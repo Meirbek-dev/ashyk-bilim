@@ -1,5 +1,5 @@
-import MainShell from './main-shell';
+import MainShell from './main-shell'
 
 export default function AppWithMenuLayout({ children }: { children: React.ReactNode }) {
-  return <MainShell>{children}</MainShell>;
+  return <MainShell>{children}</MainShell>
 }

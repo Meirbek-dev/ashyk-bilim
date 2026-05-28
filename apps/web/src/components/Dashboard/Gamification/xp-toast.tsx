@@ -7,30 +7,34 @@
  * Reduced data: Skip particle effects, use lighter animations.
  */
 
-'use client';
+'use client'
 
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { useReducedData } from '@/hooks/use-reduced-data';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useTranslations } from 'next-intl';
-import { useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion'
+import { useReducedData } from '@/hooks/use-reduced-data'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useTranslations } from 'next-intl'
+import { useEffect, useRef } from 'react'
+import { Sparkles } from 'lucide-react'
+import { motion } from 'motion/react'
 
 interface LevelUpCelebrationProps {
-  newLevel: number;
-  onDismiss: () => void;
-  compact?: boolean;
+  newLevel: number
+  onDismiss: () => void
+  compact?: boolean
 }
 
-export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: LevelUpCelebrationProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const isMobile = useIsMobile();
-  const prefersReducedMotion = useReducedMotion();
-  const prefersReducedData = useReducedData();
+export function LevelUpCelebration({
+  newLevel,
+  onDismiss,
+  compact = false,
+}: LevelUpCelebrationProps) {
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const prefersReducedData = useReducedData()
 
   // Force compact mode on mobile or reduced data
-  const shouldUseCompact = compact || isMobile || prefersReducedData;
+  const shouldUseCompact = compact || isMobile || prefersReducedData
 
   const compactParticlesRef = useRef(
     Array.from({ length: 8 }, () => ({
@@ -38,7 +42,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
       yOffset: (Math.random() - 0.5) * 100,
       delay: Math.random() * 0.5,
     })),
-  );
+  )
 
   const fullscreenParticlesRef = useRef(
     Array.from({ length: 30 }, () => ({
@@ -46,22 +50,22 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
       yOffset: (Math.random() - 0.5) * 600,
       delay: Math.random() * 0.8,
     })),
-  );
+  )
 
-  const compactParticles = compactParticlesRef.current;
-  const fullscreenParticles = fullscreenParticlesRef.current;
+  const compactParticles = compactParticlesRef.current
+  const fullscreenParticles = fullscreenParticlesRef.current
 
   useEffect(() => {
     // Auto-dismiss after 4 seconds (3s on mobile for faster flow)
     const timer = setTimeout(
       () => {
-        onDismiss();
+        onDismiss()
       },
       isMobile ? 3000 : 4000,
-    );
+    )
 
-    return () => clearTimeout(timer);
-  }, [onDismiss, isMobile]);
+    return () => clearTimeout(timer)
+  }, [onDismiss, isMobile])
 
   if (shouldUseCompact) {
     // Compact corner notification (less intrusive, mobile-friendly)
@@ -70,7 +74,9 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100, y: 100 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100 }}
-        transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 30 }}
+        transition={
+          prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 30 }
+        }
         className="bg-background/95 fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-100 w-[min(calc(100vw-2rem),24rem)] rounded-2xl border border-amber-300 p-4 shadow-xl backdrop-blur-md md:right-6 md:bottom-6 md:max-w-sm md:p-6"
         onClick={onDismiss}
       >
@@ -102,7 +108,11 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           <motion.div
             initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0, rotate: -90 }}
             animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1, rotate: 0 }}
-            transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 400, damping: 15 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0.2 }
+                : { type: 'spring', stiffness: 400, damping: 15 }
+            }
             className="shrink-0"
           >
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3">
@@ -138,7 +148,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           </div>
         </div>
       </motion.div>
-    );
+    )
   }
 
   // Full-screen celebration (default)
@@ -156,7 +166,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         exit={{ scale: 0.5, rotate: 15, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="bg-background relative mx-4 max-w-lg rounded-3xl border border-amber-300 p-12 text-center shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Sparkles animation */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
@@ -212,7 +222,9 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           transition={{ delay: 0.5, type: 'spring' }}
           className="mb-6 inline-block rounded-2xl border border-amber-300 bg-amber-50 px-8 py-3"
         >
-          <p className="text-4xl font-black text-amber-700">{t('reachedLevel', { level: newLevel })}</p>
+          <p className="text-4xl font-black text-amber-700">
+            {t('reachedLevel', { level: newLevel })}
+          </p>
         </motion.div>
 
         <motion.button
@@ -237,5 +249,5 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         </motion.p>
       </motion.div>
     </motion.div>
-  );
+  )
 }

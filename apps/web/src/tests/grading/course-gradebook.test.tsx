@@ -1,36 +1,36 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter';
-import type { CourseGradebookResponse } from '@/types/grading';
+import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter'
+import type { CourseGradebookResponse } from '@/types/grading'
 
 const navigationMocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   searchParams: new URLSearchParams(),
-}));
+}))
 
-let gradebook: CourseGradebookResponse;
+let gradebook: CourseGradebookResponse
 let queryState: {
-  data?: CourseGradebookResponse;
-  error?: Error;
-  isError: boolean;
-  isLoading: boolean;
-  refetch: () => void;
-};
+  data?: CourseGradebookResponse
+  error?: Error
+  isError: boolean
+  isLoading: boolean
+  refetch: () => void
+}
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => queryState,
-}));
+}))
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
   courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
-}));
+}))
 
 vi.mock('@/features/assessments/registry', () => ({
   loadKindModule: vi.fn(async () => ({ ReviewDetail: undefined })),
-}));
+}))
 
 vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
   default: ({
@@ -39,27 +39,27 @@ vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
     activityUuid,
     initialFilter,
   }: {
-    initialSubmissionUuid: string;
-    activityId: number;
-    activityUuid?: string;
-    initialFilter?: string;
+    initialSubmissionUuid: string
+    activityId: number
+    activityUuid?: string
+    initialFilter?: string
   }) => (
     <div>
       review:{initialSubmissionUuid}:{activityId}:{activityUuid}:{initialFilter}
     </div>
   ),
-}));
+}))
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, values?: Record<string, string | number>) =>
     values?.count === undefined ? key : `${key}:${values.count}`,
-}));
+}))
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/dash/courses/course_gradebook/gradebook',
   useRouter: () => navigationMocks,
   useSearchParams: () => navigationMocks.searchParams,
-}));
+}))
 
 function baseGradebook(): CourseGradebookResponse {
   return {
@@ -170,70 +170,72 @@ function baseGradebook(): CourseGradebookResponse {
       not_started_count: 1,
       completed_count: 1,
     },
-  };
+  }
 }
 
 describe('CourseGradebookCommandCenter', () => {
   beforeEach(() => {
-    gradebook = baseGradebook();
+    gradebook = baseGradebook()
     queryState = {
       data: gradebook,
       isError: false,
       isLoading: false,
       refetch: vi.fn(),
-    };
-    navigationMocks.push.mockClear();
-    navigationMocks.replace.mockClear();
-    navigationMocks.searchParams = new URLSearchParams();
-  });
+    }
+    navigationMocks.push.mockClear()
+    navigationMocks.replace.mockClear()
+    navigationMocks.searchParams = new URLSearchParams()
+  })
 
   it('renders matrix statuses from canonical activity progress cells', () => {
-    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    const table = screen.getByRole('table');
-    expect(within(table).getByText('ManualAssessment')).toBeInTheDocument();
-    expect(within(table).getByText('states.needs_grading')).toBeInTheDocument();
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('ManualAssessment')).toBeInTheDocument()
+    expect(within(table).getByText('states.needs_grading')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }))
 
-    expect(within(table).getByText('Quiz')).toBeInTheDocument();
-    expect(within(table).getByText('states.passed')).toBeInTheDocument();
-    expect(within(table).getByText('states.returned')).toBeInTheDocument();
-  });
+    expect(within(table).getByText('Quiz')).toBeInTheDocument()
+    expect(within(table).getByText('states.passed')).toBeInTheDocument()
+    expect(within(table).getByText('states.returned')).toBeInTheDocument()
+  })
 
   it('filters learners by saved progress filters', () => {
-    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.not_started' }));
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.not_started' }))
 
-    const table = screen.getByRole('table');
-    expect(within(table).queryByText('Student One')).not.toBeInTheDocument();
-    expect(within(table).getByText('Student Two')).toBeInTheDocument();
+    const table = screen.getByRole('table')
+    expect(within(table).queryByText('Student One')).not.toBeInTheDocument()
+    expect(within(table).getByText('Student Two')).toBeInTheDocument()
     expect(navigationMocks.replace).toHaveBeenCalledWith(
       '/dash/courses/course_gradebook/gradebook?filter=not_started',
       { scroll: false },
-    );
-  });
+    )
+  })
 
   it('opens the shared review workspace from a clicked matrix cell', () => {
-    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    fireEvent.click(within(screen.getByRole('table')).getByText('states.needs_grading'));
+    fireEvent.click(within(screen.getByRole('table')).getByText('states.needs_grading'))
 
     expect(navigationMocks.push).toHaveBeenCalledWith(
       '/dash/courses/gradebook/activity/manual_assessment/review?submission=submission_manual_assessment',
-    );
-  });
+    )
+  })
 
   it('shows command-center rollups and summary counts', () => {
-    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    const actionCells = gradebook.cells.filter((cell) => cell.teacher_action_required && cell.latest_submission_uuid);
+    const actionCells = gradebook.cells.filter(
+      cell => cell.teacher_action_required && cell.latest_submission_uuid,
+    )
 
-    expect(screen.getAllByText('summary.needsGrading').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(String(actionCells.length)).length).toBeGreaterThan(0);
-    expect(screen.getByText('rollups.title')).toBeInTheDocument();
-  });
+    expect(screen.getAllByText('summary.needsGrading').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(String(actionCells.length)).length).toBeGreaterThan(0)
+    expect(screen.getByText('rollups.title')).toBeInTheDocument()
+  })
 
   it('shows the API error instead of staying in a loading state', () => {
     queryState = {
@@ -241,24 +243,24 @@ describe('CourseGradebookCommandCenter', () => {
       isError: true,
       isLoading: false,
       refetch: vi.fn(),
-    };
+    }
 
-    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Internal Server Error');
-    expect(screen.queryByText('loading')).not.toBeInTheDocument();
-  });
+    expect(screen.getByRole('alert')).toHaveTextContent('Internal Server Error')
+    expect(screen.queryByText('loading')).not.toBeInTheDocument()
+  })
 
   it('reflects returned cells becoming resubmitted and ready for grading', () => {
-    const { rerender } = render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    const { rerender } = render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }))
 
-    expect(within(screen.getByRole('table')).getByText('states.returned')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('states.returned')).toBeInTheDocument()
 
     gradebook = {
       ...gradebook,
-      cells: gradebook.cells.map((cell) =>
+      cells: gradebook.cells.map(cell =>
         cell.user_id === 11 && cell.activity_id === 2
           ? {
               ...cell,
@@ -286,12 +288,12 @@ describe('CourseGradebookCommandCenter', () => {
         ...gradebook.summary,
         needs_grading_count: 2,
       },
-    };
-    queryState.data = gradebook;
+    }
+    queryState.data = gradebook
 
-    rerender(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
+    rerender(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    expect(within(screen.getByRole('table')).queryByText('states.returned')).not.toBeInTheDocument();
-    expect(within(screen.getByRole('table')).getAllByText('states.needs_grading')).toHaveLength(2);
-  });
-});
+    expect(within(screen.getByRole('table')).queryByText('states.returned')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getAllByText('states.needs_grading')).toHaveLength(2)
+  })
+})

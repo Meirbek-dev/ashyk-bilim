@@ -1,74 +1,87 @@
-'use client';
+'use client'
 
-import { useMemo, useState } from 'react';
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { useMemo, useState } from 'react'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Send,
+  X,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { MarkdownEditor } from '@/features/content-markdown';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { MarkdownEditor } from '@/features/content-markdown'
 import {
   fileSubmissionExportUrl,
   getFileSubmissionByActivity,
   getFileSubmissionFileUrl,
   getFileSubmissionReviewQueue,
   gradeFileSubmissionAttempt,
-} from '@/features/file-submissions/services/file-submissions';
-import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
+} from '@/features/file-submissions/services/file-submissions'
+import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
 
 // ── Rubric types (convention-based schema stored in rubric_json) ──────────────
 
 interface RubricCriterionLevel {
-  label: string;
-  score: number;
-  description?: string;
+  label: string
+  score: number
+  description?: string
 }
 
 interface RubricCriterion {
-  criterion_id: string;
-  label: string;
-  max_score: number;
-  levels?: RubricCriterionLevel[];
+  criterion_id: string
+  label: string
+  max_score: number
+  levels?: RubricCriterionLevel[]
 }
 
 function parseRubricCriteria(rubric: Record<string, unknown>): RubricCriterion[] {
-  const { criteria } = rubric as { criteria?: unknown };
-  if (!Array.isArray(criteria)) return [];
+  const { criteria } = rubric as { criteria?: unknown }
+  if (!Array.isArray(criteria)) return []
   return criteria.filter(
     (c): c is RubricCriterion =>
       typeof c === 'object' &&
       c !== null &&
       typeof (c as RubricCriterion).criterion_id === 'string' &&
       typeof (c as RubricCriterion).label === 'string',
-  );
+  )
 }
 
 interface FileSubmissionReviewWorkspaceProps {
-  activityUuid: string;
-  initialAttemptUuid?: string | null;
+  activityUuid: string
+  initialAttemptUuid?: string | null
 }
 
-const activityQueryKey = (activityUuid: string) => ['file-submission', 'review-activity', activityUuid] as const;
-const queueQueryKey = (fileSubmissionUuid: string) => ['file-submission', 'review-queue', fileSubmissionUuid] as const;
+const activityQueryKey = (activityUuid: string) =>
+  ['file-submission', 'review-activity', activityUuid] as const
+const queueQueryKey = (fileSubmissionUuid: string) =>
+  ['file-submission', 'review-queue', fileSubmissionUuid] as const
 
 export default function FileSubmissionReviewWorkspace({
   activityUuid,
   initialAttemptUuid,
 }: FileSubmissionReviewWorkspaceProps) {
-  const cleanActivityUuid = activityUuid.replace(/^activity_/, '');
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null);
-  const [score, setScore] = useState<string>('');
-  const [feedback, setFeedback] = useState('');
-  const [rubricScores, setRubricScores] = useState<Record<string, number>>({});
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewFilename, setPreviewFilename] = useState<string | null>(null);
-  const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null); // attemptFileUuid
+  const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
+  const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null)
+  const [score, setScore] = useState<string>('')
+  const [feedback, setFeedback] = useState('')
+  const [rubricScores, setRubricScores] = useState<Record<string, number>>({})
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewFilename, setPreviewFilename] = useState<string | null>(null)
+  const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attemptFileUuid
 
   const { data: config, isLoading: isConfigLoading } = useQuery(
     queryOptions({
@@ -76,43 +89,46 @@ export default function FileSubmissionReviewWorkspace({
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
       enabled: Boolean(cleanActivityUuid),
     }),
-  );
+  )
 
   const { data: queue, isLoading: isQueueLoading } = useQuery(
     queryOptions({
-      queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
+      queryKey: config
+        ? queueQueryKey(config.file_submission_uuid)
+        : ['file-submission', 'review-queue', 'pending'],
       queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
       enabled: Boolean(config?.file_submission_uuid),
     }),
-  );
+  )
 
   const filteredItems = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const items = queue?.items ?? [];
-    if (!term) return items;
-    return items.filter((attempt) => {
-      const { user } = attempt;
-      const name = `${user?.first_name ?? ''} ${user?.last_name ?? ''} ${user?.email ?? ''} ${user?.username ?? ''}`;
-      return name.toLowerCase().includes(term);
-    });
-  }, [queue?.items, search]);
+    const term = search.trim().toLowerCase()
+    const items = queue?.items ?? []
+    if (!term) return items
+    return items.filter(attempt => {
+      const { user } = attempt
+      const name = `${user?.first_name ?? ''} ${user?.last_name ?? ''} ${user?.email ?? ''} ${user?.username ?? ''}`
+      return name.toLowerCase().includes(term)
+    })
+  }, [queue?.items, search])
 
-  const selected = filteredItems.find((attempt) => attempt.attempt_uuid === selectedUuid) ?? filteredItems[0] ?? null;
+  const selected =
+    filteredItems.find(attempt => attempt.attempt_uuid === selectedUuid) ?? filteredItems[0] ?? null
 
   const gradeMutation = useMutation({
     mutationFn: async ({ status }: { status: 'GRADED' | 'PUBLISHED' | 'RETURNED' }) => {
-      if (!config || !selected) throw new Error('Submission is unavailable');
+      if (!config || !selected) throw new Error('Submission is unavailable')
       const rubricPayload =
         parsedCriteria.length > 0
           ? {
-              criteria: parsedCriteria.map((c) => ({
+              criteria: parsedCriteria.map(c => ({
                 criterion_id: c.criterion_id,
                 label: c.label,
                 score: rubricScores[c.criterion_id] ?? 0,
                 max_score: c.max_score,
               })),
             }
-          : {};
+          : {}
       return await gradeFileSubmissionAttempt(
         config.file_submission_uuid,
         selected.attempt_uuid,
@@ -123,68 +139,72 @@ export default function FileSubmissionReviewWorkspace({
           status,
         },
         selected.version,
-      );
+      )
     },
     onSuccess: async () => {
       if (config)
         await queryClient.invalidateQueries({
           queryKey: queueQueryKey(config.file_submission_uuid),
-        });
-      toast.success(t('submissionUpdated'));
+        })
+      toast.success(t('submissionUpdated'))
     },
-    onError: (gradeError) => {
-      toast.error(gradeError instanceof Error ? gradeError.message : t('updateSubmissionFailed'));
+    onError: gradeError => {
+      toast.error(gradeError instanceof Error ? gradeError.message : t('updateSubmissionFailed'))
     },
-  });
+  })
 
-  const parsedCriteria = useMemo(() => (config?.rubric ? parseRubricCriteria(config.rubric) : []), [config?.rubric]);
+  const parsedCriteria = useMemo(
+    () => (config?.rubric ? parseRubricCriteria(config.rubric) : []),
+    [config?.rubric],
+  )
 
   // Auto-fill score from rubric criterion scores
   const rubricTotalScore = useMemo(() => {
-    if (parsedCriteria.length === 0) return null;
-    return parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0);
-  }, [parsedCriteria, rubricScores]);
+    if (parsedCriteria.length === 0) return null
+    return parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0)
+  }, [parsedCriteria, rubricScores])
 
   function selectAttempt(attempt: FileSubmissionAttempt) {
-    setSelectedUuid(attempt.attempt_uuid);
-    setScore(attempt.final_score === null ? '' : String(attempt.final_score));
-    setFeedback(typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '');
+    setSelectedUuid(attempt.attempt_uuid)
+    setScore(attempt.final_score === null ? '' : String(attempt.final_score))
+    setFeedback(typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '')
     // Restore rubric scores from saved feedback.rubric
-    const savedRubric = attempt.feedback?.rubric;
+    const savedRubric = attempt.feedback?.rubric
     if (savedRubric && typeof savedRubric === 'object' && 'criteria' in savedRubric) {
-      const criteriaScores: Record<string, number> = {};
-      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] }).criteria) {
-        criteriaScores[c.criterion_id] = c.score;
+      const criteriaScores: Record<string, number> = {}
+      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] })
+        .criteria) {
+        criteriaScores[c.criterion_id] = c.score
       }
-      setRubricScores(criteriaScores);
+      setRubricScores(criteriaScores)
     } else {
-      setRubricScores({});
+      setRubricScores({})
     }
   }
 
   async function openFile(attemptFileUuid: string) {
     try {
-      const result = await getFileSubmissionFileUrl(attemptFileUuid);
-      window.open(result.get_url, '_blank', 'noopener,noreferrer');
+      const result = await getFileSubmissionFileUrl(attemptFileUuid)
+      window.open(result.get_url, '_blank', 'noopener,noreferrer')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('openFileFailed'));
+      toast.error(error instanceof Error ? error.message : t('openFileFailed'))
     }
   }
 
   async function previewFile(attemptFileUuid: string, filename: string) {
-    setIsFetchingPreview(attemptFileUuid);
+    setIsFetchingPreview(attemptFileUuid)
     try {
-      const result = await getFileSubmissionFileUrl(attemptFileUuid);
-      setPreviewUrl(result.get_url);
-      setPreviewFilename(filename);
+      const result = await getFileSubmissionFileUrl(attemptFileUuid)
+      setPreviewUrl(result.get_url)
+      setPreviewFilename(filename)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('previewFileFailed'));
+      toast.error(error instanceof Error ? error.message : t('previewFileFailed'))
     } finally {
-      setIsFetchingPreview(null);
+      setIsFetchingPreview(null)
     }
   }
 
-  const t = useTranslations('FileSubmissionReview');
+  const t = useTranslations('FileSubmissionReview')
 
   if (isConfigLoading || isQueueLoading) {
     return (
@@ -192,13 +212,15 @@ export default function FileSubmissionReviewWorkspace({
         <Loader2 className="mr-2 size-4 animate-spin" />
         {t('loadingSubmissions')}
       </div>
-    );
+    )
   }
 
   if (!config || !queue) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
-    );
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+        {t('reviewUnavailable')}
+      </div>
+    )
   }
 
   return (
@@ -213,7 +235,7 @@ export default function FileSubmissionReviewWorkspace({
             <Search className="text-muted-foreground pointer-events-none absolute top-2.5 left-2.5 size-4" />
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={event => setSearch(event.target.value)}
               placeholder={t('searchLearnersPlaceholder')}
               className="pl-8"
             />
@@ -247,7 +269,7 @@ export default function FileSubmissionReviewWorkspace({
           {filteredItems.length === 0 ? (
             <p className="text-muted-foreground p-4 text-sm">{t('noSubmissions')}</p>
           ) : (
-            filteredItems.map((attempt) => (
+            filteredItems.map(attempt => (
               <Button
                 type="button"
                 key={attempt.attempt_uuid}
@@ -261,7 +283,10 @@ export default function FileSubmissionReviewWorkspace({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{displayUser(attempt)}</p>
                     <p className="text-muted-foreground text-xs">
-                      {t('attemptInfo', { attemptNumber: attempt.attempt_number, count: attempt.files.length })}
+                      {t('attemptInfo', {
+                        attemptNumber: attempt.attempt_number,
+                        count: attempt.files.length,
+                      })}
                     </p>
                   </div>
                   <AttemptStatusBadge status={attempt.status} />
@@ -281,13 +306,17 @@ export default function FileSubmissionReviewWorkspace({
                   <h2 className="text-xl font-semibold">{displayUser(selected)}</h2>
                   <p className="text-muted-foreground text-sm">
                     {selected.submitted_at
-                      ? t('submittedAt', { date: formatDate(selected.submitted_at) })
+                      ? t('submittedAt', {
+                          date: formatDate(selected.submitted_at),
+                        })
                       : t('submittedAsDraft')}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {selected.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-                  {selected.final_score !== null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
+                  {selected.final_score !== null ? (
+                    <Badge variant="outline">{selected.final_score}%</Badge>
+                  ) : null}
                   <AttemptStatusBadge status={selected.status} />
                 </div>
               </div>
@@ -295,8 +324,8 @@ export default function FileSubmissionReviewWorkspace({
                 {selected.files.length === 0 ? (
                   <p className="text-muted-foreground p-4 text-sm">{t('noFiles')}</p>
                 ) : (
-                  selected.files.map((file) => {
-                    const previewable = isPreviewable(file.filename);
+                  selected.files.map(file => {
+                    const previewable = isPreviewable(file.filename)
                     return (
                       <div
                         key={file.attempt_file_uuid}
@@ -315,14 +344,18 @@ export default function FileSubmissionReviewWorkspace({
                           {previewable && (
                             <Button
                               size="sm"
-                              variant={previewUrl !== null && previewFilename === file.filename ? 'default' : 'outline'}
+                              variant={
+                                previewUrl !== null && previewFilename === file.filename
+                                  ? 'default'
+                                  : 'outline'
+                              }
                               disabled={isFetchingPreview === file.attempt_file_uuid}
                               onClick={() => {
                                 if (previewUrl !== null && previewFilename === file.filename) {
-                                  setPreviewUrl(null);
-                                  setPreviewFilename(null);
+                                  setPreviewUrl(null)
+                                  setPreviewFilename(null)
                                 } else {
-                                  previewFile(file.attempt_file_uuid, file.filename);
+                                  previewFile(file.attempt_file_uuid, file.filename)
                                 }
                               }}
                             >
@@ -339,12 +372,16 @@ export default function FileSubmissionReviewWorkspace({
                             variant="outline"
                             onClick={() => openFile(file.attempt_file_uuid)}
                           >
-                            {previewable ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
+                            {previewable ? (
+                              <ExternalLink className="size-4" />
+                            ) : (
+                              <Download className="size-4" />
+                            )}
                             {previewable ? t('openButton') : t('downloadButton')}
                           </Button>
                         </div>
                       </div>
-                    );
+                    )
                   })
                 )}
               </div>
@@ -359,17 +396,14 @@ export default function FileSubmissionReviewWorkspace({
                       variant="ghost"
                       className="size-7 shrink-0"
                       onClick={() => {
-                        setPreviewUrl(null);
-                        setPreviewFilename(null);
+                        setPreviewUrl(null)
+                        setPreviewFilename(null)
                       }}
                     >
                       <X className="size-4" />
                     </Button>
                   </div>
-                  <FilePreviewPane
-                    url={previewUrl}
-                    filename={previewFilename ?? ''}
-                  />
+                  <FilePreviewPane url={previewUrl} filename={previewFilename ?? ''} />
                 </div>
               )}
             </section>
@@ -384,13 +418,22 @@ export default function FileSubmissionReviewWorkspace({
                       criteria={parsedCriteria}
                       scores={rubricScores}
                       onChange={(criterionId, criterionScore) => {
-                        setRubricScores((prev) => ({ ...prev, [criterionId]: criterionScore }));
+                        setRubricScores(prev => ({
+                          ...prev,
+                          [criterionId]: criterionScore,
+                        }))
                         // Auto-fill overall score from rubric total
-                        const newScores = { ...rubricScores, [criterionId]: criterionScore };
-                        const total = parsedCriteria.reduce((acc, c) => acc + (newScores[c.criterion_id] ?? 0), 0);
-                        const maxTotal = parsedCriteria.reduce((acc, c) => acc + c.max_score, 0);
+                        const newScores = {
+                          ...rubricScores,
+                          [criterionId]: criterionScore,
+                        }
+                        const total = parsedCriteria.reduce(
+                          (acc, c) => acc + (newScores[c.criterion_id] ?? 0),
+                          0,
+                        )
+                        const maxTotal = parsedCriteria.reduce((acc, c) => acc + c.max_score, 0)
                         if (maxTotal > 0) {
-                          setScore(String(Math.round((total / maxTotal) * 100)));
+                          setScore(String(Math.round((total / maxTotal) * 100)))
                         }
                       }}
                     />
@@ -405,7 +448,7 @@ export default function FileSubmissionReviewWorkspace({
                         min={0}
                         max={100}
                         value={score}
-                        onChange={(event) => setScore(event.target.value)}
+                        onChange={event => setScore(event.target.value)}
                         placeholder={t('scorePlaceholder')}
                         className="w-24"
                       />
@@ -469,18 +512,18 @@ export default function FileSubmissionReviewWorkspace({
         )}
       </main>
     </div>
-  );
+  )
 }
 
 function displayUser(attempt: FileSubmissionAttempt) {
-  const { user } = attempt;
-  const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim();
-  return fullName || user?.username || user?.email || 'Learner';
+  const { user } = attempt
+  const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
+  return fullName || user?.username || user?.email || 'Learner'
 }
 
 function isPreviewable(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+  const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
 }
 
 function RubricGrid({
@@ -488,21 +531,18 @@ function RubricGrid({
   scores,
   onChange,
 }: {
-  criteria: RubricCriterion[];
-  scores: Record<string, number>;
-  onChange: (criterionId: string, score: number) => void;
+  criteria: RubricCriterion[]
+  scores: Record<string, number>
+  onChange: (criterionId: string, score: number) => void
 }) {
-  const t = useTranslations('FileSubmissionReview');
+  const t = useTranslations('FileSubmissionReview')
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">{t('rubric')}</p>
-      {criteria.map((c) => {
-        const current = scores[c.criterion_id] ?? null;
+      {criteria.map(c => {
+        const current = scores[c.criterion_id] ?? null
         return (
-          <div
-            key={c.criterion_id}
-            className="space-y-1.5"
-          >
+          <div key={c.criterion_id} className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-sm">{c.label}</span>
               <span className="text-muted-foreground text-xs">
@@ -511,7 +551,7 @@ function RubricGrid({
             </div>
             {c.levels && c.levels.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {c.levels.map((level) => (
+                {c.levels.map(level => (
                   <Button
                     key={level.score}
                     type="button"
@@ -534,22 +574,22 @@ function RubricGrid({
                 value={current ?? ''}
                 placeholder={t('rubricScorePlaceholder')}
                 className="h-7 w-20 text-sm"
-                onChange={(e) => {
-                  const v = Number.parseFloat(e.target.value);
-                  if (!Number.isNaN(v)) onChange(c.criterion_id, Math.min(v, c.max_score));
+                onChange={e => {
+                  const v = Number.parseFloat(e.target.value)
+                  if (!Number.isNaN(v)) onChange(c.criterion_id, Math.min(v, c.max_score))
                 }}
               />
             )}
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
-  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+  const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)
 
   if (isImage) {
     return (
@@ -559,7 +599,7 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
         alt={filename}
         className="max-h-[600px] w-full rounded-b-md object-contain p-2"
       />
-    );
+    )
   }
   // PDF / fallback iframe
   return (
@@ -569,24 +609,25 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
       className="h-[600px] w-full rounded-b-md border-0"
       sandbox="allow-scripts allow-same-origin"
     />
-  );
+  )
 }
 
 function AttemptStatusBadge({ status }: { status: string }) {
-  const variant = status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary';
-  return <Badge variant={variant}>{status.toLowerCase()}</Badge>;
+  const variant =
+    status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary'
+  return <Badge variant={variant}>{status.toLowerCase()}</Badge>
 }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }).format(new Date(value))
 }
 
 function formatBytes(bytes: number) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+  if (!bytes) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
 }

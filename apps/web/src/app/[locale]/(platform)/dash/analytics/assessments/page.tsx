@@ -1,39 +1,39 @@
-import { getTeacherAssessmentList, normalizeAnalyticsQuery } from '@services/analytics/teacher';
-import AssessmentOutliersTable from '@components/Dashboard/Analytics/AssessmentOutliersTable';
-import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState';
-import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar';
-import { Card, CardContent } from '@/components/ui/card';
-import { getTranslations } from 'next-intl/server';
-import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
+import { getTeacherAssessmentList, normalizeAnalyticsQuery } from '@services/analytics/teacher'
+import AssessmentOutliersTable from '@components/Dashboard/Analytics/AssessmentOutliersTable'
+import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
+import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
+import { Card, CardContent } from '@/components/ui/card'
+import { getTranslations } from 'next-intl/server'
+import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
 
 export default function PlatformAnalyticsAssessmentsPage(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsAssessmentsPageInner searchParams={props.searchParams} />;
+  return <PlatformAnalyticsAssessmentsPageInner searchParams={props.searchParams} />
 }
 
 async function PlatformAnalyticsAssessmentsPageInner(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const query = normalizeAnalyticsQuery(await props.searchParams);
-  const t = await getTranslations('TeacherAnalytics');
+  const query = normalizeAnalyticsQuery(await props.searchParams)
+  const t = await getTranslations('TeacherAnalytics')
 
   try {
-    const assessments = await getTeacherAssessmentList(query);
-    const courseOptions = assessments.course_options ?? [];
-    const cohortOptions = assessments.cohort_options ?? [];
-    const totalPages = Math.max(1, Math.ceil(assessments.total / assessments.page_size));
-    const params = new URLSearchParams();
-    if (query.window) params.set('window', query.window);
-    if (query.compare) params.set('compare', query.compare);
-    if (query.bucket) params.set('bucket', query.bucket);
-    if (query.course_ids) params.set('course_ids', query.course_ids);
-    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids);
-    if (query.timezone) params.set('timezone', query.timezone);
-    if (query.sort_by) params.set('sort_by', query.sort_by);
-    if (query.sort_order) params.set('sort_order', query.sort_order);
-    if (query.bucket_start) params.set('bucket_start', query.bucket_start);
+    const assessments = await getTeacherAssessmentList(query)
+    const courseOptions = assessments.course_options ?? []
+    const cohortOptions = assessments.cohort_options ?? []
+    const totalPages = Math.max(1, Math.ceil(assessments.total / assessments.page_size))
+    const params = new URLSearchParams()
+    if (query.window) params.set('window', query.window)
+    if (query.compare) params.set('compare', query.compare)
+    if (query.bucket) params.set('bucket', query.bucket)
+    if (query.course_ids) params.set('course_ids', query.course_ids)
+    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
+    if (query.timezone) params.set('timezone', query.timezone)
+    if (query.sort_by) params.set('sort_by', query.sort_by)
+    if (query.sort_order) params.set('sort_order', query.sort_order)
+    if (query.bucket_start) params.set('bucket_start', query.bucket_start)
 
     return (
       <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
@@ -84,7 +84,10 @@ async function PlatformAnalyticsAssessmentsPageInner(props: {
                   {t('table.prev')}
                 </Button>
                 <span className="text-sm text-slate-600 dark:text-slate-300">
-                  {t('table.page', { current: assessments.page, total: totalPages })}
+                  {t('table.page', {
+                    current: assessments.page,
+                    total: totalPages,
+                  })}
                 </span>
                 <Button
                   variant="outline"
@@ -105,13 +108,13 @@ async function PlatformAnalyticsAssessmentsPageInner(props: {
           </CardContent>
         </Card>
       </main>
-    );
+    )
   } catch (error) {
     return (
       <AnalyticsEmptyState
         title={t('pages.assessmentsUnavailableTitle')}
         description={error instanceof Error ? error.message : t('pages.assessmentsLoadError')}
       />
-    );
+    )
   }
 }

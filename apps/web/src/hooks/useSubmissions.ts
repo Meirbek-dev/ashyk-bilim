@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import type { SubmissionStatus } from '@/features/grading/domain/types';
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import { submissionsQueryOptions } from '@/features/grading/queries/grading.query';
-import { useState, useEffect } from 'react';
+import type { SubmissionStatus } from '@/features/grading/domain/types'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import { submissionsQueryOptions } from '@/features/grading/queries/grading.query'
+import { useState, useEffect } from 'react'
 
 export interface UseSubmissionsOptions {
-  activityId: number | null;
-  assessmentUuid?: string | null;
-  status?: SubmissionStatus | 'NEEDS_GRADING' | null;
-  search?: string;
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc';
-  pageSize?: number;
+  activityId: number | null
+  assessmentUuid?: string | null
+  status?: SubmissionStatus | 'NEEDS_GRADING' | null
+  search?: string
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
+  pageSize?: number
 }
 
 function submissionsHookOptions(
@@ -36,7 +36,7 @@ function submissionsHookOptions(
       status,
     }),
     enabled: Boolean(activityId && assessmentUuid),
-  });
+  })
 }
 
 export function useSubmissions({
@@ -48,11 +48,11 @@ export function useSubmissions({
   sortDir = 'desc',
   pageSize = 25,
 }: UseSubmissionsOptions) {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
-    setPage(1);
-  }, [activityId]);
+    setPage(1)
+  }, [activityId])
 
   const queryParams = {
     assessmentUuid: assessmentUuid ?? '',
@@ -62,12 +62,21 @@ export function useSubmissions({
     sortBy,
     sortDir,
     status: status ?? 'ALL',
-  } as const;
-  const { queryKey } = submissionsQueryOptions(queryParams);
-  const queryClient = useQueryClient();
+  } as const
+  const { queryKey } = submissionsQueryOptions(queryParams)
+  const queryClient = useQueryClient()
   const query = useQuery(
-    submissionsHookOptions(activityId, assessmentUuid, page, pageSize, search ?? '', sortBy, sortDir, status ?? 'ALL'),
-  );
+    submissionsHookOptions(
+      activityId,
+      assessmentUuid,
+      page,
+      pageSize,
+      search ?? '',
+      sortBy,
+      sortDir,
+      status ?? 'ALL',
+    ),
+  )
 
   return {
     submissions: query.data?.items ?? [],
@@ -78,9 +87,9 @@ export function useSubmissions({
     isLoading: query.isPending,
     error: query.error ?? null,
     mutate: async () => {
-      if (!activityId || !assessmentUuid) return undefined;
-      await queryClient.invalidateQueries({ queryKey });
-      return queryClient.fetchQuery(submissionsQueryOptions(queryParams));
+      if (!activityId || !assessmentUuid) return undefined
+      await queryClient.invalidateQueries({ queryKey })
+      return queryClient.fetchQuery(submissionsQueryOptions(queryParams))
     },
-  };
+  }
 }

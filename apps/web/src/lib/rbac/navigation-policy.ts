@@ -1,7 +1,7 @@
-import type { Action, Resource, Scope } from '@/types/permissions';
-import { Actions, Resources, Scopes } from '@/types/permissions';
+import type { Action, Resource, Scope } from '@/types/permissions'
+import { Actions, Resources, Scopes } from '@/types/permissions'
 
-type CanCheck = (resource: Resource, action: Action, scope: Scope) => boolean;
+type CanCheck = (resource: Resource, action: Action, scope: Scope) => boolean
 
 export function canSeePlatform(can: CanCheck): boolean {
   return (
@@ -9,7 +9,7 @@ export function canSeePlatform(can: CanCheck): boolean {
     can(Resources.APP, Actions.UPDATE, Scopes.OWN) ||
     can(Resources.APP, Actions.MANAGE, Scopes.APP) ||
     can(Resources.APP, Actions.UPDATE, Scopes.APP)
-  );
+  )
 }
 
 export function canSeeCourses(can: CanCheck): boolean {
@@ -20,7 +20,7 @@ export function canSeeCourses(can: CanCheck): boolean {
     can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
     can(Resources.ASSESSMENT, Actions.GRADE, Scopes.APP) ||
     can(Resources.ASSESSMENT, Actions.CREATE, Scopes.APP)
-  );
+  )
 }
 
 export function canSeeAnalytics(can: CanCheck): boolean {
@@ -31,7 +31,7 @@ export function canSeeAnalytics(can: CanCheck): boolean {
     can(Resources.ANALYTICS, Actions.EXPORT, Scopes.ASSIGNED) ||
     can(Resources.ANALYTICS, Actions.EXPORT, Scopes.APP) ||
     can(Resources.ANALYTICS, Actions.EXPORT, Scopes.ALL)
-  );
+  )
 }
 
 export function canSeeUsers(can: CanCheck): boolean {
@@ -39,7 +39,7 @@ export function canSeeUsers(can: CanCheck): boolean {
     can(Resources.USER, Actions.UPDATE, Scopes.APP) ||
     can(Resources.USER, Actions.READ, Scopes.APP) ||
     can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
-  );
+  )
 }
 
 export function canSeeAdmin(can: CanCheck): boolean {
@@ -50,9 +50,15 @@ export function canSeeAdmin(can: CanCheck): boolean {
     can(Resources.APP, Actions.UPDATE, Scopes.APP) ||
     can(Resources.ROLE, Actions.UPDATE, Scopes.APP) ||
     can(Resources.ROLE, Actions.READ, Scopes.APP)
-  );
+  )
 }
 
 export function canAccessDashboard(can: CanCheck): boolean {
-  return canSeePlatform(can) || canSeeCourses(can) || canSeeAnalytics(can) || canSeeUsers(can) || canSeeAdmin(can);
+  return (
+    canSeePlatform(can) ||
+    canSeeCourses(can) ||
+    canSeeAnalytics(can) ||
+    canSeeUsers(can) ||
+    canSeeAdmin(can)
+  )
 }

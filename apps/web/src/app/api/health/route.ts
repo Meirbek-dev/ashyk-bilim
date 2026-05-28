@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
 export async function GET() {
   return NextResponse.json(
@@ -7,11 +7,11 @@ export async function GET() {
       status: 200,
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
     },
-  );
+  )
 }
 
 export async function HEAD() {
@@ -20,5 +20,5 @@ export async function HEAD() {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     },
-  });
+  })
 }

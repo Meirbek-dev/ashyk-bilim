@@ -1,1 +1,1 @@
-export { GamificationProfileSection } from './GamificationProfileSection';
+export { GamificationProfileSection } from './GamificationProfileSection'

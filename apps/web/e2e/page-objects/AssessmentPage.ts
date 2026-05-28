@@ -1,45 +1,58 @@
-import type { Page, Locator } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test'
 
 /**
  * Page Object for the Assessment activity from the student perspective.
  * Handles exam attempts and code-challenge submission.
  */
 export class AssessmentPage {
-  public readonly page: Page;
+  public readonly page: Page
 
   /** "Start exam / attempt" button */
-  public readonly startButton: Locator;
+  public readonly startButton: Locator
   /** "Submit" button for finishing an exam attempt */
-  public readonly submitButton: Locator;
+  public readonly submitButton: Locator
   /** Result / score display after submission */
-  public readonly resultDisplay: Locator;
+  public readonly resultDisplay: Locator
   /** Code editor textarea / code mirror input */
-  public readonly codeEditor: Locator;
+  public readonly codeEditor: Locator
   /** "Run" / "Test" button in code challenge */
-  public readonly runCodeButton: Locator;
+  public readonly runCodeButton: Locator
   /** "Submit solution" button in code challenge */
-  public readonly submitCodeButton: Locator;
+  public readonly submitCodeButton: Locator
   /** Pass/fail status text */
-  public readonly attemptStatus: Locator;
+  public readonly attemptStatus: Locator
 
   public constructor(page: Page) {
-    this.page = page;
-    this.startButton = page.getByRole('button', { name: /start|begin attempt|take exam/i }).first();
-    this.submitButton = page.getByRole('button', { name: /submit exam|submit attempt|finish/i }).first();
-    this.resultDisplay = page.locator('[data-result], .result, .score, [aria-label*="score"]').first();
-    this.codeEditor = page.locator('.cm-editor .cm-content, .monaco-editor textarea, textarea[name*="code"]').first();
-    this.runCodeButton = page.getByRole('button', { name: /run|test code/i }).first();
-    this.submitCodeButton = page.getByRole('button', { name: /submit solution|submit code/i }).first();
-    this.attemptStatus = page.locator('text=Graded, text=Submitted, text=Pending, [data-status]').first();
+    this.page = page
+    this.startButton = page.getByRole('button', { name: /start|begin attempt|take exam/i }).first()
+    this.submitButton = page
+      .getByRole('button', { name: /submit exam|submit attempt|finish/i })
+      .first()
+    this.resultDisplay = page
+      .locator('[data-result], .result, .score, [aria-label*="score"]')
+      .first()
+    this.codeEditor = page
+      .locator('.cm-editor .cm-content, .monaco-editor textarea, textarea[name*="code"]')
+      .first()
+    this.runCodeButton = page.getByRole('button', { name: /run|test code/i }).first()
+    this.submitCodeButton = page
+      .getByRole('button', { name: /submit solution|submit code/i })
+      .first()
+    this.attemptStatus = page
+      .locator('text=Graded, text=Submitted, text=Pending, [data-status]')
+      .first()
   }
 
   // ── Exam helpers ─────────────────────────────────────────────────────────
 
   public async startAttempt(): Promise<void> {
-    await this.startButton.click();
-    await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() === 'POST', {
-      timeout: 10_000,
-    });
+    await this.startButton.click()
+    await this.page.waitForResponse(
+      r => r.url().includes('/assessments') && r.request().method() === 'POST',
+      {
+        timeout: 10_000,
+      },
+    )
   }
 
   /**
@@ -48,8 +61,10 @@ export class AssessmentPage {
    * @param answerIndex - 0-based index of the answer to select
    */
   public async answerChoiceQuestion(questionIndex: number, answerIndex: number): Promise<void> {
-    const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
-    await questionBlock.locator('input[type="radio"]').nth(answerIndex).check();
+    const questionBlock = this.page
+      .locator('[data-question], .question-block, fieldset')
+      .nth(questionIndex)
+    await questionBlock.locator('input[type="radio"]').nth(answerIndex).check()
   }
 
   /**
@@ -57,38 +72,49 @@ export class AssessmentPage {
    * @param questionIndex - 0-based
    * @param answerIndices - array of 0-based indices to check
    */
-  public async answerMultiSelectQuestion(questionIndex: number, answerIndices: number[]): Promise<void> {
-    const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
+  public async answerMultiSelectQuestion(
+    questionIndex: number,
+    answerIndices: number[],
+  ): Promise<void> {
+    const questionBlock = this.page
+      .locator('[data-question], .question-block, fieldset')
+      .nth(questionIndex)
     for (const idx of answerIndices) {
-      await questionBlock.locator('input[type="checkbox"]').nth(idx).check();
+      await questionBlock.locator('input[type="checkbox"]').nth(idx).check()
     }
   }
 
   public async submitAttempt(): Promise<void> {
-    await this.submitButton.click();
+    await this.submitButton.click()
     // Confirm submission in a possible dialog
-    const confirmBtn = this.page.getByRole('button', { name: /confirm|yes/i });
+    const confirmBtn = this.page.getByRole('button', { name: /confirm|yes/i })
     if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await confirmBtn.click();
+      await confirmBtn.click()
     }
-    await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() !== 'GET', {
-      timeout: 15_000,
-    });
+    await this.page.waitForResponse(
+      r => r.url().includes('/assessments') && r.request().method() !== 'GET',
+      {
+        timeout: 15_000,
+      },
+    )
   }
 
   // ── Code challenge helpers ───────────────────────────────────────────────
 
   public async fillCodeEditor(code: string): Promise<void> {
-    await this.codeEditor.click();
+    await this.codeEditor.click()
     // Select all and replace
-    await this.page.keyboard.press('Control+A');
-    await this.codeEditor.fill(code);
+    await this.page.keyboard.press('Control+A')
+    await this.codeEditor.fill(code)
   }
 
   public async submitCode(): Promise<void> {
-    await this.submitCodeButton.click();
-    await this.page.waitForResponse((r) => r.url().includes('/code-execution') || r.url().includes('/assessments'), {
-      timeout: 30_000,
-    });
+    await this.submitCodeButton.click()
+    await this.page.waitForResponse(
+      r => r.url().includes('/code-execution') || r.url().includes('/assessments'),
+      {
+        timeout: 30_000,
+      },
+    )
   }
 }

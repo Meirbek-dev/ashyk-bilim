@@ -1,3 +1,3 @@
-declare module '*.css';
+declare module '*.css'
 
-declare module 'katex/dist/katex.min.css';
+declare module 'katex/dist/katex.min.css'

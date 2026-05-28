@@ -1,22 +1,24 @@
-import * as v from 'valibot';
+import * as v from 'valibot'
 
 // ---------------------------------------------------------------------------
 // Learning items
 // ---------------------------------------------------------------------------
 
 const isValidLearningsJson = (value: string): boolean => {
-  if (!value) return false;
+  if (!value) return false
   try {
-    const parsed = JSON.parse(value);
+    const parsed = JSON.parse(value)
     return (
       Array.isArray(parsed) &&
       parsed.length > 0 &&
-      parsed.every((i: unknown) => typeof (i as any)?.text === 'string' && (i as any).text.trim().length > 0)
-    );
+      parsed.every(
+        (i: unknown) => typeof (i as any)?.text === 'string' && (i as any).text.trim().length > 0,
+      )
+    )
   } catch {
-    return false;
+    return false
   }
-};
+}
 
 // ---------------------------------------------------------------------------
 // Course general section
@@ -30,9 +32,9 @@ export const courseGeneralSchema = v.object({
   tags: v.array(v.string()),
   public: v.boolean(),
   thumbnail_type: v.picklist(['image', 'video', 'both'] as const),
-});
+})
 
-export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>;
+export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>
 
 // ---------------------------------------------------------------------------
 // Course access section
@@ -40,9 +42,9 @@ export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>;
 
 export const courseAccessSchema = v.object({
   public: v.boolean(),
-});
+})
 
-export type CourseAccessValues = v.InferOutput<typeof courseAccessSchema>;
+export type CourseAccessValues = v.InferOutput<typeof courseAccessSchema>
 
 // ---------------------------------------------------------------------------
 // Course contributors section
@@ -50,9 +52,9 @@ export type CourseAccessValues = v.InferOutput<typeof courseAccessSchema>;
 
 export const courseContributorsSchema = v.object({
   open_to_contributors: v.boolean(),
-});
+})
 
-export type CourseContributorsValues = v.InferOutput<typeof courseContributorsSchema>;
+export type CourseContributorsValues = v.InferOutput<typeof courseContributorsSchema>
 
 // ---------------------------------------------------------------------------
 // Course creation wizard
@@ -64,6 +66,6 @@ export const courseWizardSchema = v.object({
   public: v.boolean(),
   template: v.picklist(['blank', 'starter', 'outline'] as const),
   sourceCourseUuid: v.optional(v.string()),
-});
+})
 
-export type CourseWizardValues = v.InferOutput<typeof courseWizardSchema>;
+export type CourseWizardValues = v.InferOutput<typeof courseWizardSchema>

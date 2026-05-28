@@ -1,45 +1,45 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { LoaderCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { LoaderCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { apiFetcher } from '@/lib/api-client';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { assessmentTypeToKind } from '@/features/assessments/domain/view-models';
-import { loadKindModule } from '@/features/assessments/registry';
-import type { KindModule } from '@/features/assessments/registry';
-import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
-import { reportClientError } from '@/services/telemetry/client';
+import { apiFetcher } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { assessmentTypeToKind } from '@/features/assessments/domain/view-models'
+import { loadKindModule } from '@/features/assessments/registry'
+import type { KindModule } from '@/features/assessments/registry'
+import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace'
+import { reportClientError } from '@/services/telemetry/client'
 
 interface AssessmentReviewWorkspaceProps {
   /** Activity UUID — route param (may include "activity_" prefix). */
-  activityUuid: string;
+  activityUuid: string
   /** Optionally pre-select a specific submission (from ?submission= query param). */
-  initialSubmissionUuid?: string | null;
+  initialSubmissionUuid?: string | null
 }
 
 interface AssessmentReviewDetail {
-  assessment_uuid: string;
-  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  assessment_uuid: string
+  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
   review_projection?: {
-    assessment_uuid: string;
-    activity_id: number;
-    activity_uuid: string;
-    title: string;
-    kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
-    default_filter?: 'ALL' | 'NEEDS_GRADING' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
-  } | null;
+    assessment_uuid: string
+    activity_id: number
+    activity_uuid: string
+    title: string
+    kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
+    default_filter?: 'ALL' | 'NEEDS_GRADING' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
+  } | null
 }
 
 export default function AssessmentReviewWorkspace({
   activityUuid,
   initialSubmissionUuid,
 }: AssessmentReviewWorkspaceProps) {
-  const t = useTranslations('Features.Assessments.ReviewWorkspace');
-  const cleanUuid = activityUuid.replace(/^activity_/, '');
-  const [kindModule, setKindModule] = useState<KindModule | undefined>();
+  const t = useTranslations('Features.Assessments.ReviewWorkspace')
+  const cleanUuid = activityUuid.replace(/^activity_/, '')
+  const [kindModule, setKindModule] = useState<KindModule | undefined>()
 
   const {
     data: assessment,
@@ -51,17 +51,17 @@ export default function AssessmentReviewWorkspace({
       queryFn: () => apiFetcher<AssessmentReviewDetail>(`assessments/activity/${cleanUuid}`),
       enabled: Boolean(cleanUuid),
     }),
-  );
+  )
 
   useEffect(() => {
-    const reviewProjection = assessment?.review_projection;
-    if (!reviewProjection) return;
-    const kind = assessmentTypeToKind(reviewProjection.kind);
-    if (!kind) return;
-    let cancelled = false;
+    const reviewProjection = assessment?.review_projection
+    if (!reviewProjection) return
+    const kind = assessmentTypeToKind(reviewProjection.kind)
+    if (!kind) return
+    let cancelled = false
     void loadKindModule(kind)
-      .then((mod) => {
-        if (!cancelled) setKindModule(mod);
+      .then(mod => {
+        if (!cancelled) setKindModule(mod)
       })
       .catch((loadError: unknown) => {
         void reportClientError({
@@ -69,13 +69,14 @@ export default function AssessmentReviewWorkspace({
           phase: 'load-review-kind-module',
           activityUuid: cleanUuid,
           assessmentUuid: assessment?.assessment_uuid,
-          error: loadError instanceof Error ? loadError.message : 'Failed to load review kind module',
-        }).catch(() => undefined);
-      });
+          error:
+            loadError instanceof Error ? loadError.message : 'Failed to load review kind module',
+        }).catch(() => undefined)
+      })
     return () => {
-      cancelled = true;
-    };
-  }, [assessment?.assessment_uuid, assessment?.review_projection, cleanUuid]);
+      cancelled = true
+    }
+  }, [assessment?.assessment_uuid, assessment?.review_projection, cleanUuid])
 
   if (isLoading) {
     return (
@@ -83,16 +84,18 @@ export default function AssessmentReviewWorkspace({
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         {t('loading')}
       </div>
-    );
+    )
   }
 
   if (error || !assessment?.review_projection) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
-    );
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+        {t('reviewUnavailable')}
+      </div>
+    )
   }
 
-  const reviewProjection = assessment.review_projection;
+  const reviewProjection = assessment.review_projection
 
   return (
     <GradingReviewWorkspace
@@ -104,5 +107,5 @@ export default function AssessmentReviewWorkspace({
       initialFilter={initialSubmissionUuid ? 'ALL' : (reviewProjection.default_filter ?? 'ALL')}
       kindModule={kindModule}
     />
-  );
+  )
 }

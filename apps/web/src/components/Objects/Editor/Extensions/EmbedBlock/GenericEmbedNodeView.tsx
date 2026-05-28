@@ -1,88 +1,92 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react';
-import * as Si from '@icons-pack/react-simple-icons';
-import { NodeViewWrapper } from '@tiptap/react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
-import type { EmbedBlockAttrs } from './EmbedBlock';
-import { buildEmbedSrc } from './embed-validators';
-import { getEmbedProvider } from './embed-options';
-import type { EmbedType } from './embed-options';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react'
+import * as Si from '@icons-pack/react-simple-icons'
+import { NodeViewWrapper } from '@tiptap/react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
+import type { EmbedBlockAttrs } from './EmbedBlock'
+import { buildEmbedSrc } from './embed-validators'
+import { getEmbedProvider } from './embed-options'
+import type { EmbedType } from './embed-options'
+import { useTranslations } from 'next-intl'
 
-const MIN_HEIGHT = 240;
-const MAX_HEIGHT = 1600;
+const MIN_HEIGHT = 240
+const MAX_HEIGHT = 1600
 
 function clampHeight(value: number): number {
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value));
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value))
 }
 
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
-  const { node, editor, updateAttributes, deleteNode, getPos } = props;
-  const { type, url, height: attrHeight } = node.attrs;
-  const provider = getEmbedProvider(type);
-  const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const { isEditable } = editor;
-  const [mounted, setMounted] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(!isEditable);
-  const editButtonRef = useRef<HTMLButtonElement>(null);
-  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
-  const openForEdit = useEmbedPanelStore((state) => state.openForEdit);
+  const { node, editor, updateAttributes, deleteNode, getPos } = props
+  const { type, url, height: attrHeight } = node.attrs
+  const provider = getEmbedProvider(type)
+  const t = useTranslations('DashPage.Editor.EmbedPanel')
+  const { isEditable } = editor
+  const [mounted, setMounted] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(!isEditable)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const openForEdit = useEmbedPanelStore(state => state.openForEdit)
 
   const initialHeight = useMemo(() => {
-    const fallback = provider?.defaultHeight ?? 520;
-    return clampHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : fallback);
-  }, [attrHeight, provider?.defaultHeight]);
-  const [displayHeight, setDisplayHeight] = useState(initialHeight);
+    const fallback = provider?.defaultHeight ?? 520
+    return clampHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : fallback)
+  }, [attrHeight, provider?.defaultHeight])
+  const [displayHeight, setDisplayHeight] = useState(initialHeight)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
-    setDisplayHeight(initialHeight);
-  }, [initialHeight]);
+    setDisplayHeight(initialHeight)
+  }, [initialHeight])
 
-  const src = provider && url ? buildEmbedSrc(provider.type, url) : '';
-  const providerLabel = provider ? t(`providers.${provider.type}.label`) : '';
+  const src = provider && url ? buildEmbedSrc(provider.type, url) : ''
+  const providerLabel = provider ? t(`providers.${provider.type}.label`) : ''
 
   const handleEdit = useCallback(() => {
-    const pos = typeof getPos === 'function' ? getPos() : undefined;
-    if (pos === undefined || !provider || !url) return;
-    openForEdit(pos, { type: provider.type as EmbedType, url }, editButtonRef);
-  }, [getPos, openForEdit, provider, url]);
+    const pos = typeof getPos === 'function' ? getPos() : undefined
+    if (pos === undefined || !provider || !url) return
+    openForEdit(pos, { type: provider.type as EmbedType, url }, editButtonRef)
+  }, [getPos, openForEdit, provider, url])
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!isEditable) return;
-      event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (!isEditable) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
       dragStateRef.current = {
         startY: event.clientY,
         startHeight: displayHeight,
-      };
+      }
     },
     [displayHeight, isEditable],
-  );
+  )
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragStateRef.current) return;
-    setDisplayHeight(clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY));
-  }, []);
+    if (!dragStateRef.current) return
+    setDisplayHeight(
+      clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY),
+    )
+  }, [])
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragStateRef.current) return;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      const nextHeight = clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY);
-      dragStateRef.current = null;
-      setDisplayHeight(nextHeight);
-      updateAttributes({ height: nextHeight });
+      if (!dragStateRef.current) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      const nextHeight = clampHeight(
+        dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY,
+      )
+      dragStateRef.current = null
+      setDisplayHeight(nextHeight)
+      updateAttributes({ height: nextHeight })
     },
     [updateAttributes],
-  );
+  )
 
   if (!provider || !url) {
     return (
@@ -91,10 +95,10 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
           {t('missingEmbed')}
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
-  const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null;
+  const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null
 
   return (
     <NodeViewWrapper
@@ -126,8 +130,12 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             )}
 
             <div className="space-y-1.5">
-              <p className="text-foreground text-sm font-semibold">{t(`providers.${provider.type}.label`)}</p>
-              <p className="text-muted-foreground max-w-md text-sm">{t(`providers.${provider.type}.description`)}</p>
+              <p className="text-foreground text-sm font-semibold">
+                {t(`providers.${provider.type}.label`)}
+              </p>
+              <p className="text-muted-foreground max-w-md text-sm">
+                {t(`providers.${provider.type}.description`)}
+              </p>
               <a
                 href={url}
                 target="_blank"
@@ -195,5 +203,5 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         ) : null}
       </div>
     </NodeViewWrapper>
-  );
+  )
 }

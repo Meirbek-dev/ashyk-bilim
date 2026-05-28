@@ -1,24 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 
-import { derivePrimaryAction, normalizeProgressState } from '@/features/student-activity/domain';
-import { buildGradebookRollups, type GradebookRollupKind } from '@/features/grading/domain';
-import type { CourseGradebookResponse } from '@/features/grading/domain';
+import { derivePrimaryAction, normalizeProgressState } from '@/features/student-activity/domain'
+import { buildGradebookRollups, type GradebookRollupKind } from '@/features/grading/domain'
+import type { CourseGradebookResponse } from '@/features/grading/domain'
 
 describe('student activity runtime domain', () => {
   it('maps canonical progress states into student workflow states', () => {
-    expect(normalizeProgressState('NEEDS_GRADING')).toBe('needs_grading');
-    expect(normalizeProgressState('GRADED')).toBe('graded_hidden');
-    expect(normalizeProgressState('PASSED')).toBe('passed');
+    expect(normalizeProgressState('NEEDS_GRADING')).toBe('needs_grading')
+    expect(normalizeProgressState('GRADED')).toBe('graded_hidden')
+    expect(normalizeProgressState('PASSED')).toBe('passed')
     expect(
       normalizeProgressState('PASSED', {
         completed_at: '2026-05-19T00:00:00Z',
         passed: true,
         latest_submission_status: 'PUBLISHED',
       }),
-    ).toBe('passed');
-    expect(normalizeProgressState('FAILED')).toBe('failed');
-    expect(normalizeProgressState('COMPLETED')).toBe('complete');
-  });
+    ).toBe('passed')
+    expect(normalizeProgressState('FAILED')).toBe('failed')
+    expect(normalizeProgressState('COMPLETED')).toBe('complete')
+  })
 
   it('derives the next best action from the workflow state', () => {
     expect(
@@ -30,7 +30,7 @@ describe('student activity runtime domain', () => {
         isCourseEnd: false,
         state: 'returned',
       }).id,
-    ).toBe('revise');
+    ).toBe('revise')
 
     expect(
       derivePrimaryAction({
@@ -41,13 +41,13 @@ describe('student activity runtime domain', () => {
         isCourseEnd: false,
         state: 'not_started',
       }).id,
-    ).toBe('mark_complete');
-  });
-});
+    ).toBe('mark_complete')
+  })
+})
 
 describe('gradebook rollup taxonomy', () => {
   it('uses activity_category for activity-type rollups', () => {
-    const kind: GradebookRollupKind = 'activity_category';
+    const kind: GradebookRollupKind = 'activity_category'
     const data = {
       course_uuid: 'course_1',
       course_id: 1,
@@ -73,8 +73,8 @@ describe('gradebook rollup taxonomy', () => {
         not_started_count: 0,
         completed_count: 0,
       },
-    } satisfies CourseGradebookResponse;
+    } satisfies CourseGradebookResponse
 
-    expect(buildGradebookRollups(data, kind)[0]?.label).toBe('QUIZ');
-  });
-});
+    expect(buildGradebookRollups(data, kind)[0]?.label).toBe('QUIZ')
+  })
+})

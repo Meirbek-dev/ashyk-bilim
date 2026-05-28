@@ -1,8 +1,8 @@
-import { getActivityMediaDirectory } from '@services/media/media';
-import { useTranslations } from 'next-intl';
+import { getActivityMediaDirectory } from '@services/media/media'
+import { useTranslations } from 'next-intl'
 
 const DocumentPdfActivity = ({ activity, course }: { activity: any; course: any }) => {
-  const t = useTranslations('Activities.DocumentPdf');
+  const t = useTranslations('Activities.DocumentPdf')
 
   return (
     <div className="h-full w-full">
@@ -17,7 +17,7 @@ const DocumentPdfActivity = ({ activity, course }: { activity: any; course: any 
         })}
       />
     </div>
-  );
-};
+  )
+}
 
-export default DocumentPdfActivity;
+export default DocumentPdfActivity

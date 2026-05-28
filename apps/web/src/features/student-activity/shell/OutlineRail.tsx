@@ -1,14 +1,14 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
-import ActivityOutlineContent from './ActivityOutlineContent';
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import ActivityOutlineContent from './ActivityOutlineContent'
 
 interface OutlineRailProps {
-  runtime: StudentActivityRuntime;
-  open: boolean;
-  onClose: () => void;
+  runtime: StudentActivityRuntime
+  open: boolean
+  onClose: () => void
 }
 
 /**
@@ -24,7 +24,7 @@ interface OutlineRailProps {
  * Dismisses on Escape (handled by StudentActivityWorkspace) or click-outside backdrop.
  */
 export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps) {
-  const t = useTranslations('ActivityPage');
+  const t = useTranslations('ActivityPage')
 
   return (
     <>
@@ -46,13 +46,7 @@ export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps
       </div>
 
       {/* Click-outside backdrop */}
-      {open ? (
-        <div
-          className="fixed inset-0 z-10"
-          aria-hidden
-          onClick={onClose}
-        />
-      ) : null}
+      {open ? <div className="fixed inset-0 z-10" aria-hidden onClick={onClose} /> : null}
     </>
-  );
+  )
 }

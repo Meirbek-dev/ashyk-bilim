@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import { AiMarkdownRenderer } from './AiMarkdownRenderer';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { useEffect, useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import { AiMarkdownRenderer } from './AiMarkdownRenderer'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { useEffect, useRef, useState } from 'react'
+import { Check, Copy } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 interface AiMessageBubbleProps {
-  role: 'user' | 'assistant';
-  content: string;
+  role: 'user' | 'assistant'
+  content: string
   /** When true shows the blinking streaming cursor inside the bubble. */
-  isStreaming?: boolean;
+  isStreaming?: boolean
 }
 
 /**
@@ -20,28 +20,28 @@ interface AiMessageBubbleProps {
  * - User: right-aligned, indigo tint, plain text (user input is never markdown).
  */
 export function AiMessageBubble({ role, content, isStreaming = false }: AiMessageBubbleProps) {
-  const t = useTranslations('AiChat');
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const t = useTranslations('AiChat')
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Clear the reset-timer on unmount to prevent state updates on an
   // unmounted component if the user copies and then quickly navigates away.
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-    };
-  }, []);
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(content)
+      setCopied(true)
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 1500)
     } catch {
       // clipboard access denied — silently ignore
     }
-  };
+  }
 
   return (
     <div className={cn('group flex items-start gap-2', role === 'user' && 'flex-row-reverse')}>
@@ -51,14 +51,16 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
         predefined_avatar={role === 'assistant' ? 'ai' : undefined}
       />
 
-      <div className={cn('relative min-w-0 max-w-[85%]', role === 'assistant' ? 'flex-1' : 'max-w-[78%]')}>
+      <div
+        className={cn(
+          'relative min-w-0 max-w-[85%]',
+          role === 'assistant' ? 'flex-1' : 'max-w-[78%]',
+        )}
+      >
         {role === 'assistant' ? (
           <>
             <div className="rounded-lg bg-zinc-800 px-3 py-2">
-              <AiMarkdownRenderer
-                content={content}
-                isStreaming={isStreaming}
-              />
+              <AiMarkdownRenderer content={content} isStreaming={isStreaming} />
             </div>
 
             {/* Copy button — visible on hover for desktop, always visible on touch */}
@@ -87,5 +89,5 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
         )}
       </div>
     </div>
-  );
+  )
 }

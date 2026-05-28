@@ -1,54 +1,57 @@
-'use client';
+'use client'
 
-import { Lightbulb, Lock, HelpCircle } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { Lightbulb, Lock, HelpCircle } from 'lucide-react'
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { MarkdownContent } from '@/features/content-markdown';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { MarkdownContent } from '@/features/content-markdown'
+import { cn } from '@/lib/utils'
 
 interface Hint {
-  id?: string;
-  order?: number;
-  content: string;
-  xp_penalty: number;
+  id?: string
+  order?: number
+  content: string
+  xp_penalty: number
 }
 
 interface HintDrawerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  hints: Hint[];
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  hints: Hint[]
 }
 
 export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set())
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const handleRevealClick = (hintId: string) => {
-    setConfirmingId(hintId);
-  };
+    setConfirmingId(hintId)
+  }
 
   const confirmReveal = () => {
     if (confirmingId) {
-      setRevealedIds((prev) => {
-        const next = new Set(prev);
-        next.add(confirmingId);
-        return next;
-      });
-      setConfirmingId(null);
+      setRevealedIds(prev => {
+        const next = new Set(prev)
+        next.add(confirmingId)
+        return next
+      })
+      setConfirmingId(null)
     }
-  };
+  }
 
-  const sortedHints = [...hints].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sortedHints = [...hints].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="bg-background w-full overflow-y-auto border-l sm:max-w-md">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
@@ -66,16 +69,18 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
             </div>
           ) : (
             sortedHints.map((hint, index) => {
-              const hintId = hint.id ?? `hint_${index}`;
-              const isRevealed = revealedIds.has(hintId);
-              const isConfirming = confirmingId === hintId;
+              const hintId = hint.id ?? `hint_${index}`
+              const isRevealed = revealedIds.has(hintId)
+              const isConfirming = confirmingId === hintId
 
               return (
                 <div
                   key={hintId}
                   className={cn(
                     'rounded-lg border transition-all duration-200',
-                    isRevealed ? 'border-border bg-card/60 shadow-xs' : 'border-muted bg-muted/20 hover:bg-muted/40',
+                    isRevealed
+                      ? 'border-border bg-card/60 shadow-xs'
+                      : 'border-muted bg-muted/20 hover:bg-muted/40',
                   )}
                 >
                   <div className="flex items-center justify-between gap-4 p-4">
@@ -105,7 +110,10 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
                   {isConfirming && (
                     <div className="space-y-3 border-t border-amber-500/20 bg-amber-500/10 p-4">
                       <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                        {t('revealConfirm', { number: index + 1, penalty: hint.xp_penalty })}
+                        {t('revealConfirm', {
+                          number: index + 1,
+                          penalty: hint.xp_penalty,
+                        })}
                       </p>
                       <div className="flex justify-end gap-2">
                         <Button
@@ -139,11 +147,11 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
                     </div>
                   )}
                 </div>
-              );
+              )
             })
           )}
         </div>
       </SheetContent>
     </Sheet>
-  );
+  )
 }

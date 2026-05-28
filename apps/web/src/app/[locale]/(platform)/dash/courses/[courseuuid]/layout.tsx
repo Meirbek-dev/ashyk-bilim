@@ -1,13 +1,13 @@
-import { getCourseWorkspaceCapabilitiesForCourse } from '@/lib/course-management-server';
-import type { ReactNode } from 'react';
+import { getCourseWorkspaceCapabilitiesForCourse } from '@/lib/course-management-server'
+import type { ReactNode } from 'react'
 
 export default async function PlatformCourseWorkspaceLayout(props: {
-  children: ReactNode;
-  params: Promise<{ courseuuid: string }>;
+  children: ReactNode
+  params: Promise<{ courseuuid: string }>
 }) {
-  const { courseuuid } = await props.params;
+  const { courseuuid } = await props.params
 
-  await getCourseWorkspaceCapabilitiesForCourse(courseuuid);
+  await getCourseWorkspaceCapabilitiesForCourse(courseuuid)
 
-  return <>{props.children}</>;
+  return <>{props.children}</>
 }

@@ -25,23 +25,23 @@ export const ACCEPTED_FILE_FORMATS = {
   srt: '.srt',
   vtt: 'text/vtt',
   txt: 'text/plain',
-} as const;
+} as const
 
-export const SESSION_CACHE_TTL_MS = 1 * 60 * 1000;
-export const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000;
-export const SESSION_CACHE_MAX_SIZE = 1000;
-export const APP_NAME = 'Ashyk Bilim';
-export const APP_DESCRIPTION = 'Образовательная платформа для онлайн-обучения';
-export const APP_LABEL = 'ashyq-bilim';
-export const APP_THUMBNAIL_IMAGE_PATH = '/app_logo_full.svg';
-export const NAVBAR_HEIGHT = 60;
+export const SESSION_CACHE_TTL_MS = 1 * 60 * 1000
+export const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000
+export const SESSION_CACHE_MAX_SIZE = 1000
+export const APP_NAME = 'Ashyk Bilim'
+export const APP_DESCRIPTION = 'Образовательная платформа для онлайн-обучения'
+export const APP_LABEL = 'ashyq-bilim'
+export const APP_THUMBNAIL_IMAGE_PATH = '/app_logo_full.svg'
+export const NAVBAR_HEIGHT = 60
 
 /**
  * Constructs the 'accept' attribute value for an input element.
  */
 export function constructAcceptValue(types: (keyof typeof ACCEPTED_FILE_FORMATS)[]): string {
   return types
-    .map((type) => ACCEPTED_FILE_FORMATS[type])
+    .map(type => ACCEPTED_FILE_FORMATS[type])
     .filter(Boolean)
-    .join(',');
+    .join(',')
 }

@@ -1,11 +1,11 @@
-import { getPlatformThumbnailImage } from '@services/media/media';
-import { APP_NAME } from '@/lib/constants';
-import { getTranslations } from 'next-intl/server';
-import NewCollection from './NewCollection';
-import type { Metadata } from 'next';
+import { getPlatformThumbnailImage } from '@services/media/media'
+import { APP_NAME } from '@/lib/constants'
+import { getTranslations } from 'next-intl/server'
+import NewCollection from './NewCollection'
+import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('NewCollectionPage');
+  const t = await getTranslations('NewCollectionPage')
 
   return {
     title: `${t('metaTitle')} - ${APP_NAME}`,
@@ -15,8 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: true,
       nocache: true,
       googleBot: {
-        'index': true,
-        'follow': true,
+        index: true,
+        follow: true,
         'max-image-preview': 'large',
       },
     },
@@ -33,10 +33,10 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       ],
     },
-  };
+  }
 }
 
 export default async function Page(props: any) {
-  void props;
-  return <NewCollection />;
+  void props
+  return <NewCollection />
 }

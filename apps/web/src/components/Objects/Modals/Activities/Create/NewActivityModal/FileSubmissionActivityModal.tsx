@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { CalendarIcon } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { CalendarIcon } from 'lucide-react'
+import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldContent, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { courseKeys } from '@/hooks/courses/courseKeys';
-import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions';
-import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
+import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 
 const MIME_PRESETS = [
   { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
@@ -76,37 +76,37 @@ const MIME_PRESETS = [
       'text/x-java-source',
     ],
   },
-];
+]
 
 export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: any) {
-  const t = useTranslations('Components.NewFileSubmissionModal');
-  const queryClient = useQueryClient();
-  const [title, setTitle] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [dueAt, setDueAt] = useState('');
-  const [maxFiles, setMaxFiles] = useState(1);
-  const [maxSize, setMaxSize] = useState<number | ''>(25);
-  const [selectedMimes, setSelectedMimes] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const t = useTranslations('Components.NewFileSubmissionModal')
+  const queryClient = useQueryClient()
+  const [title, setTitle] = useState('')
+  const [instructions, setInstructions] = useState('')
+  const [dueAt, setDueAt] = useState('')
+  const [maxFiles, setMaxFiles] = useState(1)
+  const [maxSize, setMaxSize] = useState<number | ''>(25)
+  const [selectedMimes, setSelectedMimes] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const togglePreset = (mimes: string[], checked: boolean) => {
-    setSelectedMimes((current) => {
-      const next = new Set(current);
+    setSelectedMimes(current => {
+      const next = new Set(current)
       for (const mime of mimes) {
-        if (checked) next.add(mime);
-        else next.delete(mime);
+        if (checked) next.add(mime)
+        else next.delete(mime)
       }
-      return [...next];
-    });
-  };
+      return [...next]
+    })
+  }
 
   const submit = async (event: FormEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     if (!title.trim() || isMarkdownStructurallyEmpty(instructions)) {
-      toast.error(t('requiredFields'));
-      return;
+      toast.error(t('requiredFields'))
+      return
     }
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
       const result = await createFileSubmissionActivity({
         title,
@@ -117,37 +117,34 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
         allowed_mime_types: selectedMimes,
         course_id: course?.courseStructure?.id,
         chapter_id: chapterId,
-      });
+      })
       if (!result.success) {
-        toast.error(t('createError'));
-        return;
+        toast.error(t('createError'))
+        return
       }
-      toast.success(t('createSuccess'));
+      toast.success(t('createSuccess'))
       if (course?.courseStructure?.course_uuid) {
         await queryClient.invalidateQueries({
-          queryKey: courseKeys.structure(course.courseStructure.course_uuid, course.withUnpublishedActivities),
-        });
+          queryKey: courseKeys.structure(
+            course.courseStructure.course_uuid,
+            course.withUnpublishedActivities,
+          ),
+        })
       }
-      closeModal();
+      closeModal()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('createError'));
+      toast.error(error instanceof Error ? error.message : t('createError'))
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
-    <form
-      onSubmit={submit}
-      className="space-y-4"
-    >
+    <form onSubmit={submit} className="space-y-4">
       <Field>
         <FieldLabel>{t('title')}</FieldLabel>
         <FieldContent>
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-          />
+          <Input value={title} onChange={event => setTitle(event.target.value)} />
         </FieldContent>
       </Field>
 
@@ -169,11 +166,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
           <FieldLabel>{t('dueDate')}</FieldLabel>
           <FieldContent>
             <div className="relative">
-              <Input
-                type="date"
-                value={dueAt}
-                onChange={(event) => setDueAt(event.target.value)}
-              />
+              <Input type="date" value={dueAt} onChange={event => setDueAt(event.target.value)} />
               <CalendarIcon className="text-muted-foreground pointer-events-none absolute top-2.5 right-3 size-4" />
             </div>
           </FieldContent>
@@ -186,7 +179,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
               min={1}
               max={25}
               value={maxFiles}
-              onChange={(event) => setMaxFiles(Math.max(1, Number(event.target.value) || 1))}
+              onChange={event => setMaxFiles(Math.max(1, Number(event.target.value) || 1))}
             />
           </FieldContent>
         </Field>
@@ -197,7 +190,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
               type="number"
               min={1}
               value={maxSize}
-              onChange={(event) => setMaxSize(event.target.value ? Number(event.target.value) : '')}
+              onChange={event => setMaxSize(event.target.value ? Number(event.target.value) : '')}
             />
           </FieldContent>
         </Field>
@@ -206,8 +199,8 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       <div className="space-y-2">
         <FieldLabel>{t('allowedTypes')}</FieldLabel>
         <div className="grid gap-2 sm:grid-cols-2">
-          {MIME_PRESETS.map((preset) => {
-            const checked = preset.mimes.every((mime) => selectedMimes.includes(mime));
+          {MIME_PRESETS.map(preset => {
+            const checked = preset.mimes.every(mime => selectedMimes.includes(mime))
             return (
               <label
                 key={preset.id}
@@ -215,23 +208,20 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
               >
                 <Checkbox
                   checked={checked}
-                  onCheckedChange={(value) => togglePreset(preset.mimes, value)}
+                  onCheckedChange={value => togglePreset(preset.mimes, value)}
                 />
                 {preset.label}
               </label>
-            );
+            )
           })}
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t('creating') : t('createActivity')}
         </Button>
       </div>
     </form>
-  );
+  )
 }

@@ -1,1 +1,1 @@
-export { default as AttemptShell } from './shell/AssessmentLayout';
+export { default as AttemptShell } from './shell/AssessmentLayout'

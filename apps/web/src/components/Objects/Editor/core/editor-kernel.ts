@@ -1,53 +1,53 @@
-import { generateHTML } from '@tiptap/core';
-import type { Content, Extension, JSONContent, Mark, Node } from '@tiptap/core';
-import Image from '@tiptap/extension-image';
-import { Table } from '@tiptap/extension-table';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableRow } from '@tiptap/extension-table-row';
-import { StarterKit } from '@tiptap/starter-kit';
-import CharacterCount from '@tiptap/extension-character-count';
-import Focus from '@tiptap/extension-focus';
-import CodeBlockShiki from 'tiptap-extension-code-block-shiki';
-import { Markdown } from 'tiptap-markdown';
-import Placeholder from '@tiptap/extension-placeholder';
+import { generateHTML } from '@tiptap/core'
+import type { Content, Extension, JSONContent, Mark, Node } from '@tiptap/core'
+import Image from '@tiptap/extension-image'
+import { Table } from '@tiptap/extension-table'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableRow } from '@tiptap/extension-table-row'
+import { StarterKit } from '@tiptap/starter-kit'
+import CharacterCount from '@tiptap/extension-character-count'
+import Focus from '@tiptap/extension-focus'
+import CodeBlockShiki from 'tiptap-extension-code-block-shiki'
+import { Markdown } from 'tiptap-markdown'
+import Placeholder from '@tiptap/extension-placeholder'
 
-import Badges from '../Extensions/Badges/Badges';
-import Buttons from '../Extensions/Buttons/Buttons';
-import EmbedObjects from '../Extensions/EmbedObjects/EmbedObjects';
-import EmbedBlock from '../Extensions/EmbedBlock/EmbedBlock';
-import Flipcard from '../Extensions/Flipcard/Flipcard';
-import ImageBlock from '../Extensions/Image/ImageBlock';
-import InfoCallout from '../Extensions/Callout/Info/InfoCallout';
-import MathEquationBlock from '../Extensions/MathEquation/MathEquationBlock';
-import PDFBlock from '../Extensions/PDF/PDFBlock';
-import InlineQuiz from '../Extensions/InlineQuiz/InlineQuiz';
-import Scenarios from '../Extensions/Scenarios/Scenarios';
-import UserBlock from '../Extensions/Users/UserBlock';
-import VideoBlock from '../Extensions/Video/VideoBlock';
-import WarningCallout from '../Extensions/Callout/Warning/WarningCallout';
-import WebPreview from '../Extensions/WebPreview/WebPreview';
-import Youtube from '../Extensions/Youtube/Youtube';
-import { getLinkExtension } from '../EditorConf';
+import Badges from '../Extensions/Badges/Badges'
+import Buttons from '../Extensions/Buttons/Buttons'
+import EmbedObjects from '../Extensions/EmbedObjects/EmbedObjects'
+import EmbedBlock from '../Extensions/EmbedBlock/EmbedBlock'
+import Flipcard from '../Extensions/Flipcard/Flipcard'
+import ImageBlock from '../Extensions/Image/ImageBlock'
+import InfoCallout from '../Extensions/Callout/Info/InfoCallout'
+import MathEquationBlock from '../Extensions/MathEquation/MathEquationBlock'
+import PDFBlock from '../Extensions/PDF/PDFBlock'
+import InlineQuiz from '../Extensions/InlineQuiz/InlineQuiz'
+import Scenarios from '../Extensions/Scenarios/Scenarios'
+import UserBlock from '../Extensions/Users/UserBlock'
+import VideoBlock from '../Extensions/Video/VideoBlock'
+import WarningCallout from '../Extensions/Callout/Warning/WarningCallout'
+import WebPreview from '../Extensions/WebPreview/WebPreview'
+import Youtube from '../Extensions/Youtube/Youtube'
+import { getLinkExtension } from '../EditorConf'
 
-import { normalizeTiptapJsonContent } from './editor-content';
-import { HeadingWithIds } from './heading-with-ids';
-import { ImagePasteHandler } from './image-paste';
-import { SlashCommand } from './slash-command';
-import { getEditorPresetDefinition } from './editor-presets';
-import type { EditorPresetDefinition, EditorPresetName } from './editor-presets';
-import type { ActivityRef } from './editor-types';
+import { normalizeTiptapJsonContent } from './editor-content'
+import { HeadingWithIds } from './heading-with-ids'
+import { ImagePasteHandler } from './image-paste'
+import { SlashCommand } from './slash-command'
+import { getEditorPresetDefinition } from './editor-presets'
+import type { EditorPresetDefinition, EditorPresetName } from './editor-presets'
+import type { ActivityRef } from './editor-types'
 
-export type EditorExtension = Extension | Node | Mark;
+export type EditorExtension = Extension | Node | Mark
 
 interface EditorKernelOptions {
-  preset: EditorPresetName;
-  activity?: ActivityRef;
+  preset: EditorPresetName
+  activity?: ActivityRef
 }
 
 export interface EditorKernel {
-  preset: EditorPresetDefinition;
-  extensions: EditorExtension[];
+  preset: EditorPresetDefinition
+  extensions: EditorExtension[]
 }
 
 function createBaseEditorExtensions(): EditorExtension[] {
@@ -71,10 +71,13 @@ function createBaseEditorExtensions(): EditorExtension[] {
       levels: [1, 2, 3, 4, 5, 6],
     }),
     getLinkExtension(),
-  ];
+  ]
 }
 
-function createActivityBlockExtensions(activity: ActivityRef, editable: boolean): EditorExtension[] {
+function createActivityBlockExtensions(
+  activity: ActivityRef,
+  editable: boolean,
+): EditorExtension[] {
   return [
     InfoCallout.configure({ editable }),
     WarningCallout.configure({ editable }),
@@ -103,7 +106,7 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
     WebPreview.configure({ editable, activity }),
     Flipcard.configure({ editable, activity }),
     Scenarios.configure({ editable, activity }),
-  ];
+  ]
 }
 
 function createDiscussionLikeExtensions({ editable }: { editable: boolean }): EditorExtension[] {
@@ -168,21 +171,21 @@ function createDiscussionLikeExtensions({ editable }: { editable: boolean }): Ed
         class: 'w-full aspect-video rounded-lg',
       },
     }),
-  ];
+  ]
 }
 
 function requireActivity(activity: ActivityRef | undefined, preset: EditorPresetName): ActivityRef {
   if (!activity) {
-    throw new Error(`Editor preset "${preset}" requires an activity context.`);
+    throw new Error(`Editor preset "${preset}" requires an activity context.`)
   }
 
-  return activity;
+  return activity
 }
 
 export function createEditorExtensions(options: EditorKernelOptions): EditorExtension[] {
   switch (options.preset) {
     case 'authoring': {
-      const activity = requireActivity(options.activity, options.preset);
+      const activity = requireActivity(options.activity, options.preset)
       return [
         ...createBaseEditorExtensions(),
         SlashCommand,
@@ -197,24 +200,24 @@ export function createEditorExtensions(options: EditorKernelOptions): EditorExte
         // Adds has-focus / is-focused CSS classes to focused nodes
         Focus.configure({ className: 'has-focus', mode: 'all' }),
         ...createActivityBlockExtensions(activity, true),
-      ];
+      ]
     }
     case 'interactive': {
-      const activity = requireActivity(options.activity, options.preset);
-      return [...createBaseEditorExtensions(), ...createActivityBlockExtensions(activity, false)];
+      const activity = requireActivity(options.activity, options.preset)
+      return [...createBaseEditorExtensions(), ...createActivityBlockExtensions(activity, false)]
     }
     case 'viewing': {
-      return createDiscussionLikeExtensions({ editable: false });
+      return createDiscussionLikeExtensions({ editable: false })
     }
     case 'discussion': {
       return [
         ...createDiscussionLikeExtensions({ editable: true }),
         Markdown.configure({ html: true, transformPastedText: true }),
         Focus.configure({ className: 'has-focus', mode: 'all' }),
-      ];
+      ]
     }
     default: {
-      return createDiscussionLikeExtensions({ editable: true });
+      return createDiscussionLikeExtensions({ editable: true })
     }
   }
 }
@@ -223,22 +226,24 @@ export function createEditorKernel(options: EditorKernelOptions): EditorKernel {
   return {
     preset: getEditorPresetDefinition(options.preset),
     extensions: createEditorExtensions(options),
-  };
+  }
 }
 
 export function resolveEditorContent(content: unknown): Content {
-  return normalizeTiptapJsonContent(content);
+  return normalizeTiptapJsonContent(content)
 }
 
 export function renderEditorHtml(
   content: unknown,
-  options: Omit<EditorKernelOptions, 'preset'> & { preset: 'viewing' | 'discussion' },
+  options: Omit<EditorKernelOptions, 'preset'> & {
+    preset: 'viewing' | 'discussion'
+  },
 ): string {
-  const normalized = resolveEditorContent(content);
+  const normalized = resolveEditorContent(content)
 
   if (typeof normalized === 'string') {
-    return normalized;
+    return normalized
   }
 
-  return generateHTML(normalized as JSONContent, createEditorExtensions(options));
+  return generateHTML(normalized as JSONContent, createEditorExtensions(options))
 }

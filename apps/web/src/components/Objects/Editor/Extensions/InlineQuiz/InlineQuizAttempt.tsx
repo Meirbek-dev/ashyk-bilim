@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 /**
  * InlineQuizAttempt — Student attempt view for inline quizzes.
@@ -7,20 +7,20 @@
  * hooks and item renderers. Submits via POST /assessments/{uuid}/submit.
  */
 
-import { useState } from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 
 interface InlineQuizAttemptProps {
-  assessmentUuid: string;
+  assessmentUuid: string
 }
 
 export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptProps) {
-  const t = useTranslations('DashPage.Editor.InlineQuizExtension');
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const t = useTranslations('DashPage.Editor.InlineQuizExtension')
+  const [submitted, setSubmitted] = useState(false)
+  const [score, setScore] = useState<number | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // TODO: Wire to useAssessment + useAssessmentSubmission hooks
   // This is the scaffold — full implementation uses the canonical item renderers
@@ -31,24 +31,26 @@ export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptP
         <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
         <span className="text-sm font-medium">{t('score', { score })}</span>
       </div>
-    );
+    )
   }
 
   return (
     <div className="rounded-lg border p-4">
-      <p className="text-muted-foreground mb-3 text-sm">{t('quizInfo', { id: assessmentUuid.slice(0, 16) })}</p>
+      <p className="text-muted-foreground mb-3 text-sm">
+        {t('quizInfo', { id: assessmentUuid.slice(0, 16) })}
+      </p>
       {/* TODO: Render actual quiz items from useAssessment(assessmentUuid) */}
       <Button
         size="sm"
         disabled={isSubmitting}
         onClick={async () => {
-          setIsSubmitting(true);
+          setIsSubmitting(true)
           try {
             // TODO: Call POST /assessments/{assessmentUuid}/submit.
             // setScore(result.final_score ?? result.auto_score ?? 0);
-            setSubmitted(true);
+            setSubmitted(true)
           } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
           }
         }}
       >
@@ -56,5 +58,5 @@ export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptP
         {t('submit')}
       </Button>
     </div>
-  );
+  )
 }

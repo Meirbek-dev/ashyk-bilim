@@ -1,40 +1,40 @@
-'use client';
+'use client'
 
-import { Plus, TextCursorInput, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Plus, TextCursorInput, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { generateUUID } from '@/lib/utils';
-import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { generateUUID } from '@/lib/utils'
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import { registerItemKind } from '../registry';
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry'
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry'
 
 export interface FormBlank {
-  blankUUID: string;
-  placeholder: string;
-  correctAnswer?: string;
-  hint?: string;
+  blankUUID: string
+  placeholder: string
+  correctAnswer?: string
+  hint?: string
 }
 
 export interface FormQuestion {
-  questionUUID: string;
-  questionText: string;
-  blanks: FormBlank[];
+  questionUUID: string
+  questionText: string
+  blanks: FormBlank[]
 }
 
 export interface FormItemValue {
-  kind: 'FORM';
-  questions: FormQuestion[];
+  kind: 'FORM'
+  questions: FormQuestion[]
 }
 
 export interface FormAnswer {
-  task_uuid?: string;
-  content_type?: 'form';
-  form_data?: { answers?: Record<string, string> };
+  task_uuid?: string
+  content_type?: 'form'
+  form_data?: { answers?: Record<string, string> }
 }
 
 function createBlank(): FormBlank {
@@ -43,7 +43,7 @@ function createBlank(): FormBlank {
     placeholder: '',
     correctAnswer: '',
     hint: '',
-  };
+  }
 }
 
 function createQuestion(): FormQuestion {
@@ -51,35 +51,43 @@ function createQuestion(): FormQuestion {
     questionUUID: `question_${generateUUID()}`,
     questionText: '',
     blanks: [createBlank()],
-  };
+  }
 }
 
 export function normalizeFormItem(raw: Record<string, unknown> | null | undefined): FormItemValue {
-  const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [createQuestion()];
+  const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [createQuestion()]
   return {
     kind: 'FORM',
     questions: rawQuestions.map((rawQuestion, questionIndex): FormQuestion => {
-      const question = rawQuestion && typeof rawQuestion === 'object' ? (rawQuestion as Record<string, unknown>) : {};
-      const rawBlanks = Array.isArray(question.blanks) ? question.blanks : [createBlank()];
+      const question =
+        rawQuestion && typeof rawQuestion === 'object'
+          ? (rawQuestion as Record<string, unknown>)
+          : {}
+      const rawBlanks = Array.isArray(question.blanks) ? question.blanks : [createBlank()]
       return {
-        questionUUID: typeof question.questionUUID === 'string' ? question.questionUUID : `question_${questionIndex}`,
+        questionUUID:
+          typeof question.questionUUID === 'string'
+            ? question.questionUUID
+            : `question_${questionIndex}`,
         questionText: typeof question.questionText === 'string' ? question.questionText : '',
         blanks: rawBlanks.map((rawBlank, blankIndex): FormBlank => {
-          const blank = rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {};
+          const blank =
+            rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {}
           return {
-            blankUUID: typeof blank.blankUUID === 'string' ? blank.blankUUID : `blank_${blankIndex}`,
+            blankUUID:
+              typeof blank.blankUUID === 'string' ? blank.blankUUID : `blank_${blankIndex}`,
             placeholder: typeof blank.placeholder === 'string' ? blank.placeholder : '',
             correctAnswer: typeof blank.correctAnswer === 'string' ? blank.correctAnswer : '',
             hint: typeof blank.hint === 'string' ? blank.hint : '',
-          };
+          }
         }),
-      };
+      }
     }),
-  };
+  }
 }
 
 export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<FormItemValue>) {
-  const t = useTranslations('Features.Assessments.Items.Form');
+  const t = useTranslations('Features.Assessments.Items.Form')
 
   return (
     <div className="space-y-5">
@@ -92,10 +100,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
       </div>
 
       {value.questions.map((question, questionIndex) => (
-        <div
-          key={question.questionUUID}
-          className="space-y-3 rounded-md border p-4"
-        >
+        <div key={question.questionUUID} className="space-y-3 rounded-md border p-4">
           <div className="flex items-center gap-3">
             <Badge variant="secondary">{t('questionBadge', { number: questionIndex + 1 })}</Badge>
             <div className="min-w-0 flex-1">
@@ -105,7 +110,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                 disabled={disabled}
                 preset="questionPrompt"
                 minHeight={120}
-                onChange={(questionText) =>
+                onChange={questionText =>
                   onChange({
                     ...value,
                     questions: value.questions.map((item, index) =>
@@ -121,7 +126,10 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
               size="icon"
               disabled={disabled || value.questions.length <= 1}
               onClick={() =>
-                onChange({ ...value, questions: value.questions.filter((_, index) => index !== questionIndex) })
+                onChange({
+                  ...value,
+                  questions: value.questions.filter((_, index) => index !== questionIndex),
+                })
               }
             >
               <Trash2 className="size-4" />
@@ -138,24 +146,42 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                   value={blank.placeholder}
                   placeholder={t('fieldLabelPlaceholder')}
                   disabled={disabled}
-                  onChange={(event) =>
-                    updateBlank(value, questionIndex, blankIndex, { placeholder: event.target.value }, onChange)
+                  onChange={event =>
+                    updateBlank(
+                      value,
+                      questionIndex,
+                      blankIndex,
+                      { placeholder: event.target.value },
+                      onChange,
+                    )
                   }
                 />
                 <Input
                   value={blank.correctAnswer ?? ''}
                   placeholder={t('correctAnswerPlaceholder')}
                   disabled={disabled}
-                  onChange={(event) =>
-                    updateBlank(value, questionIndex, blankIndex, { correctAnswer: event.target.value }, onChange)
+                  onChange={event =>
+                    updateBlank(
+                      value,
+                      questionIndex,
+                      blankIndex,
+                      { correctAnswer: event.target.value },
+                      onChange,
+                    )
                   }
                 />
                 <Input
                   value={blank.hint ?? ''}
                   placeholder={t('hintPlaceholder')}
                   disabled={disabled}
-                  onChange={(event) =>
-                    updateBlank(value, questionIndex, blankIndex, { hint: event.target.value }, onChange)
+                  onChange={event =>
+                    updateBlank(
+                      value,
+                      questionIndex,
+                      blankIndex,
+                      { hint: event.target.value },
+                      onChange,
+                    )
                   }
                 />
                 <Button
@@ -170,7 +196,9 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                         index === questionIndex
                           ? {
                               ...item,
-                              blanks: item.blanks.filter((_, candidateIndex) => candidateIndex !== blankIndex),
+                              blanks: item.blanks.filter(
+                                (_, candidateIndex) => candidateIndex !== blankIndex,
+                              ),
                             }
                           : item,
                       ),
@@ -190,7 +218,9 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                 onChange({
                   ...value,
                   questions: value.questions.map((item, index) =>
-                    index === questionIndex ? { ...item, blanks: [...item.blanks, createBlank()] } : item,
+                    index === questionIndex
+                      ? { ...item, blanks: [...item.blanks, createBlank()] }
+                      : item,
                   ),
                 })
               }
@@ -206,13 +236,18 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
         type="button"
         variant="outline"
         disabled={disabled}
-        onClick={() => onChange({ ...value, questions: [...value.questions, createQuestion()] })}
+        onClick={() =>
+          onChange({
+            ...value,
+            questions: [...value.questions, createQuestion()],
+          })
+        }
       >
         <Plus className="size-4" />
         {t('addQuestion')}
       </Button>
     </div>
-  );
+  )
 }
 
 function updateBlank(
@@ -234,7 +269,7 @@ function updateBlank(
           }
         : question,
     ),
-  });
+  })
 }
 
 export function FormItemAttempt({
@@ -243,8 +278,8 @@ export function FormItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<FormItemValue & { taskUuid?: string }, FormAnswer | null>) {
-  const t = useTranslations('Features.Assessments.Items.Form');
-  const normalized = answer?.form_data?.answers ?? {};
+  const t = useTranslations('Features.Assessments.Items.Form')
+  const normalized = answer?.form_data?.answers ?? {}
   const updateBlankAnswer = (blankId: string, value: string) => {
     onAnswerChange({
       task_uuid: item.taskUuid,
@@ -255,20 +290,21 @@ export function FormItemAttempt({
           [blankId]: value,
         },
       },
-    });
-  };
+    })
+  }
 
   if (item.questions.length === 0) {
-    return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('noFields')}</div>;
+    return (
+      <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+        {t('noFields')}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-4">
       {item.questions.map((question, questionIndex) => (
-        <div
-          key={question.questionUUID}
-          className="bg-muted/30 rounded-md border p-4"
-        >
+        <div key={question.questionUUID} className="bg-muted/30 rounded-md border p-4">
           <div className="mb-3 flex items-start gap-2">
             <Badge variant="secondary">{t('questionBadge', { number: questionIndex + 1 })}</Badge>
             <div className="min-w-0 flex-1 font-medium">
@@ -281,12 +317,9 @@ export function FormItemAttempt({
           </div>
           <div className="grid gap-3">
             {question.blanks.map((blank, blankIndex) => {
-              const blankId = blank.blankUUID ?? `blank_${blankIndex}`;
+              const blankId = blank.blankUUID ?? `blank_${blankIndex}`
               return (
-                <div
-                  key={blankId}
-                  className="space-y-2"
-                >
+                <div key={blankId} className="space-y-2">
                   <Label htmlFor={`${item.taskUuid ?? 'form'}-${blankId}`}>
                     {blank.placeholder || t('answerLabel', { number: blankIndex + 1 })}
                   </Label>
@@ -294,25 +327,29 @@ export function FormItemAttempt({
                     id={`${item.taskUuid ?? 'form'}-${blankId}`}
                     value={normalized[blankId] ?? ''}
                     disabled={disabled}
-                    onChange={(event) => updateBlankAnswer(blankId, event.target.value)}
+                    onChange={event => updateBlankAnswer(blankId, event.target.value)}
                   />
-                  {blank.hint ? <p className="text-muted-foreground text-xs">{blank.hint}</p> : null}
+                  {blank.hint ? (
+                    <p className="text-muted-foreground text-xs">{blank.hint}</p>
+                  ) : null}
                 </div>
-              );
+              )
             })}
           </div>
         </div>
       ))}
     </div>
-  );
+  )
 }
 
-export function FormItemReviewDetail({ answer }: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) {
+export function FormItemReviewDetail({
+  answer,
+}: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) {
   return (
     <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">
       {JSON.stringify(answer?.form_data?.answers ?? {}, null, 2)}
     </pre>
-  );
+  )
 }
 
 registerItemKind({
@@ -321,4 +358,4 @@ registerItemKind({
   Author: FormItemAuthor,
   Attempt: FormItemAttempt,
   ReviewDetail: FormItemReviewDetail,
-});
+})

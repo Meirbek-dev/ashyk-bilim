@@ -1,7 +1,7 @@
-import { getEmbedProvider, isEmbedType } from './embed-options';
-import type { EmbedType } from './embed-options';
+import { getEmbedProvider, isEmbedType } from './embed-options'
+import type { EmbedType } from './embed-options'
 
-export type EmbedValidationError = 'errorEmpty' | 'errorInvalid';
+export type EmbedValidationError = 'errorEmpty' | 'errorInvalid'
 
 /**
  * Pure URL validation and transformation helpers for the EmbedBlock extension.
@@ -27,59 +27,59 @@ export type EmbedValidationError = 'errorEmpty' | 'errorInvalid';
  * The video ID must be a non-empty string. Whitespace-only IDs are rejected.
  */
 export function parseYouTubeUrl(url: string): string | null {
-  let parsed: URL;
+  let parsed: URL
   try {
-    parsed = new URL(url);
+    parsed = new URL(url)
   } catch {
-    return null;
+    return null
   }
 
-  const { protocol, hostname, pathname, searchParams } = parsed;
+  const { protocol, hostname, pathname, searchParams } = parsed
 
   // Only accept https:// URLs (the four supported formats all use https)
-  if (protocol !== 'https:') return null;
+  if (protocol !== 'https:') return null
 
   // Normalise hostname: accept "youtube.com" and "www.youtube.com"
-  const isYouTubeHost = hostname === 'www.youtube.com' || hostname === 'youtube.com';
-  const isYouTuBeHost = hostname === 'youtu.be';
+  const isYouTubeHost = hostname === 'www.youtube.com' || hostname === 'youtube.com'
+  const isYouTuBeHost = hostname === 'youtu.be'
 
   if (isYouTuBeHost) {
     // https://youtu.be/<id>
-    const id = pathname.slice(1); // strip leading "/"
-    return id.length > 0 ? id : null;
+    const id = pathname.slice(1) // strip leading "/"
+    return id.length > 0 ? id : null
   }
 
   if (isYouTubeHost) {
     // https://www.youtube.com/watch?v=<id>
     if (pathname === '/watch') {
-      const id = searchParams.get('v');
-      return id && id.length > 0 ? id : null;
+      const id = searchParams.get('v')
+      return id && id.length > 0 ? id : null
     }
 
     // https://www.youtube.com/embed/<id>
-    const embedMatch = /^\/embed\/([^/?#]+)/.exec(pathname);
+    const embedMatch = /^\/embed\/([^/?#]+)/.exec(pathname)
     if (embedMatch) {
-      const id = embedMatch[1];
-      return id && id.length > 0 ? id : null;
+      const id = embedMatch[1]
+      return id && id.length > 0 ? id : null
     }
 
     // https://www.youtube.com/shorts/<id>
-    const shortsMatch = /^\/shorts\/([^/?#]+)/.exec(pathname);
+    const shortsMatch = /^\/shorts\/([^/?#]+)/.exec(pathname)
     if (shortsMatch) {
-      const id = shortsMatch[1];
-      return id && id.length > 0 ? id : null;
+      const id = shortsMatch[1]
+      return id && id.length > 0 ? id : null
     }
   }
 
-  return null;
+  return null
 }
 
 export function resolveYouTubeVideoId(value: string): string | null {
-  const parsed = parseYouTubeUrl(value);
-  if (parsed) return parsed;
+  const parsed = parseYouTubeUrl(value)
+  if (parsed) return parsed
 
-  const trimmed = value.trim();
-  return /^[a-zA-Z0-9_-]{6,}$/.test(trimmed) ? trimmed : null;
+  const trimmed = value.trim()
+  return /^[a-zA-Z0-9_-]{6,}$/.test(trimmed) ? trimmed : null
 }
 
 // ---------------------------------------------------------------------------
@@ -96,18 +96,18 @@ export function resolveYouTubeVideoId(value: string): string | null {
  *   - `null`           — valid (absolute URL with hostname `excalidraw.com`)
  */
 export function validateExcalidrawUrl(url: string): null | EmbedValidationError {
-  if (url.trim() === '') return 'errorEmpty';
+  if (url.trim() === '') return 'errorEmpty'
 
-  let parsed: URL;
+  let parsed: URL
   try {
-    parsed = new URL(url);
+    parsed = new URL(url)
   } catch {
-    return 'errorInvalid';
+    return 'errorInvalid'
   }
 
-  if (parsed.hostname !== 'excalidraw.com') return 'errorInvalid';
+  if (parsed.hostname !== 'excalidraw.com') return 'errorInvalid'
 
-  return null;
+  return null
 }
 
 /**
@@ -117,7 +117,7 @@ export function validateExcalidrawUrl(url: string): null | EmbedValidationError 
  * Assumes the caller has already validated the URL with `validateExcalidrawUrl`.
  */
 export function buildExcalidrawSrc(url: string): string {
-  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`
 }
 
 // ---------------------------------------------------------------------------
@@ -138,21 +138,21 @@ export function buildExcalidrawSrc(url: string): string {
  *   - `null`           — valid
  */
 export function validateTldrawUrl(url: string): null | EmbedValidationError {
-  if (url.trim() === '') return 'errorEmpty';
+  if (url.trim() === '') return 'errorEmpty'
 
-  let parsed: URL;
+  let parsed: URL
   try {
-    parsed = new URL(url);
+    parsed = new URL(url)
   } catch {
-    return 'errorInvalid';
+    return 'errorInvalid'
   }
 
-  if (parsed.hostname !== 'tldraw.com') return 'errorInvalid';
+  if (parsed.hostname !== 'tldraw.com') return 'errorInvalid'
 
   // Path must be /r/<non-empty-room-id> with no further path segments
-  if (!/^\/r\/[^/]+$/.test(parsed.pathname)) return 'errorInvalid';
+  if (!/^\/r\/[^/]+$/.test(parsed.pathname)) return 'errorInvalid'
 
-  return null;
+  return null
 }
 
 /**
@@ -162,7 +162,7 @@ export function validateTldrawUrl(url: string): null | EmbedValidationError {
  * Assumes the caller has already validated the URL with `validateTldrawUrl`.
  */
 export function buildTldrawSrc(url: string): string {
-  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`
 }
 
 // ---------------------------------------------------------------------------
@@ -171,152 +171,154 @@ export function buildTldrawSrc(url: string): string {
 
 function parseAbsoluteUrl(url: string): URL | null {
   try {
-    return new URL(url);
+    return new URL(url)
   } catch {
-    return null;
+    return null
   }
 }
 
 function hostnameMatches(hostname: string, allowedHost: string): boolean {
-  return hostname === allowedHost || hostname.endsWith(`.${allowedHost}`);
+  return hostname === allowedHost || hostname.endsWith(`.${allowedHost}`)
 }
 
 function validateProviderUrl(type: EmbedType, url: string): null | EmbedValidationError {
-  if (url.trim() === '') return 'errorEmpty';
+  if (url.trim() === '') return 'errorEmpty'
 
   if (type === 'youtube') {
-    return resolveYouTubeVideoId(url) ? null : 'errorInvalid';
+    return resolveYouTubeVideoId(url) ? null : 'errorInvalid'
   }
 
   if (type === 'excalidraw') {
-    return validateExcalidrawUrl(url);
+    return validateExcalidrawUrl(url)
   }
 
   if (type === 'tldraw') {
-    return validateTldrawUrl(url);
+    return validateTldrawUrl(url)
   }
 
-  const provider = getEmbedProvider(type);
-  const parsed = parseAbsoluteUrl(url);
+  const provider = getEmbedProvider(type)
+  const parsed = parseAbsoluteUrl(url)
 
   if (!provider || parsed?.protocol !== 'https:') {
-    return 'errorInvalid';
+    return 'errorInvalid'
   }
 
-  const hostname = parsed.hostname.toLowerCase();
-  const isAllowedHost = provider.hostnames.some((allowedHost) => hostnameMatches(hostname, allowedHost.toLowerCase()));
+  const hostname = parsed.hostname.toLowerCase()
+  const isAllowedHost = provider.hostnames.some(allowedHost =>
+    hostnameMatches(hostname, allowedHost.toLowerCase()),
+  )
 
-  return isAllowedHost ? null : 'errorInvalid';
+  return isAllowedHost ? null : 'errorInvalid'
 }
 
 export function validateEmbedUrl(
   type: EmbedType | string | null | undefined,
   url: string,
 ): null | EmbedValidationError {
-  if (!type || !isEmbedType(type)) return 'errorInvalid';
-  return validateProviderUrl(type, url);
+  if (!type || !isEmbedType(type)) return 'errorInvalid'
+  return validateProviderUrl(type, url)
 }
 
 function appendQueryParam(url: string, key: string, value: string): string {
-  const [withoutHash = '', hash = ''] = url.split('#');
-  const separator = withoutHash.includes('?') ? '&' : '?';
-  return `${withoutHash}${separator}${key}=${encodeURIComponent(value)}${hash ? `#${hash}` : ''}`;
+  const [withoutHash = '', hash = ''] = url.split('#')
+  const separator = withoutHash.includes('?') ? '&' : '?'
+  return `${withoutHash}${separator}${key}=${encodeURIComponent(value)}${hash ? `#${hash}` : ''}`
 }
 
 function buildVimeoSrc(url: string): string {
-  const parsed = parseAbsoluteUrl(url);
-  if (!parsed) return url;
+  const parsed = parseAbsoluteUrl(url)
+  if (!parsed) return url
 
-  if (parsed.hostname === 'player.vimeo.com') return url;
+  if (parsed.hostname === 'player.vimeo.com') return url
 
-  const id = parsed.pathname.split('/').find(Boolean);
-  return id ? `https://player.vimeo.com/video/${id}` : url;
+  const id = parsed.pathname.split('/').find(Boolean)
+  return id ? `https://player.vimeo.com/video/${id}` : url
 }
 
 function buildCodePenSrc(url: string): string {
-  const parsed = parseAbsoluteUrl(url);
-  if (!parsed) return url;
+  const parsed = parseAbsoluteUrl(url)
+  if (!parsed) return url
 
-  const path = parsed.pathname.replace('/pen/', '/embed/');
-  return `${parsed.origin}${path}${parsed.search}`;
+  const path = parsed.pathname.replace('/pen/', '/embed/')
+  return `${parsed.origin}${path}${parsed.search}`
 }
 
 function buildFigmaSrc(url: string): string {
-  return `https://www.figma.com/embed?embed_host=ashyk-bilim&url=${encodeURIComponent(url)}`;
+  return `https://www.figma.com/embed?embed_host=ashyk-bilim&url=${encodeURIComponent(url)}`
 }
 
 function buildGistSrc(url: string): string {
-  return url.endsWith('.pibb') ? url : `${url}.pibb`;
+  return url.endsWith('.pibb') ? url : `${url}.pibb`
 }
 
 function buildSpotifySrc(url: string): string {
-  const parsed = parseAbsoluteUrl(url);
-  if (!parsed || parsed.pathname.startsWith('/embed/')) return url;
-  return `${parsed.origin}/embed${parsed.pathname}${parsed.search}`;
+  const parsed = parseAbsoluteUrl(url)
+  if (!parsed || parsed.pathname.startsWith('/embed/')) return url
+  return `${parsed.origin}/embed${parsed.pathname}${parsed.search}`
 }
 
 function buildGenericEmbeddableSrc(type: EmbedType, url: string): string {
   switch (type) {
     case 'youtube': {
-      const videoId = resolveYouTubeVideoId(url);
-      return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url;
+      const videoId = resolveYouTubeVideoId(url)
+      return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url
     }
     case 'excalidraw': {
-      return buildExcalidrawSrc(url);
+      return buildExcalidrawSrc(url)
     }
     case 'tldraw': {
-      return buildTldrawSrc(url);
+      return buildTldrawSrc(url)
     }
     case 'vimeo': {
-      return buildVimeoSrc(url);
+      return buildVimeoSrc(url)
     }
     case 'codepen': {
-      return buildCodePenSrc(url);
+      return buildCodePenSrc(url)
     }
     case 'figma': {
-      return buildFigmaSrc(url);
+      return buildFigmaSrc(url)
     }
     case 'github-gist': {
-      return buildGistSrc(url);
+      return buildGistSrc(url)
     }
     case 'spotify': {
-      return buildSpotifySrc(url);
+      return buildSpotifySrc(url)
     }
     case 'google-slides': {
-      return url.replace(/\/edit(\?.*)?$/, '/embed');
+      return url.replace(/\/edit(\?.*)?$/, '/embed')
     }
     case 'google-docs': {
-      if (url.includes('/pub')) return url;
-      return url.replace(/\/edit(\?.*)?$/, '/preview');
+      if (url.includes('/pub')) return url
+      return url.replace(/\/edit(\?.*)?$/, '/preview')
     }
     case 'telegram': {
-      return url.includes('?embed=1') ? url : appendQueryParam(url, 'embed', '1');
+      return url.includes('?embed=1') ? url : appendQueryParam(url, 'embed', '1')
     }
     case 'quizizz': {
-      return url.replace('/admin/quiz/', '/embed/quiz/');
+      return url.replace('/admin/quiz/', '/embed/quiz/')
     }
     case 'edpuzzle': {
-      return url.replace('/media/', '/embed/media/');
+      return url.replace('/media/', '/embed/media/')
     }
     default: {
-      return url;
+      return url
     }
   }
 }
 
 export function buildEmbedSrc(type: EmbedType | string | null | undefined, url: string): string {
-  if (!type || !isEmbedType(type)) return url;
-  return buildGenericEmbeddableSrc(type, url);
+  if (!type || !isEmbedType(type)) return url
+  return buildGenericEmbeddableSrc(type, url)
 }
 
 export function normalizeEmbedUrl(type: EmbedType, url: string): string {
   if (type === 'youtube') {
-    return resolveYouTubeVideoId(url) ?? url.trim();
+    return resolveYouTubeVideoId(url) ?? url.trim()
   }
 
   if (type === 'phet' && !url.includes('fullscreen')) {
-    return appendQueryParam(url.trim(), 'simulation', 'true');
+    return appendQueryParam(url.trim(), 'simulation', 'true')
   }
 
-  return url.trim();
+  return url.trim()
 }

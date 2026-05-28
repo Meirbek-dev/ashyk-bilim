@@ -1,15 +1,20 @@
-'use client';
+'use client'
 
-import DiscussionList from './discussion-list';
+import DiscussionList from './discussion-list'
 
 interface CourseDiscussionsProps {
-  initialPosts: any[];
-  currentUser: any;
-  courseUuid: string;
-  onMutate?: () => void;
+  initialPosts: any[]
+  currentUser: any
+  courseUuid: string
+  onMutate?: () => void
 }
 
-export default function CourseDiscussions({ initialPosts, currentUser, courseUuid, onMutate }: CourseDiscussionsProps) {
+export default function CourseDiscussions({
+  initialPosts,
+  currentUser,
+  courseUuid,
+  onMutate,
+}: CourseDiscussionsProps) {
   return (
     <div className="my-8">
       <DiscussionList
@@ -19,5 +24,5 @@ export default function CourseDiscussions({ initialPosts, currentUser, courseUui
         onMutate={onMutate}
       />
     </div>
-  );
+  )
 }

@@ -1,19 +1,19 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import BadgesExtension from './BadgesExtension';
-import { nodeView } from '@components/Objects/Editor/core';
+import BadgesExtension from './BadgesExtension'
+import { nodeView } from '@components/Objects/Editor/core'
 
 export interface BadgeAttrs {
-  color: string;
-  emoji: string;
+  color: string
+  emoji: string
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     badge: {
-      insertBadge: () => ReturnType;
-    };
+      insertBadge: () => ReturnType
+    }
   }
 }
 
@@ -31,7 +31,7 @@ export default Node.create({
       emoji: {
         default: '💡',
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -39,11 +39,11 @@ export default Node.create({
       {
         tag: 'badge',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['badge', mergeAttributes(HTMLAttributes), 0];
+    return ['badge', mergeAttributes(HTMLAttributes), 0]
   },
 
   addCommands() {
@@ -55,12 +55,12 @@ export default Node.create({
             type: this.name,
             content: [{ type: 'paragraph' }],
           }),
-    };
+    }
   },
 
   addNodeView() {
     return nodeView(BadgesExtension, {
       contentDOMElementTag: 'div',
-    });
+    })
   },
-});
+})

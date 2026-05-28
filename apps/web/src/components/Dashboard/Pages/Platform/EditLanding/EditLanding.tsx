@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Award,
@@ -15,16 +15,35 @@ import {
   Trash2,
   Upload,
   Users,
-} from 'lucide-react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-import { updateLanding, uploadLandingContent } from '@/services/platform/platform';
-import { compressImage } from '@/lib/image-compression';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
+} from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select'
+import { updateLanding, uploadLandingContent } from '@/services/platform/platform'
+import { compressImage } from '@/lib/image-compression'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 
 function SortableLandingSection({
   section,
@@ -36,24 +55,26 @@ function SortableLandingSection({
   deleteSection,
   getSectionDisplayName,
 }: any) {
-  const id = section._id || `section-${index}`;
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const id = section._id || `section-${index}`
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
-  };
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={() => setSelectedSection(index)}
-      onKeyDown={(event) => {
+      onKeyDown={event => {
         if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          setSelectedSection(index);
+          event.preventDefault()
+          setSelectedSection(index)
         }
       }}
       role="button"
@@ -79,7 +100,9 @@ function SortableLandingSection({
           </div>
           <div
             className={`rounded-md p-1.5 ${
-              selectedSection === index ? 'bg-primary/20/50 text-primary' : 'bg-muted/50 text-muted-foreground'
+              selectedSection === index
+                ? 'bg-primary/20/50 text-primary'
+                : 'bg-muted/50 text-muted-foreground'
             }`}
           >
             {createElement(SECTION_TYPES[section.type].icon, {
@@ -96,9 +119,9 @@ function SortableLandingSection({
         </div>
         <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedSection(index);
+            onClick={e => {
+              e.stopPropagation()
+              setSelectedSection(index)
             }}
             className={`rounded-md p-1.5 transition-colors duration-200 ${
               selectedSection === index
@@ -109,9 +132,9 @@ function SortableLandingSection({
             <Edit size={14} />
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteSection(index);
+            onClick={e => {
+              e.stopPropagation()
+              deleteSection(index)
             }}
             className="rounded-md p-1.5 text-red-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-500"
           >
@@ -120,22 +143,22 @@ function SortableLandingSection({
         </div>
       </div>
     </div>
-  );
+  )
 }
-import { createElement, useEffect, useMemo, useState, useTransition } from 'react';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { getLandingMediaDirectory } from '@services/media/media';
-import { usePlatformCourses } from '@/features/platform/hooks/usePlatform';
-import { Textarea } from '@components/ui/textarea';
-import NextImage from '@components/ui/NextImage';
+import { createElement, useEffect, useMemo, useState, useTransition } from 'react'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { getLandingMediaDirectory } from '@services/media/media'
+import { usePlatformCourses } from '@/features/platform/hooks/usePlatform'
+import { Textarea } from '@components/ui/textarea'
+import NextImage from '@components/ui/NextImage'
 
-import { Switch } from '@components/ui/switch';
-import { Button } from '@components/ui/button';
-import { Label } from '@components/ui/label';
-import { Input } from '@components/ui/input';
-import type { ChangeEvent, FC } from 'react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { Switch } from '@components/ui/switch'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import type { ChangeEvent, FC } from 'react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 import type {
   LandingButton,
@@ -147,10 +170,10 @@ import type {
   LandingPeople,
   LandingSection,
   LandingTextAndImageSection,
-} from './landing_types';
+} from './landing_types'
 
 const SECTION_TYPES = {
-  'hero': {
+  hero: {
     icon: LayoutTemplate,
     label: 'Hero',
     description: 'Add a hero section with heading and call-to-action',
@@ -160,12 +183,12 @@ const SECTION_TYPES = {
     label: 'Text & Image',
     description: 'Add a section with text and an image',
   },
-  'logos': {
+  logos: {
     icon: Award,
     label: 'Logos',
     description: 'Add a section to showcase logos',
   },
-  'people': {
+  people: {
     icon: Users,
     label: 'People',
     description: 'Add a section to highlight team members',
@@ -175,10 +198,10 @@ const SECTION_TYPES = {
     label: 'Courses',
     description: 'Add a section to showcase selected courses',
   },
-} as const;
+} as const
 
 const PREDEFINED_GRADIENTS = {
-  'sunrise': {
+  sunrise: {
     colors: ['#fef9f3', '#ffecd2'] as string[],
     direction: '45deg',
   },
@@ -222,7 +245,7 @@ const PREDEFINED_GRADIENTS = {
     colors: ['#1e3a8a', '#3b82f6'] as string[],
     direction: '225deg',
   },
-  'volcanic': {
+  volcanic: {
     colors: ['#991b1b', '#f97316'] as string[],
     direction: '315deg',
   },
@@ -238,7 +261,7 @@ const PREDEFINED_GRADIENTS = {
     colors: ['#0c4a6e', '#0ea5e9'] as string[],
     direction: '45deg',
   },
-} as const;
+} as const
 
 const _GRADIENT_DIRECTIONS = {
   '45deg': '↗️ Top Right',
@@ -249,20 +272,20 @@ const _GRADIENT_DIRECTIONS = {
   '270deg': '⬇️ Bottom',
   '315deg': '↘️ Bottom Right',
   '0deg': '➡️ Right',
-} as const;
+} as const
 
 // Map section type keys to translation keys
 const SECTION_TYPE_KEYS: Record<LandingSection['type'], string> = {
-  'hero': 'hero',
+  hero: 'hero',
   'text-and-image': 'textAndImage',
-  'logos': 'logos',
-  'people': 'people',
+  logos: 'logos',
+  people: 'people',
   'featured-courses': 'featuredCourses',
-};
+}
 
 // Function to get translated section types
 const getSectionTypes = (t: Function) => ({
-  'hero': {
+  hero: {
     icon: LayoutTemplate,
     label: t('SectionTypes.hero.label'),
     description: t('SectionTypes.hero.description'),
@@ -272,12 +295,12 @@ const getSectionTypes = (t: Function) => ({
     label: t('SectionTypes.textAndImage.label'),
     description: t('SectionTypes.textAndImage.description'),
   },
-  'logos': {
+  logos: {
     icon: Award,
     label: t('SectionTypes.logos.label'),
     description: t('SectionTypes.logos.description'),
   },
-  'people': {
+  people: {
     icon: Users,
     label: t('SectionTypes.people.label'),
     description: t('SectionTypes.people.description'),
@@ -287,7 +310,7 @@ const getSectionTypes = (t: Function) => ({
     label: t('SectionTypes.featuredCourses.label'),
     description: t('SectionTypes.featuredCourses.description'),
   },
-});
+})
 
 // Map gradient direction keys to translation keys
 const GRADIENT_DIRECTION_KEYS: Record<string, string> = {
@@ -299,27 +322,30 @@ const GRADIENT_DIRECTION_KEYS: Record<string, string> = {
   '270deg': 'bottom',
   '315deg': 'bottomRight',
   '0deg': 'right',
-};
+}
 
 // Function to get translated gradient directions
 const getGradientDirections = (t: Function) => {
-  return Object.entries(GRADIENT_DIRECTION_KEYS).reduce<Record<string, string>>((acc, [key, tKey]) => {
-    acc[key] = t(`GradientDirections.${tKey}`);
-    return acc;
-  }, {});
-};
+  return Object.entries(GRADIENT_DIRECTION_KEYS).reduce<Record<string, string>>(
+    (acc, [key, tKey]) => {
+      acc[key] = t(`GradientDirections.${tKey}`)
+      return acc
+    },
+    {},
+  )
+}
 
 // Function to get translated gradient preset names
 const getGradientPresetName = (t: Function, name: string) => {
   // Assumes keys like GradientPresets.sunrise, GradientPresets.mintBreeze etc.
-  return t(`GradientPresets.${name.replace('-', '_')}`);
-};
+  return t(`GradientPresets.${name.replace('-', '_')}`)
+}
 
 // Function to get translated section display name
 const getSectionDisplayName = (t: Function, section: LandingSection) => {
-  const sectionTypeKey = SECTION_TYPE_KEYS[section.type];
-  return t(`SectionTypes.${sectionTypeKey}.label`);
-};
+  const sectionTypeKey = SECTION_TYPE_KEYS[section.type]
+  return t(`SectionTypes.${sectionTypeKey}.label`)
+}
 
 const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): LandingSection => {
   switch (type) {
@@ -344,7 +370,7 @@ const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): 
         buttons: [],
         illustration: undefined,
         contentAlign: 'center',
-      };
+      }
     }
     case 'text-and-image': {
       return {
@@ -357,62 +383,62 @@ const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): 
           alt: '',
         },
         buttons: [],
-      };
+      }
     }
     case 'logos': {
       return {
         type: 'logos',
         title: t('EmptySections.logos.title'),
         logos: [],
-      };
+      }
     }
     case 'people': {
       return {
         type: 'people',
         title: t('EmptySections.people.title'),
         people: [],
-      };
+      }
     }
     case 'featured-courses': {
       return {
         type: 'featured-courses',
         title: t('EmptySections.featuredCourses.title'),
         courses: [],
-      };
+      }
     }
     default: {
-      throw new Error(t('Errors.invalidSectionType'));
+      throw new Error(t('Errors.invalidSectionType'))
     }
   }
-};
+}
 
 // Helper factories that produce item lists (use t at call site)
 const makeBackgroundTypeItems = (t: Function) => [
   { value: 'solid', label: t('HeroEditor.Background.solid') },
   { value: 'gradient', label: t('HeroEditor.Background.gradient') },
   { value: 'image', label: t('HeroEditor.Background.image') },
-];
+]
 
 const makeGradientTypeItems = (t: Function) => [
   { value: 'preset', label: t('HeroEditor.Background.presetGradients') },
   { value: 'custom', label: t('HeroEditor.Background.customGradient') },
-];
+]
 
 const makeIllustrationPositionItems = (t: Function) => [
   { value: 'left', label: t('HeroEditor.Illustration.positionLeft') },
   { value: 'right', label: t('HeroEditor.Illustration.positionRight') },
-];
+]
 
 const makeIllustrationSizeItems = (t: Function) => [
   { value: 'small', label: t('HeroEditor.Illustration.sizeSmall') },
   { value: 'medium', label: t('HeroEditor.Illustration.sizeMedium') },
   { value: 'large', label: t('HeroEditor.Illustration.sizeLarge') },
-];
+]
 
 const makeFlowItems = (t: Function) => [
   { value: 'left', label: t('TextAndImageEditor.positionLeft') },
   { value: 'right', label: t('TextAndImageEditor.positionRight') },
-];
+]
 
 const makeSectionTypeItems = (t: Function) =>
   Object.entries(getSectionTypes(t)).map(([type, conf]) => ({
@@ -423,7 +449,10 @@ const makeSectionTypeItems = (t: Function) =>
       createElement(
         'div',
         { className: 'rounded-md bg-muted p-1.5' },
-        createElement(conf.icon as any, { size: 16, className: 'text-muted-foreground' }),
+        createElement(conf.icon as any, {
+          size: 16,
+          className: 'text-muted-foreground',
+        }),
       ),
       createElement(
         'div',
@@ -432,7 +461,7 @@ const makeSectionTypeItems = (t: Function) =>
         createElement('div', { className: 'text-xs text-muted-foreground' }, conf.description),
       ),
     ) as any,
-  }));
+  }))
 
 const makeGradientPresetItems = (t: Function) =>
   Object.entries(PREDEFINED_GRADIENTS).map(([name]) => ({
@@ -448,27 +477,30 @@ const makeGradientPresetItems = (t: Function) =>
         <span className="capitalize">{getGradientPresetName(t, name)}</span>
       </div>
     ) as any,
-  }));
+  }))
 
 const makeGradientDirectionItems = (t: Function) =>
-  Object.entries(getGradientDirections(t)).map(([value, label]) => ({ value, label }));
+  Object.entries(getGradientDirections(t)).map(([value, label]) => ({
+    value,
+    label,
+  }))
 
 const EditLanding = () => {
-  const platform = usePlatform() as any;
-  const [isLandingEnabled, setIsLandingEnabled] = useState(false);
-  const tNotify = useTranslations('DashPage.Notifications');
-  const t = useTranslations('DashPage.PlatformSettings.Landing');
+  const platform = usePlatform() as any
+  const [isLandingEnabled, setIsLandingEnabled] = useState(false)
+  const tNotify = useTranslations('DashPage.Notifications')
+  const t = useTranslations('DashPage.PlatformSettings.Landing')
 
   // Precompute section type items for `Select` usage
-  const sectionTypeItems = makeSectionTypeItems(t);
+  const sectionTypeItems = makeSectionTypeItems(t)
 
   const [landingData, setLandingData] = useState<LandingObject>({
     sections: [],
     enabled: false,
-  });
-  const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  })
+  const [selectedSection, setSelectedSection] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -477,95 +509,99 @@ const EditLanding = () => {
       },
     }),
     useSensor(KeyboardSensor),
-  );
+  )
 
   const sectionIds = useMemo(
     () => landingData.sections.map((s: any, i: number) => s._id ?? `section-${i}`),
     [landingData.sections],
-  );
-  const announcements = useDndAnnouncements(sectionIds);
+  )
+  const announcements = useDndAnnouncements(sectionIds)
 
   // Initialize landing data from platform config
   useEffect(() => {
     if (platform?.landing) {
-      const landingConfig = platform.landing;
+      const landingConfig = platform.landing
       setLandingData({
         sections: landingConfig.sections || [],
         enabled: Boolean(landingConfig.enabled),
-      });
+      })
       // Coerce to boolean to avoid switching between controlled/uncontrolled
       // states for the `Switch` component (React warns when checked changes
       // between `undefined` and boolean during the component lifecycle).
-      setIsLandingEnabled(Boolean(landingConfig.enabled));
+      setIsLandingEnabled(Boolean(landingConfig.enabled))
     }
-  }, [platform]);
+  }, [platform])
 
   const addSection = (type: string) => {
-    const newSection: LandingSection = createEmptySection(t, type as keyof typeof SECTION_TYPE_KEYS);
+    const newSection: LandingSection = createEmptySection(t, type as keyof typeof SECTION_TYPE_KEYS)
     setLandingData((prev: LandingObject) => ({
       ...prev,
       sections: [...prev.sections, newSection],
-    }));
-  };
+    }))
+  }
 
   const updateSection = (index: number, updatedSection: LandingSection) => {
-    const newSections = [...landingData.sections];
-    newSections[index] = updatedSection;
+    const newSections = [...landingData.sections]
+    newSections[index] = updatedSection
     setLandingData((prev: LandingObject) => ({
       ...prev,
       sections: newSections,
-    }));
-  };
+    }))
+  }
 
   const deleteSection = (index: number) => {
     setLandingData((prev: LandingObject) => ({
       ...prev,
       sections: prev.sections.filter((_: LandingSection, i: number) => i !== index),
-    }));
-    setSelectedSection(null);
-  };
+    }))
+    setSelectedSection(null)
+  }
 
   const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over } = event
 
     if (!over || active.id === over.id) {
-      return;
+      return
     }
 
-    const items = [...landingData.sections];
-    const oldIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === active.id);
-    const newIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === over.id);
+    const items = [...landingData.sections]
+    const oldIndex = items.findIndex(
+      (item: any, index: number) => (item._id || `section-${index}`) === active.id,
+    )
+    const newIndex = items.findIndex(
+      (item: any, index: number) => (item._id || `section-${index}`) === over.id,
+    )
 
-    const reorderedItems = arrayMove(items, oldIndex, newIndex);
+    const reorderedItems = arrayMove(items, oldIndex, newIndex)
 
     setLandingData((prev: LandingObject) => ({
       ...prev,
       sections: reorderedItems,
-    }));
-    setSelectedSection(newIndex);
-  };
+    }))
+    setSelectedSection(newIndex)
+  }
 
   const handleSave = async () => {
-    startTransition(() => setIsSaving(true));
-    const loadingToast = toast.loading(tNotify('savingLandingPage'));
+    startTransition(() => setIsSaving(true))
+    const loadingToast = toast.loading(tNotify('savingLandingPage'))
     try {
       const res = await updateLanding({
         sections: landingData.sections,
         enabled: isLandingEnabled,
-      });
+      })
 
       if (res.status === 200) {
-        toast.success(tNotify('landingPageSavedSuccess'), { id: loadingToast });
+        toast.success(tNotify('landingPageSavedSuccess'), { id: loadingToast })
       } else {
-        toast.error(tNotify('landingPageSaveError'), { id: loadingToast });
+        toast.error(tNotify('landingPageSaveError'), { id: loadingToast })
       }
     } catch (error) {
-      toast.error(tNotify('landingPageSaveError'), { id: loadingToast });
-      console.error('Error saving landing page:', error);
+      toast.error(tNotify('landingPageSaveError'), { id: loadingToast })
+      console.error('Error saving landing page:', error)
     } finally {
-      startTransition(() => setIsSaving(false));
+      startTransition(() => setIsSaving(false))
     }
-  };
+  }
 
   return (
     <div className="bg-background mx-0 rounded-3xl sm:mx-10">
@@ -584,11 +620,7 @@ const EditLanding = () => {
                 className="h-6 w-11 [&>span]:h-5 [&>span]:w-5 [&>span]:data-[state=checked]:translate-x-5.5"
               />
             </div>
-            <Button
-              variant="default"
-              onClick={handleSave}
-              disabled={isSaving || isPending}
-            >
+            <Button variant="default" onClick={handleSave} disabled={isSaving || isPending}>
               <Save className="mr-2 h-4 w-4" />
               {isSaving || isPending ? t('savingButton') : t('saveButton')}
             </Button>
@@ -636,7 +668,7 @@ const EditLanding = () => {
                   <Select
                     onValueChange={(value: string | null) => {
                       if (value) {
-                        addSection(value);
+                        addSection(value)
                       }
                     }}
                     items={sectionTypeItems}
@@ -646,20 +678,14 @@ const EditLanding = () => {
                       withChevron={false}
                     >
                       <div className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap text-white transition-all outline-none">
-                        <Plus
-                          size={14}
-                          color="white"
-                        />
+                        <Plus size={14} color="white" />
                         {t('SectionsPanel.addSectionButton')}
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {sectionTypeItems.map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
+                        {sectionTypeItems.map(item => (
+                          <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
                         ))}
@@ -675,8 +701,8 @@ const EditLanding = () => {
                   <SectionEditor
                     t={t}
                     section={landingData.sections[selectedSection]}
-                    onChange={(updatedSection) => {
-                      updateSection(selectedSection, updatedSection);
+                    onChange={updatedSection => {
+                      updateSection(selectedSection, updatedSection)
                     }}
                   />
                 ) : (
@@ -690,77 +716,47 @@ const EditLanding = () => {
         ) : null}
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface SectionEditorProps {
-  t: Function;
-  section: LandingSection;
-  onChange: (section: LandingSection) => void;
+  t: Function
+  section: LandingSection
+  onChange: (section: LandingSection) => void
 }
 
 const SectionEditor: FC<SectionEditorProps> = ({ t, section, onChange }) => {
   switch (section.type) {
     case 'hero': {
-      return (
-        <HeroSectionEditor
-          t={t}
-          section={section}
-          onChange={onChange}
-        />
-      );
+      return <HeroSectionEditor t={t} section={section} onChange={onChange} />
     }
     case 'text-and-image': {
-      return (
-        <TextAndImageSectionEditor
-          t={t}
-          section={section}
-          onChange={onChange}
-        />
-      );
+      return <TextAndImageSectionEditor t={t} section={section} onChange={onChange} />
     }
     case 'logos': {
-      return (
-        <LogosSectionEditor
-          t={t}
-          section={section}
-          onChange={onChange}
-        />
-      );
+      return <LogosSectionEditor t={t} section={section} onChange={onChange} />
     }
     case 'people': {
-      return (
-        <PeopleSectionEditor
-          t={t}
-          section={section}
-          onChange={onChange}
-        />
-      );
+      return <PeopleSectionEditor t={t} section={section} onChange={onChange} />
     }
     case 'featured-courses': {
-      return (
-        <FeaturedCoursesEditor
-          t={t}
-          section={section}
-          onChange={onChange}
-        />
-      );
+      return <FeaturedCoursesEditor t={t} section={section} onChange={onChange} />
     }
     default: {
-      return <div>{t('Errors.unknownSectionType')}</div>;
+      return <div>{t('Errors.unknownSectionType')}</div>
     }
   }
-};
+}
 
 const HeroSectionEditor: FC<{
-  t: Function;
-  section: LandingHeroSection;
-  onChange: (section: LandingHeroSection) => void;
+  t: Function
+  section: LandingHeroSection
+  onChange: (section: LandingHeroSection) => void
 }> = ({ t, section, onChange }) => {
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onloadend = () => {
         onChange({
           ...section,
@@ -768,14 +764,18 @@ const HeroSectionEditor: FC<{
             type: 'image',
             image: reader.result as string,
           },
-        });
-      };
+        })
+      }
       void (async () => {
-        const optimized = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
-        reader.readAsDataURL(optimized);
-      })();
+        const optimized = await compressImage(file, {
+          maxWidth: 2400,
+          maxHeight: 1600,
+          quality: 0.82,
+        })
+        reader.readAsDataURL(optimized)
+      })()
     }
-  };
+  }
 
   return (
     <div className="bg-background space-y-6 rounded-lg p-6 shadow-sm">
@@ -793,52 +793,34 @@ const HeroSectionEditor: FC<{
           <Input
             id="title"
             value={section.title}
-            onChange={(e) => {
-              onChange({ ...section, title: e.target.value });
+            onChange={e => {
+              onChange({ ...section, title: e.target.value })
             }}
             placeholder={t('Editor.sectionTitlePlaceholder')}
           />
         </div>
 
-        <Tabs
-          defaultValue="content"
-          className="w-full"
-        >
+        <Tabs defaultValue="content" className="w-full">
           <TabsList className="bg-muted grid w-full grid-cols-4 rounded-lg p-1">
-            <TabsTrigger
-              value="content"
-              className="flex items-center space-x-1"
-            >
+            <TabsTrigger value="content" className="flex items-center space-x-1">
               <TextIcon className="h-4 w-4" />
               <span>{t('HeroEditor.Tabs.content')}</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="background"
-              className="flex items-center"
-            >
+            <TabsTrigger value="background" className="flex items-center">
               <LayoutTemplate className="h-4 w-4" />
               <span>{t('HeroEditor.Tabs.background')}</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="buttons"
-              className="flex items-center space-x-1"
-            >
+            <TabsTrigger value="buttons" className="flex items-center space-x-1">
               <MousePointerClick className="h-4 w-4" />
               <span>{t('HeroEditor.Tabs.buttons')}</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="illustration"
-              className="flex items-center space-x-1"
-            >
+            <TabsTrigger value="illustration" className="flex items-center space-x-1">
               <ImageIcon className="h-4 w-4" />
               <span>{t('HeroEditor.Tabs.illustration')}</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent
-            value="content"
-            className="mt-4 space-y-4"
-          >
+          <TabsContent value="content" className="mt-4 space-y-4">
             {/* Heading */}
             <div className="space-y-4">
               <div>
@@ -846,11 +828,11 @@ const HeroSectionEditor: FC<{
                 <Input
                   id="heading"
                   value={section.heading.text}
-                  onChange={(e) => {
+                  onChange={e => {
                     onChange({
                       ...section,
                       heading: { ...section.heading, text: e.target.value },
-                    });
+                    })
                   }}
                   placeholder={t('HeroEditor.Content.headingPlaceholder')}
                 />
@@ -862,21 +844,21 @@ const HeroSectionEditor: FC<{
                     id="headingColor"
                     type="color"
                     value={section.heading.color}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         heading: { ...section.heading, color: e.target.value },
-                      });
+                      })
                     }}
                     className="h-10 w-20 p-1"
                   />
                   <Input
                     value={section.heading.color}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         heading: { ...section.heading, color: e.target.value },
-                      });
+                      })
                     }}
                     placeholder="#000000"
                     className="font-mono"
@@ -892,46 +874,48 @@ const HeroSectionEditor: FC<{
                 <Input
                   id="subheading"
                   value={section.subheading.text}
-                  onChange={(e) => {
+                  onChange={e => {
                     onChange({
                       ...section,
                       subheading: {
                         ...section.subheading,
                         text: e.target.value,
                       },
-                    });
+                    })
                   }}
                   placeholder={t('HeroEditor.Content.subheadingPlaceholder')}
                 />
               </div>
               <div>
-                <Label htmlFor="subheadingColor">{t('HeroEditor.Content.subheadingColorLabel')}</Label>
+                <Label htmlFor="subheadingColor">
+                  {t('HeroEditor.Content.subheadingColorLabel')}
+                </Label>
                 <div className="flex items-center space-x-1">
                   <Input
                     id="subheadingColor"
                     type="color"
                     value={section.subheading.color}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         subheading: {
                           ...section.subheading,
                           color: e.target.value,
                         },
-                      });
+                      })
                     }}
                     className="h-10 w-20 p-1"
                   />
                   <Input
                     value={section.subheading.color}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         subheading: {
                           ...section.subheading,
                           color: e.target.value,
                         },
-                      });
+                      })
                     }}
                     placeholder="#666666"
                     className="font-mono"
@@ -941,25 +925,23 @@ const HeroSectionEditor: FC<{
             </div>
           </TabsContent>
 
-          <TabsContent
-            value="background"
-            className="mt-4 space-y-4"
-          >
+          <TabsContent value="background" className="mt-4 space-y-4">
             <div>
               <Label htmlFor="background">{t('HeroEditor.Background.typeLabel')}</Label>
               <Select
                 value={section.background.type}
                 onValueChange={(bgType = 'solid') => {
-                  const safeBgType = bgType!;
+                  const safeBgType = bgType!
                   onChange({
                     ...section,
                     background: {
                       type: safeBgType,
                       color: bgType === 'solid' ? '#ffffff' : undefined,
-                      colors: bgType === 'gradient' ? PREDEFINED_GRADIENTS.sunrise.colors : undefined,
+                      colors:
+                        bgType === 'gradient' ? PREDEFINED_GRADIENTS.sunrise.colors : undefined,
                       image: bgType === 'image' ? '' : undefined,
                     },
-                  });
+                  })
                 }}
                 items={makeBackgroundTypeItems(t)}
               >
@@ -968,11 +950,8 @@ const HeroSectionEditor: FC<{
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {makeBackgroundTypeItems(t).map((item) => (
-                      <SelectItem
-                        key={item.value}
-                        value={item.value}
-                      >
+                    {makeBackgroundTypeItems(t).map(item => (
+                      <SelectItem key={item.value} value={item.value}>
                         {item.label}
                       </SelectItem>
                     ))}
@@ -989,27 +968,27 @@ const HeroSectionEditor: FC<{
                     id="backgroundColor"
                     type="color"
                     value={section.background.color || '#ffffff'}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         background: {
                           ...section.background,
                           color: e.target.value,
                         },
-                      });
+                      })
                     }}
                     className="h-10 w-20 p-1"
                   />
                   <Input
                     value={section.background.color || '#ffffff'}
-                    onChange={(e) => {
+                    onChange={e => {
                       onChange({
                         ...section,
                         background: {
                           ...section.background,
                           color: e.target.value,
                         },
-                      });
+                      })
                     }}
                     placeholder="#ffffff"
                     className="font-mono"
@@ -1026,14 +1005,14 @@ const HeroSectionEditor: FC<{
                   <Select
                     value={
                       Object.values(PREDEFINED_GRADIENTS).some(
-                        (preset) =>
+                        preset =>
                           preset.colors[0] === section.background.colors?.[0] &&
                           preset.colors[1] === section.background.colors?.[1],
                       )
                         ? 'preset'
                         : 'custom'
                     }
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       if (value === 'custom') {
                         onChange({
                           ...section,
@@ -1042,7 +1021,7 @@ const HeroSectionEditor: FC<{
                             colors: ['#ffffff', '#f0f0f0'],
                             direction: section.background.direction || '45deg',
                           },
-                        });
+                        })
                       } else {
                         onChange({
                           ...section,
@@ -1051,21 +1030,20 @@ const HeroSectionEditor: FC<{
                             colors: PREDEFINED_GRADIENTS.sunrise.colors,
                             direction: PREDEFINED_GRADIENTS.sunrise.direction,
                           },
-                        });
+                        })
                       }
                     }}
                     items={makeGradientTypeItems(t)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('HeroEditor.Background.gradientTypePlaceholder')} />
+                      <SelectValue
+                        placeholder={t('HeroEditor.Background.gradientTypePlaceholder')}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {makeGradientTypeItems(t).map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
+                        {makeGradientTypeItems(t).map(item => (
+                          <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
                         ))}
@@ -1075,7 +1053,7 @@ const HeroSectionEditor: FC<{
                 </div>
 
                 {!Object.values(PREDEFINED_GRADIENTS).some(
-                  (preset) =>
+                  preset =>
                     preset.colors[0] === section.background.colors?.[0] &&
                     preset.colors[1] === section.background.colors?.[1],
                 ) ? (
@@ -1085,27 +1063,33 @@ const HeroSectionEditor: FC<{
                       <div className="flex items-center space-x-1">
                         <Input
                           type="color"
-                          onChange={(e) => {
+                          onChange={e => {
                             onChange({
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [e.target.value, section.background.colors?.[1] || '#f0f0f0'],
+                                colors: [
+                                  e.target.value,
+                                  section.background.colors?.[1] || '#f0f0f0',
+                                ],
                               },
-                            });
+                            })
                           }}
                           className="h-10 w-20 p-1"
                         />
                         <Input
                           value={section.background.colors?.[0] || '#ffffff'}
-                          onChange={(e) => {
+                          onChange={e => {
                             onChange({
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [e.target.value, section.background.colors?.[1] || '#f0f0f0'],
+                                colors: [
+                                  e.target.value,
+                                  section.background.colors?.[1] || '#f0f0f0',
+                                ],
                               },
-                            });
+                            })
                           }}
                           placeholder="#ffffff"
                           className="font-mono"
@@ -1119,27 +1103,33 @@ const HeroSectionEditor: FC<{
                         <Input
                           type="color"
                           value={section.background.colors?.[1] || '#f0f0f0'}
-                          onChange={(e) => {
+                          onChange={e => {
                             onChange({
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [section.background.colors?.[0] || '#ffffff', e.target.value],
+                                colors: [
+                                  section.background.colors?.[0] || '#ffffff',
+                                  e.target.value,
+                                ],
                               },
-                            });
+                            })
                           }}
                           className="h-10 w-20 p-1"
                         />
                         <Input
                           value={section.background.colors?.[1] || '#f0f0f0'}
-                          onChange={(e) => {
+                          onChange={e => {
                             onChange({
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [section.background.colors?.[0] || '#ffffff', e.target.value],
+                                colors: [
+                                  section.background.colors?.[0] || '#ffffff',
+                                  e.target.value,
+                                ],
                               },
-                            });
+                            })
                           }}
                           placeholder="#f0f0f0"
                           className="font-mono"
@@ -1158,28 +1148,31 @@ const HeroSectionEditor: FC<{
                             gradient.colors[1] === section.background.colors?.[1],
                         )?.[0] || 'sunrise'
                       }
-                      onValueChange={(value) => {
+                      onValueChange={value => {
                         onChange({
                           ...section,
                           background: {
                             ...section.background,
-                            colors: PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS].colors,
-                            direction: PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS].direction,
+                            colors:
+                              PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS]
+                                .colors,
+                            direction:
+                              PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS]
+                                .direction,
                           },
-                        });
+                        })
                       }}
                       items={makeGradientPresetItems(t)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t('HeroEditor.Background.gradientPresetPlaceholder')} />
+                        <SelectValue
+                          placeholder={t('HeroEditor.Background.gradientPresetPlaceholder')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          {makeGradientPresetItems(t).map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
+                          {makeGradientPresetItems(t).map(item => (
+                            <SelectItem key={item.value} value={item.value}>
                               {item.label}
                             </SelectItem>
                           ))}
@@ -1193,26 +1186,25 @@ const HeroSectionEditor: FC<{
                   <Label>{t('HeroEditor.Background.gradientDirectionLabel')}</Label>
                   <Select
                     value={section.background.direction || '45deg'}
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       if (value) {
                         onChange({
                           ...section,
                           background: { ...section.background, direction: value },
-                        });
+                        })
                       }
                     }}
                     items={makeGradientDirectionItems(t)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('HeroEditor.Background.gradientDirectionPlaceholder')} />
+                      <SelectValue
+                        placeholder={t('HeroEditor.Background.gradientDirectionPlaceholder')}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {makeGradientDirectionItems(t).map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
+                        {makeGradientDirectionItems(t).map(item => (
+                          <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
                         ))}
@@ -1271,10 +1263,7 @@ const HeroSectionEditor: FC<{
             )}
           </TabsContent>
 
-          <TabsContent
-            value="buttons"
-            className="mt-4 space-y-4"
-          >
+          <TabsContent value="buttons" className="mt-4 space-y-4">
             <div className="space-y-3">
               {section.buttons.map((button: LandingButton, index: number) => (
                 <div
@@ -1285,10 +1274,10 @@ const HeroSectionEditor: FC<{
                     <Label>{t('HeroEditor.Buttons.textAndColorsLabel')}</Label>
                     <Input
                       value={button.text}
-                      onChange={(e) => {
-                        const newButtons = [...section.buttons];
-                        newButtons[index] = { ...button, text: e.target.value };
-                        onChange({ ...section, buttons: newButtons });
+                      onChange={e => {
+                        const newButtons = [...section.buttons]
+                        newButtons[index] = { ...button, text: e.target.value }
+                        onChange({ ...section, buttons: newButtons })
                       }}
                       placeholder={t('HeroEditor.Buttons.textPlaceholder')}
                     />
@@ -1298,13 +1287,13 @@ const HeroSectionEditor: FC<{
                         <Input
                           type="color"
                           value={button.color}
-                          onChange={(e) => {
-                            const newButtons = [...section.buttons];
+                          onChange={e => {
+                            const newButtons = [...section.buttons]
                             newButtons[index] = {
                               ...button,
                               color: e.target.value,
-                            };
-                            onChange({ ...section, buttons: newButtons });
+                            }
+                            onChange({ ...section, buttons: newButtons })
                           }}
                           className="h-8 w-full p-1"
                         />
@@ -1314,13 +1303,13 @@ const HeroSectionEditor: FC<{
                         <Input
                           type="color"
                           value={button.background}
-                          onChange={(e) => {
-                            const newButtons = [...section.buttons];
+                          onChange={e => {
+                            const newButtons = [...section.buttons]
                             newButtons[index] = {
                               ...button,
                               background: e.target.value,
-                            };
-                            onChange({ ...section, buttons: newButtons });
+                            }
+                            onChange({ ...section, buttons: newButtons })
                           }}
                           className="h-8 w-full p-1"
                         />
@@ -1333,13 +1322,13 @@ const HeroSectionEditor: FC<{
                       <Link className="text-muted-foreground h-4 w-4" />
                       <Input
                         value={button.link}
-                        onChange={(e) => {
-                          const newButtons = [...section.buttons];
+                        onChange={e => {
+                          const newButtons = [...section.buttons]
                           newButtons[index] = {
                             ...button,
                             link: e.target.value,
-                          };
-                          onChange({ ...section, buttons: newButtons });
+                          }
+                          onChange({ ...section, buttons: newButtons })
                         }}
                         placeholder={t('HeroEditor.Buttons.linkPlaceholder')}
                       />
@@ -1348,10 +1337,12 @@ const HeroSectionEditor: FC<{
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newButtons = section.buttons.filter((_: LandingButton, i: number) => i !== index);
-                      onChange({ ...section, buttons: newButtons });
+                    onClick={e => {
+                      e.stopPropagation()
+                      const newButtons = section.buttons.filter(
+                        (_: LandingButton, i: number) => i !== index,
+                      )
+                      onChange({ ...section, buttons: newButtons })
                     }}
                     className="mt-8 self-start text-red-500 hover:bg-red-50 hover:text-red-600"
                   >
@@ -1368,11 +1359,11 @@ const HeroSectionEditor: FC<{
                       link: '#',
                       color: '#ffffff',
                       background: '#000000',
-                    };
+                    }
                     onChange({
                       ...section,
                       buttons: [...section.buttons, newButton],
-                    });
+                    })
                   }}
                   className="w-full"
                 >
@@ -1383,16 +1374,13 @@ const HeroSectionEditor: FC<{
             </div>
           </TabsContent>
 
-          <TabsContent
-            value="illustration"
-            className="mt-4 space-y-4"
-          >
+          <TabsContent value="illustration" className="mt-4 space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('HeroEditor.Illustration.imageLabel')}</Label>
                 <Input
                   value={section.illustration?.image.url || ''}
-                  onChange={(e) => {
+                  onChange={e => {
                     if (e.target.value) {
                       onChange({
                         ...section,
@@ -1405,14 +1393,14 @@ const HeroSectionEditor: FC<{
                           verticalAlign: 'center',
                           size: 'medium',
                         },
-                      });
+                      })
                     }
                   }}
                   placeholder={t('HeroEditor.Illustration.imageUrlPlaceholder')}
                 />
                 <Input
                   value={section.illustration?.image.alt || ''}
-                  onChange={(e) => {
+                  onChange={e => {
                     if (section.illustration?.image.url) {
                       onChange({
                         ...section,
@@ -1423,14 +1411,14 @@ const HeroSectionEditor: FC<{
                             alt: e.target.value,
                           },
                         },
-                      });
+                      })
                     }
                   }}
                   placeholder={t('HeroEditor.Illustration.imageAltPlaceholder')}
                 />
                 <ImageUploader
                   id="hero-illustration"
-                  onImageUploaded={(url) => {
+                  onImageUploaded={url => {
                     onChange({
                       ...section,
                       illustration: {
@@ -1442,7 +1430,7 @@ const HeroSectionEditor: FC<{
                         verticalAlign: 'center',
                         size: 'medium',
                       },
-                    });
+                    })
                   }}
                   buttonText={t('HeroEditor.Illustration.uploadButton')}
                   t={t}
@@ -1466,7 +1454,7 @@ const HeroSectionEditor: FC<{
                   <Select
                     value={section.illustration?.position || 'left'}
                     onValueChange={(value: 'left' | 'right' | null) => {
-                      if (!value) return;
+                      if (!value) return
                       onChange({
                         ...section,
                         illustration: {
@@ -1479,7 +1467,7 @@ const HeroSectionEditor: FC<{
                           size: section.illustration?.size || 'medium',
                           verticalAlign: section.illustration?.verticalAlign || 'center',
                         },
-                      });
+                      })
                     }}
                     items={makeIllustrationPositionItems(t)}
                   >
@@ -1488,11 +1476,8 @@ const HeroSectionEditor: FC<{
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {makeIllustrationPositionItems(t).map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
+                        {makeIllustrationPositionItems(t).map(item => (
+                          <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
                         ))}
@@ -1506,7 +1491,7 @@ const HeroSectionEditor: FC<{
                   <Select
                     value={section.illustration?.size || 'medium'}
                     onValueChange={(value: 'small' | 'medium' | 'large' | null) => {
-                      if (!value) return;
+                      if (!value) return
                       onChange({
                         ...section,
                         illustration: {
@@ -1519,7 +1504,7 @@ const HeroSectionEditor: FC<{
                           position: section.illustration?.position || 'left',
                           verticalAlign: section.illustration?.verticalAlign || 'center',
                         },
-                      });
+                      })
                     }}
                     items={makeIllustrationSizeItems(t)}
                   >
@@ -1528,11 +1513,8 @@ const HeroSectionEditor: FC<{
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {makeIllustrationSizeItems(t).map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
+                        {makeIllustrationSizeItems(t).map(item => (
+                          <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
                         ))}
@@ -1549,7 +1531,7 @@ const HeroSectionEditor: FC<{
                     onChange({
                       ...section,
                       illustration: undefined,
-                    });
+                    })
                   }}
                   className="w-full text-red-500 hover:bg-red-50 hover:text-red-600"
                 >
@@ -1561,55 +1543,65 @@ const HeroSectionEditor: FC<{
         </Tabs>
       </div>
     </div>
-  );
-};
-
-interface ImageUploaderProps {
-  t: Function;
-  onImageUploaded: (imageUrl: string) => void;
-  className?: string;
-  buttonText?: string;
-  id: string;
+  )
 }
 
-const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, buttonText, id }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const tNotify = useTranslations('DashPage.Notifications');
-  const inputId = `imageUpload-${id}`;
+interface ImageUploaderProps {
+  t: Function
+  onImageUploaded: (imageUrl: string) => void
+  className?: string
+  buttonText?: string
+  id: string
+}
+
+const ImageUploader: FC<ImageUploaderProps> = ({
+  t,
+  onImageUploaded,
+  className,
+  buttonText,
+  id,
+}) => {
+  const [isUploading, setIsUploading] = useState(false)
+  const tNotify = useTranslations('DashPage.Notifications')
+  const inputId = `imageUpload-${id}`
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
     // Validate file using reusable utility
-    const { validateFile } = await import('@/lib/file-validation');
-    const validation = validateFile(file, ['image']);
+    const { validateFile } = await import('@/lib/file-validation')
+    const validation = validateFile(file, ['image'])
 
     if (!validation.valid) {
-      toast.error(validation.error);
-      e.target.value = ''; // Clear the input
-      return;
+      toast.error(validation.error)
+      e.target.value = '' // Clear the input
+      return
     }
 
-    setIsUploading(true);
-    const loadingToast = toast.loading(tNotify('uploadingImage'));
+    setIsUploading(true)
+    const loadingToast = toast.loading(tNotify('uploadingImage'))
     try {
-      const fileToUpload = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
-      const response = await uploadLandingContent(fileToUpload);
+      const fileToUpload = await compressImage(file, {
+        maxWidth: 2400,
+        maxHeight: 1600,
+        quality: 0.82,
+      })
+      const response = await uploadLandingContent(fileToUpload)
       if (response.status === 200 && response.data?.filename) {
-        const imageUrl = getLandingMediaDirectory(response.data.filename);
-        onImageUploaded(imageUrl);
-        toast.success(tNotify('imageUploadSuccess'), { id: loadingToast });
+        const imageUrl = getLandingMediaDirectory(response.data.filename)
+        onImageUploaded(imageUrl)
+        toast.success(tNotify('imageUploadSuccess'), { id: loadingToast })
       } else {
-        toast.error(tNotify('imageUploadFailed'), { id: loadingToast });
+        toast.error(tNotify('imageUploadFailed'), { id: loadingToast })
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(tNotify('imageUploadFailed'), { id: loadingToast });
+      console.error('Error uploading image:', error)
+      toast.error(tNotify('imageUploadFailed'), { id: loadingToast })
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  };
+  }
 
   return (
     <div className={className}>
@@ -1632,13 +1624,13 @@ const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, 
         title={t('ImageUploader.selectFile')}
       />
     </div>
-  );
-};
+  )
+}
 
 const TextAndImageSectionEditor: FC<{
-  t: Function;
-  section: LandingTextAndImageSection;
-  onChange: (section: LandingTextAndImageSection) => void;
+  t: Function
+  section: LandingTextAndImageSection
+  onChange: (section: LandingTextAndImageSection) => void
 }> = ({ t, section, onChange }) => {
   return (
     <div className="bg-background space-y-6 rounded-lg p-6 shadow-sm">
@@ -1656,8 +1648,8 @@ const TextAndImageSectionEditor: FC<{
           <Input
             id="title"
             value={section.title}
-            onChange={(e) => {
-              onChange({ ...section, title: e.target.value });
+            onChange={e => {
+              onChange({ ...section, title: e.target.value })
             }}
             placeholder={t('Editor.sectionTitlePlaceholder')}
           />
@@ -1669,8 +1661,8 @@ const TextAndImageSectionEditor: FC<{
           <Textarea
             id="content"
             value={section.text}
-            onChange={(e) => {
-              onChange({ ...section, text: e.target.value });
+            onChange={e => {
+              onChange({ ...section, text: e.target.value })
             }}
             placeholder={t('TextAndImageEditor.contentPlaceholder')}
             className="min-h-[100px]"
@@ -1682,8 +1674,8 @@ const TextAndImageSectionEditor: FC<{
           <Label htmlFor="flow">{t('TextAndImageEditor.imagePositionLabel')}</Label>
           <Select
             value={section.flow}
-            onValueChange={(value) => {
-              onChange({ ...section, flow: value || section.flow });
+            onValueChange={value => {
+              onChange({ ...section, flow: value || section.flow })
             }}
             items={makeFlowItems(t)}
           >
@@ -1692,11 +1684,8 @@ const TextAndImageSectionEditor: FC<{
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {makeFlowItems(t).map((item) => (
-                  <SelectItem
-                    key={item.value}
-                    value={item.value}
-                  >
+                {makeFlowItems(t).map(item => (
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
@@ -1712,21 +1701,21 @@ const TextAndImageSectionEditor: FC<{
             <div className="space-y-2">
               <Input
                 value={section.image.url}
-                onChange={(e) => {
+                onChange={e => {
                   onChange({
                     ...section,
                     image: { ...section.image, url: e.target.value },
-                  });
+                  })
                 }}
                 placeholder={t('TextAndImageEditor.imageUrlPlaceholder')}
               />
               <ImageUploader
                 id="text-image-section"
-                onImageUploaded={(url) => {
+                onImageUploaded={url => {
                   onChange({
                     ...section,
                     image: { ...section.image, url },
-                  });
+                  })
                 }}
                 buttonText={t('TextAndImageEditor.uploadImageButton')}
                 t={t}
@@ -1735,11 +1724,11 @@ const TextAndImageSectionEditor: FC<{
             <div>
               <Input
                 value={section.image.alt}
-                onChange={(e) => {
+                onChange={e => {
                   onChange({
                     ...section,
                     image: { ...section.image, alt: e.target.value },
-                  });
+                  })
                 }}
                 placeholder={t('TextAndImageEditor.imageAltPlaceholder')}
               />
@@ -1759,13 +1748,13 @@ const TextAndImageSectionEditor: FC<{
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const LogosSectionEditor: FC<{
-  t: Function;
-  section: LandingLogos;
-  onChange: (section: LandingLogos) => void;
+  t: Function
+  section: LandingLogos
+  onChange: (section: LandingLogos) => void
 }> = ({ t, section, onChange }) => {
   return (
     <div className="bg-background space-y-6 rounded-lg p-6 shadow-sm">
@@ -1785,35 +1774,36 @@ const LogosSectionEditor: FC<{
             <Input
               id="title"
               value={section.title}
-              onChange={(e) => {
-                onChange({ ...section, title: e.target.value });
+              onChange={e => {
+                onChange({ ...section, title: e.target.value })
               }}
               placeholder={t('Editor.sectionTitlePlaceholder')}
             />
           </div>
 
           {section.logos.map((logo: LandingImage, index: number) => (
-            <div
-              key={index}
-              className="grid grid-cols-[1fr_1fr_auto] gap-2"
-            >
+            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
               <div className="space-y-2">
                 <Input
                   value={logo.url}
-                  onChange={(e) => {
-                    const newLogos = [...section.logos];
-                    newLogos[index] = { ...logo, url: e.target.value };
-                    onChange({ ...section, logos: newLogos });
+                  onChange={e => {
+                    const newLogos = [...section.logos]
+                    newLogos[index] = { ...logo, url: e.target.value }
+                    onChange({ ...section, logos: newLogos })
                   }}
                   placeholder={t('LogosEditor.logoUrlPlaceholder')}
                 />
                 <ImageUploader
                   id={`logo-${index}`}
-                  onImageUploaded={(url) => {
-                    const newLogos = [...section.logos];
-                    const existingLogo = section.logos[index];
-                    newLogos[index] = { ...existingLogo, url, alt: existingLogo?.alt || '' };
-                    onChange({ ...section, logos: newLogos });
+                  onImageUploaded={url => {
+                    const newLogos = [...section.logos]
+                    const existingLogo = section.logos[index]
+                    newLogos[index] = {
+                      ...existingLogo,
+                      url,
+                      alt: existingLogo?.alt || '',
+                    }
+                    onChange({ ...section, logos: newLogos })
                   }}
                   buttonText={t('LogosEditor.uploadButton')}
                   t={t}
@@ -1822,10 +1812,10 @@ const LogosSectionEditor: FC<{
               <div className="space-y-2">
                 <Input
                   value={logo.alt}
-                  onChange={(e) => {
-                    const newLogos = [...section.logos];
-                    newLogos[index] = { ...logo, alt: e.target.value };
-                    onChange({ ...section, logos: newLogos });
+                  onChange={e => {
+                    const newLogos = [...section.logos]
+                    newLogos[index] = { ...logo, alt: e.target.value }
+                    onChange({ ...section, logos: newLogos })
                   }}
                   placeholder={t('LogosEditor.logoAltPlaceholder')}
                 />
@@ -1844,10 +1834,10 @@ const LogosSectionEditor: FC<{
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const newLogos = section.logos.filter((_: LandingImage, i: number) => i !== index);
-                  onChange({ ...section, logos: newLogos });
+                onClick={e => {
+                  e.stopPropagation()
+                  const newLogos = section.logos.filter((_: LandingImage, i: number) => i !== index)
+                  onChange({ ...section, logos: newLogos })
                 }}
                 className="text-red-500 hover:bg-red-50 hover:text-red-600"
               >
@@ -1861,11 +1851,11 @@ const LogosSectionEditor: FC<{
               const newLogo: LandingImage = {
                 url: '',
                 alt: '',
-              };
+              }
               onChange({
                 ...section,
                 logos: [...section.logos, newLogo],
-              });
+              })
             }}
             className="w-full"
           >
@@ -1875,13 +1865,13 @@ const LogosSectionEditor: FC<{
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const PeopleSectionEditor: FC<{
-  t: Function;
-  section: LandingPeople;
-  onChange: (section: LandingPeople) => void;
+  t: Function
+  section: LandingPeople
+  onChange: (section: LandingPeople) => void
 }> = ({ t, section, onChange }) => {
   return (
     <div className="bg-background space-y-6 rounded-lg p-6 shadow-sm">
@@ -1899,8 +1889,8 @@ const PeopleSectionEditor: FC<{
           <Input
             id="title"
             value={section.title}
-            onChange={(e) => {
-              onChange({ ...section, title: e.target.value });
+            onChange={e => {
+              onChange({ ...section, title: e.target.value })
             }}
             placeholder={t('Editor.sectionTitlePlaceholder')}
           />
@@ -1919,10 +1909,10 @@ const PeopleSectionEditor: FC<{
                   <Label>{t('PeopleEditor.nameLabel')}</Label>
                   <Input
                     value={person.name}
-                    onChange={(e) => {
-                      const newPeople = [...section.people];
-                      newPeople[index] = { ...person, name: e.target.value };
-                      onChange({ ...section, people: newPeople });
+                    onChange={e => {
+                      const newPeople = [...section.people]
+                      newPeople[index] = { ...person, name: e.target.value }
+                      onChange({ ...section, people: newPeople })
                     }}
                     placeholder={t('PeopleEditor.namePlaceholder')}
                   />
@@ -1932,13 +1922,13 @@ const PeopleSectionEditor: FC<{
                   <Label>{t('PeopleEditor.usernameLabel')}</Label>
                   <Input
                     value={person.username || ''}
-                    onChange={(e) => {
-                      const newPeople = [...section.people];
+                    onChange={e => {
+                      const newPeople = [...section.people]
                       newPeople[index] = {
                         ...person,
                         username: e.target.value,
-                      };
-                      onChange({ ...section, people: newPeople });
+                      }
+                      onChange({ ...section, people: newPeople })
                     }}
                     placeholder={t('PeopleEditor.usernamePlaceholder')}
                   />
@@ -1949,21 +1939,21 @@ const PeopleSectionEditor: FC<{
                   <div className="space-y-2">
                     <Input
                       value={person.image_url}
-                      onChange={(e) => {
-                        const newPeople = [...section.people];
+                      onChange={e => {
+                        const newPeople = [...section.people]
                         newPeople[index] = {
                           ...person,
                           image_url: e.target.value,
-                        };
-                        onChange({ ...section, people: newPeople });
+                        }
+                        onChange({ ...section, people: newPeople })
                       }}
                       placeholder={t('PeopleEditor.imageUrlPlaceholder')}
                     />
                     <ImageUploader
                       id={`person-${index}`}
-                      onImageUploaded={(url) => {
-                        const newPeople = [...section.people];
-                        const existingPerson = section.people[index];
+                      onImageUploaded={url => {
+                        const newPeople = [...section.people]
+                        const existingPerson = section.people[index]
                         newPeople[index] = {
                           ...existingPerson,
                           image_url: url,
@@ -1971,8 +1961,8 @@ const PeopleSectionEditor: FC<{
                           name: existingPerson?.name || '',
                           description: existingPerson?.description || '',
                           username: existingPerson?.username || '',
-                        };
-                        onChange({ ...section, people: newPeople });
+                        }
+                        onChange({ ...section, people: newPeople })
                       }}
                       buttonText={t('PeopleEditor.uploadAvatarButton')}
                       t={t}
@@ -1995,13 +1985,13 @@ const PeopleSectionEditor: FC<{
                   <Label>{t('PeopleEditor.descriptionLabel')}</Label>
                   <Input
                     value={person.description}
-                    onChange={(e) => {
-                      const newPeople = [...section.people];
+                    onChange={e => {
+                      const newPeople = [...section.people]
                       newPeople[index] = {
                         ...person,
                         description: e.target.value,
-                      };
-                      onChange({ ...section, people: newPeople });
+                      }
+                      onChange({ ...section, people: newPeople })
                     }}
                     placeholder={t('PeopleEditor.descriptionPlaceholder')}
                   />
@@ -2011,10 +2001,10 @@ const PeopleSectionEditor: FC<{
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newPeople = section.people.filter((_: any, i: number) => i !== index);
-                      onChange({ ...section, people: newPeople });
+                    onClick={e => {
+                      e.stopPropagation()
+                      const newPeople = section.people.filter((_: any, i: number) => i !== index)
+                      onChange({ ...section, people: newPeople })
                     }}
                     className="text-red-500 hover:bg-red-50 hover:text-red-600"
                   >
@@ -2032,11 +2022,11 @@ const PeopleSectionEditor: FC<{
                   description: '',
                   image_url: '',
                   username: '',
-                };
+                }
                 onChange({
                   ...section,
                   people: [...section.people, newPerson],
-                });
+                })
               }}
               className="w-full"
             >
@@ -2047,16 +2037,16 @@ const PeopleSectionEditor: FC<{
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const FeaturedCoursesEditor: FC<{
-  t: Function;
-  section: LandingFeaturedCourses;
-  onChange: (section: LandingFeaturedCourses) => void;
+  t: Function
+  section: LandingFeaturedCourses
+  onChange: (section: LandingFeaturedCourses) => void
 }> = ({ t, section, onChange }) => {
-  const { data: coursesData } = usePlatformCourses();
-  const courses = coursesData?.courses;
+  const { data: coursesData } = usePlatformCourses()
+  const courses = coursesData?.courses
 
   return (
     <div className="bg-background space-y-6 rounded-lg p-6 shadow-sm">
@@ -2074,8 +2064,8 @@ const FeaturedCoursesEditor: FC<{
           <Input
             id="title"
             value={section.title}
-            onChange={(e) => {
-              onChange({ ...section, title: e.target.value });
+            onChange={e => {
+              onChange({ ...section, title: e.target.value })
             }}
             placeholder={t('Editor.sectionTitlePlaceholder')}
           />
@@ -2113,9 +2103,9 @@ const FeaturedCoursesEditor: FC<{
                       variant={section.courses.includes(course.course_uuid) ? 'default' : 'outline'}
                       onClick={() => {
                         const newCourses = section.courses.includes(course.course_uuid)
-                          ? section.courses.filter((id) => id !== course.course_uuid)
-                          : [...section.courses, course.course_uuid];
-                        onChange({ ...section, courses: newCourses });
+                          ? section.courses.filter(id => id !== course.course_uuid)
+                          : [...section.courses, course.course_uuid]
+                        onChange({ ...section, courses: newCourses })
                       }}
                     >
                       {section.courses.includes(course.course_uuid)
@@ -2126,13 +2116,15 @@ const FeaturedCoursesEditor: FC<{
                 ))}
               </div>
             ) : (
-              <div className="text-muted-foreground py-8 text-center">{t('FeaturedCoursesEditor.loadingCourses')}</div>
+              <div className="text-muted-foreground py-8 text-center">
+                {t('FeaturedCoursesEditor.loadingCourses')}
+              </div>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EditLanding;
+export default EditLanding

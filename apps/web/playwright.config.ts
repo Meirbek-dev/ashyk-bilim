@@ -1,31 +1,31 @@
-import { defineConfig, devices } from '@playwright/test';
-import * as fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
+import { defineConfig, devices } from '@playwright/test'
+import * as fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import * as path from 'node:path'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Minimal env loader — no external deps required in the config file
 function loadEnv(file: string): void {
-  if (!fs.existsSync(file)) return;
+  if (!fs.existsSync(file)) return
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const eq = t.indexOf('=');
-    if (eq === -1) continue;
-    const k = t.slice(0, eq).trim();
+    const t = line.trim()
+    if (!t || t.startsWith('#')) continue
+    const eq = t.indexOf('=')
+    if (eq === -1) continue
+    const k = t.slice(0, eq).trim()
     const v = t
       .slice(eq + 1)
       .trim()
-      .replace(/^["']|["']$/g, '');
-    if (k && !(k in process.env)) process.env[k] = v;
+      .replace(/^["']|["']$/g, '')
+    if (k && !(k in process.env)) process.env[k] = v
   }
 }
-loadEnv(path.join(__dirname, 'e2e/.env.test'));
-loadEnv(path.join(__dirname, 'e2e/.env.test.local'));
+loadEnv(path.join(__dirname, 'e2e/.env.test'))
+loadEnv(path.join(__dirname, 'e2e/.env.test.local'))
 
-const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.E2E_BASE_URL || `http://localhost:${PORT}`;
+const PORT = process.env.PORT || 3000
+const BASE_URL = process.env.E2E_BASE_URL || `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: './e2e/specs',
@@ -104,4 +104,4 @@ export default defineConfig({
     stderr: 'pipe',
     timeout: 120 * 1000,
   },
-});
+})

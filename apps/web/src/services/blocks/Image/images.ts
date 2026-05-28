@@ -1,18 +1,24 @@
-import { apiFetch, errorHandling } from '@/lib/api-client';
+import { apiFetch, errorHandling } from '@/lib/api-client'
 
 export interface UploadedImageBlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
+    file_id: string
+    file_format: string
+  }
 }
 
-export async function uploadNewImageFile(file: File, activity_uuid: string): Promise<UploadedImageBlockObject> {
-  const formData = new FormData();
-  formData.append('file_object', file);
-  formData.append('activity_uuid', activity_uuid);
+export async function uploadNewImageFile(
+  file: File,
+  activity_uuid: string,
+): Promise<UploadedImageBlockObject> {
+  const formData = new FormData()
+  formData.append('file_object', file)
+  formData.append('activity_uuid', activity_uuid)
 
-  const response = await apiFetch('blocks/image', { method: 'POST', body: formData });
-  return errorHandling(response);
+  const response = await apiFetch('blocks/image', {
+    method: 'POST',
+    body: formData,
+  })
+  return errorHandling(response)
 }

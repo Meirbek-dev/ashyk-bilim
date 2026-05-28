@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { BookOpen, ChevronDown, ExternalLink, Lightbulb, Save, Sigma } from 'lucide-react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import type { ChangeEvent } from 'react';
-import { renderToString } from 'katex';
-import { motion } from 'motion/react';
-import 'katex/dist/katex.min.css';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import { BookOpen, ChevronDown, ExternalLink, Lightbulb, Save, Sigma } from 'lucide-react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import type { ChangeEvent } from 'react'
+import { renderToString } from 'katex'
+import { motion } from 'motion/react'
+import 'katex/dist/katex.min.css'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 
 // Predefined LaTeX templates
 const mathTemplates = [
@@ -64,7 +64,7 @@ const mathTemplates = [
     latex: '\\begin{cases} a_1x + b_1y = c_1 \\\\ a_2x + b_2y = c_2 \\end{cases}',
     description: 'templateSystemEqDesc',
   },
-];
+]
 
 // Common LaTeX symbols
 const mathSymbols = [
@@ -83,98 +83,104 @@ const mathSymbols = [
   { symbol: '\\geq', display: '≥' },
   { symbol: '\\neq', display: '≠' },
   { symbol: '\\approx', display: '≈' },
-];
+]
 
 interface MathEquationNodeAttrs {
-  math_equation: string;
-  html?: string;
+  math_equation: string
+  html?: string
 }
 
 const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAttrs>) => {
-  const t = useTranslations('DashPage.Editor.MathEquationBlock');
-  const [equation, setEquation] = useState(props.node.attrs.math_equation);
-  const [isEditing, _setIsEditing] = useState(true);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showSymbols, setShowSymbols] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const editorState = useEditorProvider();
-  const { isEditable } = editorState;
-  const inputRef = useRef<HTMLInputElement>(null);
-  const templatesRef = useRef<HTMLDivElement>(null);
-  const symbolsRef = useRef<HTMLDivElement>(null);
-  const helpRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('DashPage.Editor.MathEquationBlock')
+  const [equation, setEquation] = useState(props.node.attrs.math_equation)
+  const [isEditing, _setIsEditing] = useState(true)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showSymbols, setShowSymbols] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const editorState = useEditorProvider()
+  const { isEditable } = editorState
+  const inputRef = useRef<HTMLInputElement>(null)
+  const templatesRef = useRef<HTMLDivElement>(null)
+  const symbolsRef = useRef<HTMLDivElement>(null)
+  const helpRef = useRef<HTMLDivElement>(null)
 
   // Close dropdowns when clicking outside
   const handleClickOutside = useEffectEvent((event: MouseEvent) => {
     if (templatesRef.current && !templatesRef.current.contains(event.target as Node)) {
-      setShowTemplates(false);
+      setShowTemplates(false)
     }
     if (symbolsRef.current && !symbolsRef.current.contains(event.target as Node)) {
-      setShowSymbols(false);
+      setShowSymbols(false)
     }
     if (helpRef.current && !helpRef.current.contains(event.target as Node)) {
-      setShowHelp(false);
+      setShowHelp(false)
     }
-  });
+  })
 
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleEquationChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const val = event.target.value;
-    setEquation(val);
+    const val = event.target.value
+    setEquation(val)
     props.updateAttributes({
       math_equation: val,
       html: renderToString(val, { displayMode: true, throwOnError: false }),
-    });
-  };
+    })
+  }
 
   const saveEquation = () => {
     props.updateAttributes({
       math_equation: equation,
       html: renderToString(equation, { displayMode: true, throwOnError: false }),
-    });
+    })
     // setIsEditing(false);
-  };
+  }
 
   const insertTemplate = (template: string) => {
-    setEquation(template);
+    setEquation(template)
     props.updateAttributes({
       math_equation: template,
       html: renderToString(template, { displayMode: true, throwOnError: false }),
-    });
-    setShowTemplates(false);
+    })
+    setShowTemplates(false)
 
     // Focus the input and place cursor at the end
     if (inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.setSelectionRange(template.length, template.length);
+      inputRef.current.focus()
+      inputRef.current.setSelectionRange(template.length, template.length)
     }
-  };
+  }
 
   const insertSymbol = (symbol: string) => {
-    const cursorPosition = inputRef.current?.selectionStart || equation.length;
-    const newEquation = equation.slice(0, cursorPosition) + symbol + equation.slice(cursorPosition);
+    const cursorPosition = inputRef.current?.selectionStart || equation.length
+    const newEquation = equation.slice(0, cursorPosition) + symbol + equation.slice(cursorPosition)
 
-    setEquation(newEquation);
+    setEquation(newEquation)
     props.updateAttributes({
       math_equation: newEquation,
-      html: renderToString(newEquation, { displayMode: true, throwOnError: false }),
-    });
+      html: renderToString(newEquation, {
+        displayMode: true,
+        throwOnError: false,
+      }),
+    })
 
     // Focus the input and place cursor after the inserted symbol
     // Use rAF instead of setTimeout(,0) for more predictable scheduling
     globalThis.requestAnimationFrame(() => {
       if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.setSelectionRange(cursorPosition + symbol.length, cursorPosition + symbol.length);
+        inputRef.current.focus()
+        inputRef.current.setSelectionRange(
+          cursorPosition + symbol.length,
+          cursorPosition + symbol.length,
+        )
       }
-    });
-  };
+    })
+  }
 
   return (
     <NodeViewWrapper className="block-math-equation">
@@ -193,8 +199,15 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
             <span
               dangerouslySetInnerHTML={{
                 __html: isEditable
-                  ? renderToString(equation, { displayMode: true, throwOnError: false })
-                  : props.node.attrs.html || renderToString(equation, { displayMode: true, throwOnError: false }),
+                  ? renderToString(equation, {
+                      displayMode: true,
+                      throwOnError: false,
+                    })
+                  : props.node.attrs.html ||
+                    renderToString(equation, {
+                      displayMode: true,
+                      throwOnError: false,
+                    }),
               }}
             />
           </div>
@@ -207,13 +220,10 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
               className="space-y-3"
             >
               <div className="flex space-x-2">
-                <div
-                  ref={templatesRef}
-                  className="relative"
-                >
+                <div ref={templatesRef} className="relative">
                   <button
                     onClick={() => {
-                      setShowTemplates(!showTemplates);
+                      setShowTemplates(!showTemplates)
                     }}
                     className="bg-muted/40 text-foreground flex cursor-pointer items-center space-x-1 rounded-[6px] border-0 px-[10px] py-[6px] text-[13px]"
                   >
@@ -227,13 +237,15 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
 
                   {showTemplates ? (
                     <div className="border-border absolute left-0 z-10 mt-1 max-h-80 w-64 overflow-y-auto rounded-[8px] border bg-white shadow-lg">
-                      <div className="border-b p-2 text-xs text-zinc-500">{t('selectTemplate')}</div>
+                      <div className="border-b p-2 text-xs text-zinc-500">
+                        {t('selectTemplate')}
+                      </div>
                       {mathTemplates.map((template, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => {
-                            insertTemplate(template.latex);
+                            insertTemplate(template.latex)
                           }}
                           className="hover:bg-muted/20 w-full px-3 py-2 text-left [transition:background_0.15s]"
                         >
@@ -247,13 +259,10 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   ) : null}
                 </div>
 
-                <div
-                  ref={symbolsRef}
-                  className="relative"
-                >
+                <div ref={symbolsRef} className="relative">
                   <button
                     onClick={() => {
-                      setShowSymbols(!showSymbols);
+                      setShowSymbols(!showSymbols)
                     }}
                     className="bg-muted/40 text-foreground flex cursor-pointer items-center space-x-1 rounded-[6px] border-0 px-[10px] py-[6px] text-[13px]"
                   >
@@ -273,7 +282,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                           <button
                             key={index}
                             onClick={() => {
-                              insertSymbol(symbol.symbol);
+                              insertSymbol(symbol.symbol)
                             }}
                             title={symbol.symbol}
                             className="bg-muted/30 text-foreground m-[2px] flex h-8 w-8 cursor-pointer items-center justify-center rounded-[4px] border-0 text-base"
@@ -286,13 +295,10 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   ) : null}
                 </div>
 
-                <div
-                  ref={helpRef}
-                  className="relative"
-                >
+                <div ref={helpRef} className="relative">
                   <button
                     onClick={() => {
-                      setShowHelp(!showHelp);
+                      setShowHelp(!showHelp)
                     }}
                     className="bg-muted/40 text-foreground flex cursor-pointer items-center space-x-1 rounded-[6px] border-0 px-[10px] py-[6px] text-[13px]"
                   >
@@ -306,7 +312,9 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
 
                   {showHelp ? (
                     <div className="border-border absolute left-0 z-10 mt-1 w-72 overflow-hidden rounded-[8px] border bg-white shadow-lg">
-                      <div className="border-b p-2 text-xs font-medium text-zinc-700">{t('quickReference')}</div>
+                      <div className="border-b p-2 text-xs font-medium text-zinc-700">
+                        {t('quickReference')}
+                      </div>
                       <div className="space-y-2 p-3 text-xs">
                         <div>
                           <span className="font-medium">{t('fractions')}</span> {'\\frac{'}
@@ -350,10 +358,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                             target="_blank"
                           >
                             {t('completeReference')}
-                            <ExternalLink
-                              size={10}
-                              className="ml-1"
-                            />
+                            <ExternalLink size={10} className="ml-1" />
                           </Link>
                         </div>
                       </div>
@@ -374,7 +379,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                 <motion.button
                   className="bg-muted/50 text-foreground flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-[6px] border-0"
                   onClick={() => {
-                    saveEquation();
+                    saveEquation()
                   }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -392,10 +397,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   target="_blank"
                 >
                   {t('guideLink')}
-                  <ExternalLink
-                    size={12}
-                    className="ml-1"
-                  />
+                  <ExternalLink size={12} className="ml-1" />
                 </Link>
                 <span>{t('supportedFunctions')}</span>
               </div>
@@ -404,7 +406,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
         </div>
       </motion.div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default MathEquationBlockComponent;
+export default MathEquationBlockComponent

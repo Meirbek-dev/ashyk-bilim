@@ -1,15 +1,15 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react'
 
 // ── Persisted shape ───────────────────────────────────────────────────────────
 
 export interface PersistedAttemptData<T = unknown> {
-  attemptUuid: string;
-  answers: T;
-  lastSaved: number;
+  attemptUuid: string
+  answers: T
+  lastSaved: number
   /** Bumped when the stored schema changes so old entries are discarded. */
-  version: number;
+  version: number
 }
 
 // ── Options ───────────────────────────────────────────────────────────────────
@@ -19,39 +19,39 @@ export interface UseAssessmentAttemptOptions<T = unknown> {
    * Unique identifier for the in-progress attempt. Used as the localStorage key
    * suffix so multiple concurrent attempts never collide.
    */
-  attemptUuid: string;
+  attemptUuid: string
   /**
    * Called once on mount when recoverable answers exist for this attempt.
    * The caller decides what to do (e.g. show a recovery dialog).
    */
-  onRestore?: (answers: T) => void;
+  onRestore?: (answers: T) => void
   /** Milliseconds between auto-saves.  0 = save synchronously on every call. */
-  autoSaveInterval?: number;
+  autoSaveInterval?: number
   /** Hours after which stored data is considered expired and purged. */
-  expirationHours?: number;
+  expirationHours?: number
   /**
    * Storage key prefix.  Defaults to `'assessment_answers_'`.
    * Override to namespace exam vs. quiz attempts if needed (usually unnecessary
    * since `attemptUuid` already makes keys unique).
    */
-  storageKeyPrefix?: string;
+  storageKeyPrefix?: string
   /** Optional function to validate draft schema before recovery. */
-  validate?: (answers: any) => boolean;
+  validate?: (answers: any) => boolean
 }
 
 // ── Return type ───────────────────────────────────────────────────────────────
 
 export interface UseAssessmentAttemptReturn<T = unknown> {
   /** Persist answers. May be debounced by `autoSaveInterval`. */
-  saveAnswers: (answers: T) => void;
+  saveAnswers: (answers: T) => void
   /** Remove the localStorage entry for this attempt (call on successful submit). */
-  clearSavedAnswers: () => void;
+  clearSavedAnswers: () => void
   /** Returns the stored data if it is still valid, or `null` otherwise. */
-  getRecoverableData: () => PersistedAttemptData<T> | null;
+  getRecoverableData: () => PersistedAttemptData<T> | null
 }
 
-const DEFAULT_PREFIX = 'assessment_answers_';
-const SCHEMA_VERSION = 1;
+const DEFAULT_PREFIX = 'assessment_answers_'
+const SCHEMA_VERSION = 1
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
@@ -70,55 +70,55 @@ export function useAssessmentAttempt<T = unknown>({
   storageKeyPrefix = DEFAULT_PREFIX,
   validate,
 }: UseAssessmentAttemptOptions<T>): UseAssessmentAttemptReturn<T> {
-  const storageKey = `${storageKeyPrefix}${attemptUuid}`;
-  const pendingAnswersRef = useRef<T | null>(null);
-  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onRestoreRef = useRef(onRestore);
+  const storageKey = `${storageKeyPrefix}${attemptUuid}`
+  const pendingAnswersRef = useRef<T | null>(null)
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const onRestoreRef = useRef(onRestore)
 
   useEffect(() => {
-    onRestoreRef.current = onRestore;
-  }, [onRestore]);
+    onRestoreRef.current = onRestore
+  }, [onRestore])
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   const isExpired = useCallback(
     (entry: PersistedAttemptData<T>): boolean => {
-      const expirationMs = expirationHours * 60 * 60 * 1000;
-      return Date.now() - entry.lastSaved > expirationMs;
+      const expirationMs = expirationHours * 60 * 60 * 1000
+      return Date.now() - entry.lastSaved > expirationMs
     },
     [expirationHours],
-  );
+  )
 
   const purgeExpired = useCallback(() => {
-    if (typeof globalThis.window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return
     try {
-      const toRemove: string[] = [];
+      const toRemove: string[] = []
       for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (!key?.startsWith(storageKeyPrefix)) continue;
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
+        const key = localStorage.key(i)
+        if (!key?.startsWith(storageKeyPrefix)) continue
+        const raw = localStorage.getItem(key)
+        if (!raw) continue
         try {
-          const entry = JSON.parse(raw) as PersistedAttemptData<T>;
-          if (isExpired(entry)) toRemove.push(key);
+          const entry = JSON.parse(raw) as PersistedAttemptData<T>
+          if (isExpired(entry)) toRemove.push(key)
         } catch {
-          toRemove.push(key); // corrupt entry
+          toRemove.push(key) // corrupt entry
         }
       }
-      for (const k of toRemove) localStorage.removeItem(k);
+      for (const k of toRemove) localStorage.removeItem(k)
     } catch {
       // localStorage unavailable (SSR, private browsing quota)
     }
-  }, [isExpired, storageKeyPrefix]);
+  }, [isExpired, storageKeyPrefix])
 
   // ── Read ─────────────────────────────────────────────────────────────────────
 
   const getRecoverableData = useCallback((): PersistedAttemptData<T> | null => {
-    if (typeof globalThis.window === 'undefined') return null;
+    if (typeof globalThis.window === 'undefined') return null
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return null;
-      const entry = JSON.parse(raw) as PersistedAttemptData<T>;
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) return null
+      const entry = JSON.parse(raw) as PersistedAttemptData<T>
       if (
         entry.attemptUuid !== attemptUuid ||
         entry.version !== SCHEMA_VERSION ||
@@ -126,43 +126,48 @@ export function useAssessmentAttempt<T = unknown>({
         !entry.answers ||
         (typeof entry.answers === 'object' && Object.keys(entry.answers).length === 0)
       ) {
-        return null;
+        return null
       }
       if (validate && !validate(entry.answers)) {
         try {
-          localStorage.removeItem(storageKey);
+          localStorage.removeItem(storageKey)
         } catch {
           // Ignore storage access errors
         }
-        return null;
+        return null
       }
-      return entry;
+      return entry
     } catch {
-      return null;
+      return null
     }
-  }, [attemptUuid, isExpired, storageKey, validate]);
+  }, [attemptUuid, isExpired, storageKey, validate])
 
   // ── Write ─────────────────────────────────────────────────────────────────────
 
   const persist = useCallback(
     (answers: T) => {
-      if (typeof globalThis.window === 'undefined') return;
+      if (typeof globalThis.window === 'undefined') return
       try {
         const entry: PersistedAttemptData<T> = {
           attemptUuid,
           answers,
           lastSaved: Date.now(),
           version: SCHEMA_VERSION,
-        };
-        localStorage.setItem(storageKey, JSON.stringify(entry));
+        }
+        localStorage.setItem(storageKey, JSON.stringify(entry))
       } catch (error) {
         if (error instanceof Error && error.name === 'QuotaExceededError') {
-          purgeExpired();
+          purgeExpired()
           try {
             localStorage.setItem(
               storageKey,
-              JSON.stringify({ attemptUuid, answers, lastSaved: Date.now(), version: SCHEMA_VERSION }),
-            );
+              JSON.stringify({
+                attemptUuid,
+                answers,
+                lastSaved: Date.now(),
+                version: SCHEMA_VERSION,
+              }),
+            )
           } catch {
             // Quota still exceeded after purge — silently drop.
           }
@@ -170,53 +175,53 @@ export function useAssessmentAttempt<T = unknown>({
       }
     },
     [attemptUuid, purgeExpired, storageKey],
-  );
+  )
 
   const saveAnswers = useCallback(
     (answers: T) => {
-      pendingAnswersRef.current = answers;
-      if (autoSaveInterval <= 0) persist(answers);
+      pendingAnswersRef.current = answers
+      if (autoSaveInterval <= 0) persist(answers)
     },
     [autoSaveInterval, persist],
-  );
+  )
 
   const clearSavedAnswers = useCallback(() => {
-    if (typeof globalThis.window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return
     try {
-      localStorage.removeItem(storageKey);
-      pendingAnswersRef.current = null;
+      localStorage.removeItem(storageKey)
+      pendingAnswersRef.current = null
     } catch {
       // ignore
     }
-  }, [storageKey]);
+  }, [storageKey])
 
   // ── Auto-save interval ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (autoSaveInterval <= 0) return;
+    if (autoSaveInterval <= 0) return
     autoSaveTimerRef.current = setInterval(() => {
       if (pendingAnswersRef.current !== null) {
-        persist(pendingAnswersRef.current);
+        persist(pendingAnswersRef.current)
       }
-    }, autoSaveInterval);
+    }, autoSaveInterval)
     return () => {
-      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
-    };
-  }, [autoSaveInterval, persist]);
+      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current)
+    }
+  }, [autoSaveInterval, persist])
 
   // ── Mount: purge stale + check recovery ──────────────────────────────────────
 
   useEffect(() => {
-    purgeExpired();
-  }, [purgeExpired]);
+    purgeExpired()
+  }, [purgeExpired])
 
   useEffect(() => {
-    const data = getRecoverableData();
+    const data = getRecoverableData()
     if (data && onRestoreRef.current) {
-      onRestoreRef.current(data.answers);
+      onRestoreRef.current(data.answers)
     }
     // Run once on mount only.
-  }, [getRecoverableData]);
+  }, [getRecoverableData])
 
-  return { saveAnswers, clearSavedAnswers, getRecoverableData };
+  return { saveAnswers, clearSavedAnswers, getRecoverableData }
 }

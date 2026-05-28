@@ -9,39 +9,39 @@
  * RETURNED_FOR_REVISION — feedback visible, student may re-submit (RETURNED)
  */
 
-import type { SubmissionStatus } from './submission-status';
+import type { SubmissionStatus } from './submission-status'
 
-export type ReleaseState = 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION';
+export type ReleaseState = 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION'
 
 export const RELEASE_STATE_LABELS: Record<ReleaseState, string> = {
   HIDDEN: 'Hidden from student',
   AWAITING_RELEASE: 'Awaiting release',
   VISIBLE: 'Visible to student',
   RETURNED_FOR_REVISION: 'Returned for revision',
-};
+}
 
 export function getReleaseState(status: SubmissionStatus): ReleaseState {
   switch (status) {
     case 'GRADED': {
-      return 'AWAITING_RELEASE';
+      return 'AWAITING_RELEASE'
     }
     case 'PUBLISHED': {
-      return 'VISIBLE';
+      return 'VISIBLE'
     }
     case 'RETURNED': {
-      return 'RETURNED_FOR_REVISION';
+      return 'RETURNED_FOR_REVISION'
     }
     default: {
-      return 'HIDDEN';
+      return 'HIDDEN'
     }
   }
 }
 
 export function isVisibleToStudent(status: SubmissionStatus): boolean {
-  const state = getReleaseState(status);
-  return state === 'VISIBLE' || state === 'RETURNED_FOR_REVISION';
+  const state = getReleaseState(status)
+  return state === 'VISIBLE' || state === 'RETURNED_FOR_REVISION'
 }
 
 export function hasStudentFeedback(status: SubmissionStatus): boolean {
-  return isVisibleToStudent(status);
+  return isVisibleToStudent(status)
 }

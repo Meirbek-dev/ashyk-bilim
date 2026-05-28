@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
-import { getAbsoluteUrl } from '@services/config/config';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import NextImage from '@components/ui/NextImage';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index'
+import { getAbsoluteUrl } from '@services/config/config'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import NextImage from '@components/ui/NextImage'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
 interface FixedActivitySecondaryBarProps {
-  course: any;
-  currentActivityId: string;
-  activity: any;
+  course: any
+  currentActivityId: string
+  activity: any
 }
 
 // Navigation buttons component
@@ -25,30 +25,29 @@ const NavigationButtons = ({
   navigateToActivity,
   t,
 }: {
-  prevActivity: any;
-  nextActivity: any;
-  currentIndex: number;
-  allActivities: any[];
-  navigateToActivity: (activity: any) => void;
-  t: (key: string, values?: Record<string, any>) => string;
+  prevActivity: any
+  nextActivity: any
+  currentIndex: number
+  allActivities: any[]
+  navigateToActivity: (activity: any) => void
+  t: (key: string, values?: Record<string, any>) => string
 }) => (
   <div className="flex items-center gap-1">
     <button
       onClick={() => {
-        navigateToActivity(prevActivity);
+        navigateToActivity(prevActivity)
       }}
       disabled={!prevActivity}
       className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors disabled:pointer-events-none disabled:opacity-30"
       title={
         prevActivity
-          ? t('NavigationButtons.previousActivityTitle', { activityName: prevActivity.name })
+          ? t('NavigationButtons.previousActivityTitle', {
+              activityName: prevActivity.name,
+            })
           : t('NavigationButtons.noPreviousActivity')
       }
     >
-      <ChevronLeft
-        size={15}
-        className="shrink-0"
-      />
+      <ChevronLeft size={15} className="shrink-0" />
       <div className="hidden flex-col items-start sm:flex">
         <span className="text-muted-foreground text-xs">{t('NavigationButtons.previous')}</span>
         <span className="text-foreground max-w-[120px] truncate text-left text-xs font-medium">
@@ -63,13 +62,15 @@ const NavigationButtons = ({
 
     <button
       onClick={() => {
-        navigateToActivity(nextActivity);
+        navigateToActivity(nextActivity)
       }}
       disabled={!nextActivity}
       className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors disabled:pointer-events-none disabled:opacity-30"
       title={
         nextActivity
-          ? t('NavigationButtons.nextActivityTitle', { activityName: nextActivity.name })
+          ? t('NavigationButtons.nextActivityTitle', {
+              activityName: nextActivity.name,
+            })
           : t('NavigationButtons.noNextActivity')
       }
     >
@@ -79,16 +80,19 @@ const NavigationButtons = ({
           {nextActivity ? nextActivity.name : '—'}
         </span>
       </div>
-      <ChevronRight
-        size={15}
-        className="shrink-0"
-      />
+      <ChevronRight size={15} className="shrink-0" />
     </button>
   </div>
-);
+)
 
 // Course info component
-const CourseInfo = ({ course, t }: { course: any; t: (key: string, values?: Record<string, any>) => string }) => (
+const CourseInfo = ({
+  course,
+  t,
+}: {
+  course: any
+  t: (key: string, values?: Record<string, any>) => string
+}) => (
   <div className="flex min-w-0 shrink items-center gap-3">
     <div className="relative h-8 w-[52px] shrink-0 overflow-hidden rounded">
       <NextImage
@@ -108,71 +112,77 @@ const CourseInfo = ({ course, t }: { course: any; t: (key: string, values?: Reco
       <p className="text-foreground truncate text-sm font-semibold">{course.name}</p>
     </div>
   </div>
-);
+)
 
-export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryBarProps): ReactNode {
-  const router = useRouter();
-  const t = useTranslations('FixedActivitySecondaryBar');
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [shouldShow, setShouldShow] = useState(false);
-  const mainActivityInfoRef = useRef<HTMLDivElement | null>(null);
-  const activityIndex = useMemo(() => buildCourseActivityIndex(props.course.chapters), [props.course.chapters]);
-  const cleanCurrentActivityId = normalizeActivityUuid(props.currentActivityId);
-  const { allActivities } = activityIndex;
-  const currentIndex = activityIndex.indexByCleanUuid.get(cleanCurrentActivityId) ?? -1;
+export default function FixedActivitySecondaryBar(
+  props: FixedActivitySecondaryBarProps,
+): ReactNode {
+  const router = useRouter()
+  const t = useTranslations('FixedActivitySecondaryBar')
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [shouldShow, setShouldShow] = useState(false)
+  const mainActivityInfoRef = useRef<HTMLDivElement | null>(null)
+  const activityIndex = useMemo(
+    () => buildCourseActivityIndex(props.course.chapters),
+    [props.course.chapters],
+  )
+  const cleanCurrentActivityId = normalizeActivityUuid(props.currentActivityId)
+  const { allActivities } = activityIndex
+  const currentIndex = activityIndex.indexByCleanUuid.get(cleanCurrentActivityId) ?? -1
 
-  const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null;
-  const nextActivity = currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
+  const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null
+  const nextActivity =
+    currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null
 
   const navigateToActivity = (activity: any) => {
-    if (!activity) return;
+    if (!activity) return
 
-    const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
-    router.push(`${getAbsoluteUrl('')}/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`);
-  };
+    const cleanCourseUuid = props.course.course_uuid?.replace('course_', '')
+    router.push(`${getAbsoluteUrl('')}/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`)
+  }
 
   useEffect(() => {
-    let rafId: number | null = null;
+    let rafId: number | null = null
     const handleScroll = () => {
-      if (rafId) cancelAnimationFrame(rafId);
+      if (rafId) cancelAnimationFrame(rafId)
       rafId = requestAnimationFrame(() => {
-        setIsScrolled(window.scrollY > 0);
-      });
-    };
+        setIsScrolled(window.scrollY > 0)
+      })
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry) {
-          setShouldShow(!entry.isIntersecting);
+          setShouldShow(!entry.isIntersecting)
         }
       },
       {
         threshold: [0, 0.1, 1],
         rootMargin: '-80px 0px 0px 0px',
       },
-    );
+    )
 
-    const mainActivityInfo = document.querySelector('.activity-info-section');
+    const mainActivityInfo = document.querySelector('.activity-info-section')
     if (mainActivityInfo) {
-      mainActivityInfoRef.current = mainActivityInfo as HTMLDivElement;
-      observer.observe(mainActivityInfo);
+      mainActivityInfoRef.current = mainActivityInfo as HTMLDivElement
+      observer.observe(mainActivityInfo)
     }
 
-    const listenerOptions = { passive: true } as any;
-    window.addEventListener('scroll', handleScroll, listenerOptions);
+    const listenerOptions = { passive: true } as any
+    window.addEventListener('scroll', handleScroll, listenerOptions)
 
     return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', handleScroll, listenerOptions);
+      if (rafId) cancelAnimationFrame(rafId)
+      window.removeEventListener('scroll', handleScroll, listenerOptions)
       try {
-        observer.disconnect();
+        observer.disconnect()
       } catch {
         // ignore
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  if (!shouldShow) return null;
+  if (!shouldShow) return null
 
   return (
     <div
@@ -182,10 +192,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
     >
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-between gap-4">
-          <CourseInfo
-            course={props.course}
-            t={t}
-          />
+          <CourseInfo course={props.course} t={t} />
 
           <NavigationButtons
             prevActivity={prevActivity}
@@ -198,5 +205,5 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,36 +1,30 @@
-'use client';
+'use client'
 
-import { EmptyState, GamificationCard, LoadingState, getXPSourceTheme } from '@/lib/gamification';
-import { useDateFnsLocale } from '@/hooks/useDateFnsLocale';
-import type { XPTransaction } from '@/types/gamification';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatDistanceToNow } from 'date-fns';
-import { useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { EmptyState, GamificationCard, LoadingState, getXPSourceTheme } from '@/lib/gamification'
+import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
+import type { XPTransaction } from '@/types/gamification'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { formatDistanceToNow } from 'date-fns'
+import { useTranslations } from 'next-intl'
+import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 interface RecentActivityFeedProps {
-  transactions: XPTransaction[];
-  isLoading?: boolean;
+  transactions: XPTransaction[]
+  isLoading?: boolean
 }
 
 export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFeedProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const locale = useDateFnsLocale();
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const locale = useDateFnsLocale()
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   if (!mounted || isLoading) {
-    return (
-      <LoadingState
-        title={t('dashboard.recentActivity')}
-        variant="feed"
-        itemCount={5}
-      />
-    );
+    return <LoadingState title={t('dashboard.recentActivity')} variant="feed" itemCount={5} />
   }
 
   if (!transactions || transactions.length === 0) {
@@ -40,21 +34,21 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
         message={t('dashboard.noActivityDescription')}
         variant="info"
       />
-    );
+    )
   }
 
   return (
     <GamificationCard title={t('dashboard.recentActivity')}>
       <ScrollArea className="max-h-[500] pr-4">
         <div className="space-y-3">
-          {transactions.map((transaction) => {
-            const theme = getXPSourceTheme(transaction.source);
+          {transactions.map(transaction => {
+            const theme = getXPSourceTheme(transaction.source)
             const timeAgo = transaction.created_at
               ? formatDistanceToNow(new Date(transaction.created_at), {
                   addSuffix: true,
                   locale,
                 })
-              : '';
+              : ''
 
             return (
               <div
@@ -65,7 +59,9 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
                   <theme.icon className={cn('h-3.5 w-3.5', theme.color)} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{t(`xpSources.${transaction.source}`)}</p>
+                  <p className="truncate text-sm font-medium">
+                    {t(`xpSources.${transaction.source}`)}
+                  </p>
                   <p className="text-muted-foreground text-xs">{timeAgo}</p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -73,10 +69,10 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
                   <p className="text-muted-foreground text-xs">XP</p>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       </ScrollArea>
     </GamificationCard>
-  );
+  )
 }

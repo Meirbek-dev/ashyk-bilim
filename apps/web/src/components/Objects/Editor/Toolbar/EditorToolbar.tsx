@@ -1,33 +1,28 @@
-'use client';
+'use client'
 
-import { useTiptap, useTiptapState } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import { useRef } from 'react';
-import { Globe2 } from 'lucide-react';
-import { useTheme } from '@/components/providers/theme-provider';
-import appLogoDark from '@public/app_logo.svg';
-import appLogoLight from '@public/app_logo_light.svg';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useEmbedPanelStore } from './EmbedPanel/EmbedPanelStore';
+import { useTiptap, useTiptapState } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
+import { useRef } from 'react'
+import { Globe2 } from 'lucide-react'
+import { useTheme } from '@/components/providers/theme-provider'
+import appLogoDark from '@public/app_logo.svg'
+import appLogoLight from '@public/app_logo_light.svg'
+import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useEmbedPanelStore } from './EmbedPanel/EmbedPanelStore'
 
-import { UndoRedoGroup } from './UndoRedoGroup';
-import { TextFormatGroup } from './TextFormatGroup';
-import { HeadingDropdown } from './HeadingDropdown';
-import { CodeBlockLanguageDropdown } from './CodeBlockLanguageDropdown';
-import { LinkToggle } from './LinkToggle';
-import { ListDropdown } from './ListDropdown';
-import { TableDropdown } from './TableDropdown';
-import { InsertButtons } from './InsertButtons';
+import { UndoRedoGroup } from './UndoRedoGroup'
+import { TextFormatGroup } from './TextFormatGroup'
+import { HeadingDropdown } from './HeadingDropdown'
+import { CodeBlockLanguageDropdown } from './CodeBlockLanguageDropdown'
+import { LinkToggle } from './LinkToggle'
+import { ListDropdown } from './ListDropdown'
+import { TableDropdown } from './TableDropdown'
+import { InsertButtons } from './InsertButtons'
 
-const ToolbarSeparator = () => (
-  <Separator
-    orientation="vertical"
-    className="mx-1 h-4 self-center"
-  />
-);
+const ToolbarSeparator = () => <Separator orientation="vertical" className="mx-1 h-4 self-center" />
 
 /**
  * The `useTiptapState` selector for `EditorToolbar`.
@@ -39,10 +34,10 @@ const ToolbarSeparator = () => (
  */
 export interface ToolbarStateSnap {
   editor: {
-    isActive: (name: string, attrs?: Record<string, unknown>) => boolean;
-    can: () => { undo: () => boolean; redo: () => boolean };
-    getAttributes: (name: string) => Record<string, unknown>;
-  };
+    isActive: (name: string, attrs?: Record<string, unknown>) => boolean
+    can: () => { undo: () => boolean; redo: () => boolean }
+    getAttributes: (name: string) => Record<string, unknown>
+  }
 }
 
 export function selectToolbarState(snap: ToolbarStateSnap) {
@@ -71,34 +66,34 @@ export function selectToolbarState(snap: ToolbarStateSnap) {
     canRedo: snap.editor.can().redo(),
     codeBlockLanguage: (snap.editor.getAttributes('codeBlock').language as string) ?? null,
     linkHref: (snap.editor.getAttributes('link').href as string) ?? '',
-  };
+  }
 }
 
 interface EditorToolbarProps {
-  onAIToggle: () => void;
+  onAIToggle: () => void
 }
 
 export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
-  const t = useTranslations('DashPage.Editor.Toolbar');
-  const tCommon = useTranslations('Common');
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? appLogoDark : appLogoLight;
+  const t = useTranslations('DashPage.Editor.Toolbar')
+  const tCommon = useTranslations('Common')
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === 'dark' ? appLogoDark : appLogoLight
 
   // Access the editor instance from the <Tiptap> context (Requirement 1.1).
-  const { editor } = useTiptap();
+  const { editor } = useTiptap()
 
   // Subscribe to only the primitive state slices the toolbar needs.
   // useTiptapState deep-compares by default, so the toolbar only re-renders
   // when these specific values change (Requirements 1.4, 2.2, 2.4).
-  const toolbarState = useTiptapState(selectToolbarState);
+  const toolbarState = useTiptapState(selectToolbarState)
 
   // Ref for the Embed button — passed to EmbedPanelStore so focus can be
   // returned to the trigger when the panel closes (Requirement 12.6).
-  const embedTriggerRef = useRef<HTMLButtonElement>(null);
-  const openEmbedPanel = useEmbedPanelStore((s) => s.open);
+  const embedTriggerRef = useRef<HTMLButtonElement>(null)
+  const openEmbedPanel = useEmbedPanelStore(s => s.open)
 
   // Only render the toolbar once the editor is ready (Requirement 1.4).
-  if (!editor || !toolbarState) return null;
+  if (!editor || !toolbarState) return null
 
   return (
     <div
@@ -119,16 +114,9 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
         isStrike={toolbarState.isStrike}
       />
       <ToolbarSeparator />
-      <HeadingDropdown
-        editor={editor}
-        headingLevel={toolbarState.headingLevel}
-      />
+      <HeadingDropdown editor={editor} headingLevel={toolbarState.headingLevel} />
       <ToolbarSeparator />
-      <LinkToggle
-        editor={editor}
-        isLink={toolbarState.isLink}
-        linkHref={toolbarState.linkHref}
-      />
+      <LinkToggle editor={editor} isLink={toolbarState.isLink} linkHref={toolbarState.linkHref} />
       <ToolbarSeparator />
       <ListDropdown
         editor={editor}
@@ -136,10 +124,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
         isOrderedList={toolbarState.isOrderedList}
       />
       {toolbarState.isCodeBlock ? (
-        <CodeBlockLanguageDropdown
-          editor={editor}
-          language={toolbarState.codeBlockLanguage}
-        />
+        <CodeBlockLanguageDropdown editor={editor} language={toolbarState.codeBlockLanguage} />
       ) : null}
       <TableDropdown editor={editor} />
       <ToolbarSeparator />
@@ -194,5 +179,5 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
         </button>
       </div>
     </div>
-  );
+  )
 }

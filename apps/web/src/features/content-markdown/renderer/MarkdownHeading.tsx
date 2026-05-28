@@ -1,9 +1,9 @@
-'use client';
+'use client'
 
-import { Link } from 'lucide-react';
-import { isValidElement } from 'react';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { Link } from 'lucide-react'
+import { isValidElement } from 'react'
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 export function slugifyMarkdownHeading(text: string): string {
   return text
@@ -11,22 +11,22 @@ export function slugifyMarkdownHeading(text: string): string {
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim();
+    .trim()
 }
 
 export function extractMarkdownHeadingText(children: ReactNode): string {
-  if (typeof children === 'string') return children;
-  if (Array.isArray(children)) return children.map(extractMarkdownHeadingText).join('');
+  if (typeof children === 'string') return children
+  if (Array.isArray(children)) return children.map(extractMarkdownHeadingText).join('')
   if (isValidElement<{ children?: ReactNode }>(children)) {
-    return extractMarkdownHeadingText(children.props.children);
+    return extractMarkdownHeadingText(children.props.children)
   }
-  return '';
+  return ''
 }
 
 interface MarkdownHeadingProps extends ComponentPropsWithoutRef<'h1'> {
-  level: 1 | 2 | 3 | 4 | 5 | 6;
-  anchorId?: string;
-  onAnchorClick?: (id: string) => void;
+  level: 1 | 2 | 3 | 4 | 5 | 6
+  anchorId?: string
+  onAnchorClick?: (id: string) => void
 }
 
 const HEADING_CLASS: Record<number, string> = {
@@ -36,7 +36,7 @@ const HEADING_CLASS: Record<number, string> = {
   4: 'text-base font-semibold mt-4 mb-2',
   5: 'text-sm font-semibold mt-3 mb-1',
   6: 'text-xs font-semibold mt-2 mb-1',
-};
+}
 
 const HEADING_TAG = {
   1: 'h1',
@@ -45,7 +45,7 @@ const HEADING_TAG = {
   4: 'h4',
   5: 'h5',
   6: 'h6',
-} as const;
+} as const
 
 export function MarkdownHeading({
   level,
@@ -55,9 +55,9 @@ export function MarkdownHeading({
   onAnchorClick,
   ...props
 }: MarkdownHeadingProps) {
-  const Tag = HEADING_TAG[level];
-  const text = extractMarkdownHeadingText(children);
-  const id = anchorId ?? slugifyMarkdownHeading(text);
+  const Tag = HEADING_TAG[level]
+  const text = extractMarkdownHeadingText(children)
+  const id = anchorId ?? slugifyMarkdownHeading(text)
 
   return (
     <Tag
@@ -70,15 +70,15 @@ export function MarkdownHeading({
         href={`#${id}`}
         className="text-muted-foreground/0 group-hover:text-muted-foreground/60 -ml-1 opacity-0 transition-opacity group-hover:opacity-100"
         aria-label={`Link to ${text}`}
-        onClick={(e) => {
+        onClick={e => {
           if (onAnchorClick) {
-            e.preventDefault();
-            onAnchorClick(id);
+            e.preventDefault()
+            onAnchorClick(id)
           }
         }}
       >
         <Link className="size-3.5" />
       </a>
     </Tag>
-  );
+  )
 }

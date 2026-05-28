@@ -1,2 +1,2 @@
-export { useEditorPreferences } from './useEditorPreferences';
-export type { CodeEditorPreferences } from './useEditorPreferences';
+export { useEditorPreferences } from './useEditorPreferences'
+export type { CodeEditorPreferences } from './useEditorPreferences'

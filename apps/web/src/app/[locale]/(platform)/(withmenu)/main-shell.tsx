@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { GamificationProvider } from '@/components/Contexts/GamificationContext';
-import NavBar from '@/components/Objects/Menus/nav-menu';
-import { NAVBAR_HEIGHT } from '@/lib/constants';
-import type { ReactNode } from 'react';
+import { GamificationProvider } from '@/components/Contexts/GamificationContext'
+import NavBar from '@/components/Objects/Menus/nav-menu'
+import { NAVBAR_HEIGHT } from '@/lib/constants'
+import type { ReactNode } from 'react'
 
 interface MainShellProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export default function MainShell({ children }: MainShellProps) {
@@ -16,6 +16,5 @@ export default function MainShell({ children }: MainShellProps) {
       {/* Content area offset via CSS — resilient to viewport/notch changes */}
       <div style={{ paddingTop: NAVBAR_HEIGHT }}>{children}</div>
     </GamificationProvider>
-  );
+  )
 }
-

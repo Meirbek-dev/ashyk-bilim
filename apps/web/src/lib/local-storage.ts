@@ -1,54 +1,60 @@
 export interface VersionedStorageEnvelope<T> {
-  version: number;
-  value: T;
-  updatedAt: number;
+  version: number
+  value: T
+  updatedAt: number
 }
 
 function canUseLocalStorage(): boolean {
-  return typeof globalThis.window !== 'undefined' && typeof globalThis.localStorage !== 'undefined';
+  return typeof globalThis.window !== 'undefined' && typeof globalThis.localStorage !== 'undefined'
 }
 
-export function readLocalStorageString(key: string, allowedValues?: readonly string[]): string | null {
-  if (!canUseLocalStorage()) return null;
+export function readLocalStorageString(
+  key: string,
+  allowedValues?: readonly string[],
+): string | null {
+  if (!canUseLocalStorage()) return null
 
   try {
-    const value = globalThis.localStorage.getItem(key);
-    if (value === null) return null;
-    if (allowedValues && !allowedValues.includes(value)) return null;
-    return value;
+    const value = globalThis.localStorage.getItem(key)
+    if (value === null) return null
+    if (allowedValues && !allowedValues.includes(value)) return null
+    return value
   } catch {
-    return null;
+    return null
   }
 }
 
 export function writeLocalStorageString(key: string, value: string): void {
-  if (!canUseLocalStorage()) return;
+  if (!canUseLocalStorage()) return
 
   try {
-    globalThis.localStorage.setItem(key, value);
+    globalThis.localStorage.setItem(key, value)
   } catch {
     // Ignore storage failures in private browsing / quota exhaustion.
   }
 }
 
-export function readJsonLocalStorage<T>(key: string, validate: (value: unknown) => value is T): T | null {
-  if (!canUseLocalStorage()) return null;
+export function readJsonLocalStorage<T>(
+  key: string,
+  validate: (value: unknown) => value is T,
+): T | null {
+  if (!canUseLocalStorage()) return null
 
   try {
-    const raw = globalThis.localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    return validate(parsed) ? parsed : null;
+    const raw = globalThis.localStorage.getItem(key)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    return validate(parsed) ? parsed : null
   } catch {
-    return null;
+    return null
   }
 }
 
 export function writeJsonLocalStorage(key: string, value: unknown): void {
-  if (!canUseLocalStorage()) return;
+  if (!canUseLocalStorage()) return
 
   try {
-    globalThis.localStorage.setItem(key, JSON.stringify(value));
+    globalThis.localStorage.setItem(key, JSON.stringify(value))
   } catch {
     // Ignore storage failures in private browsing / quota exhaustion.
   }
@@ -62,13 +68,17 @@ export function readVersionedLocalStorage<T>(
   const envelope = readJsonLocalStorage<VersionedStorageEnvelope<T>>(
     key,
     (value): value is VersionedStorageEnvelope<T> => {
-      if (typeof value !== 'object' || value === null) return false;
-      const candidate = value as Partial<VersionedStorageEnvelope<T>>;
-      return typeof candidate.version === 'number' && candidate.version === version && validate(candidate.value);
+      if (typeof value !== 'object' || value === null) return false
+      const candidate = value as Partial<VersionedStorageEnvelope<T>>
+      return (
+        typeof candidate.version === 'number' &&
+        candidate.version === version &&
+        validate(candidate.value)
+      )
     },
-  );
+  )
 
-  return envelope?.value ?? null;
+  return envelope?.value ?? null
 }
 
 export function writeVersionedLocalStorage(key: string, version: number, value: unknown): void {
@@ -76,5 +86,5 @@ export function writeVersionedLocalStorage(key: string, version: number, value: 
     version,
     value,
     updatedAt: Date.now(),
-  } satisfies VersionedStorageEnvelope<unknown>);
+  } satisfies VersionedStorageEnvelope<unknown>)
 }

@@ -1,52 +1,56 @@
-import AnalyticsThresholdHistogram from '@components/Dashboard/Analytics/AnalyticsThresholdHistogram';
-import AssessmentLearnerRowsTable from '@components/Dashboard/Analytics/AssessmentLearnerRowsTable';
-import AssessmentOperationsPanel from '@components/Dashboard/Analytics/AssessmentOperationsPanel';
-import { getTeacherAssessmentDetail, normalizeAnalyticsQuery } from '@services/analytics/teacher';
-import QuestionDifficultyRadar from '@components/Dashboard/Analytics/QuestionDifficultyRadar';
-import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels';
-import { getLocale, getTranslations } from 'next-intl/server';
-import type { AssessmentType } from '@/types/analytics';
-import { Badge } from '@/components/ui/badge';
+import AnalyticsThresholdHistogram from '@components/Dashboard/Analytics/AnalyticsThresholdHistogram'
+import AssessmentLearnerRowsTable from '@components/Dashboard/Analytics/AssessmentLearnerRowsTable'
+import AssessmentOperationsPanel from '@components/Dashboard/Analytics/AssessmentOperationsPanel'
+import { getTeacherAssessmentDetail, normalizeAnalyticsQuery } from '@services/analytics/teacher'
+import QuestionDifficultyRadar from '@components/Dashboard/Analytics/QuestionDifficultyRadar'
+import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels'
+import { getLocale, getTranslations } from 'next-intl/server'
+import type { AssessmentType } from '@/types/analytics'
+import { Badge } from '@/components/ui/badge'
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
-  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   return (
     <PlatformAnalyticsAssessmentDetailPageInner
       params={props.params}
       searchParams={props.searchParams}
     />
-  );
+  )
 }
 
 async function PlatformAnalyticsAssessmentDetailPageInner(props: {
-  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const [{ assessmentType, assessmentId }, searchParams, locale, t] = await Promise.all([
     props.params,
     props.searchParams,
     getLocale(),
     getTranslations('TeacherAnalytics'),
-  ]);
-  const query = normalizeAnalyticsQuery(searchParams);
+  ])
+  const query = normalizeAnalyticsQuery(searchParams)
 
   try {
     const detail = await getTeacherAssessmentDetail({
       assessmentType,
       assessmentId: Number(assessmentId),
       query,
-    });
+    })
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
         <Card className="border-slate-200 bg-white/90 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
-              <Badge variant="outline">{t('pages.assessmentDetailBadge', { id: detail.assessment_id })}</Badge>
+              <Badge variant="outline">
+                {getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}
+              </Badge>
+              <Badge variant="outline">
+                {t('pages.assessmentDetailBadge', { id: detail.assessment_id })}
+              </Badge>
             </div>
             <CardTitle className="mt-3 text-3xl">{detail.title}</CardTitle>
           </CardHeader>
@@ -61,7 +65,9 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatPassRate')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">
+                {t('pages.assessmentStatPassRate')}
+              </div>
               <div className="mt-2 text-3xl font-semibold">
                 {detail.summary.pass_rate ?? t('atRisk.na')}
                 {detail.summary.pass_rate !== null ? '%' : ''}
@@ -77,8 +83,12 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatGenerated')}</div>
-              <div className="mt-2 text-lg font-semibold">{new Date(detail.generated_at).toLocaleString(locale)}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">
+                {t('pages.assessmentStatGenerated')}
+              </div>
+              <div className="mt-2 text-lg font-semibold">
+                {new Date(detail.generated_at).toLocaleString(locale)}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -116,11 +126,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {detail.common_failures.length ? (
-              detail.common_failures.map((failure) => (
-                <Badge
-                  key={failure.key}
-                  variant="outline"
-                >
+              detail.common_failures.map(failure => (
+                <Badge key={failure.key} variant="outline">
                   {failure.label} · {failure.count}
                 </Badge>
               ))
@@ -137,13 +144,13 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           storageKey={`assessment-${detail.assessment_type}-${detail.assessment_id}-learners`}
         />
       </div>
-    );
+    )
   } catch (error) {
     return (
       <AnalyticsEmptyState
         title={t('pages.assessmentDetailTitle')}
         description={error instanceof Error ? error.message : t('pages.assessmentDetailLoadError')}
       />
-    );
+    )
   }
 }

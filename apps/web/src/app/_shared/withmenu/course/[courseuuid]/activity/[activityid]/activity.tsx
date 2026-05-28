@@ -1,27 +1,35 @@
-'use client';
+'use client'
 
-import dynamic from 'next/dynamic';
+import dynamic from 'next/dynamic'
 
-import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
-import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext';
-import { CourseProvider } from '@components/Contexts/CourseContext';
-import StudentActivityWorkspace from '@/features/student-activity/shell/StudentActivityWorkspace';
-import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
-import { ActivityLayoutProvider } from '@/features/assessments/shell/ActivityLayoutContext';
-import { ActivityContentRenderer } from './ActivityContentRenderer';
+import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
+import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext'
+import { CourseProvider } from '@components/Contexts/CourseContext'
+import StudentActivityWorkspace from '@/features/student-activity/shell/StudentActivityWorkspace'
+import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import { ActivityLayoutProvider } from '@/features/assessments/shell/ActivityLayoutContext'
+import { ActivityContentRenderer } from './ActivityContentRenderer'
 
-const AIActivityAsk = dynamic(() => import('@components/Objects/Activities/AI/AIActivityAsk'), { ssr: false });
+const AIActivityAsk = dynamic(() => import('@components/Objects/Activities/AI/AIActivityAsk'), {
+  ssr: false,
+})
 
 interface ActivityClientProps {
-  activityid: string;
-  courseuuid: string;
-  activity: Activity | null;
-  course: CourseStructure;
-  runtime: StudentActivityRuntime | null;
+  activityid: string
+  courseuuid: string
+  activity: Activity | null
+  course: CourseStructure
+  runtime: StudentActivityRuntime | null
 }
 
-export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
-  const resolvedRuntime = runtime ?? buildCourseEndRuntime(course);
+export default function ActivityClient({
+  activityid,
+  courseuuid,
+  activity,
+  course,
+  runtime,
+}: ActivityClientProps) {
+  const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
 
   return (
     <CourseProvider courseuuid={course.course_uuid}>
@@ -44,7 +52,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
         </ActivityLayoutProvider>
       </ActivityAIChatProvider>
     </CourseProvider>
-  );
+  )
 }
 
 function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime {
@@ -61,7 +69,7 @@ function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime 
       complete: true,
       state: 'complete' as const,
     })),
-  }));
+  }))
 
   return {
     course: {
@@ -105,5 +113,5 @@ function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime 
       completed_at: null,
       status_reason: null,
     },
-  };
+  }
 }

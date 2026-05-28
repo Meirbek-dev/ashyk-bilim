@@ -1,32 +1,36 @@
-'use client';
+'use client'
 
-import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CalendarClock, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import Link from '@components/ui/AppLink';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import Link from '@components/ui/AppLink'
 import {
   getFileSubmissionByActivity,
   publishFileSubmissionActivity,
   updateFileSubmissionActivity,
-} from '@/features/file-submissions/services/file-submissions';
-import { getFriendlyMimeName } from '@/lib/file-validation';
-import { Checkbox } from '@/components/ui/checkbox';
-import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
+} from '@/features/file-submissions/services/file-submissions'
+import { getFriendlyMimeName } from '@/lib/file-validation'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  MarkdownEditor,
+  getMarkdownSaveGate,
+  isMarkdownStructurallyEmpty,
+} from '@/features/content-markdown'
 
 interface FileSubmissionStudioProps {
-  courseUuid: string;
-  activityUuid: string;
+  courseUuid: string
+  activityUuid: string
 }
 
-const queryKey = (activityUuid: string) => ['file-submission', 'studio', activityUuid] as const;
+const queryKey = (activityUuid: string) => ['file-submission', 'studio', activityUuid] as const
 
 const MIME_PRESETS = [
   { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
@@ -89,17 +93,20 @@ const MIME_PRESETS = [
       'text/x-java-source',
     ],
   },
-];
+]
 
-export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileSubmissionStudioProps) {
-  const cleanActivityUuid = activityUuid.replace(/^activity_/, '');
-  const queryClient = useQueryClient();
-  const [title, setTitle] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [dueAt, setDueAt] = useState('');
-  const [maxFiles, setMaxFiles] = useState(1);
-  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | ''>('');
-  const [allowedMimeTypes, setAllowedMimeTypes] = useState<string[]>([]);
+export default function FileSubmissionStudio({
+  courseUuid,
+  activityUuid,
+}: FileSubmissionStudioProps) {
+  const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
+  const queryClient = useQueryClient()
+  const [title, setTitle] = useState('')
+  const [instructions, setInstructions] = useState('')
+  const [dueAt, setDueAt] = useState('')
+  const [maxFiles, setMaxFiles] = useState(1)
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | ''>('')
+  const [allowedMimeTypes, setAllowedMimeTypes] = useState<string[]>([])
 
   const { data, isLoading, error } = useQuery(
     queryOptions({
@@ -107,34 +114,34 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
       enabled: Boolean(cleanActivityUuid),
     }),
-  );
+  )
 
   useEffect(() => {
-    if (!data) return;
-    setTitle(data.title);
-    setInstructions(data.instructions);
-    setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : '');
-    setMaxFiles(data.max_files);
-    setMaxFileSizeMb(data.max_file_size_mb ?? '');
-    setAllowedMimeTypes(data.allowed_mime_types ?? []);
-  }, [data]);
+    if (!data) return
+    setTitle(data.title)
+    setInstructions(data.instructions)
+    setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : '')
+    setMaxFiles(data.max_files)
+    setMaxFileSizeMb(data.max_file_size_mb ?? '')
+    setAllowedMimeTypes(data.allowed_mime_types ?? [])
+  }, [data])
 
   const togglePreset = (mimes: string[], checked: boolean) => {
-    setAllowedMimeTypes((current) => {
-      const next = new Set(current);
+    setAllowedMimeTypes(current => {
+      const next = new Set(current)
       for (const mime of mimes) {
-        if (checked) next.add(mime);
-        else next.delete(mime);
+        if (checked) next.add(mime)
+        else next.delete(mime)
       }
-      return [...next];
-    });
-  };
+      return [...next]
+    })
+  }
 
-  const t = useTranslations('FileSubmissionStudio');
+  const t = useTranslations('FileSubmissionStudio')
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error(t('unavailableError'));
+      if (!data) throw new Error(t('unavailableError'))
       return await updateFileSubmissionActivity(data.file_submission_uuid, {
         title,
         instructions,
@@ -142,51 +149,51 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
         max_files: maxFiles,
         max_file_size_mb: maxFileSizeMb === '' ? null : maxFileSizeMb,
         allowed_mime_types: allowedMimeTypes,
-      });
+      })
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
-      });
-      toast.success(t('saveSuccess'));
+      })
+      toast.success(t('saveSuccess'))
     },
-    onError: (saveError) => {
-      toast.error(saveError instanceof Error ? saveError.message : t('saveError'));
+    onError: saveError => {
+      toast.error(saveError instanceof Error ? saveError.message : t('saveError'))
     },
-  });
+  })
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error(t('unavailableError'));
-      return await publishFileSubmissionActivity(data.file_submission_uuid);
+      if (!data) throw new Error(t('unavailableError'))
+      return await publishFileSubmissionActivity(data.file_submission_uuid)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
-      });
-      toast.success(t('publishSuccess'));
+      })
+      toast.success(t('publishSuccess'))
     },
-    onError: (publishError) => {
-      toast.error(publishError instanceof Error ? publishError.message : t('publishError'));
+    onError: publishError => {
+      toast.error(publishError instanceof Error ? publishError.message : t('publishError'))
     },
-  });
+  })
 
   function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    event.preventDefault()
     const gate = getMarkdownSaveGate(instructions, 'fileSubmissionInstructions', {
       intent: 'draft',
       required: true,
-    });
+    })
     if (!gate.canSave) {
-      toast.error(gate.errors[0]?.message ?? t('fixInstructionsBeforeSaving'));
-      return;
+      toast.error(gate.errors[0]?.message ?? t('fixInstructionsBeforeSaving'))
+      return
     }
-    saveMutation.mutate();
+    saveMutation.mutate()
   }
   const publishGate = getMarkdownSaveGate(instructions, 'fileSubmissionInstructions', {
     intent: 'publish',
     required: true,
-  });
+  })
 
   if (isLoading) {
     return (
@@ -194,13 +201,15 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
         <Loader2 className="mr-2 size-4 animate-spin" />
         {t('loadingStudio')}
       </div>
-    );
+    )
   }
 
   if (error || !data) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('studioUnavailable')}</div>
-    );
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+        {t('studioUnavailable')}
+      </div>
+    )
   }
 
   return (
@@ -222,7 +231,9 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{data.title}</h1>
-              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{data.lifecycle}</Badge>
+              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>
+                {data.lifecycle}
+              </Badge>
               {data.due_at ? (
                 <Badge variant="outline">
                   <CalendarClock className="mr-1 size-3" />
@@ -236,7 +247,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={<Link href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`} />}
+              render={
+                <Link
+                  href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`}
+                />
+              }
             >
               <Eye className="size-4" />
               {t('preview')}
@@ -247,17 +262,23 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || publishMutation.isPending}
             >
-              {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {saveMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
               {t('save')}
             </Button>
             <Button
               size="sm"
               onClick={() => {
                 if (!publishGate.canPublish) {
-                  toast.error(publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'));
-                  return;
+                  toast.error(
+                    publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'),
+                  )
+                  return
                 }
-                publishMutation.mutate();
+                publishMutation.mutate()
               }}
               disabled={
                 publishMutation.isPending ||
@@ -267,7 +288,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 !publishGate.canPublish
               }
             >
-              {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {publishMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
               {t('publish')}
             </Button>
           </div>
@@ -275,17 +300,10 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       </header>
 
       <main className="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
-        <form
-          onSubmit={save}
-          className="space-y-5"
-        >
+        <form onSubmit={save} className="space-y-5">
           <Field>
             <FieldLabel>{t('title')}</FieldLabel>
-            <Input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              maxLength={200}
-            />
+            <Input value={title} onChange={event => setTitle(event.target.value)} maxLength={200} />
           </Field>
           <Field>
             <FieldLabel>{t('instructions')}</FieldLabel>
@@ -302,7 +320,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               <Input
                 type="datetime-local"
                 value={dueAt}
-                onChange={(event) => setDueAt(event.target.value)}
+                onChange={event => setDueAt(event.target.value)}
               />
             </Field>
             <Field>
@@ -312,7 +330,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 min={1}
                 max={20}
                 value={maxFiles}
-                onChange={(event) => setMaxFiles(Number(event.target.value))}
+                onChange={event => setMaxFiles(Number(event.target.value))}
               />
             </Field>
             <Field>
@@ -321,7 +339,9 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 type="number"
                 min={1}
                 value={maxFileSizeMb}
-                onChange={(event) => setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))}
+                onChange={event =>
+                  setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))
+                }
               />
             </Field>
           </div>
@@ -329,8 +349,8 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           <Field>
             <FieldLabel>{t('allowedFileTypes')}</FieldLabel>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {MIME_PRESETS.map((preset) => {
-                const checked = preset.mimes.every((mime) => allowedMimeTypes.includes(mime));
+              {MIME_PRESETS.map(preset => {
+                const checked = preset.mimes.every(mime => allowedMimeTypes.includes(mime))
                 return (
                   <label
                     key={preset.id}
@@ -338,14 +358,14 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(nextChecked) => togglePreset(preset.mimes, nextChecked)}
+                      onCheckedChange={nextChecked => togglePreset(preset.mimes, nextChecked)}
                       className="mt-0.5"
                     />
                     <div className="grid gap-0.5">
                       <span className="text-sm leading-none font-medium">{preset.label}</span>
                     </div>
                   </label>
-                );
+                )
               })}
             </div>
             <p className="text-muted-foreground mt-2 text-xs">{t('allowedFileTypesDesc')}</p>
@@ -395,18 +415,18 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
         </aside>
       </main>
     </div>
-  );
+  )
 }
 
 function toDateTimeLocal(value: string) {
-  const date = new Date(value);
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
 }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }).format(new Date(value))
 }

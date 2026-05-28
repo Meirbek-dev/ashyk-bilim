@@ -1,49 +1,51 @@
-'use server';
+'use server'
 
-import { apiFetch, errorHandling } from '@/lib/api-client';
-import { getAPIUrl } from '@services/config/config';
+import { apiFetch, errorHandling } from '@/lib/api-client'
+import { getAPIUrl } from '@services/config/config'
 
 export interface AssessmentSummary {
-  id: number;
-  assessment_uuid: string;
-  activity_id: number;
-  activity_uuid: string;
-  course_id: number | null;
-  course_uuid: string | null;
-  chapter_id: number;
-  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
-  title: string;
-  description: string;
-  lifecycle: string;
-  scheduled_at?: string | null;
-  published_at?: string | null;
-  archived_at?: string | null;
+  id: number
+  assessment_uuid: string
+  activity_id: number
+  activity_uuid: string
+  course_id: number | null
+  course_uuid: string | null
+  chapter_id: number
+  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ'
+  title: string
+  description: string
+  lifecycle: string
+  scheduled_at?: string | null
+  published_at?: string | null
+  archived_at?: string | null
 }
 
 export interface AssessmentMutationPayload {
-  title: string;
-  description?: string;
-  course_id?: number;
-  chapter_id?: number;
-  grading_type?: 'NUMERIC' | 'PERCENTAGE';
-  due_at?: string | null;
+  title: string
+  description?: string
+  course_id?: number
+  chapter_id?: number
+  grading_type?: 'NUMERIC' | 'PERCENTAGE'
+  due_at?: string | null
 }
 
 /**
  * Server-side: fetch an assessment by its UUID.
  * Returns null on 404 rather than throwing.
  */
-export async function getAssessmentByUuid(assessmentUuid: string): Promise<AssessmentSummary | null> {
+export async function getAssessmentByUuid(
+  assessmentUuid: string,
+): Promise<AssessmentSummary | null> {
   try {
     const result = await apiFetch(`assessments/${assessmentUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
       timeoutMs: 8000,
-    });
-    if (result.status === 404) return null;
-    return await errorHandling(result);
+    })
+    if (result.status === 404) return null
+    return await errorHandling(result)
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -51,16 +53,18 @@ export async function getAssessmentByUuid(assessmentUuid: string): Promise<Asses
  * Server-side: fetch an assessment by its activity UUID.
  * Returns null on 404 rather than throwing.
  */
-export async function getAssessmentByActivityUuid(activityUuid: string): Promise<AssessmentSummary | null> {
+export async function getAssessmentByActivityUuid(
+  activityUuid: string,
+): Promise<AssessmentSummary | null> {
   try {
     const result = await apiFetch(`assessments/activity/${activityUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
       timeoutMs: 8000,
-    });
-    if (result.status === 404) return null;
-    return await errorHandling(result);
+    })
+    if (result.status === 404) return null
+    return await errorHandling(result)
   } catch {
-    return null;
+    return null
   }
 }

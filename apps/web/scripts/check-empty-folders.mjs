@@ -1,7 +1,7 @@
-import { readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
 
-const root = process.cwd();
+const root = process.cwd()
 const ignored = new Set([
   '.git',
   '.next',
@@ -12,10 +12,10 @@ const ignored = new Set([
   'node_modules',
   'playwright-report',
   'test-results',
-]);
+])
 
-const scanRoots = ['src', 'scripts'].map((entry) => join(root, entry));
-const emptyFolders = [];
+const scanRoots = ['src', 'scripts'].map(entry => join(root, entry))
+const emptyFolders = []
 const baselineEmptyFolders = new Set([
   'src/components/Activities',
   'src/components/Contexts/Assignments',
@@ -42,50 +42,50 @@ const baselineEmptyFolders = new Set([
   'src/components/Utils/libs',
   'src/services/blocks/Quiz',
   'src/services/utils/react/middlewares',
-]);
+])
 
 for (const directory of scanRoots) {
-  scan(directory);
+  scan(directory)
 }
 
 const newEmptyFolders = emptyFolders.filter(
-  (folder) => !baselineEmptyFolders.has(toPortablePath(relative(root, folder))),
-);
+  folder => !baselineEmptyFolders.has(toPortablePath(relative(root, folder))),
+)
 
 if (newEmptyFolders.length > 0) {
-  console.error('Empty folders are not allowed:');
+  console.error('Empty folders are not allowed:')
   for (const folder of newEmptyFolders) {
-    console.error(`- ${relative(root, folder)}`);
+    console.error(`- ${relative(root, folder)}`)
   }
-  process.exit(1);
+  process.exit(1)
 }
 
 function scan(directory) {
-  let entries;
+  let entries
   try {
-    entries = readdirSync(directory, { withFileTypes: true });
+    entries = readdirSync(directory, { withFileTypes: true })
   } catch (error) {
-    if (error?.code === 'ENOENT') return;
-    throw error;
+    if (error?.code === 'ENOENT') return
+    throw error
   }
 
-  const visibleEntries = entries.filter((entry) => !ignored.has(entry.name));
+  const visibleEntries = entries.filter(entry => !ignored.has(entry.name))
   if (visibleEntries.length === 0) {
-    emptyFolders.push(directory);
-    return;
+    emptyFolders.push(directory)
+    return
   }
 
   for (const entry of visibleEntries) {
-    const path = join(directory, entry.name);
+    const path = join(directory, entry.name)
     if (entry.isDirectory()) {
-      scan(path);
+      scan(path)
     } else if (entry.isSymbolicLink()) {
-      const stats = statSync(path);
-      if (stats.isDirectory()) scan(path);
+      const stats = statSync(path)
+      if (stats.isDirectory()) scan(path)
     }
   }
 }
 
 function toPortablePath(path) {
-  return path.replaceAll('\\', '/');
+  return path.replaceAll('\\', '/')
 }

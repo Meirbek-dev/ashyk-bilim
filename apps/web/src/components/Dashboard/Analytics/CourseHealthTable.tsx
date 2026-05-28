@@ -1,28 +1,32 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { TeacherCourseRow } from '@/types/analytics';
-import type { ColumnDef } from '@tanstack/react-table';
-import AnalyticsDataTable from './AnalyticsDataTable';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { TeacherCourseRow } from '@/types/analytics'
+import type { ColumnDef } from '@tanstack/react-table'
+import AnalyticsDataTable from './AnalyticsDataTable'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 interface CourseHealthTableProps {
-  rows: TeacherCourseRow[];
-  storageKey?: string;
-  serverPaginated?: boolean;
+  rows: TeacherCourseRow[]
+  storageKey?: string
+  serverPaginated?: boolean
 }
 
 type EnhancedTeacherCourseRow = TeacherCourseRow & {
-  teacher_completion_delta_pct?: number | null;
-  platform_completion_delta_pct?: number | null;
-  historical_completion_delta_pct?: number | null;
-  cohort_completion_delta_pct?: number | null;
-};
+  teacher_completion_delta_pct?: number | null
+  platform_completion_delta_pct?: number | null
+  historical_completion_delta_pct?: number | null
+  cohort_completion_delta_pct?: number | null
+}
 
-export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
-  const t = useTranslations('TeacherAnalytics');
+export default function CourseHealthTable({
+  rows,
+  storageKey,
+  serverPaginated,
+}: CourseHealthTableProps) {
+  const t = useTranslations('TeacherAnalytics')
   const columns: ColumnDef<TeacherCourseRow>[] = [
     {
       accessorKey: 'course_name',
@@ -41,28 +45,32 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
       accessorKey: 'completion_rate',
       header: t('courseHealth.colCompletion'),
       cell: ({ row }) => {
-        const course = row.original as EnhancedTeacherCourseRow;
+        const course = row.original as EnhancedTeacherCourseRow
         return (
           <div>
             <div>{course.completion_rate}%</div>
             <div className="text-muted-foreground text-[11px]">
-              {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
+              {course.teacher_completion_delta_pct !== null &&
+              course.teacher_completion_delta_pct !== undefined
                 ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
                 : ''}
             </div>
           </div>
-        );
+        )
       },
     },
     { accessorKey: 'at_risk_learners', header: t('courseHealth.colRisk') },
-    { accessorKey: 'ungraded_submissions', header: t('courseHealth.colUngraded') },
+    {
+      accessorKey: 'ungraded_submissions',
+      header: t('courseHealth.colUngraded'),
+    },
     {
       accessorKey: 'content_health_score',
       header: t('courseHealth.colHealth'),
       cell: ({ row }) => {
-        const course = row.original as EnhancedTeacherCourseRow;
-        const v = course.content_health_score;
-        if (v === null) return t('atRisk.na');
+        const course = row.original as EnhancedTeacherCourseRow
+        const v = course.content_health_score
+        if (v === null) return t('atRisk.na')
         // Score is already on a 0–100 scale (freshness × 0.55 + avg_progress × 0.45).
         return (
           <div>
@@ -75,7 +83,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
                 </div>
               )}
           </div>
-        );
+        )
       },
     },
     {
@@ -98,7 +106,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
           t('courseHealth.noAlert')
         ),
     },
-  ];
+  ]
 
   return (
     <Card className="shadow-sm">
@@ -117,5 +125,5 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
         />
       </CardContent>
     </Card>
-  );
+  )
 }

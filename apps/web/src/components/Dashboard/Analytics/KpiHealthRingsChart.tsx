@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { RadialBar, RadialBarChart } from 'recharts';
-import { useTranslations } from 'next-intl';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { RadialBar, RadialBarChart } from 'recharts'
+import { useTranslations } from 'next-intl'
 
 interface RadialDatum {
-  name: string;
-  label: string;
-  value: number;
-  fill: string;
+  name: string
+  label: string
+  value: number
+  fill: string
 }
 
 interface KpiHealthRingsChartProps {
-  data: RadialDatum[];
+  data: RadialDatum[]
 }
 
 export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) {
-  const t = useTranslations('TeacherAnalytics');
+  const t = useTranslations('TeacherAnalytics')
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -28,7 +28,7 @@ export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) 
         <ChartContainer
           className="h-[260px] w-full"
           config={Object.fromEntries(
-            data.map((d) => [
+            data.map(d => [
               d.name,
               {
                 label: d.label,
@@ -53,23 +53,16 @@ export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) 
               content={
                 <ChartTooltipContent
                   nameKey="name"
-                  formatter={(v) => [`${Math.round(Number(v))} / 100`, t('kpiCharts.healthScore')]}
+                  formatter={v => [`${Math.round(Number(v))} / 100`, t('kpiCharts.healthScore')]}
                 />
               }
             />
-            <RadialBar
-              dataKey="value"
-              background={{ fill: 'var(--chart-5)' }}
-              cornerRadius={4}
-            />
+            <RadialBar dataKey="value" background={{ fill: 'var(--chart-5)' }} cornerRadius={4} />
           </RadialBarChart>
         </ChartContainer>
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
-          {data.map((d) => (
-            <div
-              key={d.name}
-              className="text-muted-foreground flex items-center gap-1.5 text-xs"
-            >
+          {data.map(d => (
+            <div key={d.name} className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: d.fill }}
@@ -80,5 +73,5 @@ export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) 
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

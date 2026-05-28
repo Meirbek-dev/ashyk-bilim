@@ -1,19 +1,21 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AlertItem } from '@/types/analytics';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { Clock4 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { AlertItem } from '@/types/analytics'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { Clock4 } from 'lucide-react'
 
 interface GradingBacklogPanelProps {
-  backlogCount: number;
-  alerts: AlertItem[];
+  backlogCount: number
+  alerts: AlertItem[]
 }
 
 export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBacklogPanelProps) {
-  const t = useTranslations('TeacherAnalytics');
-  const gradingAlerts = alerts.filter((alert) => alert.type === 'grading_backlog' || alert.type === 'grading_slo');
+  const t = useTranslations('TeacherAnalytics')
+  const gradingAlerts = alerts.filter(
+    alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo',
+  )
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -27,7 +29,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
         <div className="text-foreground text-4xl font-semibold">{backlogCount}</div>
         <div className="mt-4 flex flex-wrap gap-2">
           {gradingAlerts.length ? (
-            gradingAlerts.map((alert) => (
+            gradingAlerts.map(alert => (
               <Badge
                 key={alert.id}
                 variant={alert.severity === 'critical' ? 'destructive' : 'warning'}
@@ -41,5 +43,5 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

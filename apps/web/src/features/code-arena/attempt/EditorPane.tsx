@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useRef } from 'react';
-import { AlignLeft, Code2, RotateCcw, Settings2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useRef } from 'react'
+import { AlignLeft, Code2, RotateCcw, Settings2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,24 +18,24 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
-import { LanguageSelector } from '@/components/features/courses/code-challenges/LanguageSelector';
-import type { Judge0Language } from '../domain';
-import type { CodeEditorPreferences } from '../hooks/useEditorPreferences';
+} from '@/components/ui/dropdown-menu'
+import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor'
+import { LanguageSelector } from '@/components/features/courses/code-challenges/LanguageSelector'
+import type { Judge0Language } from '../domain'
+import type { CodeEditorPreferences } from '../hooks/useEditorPreferences'
 
 interface EditorPaneProps {
-  code: string;
-  onCodeChange: (code: string) => void;
-  languageId: number;
-  onLanguageChange: (languageId: number) => void;
-  languages: Judge0Language[];
-  allowedLanguages?: number[];
-  readOnly?: boolean;
-  starterCode: string;
-  preferences: CodeEditorPreferences;
-  onPreferencesChange: (next: CodeEditorPreferences) => void;
-  monacoOptions: Record<string, unknown>;
+  code: string
+  onCodeChange: (code: string) => void
+  languageId: number
+  onLanguageChange: (languageId: number) => void
+  languages: Judge0Language[]
+  allowedLanguages?: number[]
+  readOnly?: boolean
+  starterCode: string
+  preferences: CodeEditorPreferences
+  onPreferencesChange: (next: CodeEditorPreferences) => void
+  monacoOptions: Record<string, unknown>
 }
 
 export function EditorPane({
@@ -51,17 +51,17 @@ export function EditorPane({
   onPreferencesChange,
   monacoOptions,
 }: EditorPaneProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const selectedLanguage = languages.find((language) => language.id === languageId);
-  const editorRef = useRef<any>(null);
+  const t = useTranslations('Activities.CodeChallenges')
+  const selectedLanguage = languages.find(language => language.id === languageId)
+  const editorRef = useRef<any>(null)
 
   const handleMount = (editor: any) => {
-    editorRef.current = editor;
-  };
+    editorRef.current = editor
+  }
 
   const handleFormat = () => {
-    editorRef.current?.getAction('editor.action.formatDocument')?.run();
-  };
+    editorRef.current?.getAction('editor.action.formatDocument')?.run()
+  }
 
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
@@ -99,34 +99,27 @@ export function EditorPane({
             disabled={readOnly}
           />
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                />
-              }
-            >
+            <DropdownMenuTrigger render={<Button type="button" size="icon" variant="ghost" />}>
               <Settings2 className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56"
-            >
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{t('editorSettings')}</DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={preferences.wordWrap}
-                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, wordWrap: checked })}
+                onCheckedChange={checked =>
+                  onPreferencesChange({ ...preferences, wordWrap: checked })
+                }
               >
                 {t('wordWrap')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={preferences.minimap}
-                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, minimap: checked })}
+                onCheckedChange={checked =>
+                  onPreferencesChange({ ...preferences, minimap: checked })
+                }
               >
                 {t('minimap')}
               </DropdownMenuCheckboxItem>
@@ -138,13 +131,15 @@ export function EditorPane({
                 <DropdownMenuSubContent>
                   <DropdownMenuRadioGroup
                     value={String(preferences.fontSize)}
-                    onValueChange={(val) => onPreferencesChange({ ...preferences, fontSize: Number(val) })}
+                    onValueChange={val =>
+                      onPreferencesChange({
+                        ...preferences,
+                        fontSize: Number(val),
+                      })
+                    }
                   >
-                    {[12, 13, 14, 15, 16, 18, 20].map((size) => (
-                      <DropdownMenuRadioItem
-                        key={size}
-                        value={String(size)}
-                      >
+                    {[12, 13, 14, 15, 16, 18, 20].map(size => (
+                      <DropdownMenuRadioItem key={size} value={String(size)}>
                         {t('pxValue', { size })}
                       </DropdownMenuRadioItem>
                     ))}
@@ -169,5 +164,5 @@ export function EditorPane({
         readOnlyMessage={readOnly ? 'This submission is read-only.' : undefined}
       />
     </div>
-  );
+  )
 }

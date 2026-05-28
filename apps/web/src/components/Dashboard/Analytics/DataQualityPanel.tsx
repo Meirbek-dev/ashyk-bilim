@@ -1,24 +1,24 @@
-'use client';
+'use client'
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AnalyticsDataQuality } from '@/types/analytics';
-import { DatabaseZap, ShieldCheck } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { AnalyticsDataQuality } from '@/types/analytics'
+import { DatabaseZap, ShieldCheck } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface DataQualityPanelProps {
-  quality: AnalyticsDataQuality;
+  quality: AnalyticsDataQuality
 }
 
 export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
-  const locale = useLocale();
-  const t = useTranslations('Components.DashboardAnalytics');
+  const locale = useLocale()
+  const t = useTranslations('Components.DashboardAnalytics')
   const freshness =
     quality.freshness_seconds < 60
       ? `${quality.freshness_seconds}s`
       : quality.freshness_seconds < 3600
         ? `${Math.round(quality.freshness_seconds / 60)}m`
-        : `${Math.round(quality.freshness_seconds / 3600)}h`;
+        : `${Math.round(quality.freshness_seconds / 3600)}h`
 
   return (
     <Card className="shadow-sm">
@@ -32,7 +32,9 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="bg-muted rounded-lg border p-4">
-            <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('dataQualityPanel.mode')}</div>
+            <div className="text-muted-foreground text-xs tracking-wider uppercase">
+              {t('dataQualityPanel.mode')}
+            </div>
             <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
               <DatabaseZap className="h-4 w-4" />
               {quality.mode}
@@ -85,14 +87,15 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
 
         <div className="space-y-2">
           {quality.issues.length ? (
-            quality.issues.map((issue) => (
-              <div
-                key={issue.id}
-                className="bg-muted rounded-lg border p-3"
-              >
+            quality.issues.map(issue => (
+              <div key={issue.id} className="bg-muted rounded-lg border p-3">
                 <Badge
                   variant={
-                    issue.severity === 'critical' ? 'destructive' : issue.severity === 'warning' ? 'warning' : 'outline'
+                    issue.severity === 'critical'
+                      ? 'destructive'
+                      : issue.severity === 'warning'
+                        ? 'warning'
+                        : 'outline'
                   }
                 >
                   {t(`dataQualityPanel.issueSeverity.${issue.severity}`)}
@@ -107,5 +110,5 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

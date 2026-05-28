@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import type { Editor } from '@tiptap/react';
+import type { Editor } from '@tiptap/react'
 import {
   Bold,
   Code,
@@ -26,25 +26,25 @@ import {
   FileCode2,
   Eye,
   Undo2,
-} from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import type { MarkdownPresetConfig } from '../presets/presets';
-import { EditorLinkDialog } from './EditorLinkDialog';
-import { EditorImageDialog } from './EditorImageDialog';
-import { EditorSnippetPicker } from './EditorSnippetPicker';
-import { useTranslations } from 'next-intl';
+} from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import type { MarkdownPresetConfig } from '../presets/presets'
+import { EditorLinkDialog } from './EditorLinkDialog'
+import { EditorImageDialog } from './EditorImageDialog'
+import { EditorSnippetPicker } from './EditorSnippetPicker'
+import { useTranslations } from 'next-intl'
 
-export type ViewMode = 'write' | 'source' | 'split' | 'preview';
+export type ViewMode = 'write' | 'source' | 'split' | 'preview'
 
 interface EditorToolbarProps {
-  editor: Editor | null;
-  config: MarkdownPresetConfig;
-  disabled: boolean;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-  isFullscreen: boolean;
-  onFullscreenToggle: () => void;
+  editor: Editor | null
+  config: MarkdownPresetConfig
+  disabled: boolean
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
+  isFullscreen: boolean
+  onFullscreenToggle: () => void
 }
 
 export function EditorToolbar({
@@ -56,36 +56,36 @@ export function EditorToolbar({
   isFullscreen,
   onFullscreenToggle,
 }: EditorToolbarProps) {
-  const t = useTranslations('MarkdownEditor');
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const t = useTranslations('MarkdownEditor')
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
 
-  const groups = config.toolbarGroups;
+  const groups = config.toolbarGroups
 
   const handleLinkConfirm = (href: string, openInNewTab: boolean) => {
-    if (!editor) return;
+    if (!editor) return
     if (!href) {
-      editor.chain().focus().unsetLink().run();
-      return;
+      editor.chain().focus().unsetLink().run()
+      return
     }
     editor
       .chain()
       .focus()
       .setLink({ href, target: openInNewTab ? '_blank' : null })
-      .run();
-  };
+      .run()
+  }
 
   const handleImageConfirm = (src: string, alt: string) => {
-    if (!editor) return;
+    if (!editor) return
     // Insert as markdown image syntax via tiptap-markdown
-    const markdown = `![${alt}](${src})`;
-    const pos = editor.state.selection.to;
-    editor.chain().focus().insertContentAt(pos, markdown).run();
-  };
+    const markdown = `![${alt}](${src})`
+    const pos = editor.state.selection.to
+    editor.chain().focus().insertContentAt(pos, markdown).run()
+  }
 
   const currentLinkHref = editor?.isActive('link')
     ? (editor.getAttributes('link').href as string | undefined)
-    : undefined;
+    : undefined
 
   return (
     <>
@@ -194,9 +194,9 @@ export function EditorToolbar({
                 active={editor?.isActive('taskList')}
                 disabled={disabled}
                 onClick={() => {
-                  if (!editor) return;
-                  const pos = editor.state.selection.to;
-                  editor.chain().focus().insertContentAt(pos, '- [ ] ').run();
+                  if (!editor) return
+                  const pos = editor.state.selection.to
+                  editor.chain().focus().insertContentAt(pos, '- [ ] ').run()
                 }}
               >
                 <ListTodo className="size-3.5" />
@@ -260,7 +260,9 @@ export function EditorToolbar({
               title={t('toolbar.table')}
               disabled={disabled}
               onClick={() =>
-                (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+                (editor?.chain().focus() as any)
+                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                  .run()
               }
             >
               <Rows3 className="size-3.5" />
@@ -275,8 +277,9 @@ export function EditorToolbar({
               title={t('toolbar.math')}
               disabled={disabled}
               onClick={() => {
-                const pos = editor?.state.selection.to;
-                if (pos !== undefined) editor?.chain().focus().insertContentAt(pos, ' $math$ ').run();
+                const pos = editor?.state.selection.to
+                if (pos !== undefined)
+                  editor?.chain().focus().insertContentAt(pos, ' $math$ ').run()
               }}
             >
               <Sigma className="size-3.5" />
@@ -312,10 +315,10 @@ export function EditorToolbar({
               disabled={disabled}
               label={t('toolbar.snippets')}
               ariaLabel={t('toolbar.insertSnippet')}
-              onSelect={(markdown) => {
-                if (!editor) return;
-                const pos = editor.state.selection.to;
-                editor.chain().focus().insertContentAt(pos, `\n${markdown}`).run();
+              onSelect={markdown => {
+                if (!editor) return
+                const pos = editor.state.selection.to
+                editor.chain().focus().insertContentAt(pos, `\n${markdown}`).run()
               }}
             />
           )}
@@ -379,7 +382,7 @@ export function EditorToolbar({
         />
       )}
     </>
-  );
+  )
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -388,12 +391,9 @@ function ToolbarGroup({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex items-center gap-0.5">{children}</div>
-      <div
-        className="bg-border mx-0.5 h-5 w-px"
-        aria-hidden="true"
-      />
+      <div className="bg-border mx-0.5 h-5 w-px" aria-hidden="true" />
     </>
-  );
+  )
 }
 
 function ToolbarButton({
@@ -404,14 +404,14 @@ function ToolbarButton({
   onClick,
   children,
 }: {
-  title: string;
-  shortcut?: string;
-  active?: boolean | null;
-  disabled?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
+  title: string
+  shortcut?: string
+  active?: boolean | null
+  disabled?: boolean
+  onClick?: () => void
+  children: React.ReactNode
 }) {
-  const label = shortcut ? `${title} (${shortcut})` : title;
+  const label = shortcut ? `${title} (${shortcut})` : title
   return (
     <button
       type="button"
@@ -420,9 +420,9 @@ function ToolbarButton({
       aria-pressed={active ?? undefined}
       aria-keyshortcuts={shortcut}
       disabled={disabled}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onClick?.();
+      onMouseDown={e => {
+        e.preventDefault()
+        onClick?.()
       }}
       className={cn(
         'hover:bg-muted flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground',
@@ -432,7 +432,7 @@ function ToolbarButton({
     >
       {children}
     </button>
-  );
+  )
 }
 
 function ViewModeButton({
@@ -442,13 +442,13 @@ function ViewModeButton({
   title,
   icon,
 }: {
-  mode: ViewMode;
-  activeMode: ViewMode;
-  onClick: (mode: ViewMode) => void;
-  title: string;
-  icon: React.ReactNode;
+  mode: ViewMode
+  activeMode: ViewMode
+  onClick: (mode: ViewMode) => void
+  title: string
+  icon: React.ReactNode
 }) {
-  const isActive = activeMode === mode;
+  const isActive = activeMode === mode
   return (
     <button
       type="button"
@@ -458,10 +458,12 @@ function ViewModeButton({
       onClick={() => onClick(mode)}
       className={cn(
         'flex size-7 items-center justify-center rounded transition-colors',
-        isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        isActive
+          ? 'bg-primary text-primary-foreground'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
       {icon}
     </button>
-  );
+  )
 }

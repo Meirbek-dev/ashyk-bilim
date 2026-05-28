@@ -1,16 +1,23 @@
-'use client';
+'use client'
 
-import { AlertTriangle, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { Viewport } from 'next';
+import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import type { Viewport } from 'next'
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { reportClientError } from '@/services/telemetry/client';
-import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { reportClientError } from '@/services/telemetry/client'
+import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n'
 
 /**
  * Viewport export is required in global-error.tsx because this component
@@ -20,13 +27,19 @@ import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-};
+}
 
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [locale, setLocale] = useState<SupportedLocale>('ru-RU');
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
 
   useEffect(() => {
-    setLocale(detectLocale());
+    setLocale(detectLocale())
 
     console.error('Global Error Caught:', {
       message: error.message,
@@ -34,7 +47,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       digest: error.digest,
       stack: error.stack,
       timestamp: new Date().toISOString(),
-    });
+    })
 
     void reportClientError({
       digest: error.digest,
@@ -46,25 +59,26 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'unknown',
       url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'unknown',
     }).catch((loggingError: unknown) => {
-      console.error('Failed to report global error boundary event:', loggingError);
-    });
-  }, [error]);
+      console.error('Failed to report global error boundary event:', loggingError)
+    })
+  }, [error])
 
-  const t = ERROR_MESSAGES[locale];
-  const isChunkError = error?.name === 'ChunkLoadError' || /Failed to load chunk/i.test(error?.message || '');
+  const t = ERROR_MESSAGES[locale]
+  const isChunkError =
+    error?.name === 'ChunkLoadError' || /Failed to load chunk/i.test(error?.message || '')
 
   const handleRetry = () => {
     if (typeof globalThis.window === 'undefined') {
-      reset();
-      return;
+      reset()
+      return
     }
 
     if (isChunkError) {
-      globalThis.location.reload();
+      globalThis.location.reload()
     } else {
-      reset();
+      reset()
     }
-  };
+  }
 
   return (
     <html lang={locale.split('-')[0]}>
@@ -98,24 +112,25 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 
               {isChunkError && <p className="text-muted-foreground text-sm">{t.updateInfo}</p>}
 
-              {typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production' && error.stack && (
-                <>
-                  <Separator />
-                  <details className="group bg-muted/50 rounded-md border p-3">
-                    <summary className="cursor-pointer text-sm font-medium">{t.devDetails}</summary>
-                    <pre className="text-muted-foreground mt-2 max-h-64 overflow-auto text-xs break-all whitespace-pre-wrap">
-                      {error.stack}
-                    </pre>
-                  </details>
-                </>
-              )}
+              {typeof process !== 'undefined' &&
+                process?.env?.NODE_ENV !== 'production' &&
+                error.stack && (
+                  <>
+                    <Separator />
+                    <details className="group bg-muted/50 rounded-md border p-3">
+                      <summary className="cursor-pointer text-sm font-medium">
+                        {t.devDetails}
+                      </summary>
+                      <pre className="text-muted-foreground mt-2 max-h-64 overflow-auto text-xs break-all whitespace-pre-wrap">
+                        {error.stack}
+                      </pre>
+                    </details>
+                  </>
+                )}
             </CardContent>
 
             <CardFooter className="flex justify-end gap-3">
-              <Button
-                onClick={handleRetry}
-                className="gap-2"
-              >
+              <Button onClick={handleRetry} className="gap-2">
                 <RotateCcw className="h-4 w-4" />
                 {t.retry}
               </Button>
@@ -124,5 +139,5 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         </main>
       </body>
     </html>
-  );
+  )
 }

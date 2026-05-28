@@ -1,5 +1,5 @@
-import type { Plugins, Schema, Template } from '@pdfme/common';
-import QRCode from 'qrcode';
+import type { Plugins, Schema, Template } from '@pdfme/common'
+import QRCode from 'qrcode'
 
 type CertificationPattern =
   | 'academic'
@@ -12,44 +12,44 @@ type CertificationPattern =
   | 'tech'
   | 'vintage'
   | 'waves'
-  | string;
+  | string
 
 interface CertificatePdfLabels {
-  authenticityGuaranteed: string;
-  awarded: string;
-  badgeCheckIcon: string;
-  certificate: string;
-  certificateId: string;
-  instructor: string;
-  verificationNote: string;
+  authenticityGuaranteed: string
+  awarded: string
+  badgeCheckIcon: string
+  certificate: string
+  certificateId: string
+  instructor: string
+  verificationNote: string
 }
 
 interface CertificatePdfData {
-  awardedDate: string;
-  certificateId: string;
-  certificationDescription: string;
-  certificationName: string;
-  certificationTypeLabel: string;
-  instructor?: string | null;
-  labels: CertificatePdfLabels;
-  pattern: CertificationPattern;
-  verificationUrl: string;
+  awardedDate: string
+  certificateId: string
+  certificationDescription: string
+  certificationName: string
+  certificationTypeLabel: string
+  instructor?: string | null
+  labels: CertificatePdfLabels
+  pattern: CertificationPattern
+  verificationUrl: string
 }
 
 interface PatternTheme {
-  badgeBackground: string;
-  infoBackground: string;
-  infoBorder: string;
-  primary: string;
-  secondary: string;
+  badgeBackground: string
+  infoBackground: string
+  infoBorder: string
+  primary: string
+  secondary: string
 }
 
 const A4_LANDSCAPE = {
   width: 297,
   height: 210,
-} as const;
+} as const
 
-let pdfmePlugins: Plugins | null = null;
+let pdfmePlugins: Plugins | null = null
 
 const ROBOTO_FONT = {
   Roboto: {
@@ -62,77 +62,77 @@ const ROBOTO_FONT = {
   RobotoBold: {
     data: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAx05IsDqlA.ttf',
   },
-} as const;
+} as const
 
 const getPatternTheme = (pattern: CertificationPattern): PatternTheme => {
   const colors = (() => {
     switch (pattern) {
       case 'academic': {
-        return { primary: '#3730a3', secondary: '#4338ca' };
+        return { primary: '#3730a3', secondary: '#4338ca' }
       }
       case 'geometric': {
-        return { primary: '#7c3aed', secondary: '#9333ea' };
+        return { primary: '#7c3aed', secondary: '#9333ea' }
       }
       case 'minimal': {
-        return { primary: '#374151', secondary: '#4b5563' };
+        return { primary: '#374151', secondary: '#4b5563' }
       }
       case 'nature': {
-        return { primary: '#15803d', secondary: '#16a34a' };
+        return { primary: '#15803d', secondary: '#16a34a' }
       }
       case 'professional': {
-        return { primary: '#334155', secondary: '#475569' };
+        return { primary: '#334155', secondary: '#475569' }
       }
       case 'royal': {
-        return { primary: '#b45309', secondary: '#d97706' };
+        return { primary: '#b45309', secondary: '#d97706' }
       }
       case 'tech': {
-        return { primary: '#0e7490', secondary: '#0891b2' };
+        return { primary: '#0e7490', secondary: '#0891b2' }
       }
       case 'vintage': {
-        return { primary: '#c2410c', secondary: '#ea580c' };
+        return { primary: '#c2410c', secondary: '#ea580c' }
       }
       case 'waves':
       case 'modern': {
-        return { primary: '#1d4ed8', secondary: '#2563eb' };
+        return { primary: '#1d4ed8', secondary: '#2563eb' }
       }
       default: {
-        return { primary: '#374151', secondary: '#4b5563' };
+        return { primary: '#374151', secondary: '#4b5563' }
       }
     }
-  })();
+  })()
 
   return {
     ...colors,
     badgeBackground: mixHex(colors.secondary, '#ffffff', 0.12),
     infoBackground: '#f9fafb',
     infoBorder: mixHex(colors.secondary, '#ffffff', 0.28),
-  };
-};
+  }
+}
 
 const mixHex = (foreground: string, background: string, foregroundWeight: number) => {
-  const fg = hexToRgb(foreground);
-  const bg = hexToRgb(background);
+  const fg = hexToRgb(foreground)
+  const bg = hexToRgb(background)
 
   return rgbToHex({
     r: Math.round(fg.r * foregroundWeight + bg.r * (1 - foregroundWeight)),
     g: Math.round(fg.g * foregroundWeight + bg.g * (1 - foregroundWeight)),
     b: Math.round(fg.b * foregroundWeight + bg.b * (1 - foregroundWeight)),
-  });
-};
+  })
+}
 
 const hexToRgb = (hex: string) => {
-  const normalized = hex.replace('#', '');
-  const value = Number.parseInt(normalized, 16);
+  const normalized = hex.replace('#', '')
+  const value = Number.parseInt(normalized, 16)
 
   return {
     r: (value >> 16) & 255,
     g: (value >> 8) & 255,
     b: value & 255,
-  };
-};
+  }
+}
 
 const rgbToHex = ({ r, g, b }: { b: number; g: number; r: number }) =>
-  `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+  `#${[r, g, b].map(value => value.toString(16).padStart(2, '0')).join('')}`
 
 const rectangle = (
   name: string,
@@ -140,7 +140,11 @@ const rectangle = (
   width: number,
   height: number,
   color: string,
-  options: Partial<Schema> & { borderColor?: string; borderWidth?: number; radius?: number } = {},
+  options: Partial<Schema> & {
+    borderColor?: string
+    borderWidth?: number
+    radius?: number
+  } = {},
 ): Schema => ({
   name,
   type: 'rectangle',
@@ -154,7 +158,7 @@ const rectangle = (
   radius: options.radius ?? 0,
   readOnly: true,
   rotate: options.rotate ?? 0,
-});
+})
 
 const text = (
   name: string,
@@ -162,16 +166,16 @@ const text = (
   width: number,
   height: number,
   options: {
-    alignment?: 'center' | 'left' | 'right';
-    characterSpacing?: number;
-    color?: string;
-    content?: string;
-    dynamicFontSize?: { fit: 'horizontal' | 'vertical'; max: number; min: number };
-    fontName?: 'Roboto' | 'RobotoBold' | 'RobotoMedium';
-    fontSize: number;
-    lineHeight?: number;
-    readOnly?: boolean;
-    verticalAlignment?: 'bottom' | 'middle' | 'top';
+    alignment?: 'center' | 'left' | 'right'
+    characterSpacing?: number
+    color?: string
+    content?: string
+    dynamicFontSize?: { fit: 'horizontal' | 'vertical'; max: number; min: number }
+    fontName?: 'Roboto' | 'RobotoBold' | 'RobotoMedium'
+    fontSize: number
+    lineHeight?: number
+    readOnly?: boolean
+    verticalAlignment?: 'bottom' | 'middle' | 'top'
   },
 ): Schema => ({
   name,
@@ -191,7 +195,7 @@ const text = (
   opacity: 1,
   readOnly: options.readOnly ?? false,
   verticalAlignment: options.verticalAlignment ?? 'top',
-});
+})
 
 const inputText = (
   name: string,
@@ -199,9 +203,14 @@ const inputText = (
   width: number,
   height: number,
   options: Parameters<typeof text>[4],
-) => text(name, position, width, height, { ...options, readOnly: false });
+) => text(name, position, width, height, { ...options, readOnly: false })
 
-const image = (name: string, position: Schema['position'], width: number, height: number): Schema => ({
+const image = (
+  name: string,
+  position: Schema['position'],
+  width: number,
+  height: number,
+): Schema => ({
   name,
   type: 'image',
   position,
@@ -210,20 +219,26 @@ const image = (name: string, position: Schema['position'], width: number, height
   opacity: 1,
   readOnly: false,
   rotate: 0,
-});
+})
 
 const cornerSchemas = (theme: PatternTheme): Schema[] => {
-  const size = 35;
-  const inset = 24;
-  const thickness = 1.4;
-  const right = A4_LANDSCAPE.width - inset - size;
-  const bottom = A4_LANDSCAPE.height - inset - size;
+  const size = 35
+  const inset = 24
+  const thickness = 1.4
+  const right = A4_LANDSCAPE.width - inset - size
+  const bottom = A4_LANDSCAPE.height - inset - size
 
   return [
     rectangle('cornerTopLeftHorizontal', { x: inset, y: inset }, size, thickness, theme.secondary),
     rectangle('cornerTopLeftVertical', { x: inset, y: inset }, thickness, size, theme.secondary),
     rectangle('cornerTopRightHorizontal', { x: right, y: inset }, size, thickness, theme.secondary),
-    rectangle('cornerTopRightVertical', { x: right + size - thickness, y: inset }, thickness, size, theme.secondary),
+    rectangle(
+      'cornerTopRightVertical',
+      { x: right + size - thickness, y: inset },
+      thickness,
+      size,
+      theme.secondary,
+    ),
     rectangle(
       'cornerBottomLeftHorizontal',
       { x: inset, y: bottom + size - thickness },
@@ -231,7 +246,13 @@ const cornerSchemas = (theme: PatternTheme): Schema[] => {
       thickness,
       theme.secondary,
     ),
-    rectangle('cornerBottomLeftVertical', { x: inset, y: bottom }, thickness, size, theme.secondary),
+    rectangle(
+      'cornerBottomLeftVertical',
+      { x: inset, y: bottom },
+      thickness,
+      size,
+      theme.secondary,
+    ),
     rectangle(
       'cornerBottomRightHorizontal',
       { x: right, y: bottom + size - thickness },
@@ -246,13 +267,13 @@ const cornerSchemas = (theme: PatternTheme): Schema[] => {
       size,
       theme.secondary,
     ),
-  ];
-};
+  ]
+}
 
 const buildTemplate = (data: CertificatePdfData): Template => {
-  const theme = getPatternTheme(data.pattern);
-  const hasInstructor = Boolean(data.instructor);
-  const infoIdY = hasInstructor ? 178 : 169;
+  const theme = getPatternTheme(data.pattern)
+  const hasInstructor = Boolean(data.instructor)
+  const infoIdY = hasInstructor ? 178 : 169
 
   const schemas: Schema[] = [
     ...cornerSchemas(theme),
@@ -346,9 +367,13 @@ const buildTemplate = (data: CertificatePdfData): Template => {
       lineHeight: 1.25,
     }),
     rectangle('dividerLineLeft', { x: 93, y: 148 }, 27, 0.7, theme.secondary),
-    rectangle('dividerDotLeft', { x: 132, y: 146.7 }, 2.5, 2.5, theme.primary, { radius: 1.25 }),
+    rectangle('dividerDotLeft', { x: 132, y: 146.7 }, 2.5, 2.5, theme.primary, {
+      radius: 1.25,
+    }),
     rectangle('dividerLineMiddle', { x: 146, y: 148 }, 27, 0.7, theme.secondary),
-    rectangle('dividerDotRight', { x: 185, y: 146.7 }, 2.5, 2.5, theme.primary, { radius: 1.25 }),
+    rectangle('dividerDotRight', { x: 185, y: 146.7 }, 2.5, 2.5, theme.primary, {
+      radius: 1.25,
+    }),
     rectangle('dividerLineRight', { x: 199, y: 148 }, 27, 0.7, theme.secondary),
     rectangle('infoBox', { x: 69, y: 155 }, 159, hasInstructor ? 32 : 23, theme.infoBackground, {
       borderColor: theme.infoBorder,
@@ -398,7 +423,7 @@ const buildTemplate = (data: CertificatePdfData): Template => {
       dynamicFontSize: { min: 4.5, max: 6.5, fit: 'horizontal' },
       fontSize: 6.5,
     }),
-  ];
+  ]
 
   return {
     basePdf: {
@@ -407,22 +432,26 @@ const buildTemplate = (data: CertificatePdfData): Template => {
       padding: [0, 0, 0, 0],
     },
     schemas: [schemas],
-  };
-};
+  }
+}
 
 const getPdfmePlugins = async (): Promise<Plugins> => {
-  if (pdfmePlugins) return pdfmePlugins;
+  if (pdfmePlugins) return pdfmePlugins
 
-  const { image: imagePlugin, rectangle: rectanglePlugin, text: textPlugin } = await import('@pdfme/schemas');
+  const {
+    image: imagePlugin,
+    rectangle: rectanglePlugin,
+    text: textPlugin,
+  } = await import('@pdfme/schemas')
 
   pdfmePlugins = {
     Image: imagePlugin,
     Rectangle: rectanglePlugin,
     Text: textPlugin,
-  };
+  }
 
-  return pdfmePlugins;
-};
+  return pdfmePlugins
+}
 
 export const generateCertificatePdfBlob = async (data: CertificatePdfData): Promise<Blob> => {
   const [{ generate }, plugins, qrCode] = await Promise.all([
@@ -438,9 +467,9 @@ export const generateCertificatePdfBlob = async (data: CertificatePdfData): Prom
       type: 'image/png',
       width: 240,
     }),
-  ]);
+  ])
 
-  const verificationHost = data.verificationUrl.replace('https://', '').replace('http://', '');
+  const verificationHost = data.verificationUrl.replace('https://', '').replace('http://', '')
   const pdfBytes = await generate({
     inputs: [
       {
@@ -463,20 +492,20 @@ export const generateCertificatePdfBlob = async (data: CertificatePdfData): Prom
     },
     plugins,
     template: buildTemplate(data),
-  });
+  })
 
-  return new Blob([pdfBytes], { type: 'application/pdf' });
-};
+  return new Blob([pdfBytes], { type: 'application/pdf' })
+}
 
 export const downloadPdfBlob = (blob: Blob, fileName: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
 
-  link.href = url;
-  link.download = fileName;
-  link.click();
+  link.href = url
+  link.download = fileName
+  link.click()
 
-  URL.revokeObjectURL(url);
-};
+  URL.revokeObjectURL(url)
+}
 
-export const sanitizePdfFileName = (fileName: string) => fileName.replaceAll(/[^\dA-Za-z]/g, '_');
+export const sanitizePdfFileName = (fileName: string) => fileName.replaceAll(/[^\dA-Za-z]/g, '_')

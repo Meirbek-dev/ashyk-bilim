@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
-import NextImage from '../../components/ui/NextImage';
+import NextImage from '../../components/ui/NextImage'
 
 describe('NextImage', () => {
   it('renders arbitrary remote URLs as browser images', () => {
@@ -13,11 +13,14 @@ describe('NextImage', () => {
           fill
         />
       </div>,
-    );
+    )
 
-    const image = screen.getByAltText('Android preview');
+    const image = screen.getByAltText('Android preview')
 
-    expect(image.tagName).toBe('IMG');
-    expect(image).toHaveAttribute('src', 'https://developer.android.com/static/images/social/android-developers.png');
-  });
-});
+    expect(image.tagName).toBe('IMG')
+    expect(image).toHaveAttribute(
+      'src',
+      'https://developer.android.com/static/images/social/android-developers.png',
+    )
+  })
+})

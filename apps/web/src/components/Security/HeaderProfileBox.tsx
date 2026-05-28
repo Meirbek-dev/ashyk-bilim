@@ -1,61 +1,61 @@
-'use client';
+'use client'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@components/ui/dropdown-menu';
-import { ChevronDown, Crown, LogOut, Shield, User as UserIcon, Users, Star } from 'lucide-react'; // Added Star
-import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip';
-import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
-import { useSession } from '@/hooks/useSession';
-import { logout } from '@services/auth/auth';
-import { getAbsoluteUrl } from '@services/config/config';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { RoleSlugs } from '@/types/permissions';
-import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
-import type { Session } from '@/lib/auth/types';
-import { useTranslations } from 'next-intl';
-import { useTransition } from 'react';
-import Link from '@components/ui/AppLink';
-import type { ReactNode } from 'react';
+} from '@components/ui/dropdown-menu'
+import { ChevronDown, Crown, LogOut, Shield, User as UserIcon, Users, Star } from 'lucide-react' // Added Star
+import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip'
+import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
+import { useSession } from '@/hooks/useSession'
+import { logout } from '@services/auth/auth'
+import { getAbsoluteUrl } from '@services/config/config'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { RoleSlugs } from '@/types/permissions'
+import { Button } from '@components/ui/button'
+import { Badge } from '@components/ui/badge'
+import type { Session } from '@/lib/auth/types'
+import { useTranslations } from 'next-intl'
+import { useTransition } from 'react'
+import Link from '@components/ui/AppLink'
+import type { ReactNode } from 'react'
 
 interface RoleInfo {
-  slug: string; // Added slug to help with conditional rendering
-  name: string;
-  icon: ReactNode;
-  bgColor: string;
-  textColor: string;
-  description: string;
+  slug: string // Added slug to help with conditional rendering
+  name: string
+  icon: ReactNode
+  bgColor: string
+  textColor: string
+  description: string
 }
 
 interface CustomRoleInfo {
-  name: string;
-  description?: string;
+  name: string
+  description?: string
 }
 
-type SessionRole = Session['roles'][number];
+type SessionRole = Session['roles'][number]
 
 export const HeaderProfileBox = () => {
-  const { isAuthenticated, session, user } = useSession();
-  const { canAccessDashboard } = useNavigationPermissions();
-  const t = useTranslations('Header');
-  const [isLoggingOut, startLogoutTransition] = useTransition();
+  const { isAuthenticated, session, user } = useSession()
+  const { canAccessDashboard } = useNavigationPermissions()
+  const t = useTranslations('Header')
+  const [isLoggingOut, startLogoutTransition] = useTransition()
 
-  const userRoles = session?.roles ?? [];
+  const userRoles = session?.roles ?? []
 
-  let userRoleInfo: RoleInfo | null = null;
+  let userRoleInfo: RoleInfo | null = null
   if (userRoles && userRoles.length > 0) {
     const sortedRoles = [...userRoles].toSorted((a: SessionRole, b: SessionRole) => {
-      return (b.role?.priority ?? 0) - (a.role?.priority ?? 0);
-    });
+      return (b.role?.priority ?? 0) - (a.role?.priority ?? 0)
+    })
 
-    const highestRole = sortedRoles[0];
+    const highestRole = sortedRoles[0]
 
     if (highestRole) {
-      const roleSlug = highestRole.role?.slug || '';
+      const roleSlug = highestRole.role?.slug || ''
       const roleConfigs: Record<string, RoleInfo> = {
         [RoleSlugs.ADMIN]: {
           slug: RoleSlugs.ADMIN,
@@ -89,15 +89,15 @@ export const HeaderProfileBox = () => {
           textColor: 'text-white',
           description: t('profile.roles.user.description'),
         },
-      };
+      }
 
-      userRoleInfo = roleConfigs[roleSlug] || roleConfigs[RoleSlugs.USER] || null;
+      userRoleInfo = roleConfigs[roleSlug] || roleConfigs[RoleSlugs.USER] || null
     }
   }
 
   // Logic to determine if we should show the badge
   // We hide it if it's the standard USER role to reduce clutter
-  const shouldShowBadge = userRoleInfo !== null && userRoleInfo.slug !== RoleSlugs.USER;
+  const shouldShowBadge = userRoleInfo !== null && userRoleInfo.slug !== RoleSlugs.USER
 
   const customRoles: CustomRoleInfo[] =
     userRoles.length > 0
@@ -107,13 +107,13 @@ export const HeaderProfileBox = () => {
             name: role.role.name || t('profile.customRole'),
             description: role.role.description ?? undefined,
           }))
-      : [];
+      : []
 
   const handleLogout = () => {
     startLogoutTransition(() => {
-      void logout();
-    });
-  };
+      void logout()
+    })
+  }
 
   return (
     <div className="flex items-center">
@@ -122,10 +122,7 @@ export const HeaderProfileBox = () => {
           <ul className="flex items-center space-x-3">
             <li>
               <Link href={getAbsoluteUrl('/login')}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                >
+                <Button variant="ghost" size="sm">
                   {t('login')}
                 </Button>
               </Link>
@@ -145,16 +142,15 @@ export const HeaderProfileBox = () => {
               <DropdownMenuTrigger
                 nativeButton
                 render={
-                  <Button
-                    variant="ghost"
-                    className="flex h-auto items-center space-x-1 p-2"
-                  />
+                  <Button variant="ghost" className="flex h-auto items-center space-x-1 p-2" />
                 }
               >
                 <UserAvatar size="sm" />
                 <div className="flex flex-col space-y-0 text-start">
                   <div className="flex items-center space-x-2">
-                    <p className="text-foreground text-sm font-semibold capitalize">{user?.username}</p>
+                    <p className="text-foreground text-sm font-semibold capitalize">
+                      {user?.username}
+                    </p>
                     {/* Updated condition here */}
                     {shouldShowBadge && userRoleInfo && (
                       <Tooltip>
@@ -169,11 +165,7 @@ export const HeaderProfileBox = () => {
                             </Badge>
                           }
                         />
-                        <TooltipContent
-                          side="bottom"
-                          sideOffset={15}
-                          className="max-w-56"
-                        >
+                        <TooltipContent side="bottom" sideOffset={15} className="max-w-56">
                           {userRoleInfo.description}
                         </TooltipContent>
                       </Tooltip>
@@ -192,11 +184,7 @@ export const HeaderProfileBox = () => {
                             </Badge>
                           }
                         />
-                        <TooltipContent
-                          side="bottom"
-                          sideOffset={15}
-                          className="max-w-56"
-                        >
+                        <TooltipContent side="bottom" sideOffset={15} className="max-w-56">
                           {customRole.description || `Custom role: ${customRole.name}`}
                         </TooltipContent>
                       </Tooltip>
@@ -204,15 +192,9 @@ export const HeaderProfileBox = () => {
                   </div>
                   <p className="text-muted-foreground text-xs">{user?.email}</p>
                 </div>
-                <ChevronDown
-                  size={16}
-                  className="text-muted-foreground"
-                />
+                <ChevronDown size={16} className="text-muted-foreground" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56"
-                align="end"
-              >
+              <DropdownMenuContent className="w-56" align="end">
                 <div className="px-2 py-1.5">
                   <div className="flex items-center space-x-2">
                     <UserAvatar size="sm" />
@@ -257,5 +239,5 @@ export const HeaderProfileBox = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}

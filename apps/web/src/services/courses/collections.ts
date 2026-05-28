@@ -1,25 +1,27 @@
-'use server';
+'use server'
 
-import { errorHandling } from '@/lib/api-client';
-import { apiFetch } from '@/lib/api-client';
-import { tags } from '@/lib/cacheTags';
+import { errorHandling } from '@/lib/api-client'
+import { apiFetch } from '@/lib/api-client'
+import { tags } from '@/lib/cacheTags'
 
-import { getAPIUrl } from '../config/config';
+import { getAPIUrl } from '../config/config'
 
 /*
  This file includes POST, PUT, DELETE requests and cached GET requests
 */
 
 export async function deleteCollection(collection_uuid: string) {
-  const result = await apiFetch(`collections/${collection_uuid}`, { method: 'DELETE' });
-  const data_result = await errorHandling(result);
+  const result = await apiFetch(`collections/${collection_uuid}`, {
+    method: 'DELETE',
+  })
+  const data_result = await errorHandling(result)
 
   if (result.ok) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.collections, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.collections, 'max')
   }
 
-  return data_result;
+  return data_result
 }
 
 export async function createCollection(collection: any) {
@@ -27,15 +29,15 @@ export async function createCollection(collection: any) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(collection),
-  });
-  const data_result = await errorHandling(result);
+  })
+  const data_result = await errorHandling(result)
 
   if (result.ok) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.collections, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.collections, 'max')
   }
 
-  return data_result;
+  return data_result
 }
 
 async function fetchCollectionById(collection_uuid: string) {
@@ -44,12 +46,12 @@ async function fetchCollectionById(collection_uuid: string) {
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
-  });
-  return await errorHandling<any>(result);
+  })
+  return await errorHandling<any>(result)
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: any) {
-  return fetchCollectionById(collection_uuid);
+  return fetchCollectionById(collection_uuid)
 }
 
 /**
@@ -61,10 +63,10 @@ async function fetchCollections() {
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
-  });
-  return await errorHandling<any>(result);
+  })
+  return await errorHandling<any>(result)
 }
 
 export async function getCollections(_next?: any) {
-  return fetchCollections();
+  return fetchCollections()
 }

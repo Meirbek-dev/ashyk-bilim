@@ -1,45 +1,49 @@
-'use client';
+'use client'
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import { useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { cn } from '@/lib/utils';
-import type { MarkdownRenderMode } from '../presets/presets';
-import { extractMarkdownSummary } from '../utils/markdown-extract';
-import { sanitizeMarkdownImageUrl, sanitizeMarkdownUrl } from '../utils/markdown-sanitize';
-import { MarkdownCodeBlock } from './MarkdownCodeBlock';
-import { MarkdownImage } from './MarkdownImage';
-import { extractMarkdownHeadingText, MarkdownHeading, slugifyMarkdownHeading } from './MarkdownHeading';
-import { AiStreamingCursor } from './MarkdownStreaming';
+import { cn } from '@/lib/utils'
+import type { MarkdownRenderMode } from '../presets/presets'
+import { extractMarkdownSummary } from '../utils/markdown-extract'
+import { sanitizeMarkdownImageUrl, sanitizeMarkdownUrl } from '../utils/markdown-sanitize'
+import { MarkdownCodeBlock } from './MarkdownCodeBlock'
+import { MarkdownImage } from './MarkdownImage'
+import {
+  extractMarkdownHeadingText,
+  MarkdownHeading,
+  slugifyMarkdownHeading,
+} from './MarkdownHeading'
+import { AiStreamingCursor } from './MarkdownStreaming'
 
 interface MarkdownContentProps {
-  content: string;
-  mode?: MarkdownRenderMode;
-  className?: string;
-  compact?: boolean;
-  emptyFallback?: React.ReactNode;
+  content: string
+  mode?: MarkdownRenderMode
+  className?: string
+  compact?: boolean
+  emptyFallback?: React.ReactNode
   /** When true, append a blinking cursor after the last streamed token (AI use). */
-  streaming?: boolean;
+  streaming?: boolean
   /** Allow rendering of external images. Default: false for security. */
-  allowImages?: boolean;
+  allowImages?: boolean
   /** Show heading anchor links. Default: true for courseDescription / codeProblem modes. */
-  showHeadingAnchors?: boolean;
+  showHeadingAnchors?: boolean
   /** Callback when a heading anchor is clicked (e.g. for hash navigation). */
-  onHeadingAnchorClick?: (id: string) => void;
+  onHeadingAnchorClick?: (id: string) => void
 }
 
-const MODE_WITH_ANCHORS = new Set<MarkdownRenderMode>(['courseDescription', 'codeProblem']);
+const MODE_WITH_ANCHORS = new Set<MarkdownRenderMode>(['courseDescription', 'codeProblem'])
 const MODE_WITH_MATH = new Set<MarkdownRenderMode>([
   'prompt',
   'taskDescription',
   'codeProblem',
   'codeSpec',
   'compactRichText',
-]);
+])
 
 const modeClassName: Record<MarkdownRenderMode, string> = {
   prompt: 'prose-sm leading-relaxed',
@@ -49,7 +53,7 @@ const modeClassName: Record<MarkdownRenderMode, string> = {
   codeSpec: 'prose-sm leading-relaxed',
   courseDescription: 'prose-base md:prose-lg leading-relaxed',
   plainSummary: '',
-};
+}
 
 export function MarkdownContent({
   content,
@@ -62,56 +66,56 @@ export function MarkdownContent({
   showHeadingAnchors,
   onHeadingAnchorClick,
 }: MarkdownContentProps) {
-  const t = useTranslations('Features.ContentMarkdown');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const shouldShowAnchors = showHeadingAnchors ?? MODE_WITH_ANCHORS.has(mode);
-  const hasMath = MODE_WITH_MATH.has(mode) && /\$/.test(content);
-  const headingIds = new Map<string, number>();
+  const t = useTranslations('Features.ContentMarkdown')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const shouldShowAnchors = showHeadingAnchors ?? MODE_WITH_ANCHORS.has(mode)
+  const hasMath = MODE_WITH_MATH.has(mode) && /\$/.test(content)
+  const headingIds = new Map<string, number>()
 
   const nextHeadingId = (raw: React.ReactNode) => {
-    const base = slugifyMarkdownHeading(extractMarkdownHeadingText(raw)) || 'section';
-    const count = headingIds.get(base) ?? 0;
-    headingIds.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count + 1}`;
-  };
+    const base = slugifyMarkdownHeading(extractMarkdownHeadingText(raw)) || 'section'
+    const count = headingIds.get(base) ?? 0
+    headingIds.set(base, count + 1)
+    return count === 0 ? base : `${base}-${count + 1}`
+  }
 
   // Lazy-load KaTeX CSS only when math is actually present
   useEffect(() => {
-    if (!hasMath) return;
+    if (!hasMath) return
     // Dynamic import so KaTeX CSS is code-split and not loaded on every page
     import('katex/dist/katex.min.css').catch(() => {
       // CSS import — no action needed on failure
-    });
-  }, [hasMath]);
+    })
+  }, [hasMath])
 
   // Streaming cursor: inject after last text node
   useEffect(() => {
-    if (!streaming || !containerRef.current) return;
-    const container = containerRef.current;
+    if (!streaming || !containerRef.current) return
+    const container = containerRef.current
 
-    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-    let lastTextNode: Node | null = null;
-    let node: Node | null;
-    while ((node = walker.nextNode())) lastTextNode = node;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+    let lastTextNode: Node | null = null
+    let node: Node | null
+    while ((node = walker.nextNode())) lastTextNode = node
 
-    if (!lastTextNode?.parentElement) return;
+    if (!lastTextNode?.parentElement) return
 
-    const cursor = document.createElement('span');
+    const cursor = document.createElement('span')
     cursor.className =
-      'ml-0.5 inline-block h-[1em] w-[2px] translate-y-[1px] animate-pulse rounded-sm bg-current opacity-80';
-    cursor.setAttribute('aria-hidden', 'true');
-    lastTextNode.parentElement.appendChild(cursor);
-    return () => cursor.remove();
-  });
+      'ml-0.5 inline-block h-[1em] w-[2px] translate-y-[1px] animate-pulse rounded-sm bg-current opacity-80'
+    cursor.setAttribute('aria-hidden', 'true')
+    lastTextNode.parentElement.appendChild(cursor)
+    return () => cursor.remove()
+  })
 
-  if (!content?.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>;
-  if (mode === 'plainSummary') return <>{extractMarkdownSummary(content)}</>;
+  if (!content?.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>
+  if (mode === 'plainSummary') return <>{extractMarkdownSummary(content)}</>
 
-  const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm];
-  if (hasMath) remarkPlugins.push(remarkMath);
+  const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm]
+  if (hasMath) remarkPlugins.push(remarkMath)
 
-  const rehypePlugins: Parameters<typeof ReactMarkdown>[0]['rehypePlugins'] = [];
-  if (hasMath) rehypePlugins.push(rehypeKatex);
+  const rehypePlugins: Parameters<typeof ReactMarkdown>[0]['rehypePlugins'] = []
+  if (hasMath) rehypePlugins.push(rehypeKatex)
 
   return (
     <div
@@ -174,11 +178,15 @@ export function MarkdownContent({
 
           // ── Links ────────────────────────────────────────────────────────────
           a: ({ href, children, ...props }) => {
-            const safeHref = sanitizeMarkdownUrl(href);
+            const safeHref = sanitizeMarkdownUrl(href)
             if (!safeHref) {
-              return <span className="text-muted-foreground underline decoration-dotted">{children}</span>;
+              return (
+                <span className="text-muted-foreground underline decoration-dotted">
+                  {children}
+                </span>
+              )
             }
-            const external = /^https?:\/\//i.test(safeHref);
+            const external = /^https?:\/\//i.test(safeHref)
             return (
               <a
                 {...props}
@@ -188,19 +196,21 @@ export function MarkdownContent({
               >
                 {children}
               </a>
-            );
+            )
           },
 
           // ── Code ─────────────────────────────────────────────────────────────
           code: ({ className: codeClassName, children }) => {
-            const match = /language-(\w+)/.exec(codeClassName ?? '');
-            const code = String(children).replace(/\n$/, '');
+            const match = /language-(\w+)/.exec(codeClassName ?? '')
+            const code = String(children).replace(/\n$/, '')
 
             // Inline code: no language class AND no newlines
             if (!match && !code.includes('\n')) {
               return (
-                <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>{children}</code>
-              );
+                <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>
+                  {children}
+                </code>
+              )
             }
 
             return (
@@ -209,7 +219,7 @@ export function MarkdownContent({
                 language={match?.[1]}
                 compact={compact || mode === 'compactRichText'}
               />
-            );
+            )
           },
 
           // ── Tables ────────────────────────────────────────────────────────────
@@ -227,43 +237,37 @@ export function MarkdownContent({
                   <span aria-hidden="true">🖼</span>
                   <span>{alt || t('imageLabel')}</span>
                 </span>
-              );
+              )
             }
-            const safeHref = sanitizeMarkdownImageUrl(typeof src === 'string' ? src : undefined);
-            return (
-              <MarkdownImage
-                src={safeHref}
-                alt={alt}
-                title={title}
-              />
-            );
+            const safeHref = sanitizeMarkdownImageUrl(typeof src === 'string' ? src : undefined)
+            return <MarkdownImage src={safeHref} alt={alt} title={title} />
           },
 
           // ── Paragraphs (streaming cursor) ──────────────────────────────────
           p: ({ children, node }) => {
-            const isLast = streaming && node?.position?.end?.offset === content.length;
+            const isLast = streaming && node?.position?.end?.offset === content.length
             return (
               <p>
                 {children}
                 {isLast && <AiStreamingCursor />}
               </p>
-            );
+            )
           },
 
           // ── List items (streaming cursor) ──────────────────────────────────
           li: ({ children, node }) => {
-            const isLast = streaming && node?.position?.end?.offset === content.length;
+            const isLast = streaming && node?.position?.end?.offset === content.length
             return (
               <li>
                 {children}
                 {isLast && <AiStreamingCursor />}
               </li>
-            );
+            )
           },
         }}
       >
         {content}
       </ReactMarkdown>
     </div>
-  );
+  )
 }

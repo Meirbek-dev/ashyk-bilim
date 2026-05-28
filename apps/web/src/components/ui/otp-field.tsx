@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { OTPFieldPreview as OTPFieldPrimitive } from '@base-ui/react/otp-field';
-import type * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
+import { OTPFieldPreview as OTPFieldPrimitive } from '@base-ui/react/otp-field'
+import type * as React from 'react'
+import { cn } from '@/lib/utils'
+import { Separator } from '@/components/ui/separator'
 
 export function OTPField({
   className,
   size = 'default',
   ...props
 }: React.ComponentProps<typeof OTPFieldPrimitive.Root> & {
-  size?: 'default' | 'lg';
+  size?: 'default' | 'lg'
 }): React.ReactElement {
   return (
     <OTPFieldPrimitive.Root
@@ -22,7 +22,7 @@ export function OTPField({
       data-slot="otp-field"
       {...props}
     />
-  );
+  )
 }
 
 export function OTPFieldInput({
@@ -39,10 +39,13 @@ export function OTPFieldInput({
       spellCheck={false}
       {...props}
     />
-  );
+  )
 }
 
-export function OTPFieldSeparator({ className, ...props }: React.ComponentProps<typeof Separator>): React.ReactElement {
+export function OTPFieldSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof Separator>): React.ReactElement {
   return (
     <OTPFieldPrimitive.Separator
       render={
@@ -56,7 +59,7 @@ export function OTPFieldSeparator({ className, ...props }: React.ComponentProps<
         />
       }
     />
-  );
+  )
 }
 
-export { OTPFieldPrimitive };
+export { OTPFieldPrimitive }

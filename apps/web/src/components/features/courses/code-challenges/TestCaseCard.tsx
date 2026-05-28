@@ -1,13 +1,21 @@
-'use client';
+'use client'
 
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, MemoryStick, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  MemoryStick,
+  XCircle,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Badge } from '@/components/ui/badge';
-import { extractMarkdownSummary } from '@/features/content-markdown';
-import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
+import { extractMarkdownSummary } from '@/features/content-markdown'
+import { cn } from '@/lib/utils'
 
 // Judge0 status codes
 export enum Judge0Status {
@@ -28,25 +36,25 @@ export enum Judge0Status {
 }
 
 export interface TestCaseResult {
-  test_case_id: string;
-  status: number;
-  status_description: string;
-  passed: boolean;
-  time_ms?: number | null;
-  memory_kb?: number | null;
-  stdout?: string | null;
-  stderr?: string | null;
-  compile_output?: string | null;
-  message?: string | null;
+  test_case_id: string
+  status: number
+  status_description: string
+  passed: boolean
+  time_ms?: number | null
+  memory_kb?: number | null
+  stdout?: string | null
+  stderr?: string | null
+  compile_output?: string | null
+  message?: string | null
 }
 
 interface TestCaseCardProps {
-  result: TestCaseResult;
-  index: number;
-  isVisible?: boolean;
-  testDescription?: string;
-  expectedOutput?: string;
-  input?: string;
+  result: TestCaseResult
+  index: number
+  isVisible?: boolean
+  testDescription?: string
+  expectedOutput?: string
+  input?: string
 }
 
 export function TestCaseCard({
@@ -57,8 +65,8 @@ export function TestCaseCard({
   expectedOutput,
   input,
 }: TestCaseCardProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [isOpen, setIsOpen] = useState(false);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [isOpen, setIsOpen] = useState(false)
 
   const getStatusConfig = (status: number) => {
     switch (status) {
@@ -70,7 +78,7 @@ export function TestCaseCard({
           borderColor: 'border-green-200',
           badgeVariant: 'success' as const,
           label: t('status.accepted'),
-        };
+        }
       }
       case Judge0Status.WRONG_ANSWER: {
         return {
@@ -80,7 +88,7 @@ export function TestCaseCard({
           borderColor: 'border-red-200',
           badgeVariant: 'destructive' as const,
           label: t('status.wrongAnswer'),
-        };
+        }
       }
       case Judge0Status.TIME_LIMIT_EXCEEDED: {
         return {
@@ -90,7 +98,7 @@ export function TestCaseCard({
           borderColor: 'border-yellow-200',
           badgeVariant: 'warning' as const,
           label: t('status.timeLimitExceeded'),
-        };
+        }
       }
       case Judge0Status.COMPILATION_ERROR: {
         return {
@@ -100,7 +108,7 @@ export function TestCaseCard({
           borderColor: 'border-orange-200',
           badgeVariant: 'warning' as const,
           label: t('status.compilationError'),
-        };
+        }
       }
       case Judge0Status.RUNTIME_ERROR_SIGSEGV:
       case Judge0Status.RUNTIME_ERROR_SIGXFSZ:
@@ -115,7 +123,7 @@ export function TestCaseCard({
           borderColor: 'border-red-200',
           badgeVariant: 'destructive' as const,
           label: t('status.runtimeError'),
-        };
+        }
       }
       default: {
         return {
@@ -125,19 +133,23 @@ export function TestCaseCard({
           borderColor: 'border-gray-200',
           badgeVariant: 'secondary' as const,
           label: result.status_description || t('status.unknown'),
-        };
+        }
       }
     }
-  };
+  }
 
-  const config = getStatusConfig(result.status);
-  const StatusIcon = config.icon;
+  const config = getStatusConfig(result.status)
+  const StatusIcon = config.icon
 
   // For hidden tests, show minimal info
   if (!isVisible) {
     return (
       <div
-        className={cn('flex items-center justify-between rounded-lg border p-3', config.borderColor, config.bgColor)}
+        className={cn(
+          'flex items-center justify-between rounded-lg border p-3',
+          config.borderColor,
+          config.bgColor,
+        )}
       >
         <div className="flex items-center gap-2">
           <StatusIcon className={cn('h-5 w-5', config.color)} />
@@ -145,16 +157,15 @@ export function TestCaseCard({
             {t('hiddenTest')} #{index + 1}
           </span>
         </div>
-        <Badge variant={result.passed ? 'success' : 'destructive'}>{result.passed ? t('passed') : t('failed')}</Badge>
+        <Badge variant={result.passed ? 'success' : 'destructive'}>
+          {result.passed ? t('passed') : t('failed')}
+        </Badge>
       </div>
-    );
+    )
   }
 
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div
         className={cn(
           'rounded-lg border transition-colors',
@@ -189,7 +200,9 @@ export function TestCaseCard({
             {result.memory_kb && (
               <div className="text-muted-foreground flex items-center gap-1 text-sm">
                 <MemoryStick className="h-4 w-4" />
-                {t('memoryLimitValue', { value: (result.memory_kb / 1024).toFixed(1) })}
+                {t('memoryLimitValue', {
+                  value: (result.memory_kb / 1024).toFixed(1),
+                })}
               </div>
             )}
             <Badge variant={result.passed ? 'success' : 'destructive'}>{config.label}</Badge>
@@ -209,7 +222,9 @@ export function TestCaseCard({
             {/* Expected Output */}
             {expectedOutput && (
               <div>
-                <div className="text-muted-foreground mb-1 text-sm font-medium">{t('expectedOutput')}:</div>
+                <div className="text-muted-foreground mb-1 text-sm font-medium">
+                  {t('expectedOutput')}:
+                </div>
                 <pre className="bg-muted overflow-x-auto rounded p-2 text-sm">{expectedOutput}</pre>
               </div>
             )}
@@ -217,7 +232,9 @@ export function TestCaseCard({
             {/* Actual Output */}
             {result.stdout && (
               <div>
-                <div className="text-muted-foreground mb-1 text-sm font-medium">{t('actualOutput')}:</div>
+                <div className="text-muted-foreground mb-1 text-sm font-medium">
+                  {t('actualOutput')}:
+                </div>
                 <pre
                   className={cn(
                     'overflow-x-auto rounded p-2 text-sm',
@@ -232,7 +249,9 @@ export function TestCaseCard({
             {/* Compilation Error */}
             {result.compile_output && (
               <div>
-                <div className="mb-1 text-sm font-medium text-red-600">{t('compilationOutput')}:</div>
+                <div className="mb-1 text-sm font-medium text-red-600">
+                  {t('compilationOutput')}:
+                </div>
                 <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">
                   {result.compile_output}
                 </pre>
@@ -243,38 +262,42 @@ export function TestCaseCard({
             {result.stderr && (
               <div>
                 <div className="mb-1 text-sm font-medium text-red-600">{t('stderr')}:</div>
-                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">{result.stderr}</pre>
+                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">
+                  {result.stderr}
+                </pre>
               </div>
             )}
 
             {/* Message */}
-            {result.message && <div className="text-muted-foreground text-sm">{result.message}</div>}
+            {result.message && (
+              <div className="text-muted-foreground text-sm">{result.message}</div>
+            )}
           </div>
         </CollapsibleContent>
       </div>
     </Collapsible>
-  );
+  )
 }
 
 interface TestResultsListProps {
-  results: TestCaseResult[];
-  visibleTestIds?: Set<string>;
+  results: TestCaseResult[]
+  visibleTestIds?: Set<string>
   testCases?: {
-    id: string;
-    input?: string;
-    expected_output?: string;
-    description?: string;
-  }[];
+    id: string
+    input?: string
+    expected_output?: string
+    description?: string
+  }[]
 }
 
 export function TestResultsList({ results, visibleTestIds, testCases = [] }: TestResultsListProps) {
-  const t = useTranslations('Activities.CodeChallenges');
+  const t = useTranslations('Activities.CodeChallenges')
 
-  const passed = results.filter((r) => r.passed).length;
-  const total = results.length;
+  const passed = results.filter(r => r.passed).length
+  const total = results.length
 
   // Build test case map for details
-  const testCaseMap = new Map(testCases.map((tc) => [tc.id, tc]));
+  const testCaseMap = new Map(testCases.map(tc => [tc.id, tc]))
 
   return (
     <div className="space-y-4">
@@ -291,8 +314,8 @@ export function TestResultsList({ results, visibleTestIds, testCases = [] }: Tes
       {/* Results List */}
       <div className="space-y-2">
         {results.map((result, index) => {
-          const testCase = testCaseMap.get(result.test_case_id);
-          const isVisible = visibleTestIds ? visibleTestIds.has(result.test_case_id) : true;
+          const testCase = testCaseMap.get(result.test_case_id)
+          const isVisible = visibleTestIds ? visibleTestIds.has(result.test_case_id) : true
 
           return (
             <TestCaseCard
@@ -304,11 +327,11 @@ export function TestResultsList({ results, visibleTestIds, testCases = [] }: Tes
               expectedOutput={isVisible ? testCase?.expected_output : undefined}
               input={isVisible ? testCase?.input : undefined}
             />
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
 
-export default TestCaseCard;
+export default TestCaseCard

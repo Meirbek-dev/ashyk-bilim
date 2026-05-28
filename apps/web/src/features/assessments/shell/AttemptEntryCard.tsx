@@ -1,42 +1,54 @@
-'use client';
+'use client'
 
-import type { ReactNode } from 'react';
-import { AlertTriangle, BookOpen, Clock, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react'
+import {
+  AlertTriangle,
+  BookOpen,
+  Clock,
+  FileEdit,
+  Layers,
+  Lock,
+  RotateCcw,
+  Timer,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
-import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
+import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 
 function formatSeconds(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m} min`;
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m`
+  return `${m} min`
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 interface AttemptEntryCardProps {
-  vm: AttemptViewModel;
-  isTeacher?: boolean;
+  vm: AttemptViewModel
+  isTeacher?: boolean
 }
 
 export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
-  const t = useTranslations('Features.ActivityWorkspace');
+  const t = useTranslations('Features.ActivityWorkspace')
 
-  const { recommendedAction, policy, items } = vm;
-  const isBlocked = recommendedAction === 'blocked';
-  const isWaiting = recommendedAction === 'waitForRelease';
-  const isRevision = recommendedAction === 'startRevision';
+  const { recommendedAction, policy, items } = vm
+  const isBlocked = recommendedAction === 'blocked'
+  const isWaiting = recommendedAction === 'waitForRelease'
+  const isRevision = recommendedAction === 'startRevision'
 
-  const questionCount = items.length;
-  const { timeLimitSeconds } = policy;
-  const { maxAttempts } = policy;
+  const questionCount = items.length
+  const { timeLimitSeconds } = policy
+  const { maxAttempts } = policy
 
   if (isBlocked) {
     return (
@@ -47,7 +59,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
         <p className="text-muted-foreground max-w-md text-sm">{t('assessmentBlocked')}</p>
       </div>
-    );
+    )
   }
 
   if (isWaiting) {
@@ -59,10 +71,10 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
         <p className="text-muted-foreground max-w-md text-sm">{t('waitingForRelease')}</p>
       </div>
-    );
+    )
   }
 
-  const Icon = isRevision ? RotateCcw : BookOpen;
+  const Icon = isRevision ? RotateCcw : BookOpen
 
   return (
     <section className="mx-auto w-full max-w-6xl py-6">
@@ -78,10 +90,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
                   {getKindLabel(vm.kind)}
                 </span>
                 {isRevision ? (
-                  <Badge
-                    variant="secondary"
-                    className="gap-1 text-xs"
-                  >
+                  <Badge variant="secondary" className="gap-1 text-xs">
                     <RotateCcw className="size-3" />
                     {t('revision')}
                   </Badge>
@@ -89,7 +98,9 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
               </div>
               <h2 className="text-2xl font-semibold tracking-tight">{vm.title}</h2>
               {vm.description ? (
-                <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">{vm.description}</p>
+                <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">
+                  {vm.description}
+                </p>
               ) : null}
             </div>
           </div>
@@ -135,14 +146,18 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <div className="rounded-lg border p-4">
             {questionCount === 0 ? (
               <>
-                <div className="text-destructive text-sm font-semibold">{t('testNotReadyTitle')}</div>
+                <div className="text-destructive text-sm font-semibold">
+                  {t('testNotReadyTitle')}
+                </div>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
                 </p>
               </>
             ) : (
               <>
-                <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
+                <div className="text-sm font-semibold">
+                  {isRevision ? t('revision') : t('readyToStart')}
+                </div>
                 <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
               </>
             )}
@@ -150,9 +165,14 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
 
           {policy.dueAt ? (
             <div className="rounded-lg border p-4">
-              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('dueDate')}</div>
+              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                {t('dueDate')}
+              </div>
               <div
-                className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
+                className={cn(
+                  'mt-1 text-sm font-medium',
+                  new Date(policy.dueAt) < new Date() && 'text-destructive',
+                )}
               >
                 {formatDate(policy.dueAt)}
               </div>
@@ -161,7 +181,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
         </aside>
       </div>
     </section>
-  );
+  )
 }
 
 function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -171,25 +191,25 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
       <span className="mt-3 text-2xl font-semibold tabular-nums">{value}</span>
       <span className="text-muted-foreground text-xs">{label}</span>
     </div>
-  );
+  )
 }
 
 function getKindLabel(kind: string): string {
   switch (kind) {
     case 'TYPE_EXAM': {
-      return 'Exam';
+      return 'Exam'
     }
     case 'TYPE_CUSTOM': {
-      return 'Quiz';
+      return 'Quiz'
     }
     case 'TYPE_CODE_CHALLENGE': {
-      return 'Coding Challenge';
+      return 'Coding Challenge'
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return 'File Submission';
+      return 'File Submission'
     }
     default: {
-      return kind;
+      return kind
     }
   }
 }

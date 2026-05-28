@@ -10,7 +10,7 @@
  *  - cache tag revalidation on mutations
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 const mocks = vi.hoisted(() => ({
@@ -18,22 +18,22 @@ const mocks = vi.hoisted(() => ({
   getResponseMetadata: vi.fn(),
   errorHandling: vi.fn(),
   revalidateTag: vi.fn(),
-}));
+}))
 
 vi.mock('@/lib/api-client', () => ({
   apiFetch: mocks.apiFetch,
   getResponseMetadata: mocks.getResponseMetadata,
   errorHandling: mocks.errorHandling,
-}));
+}))
 
 vi.mock('next/cache', () => ({
   revalidateTag: mocks.revalidateTag,
-}));
+}))
 
 vi.mock('@services/config/config', () => ({
   getAPIUrl: vi.fn(() => 'http://api.test/'),
   getServerAPIUrl: vi.fn(() => 'http://api:8000/api/v1/'),
-}));
+}))
 
 vi.mock('@/lib/cacheTags', () => ({
   tags: { courses: 'courses' },
@@ -43,7 +43,7 @@ vi.mock('@/lib/cacheTags', () => ({
     publicList: () => 'course-public-list',
     access: (uuid: string) => `course-access-${uuid}`,
   },
-}));
+}))
 
 // Import AFTER mocks
 import {
@@ -55,7 +55,7 @@ import {
   updateCourseAccess,
   getCourseUserRights,
   searchCourses,
-} from '@/services/courses/courses';
+} from '@/services/courses/courses'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -91,7 +91,7 @@ function makeCourse(overrides: Record<string, unknown> = {}) {
       },
     ],
     ...overrides,
-  };
+  }
 }
 
 function makeFullCourse(overrides: Record<string, unknown> = {}) {
@@ -106,138 +106,145 @@ function makeFullCourse(overrides: Record<string, unknown> = {}) {
         activities: [],
       },
     ],
-  };
+  }
 }
 
 /** Create a Response-like mock with ok, status, json, headers */
 function makeResponse(
   body: unknown,
-  { status = 200, ok = true, headers = {} }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
+  {
+    status = 200,
+    ok = true,
+    headers = {},
+  }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
 ) {
-  const headerMap = new Map(Object.entries(headers));
+  const headerMap = new Map(Object.entries(headers))
   return {
     ok,
     status,
     json: vi.fn().mockResolvedValue(body),
     headers: { get: (key: string) => headerMap.get(key) ?? null },
-  };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  vi.clearAllMocks();
-});
+  vi.clearAllMocks()
+})
 
 // ── getCourses ────────────────────────────────────────────────────────────────
 
 describe('getCourses', () => {
   it('fetches the courses list with pagination params', async () => {
-    const course = makeCourse();
-    mocks.apiFetch.mockResolvedValue(makeResponse([course], { headers: { 'X-Total-Count': '1' } }));
+    const course = makeCourse()
+    mocks.apiFetch.mockResolvedValue(makeResponse([course], { headers: { 'X-Total-Count': '1' } }))
 
-    const result = await getCourses(undefined, 1, 20);
+    const result = await getCourses(undefined, 1, 20)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/page/1/limit/20', expect.objectContaining({ method: 'GET' }));
-    expect(result.total).toBe(1);
-    expect(result.courses).toHaveLength(1);
-  });
+    expect(mocks.apiFetch).toHaveBeenCalledWith(
+      'courses/page/1/limit/20',
+      expect.objectContaining({ method: 'GET' }),
+    )
+    expect(result.total).toBe(1)
+    expect(result.courses).toHaveLength(1)
+  })
 
   it('normalises null thumbnail_video to empty string', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ thumbnail_video: null })]));
+    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ thumbnail_video: null })]))
 
-    const { courses } = await getCourses();
+    const { courses } = await getCourses()
 
-    expect(courses[0]!.thumbnail_video).toBe('');
-  });
+    expect(courses[0]!.thumbnail_video).toBe('')
+  })
 
   it('parses JSON tags array', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ tags: '["python","beginner"]' })]));
+    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ tags: '["python","beginner"]' })]))
 
-    const { courses } = await getCourses();
+    const { courses } = await getCourses()
 
-    expect(courses[0]!.tags).toEqual(['python', 'beginner']);
-  });
+    expect(courses[0]!.tags).toEqual(['python', 'beginner'])
+  })
 
   it('falls back to comma-separated tags if not valid JSON', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ tags: 'python, beginner' })]));
+    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse({ tags: 'python, beginner' })]))
 
-    const { courses } = await getCourses();
+    const { courses } = await getCourses()
 
-    expect(courses[0]!.tags).toEqual(['python', 'beginner']);
-  });
+    expect(courses[0]!.tags).toEqual(['python', 'beginner'])
+  })
 
   it('normalises null author avatar to empty string', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse()]));
+    mocks.apiFetch.mockResolvedValue(makeResponse([makeCourse()]))
 
-    const { courses } = await getCourses();
+    const { courses } = await getCourses()
 
-    expect(courses[0]!.authors[0]!.user.avatar_image).toBe('');
-  });
-});
+    expect(courses[0]!.authors[0]!.user.avatar_image).toBe('')
+  })
+})
 
 // ── getCourse ─────────────────────────────────────────────────────────────────
 
 describe('getCourse', () => {
   it('fetches a single course by UUID', async () => {
-    const course = makeCourse({ description: null, about: null });
-    mocks.errorHandling.mockResolvedValue(course);
-    mocks.apiFetch.mockResolvedValue(makeResponse(course));
+    const course = makeCourse({ description: null, about: null })
+    mocks.errorHandling.mockResolvedValue(course)
+    mocks.apiFetch.mockResolvedValue(makeResponse(course))
 
-    const result = await getCourse('course_abc');
+    const result = await getCourse('course_abc')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc', expect.any(Object));
-    expect(result.course_uuid).toBe('course_abc');
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc', expect.any(Object))
+    expect(result.course_uuid).toBe('course_abc')
     // Null description normalised
-    expect(result.description).toBe('');
-    expect(result.about).toBe('');
-  });
-});
+    expect(result.description).toBe('')
+    expect(result.about).toBe('')
+  })
+})
 
 // ── getCourseMetadata ─────────────────────────────────────────────────────────
 
 describe('getCourseMetadata', () => {
   it('prepends course_ prefix when not present', async () => {
-    const full = makeFullCourse();
-    mocks.errorHandling.mockResolvedValue(full);
-    mocks.apiFetch.mockResolvedValue(makeResponse(full));
+    const full = makeFullCourse()
+    mocks.errorHandling.mockResolvedValue(full)
+    mocks.apiFetch.mockResolvedValue(makeResponse(full))
 
-    await getCourseMetadata('abc');
+    await getCourseMetadata('abc')
 
-    const [url] = mocks.apiFetch.mock.calls[0]!;
-    expect(url).toContain('courses/course_abc/meta');
-  });
+    const [url] = mocks.apiFetch.mock.calls[0]!
+    expect(url).toContain('courses/course_abc/meta')
+  })
 
   it('does NOT double-prepend course_ prefix', async () => {
-    const full = makeFullCourse();
-    mocks.errorHandling.mockResolvedValue(full);
-    mocks.apiFetch.mockResolvedValue(makeResponse(full));
+    const full = makeFullCourse()
+    mocks.errorHandling.mockResolvedValue(full)
+    mocks.apiFetch.mockResolvedValue(makeResponse(full))
 
-    await getCourseMetadata('course_abc');
+    await getCourseMetadata('course_abc')
 
-    const [url] = mocks.apiFetch.mock.calls[0]!;
-    expect(url).toContain('courses/course_abc/meta');
-    expect(url).not.toContain('course_course_abc');
-  });
+    const [url] = mocks.apiFetch.mock.calls[0]!
+    expect(url).toContain('courses/course_abc/meta')
+    expect(url).not.toContain('course_course_abc')
+  })
 
   it('normalises chapters to empty array when absent', async () => {
     // Build a full-course fixture with chapters explicitly absent (null)
-    const { chapters: _omitted, ...baseFields } = makeFullCourse();
-    const fullWithoutChapters = { ...baseFields, chapters: null };
-    mocks.errorHandling.mockResolvedValue(fullWithoutChapters);
-    mocks.apiFetch.mockResolvedValue(makeResponse(fullWithoutChapters));
+    const { chapters: _omitted, ...baseFields } = makeFullCourse()
+    const fullWithoutChapters = { ...baseFields, chapters: null }
+    mocks.errorHandling.mockResolvedValue(fullWithoutChapters)
+    mocks.apiFetch.mockResolvedValue(makeResponse(fullWithoutChapters))
 
-    const result = await getCourseMetadata('course_abc');
+    const result = await getCourseMetadata('course_abc')
 
-    expect(result.chapters).toEqual([]);
-  });
-});
+    expect(result.chapters).toEqual([])
+  })
+})
 
 // ── getEditableCourses ────────────────────────────────────────────────────────
 
 describe('getEditableCourses', () => {
   it('fetches editable courses list', async () => {
-    const course = makeCourse();
+    const course = makeCourse()
     mocks.apiFetch.mockResolvedValue(
       makeResponse([course], {
         headers: {
@@ -248,82 +255,86 @@ describe('getEditableCourses', () => {
           'X-Summary-Attention': '0',
         },
       }),
-    );
+    )
 
-    const result = await getEditableCourses();
+    const result = await getEditableCourses()
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       expect.stringContaining('courses/editable/page/1/limit/20'),
       expect.any(Object),
-    );
-    expect(result.total).toBe(1);
-    expect(result.summary.ready).toBe(1);
-  });
+    )
+    expect(result.total).toBe(1)
+    expect(result.summary.ready).toBe(1)
+  })
 
   it('appends query and sortBy params when provided', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse([], { headers: { 'X-Total-Count': '0' } }));
+    mocks.apiFetch.mockResolvedValue(makeResponse([], { headers: { 'X-Total-Count': '0' } }))
 
-    await getEditableCourses(1, 20, 'python', 'name');
+    await getEditableCourses(1, 20, 'python', 'name')
 
-    const [url] = mocks.apiFetch.mock.calls[0]!;
-    expect(url).toContain('query=python');
-    expect(url).toContain('sort_by=name');
-  });
+    const [url] = mocks.apiFetch.mock.calls[0]!
+    expect(url).toContain('query=python')
+    expect(url).toContain('sort_by=name')
+  })
 
   it('returns empty list on 401', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 401, ok: false }));
+    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 401, ok: false }))
 
-    const result = await getEditableCourses();
+    const result = await getEditableCourses()
 
-    expect(result.courses).toEqual([]);
-    expect(result.total).toBe(0);
-  });
+    expect(result.courses).toEqual([])
+    expect(result.total).toBe(0)
+  })
 
   it('returns empty list on 403', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 403, ok: false }));
+    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 403, ok: false }))
 
-    const result = await getEditableCourses();
+    const result = await getEditableCourses()
 
-    expect(result.courses).toEqual([]);
-  });
-});
+    expect(result.courses).toEqual([])
+  })
+})
 
 // ── getCourseUserRights ───────────────────────────────────────────────────────
 
 describe('getCourseUserRights', () => {
   it('fetches user rights for a course', async () => {
-    const rights = { can_edit: true, can_manage_members: false };
-    mocks.apiFetch.mockResolvedValue(makeResponse(rights));
-    mocks.errorHandling.mockResolvedValue(rights);
+    const rights = { can_edit: true, can_manage_members: false }
+    mocks.apiFetch.mockResolvedValue(makeResponse(rights))
+    mocks.errorHandling.mockResolvedValue(rights)
 
-    const result = await getCourseUserRights('course_abc');
+    const result = await getCourseUserRights('course_abc')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc/rights');
-    expect(result).toEqual(rights);
-  });
-});
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc/rights')
+    expect(result).toEqual(rights)
+  })
+})
 
 // ── searchCourses ─────────────────────────────────────────────────────────────
 
 describe('searchCourses', () => {
   it('fetches search results with encoded query', async () => {
-    const courses = [makeCourse()];
-    mocks.apiFetch.mockResolvedValue(makeResponse(courses));
-    mocks.errorHandling.mockResolvedValue(courses);
+    const courses = [makeCourse()]
+    mocks.apiFetch.mockResolvedValue(makeResponse(courses))
+    mocks.errorHandling.mockResolvedValue(courses)
 
-    const result = await searchCourses('python basics', 1, 10, undefined);
+    const result = await searchCourses('python basics', 1, 10, undefined)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(expect.stringContaining('query=python%20basics'));
-    expect(result).toHaveLength(1);
-  });
-});
+    expect(mocks.apiFetch).toHaveBeenCalledWith(expect.stringContaining('query=python%20basics'))
+    expect(result).toHaveLength(1)
+  })
+})
 
 // ── updateCourseMetadata ──────────────────────────────────────────────────────
 
 describe('updateCourseMetadata', () => {
   it('PUTs metadata and revalidates relevant tags on success', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse(makeCourse()));
-    mocks.getResponseMetadata.mockResolvedValue({ success: true, data: makeCourse(), status: 200 });
+    mocks.apiFetch.mockResolvedValue(makeResponse(makeCourse()))
+    mocks.getResponseMetadata.mockResolvedValue({
+      success: true,
+      data: makeCourse(),
+      status: 200,
+    })
 
     await updateCourseMetadata('course_abc', {
       name: 'Updated Course',
@@ -332,39 +343,47 @@ describe('updateCourseMetadata', () => {
       learnings: '["Skill A"]',
       tags: '["tag1"]',
       thumbnail_type: 'IMAGE',
-    });
+    })
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'courses/course_abc/metadata',
       expect.objectContaining({ method: 'PUT' }),
-    );
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('courses', 'max');
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('course-course_abc', 'max');
-  });
+    )
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('courses', 'max')
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('course-course_abc', 'max')
+  })
 
   it('does NOT revalidate when response is not successful', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 400, ok: false }));
-    mocks.getResponseMetadata.mockResolvedValue({ success: false, data: { detail: 'Conflict' }, status: 400 });
+    mocks.apiFetch.mockResolvedValue(makeResponse(null, { status: 400, ok: false }))
+    mocks.getResponseMetadata.mockResolvedValue({
+      success: false,
+      data: { detail: 'Conflict' },
+      status: 400,
+    })
 
-    await updateCourseMetadata('course_abc', { name: 'Oops' });
+    await updateCourseMetadata('course_abc', { name: 'Oops' })
 
-    expect(mocks.revalidateTag).not.toHaveBeenCalled();
-  });
-});
+    expect(mocks.revalidateTag).not.toHaveBeenCalled()
+  })
+})
 
 // ── updateCourseAccess ────────────────────────────────────────────────────────
 
 describe('updateCourseAccess', () => {
   it('PUTs access settings and revalidates access tag', async () => {
-    mocks.apiFetch.mockResolvedValue(makeResponse(makeCourse()));
-    mocks.getResponseMetadata.mockResolvedValue({ success: true, data: makeCourse(), status: 200 });
+    mocks.apiFetch.mockResolvedValue(makeResponse(makeCourse()))
+    mocks.getResponseMetadata.mockResolvedValue({
+      success: true,
+      data: makeCourse(),
+      status: 200,
+    })
 
-    await updateCourseAccess('course_abc', { public: true });
+    await updateCourseAccess('course_abc', { public: true })
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'courses/course_abc/access',
       expect.objectContaining({ method: 'PUT' }),
-    );
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('course-access-course_abc', 'max');
-  });
-});
+    )
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('course-access-course_abc', 'max')
+  })
+})

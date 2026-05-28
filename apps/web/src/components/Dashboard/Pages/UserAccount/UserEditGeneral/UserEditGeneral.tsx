@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import {
   AlertTriangle,
   Award,
@@ -18,79 +18,92 @@ import {
   MapPin,
   UploadCloud,
   Users,
-} from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-import { updateProfile, updateUserAvatar } from '@/lib/users/client';
-import { useSession } from '@/hooks/useSession';
-import { logout } from '@services/auth/auth';
-import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useDebouncedCallback } from '@/hooks/useDebounce';
-import { getAbsoluteUrl } from '@services/config/config';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { constructAcceptValue } from '@/lib/constants';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import type { ChangeEvent, ElementType } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
-import { Textarea } from '@components/ui/textarea';
-import { ThemeModeToggle } from '@/components/theme-mode-toggle';
-import { ThemeSelector } from '@/lib/theme-system';
-import { Button } from '@components/ui/button';
-import { getUserLocale } from '@/i18n/locale';
-import { Label } from '@components/ui/label';
-import { Input } from '@components/ui/input';
-import type { Locale } from '@/i18n/config';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import * as v from 'valibot';
+} from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select'
+import { updateProfile, updateUserAvatar } from '@/lib/users/client'
+import { useSession } from '@/hooks/useSession'
+import { logout } from '@services/auth/auth'
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
+import { valibotResolver } from '@hookform/resolvers/valibot'
+import { useDebouncedCallback } from '@/hooks/useDebounce'
+import { getAbsoluteUrl } from '@services/config/config'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { constructAcceptValue } from '@/lib/constants'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import type { ChangeEvent, ElementType } from 'react'
+import type { UseFormReturn } from 'react-hook-form'
+import { Textarea } from '@components/ui/textarea'
+import { ThemeModeToggle } from '@/components/theme-mode-toggle'
+import { ThemeSelector } from '@/lib/theme-system'
+import { Button } from '@components/ui/button'
+import { getUserLocale } from '@/i18n/locale'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import type { Locale } from '@/i18n/config'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import * as v from 'valibot'
 
-const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif']);
-const SUPPORTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
-const MAX_AVATAR_UPLOAD_BYTES = 2 * 1024 * 1024;
-const MAX_AVATAR_SOURCE_BYTES = 10 * 1024 * 1024;
-const AVATAR_EXPORT_SIZE = 512;
-const AVATAR_EXPORT_QUALITY = 0.88;
+const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif'])
+const SUPPORTED_AVATAR_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+])
+const MAX_AVATAR_UPLOAD_BYTES = 2 * 1024 * 1024
+const MAX_AVATAR_SOURCE_BYTES = 10 * 1024 * 1024
+const AVATAR_EXPORT_SIZE = 512
+const AVATAR_EXPORT_QUALITY = 0.88
 
 const iconComponentMap = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
+  speciality: Lightbulb,
+  globe: Globe,
   'laptop-2': Laptop2,
-  'award': Award,
+  award: Award,
   'book-open': BookOpen,
-  'link': Link,
-  'users': Users,
-  'calendar': Calendar,
-};
+  link: Link,
+  users: Users,
+  calendar: Calendar,
+}
 
 const IconComponent = ({ iconName }: { iconName: string }) => {
-  const IconElement = iconComponentMap[iconName as keyof typeof iconComponentMap];
-  if (!IconElement) return null;
-  return <IconElement className="h-4 w-4" />;
-};
+  const IconElement = iconComponentMap[iconName as keyof typeof iconComponentMap]
+  if (!IconElement) return null
+  return <IconElement className="h-4 w-4" />
+}
 
 interface DetailItem {
-  id: string;
-  label: string;
-  icon: string;
-  text: string;
+  id: string
+  label: string
+  icon: string
+  text: string
 }
 
 interface FormValues {
-  username: string;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  email: string;
-  bio?: string;
-  details: Record<string, DetailItem>;
+  username: string
+  first_name: string
+  middle_name?: string
+  last_name: string
+  email: string
+  bio?: string
+  details: Record<string, DetailItem>
 }
 
 const createValidationSchema = (t: (key: string, values?: any) => string) =>
@@ -100,10 +113,21 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
       v.minLength(1, t('Form.requiredField', { fieldName: 'Email' })),
       v.email(t('Form.invalidEmail')),
     ),
-    username: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'Username' }))),
-    first_name: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'First name' }))),
-    middle_name: v.optional(v.pipe(v.string(), v.maxLength(100, t('Form.maxChars', { count: 100 })))),
-    last_name: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'Last name' }))),
+    username: v.pipe(
+      v.string(),
+      v.minLength(1, t('Form.requiredField', { fieldName: 'Username' })),
+    ),
+    first_name: v.pipe(
+      v.string(),
+      v.minLength(1, t('Form.requiredField', { fieldName: 'First name' })),
+    ),
+    middle_name: v.optional(
+      v.pipe(v.string(), v.maxLength(100, t('Form.maxChars', { count: 100 }))),
+    ),
+    last_name: v.pipe(
+      v.string(),
+      v.minLength(1, t('Form.requiredField', { fieldName: 'Last name' })),
+    ),
     bio: v.optional(v.pipe(v.string(), v.maxLength(400, t('Form.maxChars', { count: 400 })))),
     details: v.record(
       v.string(),
@@ -114,7 +138,7 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
         text: v.string(),
       }),
     ),
-  });
+  })
 
 async function optimizeAvatarFile(file: File): Promise<File> {
   if (
@@ -124,43 +148,43 @@ async function optimizeAvatarFile(file: File): Promise<File> {
     file.type === 'image/gif' ||
     file.type === 'image/avif'
   ) {
-    return file;
+    return file
   }
 
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
+  const bitmap = await createImageBitmap(file).catch(() => null)
+  if (!bitmap) return file
 
   try {
-    const scale = Math.min(1, AVATAR_EXPORT_SIZE / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const scale = Math.min(1, AVATAR_EXPORT_SIZE / Math.max(bitmap.width, bitmap.height))
+    const width = Math.max(1, Math.round(bitmap.width * scale))
+    const height = Math.max(1, Math.round(bitmap.height * scale))
 
     if (scale === 1 && file.type === 'image/webp' && file.size <= MAX_AVATAR_UPLOAD_BYTES) {
-      return file;
+      return file
     }
 
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) return file;
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext('2d')
+    if (!context) return file
 
-    context.drawImage(bitmap, 0, 0, width, height);
+    context.drawImage(bitmap, 0, 0, width, height)
 
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/webp', AVATAR_EXPORT_QUALITY);
-    });
+    const blob = await new Promise<Blob | null>(resolve => {
+      canvas.toBlob(resolve, 'image/webp', AVATAR_EXPORT_QUALITY)
+    })
 
     if (!blob || (blob.size >= file.size && file.size <= MAX_AVATAR_UPLOAD_BYTES)) {
-      return file;
+      return file
     }
 
     return new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), {
       type: 'image/webp',
       lastModified: Date.now(),
-    });
+    })
   } finally {
-    bitmap.close();
+    bitmap.close()
   }
 }
 
@@ -172,23 +196,23 @@ const DetailCard = ({
   onLabelChange,
   availableIcons,
 }: {
-  id: string;
-  detail: DetailItem;
-  onUpdate: (id: string, field: keyof DetailItem, value: string) => void;
-  onRemove: (id: string) => void;
-  onLabelChange: (id: string, newLabel: string) => void;
+  id: string
+  detail: DetailItem
+  onUpdate: (id: string, field: keyof DetailItem, value: string) => void
+  onRemove: (id: string) => void
+  onLabelChange: (id: string, newLabel: string) => void
   availableIcons: readonly {
-    name: string;
-    label: string;
-    component: ElementType;
-  }[];
+    name: string
+    label: string
+    component: ElementType
+  }[]
 }) => {
   // Use lazy initialization to set initial label from prop
-  const [localLabel, setLocalLabel] = useState(() => detail.label);
-  const [isUserInput, setIsUserInput] = useState(false);
-  const t = useTranslations('DashPage.UserAccountSettings.generalSection');
+  const [localLabel, setLocalLabel] = useState(() => detail.label)
+  const [isUserInput, setIsUserInput] = useState(false)
+  const t = useTranslations('DashPage.UserAccountSettings.generalSection')
 
-  const iconItems = availableIcons.map((icon) => ({
+  const iconItems = availableIcons.map(icon => ({
     value: icon.name,
     label: (
       <div className="flex items-center gap-2">
@@ -196,36 +220,36 @@ const DetailCard = ({
         <span>{icon.label}</span>
       </div>
     ),
-  }));
+  }))
 
   // Create a stable callback for label changes - only for user input
   const stableLabelChangeCallback = (newLabel: string) => {
     if (isUserInput && newLabel !== detail.label) {
-      onLabelChange(id, newLabel);
+      onLabelChange(id, newLabel)
     }
-  };
+  }
 
   // Debounce the label change handler
-  const debouncedLabelChange = useDebouncedCallback(stableLabelChangeCallback, 500);
+  const debouncedLabelChange = useDebouncedCallback(stableLabelChangeCallback, 500)
 
   const handleLabelChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newLabel = e.target.value;
-    setLocalLabel(newLabel);
-    setIsUserInput(true);
-    debouncedLabelChange(newLabel);
-  };
+    const newLabel = e.target.value
+    setLocalLabel(newLabel)
+    setIsUserInput(true)
+    debouncedLabelChange(newLabel)
+  }
 
   const handleIconChange = (value: string) => {
-    onUpdate(id, 'icon', value);
-  };
+    onUpdate(id, 'icon', value)
+  }
 
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onUpdate(id, 'text', e.target.value);
-  };
+    onUpdate(id, 'text', e.target.value)
+  }
 
   const handleRemove = () => {
-    onRemove(id);
-  };
+    onRemove(id)
+  }
 
   return (
     <div className="bg-card ring-foreground/10 space-y-2 rounded-lg p-4 ring-1">
@@ -252,7 +276,7 @@ const DetailCard = ({
           <Label>{t('detailIconLabel')}</Label>
           <Select
             value={detail.icon}
-            onValueChange={(value) => value && handleIconChange(value)}
+            onValueChange={value => value && handleIconChange(value)}
             items={iconItems}
           >
             <SelectTrigger className="w-full">
@@ -260,18 +284,15 @@ const DetailCard = ({
                 {detail.icon ? (
                   <div className="flex items-center gap-2">
                     <IconComponent iconName={detail.icon} />
-                    <span>{availableIcons.find((i) => i.name === detail.icon)?.label}</span>
+                    <span>{availableIcons.find(i => i.name === detail.icon)?.label}</span>
                   </div>
                 ) : null}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {iconItems.map((item) => (
-                  <SelectItem
-                    key={item.value}
-                    value={item.value}
-                  >
+                {iconItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
@@ -289,31 +310,37 @@ const DetailCard = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface UserEditFormProps {
-  form: UseFormReturn<FormValues>;
+  form: UseFormReturn<FormValues>
   profilePicture: {
-    error: string | undefined;
-    success: string;
-    isLoading: boolean;
-    localAvatar: File | null;
-    previewUrl: string | null;
-    handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
-  };
+    error: string | undefined
+    success: string
+    isLoading: boolean
+    localAvatar: File | null
+    previewUrl: string | null
+    handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
+  }
 }
 
 // Form component to handle the details section
 const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const tIcons = useTranslations('Components.UserProfilePopup.Icons');
-  const tTemplates = useTranslations('DashPage.UserAccountSettings.generalSection.detailTemplateLabels');
-  const t = useTranslations('DashPage.UserAccountSettings.generalSection');
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const tIcons = useTranslations('Components.UserProfilePopup.Icons')
+  const tTemplates = useTranslations(
+    'DashPage.UserAccountSettings.generalSection.detailTemplateLabels',
+  )
+  const t = useTranslations('DashPage.UserAccountSettings.generalSection')
 
   const AVAILABLE_ICONS = [
     { name: 'briefcase', label: tIcons('briefcase'), component: Briefcase },
-    { name: 'graduation-cap', label: tIcons('graduation-cap'), component: GraduationCap },
+    {
+      name: 'graduation-cap',
+      label: tIcons('graduation-cap'),
+      component: GraduationCap,
+    },
     { name: 'map-pin', label: tIcons('map-pin'), component: MapPin },
     { name: 'building-2', label: tIcons('building-2'), component: Building2 },
     { name: 'speciality', label: tIcons('speciality'), component: Lightbulb },
@@ -324,31 +351,85 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
     { name: 'link', label: tIcons('link'), component: Link },
     { name: 'users', label: tIcons('users'), component: Users },
     { name: 'calendar', label: tIcons('calendar'), component: Calendar },
-  ] as const;
+  ] as const
 
   const DETAIL_TEMPLATES = {
     general: [
       { id: 'title', label: tTemplates('title'), icon: 'briefcase', text: '' },
-      { id: 'affiliation', label: tTemplates('affiliation'), icon: 'building-2', text: '' },
-      { id: 'location', label: tTemplates('location'), icon: 'map-pin', text: '' },
+      {
+        id: 'affiliation',
+        label: tTemplates('affiliation'),
+        icon: 'building-2',
+        text: '',
+      },
+      {
+        id: 'location',
+        label: tTemplates('location'),
+        icon: 'map-pin',
+        text: '',
+      },
       { id: 'website', label: tTemplates('website'), icon: 'globe', text: '' },
       { id: 'linkedin', label: tTemplates('linkedin'), icon: 'link', text: '' },
     ],
     academic: [
-      { id: 'institution', label: tTemplates('institution'), icon: 'building-2', text: '' },
-      { id: 'department', label: tTemplates('department'), icon: 'graduation-cap', text: '' },
-      { id: 'research', label: tTemplates('research'), icon: 'book-open', text: '' },
-      { id: 'academic-title', label: tTemplates('academic-title'), icon: 'award', text: '' },
+      {
+        id: 'institution',
+        label: tTemplates('institution'),
+        icon: 'building-2',
+        text: '',
+      },
+      {
+        id: 'department',
+        label: tTemplates('department'),
+        icon: 'graduation-cap',
+        text: '',
+      },
+      {
+        id: 'research',
+        label: tTemplates('research'),
+        icon: 'book-open',
+        text: '',
+      },
+      {
+        id: 'academic-title',
+        label: tTemplates('academic-title'),
+        icon: 'award',
+        text: '',
+      },
     ],
     professional: [
-      { id: 'company', label: tTemplates('company'), icon: 'building-2', text: '' },
-      { id: 'industry', label: tTemplates('industry'), icon: 'briefcase', text: '' },
-      { id: 'expertise', label: tTemplates('expertise'), icon: 'laptop-2', text: '' },
-      { id: 'community', label: tTemplates('community'), icon: 'users', text: '' },
+      {
+        id: 'company',
+        label: tTemplates('company'),
+        icon: 'building-2',
+        text: '',
+      },
+      {
+        id: 'industry',
+        label: tTemplates('industry'),
+        icon: 'briefcase',
+        text: '',
+      },
+      {
+        id: 'expertise',
+        label: tTemplates('expertise'),
+        icon: 'laptop-2',
+        text: '',
+      },
+      {
+        id: 'community',
+        label: tTemplates('community'),
+        icon: 'users',
+        text: '',
+      },
     ],
-  } as const;
+  } as const
 
-  const details = useWatch({ control: form.control, name: 'details', defaultValue: {} });
+  const details = useWatch({
+    control: form.control,
+    name: 'details',
+    defaultValue: {},
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -391,11 +472,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <Field>
                   <FieldLabel htmlFor={field.name}>{t('username')}</FieldLabel>
                   <FieldContent>
-                    <Input
-                      id={field.name}
-                      placeholder={t('usernamePlaceholder')}
-                      {...field}
-                    />
+                    <Input id={field.name} placeholder={t('usernamePlaceholder')} {...field} />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
@@ -410,11 +487,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   <Field>
                     <FieldLabel htmlFor={field.name}>{t('firstName')}</FieldLabel>
                     <FieldContent>
-                      <Input
-                        id={field.name}
-                        placeholder={t('firstNamePlaceholder')}
-                        {...field}
-                      />
+                      <Input id={field.name} placeholder={t('firstNamePlaceholder')} {...field} />
                     </FieldContent>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
@@ -428,11 +501,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   <Field>
                     <FieldLabel htmlFor={field.name}>{t('middleName')}</FieldLabel>
                     <FieldContent>
-                      <Input
-                        id={field.name}
-                        placeholder={t('middleNamePlaceholder')}
-                        {...field}
-                      />
+                      <Input id={field.name} placeholder={t('middleNamePlaceholder')} {...field} />
                     </FieldContent>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
@@ -446,11 +515,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   <Field>
                     <FieldLabel htmlFor={field.name}>{t('lastName')}</FieldLabel>
                     <FieldContent>
-                      <Input
-                        id={field.name}
-                        placeholder={t('lastNamePlaceholder')}
-                        {...field}
-                      />
+                      <Input id={field.name} placeholder={t('lastNamePlaceholder')} {...field} />
                     </FieldContent>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
@@ -490,7 +555,9 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
             <div className="flex flex-wrap items-center justify-start gap-4">
               <div className="space-y-1">
                 <Label className="text-base font-medium">{t('themeSelector.modeTitle')}</Label>
-                <p className="text-muted-foreground text-xs">{t('themeSelector.modeDescription')}</p>
+                <p className="text-muted-foreground text-xs">
+                  {t('themeSelector.modeDescription')}
+                </p>
               </div>
               <ThemeModeToggle className="ml-4" />
             </div>
@@ -507,7 +574,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     size="sm"
                     className="text-destructive hover:bg-destructive/10"
                     onClick={() => {
-                      form.setValue('details', {});
+                      form.setValue('details', {})
                     }}
                   >
                     {t('clearAll')}
@@ -517,15 +584,15 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const newDetails = { ...details };
-                      const id = `detail-${Date.now()}`;
+                      const newDetails = { ...details }
+                      const id = `detail-${Date.now()}`
                       newDetails[id] = {
                         id,
                         label: t('newDetail'),
                         icon: '',
                         text: '',
-                      };
-                      form.setValue('details', newDetails);
+                      }
+                      form.setValue('details', newDetails)
                     }}
                   >
                     {t('addDetail')}
@@ -542,16 +609,16 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     size="sm"
                     className="flex items-center gap-2"
                     onClick={() => {
-                      const currentIds = new Set(Object.keys(details || {}));
-                      const newDetails = { ...details };
+                      const currentIds = new Set(Object.keys(details || {}))
+                      const newDetails = { ...details }
 
                       for (const item of template) {
                         if (!currentIds.has(item.id)) {
-                          newDetails[item.id] = { ...item };
+                          newDetails[item.id] = { ...item }
                         }
                       }
 
-                      form.setValue('details', newDetails);
+                      form.setValue('details', newDetails)
                     }}
                   >
                     {key === 'general' && <Briefcase className="h-4 w-4" />}
@@ -570,8 +637,8 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   id={id}
                   detail={detail}
                   onUpdate={(id, field, value) => {
-                    const newDetails = { ...details };
-                    const existingDetail = newDetails[id];
+                    const newDetails = { ...details }
+                    const existingDetail = newDetails[id]
                     newDetails[id] = {
                       id: existingDetail?.id || id,
                       label: existingDetail?.label || '',
@@ -579,25 +646,25 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                       text: existingDetail?.text || '',
                       ...existingDetail,
                       [field]: value,
-                    };
-                    form.setValue('details', newDetails);
+                    }
+                    form.setValue('details', newDetails)
                   }}
-                  onRemove={(id) => {
-                    const newDetails = { ...details };
-                    const { [id]: removed, ...nextDetails } = newDetails;
-                    form.setValue('details', nextDetails);
+                  onRemove={id => {
+                    const newDetails = { ...details }
+                    const { [id]: removed, ...nextDetails } = newDetails
+                    form.setValue('details', nextDetails)
                   }}
                   onLabelChange={(id, newLabel) => {
-                    const newDetails = { ...details };
-                    const existingDetail = newDetails[id];
+                    const newDetails = { ...details }
+                    const existingDetail = newDetails[id]
                     newDetails[id] = {
                       id: existingDetail?.id || id,
                       label: newLabel,
                       icon: existingDetail?.icon || '',
                       text: existingDetail?.text || '',
                       ...existingDetail,
-                    };
-                    form.setValue('details', newDetails);
+                    }
+                    form.setValue('details', newDetails)
                   }}
                   availableIcons={AVAILABLE_ICONS}
                 />
@@ -675,12 +742,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
       </div>
 
       <div className="mx-5 mb-5 flex flex-row-reverse border-t pt-5">
-        <Button
-          type="submit"
-          size="lg"
-          disabled={form.formState.isSubmitting}
-          className="px-8"
-        >
+        <Button type="submit" size="lg" disabled={form.formState.isSubmitting} className="px-8">
           {form.formState.isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -692,24 +754,24 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const UserEditGeneral = () => {
-  const router = useRouter();
-  const { user: me } = useSession();
-  const [localAvatar, setLocalAvatar] = useState<File | null>(null);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState('');
-  const [userData, setUserData] = useState<any>(null);
-  const [currentLocale, setCurrentLocale] = useState<Locale | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const t = useTranslations('DashPage.Notifications');
-  const validationSchema = createValidationSchema(t);
+  const router = useRouter()
+  const { user: me } = useSession()
+  const [localAvatar, setLocalAvatar] = useState<File | null>(null)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | undefined>()
+  const [success, setSuccess] = useState('')
+  const [userData, setUserData] = useState<any>(null)
+  const [currentLocale, setCurrentLocale] = useState<Locale | null>(null)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const t = useTranslations('DashPage.Notifications')
+  const validationSchema = createValidationSchema(t)
 
-  type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>;
+  type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
 
   const form = useForm<UserEditFormInput, any, FormValues>({
     resolver: valibotResolver(validationSchema),
@@ -723,16 +785,19 @@ const UserEditGeneral = () => {
       details: {},
     },
     mode: 'onChange',
-  });
+  })
 
   useEffect(() => {
     const fetchData = async () => {
       if (me?.id) {
         try {
-          const [userDataResponse, localeResponse] = await Promise.all([Promise.resolve(me), getUserLocale()]);
-          const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {};
-          setUserData(userDataResponse);
-          setCurrentLocale(localeResponse);
+          const [userDataResponse, localeResponse] = await Promise.all([
+            Promise.resolve(me),
+            getUserLocale(),
+          ])
+          const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {}
+          setUserData(userDataResponse)
+          setCurrentLocale(localeResponse)
 
           // Reset form with fetched data
           form.reset({
@@ -743,126 +808,126 @@ const UserEditGeneral = () => {
             email: userDataResponse.email || '',
             bio: userDataResponse.bio || '',
             details,
-          });
+          })
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error('Error fetching initial data:', errorMessage, error);
-          setError('Failed to load user data.');
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          console.error('Error fetching initial data:', errorMessage, error)
+          setError('Failed to load user data.')
         } finally {
-          setInitialLoading(false);
+          setInitialLoading(false)
         }
       } else {
-        setInitialLoading(false);
+        setInitialLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, [form, me]);
+    fetchData()
+  }, [form, me])
 
   useEffect(() => {
     if (!localAvatar) {
-      setAvatarPreviewUrl(null);
-      return;
+      setAvatarPreviewUrl(null)
+      return
     }
 
-    const previewUrl = URL.createObjectURL(localAvatar);
-    setAvatarPreviewUrl(previewUrl);
+    const previewUrl = URL.createObjectURL(localAvatar)
+    setAvatarPreviewUrl(previewUrl)
 
     return () => {
-      URL.revokeObjectURL(previewUrl);
-    };
-  }, [localAvatar]);
+      URL.revokeObjectURL(previewUrl)
+    }
+  }, [localAvatar])
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const file = event.target.files?.[0]
+    if (!file) return
 
-    setIsLoading(true);
-    setError(undefined);
-    setSuccess('');
-    event.currentTarget.value = '';
+    setIsLoading(true)
+    setError(undefined)
+    setSuccess('')
+    event.currentTarget.value = ''
 
     if (!me?.id) {
-      setError(t('avatarError'));
-      setIsLoading(false);
-      return;
+      setError(t('avatarError'))
+      setIsLoading(false)
+      return
     }
     if (!SUPPORTED_AVATAR_MIME_TYPES.has(file.type) || file.name.toLowerCase().endsWith('.svg')) {
-      setError(t('avatarError'));
-      setIsLoading(false);
-      return;
+      setError(t('avatarError'))
+      setIsLoading(false)
+      return
     }
     if (file.size > MAX_AVATAR_SOURCE_BYTES) {
-      setError(t('avatarError'));
-      setIsLoading(false);
-      return;
+      setError(t('avatarError'))
+      setIsLoading(false)
+      return
     }
 
     try {
-      const uploadFile = await optimizeAvatarFile(file);
+      const uploadFile = await optimizeAvatarFile(file)
       if (uploadFile.size > MAX_AVATAR_UPLOAD_BYTES) {
-        setError(t('avatarError'));
-        return;
+        setError(t('avatarError'))
+        return
       }
 
-      setLocalAvatar(uploadFile);
-      const res = await updateUserAvatar(me.id, uploadFile);
+      setLocalAvatar(uploadFile)
+      const res = await updateUserAvatar(me.id, uploadFile)
       if (!res.success) {
-        setError(res.HTTPmessage || t('avatarError'));
+        setError(res.HTTPmessage || t('avatarError'))
       } else {
-        setSuccess(t('avatarSuccess'));
-        router.refresh();
+        setSuccess(t('avatarSuccess'))
+        router.refresh()
       }
     } catch (error) {
-      console.error('Avatar upload error:', error);
-      setError(t('avatarError'));
+      console.error('Avatar upload error:', error)
+      setError(t('avatarError'))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleEmailChange = async (newEmail: string) => {
     toast.success(t('profileUpdateSuccess'), {
       duration: 4000,
-    });
+    })
 
     toast(t('promptLogoutOnEmailChange', { newEmail }), {
       duration: 4000,
       icon: '📧',
-    });
+    })
 
     // Wait for 4 seconds before signing out
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-    await logout({ redirectTo: getAbsoluteUrl('/') });
-  };
+    await new Promise(resolve => setTimeout(resolve, 4000))
+    await logout({ redirectTo: getAbsoluteUrl('/') })
+  }
 
   const onSubmit = async (values: FormValues) => {
     if (!userData?.id) {
-      toast.error(t('profileUpdateError'));
-      return;
+      toast.error(t('profileUpdateError'))
+      return
     }
 
-    const isEmailChanged = values.email !== userData.email;
-    const loadingToast = toast.loading(t('updating'));
+    const isEmailChanged = values.email !== userData.email
+    const loadingToast = toast.loading(t('updating'))
 
     try {
-      await updateProfile(values, userData.id);
-      setUserData((current: any) => ({ ...current, ...values }));
+      await updateProfile(values, userData.id)
+      setUserData((current: any) => ({ ...current, ...values }))
 
-      toast.dismiss(loadingToast);
+      toast.dismiss(loadingToast)
       if (isEmailChanged) {
-        await handleEmailChange(values.email);
+        await handleEmailChange(values.email)
       } else {
-        router.refresh();
-        toast.success(t('profileUpdateSuccess'));
+        router.refresh()
+        toast.success(t('profileUpdateSuccess'))
       }
     } catch (error) {
-      console.error('Profile update error:', error);
+      console.error('Profile update error:', error)
       toast.error(t('profileUpdateError'), {
         id: loadingToast,
-      });
+      })
     }
-  };
+  }
 
   if (initialLoading || !userData || !currentLocale) {
     return (
@@ -871,7 +936,7 @@ const UserEditGeneral = () => {
           <Loader2 className="text-primary h-8 w-8 animate-spin" />
         </div>
       </Card>
-    );
+    )
   }
 
   return (
@@ -890,7 +955,7 @@ const UserEditGeneral = () => {
         />
       </form>
     </Card>
-  );
-};
+  )
+}
 
-export default UserEditGeneral;
+export default UserEditGeneral

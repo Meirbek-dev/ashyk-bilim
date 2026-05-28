@@ -1,26 +1,32 @@
-'use client';
+'use client'
 
-import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { Controller, useFormContext, useWatch } from 'react-hook-form'
+import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
-import { useJudge0Languages } from '@/features/assessments/hooks/code-challenge';
-import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor'
+import { useJudge0Languages } from '@/features/assessments/hooks/code-challenge'
+import type { CodeChallengeSettingsForm } from './CodeChallengeStudio'
 
 export default function StarterCodeTabs() {
-  const t = useTranslations('Activities.CodeChallenges.form');
-  const form = useFormContext<CodeChallengeSettingsForm>();
-  const { data: judge0Languages = [] } = useJudge0Languages();
-  const watchedLanguages = useWatch({ control: form.control, name: 'allowed_languages' });
+  const t = useTranslations('Activities.CodeChallenges.form')
+  const form = useFormContext<CodeChallengeSettingsForm>()
+  const { data: judge0Languages = [] } = useJudge0Languages()
+  const watchedLanguages = useWatch({
+    control: form.control,
+    name: 'allowed_languages',
+  })
   const languages = useMemo(
-    () => (watchedLanguages ?? []).map((id) => judge0Languages.find((language) => language.id === id)).filter(Boolean),
+    () =>
+      (watchedLanguages ?? [])
+        .map(id => judge0Languages.find(language => language.id === id))
+        .filter(Boolean),
     [judge0Languages, watchedLanguages],
-  );
+  )
 
-  if (!languages.length) return null;
+  if (!languages.length) return null
 
   return (
     <Card>
@@ -31,20 +37,14 @@ export default function StarterCodeTabs() {
       <CardContent>
         <Tabs defaultValue={String(languages[0]?.id)}>
           <TabsList className="mb-3 flex h-auto flex-wrap justify-start">
-            {languages.map((language) => (
-              <TabsTrigger
-                key={language!.id}
-                value={String(language!.id)}
-              >
+            {languages.map(language => (
+              <TabsTrigger key={language!.id} value={String(language!.id)}>
                 {language!.name}
               </TabsTrigger>
             ))}
           </TabsList>
-          {languages.map((language) => (
-            <TabsContent
-              key={language!.id}
-              value={String(language!.id)}
-            >
+          {languages.map(language => (
+            <TabsContent key={language!.id} value={String(language!.id)}>
               <Controller
                 control={form.control}
                 name={`starter_code.${language!.id}`}
@@ -64,5 +64,5 @@ export default function StarterCodeTabs() {
         </Tabs>
       </CardContent>
     </Card>
-  );
+  )
 }

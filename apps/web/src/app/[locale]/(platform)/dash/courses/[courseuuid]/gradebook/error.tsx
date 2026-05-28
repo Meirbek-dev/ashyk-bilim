@@ -1,12 +1,18 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
-import { reportClientError } from '@/services/telemetry/client';
+import { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
+import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { reportClientError } from '@/services/telemetry/client'
 
-export default function GradebookError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const t = useTranslations('Errors');
+export default function GradebookError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  const t = useTranslations('Errors')
 
   useEffect(() => {
     void reportClientError({
@@ -18,8 +24,8 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
       },
       page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'gradebook',
       url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'gradebook',
-    }).catch(() => undefined);
-  }, [error]);
+    }).catch(() => undefined)
+  }, [error])
 
   return (
     <div className="flex min-h-[480px] items-center justify-center p-6">
@@ -46,5 +52,5 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
-import { PermissionGuard } from '@/components/Security/PermissionGuard';
-import { SessionProvider } from '@/components/providers/session-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import type { Session } from '@/lib/auth/types';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
+import { PermissionGuard } from '@/components/Security/PermissionGuard'
+import { SessionProvider } from '@/components/providers/session-provider'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import type { Session } from '@/lib/auth/types'
 
 // Mock useRouter
 vi.mock('next/navigation', () => ({
@@ -12,12 +12,12 @@ vi.mock('next/navigation', () => ({
     push: vi.fn(),
     refresh: vi.fn(),
   }),
-}));
+}))
 
 // Mock apiFetch
 vi.mock('@/lib/api-client', () => ({
   apiFetch: vi.fn(),
-}));
+}))
 
 const mockUser = {
   id: 1,
@@ -30,7 +30,7 @@ const mockUser = {
   bio: null,
   middle_name: null,
   theme: 'system',
-};
+}
 
 const mockSession: Session = {
   user: mockUser,
@@ -53,10 +53,10 @@ const mockSession: Session = {
   permissions_timestamp: Date.now(),
   expiresAt: Date.now() + 86_400_000,
   sessionVersion: 1,
-};
+}
 
 describe('Security Audit - Frontend', () => {
-  let queryClient: QueryClient;
+  let queryClient: QueryClient
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -65,33 +65,29 @@ describe('Security Audit - Frontend', () => {
           retry: false,
         },
       },
-    });
-    vi.clearAllMocks();
-  });
+    })
+    vi.clearAllMocks()
+  })
 
   afterEach(() => {
-    cleanup();
-  });
+    cleanup()
+  })
 
   describe('PermissionGuard', () => {
     it('[SECURITY] should render children when permission is granted', () => {
       render(
         <QueryClientProvider client={queryClient}>
           <SessionProvider initialSession={mockSession}>
-            <PermissionGuard
-              action={Actions.READ}
-              resource={Resources.COURSE}
-              scope={Scopes.OWN}
-            >
+            <PermissionGuard action={Actions.READ} resource={Resources.COURSE} scope={Scopes.OWN}>
               <div data-testid="protected-content">Secret Content</div>
             </PermissionGuard>
           </SessionProvider>
         </QueryClientProvider>,
-      );
+      )
 
-      expect(screen.getByTestId('protected-content')).toBeDefined();
-      expect(screen.getByText('Secret Content')).toBeDefined();
-    });
+      expect(screen.getByTestId('protected-content')).toBeDefined()
+      expect(screen.getByText('Secret Content')).toBeDefined()
+    })
 
     it('[SECURITY] should render fallback when permission is denied', () => {
       render(
@@ -107,55 +103,51 @@ describe('Security Audit - Frontend', () => {
             </PermissionGuard>
           </SessionProvider>
         </QueryClientProvider>,
-      );
+      )
 
-      expect(screen.queryByTestId('protected-content')).toBeNull();
-      expect(screen.getByTestId('fallback')).toBeDefined();
-    });
+      expect(screen.queryByTestId('protected-content')).toBeNull()
+      expect(screen.getByTestId('fallback')).toBeDefined()
+    })
 
     it('[SECURITY] should hide content for unauthenticated users', () => {
       render(
         <QueryClientProvider client={queryClient}>
           <SessionProvider initialSession={null}>
-            <PermissionGuard
-              action={Actions.READ}
-              resource={Resources.COURSE}
-              scope={Scopes.OWN}
-            >
+            <PermissionGuard action={Actions.READ} resource={Resources.COURSE} scope={Scopes.OWN}>
               <div data-testid="protected-content">Secret Content</div>
             </PermissionGuard>
           </SessionProvider>
         </QueryClientProvider>,
-      );
+      )
 
-      expect(screen.queryByTestId('protected-content')).toBeNull();
-    });
-  });
+      expect(screen.queryByTestId('protected-content')).toBeNull()
+    })
+  })
 
   describe('Session Management', () => {
     it('[SECURITY] should handle broadcast logout across tabs', async () => {
       // BroadcastChannel might need a polyfill or mock in jsdom
-      const broadcastMock = vi.fn();
-      const originalBroadcastChannel = globalThis.BroadcastChannel;
+      const broadcastMock = vi.fn()
+      const originalBroadcastChannel = globalThis.BroadcastChannel
 
       globalThis.BroadcastChannel = class {
-        public name: string;
-        public onmessage: ((ev: MessageEvent) => any) | null = null;
+        public name: string
+        public onmessage: ((ev: MessageEvent) => any) | null = null
         public constructor(name: string) {
-          this.name = name;
+          this.name = name
         }
         public postMessage(data: any) {
-          broadcastMock(data);
+          broadcastMock(data)
         }
         public close() {}
         public addEventListener(type: string, listener: any) {
-          if (type === 'message') this.onmessage = listener;
+          if (type === 'message') this.onmessage = listener
         }
         public removeEventListener() {}
         public dispatchEvent() {
-          return true;
+          return true
         }
-      } as any;
+      } as any
 
       render(
         <QueryClientProvider client={queryClient}>
@@ -163,18 +155,18 @@ describe('Security Audit - Frontend', () => {
             <div data-testid="app">App</div>
           </SessionProvider>
         </QueryClientProvider>,
-      );
+      )
 
       // Simulate logout message from another tab
-      const channel = new globalThis.BroadcastChannel('auth');
+      const channel = new globalThis.BroadcastChannel('auth')
       if (channel.onmessage) {
-        channel.onmessage({ data: { type: 'logout' } } as MessageEvent);
+        channel.onmessage({ data: { type: 'logout' } } as MessageEvent)
       }
 
       // Check if session is cleared (status becomes unauthenticated)
       // We can check if it redirected to /login (needs mocking useRouter correctly)
 
-      globalThis.BroadcastChannel = originalBroadcastChannel;
-    });
-  });
-});
+      globalThis.BroadcastChannel = originalBroadcastChannel
+    })
+  })
+})

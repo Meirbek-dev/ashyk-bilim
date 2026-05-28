@@ -1,55 +1,55 @@
-'use client';
+'use client'
 
-import { useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { isSafeMarkdownImageUrl } from '../utils/markdown-sanitize';
-import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react'
+import { Image as ImageIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { isSafeMarkdownImageUrl } from '../utils/markdown-sanitize'
+import { useTranslations } from 'next-intl'
 
 interface EditorImageDialogProps {
-  onConfirm: (src: string, alt: string) => void;
-  onClose: () => void;
+  onConfirm: (src: string, alt: string) => void
+  onClose: () => void
 }
 
 export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps) {
-  const t = useTranslations('MarkdownEditor');
-  const [src, setSrc] = useState('');
-  const [alt, setAlt] = useState('');
-  const [touched, setTouched] = useState(false);
-  const [previewFailed, setPreviewFailed] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('MarkdownEditor')
+  const [src, setSrc] = useState('')
+  const [alt, setAlt] = useState('')
+  const [touched, setTouched] = useState(false)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const srcValid = !src.trim() || isSafeMarkdownImageUrl(src.trim());
-  const showError = touched && Boolean(src.trim()) && !srcValid;
+  const srcValid = !src.trim() || isSafeMarkdownImageUrl(src.trim())
+  const showError = touched && Boolean(src.trim()) && !srcValid
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    inputRef.current?.focus()
+  }, [])
 
   const handleConfirm = () => {
-    if (!src.trim() || !srcValid) return;
+    if (!src.trim() || !srcValid) return
     if (!alt.trim()) {
-      setTouched(true);
-      return;
+      setTouched(true)
+      return
     }
-    onConfirm(src.trim(), alt.trim());
-    onClose();
-  };
+    onConfirm(src.trim(), alt.trim())
+    onClose()
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      handleConfirm();
+      e.preventDefault()
+      handleConfirm()
     }
     if (e.key === 'Escape') {
-      e.preventDefault();
-      onClose();
+      e.preventDefault()
+      onClose()
     }
-  };
+  }
 
-  const showPreview = src.trim() && srcValid && !previewFailed;
+  const showPreview = src.trim() && srcValid && !previewFailed
 
   return (
     <div
@@ -61,8 +61,8 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
     >
       <div
         className="bg-popover border-border w-[380px] rounded-lg border p-4 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
           <ImageIcon className="text-muted-foreground size-4" />
@@ -71,20 +71,17 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Image URL */}
         <div className="mb-2 space-y-1">
-          <label
-            htmlFor="image-dialog-src"
-            className="text-muted-foreground text-xs font-medium"
-          >
+          <label htmlFor="image-dialog-src" className="text-muted-foreground text-xs font-medium">
             {t('imageDialog.srcLabel')}
           </label>
           <Input
             id="image-dialog-src"
             ref={inputRef}
             value={src}
-            onChange={(e) => {
-              setSrc(e.target.value);
-              setTouched(true);
-              setPreviewFailed(false);
+            onChange={e => {
+              setSrc(e.target.value)
+              setTouched(true)
+              setPreviewFailed(false)
             }}
             onKeyDown={handleKeyDown}
             placeholder={t('imageDialog.srcPlaceholder')}
@@ -96,17 +93,14 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Alt text */}
         <div className="mb-3 space-y-1">
-          <label
-            htmlFor="image-dialog-alt"
-            className="text-muted-foreground text-xs font-medium"
-          >
+          <label htmlFor="image-dialog-alt" className="text-muted-foreground text-xs font-medium">
             {t('imageDialog.altLabel')}{' '}
             <span className="text-muted-foreground/60">{t('imageDialog.altLabelOptional')}</span>
           </label>
           <Input
             id="image-dialog-alt"
             value={alt}
-            onChange={(e) => setAlt(e.target.value)}
+            onChange={e => setAlt(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('imageDialog.altPlaceholder')}
           />
@@ -127,12 +121,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
             {t('imageDialog.cancel')}
           </Button>
           <Button
@@ -146,5 +135,5 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,6 +1,6 @@
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import { requireAnyPermission } from '@/lib/auth/permissions';
-import type { ReactNode } from 'react';
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import { requireAnyPermission } from '@/lib/auth/permissions'
+import type { ReactNode } from 'react'
 
 export default async function PlatformSettingsLayout({ children }: { children: ReactNode }) {
   await requireAnyPermission(
@@ -12,7 +12,7 @@ export default async function PlatformSettingsLayout({ children }: { children: R
       { action: Actions.MANAGE, resource: Resources.APP, scope: Scopes.APP },
     ],
     '/dash',
-  );
+  )
 
-  return <>{children}</>;
+  return <>{children}</>
 }

@@ -1,39 +1,39 @@
-'use client';
+'use client'
 
-import { AlertTriangle, Clock, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Clock, RotateCcw } from 'lucide-react'
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { TimerRing } from './TimerRing';
-import { useTranslations } from 'next-intl';
-import type { PolicyView } from '@/features/assessments/domain/policy';
-import type { ReleaseState } from '@/features/assessments/domain/release';
-import type { SubmissionStatus } from '@/features/assessments/domain/submission-status';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { TimerRing } from './TimerRing'
+import { useTranslations } from 'next-intl'
+import type { PolicyView } from '@/features/assessments/domain/policy'
+import type { ReleaseState } from '@/features/assessments/domain/release'
+import type { SubmissionStatus } from '@/features/assessments/domain/submission-status'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 export interface AssessmentChromeProps {
   /** Assessment kind label shown above the title (e.g. "Exam"). */
-  kindLabel: string;
-  title: string;
-  description?: string | null;
+  kindLabel: string
+  title: string
+  description?: string | null
   /** ISO date string or null. */
-  dueAt?: string | null;
+  dueAt?: string | null
   /** Whether this attempt was returned for revision. */
-  returned?: boolean;
+  returned?: boolean
   /** Remaining seconds for a timed assessment. `null` = no timer. */
-  timerSeconds?: number | null;
+  timerSeconds?: number | null
   /** Whether anti-cheat checks are active. */
-  antiCheatEnabled?: boolean;
+  antiCheatEnabled?: boolean
   /** Number of recorded violations (shown when > 0). */
-  violationCount?: number;
+  violationCount?: number
   /** Full policy view, used to describe which checks are active. */
-  policy?: PolicyView | null;
-  releaseState?: ReleaseState;
-  submissionStatus?: SubmissionStatus | null;
-  isResultVisible?: boolean;
-  className?: string;
+  policy?: PolicyView | null
+  releaseState?: ReleaseState
+  submissionStatus?: SubmissionStatus | null
+  isResultVisible?: boolean
+  className?: string
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -62,8 +62,14 @@ export function AssessmentChrome({
   isResultVisible = false,
   className,
 }: AssessmentChromeProps) {
-  const t = useTranslations('Features.Assessments.Attempt.Exam');
-  const releaseNotice = getReleaseNotice({ releaseState, submissionStatus, returned, isResultVisible, t });
+  const t = useTranslations('Features.Assessments.Attempt.Exam')
+  const releaseNotice = getReleaseNotice({
+    releaseState,
+    submissionStatus,
+    returned,
+    isResultVisible,
+    t,
+  })
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -73,7 +79,9 @@ export function AssessmentChrome({
           <div className="min-w-0">
             <div className="text-muted-foreground text-xs font-medium uppercase">{kindLabel}</div>
             <h1 className="mt-1 text-xl font-semibold tracking-tight">{title}</h1>
-            {description ? <p className="text-muted-foreground mt-1 max-w-4xl text-sm">{description}</p> : null}
+            {description ? (
+              <p className="text-muted-foreground mt-1 max-w-4xl text-sm">{description}</p>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -117,21 +125,26 @@ export function AssessmentChrome({
         </Alert>
       ) : null}
     </div>
-  );
+  )
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function describeAntiCheat(policy: PolicyView | null | undefined, t: (key: string, values?: any) => string): string {
-  if (!policy) return t('antiCheatDefaultNotice');
+function describeAntiCheat(
+  policy: PolicyView | null | undefined,
+  t: (key: string, values?: any) => string,
+): string {
+  if (!policy) return t('antiCheatDefaultNotice')
   const enabled = [
     policy.antiCheat.copyPasteProtection ? t('antiCheatCopyPaste') : null,
     policy.antiCheat.tabSwitchDetection ? t('antiCheatTabSwitch') : null,
     policy.antiCheat.devtoolsDetection ? t('antiCheatDevTools') : null,
     policy.antiCheat.rightClickDisabled ? t('antiCheatRightClick') : null,
     policy.antiCheat.fullscreenEnforced ? t('antiCheatFullscreen') : null,
-  ].filter(Boolean);
-  return enabled.length ? t('antiCheatActiveChecks', { checks: enabled.join(', ') }) : t('antiCheatActiveNotice');
+  ].filter(Boolean)
+  return enabled.length
+    ? t('antiCheatActiveChecks', { checks: enabled.join(', ') })
+    : t('antiCheatActiveNotice')
 }
 
 function getReleaseNotice({
@@ -141,42 +154,45 @@ function getReleaseNotice({
   isResultVisible,
   t,
 }: {
-  releaseState?: ReleaseState;
-  submissionStatus: SubmissionStatus | null;
-  returned: boolean;
-  isResultVisible: boolean;
-  t: (key: string) => string;
+  releaseState?: ReleaseState
+  submissionStatus: SubmissionStatus | null
+  returned: boolean
+  isResultVisible: boolean
+  t: (key: string) => string
 }): { title: string; description: string } | null {
   if (returned || !submissionStatus) {
-    return null;
+    return null
   }
 
   if (releaseState === 'AWAITING_RELEASE' || submissionStatus === 'GRADED') {
     return {
       title: t('resultsAwaitingReleaseTitle'),
       description: t('resultsAwaitingReleaseDescription'),
-    };
+    }
   }
 
   if (releaseState === 'HIDDEN' && submissionStatus === 'PENDING') {
     return {
       title: t('submissionReceivedTitle'),
       description: t('submissionReceivedDescription'),
-    };
+    }
   }
 
   if (releaseState === 'VISIBLE' && isResultVisible) {
     return {
       title: t('resultsAvailableTitle'),
       description: t('resultsAvailableDescription'),
-    };
+    }
   }
 
-  return null;
+  return null
 }
 
 function formatDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
 }

@@ -17,12 +17,12 @@ export type EmbedCategoryId =
   | 'assessment'
   | 'productivity'
   | 'academic'
-  | 'collaboration';
+  | 'collaboration'
 
 export interface EmbedCategory {
-  id: EmbedCategoryId;
-  label: string;
-  description: string;
+  id: EmbedCategoryId
+  label: string
+  description: string
 }
 
 export const EMBED_CATEGORIES: EmbedCategory[] = [
@@ -30,22 +30,34 @@ export const EMBED_CATEGORIES: EmbedCategory[] = [
   { id: 'visual', label: 'visualLabel', description: 'visualDescription' },
   { id: 'code', label: 'codeLabel', description: 'codeDescription' },
   { id: 'media', label: 'mediaLabel', description: 'mediaDescription' },
-  { id: 'assessment', label: 'assessmentLabel', description: 'assessmentDescription' },
-  { id: 'productivity', label: 'productivityLabel', description: 'productivityDescription' },
+  {
+    id: 'assessment',
+    label: 'assessmentLabel',
+    description: 'assessmentDescription',
+  },
+  {
+    id: 'productivity',
+    label: 'productivityLabel',
+    description: 'productivityDescription',
+  },
   { id: 'academic', label: 'academicLabel', description: 'academicDescription' },
-  { id: 'collaboration', label: 'collaborationLabel', description: 'collaborationDescription' },
-];
+  {
+    id: 'collaboration',
+    label: 'collaborationLabel',
+    description: 'collaborationDescription',
+  },
+]
 
 export interface EmbedProvider {
-  type: string;
-  categories: readonly EmbedCategoryId[];
-  placeholder: string;
-  hostnames: readonly string[];
-  defaultHeight: number;
-  allow?: string;
-  requiresEmbedUrl?: boolean;
+  type: string
+  categories: readonly EmbedCategoryId[]
+  placeholder: string
+  hostnames: readonly string[]
+  defaultHeight: number
+  allow?: string
+  requiresEmbedUrl?: boolean
   /** Named export from `@icons-pack/react-simple-icons`, e.g. `'SiYoutube'`. */
-  iconName?: string;
+  iconName?: string
 }
 
 export const EMBED_PROVIDERS = [
@@ -321,7 +333,8 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.youtube.com/watch?v=...',
     hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
     defaultHeight: 420,
-    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+    allow:
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
     iconName: 'SiYoutube',
   },
   {
@@ -876,23 +889,25 @@ export const EMBED_PROVIDERS = [
     defaultHeight: 560,
     iconName: 'SiFlip',
   },
-] as const satisfies readonly EmbedProvider[];
+] as const satisfies readonly EmbedProvider[]
 
-export type EmbedType = (typeof EMBED_PROVIDERS)[number]['type'];
+export type EmbedType = (typeof EMBED_PROVIDERS)[number]['type']
 
-export const DEFAULT_EMBED_TYPE: EmbedType = 'youtube';
+export const DEFAULT_EMBED_TYPE: EmbedType = 'youtube'
 
 const PROVIDERS_BY_TYPE = new Map<EmbedType, EmbedProvider>(
-  EMBED_PROVIDERS.map((provider) => [provider.type, provider]),
-);
+  EMBED_PROVIDERS.map(provider => [provider.type, provider]),
+)
 
-export function getEmbedProvider(type: EmbedType | string | null | undefined): EmbedProvider | null {
-  if (!type) return null;
-  return PROVIDERS_BY_TYPE.get(type as EmbedType) ?? null;
+export function getEmbedProvider(
+  type: EmbedType | string | null | undefined,
+): EmbedProvider | null {
+  if (!type) return null
+  return PROVIDERS_BY_TYPE.get(type as EmbedType) ?? null
 }
 
 export function isEmbedType(type: string | null | undefined): type is EmbedType {
-  return Boolean(type && PROVIDERS_BY_TYPE.has(type as EmbedType));
+  return Boolean(type && PROVIDERS_BY_TYPE.has(type as EmbedType))
 }
 
 /**
@@ -901,10 +916,10 @@ export function isEmbedType(type: string | null | undefined): type is EmbedType 
  */
 export function getProvidersByCategory(category: EmbedCategoryId): EmbedProvider[] {
   return (EMBED_PROVIDERS as readonly EmbedProvider[])
-    .filter((p) => p.categories.includes(category))
+    .filter(p => p.categories.includes(category))
     .toSorted((a, b) => {
-      if (a.iconName && !b.iconName) return -1;
-      if (!a.iconName && b.iconName) return 1;
-      return a.type.localeCompare(b.type);
-    });
+      if (a.iconName && !b.iconName) return -1
+      if (!a.iconName && b.iconName) return 1
+      return a.type.localeCompare(b.type)
+    })
 }

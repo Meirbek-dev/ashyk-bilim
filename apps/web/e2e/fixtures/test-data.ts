@@ -7,10 +7,10 @@
  * will read from process.env which has already been populated.
  */
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export const USERS = {
   admin: {
@@ -29,7 +29,7 @@ export const USERS = {
     firstName: process.env.E2E_STUDENT_FIRST_NAME ?? 'Sam',
     lastName: process.env.E2E_STUDENT_LAST_NAME ?? 'Learn',
   },
-} as const;
+} as const
 
 /** Course metadata used in the "ultimate course" fixture. */
 export const COURSE = {
@@ -47,18 +47,18 @@ export const COURSE = {
     exam: 'Final Exam',
     codeChallenge: 'Coding Challenge',
   },
-} as const;
+} as const
 
 /** Sample file paths for upload tests (created in test setup) */
-export const FIXTURES_DIR = path.join(__dirname, '../fixtures/files');
-export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf');
+export const FIXTURES_DIR = path.join(__dirname, '../fixtures/files')
+export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf')
 
 /** A simple Python function used in the coding challenge test */
-export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`;
+export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`
 
 /** Passing exam: answer indices that should yield a passing score */
 export const EXAM_ANSWERS = {
   question0ChoiceIndex: 0, // First question, first choice (set as correct)
   question1IsTrue: true, // True/False — True
   question2MultiSelectIndices: [0, 2], // Multi-select: choices 0 and 2
-};
+}

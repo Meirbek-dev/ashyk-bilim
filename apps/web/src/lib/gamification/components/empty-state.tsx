@@ -4,37 +4,44 @@
  * Single, flexible empty state component replacing multiple variants.
  */
 
-'use client';
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Inbox, TrendingUp } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertCircle, Inbox, TrendingUp } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface EmptyStateProps {
-  title?: string;
-  message: string;
-  icon?: LucideIcon;
-  action?: ReactNode;
-  variant?: 'default' | 'info' | 'warning';
-  className?: string;
+  title?: string
+  message: string
+  icon?: LucideIcon
+  action?: ReactNode
+  variant?: 'default' | 'info' | 'warning'
+  className?: string
 }
 
 const variantStyles = {
   default: 'text-muted-foreground',
   info: 'text-blue-600 dark:text-blue-400',
   warning: 'text-orange-600 dark:text-orange-400',
-} as const;
+} as const
 
 const defaultIcons = {
   default: Inbox,
   info: AlertCircle,
   warning: TrendingUp,
-} as const;
+} as const
 
-export function EmptyState({ title, message, icon, action, variant = 'default', className = '' }: EmptyStateProps) {
-  const Icon = icon || defaultIcons[variant];
-  const colorClass = variantStyles[variant];
+export function EmptyState({
+  title,
+  message,
+  icon,
+  action,
+  variant = 'default',
+  className = '',
+}: EmptyStateProps) {
+  const Icon = icon || defaultIcons[variant]
+  const colorClass = variantStyles[variant]
 
   return (
     <Card className={className}>
@@ -51,5 +58,5 @@ export function EmptyState({ title, message, icon, action, variant = 'default', 
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

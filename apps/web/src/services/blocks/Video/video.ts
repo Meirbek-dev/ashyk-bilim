@@ -1,23 +1,27 @@
-import { apiFetch } from '@/lib/api-client';
-import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload';
+import { apiFetch } from '@/lib/api-client'
+import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
 
 export async function uploadNewVideoFile(
   file: File,
   activity_uuid: string,
   course_uuid?: string,
   block_uuid?: string,
-  onProgress?: (progress: { percentage: number; currentChunk: number; totalChunks: number }) => void,
+  onProgress?: (progress: {
+    percentage: number
+    currentChunk: number
+    totalChunks: number
+  }) => void,
 ) {
   // For large files, use chunked upload
   if (shouldUseChunkedUpload(file.size)) {
-    console.log('Using chunked upload for large file');
+    console.log('Using chunked upload for large file')
 
     if (!course_uuid) {
-      throw new Error('course_uuid is required for chunked uploads');
+      throw new Error('course_uuid is required for chunked uploads')
     }
 
     if (!block_uuid) {
-      throw new Error('block_uuid is required for chunked uploads');
+      throw new Error('block_uuid is required for chunked uploads')
     }
 
     try {
@@ -27,19 +31,19 @@ export async function uploadNewVideoFile(
         typeOfDir: 'platform',
         filename: `block_${Date.now()}.${file.name.split('.').pop()}`,
         onProgress: onProgress
-          ? (progress) =>
+          ? progress =>
               onProgress({
                 percentage: progress.percentage,
                 currentChunk: progress.currentChunk,
                 totalChunks: progress.totalChunks,
               })
           : undefined,
-      });
+      })
 
-      const savedFilename = result.filename;
-      const dotIndex = savedFilename.lastIndexOf('.');
-      const fileFormat = dotIndex !== -1 ? savedFilename.slice(dotIndex + 1) : 'bin';
-      const fileId = dotIndex !== -1 ? savedFilename.slice(0, dotIndex) : savedFilename;
+      const savedFilename = result.filename
+      const dotIndex = savedFilename.lastIndexOf('.')
+      const fileFormat = dotIndex !== -1 ? savedFilename.slice(dotIndex + 1) : 'bin'
+      const fileId = dotIndex !== -1 ? savedFilename.slice(0, dotIndex) : savedFilename
 
       return {
         block_uuid,
@@ -51,23 +55,26 @@ export async function uploadNewVideoFile(
           file_type: file.type,
           activity_uuid,
         },
-      };
+      }
     } catch (error: any) {
-      console.error('Chunked upload error:', error);
-      const message = error?.message || JSON.stringify(error);
-      throw new Error(message, { cause: error });
+      console.error('Chunked upload error:', error)
+      const message = error?.message || JSON.stringify(error)
+      throw new Error(message, { cause: error })
     }
   }
 
   // For smaller files, use traditional upload
-  const formData = new FormData();
-  formData.append('file_object', file);
-  formData.append('activity_uuid', activity_uuid);
+  const formData = new FormData()
+  formData.append('file_object', file)
+  formData.append('activity_uuid', activity_uuid)
   try {
-    const result = await apiFetch('blocks/video', { method: 'POST', body: formData });
-    return await result.json();
+    const result = await apiFetch('blocks/video', {
+      method: 'POST',
+      body: formData,
+    })
+    return await result.json()
   } catch (error) {
-    console.error('error', error);
-    throw error;
+    console.error('error', error)
+    throw error
   }
 }

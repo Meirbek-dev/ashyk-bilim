@@ -1,5 +1,5 @@
-import type { Page, Locator } from '@playwright/test';
-import { expect } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /**
  * Page Object for the activity studio pages:
@@ -8,49 +8,55 @@ import { expect } from '@playwright/test';
  * Covers dynamic page (lecture) editor, exam builder, and file-submission editor.
  */
 export class ActivityStudioPage {
-  public readonly page: Page;
+  public readonly page: Page
 
   // ── Name field (shared across all activity types) ─────────────────────
-  public readonly activityNameInput: Locator;
+  public readonly activityNameInput: Locator
 
   // ── Dynamic / lecture editor ──────────────────────────────────────────
   /** The rich-text / block editor content area */
-  public readonly editorContent: Locator;
+  public readonly editorContent: Locator
   /** Toolbar button that opens the block-insert menu */
-  public readonly addBlockButton: Locator;
+  public readonly addBlockButton: Locator
 
   // ── Exam / quiz builder ───────────────────────────────────────────────
   /** "Add question" button */
-  public readonly addQuestionButton: Locator;
+  public readonly addQuestionButton: Locator
   /** Question type dropdown / combobox */
-  public readonly questionTypeSelect: Locator;
+  public readonly questionTypeSelect: Locator
 
   // ── Shared ────────────────────────────────────────────────────────────
-  public readonly saveButton: Locator;
-  public readonly savedBadge: Locator;
-  public readonly toast: Locator;
+  public readonly saveButton: Locator
+  public readonly savedBadge: Locator
+  public readonly toast: Locator
 
   public constructor(page: Page) {
-    this.page = page;
+    this.page = page
 
-    this.activityNameInput = page.locator('input[placeholder*="Activity name"], input[name*="name"]').first();
+    this.activityNameInput = page
+      .locator('input[placeholder*="Activity name"], input[name*="name"]')
+      .first()
 
-    this.editorContent = page.locator('.ProseMirror, [contenteditable="true"], [data-lexical-editor]').first();
+    this.editorContent = page
+      .locator('.ProseMirror, [contenteditable="true"], [data-lexical-editor]')
+      .first()
 
-    this.addBlockButton = page.getByRole('button', { name: /add block|\+ block|insert/i }).first();
+    this.addBlockButton = page.getByRole('button', { name: /add block|\+ block|insert/i }).first()
 
-    this.addQuestionButton = page.getByRole('button', { name: /add question|new question|\+ question/i }).first();
+    this.addQuestionButton = page
+      .getByRole('button', { name: /add question|new question|\+ question/i })
+      .first()
 
-    this.questionTypeSelect = page.getByRole('combobox', { name: /question type|type/i }).first();
+    this.questionTypeSelect = page.getByRole('combobox', { name: /question type|type/i }).first()
 
-    this.saveButton = page.getByRole('button', { name: /save/i }).first();
-    this.savedBadge = page.locator('text=Saved').first();
-    this.toast = page.locator('[data-sonner-toast]').first();
+    this.saveButton = page.getByRole('button', { name: /save/i }).first()
+    this.savedBadge = page.locator('text=Saved').first()
+    this.toast = page.locator('[data-sonner-toast]').first()
   }
 
   public async goto(courseUuid: string, activityId: string): Promise<void> {
-    await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/studio`);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/studio`)
+    await this.page.waitForLoadState('networkidle')
   }
 
   // ── Lecture / dynamic page helpers ────────────────────────────────────
@@ -60,8 +66,8 @@ export class ActivityStudioPage {
    * Assumes the editor is a contenteditable element.
    */
   public async typeInEditor(text: string): Promise<void> {
-    await this.editorContent.click();
-    await this.editorContent.type(text);
+    await this.editorContent.click()
+    await this.editorContent.type(text)
   }
 
   /**
@@ -70,12 +76,14 @@ export class ActivityStudioPage {
    */
   public async insertBlock(blockTypeLabel: string): Promise<void> {
     // Trigger the slash-command / block insert menu
-    await this.editorContent.click();
-    await this.page.keyboard.type('/');
-    await expect(this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') })).toBeVisible({
+    await this.editorContent.click()
+    await this.page.keyboard.type('/')
+    await expect(
+      this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }),
+    ).toBeVisible({
       timeout: 5000,
-    });
-    await this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }).click();
+    })
+    await this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }).click()
   }
 
   // ── Exam / quiz helpers ───────────────────────────────────────────────
@@ -88,50 +96,58 @@ export class ActivityStudioPage {
    * @param correctIndex - 0-based index of the correct answer (for single-choice)
    */
   public async addExamQuestion(opts: {
-    type: string;
-    questionText: string;
-    choices?: string[];
-    correctIndex?: number;
-    correctIndices?: number[];
+    type: string
+    questionText: string
+    choices?: string[]
+    correctIndex?: number
+    correctIndices?: number[]
   }): Promise<void> {
-    await this.addQuestionButton.click();
+    await this.addQuestionButton.click()
 
     // Select type if a type picker is shown
-    const typePicker = this.page.getByRole('option', { name: new RegExp(opts.type, 'i') });
+    const typePicker = this.page.getByRole('option', {
+      name: new RegExp(opts.type, 'i'),
+    })
     if (await typePicker.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await typePicker.click();
+      await typePicker.click()
     }
 
     // Wait for the question editor to appear
-    const questionEditor = this.page.locator('[data-question-editor], .question-editor, .assessment-item').last();
-    await expect(questionEditor).toBeVisible({ timeout: 8000 });
+    const questionEditor = this.page
+      .locator('[data-question-editor], .question-editor, .assessment-item')
+      .last()
+    await expect(questionEditor).toBeVisible({ timeout: 8000 })
 
     // Fill the question text
-    const questionInput = questionEditor.locator('input[type="text"], textarea, [contenteditable="true"]').first();
-    await questionInput.fill(opts.questionText);
+    const questionInput = questionEditor
+      .locator('input[type="text"], textarea, [contenteditable="true"]')
+      .first()
+    await questionInput.fill(opts.questionText)
 
     // Fill choices if provided
     if (opts.choices) {
       for (let i = 0; i < opts.choices.length; i += 1) {
-        const choiceInput = questionEditor.locator('input[type="text"]').nth(i + 1);
+        const choiceInput = questionEditor.locator('input[type="text"]').nth(i + 1)
         if (!(await choiceInput.isVisible().catch(() => false))) {
           // Add another choice option
-          const addChoiceBtn = questionEditor.getByRole('button', { name: /add\s*(choice|option)/i });
-          await addChoiceBtn.click();
+          const addChoiceBtn = questionEditor.getByRole('button', {
+            name: /add\s*(choice|option)/i,
+          })
+          await addChoiceBtn.click()
         }
-        const choiceText = opts.choices[i];
+        const choiceText = opts.choices[i]
         if (choiceText !== undefined) {
-          await choiceInput.fill(choiceText);
+          await choiceInput.fill(choiceText)
         }
       }
 
       // Mark correct answer(s)
       if (opts.correctIndex !== undefined) {
-        await questionEditor.locator('input[type="radio"]').nth(opts.correctIndex).check();
+        await questionEditor.locator('input[type="radio"]').nth(opts.correctIndex).check()
       }
       if (opts.correctIndices) {
         for (const idx of opts.correctIndices) {
-          await questionEditor.locator('input[type="checkbox"]').nth(idx).check();
+          await questionEditor.locator('input[type="checkbox"]').nth(idx).check()
         }
       }
     }
@@ -139,7 +155,9 @@ export class ActivityStudioPage {
 
   /** Save and confirm success badge or toast */
   public async save(): Promise<void> {
-    await this.saveButton.click();
-    await expect(this.page.locator('[data-sonner-toast]').first().or(this.savedBadge)).toBeVisible({ timeout: 10_000 });
+    await this.saveButton.click()
+    await expect(this.page.locator('[data-sonner-toast]').first().or(this.savedBadge)).toBeVisible({
+      timeout: 10_000,
+    })
   }
 }

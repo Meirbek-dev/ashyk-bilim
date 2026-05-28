@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertCircle,
@@ -11,132 +11,155 @@ import {
   RotateCcw,
   LayoutList,
   Rows2,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient, queryOptions } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient, queryOptions } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client'
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { courseKeys } from '@/hooks/courses/courseKeys';
-import { useContributorStatus } from '@/hooks/useContributorStatus';
-import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
-import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items';
-import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
-import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel';
-import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
-import { useAttemptShellControls } from '@/features/assessments/shell';
-import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
-import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
-import PageLoading from '@components/Objects/Loaders/PageLoading';
-import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation';
-import { getOrderedExamQuestions } from './questionOrder';
-import { Progress } from '@components/ui/progress';
-import type { KindAttemptProps } from '../index';
-import ExamQuestionCard from './ExamQuestionCard';
-import ExamSubmitDialog from './ExamSubmitDialog';
-import { getSubmissionPlagiarismState } from '@/features/grading/domain/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { useContributorStatus } from '@/hooks/useContributorStatus'
+import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
+import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
+import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
+import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
+import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
+import { useAttemptShellControls } from '@/features/assessments/shell'
+import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt'
+import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
+import PageLoading from '@components/Objects/Loaders/PageLoading'
+import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation'
+import { getOrderedExamQuestions } from './questionOrder'
+import { Progress } from '@components/ui/progress'
+import type { KindAttemptProps } from '../index'
+import ExamQuestionCard from './ExamQuestionCard'
+import ExamSubmitDialog from './ExamSubmitDialog'
+import { getSubmissionPlagiarismState } from '@/features/grading/domain/types'
 
 interface QuestionData {
-  id: string;
-  question_uuid: string;
-  question_text: string;
-  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
-  points: number;
-  explanation?: string;
-  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: string | number }[];
+  id: string
+  question_uuid: string
+  question_text: string
+  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING'
+  points: number
+  explanation?: string
+  answer_options: {
+    text: string
+    is_correct?: boolean
+    left?: string
+    right?: string
+    option_id?: string | number
+  }[]
 }
 
 export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
-  const t = useTranslations('Activities.ExamActivity');
-  const queryClient = useQueryClient();
-  const { contributorStatus } = useContributorStatus(courseUuid);
-  const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null);
-  const [isStarting, setIsStarting] = useState(false);
-  const policy = vm?.policy ?? DEFAULT_POLICY_VIEW;
-  const assessmentUuid = vm?.assessmentUuid ?? null;
-  const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items]);
+  const t = useTranslations('Activities.ExamActivity')
+  const queryClient = useQueryClient()
+  const { contributorStatus } = useContributorStatus(courseUuid)
+  const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
+  const [isStarting, setIsStarting] = useState(false)
+  const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
+  const assessmentUuid = vm?.assessmentUuid ?? null
+  const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items])
 
   const handleComplete = useCallback(async () => {
     await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
-      queryClient.invalidateQueries({ queryKey: courseKeys.structure(courseUuid, false) }),
-    ]);
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.structure(courseUuid, false),
+      }),
+    ])
 
-    if (!assessmentUuid) return;
+    if (!assessmentUuid) return
 
     await Promise.allSettled([
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
-      queryClient.invalidateQueries(queryOptions({ queryKey: ['assessments', 'submissions', 'me', assessmentUuid] })),
-      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
-    ]);
-  }, [assessmentUuid, courseUuid, queryClient]);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.draft(assessmentUuid),
+      }),
+      queryClient.invalidateQueries(
+        queryOptions({
+          queryKey: ['assessments', 'submissions', 'me', assessmentUuid],
+        }),
+      ),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.assessments.detail(assessmentUuid),
+      }),
+    ])
+  }, [assessmentUuid, courseUuid, queryClient])
 
   if (!vm || submissionState.isLoading) {
-    return <PageLoading />;
+    return <PageLoading />
   }
 
   if (!assessmentUuid) {
-    return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>;
+    return (
+      <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>
+    )
   }
 
   const latestCompletedSubmission =
-    submissionState.submissions.find((submission) => submission.status !== 'DRAFT') ?? null;
+    submissionState.submissions.find(submission => submission.status !== 'DRAFT') ?? null
   const historyItems = submissionState.submissions
-    .filter((submission) => submission.status !== 'DRAFT')
+    .filter(submission => submission.status !== 'DRAFT')
     .map((submission, index) => {
-      const plagiarism = getSubmissionPlagiarismState(submission);
-      let plagiarismText: string;
+      const plagiarism = getSubmissionPlagiarismState(submission)
+      let plagiarismText: string
       if (plagiarism.status === 'failed') {
-        plagiarismText = 'Plagiarism: Failed';
+        plagiarismText = 'Plagiarism: Failed'
       } else if (plagiarism.status === 'checking') {
-        plagiarismText = 'Plagiarism: Checking';
+        plagiarismText = 'Plagiarism: Checking'
       } else if (plagiarism.status === 'pending') {
-        plagiarismText = 'Plagiarism: Pending';
+        plagiarismText = 'Plagiarism: Pending'
       } else if (plagiarism.flagged) {
-        plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`;
+        plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
       } else {
-        plagiarismText = 'Plagiarism: Checked Clear';
+        plagiarismText = 'Plagiarism: Checked Clear'
       }
       return {
         id: submission.submission_uuid,
         label:
           index === 0
             ? t('latestSubmission')
-            : t('attemptNumber', { number: submissionState.submissions.length - index }),
+            : t('attemptNumber', {
+                number: submissionState.submissions.length - index,
+              }),
         submittedAt: submission.submitted_at ?? submission.updated_at,
         status: submission.status,
-        scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
+        scoreLabel:
+          typeof submission.final_score === 'number'
+            ? `${Math.round(submission.final_score)}%`
+            : null,
         metaLabel: plagiarismText || null,
-      };
-    });
+      }
+    })
 
   const handleStartExam = async () => {
-    if (!assessmentUuid || !vm.canEdit) return;
-    setIsStarting(true);
+    if (!assessmentUuid || !vm.canEdit) return
+    setIsStarting(true)
     try {
       const response = await apiFetch(`assessments/${assessmentUuid}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-      });
+      })
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.detail || t('errorStartingExam'));
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.detail || t('errorStartingExam'))
       }
-      toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'));
-      await handleComplete();
+      toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'))
+      await handleComplete()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('errorStartingExam'));
+      toast.error(error instanceof Error ? error.message : t('errorStartingExam'))
     } finally {
-      setIsStarting(false);
+      setIsStarting(false)
     }
-  };
+  }
 
   if (!submissionState.draft) {
     return (
@@ -144,13 +167,19 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
         title={vm.title}
         description={vm.description}
         metrics={[
-          { icon: FileText, label: t('totalQuestions'), value: String(questions.length) },
+          {
+            icon: FileText,
+            label: t('totalQuestions'),
+            value: String(questions.length),
+          },
           {
             icon: Clock,
             label: t('timeLimit'),
             value:
               typeof policy.timeLimitSeconds === 'number'
-                ? t('minutes', { count: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })
+                ? t('minutes', {
+                    count: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
+                  })
                 : t('unlimited'),
           },
           {
@@ -210,38 +239,30 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
                 <AlertCircle className="size-4" />
                 <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
                 <AlertDescription>
-                  {contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning')}
+                  {contributorStatus === 'ACTIVE'
+                    ? t('teacherNoQuestionsWarning')
+                    : t('noQuestionsWarning')}
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="bg-muted/30 rounded-md border p-4">
                 <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
                 <ul className="space-y-2 text-sm">
-                  <Instruction
-                    icon={CheckCircle}
-                    label={t('instruction1')}
-                  />
+                  <Instruction icon={CheckCircle} label={t('instruction1')} />
                   {policy.timeLimitSeconds ? (
                     <Instruction
                       icon={CheckCircle}
-                      label={t('instruction3', { minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })}
+                      label={t('instruction3', {
+                        minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
+                      })}
                     />
                   ) : null}
-                  <Instruction
-                    icon={AlertCircle}
-                    label={t('instruction2')}
-                  />
+                  <Instruction icon={AlertCircle} label={t('instruction2')} />
                   {policy.antiCheat.tabSwitchDetection ? (
-                    <Instruction
-                      icon={AlertCircle}
-                      label={t('instruction4')}
-                    />
+                    <Instruction icon={AlertCircle} label={t('instruction4')} />
                   ) : null}
                   {policy.antiCheat.copyPasteProtection ? (
-                    <Instruction
-                      icon={AlertCircle}
-                      label={t('instruction5')}
-                    />
+                    <Instruction icon={AlertCircle} label={t('instruction5')} />
                   ) : null}
                 </ul>
               </div>
@@ -251,7 +272,9 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
                 <ShieldAlert className="size-4" />
                 <AlertTitle>{t('antiCheatingEnabled')}</AlertTitle>
                 <AlertDescription>
-                  {t('antiCheatingDescription', { threshold: policy.antiCheat.violationThreshold || t('notSet') })}
+                  {t('antiCheatingDescription', {
+                    threshold: policy.antiCheat.violationThreshold || t('notSet'),
+                  })}
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -261,7 +284,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
           </div>
         }
       />
-    );
+    )
   }
 
   return (
@@ -278,7 +301,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       latestCompletedSubmission={latestCompletedSubmission}
       historyItems={historyItems as any}
     />
-  );
+  )
 }
 
 function ExamTakingContent({
@@ -294,55 +317,55 @@ function ExamTakingContent({
   latestCompletedSubmission,
   historyItems,
 }: {
-  title: string;
-  questions: QuestionData[];
-  submissionState: ReturnType<typeof useAssessmentSubmission>;
-  attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>;
-  policy: typeof DEFAULT_POLICY_VIEW;
-  onComplete: () => void | Promise<void>;
-  canSaveDraft: boolean;
-  canSubmit: boolean;
-  timerExpiresAt: string | null;
-  latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission'];
+  title: string
+  questions: QuestionData[]
+  submissionState: ReturnType<typeof useAssessmentSubmission>
+  attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>
+  policy: typeof DEFAULT_POLICY_VIEW
+  onComplete: () => void | Promise<void>
+  canSaveDraft: boolean
+  canSubmit: boolean
+  timerExpiresAt: string | null
+  latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
   historyItems: {
-    id: string;
-    label: string;
-    submittedAt: string | null | undefined;
-    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
-    scoreLabel: string | null;
-  }[];
+    id: string
+    label: string
+    submittedAt: string | null | undefined
+    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
+    scoreLabel: string | null
+  }[]
 }) {
-  const t = useTranslations('Activities.ExamActivity');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null);
-  const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set());
-  const violationCountRef = useRef(0);
+  const t = useTranslations('Activities.ExamActivity')
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false)
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false)
+  const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null)
+  const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set())
+  const violationCountRef = useRef(0)
 
   // View mode: CARD (one at a time) or SCROLL (all visible)
   const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
     if (typeof globalThis.window !== 'undefined') {
-      return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD';
+      return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD'
     }
-    return 'CARD';
-  });
-  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+    return 'CARD'
+  })
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const toggleViewMode = useCallback(() => {
-    setViewMode((prev) => {
-      const next = prev === 'CARD' ? 'SCROLL' : 'CARD';
-      localStorage.setItem('exam-view-mode', next);
-      return next;
-    });
-  }, []);
+    setViewMode(prev => {
+      const next = prev === 'CARD' ? 'SCROLL' : 'CARD'
+      localStorage.setItem('exam-view-mode', next)
+      return next
+    })
+  }, [])
 
   const scrollToQuestion = useCallback((index: number) => {
-    const ref = questionRefs.current[index];
+    const ref = questionRefs.current[index]
     if (ref) {
-      ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ref.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-  }, []);
+  }, [])
 
   const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
     attemptUuid: attempt.submission_uuid,
@@ -350,141 +373,145 @@ function ExamTakingContent({
     expirationHours: 24,
     storageKeyPrefix: 'exam_answers_',
     validate: (answers: unknown): boolean => {
-      if (!answers || typeof answers !== 'object') return false;
-      const record = answers as Record<string, unknown>;
+      if (!answers || typeof answers !== 'object') return false
+      const record = answers as Record<string, unknown>
       for (const key of Object.keys(record)) {
-        const ans = record[key];
-        if (!ans || typeof ans !== 'object') return false;
-        const { kind } = ans as any;
+        const ans = record[key]
+        if (!ans || typeof ans !== 'object') return false
+        const { kind } = ans as any
         if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
-          return false;
+          return false
         }
-        if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false;
-        if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false;
-        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object')) return false;
-        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string'))
-          return false;
-        if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false;
+        if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false
+        if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false
+        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object'))
+          return false
+        if (
+          kind === 'CODE' &&
+          (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string')
+        )
+          return false
+        if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false
       }
-      return true;
+      return true
     },
-    onRestore: (recovered) => {
+    onRestore: recovered => {
       if (Object.keys(submissionState.answers).length === 0 && Object.keys(recovered).length > 0) {
-        setRecoveredAnswers(recovered);
-        setShowRecoveryDialog(true);
+        setRecoveredAnswers(recovered)
+        setShowRecoveryDialog(true)
       }
     },
-  });
+  })
 
-  const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions]);
+  const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions])
 
   // Track which question is in view when in SCROLL mode
   useEffect(() => {
-    if (viewMode !== 'SCROLL') return;
-    const observers: IntersectionObserver[] = [];
+    if (viewMode !== 'SCROLL') return
+    const observers: IntersectionObserver[] = []
     questionRefs.current.forEach((ref, index) => {
-      if (!ref) return;
+      if (!ref) return
       const obs = new IntersectionObserver(
         ([entry]) => {
-          if (entry?.isIntersecting) setCurrentIndex(index);
+          if (entry?.isIntersecting) setCurrentIndex(index)
         },
         { threshold: 0.4, rootMargin: '-10% 0px -55% 0px' },
-      );
-      obs.observe(ref);
-      observers.push(obs);
-    });
-    return () => observers.forEach((obs) => obs.disconnect());
-  }, [viewMode, orderedQuestions.length]);
-  const currentQuestion = orderedQuestions[currentIndex];
+      )
+      obs.observe(ref)
+      observers.push(obs)
+    })
+    return () => observers.forEach(obs => obs.disconnect())
+  }, [viewMode, orderedQuestions.length])
+  const currentQuestion = orderedQuestions[currentIndex]
   const questionById = useMemo(
-    () => new Map(orderedQuestions.map((question) => [question.id, question])),
+    () => new Map(orderedQuestions.map(question => [question.id, question])),
     [orderedQuestions],
-  );
+  )
 
   const displayAnswers = useMemo(() => {
-    const next: Record<string, unknown> = {};
+    const next: Record<string, unknown> = {}
     for (const question of orderedQuestions) {
-      const answer = submissionState.answers[question.id];
-      if (!answer) continue;
-      next[question.id] = toExamAnswer(question, answer);
+      const answer = submissionState.answers[question.id]
+      if (!answer) continue
+      next[question.id] = toExamAnswer(question, answer)
     }
-    return next;
-  }, [orderedQuestions, submissionState.answers]);
+    return next
+  }, [orderedQuestions, submissionState.answers])
 
   const isAnswered = useCallback(
     (questionId: string) => isItemAnswered(submissionState.answers[questionId]),
     [submissionState.answers],
-  );
+  )
 
-  const answeredCount = orderedQuestions.filter((question) => isAnswered(question.id)).length;
+  const answeredCount = orderedQuestions.filter(question => isAnswered(question.id)).length
   const answeredIndexes = useMemo(
     () =>
       orderedQuestions.reduce<Set<number>>((set, question, index) => {
-        if (isAnswered(question.id)) set.add(index);
-        return set;
+        if (isAnswered(question.id)) set.add(index)
+        return set
       }, new Set()),
     [isAnswered, orderedQuestions],
-  );
+  )
 
-  const progress = orderedQuestions.length > 0 ? (answeredCount / orderedQuestions.length) * 100 : 0;
+  const progress = orderedQuestions.length > 0 ? (answeredCount / orderedQuestions.length) * 100 : 0
 
   const handleAnswerChange = (questionId: string, answer: unknown) => {
-    const question = questionById.get(questionId);
-    if (!question) return;
-    const canonicalAnswer = fromExamAnswer(question, answer);
-    submissionState.setItemAnswer(question.id, canonicalAnswer);
+    const question = questionById.get(questionId)
+    if (!question) return
+    const canonicalAnswer = fromExamAnswer(question, answer)
+    submissionState.setItemAnswer(question.id, canonicalAnswer)
     persistence.saveAnswers({
       ...submissionState.answers,
       [question.id]: canonicalAnswer,
-    });
-  };
+    })
+  }
 
   const handleOpenSubmitConfirmation = useCallback(() => {
-    setIsConfirmingSubmit(true);
-  }, []);
+    setIsConfirmingSubmit(true)
+  }, [])
 
   const handleSubmit = useCallback(
     async (isAutoSubmit = false) => {
-      if (submissionState.isSubmitting) return;
-      setIsConfirmingSubmit(false);
+      if (submissionState.isSubmitting) return
+      setIsConfirmingSubmit(false)
 
       try {
         await submissionState.submit({
           violationCount: violationCountRef.current,
           autoSubmit: isAutoSubmit,
-        });
-        persistence.clearSavedAnswers();
-        toast.success(t('examSubmittedSuccessfully'));
-        await onComplete();
+        })
+        persistence.clearSavedAnswers()
+        toast.success(t('examSubmittedSuccessfully'))
+        await onComplete()
       } catch (error) {
-        console.error('Error submitting exam:', error);
-        toast.error(t('errorSubmittingExam'));
+        console.error('Error submitting exam:', error)
+        toast.error(t('errorSubmittingExam'))
       }
     },
     [onComplete, persistence, submissionState, t],
-  );
+  )
 
   const handleViolation = useCallback((type: string, count: number) => {
-    void type;
-    violationCountRef.current = count;
-  }, []);
+    void type
+    violationCountRef.current = count
+  }, [])
 
   const toggleFlag = useCallback((index: number) => {
-    setFlaggedIndexes((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  }, []);
+    setFlaggedIndexes(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }, [])
 
   useEffect(() => {
-    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return;
+    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return
     const timeout = setTimeout(() => {
-      submissionState.save();
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [submissionState]);
+      submissionState.save()
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [submissionState])
 
   const shellControls = useMemo(
     () => ({
@@ -506,7 +533,10 @@ function ExamTakingContent({
       canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined,
+      onSave:
+        canSaveDraft && submissionState.saveState === 'dirty'
+          ? () => submissionState.save()
+          : undefined,
       onSubmit: canSubmit ? handleOpenSubmitConfirmation : undefined,
       navigation: {
         current: currentIndex + 1,
@@ -515,14 +545,14 @@ function ExamTakingContent({
         canPrevious: currentIndex > 0,
         canNext: currentIndex < orderedQuestions.length - 1,
         onPrevious: () => {
-          const next = Math.max(0, currentIndex - 1);
-          setCurrentIndex(next);
-          if (viewMode === 'SCROLL') scrollToQuestion(next);
+          const next = Math.max(0, currentIndex - 1)
+          setCurrentIndex(next)
+          if (viewMode === 'SCROLL') scrollToQuestion(next)
         },
         onNext: () => {
-          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1);
-          setCurrentIndex(next);
-          if (viewMode === 'SCROLL') scrollToQuestion(next);
+          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1)
+          setCurrentIndex(next)
+          if (viewMode === 'SCROLL') scrollToQuestion(next)
         },
       },
       timer: policy.timeLimitSeconds
@@ -531,8 +561,12 @@ function ExamTakingContent({
             timeLimitMinutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
             expiresAt: timerExpiresAt,
             onExpire: () => {
-              toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.timeExpired') }));
-              void handleSubmit(true);
+              toast.error(
+                t('autoSubmitting', {
+                  reason: t('autoSubmittingReason.timeExpired'),
+                }),
+              )
+              void handleSubmit(true)
             },
           }
         : null,
@@ -540,8 +574,12 @@ function ExamTakingContent({
       initialViolationCount: 0,
       onViolation: handleViolation,
       onGuardAutoSubmit: () => {
-        toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.violationThresholdExceeded') }));
-        void handleSubmit(true);
+        toast.error(
+          t('autoSubmitting', {
+            reason: t('autoSubmittingReason.violationThresholdExceeded'),
+          }),
+        )
+        void handleSubmit(true)
       },
       recovery: showRecoveryDialog
         ? {
@@ -550,16 +588,16 @@ function ExamTakingContent({
             onAccept: () => {
               if (recoveredAnswers) {
                 for (const [itemUuid, answer] of Object.entries(recoveredAnswers)) {
-                  submissionState.setItemAnswer(itemUuid, answer);
+                  submissionState.setItemAnswer(itemUuid, answer)
                 }
               }
-              setShowRecoveryDialog(false);
-              toast.success(t('answersRecovered'));
+              setShowRecoveryDialog(false)
+              toast.success(t('answersRecovered'))
             },
             onReject: () => {
-              persistence.clearSavedAnswers();
-              setShowRecoveryDialog(false);
-              setRecoveredAnswers(null);
+              persistence.clearSavedAnswers()
+              setShowRecoveryDialog(false)
+              setRecoveredAnswers(null)
             },
           }
         : null,
@@ -596,9 +634,9 @@ function ExamTakingContent({
       viewMode,
       scrollToQuestion,
     ],
-  );
+  )
 
-  useAttemptShellControls(shellControls);
+  useAttemptShellControls(shellControls)
 
   if (!currentQuestion) {
     return (
@@ -606,7 +644,7 @@ function ExamTakingContent({
         {title ? `${title}: ` : ''}
         {t('noQuestions')}
       </div>
-    );
+    )
   }
 
   return (
@@ -615,20 +653,27 @@ function ExamTakingContent({
         <RotateCcw className="size-4" />
         <AlertTitle>{t('resumedDraft')}</AlertTitle>
         <AlertDescription>
-          {t('resumedDraftDescription', { time: formatDateTime(attempt.updated_at) })}
+          {t('resumedDraftDescription', {
+            time: formatDateTime(attempt.updated_at),
+          })}
         </AlertDescription>
       </Alert>
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} /> : null}
+      {latestCompletedSubmission ? (
+        <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} />
+      ) : null}
 
       {/* Progress bar + view mode toggle */}
       <div className="flex items-center gap-3">
         <Progress
           value={progress}
           className="h-2 flex-1 transition-all duration-500 ease-out"
-          aria-label={t('questionProgress', { current: currentIndex + 1, total: orderedQuestions.length })}
+          aria-label={t('questionProgress', {
+            current: currentIndex + 1,
+            total: orderedQuestions.length,
+          })}
         />
         <Tooltip>
           <TooltipTrigger
@@ -641,7 +686,11 @@ function ExamTakingContent({
                 onClick={toggleViewMode}
                 aria-label={viewMode === 'CARD' ? t('switchToScrollMode') : t('switchToCardMode')}
               >
-                {viewMode === 'CARD' ? <LayoutList className="size-4" /> : <Rows2 className="size-4" />}
+                {viewMode === 'CARD' ? (
+                  <LayoutList className="size-4" />
+                ) : (
+                  <Rows2 className="size-4" />
+                )}
               </Button>
             }
           />
@@ -682,8 +731,8 @@ function ExamTakingContent({
             {orderedQuestions.map((question, index) => (
               <div
                 key={question.id}
-                ref={(el) => {
-                  questionRefs.current[index] = el;
+                ref={el => {
+                  questionRefs.current[index] = el
                 }}
                 id={`exam-q-${index}`}
                 className={cn(
@@ -710,9 +759,9 @@ function ExamTakingContent({
                 currentQuestionIndex={currentIndex}
                 answeredQuestions={answeredIndexes}
                 flaggedQuestions={flaggedIndexes}
-                onQuestionSelect={(index) => {
-                  setCurrentIndex(index);
-                  scrollToQuestion(index);
+                onQuestionSelect={index => {
+                  setCurrentIndex(index)
+                  scrollToQuestion(index)
                 }}
               />
             </div>
@@ -725,19 +774,19 @@ function ExamTakingContent({
         currentQuestionIndex={currentIndex}
         answeredQuestions={answeredIndexes}
         flaggedQuestions={flaggedIndexes}
-        onQuestionSelect={(index) => {
-          setCurrentIndex(index);
-          if (viewMode === 'SCROLL') scrollToQuestion(index);
+        onQuestionSelect={index => {
+          setCurrentIndex(index)
+          if (viewMode === 'SCROLL') scrollToQuestion(index)
         }}
         onPrevious={() => {
-          const next = Math.max(0, currentIndex - 1);
-          setCurrentIndex(next);
-          if (viewMode === 'SCROLL') scrollToQuestion(next);
+          const next = Math.max(0, currentIndex - 1)
+          setCurrentIndex(next)
+          if (viewMode === 'SCROLL') scrollToQuestion(next)
         }}
         onNext={() => {
-          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1);
-          setCurrentIndex(next);
-          if (viewMode === 'SCROLL') scrollToQuestion(next);
+          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1)
+          setCurrentIndex(next)
+          if (viewMode === 'SCROLL') scrollToQuestion(next)
         }}
         onSubmit={handleOpenSubmitConfirmation}
         canGoNext={currentIndex < orderedQuestions.length - 1}
@@ -751,11 +800,11 @@ function ExamTakingContent({
         flaggedCount={flaggedIndexes.size}
         unansweredQuestions={orderedQuestions
           .map((q, i) => ({ index: i, id: q.id, question_text: q.question_text }))
-          .filter((q) => !isAnswered(q.id))}
+          .filter(q => !isAnswered(q.id))}
         isSubmitting={submissionState.isSubmitting}
-        onNavigateTo={(index) => {
-          setIsConfirmingSubmit(false);
-          setCurrentIndex(index);
+        onNavigateTo={index => {
+          setIsConfirmingSubmit(false)
+          setCurrentIndex(index)
         }}
         labels={{
           confirmSubmission: t('confirmSubmission'),
@@ -773,12 +822,12 @@ function ExamTakingContent({
         onSubmit={() => void handleSubmit()}
       />
     </div>
-  );
+  )
 }
 
 function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
   return items.reduce<QuestionData[]>((questions, item) => {
-    const { body } = item;
+    const { body } = item
 
     if (body.kind === 'CHOICE') {
       questions.push({
@@ -786,16 +835,20 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_uuid: item.item_uuid,
         question_text: body.prompt,
         question_type:
-          body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
+          body.variant === 'TRUE_FALSE'
+            ? 'TRUE_FALSE'
+            : body.multiple
+              ? 'MULTIPLE_CHOICE'
+              : 'SINGLE_CHOICE',
         points: item.max_score,
         explanation: body.explanation ?? undefined,
-        answer_options: body.options.map((option) => ({
+        answer_options: body.options.map(option => ({
           text: option.text,
           is_correct: option.is_correct,
           option_id: option.id,
         })),
-      });
-      return questions;
+      })
+      return questions
     }
 
     if (body.kind === 'MATCHING') {
@@ -812,35 +865,37 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
           right: pair.right,
           option_id: String(index),
         })),
-      });
+      })
     }
 
-    return questions;
-  }, []);
+    return questions
+  }, [])
 }
 
 function ExamSubmissionStatePanel({
   submission,
 }: {
   submission: {
-    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
-    final_score?: number | null;
-    grading_json?: { feedback?: string } | null;
-    submitted_at?: string | null;
-  };
+    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
+    final_score?: number | null
+    grading_json?: { feedback?: string } | null
+    submitted_at?: string | null
+  }
 }) {
-  const t = useTranslations('Activities.ExamActivity');
+  const t = useTranslations('Activities.ExamActivity')
   if (submission.status === 'PENDING') {
     return (
       <Alert>
         <AlertTitle>{t('submissionReceivedTitle')}</AlertTitle>
         <AlertDescription>
           {submission.submitted_at
-            ? t('submissionReceivedWithDateDescription', { date: formatDateTime(submission.submitted_at) })
+            ? t('submissionReceivedWithDateDescription', {
+                date: formatDateTime(submission.submitted_at),
+              })
             : t('submissionReceivedDescription')}
         </AlertDescription>
       </Alert>
-    );
+    )
   }
 
   if (submission.status === 'GRADED') {
@@ -849,16 +904,20 @@ function ExamSubmissionStatePanel({
         <AlertTitle>{t('resultsWaitingForReleaseTitle')}</AlertTitle>
         <AlertDescription>{t('resultsWaitingForReleaseDescription')}</AlertDescription>
       </Alert>
-    );
+    )
   }
 
   return (
     <Alert>
-      <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
+      <AlertTitle>
+        {submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}
+      </AlertTitle>
       <AlertDescription className="space-y-3">
         {typeof submission.final_score === 'number' ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
-            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
+            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">
+              {t('scoreLabel')}
+            </span>
             {Math.round(submission.final_score)}%
           </span>
         ) : null}
@@ -867,7 +926,7 @@ function ExamSubmissionStatePanel({
         ) : null}
       </AlertDescription>
     </Alert>
-  );
+  )
 }
 
 function Instruction({ icon: Icon, label }: { icon: any; label: string }) {
@@ -876,29 +935,34 @@ function Instruction({ icon: Icon, label }: { icon: any; label: string }) {
       <Icon className="mt-0.5 size-4 shrink-0" />
       <span>{label}</span>
     </li>
-  );
+  )
 }
 
 function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean {
   return (
-    policy.antiCheat.tabSwitchDetection || policy.antiCheat.copyPasteProtection || policy.antiCheat.devtoolsDetection
-  );
+    policy.antiCheat.tabSwitchDetection ||
+    policy.antiCheat.copyPasteProtection ||
+    policy.antiCheat.devtoolsDetection
+  )
 }
 
 function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
 }
 
 function toExamAnswer(question: QuestionData, answer: ItemAnswer): unknown {
   if (question.question_type === 'MATCHING' && answer.kind === 'MATCHING') {
-    return Object.fromEntries(answer.matches.map((pair) => [pair.left, pair.right]));
+    return Object.fromEntries(answer.matches.map(pair => [pair.left, pair.right]))
   }
 
-  if (answer.kind !== 'CHOICE') return null;
-  if (question.question_type === 'MULTIPLE_CHOICE') return answer.selected;
-  return answer.selected[0] ?? null;
+  if (answer.kind !== 'CHOICE') return null
+  if (question.question_type === 'MULTIPLE_CHOICE') return answer.selected
+  return answer.selected[0] ?? null
 }
 
 function fromExamAnswer(question: QuestionData, answer: unknown): ItemAnswer {
@@ -908,14 +972,14 @@ function fromExamAnswer(question: QuestionData, answer: unknown): ItemAnswer {
         ? Object.entries(answer as Record<string, string>)
             .filter(([, right]) => typeof right === 'string' && right.length > 0)
             .map(([left, right]) => ({ left, right }))
-        : [];
-    return { kind: 'MATCHING', matches };
+        : []
+    return { kind: 'MATCHING', matches }
   }
 
   const selected = Array.isArray(answer)
     ? answer.map(String)
     : answer === null || answer === undefined || answer === ''
       ? []
-      : [String(answer)];
-  return { kind: 'CHOICE', selected };
+      : [String(answer)]
+  return { kind: 'CHOICE', selected }
 }

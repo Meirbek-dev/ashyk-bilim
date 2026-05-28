@@ -1,48 +1,53 @@
-'use client';
+'use client'
 
-import { Check, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Check, Copy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { highlightCode, getLanguageDisplayName } from '../lib/shiki';
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { highlightCode, getLanguageDisplayName } from '../lib/shiki'
 
 interface MarkdownCodeBlockProps {
-  code: string;
-  language?: string;
-  compact?: boolean;
-  lineNumbers?: boolean;
+  code: string
+  language?: string
+  compact?: boolean
+  lineNumbers?: boolean
 }
 
-export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers = false }: MarkdownCodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
+export function MarkdownCodeBlock({
+  code,
+  language,
+  compact = false,
+  lineNumbers = false,
+}: MarkdownCodeBlockProps) {
+  const [copied, setCopied] = useState(false)
+  const [highlighted, setHighlighted] = useState<string | null>(null)
 
-  const lang = language ?? 'text';
-  const displayName = getLanguageDisplayName(lang);
-  const isDiff = lang === 'diff';
+  const lang = language ?? 'text'
+  const displayName = getLanguageDisplayName(lang)
+  const isDiff = lang === 'diff'
 
   useEffect(() => {
-    let cancelled = false;
-    setHighlighted(null);
-    highlightCode(code, lang).then((html) => {
-      if (!cancelled) setHighlighted(html);
-    });
+    let cancelled = false
+    setHighlighted(null)
+    highlightCode(code, lang).then(html => {
+      if (!cancelled) setHighlighted(html)
+    })
     return () => {
-      cancelled = true;
-    };
-  }, [code, lang]);
+      cancelled = true
+    }
+  }, [code, lang])
 
   const copy = async () => {
-    if (!navigator?.clipboard) return;
+    if (!navigator?.clipboard) return
     try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      globalThis.setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      globalThis.setTimeout(() => setCopied(false), 2000)
     } catch {
-      setCopied(false);
+      setCopied(false)
     }
-  };
+  }
 
   return (
     <div
@@ -53,7 +58,12 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
     >
       {/* Header bar */}
       <div className="flex h-8 items-center justify-between border-b border-white/10 px-3">
-        <span className={cn('font-mono font-medium text-zinc-400', compact ? 'text-[10px]' : 'text-[11px]')}>
+        <span
+          className={cn(
+            'font-mono font-medium text-zinc-400',
+            compact ? 'text-[10px]' : 'text-[11px]',
+          )}
+        >
           {displayName}
         </span>
         <Button
@@ -99,5 +109,5 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
         </pre>
       )}
     </div>
-  );
+  )
 }

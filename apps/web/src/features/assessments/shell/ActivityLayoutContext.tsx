@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 /**
  * Layout mode for the student activity page.
@@ -13,7 +13,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
  * The mode is reflected on `document.documentElement.dataset.layoutMode` so
  * CSS and the global nav can react without prop-drilling.
  */
-export type ActivityLayoutMode = 'CONTENT' | 'PREFLIGHT' | 'ACTIVE_ATTEMPT' | 'RESULT';
+export type ActivityLayoutMode = 'CONTENT' | 'PREFLIGHT' | 'ACTIVE_ATTEMPT' | 'RESULT'
 
 /**
  * An action that a nested component (e.g. InlineAssessmentWorkspace) can
@@ -21,19 +21,19 @@ export type ActivityLayoutMode = 'CONTENT' | 'PREFLIGHT' | 'ACTIVE_ATTEMPT' | 'R
  * When set, it overrides the runtime.primary_action CTA.
  */
 export interface BottomBarActionOverride {
-  label: string;
-  handler: () => void;
-  isPending?: boolean;
-  disabled?: boolean;
-  disabledReason?: string;
+  label: string
+  handler: () => void
+  isPending?: boolean
+  disabled?: boolean
+  disabledReason?: string
 }
 
 interface ActivityLayoutContextValue {
-  mode: ActivityLayoutMode;
-  setMode: (mode: ActivityLayoutMode) => void;
+  mode: ActivityLayoutMode
+  setMode: (mode: ActivityLayoutMode) => void
   /** Override the primary CTA rendered by BottomActionBar. Null = use runtime action. */
-  bottomBarAction: BottomBarActionOverride | null;
-  setBottomBarAction: (action: BottomBarActionOverride | null) => void;
+  bottomBarAction: BottomBarActionOverride | null
+  setBottomBarAction: (action: BottomBarActionOverride | null) => void
 }
 
 const ActivityLayoutContext = createContext<ActivityLayoutContextValue>({
@@ -41,37 +41,37 @@ const ActivityLayoutContext = createContext<ActivityLayoutContextValue>({
   setMode: () => undefined,
   bottomBarAction: null,
   setBottomBarAction: () => undefined,
-});
+})
 
 export function ActivityLayoutProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ActivityLayoutMode>('CONTENT');
-  const [bottomBarAction, setBottomBarActionState] = useState<BottomBarActionOverride | null>(null);
+  const [mode, setModeState] = useState<ActivityLayoutMode>('CONTENT')
+  const [bottomBarAction, setBottomBarActionState] = useState<BottomBarActionOverride | null>(null)
 
   const setMode = useCallback((next: ActivityLayoutMode) => {
-    setModeState(next);
-  }, []);
+    setModeState(next)
+  }, [])
 
   const setBottomBarAction = useCallback((action: BottomBarActionOverride | null) => {
-    setBottomBarActionState(action);
-  }, []);
+    setBottomBarActionState(action)
+  }, [])
 
   // Keep the DOM attribute in sync so nav-menu and CSS can react
   useEffect(() => {
-    const slug = mode.toLowerCase().replace(/_/g, '-');
-    document.documentElement.dataset.layoutMode = slug;
+    const slug = mode.toLowerCase().replace(/_/g, '-')
+    document.documentElement.dataset.layoutMode = slug
     return () => {
-      delete document.documentElement.dataset.layoutMode;
-    };
-  }, [mode]);
+      delete document.documentElement.dataset.layoutMode
+    }
+  }, [mode])
 
   const value = useMemo(
     () => ({ mode, setMode, bottomBarAction, setBottomBarAction }),
     [mode, setMode, bottomBarAction, setBottomBarAction],
-  );
+  )
 
-  return <ActivityLayoutContext.Provider value={value}>{children}</ActivityLayoutContext.Provider>;
+  return <ActivityLayoutContext.Provider value={value}>{children}</ActivityLayoutContext.Provider>
 }
 
 export function useActivityLayout(): ActivityLayoutContextValue {
-  return useContext(ActivityLayoutContext);
+  return useContext(ActivityLayoutContext)
 }

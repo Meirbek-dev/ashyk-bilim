@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { getAbsoluteUrl } from '@services/config/config';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import AuthLogo from '@components/auth/logo';
-import AuthCard from '@components/auth/card';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import Link from '@components/ui/AppLink';
+import { getAbsoluteUrl } from '@services/config/config'
+import { Loader2, AlertTriangle } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import AuthLogo from '@components/auth/logo'
+import AuthCard from '@components/auth/card'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import Link from '@components/ui/AppLink'
 
 /**
  * Google OAuth callback page.
@@ -18,20 +18,20 @@ import Link from '@components/ui/AppLink';
  *   - otherwise        — redirect into the authenticated app flow
  */
 const GoogleCallbackPage = () => {
-  const searchParams = useSearchParams();
-  const t = useTranslations('Auth.Login');
-  const [error, setError] = useState('');
+  const searchParams = useSearchParams()
+  const t = useTranslations('Auth.Login')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    const oauthError = searchParams.get('error');
+    const oauthError = searchParams.get('error')
 
     if (oauthError) {
-      setError(t('wrongCredentials'));
-      return;
+      setError(t('wrongCredentials'))
+      return
     }
 
-    globalThis.location.href = '/redirect_from_auth';
-  }, [searchParams, t]);
+    globalThis.location.href = '/redirect_from_auth'
+  }, [searchParams, t])
 
   return (
     <AuthCard>
@@ -61,7 +61,7 @@ const GoogleCallbackPage = () => {
         )}
       </div>
     </AuthCard>
-  );
-};
+  )
+}
 
-export default GoogleCallbackPage;
+export default GoogleCallbackPage

@@ -1,2 +1,2 @@
-export { CodeSubmissionReview } from './CodeSubmissionReview';
-export { CodeDiffViewer } from './CodeDiffViewer';
+export { CodeSubmissionReview } from './CodeSubmissionReview'
+export { CodeDiffViewer } from './CodeDiffViewer'

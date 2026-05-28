@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import type { EmbedBlockAttrs } from './EmbedBlock';
-import YouTubeNodeView from './YouTubeNodeView';
-import ExcalidrawNodeView from './ExcalidrawNodeView';
-import TldrawNodeView from './TldrawNodeView';
-import GenericEmbedNodeView from './GenericEmbedNodeView';
-import { getEmbedProvider } from './embed-options';
+import { Component } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { EmbedBlockAttrs } from './EmbedBlock'
+import YouTubeNodeView from './YouTubeNodeView'
+import ExcalidrawNodeView from './ExcalidrawNodeView'
+import TldrawNodeView from './TldrawNodeView'
+import GenericEmbedNodeView from './GenericEmbedNodeView'
+import { getEmbedProvider } from './embed-options'
 
 // ============================================================================
 // clampEmbedHeight utility
@@ -20,7 +20,7 @@ import { getEmbedProvider } from './embed-options';
  * Clamps a raw height value to the valid embed height range [200, 1200].
  */
 export function clampEmbedHeight(raw: number): number {
-  return Math.min(1200, Math.max(200, raw));
+  return Math.min(1200, Math.max(200, raw))
 }
 
 // ============================================================================
@@ -28,28 +28,28 @@ export function clampEmbedHeight(raw: number): number {
 // ============================================================================
 
 interface EmbedErrorBoundaryProps {
-  embedType: string | null;
-  title: string;
-  message: string;
-  children: ReactNode;
+  embedType: string | null
+  title: string
+  message: string
+  children: ReactNode
 }
 
 interface EmbedErrorBoundaryState {
-  hasError: boolean;
+  hasError: boolean
 }
 
 class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBoundaryState> {
   public constructor(props: EmbedErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
+    super(props)
+    this.state = { hasError: false }
   }
 
   public static getDerivedStateFromError(): EmbedErrorBoundaryState {
-    return { hasError: true };
+    return { hasError: true }
   }
 
   public override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[EmbedBlock] NodeView render error:', error, info);
+    console.error('[EmbedBlock] NodeView render error:', error, info)
   }
 
   public override render() {
@@ -64,10 +64,10 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
             <p className="mt-1 text-xs text-red-500">{this.props.message}</p>
           </div>
         </div>
-      );
+      )
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
 
@@ -76,9 +76,9 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
 // ============================================================================
 
 const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
-  const { type } = props.node.attrs;
-  const provider = getEmbedProvider(type);
-  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects');
+  const { type } = props.node.attrs
+  const provider = getEmbedProvider(type)
+  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects')
 
   const renderSubView = () => {
     switch (type) {
@@ -91,7 +91,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           >
             <YouTubeNodeView {...props} />
           </EmbedErrorBoundary>
-        );
+        )
       }
       case 'excalidraw': {
         return (
@@ -102,7 +102,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           >
             <ExcalidrawNodeView {...props} />
           </EmbedErrorBoundary>
-        );
+        )
       }
       case 'tldraw': {
         return (
@@ -113,7 +113,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           >
             <TldrawNodeView {...props} />
           </EmbedErrorBoundary>
-        );
+        )
       }
       default: {
         if (provider) {
@@ -125,19 +125,23 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
             >
               <GenericEmbedNodeView {...props} />
             </EmbedErrorBoundary>
-          );
+          )
         }
 
         return (
           <div className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-sm text-gray-500">{t('unknownEmbedType', { type: type ? `: ${type}` : '' })}</p>
+            <p className="text-sm text-gray-500">
+              {t('unknownEmbedType', { type: type ? `: ${type}` : '' })}
+            </p>
           </div>
-        );
+        )
       }
     }
-  };
+  }
 
-  return <NodeViewWrapper className="embed-block-node-view w-full">{renderSubView()}</NodeViewWrapper>;
-};
+  return (
+    <NodeViewWrapper className="embed-block-node-view w-full">{renderSubView()}</NodeViewWrapper>
+  )
+}
 
-export default EmbedBlockNodeView;
+export default EmbedBlockNodeView

@@ -1,82 +1,89 @@
-import { ArrowBigUpDash, Image as ImageIcon, UploadCloud, Video } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations';
-import { useSaveSection } from '@/hooks/useSaveSection';
-import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
+import { ArrowBigUpDash, Image as ImageIcon, UploadCloud, Video } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs'
+import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
+import { useSaveSection } from '@/hooks/useSaveSection'
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
 
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useCourse } from '@components/Contexts/CourseContext';
-import { useCourseEditorStore } from '@/stores/courses';
-import { Card, CardContent } from '@components/ui/card';
-import { Button } from '@components/ui/button';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import type React from 'react';
-import { compressImage } from '@/lib/image-compression';
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCourse } from '@components/Contexts/CourseContext'
+import { useCourseEditorStore } from '@/stores/courses'
+import { Card, CardContent } from '@components/ui/card'
+import { Button } from '@components/ui/button'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
+import { toast } from 'sonner'
+import type React from 'react'
+import { compressImage } from '@/lib/image-compression'
 
-const MAX_FILE_SIZE = 8_000_000; // 8MB for images
-const MAX_VIDEO_FILE_SIZE = 100_000_000; // 100MB for videos
-const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9;
-const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01;
-const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const;
-const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/x-matroska'] as const;
+const MAX_FILE_SIZE = 8_000_000 // 8MB for images
+const MAX_VIDEO_FILE_SIZE = 100_000_000 // 100MB for videos
+const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9
+const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01
+const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const
+const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/x-matroska'] as const
 
-type ValidImageMimeType = (typeof VALID_IMAGE_MIME_TYPES)[number];
-type ValidVideoMimeType = (typeof VALID_VIDEO_MIME_TYPES)[number];
+type ValidImageMimeType = (typeof VALID_IMAGE_MIME_TYPES)[number]
+type ValidVideoMimeType = (typeof VALID_VIDEO_MIME_TYPES)[number]
 
 interface ThumbnailUpdateProps {
-  thumbnailType: 'image' | 'video' | 'both';
-  disabled?: boolean;
-  disabledReason?: string;
+  thumbnailType: 'image' | 'video' | 'both'
+  disabled?: boolean
+  disabledReason?: string
 }
 
-type TabType = 'image' | 'video';
+type TabType = 'image' | 'video'
 
 interface LocalThumbnail {
-  file: File;
-  url: string;
-  type: 'image' | 'video';
+  file: File
+  url: string
+  type: 'image' | 'video'
 }
 
-const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: ThumbnailUpdateProps) => {
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+const ThumbnailUpdate = ({
+  thumbnailType,
+  disabled = false,
+  disabledReason,
+}: ThumbnailUpdateProps) => {
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
 
-  const course = useCourse();
-  const { updateThumbnail: updateThumbnailMutation } = useCoursesMutations(course.courseStructure.course_uuid, true);
-  const lastKnownUpdateDate = useCourseEditorStore((state) => state.lastKnownUpdateDate);
-  const t = useTranslations('CourseEdit.General.Thumbnail');
+  const course = useCourse()
+  const { updateThumbnail: updateThumbnailMutation } = useCoursesMutations(
+    course.courseStructure.course_uuid,
+    true,
+  )
+  const lastKnownUpdateDate = useCourseEditorStore(state => state.lastKnownUpdateDate)
+  const t = useTranslations('CourseEdit.General.Thumbnail')
 
-  const [localThumbnail, setLocalThumbnail] = useState<LocalThumbnail | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>(thumbnailType === 'video' ? 'video' : 'image');
+  const [localThumbnail, setLocalThumbnail] = useState<LocalThumbnail | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>(thumbnailType === 'video' ? 'video' : 'image')
   const { isSaving, saveWithoutRefresh } = useSaveSection({
     section: 'general',
     errorMessage: t('errors.updateFailed'),
-  });
+  })
 
   // Cleanup blob URLs
   useEffect(() => {
     return () => {
       if (localThumbnail?.url) {
-        URL.revokeObjectURL(localThumbnail.url);
+        URL.revokeObjectURL(localThumbnail.url)
       }
-    };
-  }, [localThumbnail]);
+    }
+  }, [localThumbnail])
   const showError = useCallback((message: string) => {
     toast.error(message, {
       duration: 3000,
       position: 'top-center',
-    });
-  }, []);
+    })
+  }, [])
 
   const validateFile = useCallback(
     (file: File, type: 'image' | 'video'): boolean => {
       if (type === 'image') {
         if (!VALID_IMAGE_MIME_TYPES.includes(file.type as ValidImageMimeType)) {
-          showError(t('errors.invalidMimeType', { fileType: file.type }));
-          return false;
+          showError(t('errors.invalidMimeType', { fileType: file.type }))
+          return false
         }
 
         if (file.size > MAX_FILE_SIZE) {
@@ -84,13 +91,13 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             t('errors.fileTooLarge', {
               fileSize: (file.size / 1024 / 1024).toFixed(2),
             }),
-          );
-          return false;
+          )
+          return false
         }
       } else {
         if (!VALID_VIDEO_MIME_TYPES.includes(file.type as ValidVideoMimeType)) {
-          showError(t('errors.invalidVideoMimeType', { fileType: file.type }));
-          return false;
+          showError(t('errors.invalidVideoMimeType', { fileType: file.type }))
+          return false
         }
 
         if (file.size > MAX_VIDEO_FILE_SIZE) {
@@ -98,59 +105,63 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             t('errors.videoFileTooLarge', {
               fileSize: (file.size / 1024 / 1024).toFixed(2),
             }),
-          );
-          return false;
+          )
+          return false
         }
       }
 
-      return true;
+      return true
     },
     [showError, t],
-  );
+  )
 
   const validateImageAspectRatio = useCallback(
     async (blobUrl: string): Promise<boolean> => {
       try {
-        const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-          const image = new globalThis.Image();
+        const dimensions = await new Promise<{ width: number; height: number }>(
+          (resolve, reject) => {
+            const image = new globalThis.Image()
 
-          image.onload = () => {
-            resolve({ width: image.naturalWidth, height: image.naturalHeight });
-          };
+            image.onload = () => {
+              resolve({ width: image.naturalWidth, height: image.naturalHeight })
+            }
 
-          image.onerror = () => {
-            reject(new Error('Failed to read image dimensions'));
-          };
+            image.onerror = () => {
+              reject(new Error('Failed to read image dimensions'))
+            }
 
-          image.src = blobUrl;
-        });
+            image.src = blobUrl
+          },
+        )
 
-        const actualAspectRatio = dimensions.width / dimensions.height;
+        const actualAspectRatio = dimensions.width / dimensions.height
 
-        if (Math.abs(actualAspectRatio - REQUIRED_IMAGE_ASPECT_RATIO) > IMAGE_ASPECT_RATIO_TOLERANCE) {
+        if (
+          Math.abs(actualAspectRatio - REQUIRED_IMAGE_ASPECT_RATIO) > IMAGE_ASPECT_RATIO_TOLERANCE
+        ) {
           showError(
             t('errors.invalidAspectRatio', {
               height: dimensions.height,
               width: dimensions.width,
             }),
-          );
-          return false;
+          )
+          return false
         }
 
-        return true;
+        return true
       } catch {
-        showError(t('errors.imageReadFailed'));
-        return false;
+        showError(t('errors.imageReadFailed'))
+        return false
       }
     },
     [showError, t],
-  );
+  )
 
   const updateThumbnail = useCallback(
     async (file: File, type: 'image' | 'video') => {
-      const formData = new FormData();
-      formData.append('thumbnail', file);
-      formData.append('thumbnail_type', type);
+      const formData = new FormData()
+      formData.append('thumbnail', file)
+      formData.append('thumbnail_type', type)
 
       await saveWithoutRefresh(
         async () =>
@@ -161,72 +172,88 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           onSuccess: () => setLocalThumbnail(null),
           successMessage: t('thumbnailUpdatedSuccessfully'),
         },
-      );
+      )
     },
-    [course.courseStructure.update_date, lastKnownUpdateDate, saveWithoutRefresh, t, updateThumbnailMutation],
-  );
+    [
+      course.courseStructure.update_date,
+      lastKnownUpdateDate,
+      saveWithoutRefresh,
+      t,
+      updateThumbnailMutation,
+    ],
+  )
 
   const handleFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-      const file = event.target.files?.[0];
+      const file = event.target.files?.[0]
 
       if (!file) {
-        showError(t('errors.pleaseSelectAFile'));
-        return;
+        showError(t('errors.pleaseSelectAFile'))
+        return
       }
 
-      let fileToUse = file;
+      let fileToUse = file
       if (type === 'image') {
         try {
-          fileToUse = await compressImage(file, { maxWidth: 1200, maxHeight: 675, quality: 0.8 });
+          fileToUse = await compressImage(file, {
+            maxWidth: 1200,
+            maxHeight: 675,
+            quality: 0.8,
+          })
         } catch (error) {
-          console.error('Image compression failed, using original file', error);
+          console.error('Image compression failed, using original file', error)
         }
       }
 
       if (!validateFile(fileToUse, type)) {
-        event.target.value = '';
-        return;
+        event.target.value = ''
+        return
       }
 
-      const blobUrl = URL.createObjectURL(fileToUse);
+      const blobUrl = URL.createObjectURL(fileToUse)
 
       if (type === 'image') {
-        const hasValidAspectRatio = await validateImageAspectRatio(blobUrl);
+        const hasValidAspectRatio = await validateImageAspectRatio(blobUrl)
 
         if (!hasValidAspectRatio) {
-          URL.revokeObjectURL(blobUrl);
-          event.target.value = '';
-          return;
+          URL.revokeObjectURL(blobUrl)
+          event.target.value = ''
+          return
         }
       }
 
-      setLocalThumbnail({ file: fileToUse, url: blobUrl, type });
-      await updateThumbnail(fileToUse, type);
-      event.target.value = '';
+      setLocalThumbnail({ file: fileToUse, url: blobUrl, type })
+      await updateThumbnail(fileToUse, type)
+      event.target.value = ''
     },
     [showError, validateFile, validateImageAspectRatio, updateThumbnail, t],
-  );
+  )
 
   const getThumbnailUrl = useCallback(
     (type: 'image' | 'video') => {
       if (type === 'image') {
         return course.courseStructure.thumbnail_image
-          ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
-          : '/empty_thumbnail.avif';
+          ? getCourseThumbnailMediaDirectory(
+              course.courseStructure.course_uuid,
+              course.courseStructure.thumbnail_image,
+            )
+          : '/empty_thumbnail.avif'
       }
       return course.courseStructure.thumbnail_video
-        ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_video)
-        : undefined;
+        ? getCourseThumbnailMediaDirectory(
+            course.courseStructure.course_uuid,
+            course.courseStructure.thumbnail_video,
+          )
+        : undefined
     },
     [course],
-  );
+  )
 
   const renderThumbnailPreview = useCallback(() => {
     const thumbnailToShow = localThumbnail || {
       url: getThumbnailUrl(activeTab),
       type: activeTab,
-    };
+    }
 
     if (!thumbnailToShow.url) {
       return (
@@ -238,7 +265,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             </p>
           </div>
         </div>
-      );
+      )
     }
 
     if (thumbnailToShow.type === 'video' || activeTab === 'video') {
@@ -251,15 +278,10 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             }`}
             controls
           >
-            <track
-              kind="captions"
-              srcLang="en"
-              label={t('videoCaptions')}
-              default
-            />
+            <track kind="captions" srcLang="en" label={t('videoCaptions')} default />
           </video>
         </div>
-      );
+      )
     }
 
     return (
@@ -275,8 +297,8 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           unoptimized
         />
       </div>
-    );
-  }, [localThumbnail, activeTab, getThumbnailUrl, isSaving, t]);
+    )
+  }, [localThumbnail, activeTab, getThumbnailUrl, isSaving, t])
 
   const renderImageControls = () => (
     <>
@@ -285,7 +307,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         type="file"
         className="hidden"
         accept=".jpg,.jpeg,.png,.webp"
-        onChange={(e) => handleFileChange(e, 'image')}
+        onChange={e => handleFileChange(e, 'image')}
         aria-label={t('ariaLabelImage')}
         disabled={isSaving || disabled}
       />
@@ -301,7 +323,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         {t('uploadImageButton')}
       </Button>
     </>
-  );
+  )
 
   const renderVideoControls = () => (
     <>
@@ -310,7 +332,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         type="file"
         className="hidden"
         accept=".mp4,.webm,.mkv"
-        onChange={(e) => handleFileChange(e, 'video')}
+        onChange={e => handleFileChange(e, 'video')}
         aria-label={t('ariaLabelVideo')}
         disabled={isSaving || disabled}
       />
@@ -326,37 +348,25 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         {t('uploadVideo')}
       </Button>
     </>
-  );
+  )
 
   if (thumbnailType === 'both') {
     return (
       <Card className="w-full">
         <CardContent className="p-6">
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as TabType)}
-          >
+          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabType)}>
             <TabsList className="mb-6 grid w-full grid-cols-2">
-              <TabsTrigger
-                value="image"
-                disabled={isSaving || disabled}
-              >
+              <TabsTrigger value="image" disabled={isSaving || disabled}>
                 <ImageIcon className="mr-2 h-4 w-4" />
                 {t('image')}
               </TabsTrigger>
-              <TabsTrigger
-                value="video"
-                disabled={isSaving || disabled}
-              >
+              <TabsTrigger value="video" disabled={isSaving || disabled}>
                 <Video className="mr-2 h-4 w-4" />
                 {t('video')}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent
-              value="image"
-              className="space-y-6"
-            >
+            <TabsContent value="image" className="space-y-6">
               {renderThumbnailPreview()}
 
               {isSaving ? (
@@ -379,10 +389,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
               ) : null}
             </TabsContent>
 
-            <TabsContent
-              value="video"
-              className="space-y-6"
-            >
+            <TabsContent value="video" className="space-y-6">
               {renderThumbnailPreview()}
 
               {isSaving ? (
@@ -396,7 +403,9 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
                 <div className="flex gap-2">{renderVideoControls()}</div>
               )}
 
-              <p className="text-muted-foreground text-center text-xs">{t('supportedVideoFormats')}</p>
+              <p className="text-muted-foreground text-center text-xs">
+                {t('supportedVideoFormats')}
+              </p>
               {disabledReason ? (
                 <Alert className="border-border bg-muted/60">
                   <AlertTitle>{t('uploadVideo')}</AlertTitle>
@@ -407,7 +416,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           </Tabs>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   // Single tab view (image or video only)
@@ -424,7 +433,9 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             </div>
           </div>
         ) : (
-          <div className="flex gap-2">{thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}</div>
+          <div className="flex gap-2">
+            {thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}
+          </div>
         )}
 
         <p className="text-muted-foreground text-center text-xs">
@@ -432,13 +443,15 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         </p>
         {disabledReason ? (
           <Alert className="border-border bg-muted/60">
-            <AlertTitle>{thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}</AlertTitle>
+            <AlertTitle>
+              {thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}
+            </AlertTitle>
             <AlertDescription>{disabledReason}</AlertDescription>
           </Alert>
         ) : null}
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default ThumbnailUpdate;
+export default ThumbnailUpdate

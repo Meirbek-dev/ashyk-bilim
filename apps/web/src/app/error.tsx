@@ -1,15 +1,21 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
-import { reportClientError } from '@/services/telemetry/client';
-import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n';
+import { useEffect, useState } from 'react'
+import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { reportClientError } from '@/services/telemetry/client'
+import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n'
 
-export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [locale, setLocale] = useState<SupportedLocale>('ru-RU');
+export default function AppError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
 
   useEffect(() => {
-    setLocale(detectLocale());
+    setLocale(detectLocale())
 
     void reportClientError({
       digest: error.digest,
@@ -20,10 +26,10 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
       },
       page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'app-error',
       url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'app-error',
-    }).catch(() => undefined);
-  }, [error]);
+    }).catch(() => undefined)
+  }, [error])
 
-  const t = ERROR_MESSAGES[locale];
+  const t = ERROR_MESSAGES[locale]
 
   return (
     <div className="flex min-h-svh items-center justify-center px-4">
@@ -50,5 +56,5 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
         </div>
       </div>
     </div>
-  );
+  )
 }

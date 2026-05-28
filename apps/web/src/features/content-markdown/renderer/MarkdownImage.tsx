@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 interface MarkdownImageProps {
-  src?: string;
-  alt?: string;
-  title?: string;
-  className?: string;
+  src?: string
+  alt?: string
+  title?: string
+  className?: string
 }
 
 /** Safe inline image renderer for MarkdownContent.
  * Shows a placeholder badge when src is absent or load fails.
  */
 export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps) {
-  const t = useTranslations('Features.ContentMarkdown');
-  const [failed, setFailed] = useState(false);
+  const t = useTranslations('Features.ContentMarkdown')
+  const [failed, setFailed] = useState(false)
 
   if (!src || failed) {
     return (
@@ -30,7 +30,7 @@ export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps
         <span aria-hidden="true">🖼</span>
         <span>{alt || t('imageLabel')}</span>
       </span>
-    );
+    )
   }
 
   return (
@@ -43,5 +43,5 @@ export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps
       loading="lazy"
       onError={() => setFailed(true)}
     />
-  );
+  )
 }

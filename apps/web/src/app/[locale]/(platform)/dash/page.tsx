@@ -1,33 +1,47 @@
-import { BarChart2, BookCopy, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react';
-import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp';
-import ServerLink from '@/components/ui/ServerLink';
-import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
-import Image from 'next/image';
+import {
+  BarChart2,
+  BookCopy,
+  School,
+  Settings,
+  ShieldCheck,
+  Users,
+  ChevronRight,
+} from 'lucide-react'
+import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp'
+import ServerLink from '@/components/ui/ServerLink'
+import { getTranslations } from 'next-intl/server'
+import type { ReactNode } from 'react'
+import Image from 'next/image'
 
-import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUsers } from '@/lib/rbac/navigation-policy';
-import { requireSession } from '@/lib/auth/session';
-import { sessionCan } from '@/lib/auth/permissions';
+import {
+  canSeeAdmin,
+  canSeeAnalytics,
+  canSeeCourses,
+  canSeePlatform,
+  canSeeUsers,
+} from '@/lib/rbac/navigation-policy'
+import { requireSession } from '@/lib/auth/session'
+import { sessionCan } from '@/lib/auth/permissions'
 
-import appLogoFull from '@public/app_logo_full.svg';
-import appLogoLightFull from '@public/app_logo_light_full.svg';
-import type { Action, Resource, Scope } from '@/types/permissions';
+import appLogoFull from '@public/app_logo_full.svg'
+import appLogoLightFull from '@public/app_logo_light_full.svg'
+import type { Action, Resource, Scope } from '@/types/permissions'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default async function PlatformDashHomePage() {
-  const t = await getTranslations('DashPage.Card');
-  const session = await requireSession();
-  const permsSet = new Set<string>(session.permissions);
+  const t = await getTranslations('DashPage.Card')
+  const session = await requireSession()
+  const permsSet = new Set<string>(session.permissions)
   const can = (resource: Resource, action: Action, scope: Scope): boolean =>
-    sessionCan(session, resource, action, scope, permsSet);
+    sessionCan(session, resource, action, scope, permsSet)
 
-  const hasCoursesAccess = canSeeCourses(can);
-  const hasAnalyticsAccess = canSeeAnalytics(can);
-  const hasPlatformAccess = canSeePlatform(can);
-  const hasUsersAccess = canSeeUsers(can);
-  const hasAdminAccess = canSeeAdmin(can);
+  const hasCoursesAccess = canSeeCourses(can)
+  const hasAnalyticsAccess = canSeeAnalytics(can)
+  const hasPlatformAccess = canSeePlatform(can)
+  const hasUsersAccess = canSeeUsers(can)
+  const hasAdminAccess = canSeeAdmin(can)
 
   const cards = [
     {
@@ -66,7 +80,7 @@ export default async function PlatformDashHomePage() {
       description: t('Admin.description'),
       badge: t('Admin.badge'),
     },
-  ].filter((card) => card.visible);
+  ].filter(card => card.visible)
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
@@ -95,7 +109,7 @@ export default async function PlatformDashHomePage() {
       {/* Nav Cards Grid */}
       {cards.length > 0 ? (
         <div className="grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
+          {cards.map(card => (
             <DashboardCard
               key={card.title}
               href={card.href}
@@ -119,11 +133,7 @@ export default async function PlatformDashHomePage() {
             target="_blank"
             className="bg-primary mt-4 flex cursor-pointer items-center gap-2 rounded-lg px-7 py-3 shadow-lg transition-all ease-linear hover:scale-105 sm:mt-[40px]"
           >
-            <Image
-              width={26}
-              src={touEmblemLight}
-              alt={t('touUniversity')}
-            />
+            <Image width={26} src={touEmblemLight} alt={t('touUniversity')} />
             <div className="text-primary-foreground text-sm font-bold">{t('touUniversity')}</div>
           </ServerLink>
         </div>
@@ -134,10 +144,7 @@ export default async function PlatformDashHomePage() {
           className="bg-background mx-auto flex max-w-md cursor-pointer items-center rounded-lg p-4 shadow-lg transition-all ease-linear hover:scale-105"
         >
           <div className="mx-auto flex flex-col items-center gap-2 text-center sm:flex-row sm:gap-3 sm:text-left">
-            <Settings
-              className="text-muted-foreground"
-              size={20}
-            />
+            <Settings className="text-muted-foreground" size={20} />
             <div>
               <div className="text-muted-foreground font-bold">{t('AccountSettings.title')}</div>
               <p className="text-muted-foreground text-sm">{t('AccountSettings.description')}</p>
@@ -146,7 +153,7 @@ export default async function PlatformDashHomePage() {
         </ServerLink>
       </div>
     </div>
-  );
+  )
 }
 
 const DashboardCard = ({
@@ -156,17 +163,14 @@ const DashboardCard = ({
   description,
   badge,
 }: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  description: string;
-  badge?: string;
+  href: string
+  icon: ReactNode
+  title: string
+  description: string
+  badge?: string
 }) => {
   return (
-    <ServerLink
-      href={href}
-      className="group block"
-    >
+    <ServerLink href={href} className="group block">
       <Card className="hover:bg-accent hover:text-accent-foreground h-full transition-colors duration-150">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
@@ -175,10 +179,7 @@ const DashboardCard = ({
             </div>
             <div className="flex items-center gap-2">
               {badge && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs"
-                >
+                <Badge variant="secondary" className="text-xs">
                   {badge}
                 </Badge>
               )}
@@ -195,5 +196,5 @@ const DashboardCard = ({
         </CardContent>
       </Card>
     </ServerLink>
-  );
-};
+  )
+}

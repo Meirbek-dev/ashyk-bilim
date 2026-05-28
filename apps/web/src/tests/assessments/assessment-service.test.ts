@@ -14,7 +14,7 @@
  *  - `runCodeItem` — success, throws on failure
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 const mocks = vi.hoisted(() => ({
@@ -23,22 +23,22 @@ const mocks = vi.hoisted(() => ({
   errorHandling: vi.fn(),
   revalidateTag: vi.fn(),
   getAssessmentSubmission: vi.fn(),
-}));
+}))
 
 vi.mock('@/lib/api-client', () => ({
   apiFetch: mocks.apiFetch,
   getResponseMetadata: mocks.getResponseMetadata,
   errorHandling: mocks.errorHandling,
-}));
+}))
 
 vi.mock('next/cache', () => ({
   revalidateTag: mocks.revalidateTag,
-}));
+}))
 
 vi.mock('@services/config/config', () => ({
   getAPIUrl: vi.fn(() => 'http://api.test/'),
   getServerAPIUrl: vi.fn(() => 'http://api:8000/api/v1/'),
-}));
+}))
 
 // Import AFTER mocks
 import {
@@ -50,8 +50,11 @@ import {
   deleteStudentPolicyOverride,
   saveGradingDraft,
   runCodeItem,
-} from '@/services/assessments/assessment-actions';
-import { getAssessmentByUuid, getAssessmentByActivityUuid } from '@/services/assessments/assessments';
+} from '@/services/assessments/assessment-actions'
+import {
+  getAssessmentByUuid,
+  getAssessmentByActivityUuid,
+} from '@/services/assessments/assessments'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,102 +73,113 @@ function makeAssessment(overrides = {}) {
     lifecycle: 'PUBLISHED',
     published_at: '2026-05-01T10:00:00Z',
     ...overrides,
-  };
+  }
 }
 
 function mockFetchSuccess(data: unknown) {
-  const mockResponse = { status: 200, ok: true };
-  mocks.apiFetch.mockResolvedValue(mockResponse);
-  mocks.errorHandling.mockResolvedValue(data);
+  const mockResponse = { status: 200, ok: true }
+  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.errorHandling.mockResolvedValue(data)
 }
 
 function mockFetch404() {
-  const mockResponse = { status: 404, ok: false };
-  mocks.apiFetch.mockResolvedValue(mockResponse);
+  const mockResponse = { status: 404, ok: false }
+  mocks.apiFetch.mockResolvedValue(mockResponse)
 }
 
 function mockFetchNetworkError() {
-  mocks.apiFetch.mockRejectedValue(new Error('Network error'));
+  mocks.apiFetch.mockRejectedValue(new Error('Network error'))
 }
 
 function mockMetaSuccess(data: unknown) {
-  const mockResponse = {};
-  mocks.apiFetch.mockResolvedValue(mockResponse);
-  mocks.getResponseMetadata.mockResolvedValue({ success: true, data, status: 200 });
+  const mockResponse = {}
+  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.getResponseMetadata.mockResolvedValue({
+    success: true,
+    data,
+    status: 200,
+  })
 }
 
 function mockMetaFailure(detail = 'Operation failed') {
-  const mockResponse = {};
-  mocks.apiFetch.mockResolvedValue(mockResponse);
-  mocks.getResponseMetadata.mockResolvedValue({ success: false, data: { detail }, status: 400 });
+  const mockResponse = {}
+  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.getResponseMetadata.mockResolvedValue({
+    success: false,
+    data: { detail },
+    status: 400,
+  })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  vi.clearAllMocks();
-});
+  vi.clearAllMocks()
+})
 
 // ── getAssessmentByUuid ───────────────────────────────────────────────────────
 
 describe('getAssessmentByUuid', () => {
   it('returns the assessment on success', async () => {
-    const assessment = makeAssessment();
-    mockFetchSuccess(assessment);
+    const assessment = makeAssessment()
+    mockFetchSuccess(assessment)
 
-    const result = await getAssessmentByUuid('asm_test_1');
+    const result = await getAssessmentByUuid('asm_test_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object));
-    expect(result?.assessment_uuid).toBe('asm_test_1');
-    expect(result?.lifecycle).toBe('PUBLISHED');
-  });
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object))
+    expect(result?.assessment_uuid).toBe('asm_test_1')
+    expect(result?.lifecycle).toBe('PUBLISHED')
+  })
 
   it('returns null on 404', async () => {
-    mockFetch404();
+    mockFetch404()
 
-    const result = await getAssessmentByUuid('ghost_uuid');
+    const result = await getAssessmentByUuid('ghost_uuid')
 
-    expect(result).toBeNull();
-  });
+    expect(result).toBeNull()
+  })
 
   it('returns null on network error', async () => {
-    mockFetchNetworkError();
+    mockFetchNetworkError()
 
-    const result = await getAssessmentByUuid('any_uuid');
+    const result = await getAssessmentByUuid('any_uuid')
 
-    expect(result).toBeNull();
-  });
-});
+    expect(result).toBeNull()
+  })
+})
 
 // ── getAssessmentByActivityUuid ───────────────────────────────────────────────
 
 describe('getAssessmentByActivityUuid', () => {
   it('calls the activity-scoped endpoint', async () => {
-    const assessment = makeAssessment({ activity_uuid: 'activity_abc' });
-    mockFetchSuccess(assessment);
+    const assessment = makeAssessment({ activity_uuid: 'activity_abc' })
+    mockFetchSuccess(assessment)
 
-    const result = await getAssessmentByActivityUuid('activity_abc');
+    const result = await getAssessmentByActivityUuid('activity_abc')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object));
-    expect(result?.activity_uuid).toBe('activity_abc');
-  });
+    expect(mocks.apiFetch).toHaveBeenCalledWith(
+      'assessments/activity/activity_abc',
+      expect.any(Object),
+    )
+    expect(result?.activity_uuid).toBe('activity_abc')
+  })
 
   it('returns null on 404', async () => {
-    mockFetch404();
+    mockFetch404()
 
-    const result = await getAssessmentByActivityUuid('activity_ghost');
+    const result = await getAssessmentByActivityUuid('activity_ghost')
 
-    expect(result).toBeNull();
-  });
+    expect(result).toBeNull()
+  })
 
   it('returns null on unexpected error', async () => {
-    mockFetchNetworkError();
+    mockFetchNetworkError()
 
-    const result = await getAssessmentByActivityUuid('activity_err');
+    const result = await getAssessmentByActivityUuid('activity_err')
 
-    expect(result).toBeNull();
-  });
-});
+    expect(result).toBeNull()
+  })
+})
 
 // ── getAttemptState ───────────────────────────────────────────────────────────
 
@@ -200,27 +214,27 @@ describe('getAttemptState', () => {
       time_remaining_seconds: null,
       content_version: 1,
       policy_version: 1,
-    };
-    mockMetaSuccess(state);
+    }
+    mockMetaSuccess(state)
 
-    const result = await getAttemptState('asm_1');
+    const result = await getAttemptState('asm_1')
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/attempt-state',
       expect.objectContaining({ method: 'GET' }),
-    );
-    expect(result?.recommended_action).toBe('start');
-    expect(result?.can_start).toBe(true);
-  });
+    )
+    expect(result?.recommended_action).toBe('start')
+    expect(result?.can_start).toBe(true)
+  })
 
   it('returns null on failure', async () => {
-    mockMetaFailure('Not found');
+    mockMetaFailure('Not found')
 
-    const result = await getAttemptState('ghost');
+    const result = await getAttemptState('ghost')
 
-    expect(result).toBeNull();
-  });
-});
+    expect(result).toBeNull()
+  })
+})
 
 // ── getPolicyPreset ───────────────────────────────────────────────────────────
 
@@ -237,56 +251,67 @@ describe('getPolicyPreset', () => {
       allow_late: true,
       anti_cheat_enabled: false,
       review_visibility: 'AFTER_GRADING',
-    };
-    mockMetaSuccess(preset);
+    }
+    mockMetaSuccess(preset)
 
-    const result = await getPolicyPreset('EXAM');
+    const result = await getPolicyPreset('EXAM')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object));
-    expect(result?.grade_release_mode).toBe('IMMEDIATE');
-    expect(result?.grading_mode).toBe('MANUAL');
-  });
+    expect(mocks.apiFetch).toHaveBeenCalledWith(
+      'assessments/policy-preset/EXAM',
+      expect.any(Object),
+    )
+    expect(result?.grade_release_mode).toBe('IMMEDIATE')
+    expect(result?.grading_mode).toBe('MANUAL')
+  })
 
   it('returns null on failure', async () => {
-    mockMetaFailure('Unknown kind');
+    mockMetaFailure('Unknown kind')
 
-    const result = await getPolicyPreset('UNKNOWN');
+    const result = await getPolicyPreset('UNKNOWN')
 
-    expect(result).toBeNull();
-  });
-});
+    expect(result).toBeNull()
+  })
+})
 
 // ── listStudentPolicyOverrides ────────────────────────────────────────────────
 
 describe('listStudentPolicyOverrides', () => {
   it('returns list of overrides on success', async () => {
-    const overrides = [{ id: 1, user_id: 5, policy_id: 10, max_attempts_override: 3 }];
-    mockMetaSuccess(overrides);
+    const overrides = [{ id: 1, user_id: 5, policy_id: 10, max_attempts_override: 3 }]
+    mockMetaSuccess(overrides)
 
-    const result = await listStudentPolicyOverrides('asm_1');
+    const result = await listStudentPolicyOverrides('asm_1')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object));
-    expect(result).toHaveLength(1);
-    expect(result[0]!.max_attempts_override).toBe(3);
-  });
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object))
+    expect(result).toHaveLength(1)
+    expect(result[0]!.max_attempts_override).toBe(3)
+  })
 
   it('returns empty array on failure', async () => {
-    mockMetaFailure('Forbidden');
+    mockMetaFailure('Forbidden')
 
-    const result = await listStudentPolicyOverrides('asm_1');
+    const result = await listStudentPolicyOverrides('asm_1')
 
-    expect(result).toEqual([]);
-  });
-});
+    expect(result).toEqual([])
+  })
+})
 
 // ── createStudentPolicyOverride ───────────────────────────────────────────────
 
 describe('createStudentPolicyOverride', () => {
   it('POSTs and returns created override', async () => {
-    const override = { id: 1, user_id: 5, policy_id: 10, max_attempts_override: 2 };
-    mockMetaSuccess(override);
+    const override = {
+      id: 1,
+      user_id: 5,
+      policy_id: 10,
+      max_attempts_override: 2,
+    }
+    mockMetaSuccess(override)
 
-    const result = await createStudentPolicyOverride('asm_1', { user_id: 5, max_attempts_override: 2 });
+    const result = await createStudentPolicyOverride('asm_1', {
+      user_id: 5,
+      max_attempts_override: 2,
+    })
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/overrides',
@@ -294,26 +319,30 @@ describe('createStudentPolicyOverride', () => {
         method: 'POST',
         body: JSON.stringify({ user_id: 5, max_attempts_override: 2 }),
       }),
-    );
-    expect(result.id).toBe(1);
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max');
-  });
+    )
+    expect(result.id).toBe(1)
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
+  })
 
   it('throws on failure', async () => {
-    mockMetaFailure('User not enrolled');
+    mockMetaFailure('User not enrolled')
 
-    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow('User not enrolled');
-  });
-});
+    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow(
+      'User not enrolled',
+    )
+  })
+})
 
 // ── updateStudentPolicyOverride ───────────────────────────────────────────────
 
 describe('updateStudentPolicyOverride', () => {
   it('PATCHes and returns the updated override', async () => {
-    const updated = { id: 1, user_id: 5, policy_id: 10, max_attempts_override: 5 };
-    mockMetaSuccess(updated);
+    const updated = { id: 1, user_id: 5, policy_id: 10, max_attempts_override: 5 }
+    mockMetaSuccess(updated)
 
-    const result = await updateStudentPolicyOverride('asm_1', 5, { max_attempts_override: 5 });
+    const result = await updateStudentPolicyOverride('asm_1', 5, {
+      max_attempts_override: 5,
+    })
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/overrides/5',
@@ -321,52 +350,54 @@ describe('updateStudentPolicyOverride', () => {
         method: 'PATCH',
         body: JSON.stringify({ max_attempts_override: 5 }),
       }),
-    );
-    expect(result.max_attempts_override).toBe(5);
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max');
-  });
+    )
+    expect(result.max_attempts_override).toBe(5)
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
+  })
 
   it('throws on failure', async () => {
-    mockMetaFailure('Override not found');
+    mockMetaFailure('Override not found')
 
-    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow('Override not found');
-  });
-});
+    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow(
+      'Override not found',
+    )
+  })
+})
 
 // ── deleteStudentPolicyOverride ───────────────────────────────────────────────
 
 describe('deleteStudentPolicyOverride', () => {
   it('sends DELETE and revalidates on success', async () => {
-    mockMetaSuccess(null);
+    mockMetaSuccess(null)
 
-    await deleteStudentPolicyOverride('asm_1', 5);
+    await deleteStudentPolicyOverride('asm_1', 5)
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/overrides/5',
       expect.objectContaining({ method: 'DELETE' }),
-    );
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max');
-  });
+    )
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('overrides', 'max')
+  })
 
   it('throws on failure', async () => {
-    mockMetaFailure('Override not found');
+    mockMetaFailure('Override not found')
 
-    await expect(deleteStudentPolicyOverride('asm_1', 999)).rejects.toThrow('Override not found');
-  });
-});
+    await expect(deleteStudentPolicyOverride('asm_1', 999)).rejects.toThrow('Override not found')
+  })
+})
 
 // ── saveGradingDraft ──────────────────────────────────────────────────────────
 
 describe('saveGradingDraft', () => {
   it('PATCHes the grade endpoint with item grades', async () => {
-    mockMetaSuccess({ submission_uuid: 'sub_1', status: 'GRADED' });
+    mockMetaSuccess({ submission_uuid: 'sub_1', status: 'GRADED' })
 
     const payload = {
       item_grades: [{ item_uuid: 'item_1', score: 80, feedback: 'Good.' }],
       overall_feedback: 'Well done',
       status: 'publish' as const,
-    };
-    await saveGradingDraft('asm_1', 'sub_1', payload);
+    }
+    await saveGradingDraft('asm_1', 'sub_1', payload)
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/submissions/sub_1/grade',
@@ -374,41 +405,45 @@ describe('saveGradingDraft', () => {
         method: 'PATCH',
         body: JSON.stringify(payload),
       }),
-    );
-    expect(mocks.revalidateTag).toHaveBeenCalledWith('submissions', 'max');
-  });
+    )
+    expect(mocks.revalidateTag).toHaveBeenCalledWith('submissions', 'max')
+  })
 
   it('includes If-Match header when version is provided', async () => {
-    mockMetaSuccess({ submission_uuid: 'sub_v3' });
+    mockMetaSuccess({ submission_uuid: 'sub_v3' })
 
-    await saveGradingDraft('asm_1', 'sub_v3', { item_grades: [] }, 3);
+    await saveGradingDraft('asm_1', 'sub_v3', { item_grades: [] }, 3)
 
-    const [, opts] = mocks.apiFetch.mock.calls[0]!;
-    expect(opts.headers['If-Match']).toBe('3');
-  });
+    const [, opts] = mocks.apiFetch.mock.calls[0]!
+    expect(opts.headers['If-Match']).toBe('3')
+  })
 
   it('throws StaleGradeError when server returns 412', async () => {
     // Mock the 412 response
-    mocks.apiFetch.mockResolvedValue({ status: 412 });
+    mocks.apiFetch.mockResolvedValue({ status: 412 })
     // Mock the subsequent getAssessmentSubmission call
-    const { StaleGradeError } = await import('@/services/grading/errors');
+    const { StaleGradeError } = await import('@/services/grading/errors')
 
     // The function dynamically imports grading module; mock it too
     vi.doMock('@/services/grading/grading', () => ({
-      getAssessmentSubmission: vi.fn().mockResolvedValue({ submission_uuid: 'sub_stale', version: 5 }),
-    }));
+      getAssessmentSubmission: vi
+        .fn()
+        .mockResolvedValue({ submission_uuid: 'sub_stale', version: 5 }),
+    }))
 
-    await expect(saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2)).rejects.toBeInstanceOf(
-      StaleGradeError,
-    );
-  });
+    await expect(
+      saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2),
+    ).rejects.toBeInstanceOf(StaleGradeError)
+  })
 
   it('throws on generic failure', async () => {
-    mockMetaFailure('Grade conflict');
+    mockMetaFailure('Grade conflict')
 
-    await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow('Grade conflict');
-  });
-});
+    await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow(
+      'Grade conflict',
+    )
+  })
+})
 
 // ── runCodeItem ───────────────────────────────────────────────────────────────
 
@@ -420,11 +455,11 @@ describe('runCodeItem', () => {
       passed: 3,
       total: 3,
       score: 100,
-    };
-    mockMetaSuccess(runResult);
+    }
+    mockMetaSuccess(runResult)
 
-    const payload = { source: 'print("hello")', language: 71 };
-    const result = await runCodeItem('asm_1', 'item_code_1', payload);
+    const payload = { source: 'print("hello")', language: 71 }
+    const result = await runCodeItem('asm_1', 'item_code_1', payload)
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(
       'assessments/asm_1/items/item_code_1/runs',
@@ -432,16 +467,16 @@ describe('runCodeItem', () => {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
-    );
-    expect(result.status).toBe('ACCEPTED');
-    expect(result.passed).toBe(3);
-  });
+    )
+    expect(result.status).toBe('ACCEPTED')
+    expect(result.passed).toBe(3)
+  })
 
   it('throws on failure', async () => {
-    mockMetaFailure('Language not supported');
+    mockMetaFailure('Language not supported')
 
     await expect(runCodeItem('asm_1', 'item_1', { source: 'code', language: 999 })).rejects.toThrow(
       'Language not supported',
-    );
-  });
-});
+    )
+  })
+})

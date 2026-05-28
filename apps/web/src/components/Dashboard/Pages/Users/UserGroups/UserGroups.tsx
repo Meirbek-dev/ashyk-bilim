@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,51 +12,48 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { AlertTriangle, Loader2, Pencil, SquareUserRound, Users, X } from 'lucide-react';
-import EditUserGroup from '@/components/Objects/Modals/Dash/UserGroups/EditUserGroup';
-import AddUserGroup from '@/components/Objects/Modals/Dash/UserGroups/AddUserGroup';
-import ManageUsers from '@/components/Objects/Modals/Dash/UserGroups/ManageUsers';
-import { deleteUserGroup } from '@services/usergroups/usergroups';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { useUserGroups } from '@/features/users/hooks/useUsers';
-import type { ColumnDef } from '@tanstack/react-table';
-import DataTable from '@components/ui/data-table';
-import { useEffect, useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+} from '@/components/ui/alert-dialog'
+import { AlertTriangle, Loader2, Pencil, SquareUserRound, Users, X } from 'lucide-react'
+import EditUserGroup from '@/components/Objects/Modals/Dash/UserGroups/EditUserGroup'
+import AddUserGroup from '@/components/Objects/Modals/Dash/UserGroups/AddUserGroup'
+import ManageUsers from '@/components/Objects/Modals/Dash/UserGroups/ManageUsers'
+import { deleteUserGroup } from '@services/usergroups/usergroups'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import Modal from '@/components/Objects/Elements/Modal/Modal'
+import { useUserGroups } from '@/features/users/hooks/useUsers'
+import type { ColumnDef } from '@tanstack/react-table'
+import DataTable from '@components/ui/data-table'
+import { useEffect, useState, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 
 interface DeleteUserGroupButtonProps {
-  usergroupId: number;
-  onDelete: (usergroupId: number) => Promise<void>;
-  t: (key: string) => string;
+  usergroupId: number
+  onDelete: (usergroupId: number) => Promise<void>
+  t: (key: string) => string
 }
 
 interface UserGroup {
-  id: number;
-  name: string;
-  description?: string;
+  id: number
+  name: string
+  description?: string
 }
 
 function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   function handleDelete() {
     startTransition(async () => {
-      await onDelete(usergroupId);
-      setIsOpen(false);
-    });
+      await onDelete(usergroupId)
+      setIsOpen(false)
+    })
   }
 
   return (
-    <AlertDialog
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger
         render={
           <Button
@@ -79,85 +76,80 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending} />
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
+          <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             {t('deleteModalConfirmButton')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
 const UserGroups = () => {
-  const t = useTranslations('DashPage.UserSettings.usergroupsSection');
-  const [userGroupManagementModal, setUserGroupManagementModal] = useState(false);
-  const [createUserGroupModal, setCreateUserGroupModal] = useState(false);
-  const [editUserGroupModal, setEditUserGroupModal] = useState(false);
-  const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null);
-  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null);
-  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  const queryClient = useQueryClient();
+  const t = useTranslations('DashPage.UserSettings.usergroupsSection')
+  const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
+  const [createUserGroupModal, setCreateUserGroupModal] = useState(false)
+  const [editUserGroupModal, setEditUserGroupModal] = useState(false)
+  const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null)
+  const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
+  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(
+    null,
+  )
+  const [isMounted, setIsMounted] = useState(false)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setIsMounted(true)
+  }, [])
 
-  const { data: usergroups, error, isLoading } = useUserGroups();
+  const { data: usergroups, error, isLoading } = useUserGroups()
 
   const deleteUserGroupUI = async (usergroup_id: number) => {
-    const toastId = toast.loading(t('deletingUserGroup'));
+    const toastId = toast.loading(t('deletingUserGroup'))
     try {
-      const res = await deleteUserGroup(usergroup_id);
+      const res = await deleteUserGroup(usergroup_id)
       if (res.status === 200) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all() });
-        toast.success(t('userGroupDeletedSuccess'), { id: toastId });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.userGroups.all(),
+        })
+        toast.success(t('userGroupDeletedSuccess'), { id: toastId })
       } else {
-        toast.error(t('errors.deleteUserGroupFailed'), { id: toastId });
+        toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
       }
     } catch {
-      toast.error(t('errors.deleteUserGroupFailed'), { id: toastId });
+      toast.error(t('errors.deleteUserGroupFailed'), { id: toastId })
     }
-  };
+  }
 
   const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: any) => {
-    setSelectedUserGroup(userGroup);
+    setSelectedUserGroup(userGroup)
     if (modalType === 'manage') {
-      setSelectedUserGroupIdForManage(userGroup.id);
-      setUserGroupManagementModal(true);
+      setSelectedUserGroupIdForManage(userGroup.id)
+      setUserGroupManagementModal(true)
     } else if (modalType === 'edit') {
-      setSelectedUserGroupIdForEdit(userGroup.id);
-      setEditUserGroupModal(true);
+      setSelectedUserGroupIdForEdit(userGroup.id)
+      setEditUserGroupModal(true)
     }
-  };
+  }
 
   const handleCloseModal = (modalType: 'manage' | 'edit' | 'create') => {
-    setSelectedUserGroup(null);
+    setSelectedUserGroup(null)
     if (modalType === 'manage') {
-      setSelectedUserGroupIdForManage(null);
-      setUserGroupManagementModal(false);
+      setSelectedUserGroupIdForManage(null)
+      setUserGroupManagementModal(false)
     } else if (modalType === 'edit') {
-      setSelectedUserGroupIdForEdit(null);
-      setEditUserGroupModal(false);
+      setSelectedUserGroupIdForEdit(null)
+      setEditUserGroupModal(false)
     } else if (modalType === 'create') {
-      setCreateUserGroupModal(false);
+      setCreateUserGroupModal(false)
     }
-  };
+  }
 
   if (!isMounted || isLoading) {
-    return (
-      <Loader2
-        size={16}
-        className="mr-2 animate-spin"
-      />
-    );
+    return <Loader2 size={16} className="mr-2 animate-spin" />
   }
-  if (error) return <div>{t('errorLoadingUserGroups')}</div>;
+  if (error) return <div>{t('errorLoadingUserGroups')}</div>
 
   const columns: ColumnDef<UserGroup>[] = [
     {
@@ -165,7 +157,7 @@ const UserGroups = () => {
       header: t('userGroupHeader'),
     },
     {
-      accessorFn: (usergroup) => usergroup.description || '',
+      accessorFn: usergroup => usergroup.description || '',
       id: 'description',
       header: t('descriptionHeader'),
       cell: ({ row }) => row.original.description || '—',
@@ -176,13 +168,17 @@ const UserGroups = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <Modal
-          isDialogOpen={userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) handleCloseModal('manage');
+          isDialogOpen={
+            userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false
+          }
+          onOpenChange={isOpen => {
+            if (!isOpen) handleCloseModal('manage')
           }}
           minHeight="lg"
           minWidth="lg"
-          dialogContent={selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null}
+          dialogContent={
+            selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null
+          }
           dialogTitle={t('manageUsersModalTitle')}
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
@@ -190,7 +186,7 @@ const UserGroups = () => {
               <button
                 className="flex items-center space-x-2 rounded-md bg-yellow-700 p-1 px-3 text-sm font-bold text-yellow-100 hover:cursor-pointer"
                 onClick={() => {
-                  handleOpenModal('manage', row.original);
+                  handleOpenModal('manage', row.original)
                 }}
                 type="button"
               >
@@ -209,16 +205,18 @@ const UserGroups = () => {
       cell: ({ row }) => (
         <div className="flex space-x-2">
           <Modal
-            isDialogOpen={editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) handleCloseModal('edit');
+            isDialogOpen={
+              editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false
+            }
+            onOpenChange={isOpen => {
+              if (!isOpen) handleCloseModal('edit')
             }}
             dialogTrigger={
               <span>
                 <button
                   className="flex items-center space-x-2 rounded-md bg-sky-700 p-1 px-3 text-sm font-bold text-sky-100 hover:cursor-pointer"
                   onClick={() => {
-                    handleOpenModal('edit', row.original);
+                    handleOpenModal('edit', row.original)
                   }}
                   type="button"
                 >
@@ -229,17 +227,15 @@ const UserGroups = () => {
             }
             minHeight="sm"
             minWidth="sm"
-            dialogContent={selectedUserGroup ? <EditUserGroup usergroup={selectedUserGroup} /> : null}
+            dialogContent={
+              selectedUserGroup ? <EditUserGroup usergroup={selectedUserGroup} /> : null
+            }
           />
-          <DeleteUserGroupButton
-            usergroupId={row.original.id}
-            onDelete={deleteUserGroupUI}
-            t={t}
-          />
+          <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
         </div>
       ),
     },
-  ];
+  ]
 
   return (
     <>
@@ -259,9 +255,9 @@ const UserGroups = () => {
         <div className="mt-3 mr-2 flex justify-end">
           <Modal
             isDialogOpen={createUserGroupModal}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) handleCloseModal('create');
-              else setCreateUserGroupModal(true);
+            onOpenChange={isOpen => {
+              if (!isOpen) handleCloseModal('create')
+              else setCreateUserGroupModal(true)
             }}
             minHeight="no-min"
             dialogContent={<AddUserGroup setCreateUserGroupModal={setCreateUserGroupModal} />}
@@ -279,7 +275,7 @@ const UserGroups = () => {
         </div>
       </div>
     </>
-  );
-};
+  )
+}
 
-export default UserGroups;
+export default UserGroups

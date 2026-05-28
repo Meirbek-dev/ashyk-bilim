@@ -3,20 +3,20 @@
  * Tiptap's `getSchema` + ProseMirror `Node.fromJSON` / `.toJSON()` are
  * DOM-free and run in a Node environment without jsdom.
  */
-import { describe, expect, it } from 'vitest';
-import { getSchema } from '@tiptap/core';
-import { StarterKit } from '@tiptap/starter-kit';
-import { Node as PMNode } from '@tiptap/pm/model';
-import { HeadingWithIds } from '../../components/Objects/Editor/core/heading-with-ids';
+import { describe, expect, it } from 'vitest'
+import { getSchema } from '@tiptap/core'
+import { StarterKit } from '@tiptap/starter-kit'
+import { Node as PMNode } from '@tiptap/pm/model'
+import { HeadingWithIds } from '../../components/Objects/Editor/core/heading-with-ids'
 
 // Build a minimal schema that includes HeadingWithIds
 const schema = getSchema([
   StarterKit.configure({ heading: false }),
   HeadingWithIds.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-]);
+])
 
 function roundTrip(json: object): object {
-  return PMNode.fromJSON(schema, json).toJSON();
+  return PMNode.fromJSON(schema, json).toJSON()
 }
 
 describe('Schema JSON round-trip', () => {
@@ -29,9 +29,9 @@ describe('Schema JSON round-trip', () => {
           content: [{ type: 'text', text: 'Hello, world!' }],
         },
       ],
-    };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
+    }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
 
   it('preserves bold and italic marks', () => {
     const doc = {
@@ -46,9 +46,9 @@ describe('Schema JSON round-trip', () => {
           ],
         },
       ],
-    };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
+    }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
 
   it('preserves headings with id attribute', () => {
     const doc = {
@@ -60,9 +60,9 @@ describe('Schema JSON round-trip', () => {
           content: [{ type: 'text', text: 'Introduction' }],
         },
       ],
-    };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
+    }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
 
   it('preserves a heading with Cyrillic id', () => {
     const doc = {
@@ -74,9 +74,9 @@ describe('Schema JSON round-trip', () => {
           content: [{ type: 'text', text: 'Привет Мир' }],
         },
       ],
-    };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
+    }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
 
   it('preserves a bullet list', () => {
     const doc = {
@@ -87,18 +87,28 @@ describe('Schema JSON round-trip', () => {
           content: [
             {
               type: 'listItem',
-              content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item one' }] }],
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Item one' }],
+                },
+              ],
             },
             {
               type: 'listItem',
-              content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item two' }] }],
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Item two' }],
+                },
+              ],
             },
           ],
         },
       ],
-    };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
+    }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
 
   it('preserves nested marks (bold + italic)', () => {
     const doc = {
@@ -115,17 +125,19 @@ describe('Schema JSON round-trip', () => {
           ],
         },
       ],
-    };
-    const result = roundTrip(doc) as typeof doc;
+    }
+    const result = roundTrip(doc) as typeof doc
     // Marks may be reordered by ProseMirror; just check both are present
-    type DocShape = { content?: Array<{ content?: Array<{ marks?: Array<{ type: string }> }> }> };
-    const marks = ((result as DocShape).content?.[0]?.content?.[0]?.marks ?? []).map((m) => m.type);
-    expect(marks).toContain('bold');
-    expect(marks).toContain('italic');
-  });
+    type DocShape = {
+      content?: Array<{ content?: Array<{ marks?: Array<{ type: string }> }> }>
+    }
+    const marks = ((result as DocShape).content?.[0]?.content?.[0]?.marks ?? []).map(m => m.type)
+    expect(marks).toContain('bold')
+    expect(marks).toContain('italic')
+  })
 
   it('preserves an empty doc', () => {
-    const doc = { type: 'doc', content: [{ type: 'paragraph' }] };
-    expect(roundTrip(doc)).toEqual(doc);
-  });
-});
+    const doc = { type: 'doc', content: [{ type: 'paragraph' }] }
+    expect(roundTrip(doc)).toEqual(doc)
+  })
+})

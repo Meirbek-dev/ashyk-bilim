@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { NumberField as NumberFieldPrimitive } from '@base-ui/react/number-field';
-import { MinusIcon, PlusIcon } from 'lucide-react';
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
+import { NumberField as NumberFieldPrimitive } from '@base-ui/react/number-field'
+import { MinusIcon, PlusIcon } from 'lucide-react'
+import * as React from 'react'
+import { cn } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
 
 export const NumberFieldContext: React.Context<{
-  fieldId: string;
+  fieldId: string
 } | null> = React.createContext<{
-  fieldId: string;
-} | null>(null);
+  fieldId: string
+} | null>(null)
 
 export function NumberField({
   id,
@@ -18,10 +18,10 @@ export function NumberField({
   size = 'default',
   ...props
 }: NumberFieldPrimitive.Root.Props & {
-  size?: 'sm' | 'default' | 'lg';
+  size?: 'sm' | 'default' | 'lg'
 }): React.ReactElement {
-  const generatedId = React.useId();
-  const fieldId = id ?? generatedId;
+  const generatedId = React.useId()
+  const fieldId = id ?? generatedId
 
   return (
     <NumberFieldContext.Provider value={{ fieldId }}>
@@ -33,10 +33,13 @@ export function NumberField({
         {...props}
       />
     </NumberFieldContext.Provider>
-  );
+  )
 }
 
-export function NumberFieldGroup({ className, ...props }: NumberFieldPrimitive.Group.Props): React.ReactElement {
+export function NumberFieldGroup({
+  className,
+  ...props
+}: NumberFieldPrimitive.Group.Props): React.ReactElement {
   return (
     <NumberFieldPrimitive.Group
       className={cn(
@@ -46,7 +49,7 @@ export function NumberFieldGroup({ className, ...props }: NumberFieldPrimitive.G
       data-slot="number-field-group"
       {...props}
     />
-  );
+  )
 }
 
 export function NumberFieldDecrement({
@@ -64,7 +67,7 @@ export function NumberFieldDecrement({
     >
       <MinusIcon />
     </NumberFieldPrimitive.Decrement>
-  );
+  )
 }
 
 export function NumberFieldIncrement({
@@ -82,10 +85,13 @@ export function NumberFieldIncrement({
     >
       <PlusIcon />
     </NumberFieldPrimitive.Increment>
-  );
+  )
 }
 
-export function NumberFieldInput({ className, ...props }: NumberFieldPrimitive.Input.Props): React.ReactElement {
+export function NumberFieldInput({
+  className,
+  ...props
+}: NumberFieldPrimitive.Input.Props): React.ReactElement {
   return (
     <NumberFieldPrimitive.Input
       className={cn(
@@ -95,7 +101,7 @@ export function NumberFieldInput({ className, ...props }: NumberFieldPrimitive.I
       data-slot="number-field-input"
       {...props}
     />
-  );
+  )
 }
 
 export function NumberFieldScrubArea({
@@ -103,12 +109,14 @@ export function NumberFieldScrubArea({
   label,
   ...props
 }: NumberFieldPrimitive.ScrubArea.Props & {
-  label: string;
+  label: string
 }): React.ReactElement {
-  const context = React.useContext(NumberFieldContext);
+  const context = React.useContext(NumberFieldContext)
 
   if (!context) {
-    throw new Error('NumberFieldScrubArea must be used within a NumberField component for accessibility.');
+    throw new Error(
+      'NumberFieldScrubArea must be used within a NumberField component for accessibility.',
+    )
   }
 
   return (
@@ -117,17 +125,14 @@ export function NumberFieldScrubArea({
       data-slot="number-field-scrub-area"
       {...props}
     >
-      <Label
-        className="cursor-ew-resize"
-        htmlFor={context.fieldId}
-      >
+      <Label className="cursor-ew-resize" htmlFor={context.fieldId}>
         {label}
       </Label>
       <NumberFieldPrimitive.ScrubAreaCursor className="drop-shadow-[0_1px_1px_#0008] filter">
         <CursorGrowIcon />
       </NumberFieldPrimitive.ScrubAreaCursor>
     </NumberFieldPrimitive.ScrubArea>
-  );
+  )
 }
 
 export function CursorGrowIcon(props: React.ComponentProps<'svg'>): React.ReactElement {
@@ -144,7 +149,7 @@ export function CursorGrowIcon(props: React.ComponentProps<'svg'>): React.ReactE
     >
       <path d="M19.5 5.5L6.49737 5.51844V2L1 6.9999L6.5 12L6.49737 8.5L19.5 8.5V12L25 6.9999L19.5 2V5.5Z" />
     </svg>
-  );
+  )
 }
 
-export { NumberFieldPrimitive };
+export { NumberFieldPrimitive }

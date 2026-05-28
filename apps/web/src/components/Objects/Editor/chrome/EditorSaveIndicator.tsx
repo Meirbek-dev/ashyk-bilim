@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { Check, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl'
+import { Check, Loader2 } from 'lucide-react'
 
 interface EditorSaveIndicatorProps {
-  saveState: 'idle' | 'saving' | 'saved' | 'error';
+  saveState: 'idle' | 'saving' | 'saved' | 'error'
 }
 
 export function EditorSaveIndicator({ saveState }: EditorSaveIndicatorProps) {
-  const t = useTranslations('DashPage.Editor.EditorWrapper');
+  const t = useTranslations('DashPage.Editor.EditorWrapper')
 
-  if (saveState === 'idle') return null;
+  if (saveState === 'idle') return null
 
   return (
     <span className="text-muted-foreground flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs">
@@ -28,5 +28,5 @@ export function EditorSaveIndicator({ saveState }: EditorSaveIndicatorProps) {
         <span className="text-destructive font-medium">{t('saveError')}</span>
       )}
     </span>
-  );
+  )
 }

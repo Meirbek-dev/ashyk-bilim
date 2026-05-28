@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { MarkdownContent } from '@/features/content-markdown';
-import { cn } from '@/lib/utils';
+import { MarkdownContent } from '@/features/content-markdown'
+import { cn } from '@/lib/utils'
 
 interface AiMarkdownRendererProps {
-  content: string;
+  content: string
   /** When true, appends a blinking cursor after the last token. */
-  isStreaming?: boolean;
-  className?: string;
+  isStreaming?: boolean
+  className?: string
 }
 
 /**
@@ -18,7 +18,11 @@ interface AiMarkdownRendererProps {
  * @deprecated Internal implementation merged into MarkdownContent.
  *   This component is kept as a thin wrapper for backward compatibility.
  */
-export function AiMarkdownRenderer({ content, isStreaming = false, className }: AiMarkdownRendererProps) {
+export function AiMarkdownRenderer({
+  content,
+  isStreaming = false,
+  className,
+}: AiMarkdownRendererProps) {
   return (
     <MarkdownContent
       content={content}
@@ -26,5 +30,5 @@ export function AiMarkdownRenderer({ content, isStreaming = false, className }: 
       streaming={isStreaming}
       className={cn('prose-invert', className)}
     />
-  );
+  )
 }

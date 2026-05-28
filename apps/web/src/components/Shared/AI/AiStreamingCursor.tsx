@@ -8,5 +8,5 @@ export function AiStreamingCursor() {
       aria-hidden="true"
       className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse rounded-sm bg-zinc-400"
     />
-  );
+  )
 }

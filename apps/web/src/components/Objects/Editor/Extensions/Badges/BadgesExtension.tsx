@@ -1,94 +1,94 @@
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Palette } from 'lucide-react';
-import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { twMerge } from 'tailwind-merge';
-import dynamic from 'next/dynamic';
-import type { FC } from 'react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { ChevronDown, ChevronRight, Palette } from 'lucide-react'
+import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
+import dynamic from 'next/dynamic'
+import type { FC } from 'react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
   ssr: false,
   loading: () => null,
-});
+})
 
 interface BadgeNodeAttrs {
-  color: string;
-  emoji: string;
+  color: string
+  emoji: string
 }
 
-const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
-  const t = useTranslations('DashPage.Editor.BadgesExtension');
-  const [color, setColor] = useState(props.node.attrs.color);
-  const [emoji, setEmoji] = useState(props.node.attrs.emoji);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showPredefinedCallouts, setShowPredefinedCallouts] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const colorPickerRef = useRef<HTMLDivElement>(null);
-  const editorState = useEditorProvider();
-  const { isEditable } = editorState;
+const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
+  const t = useTranslations('DashPage.Editor.BadgesExtension')
+  const [color, setColor] = useState(props.node.attrs.color)
+  const [emoji, setEmoji] = useState(props.node.attrs.emoji)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [showPredefinedCallouts, setShowPredefinedCallouts] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+  const colorPickerRef = useRef<HTMLDivElement>(null)
+  const editorState = useEditorProvider()
+  const { isEditable } = editorState
 
   const handleClickOutside = useEffectEvent((event: MouseEvent) => {
     if (
       (pickerRef.current && !pickerRef.current.contains(event.target as Node)) ||
       (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node))
     ) {
-      setShowEmojiPicker(false);
-      setShowColorPicker(false);
+      setShowEmojiPicker(false)
+      setShowColorPicker(false)
     }
-  });
+  })
 
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleEmojiSelect = (emoji: any) => {
-    setEmoji(emoji.emoji);
-    setShowEmojiPicker(false);
+    setEmoji(emoji.emoji)
+    setShowEmojiPicker(false)
     props.updateAttributes({
       emoji: emoji.emoji,
-    });
-  };
+    })
+  }
 
   const handleColorSelect = (selectedColor: string) => {
-    setColor(selectedColor);
-    setShowColorPicker(false);
+    setColor(selectedColor)
+    setShowColorPicker(false)
     props.updateAttributes({
       color: selectedColor,
-    });
-  };
+    })
+  }
 
   const handlePredefinedBadgeSelect = (badge: (typeof predefinedBadges)[0]) => {
-    setEmoji(badge.emoji);
-    setColor(badge.color);
+    setEmoji(badge.emoji)
+    setColor(badge.color)
 
     props.updateAttributes({
       emoji: badge.emoji,
       color: badge.color,
-    });
+    })
 
     // Insert the predefined content
-    const { editor } = props;
-    const { getPos } = props;
-    const position = getPos?.();
+    const { editor } = props
+    const { getPos } = props
+    const position = getPos?.()
 
     if (editor && position !== undefined) {
       editor.commands.setTextSelection({
         from: position + 1,
         to: position + props.node.nodeSize - 1,
-      });
-      editor.commands.insertContent(badge.content);
+      })
+      editor.commands.insertContent(badge.content)
     }
 
-    setShowPredefinedCallouts(false);
-  };
+    setShowPredefinedCallouts(false)
+  }
 
-  const colors = ['sky', 'green', 'yellow', 'red', 'purple', 'teal', 'amber', 'indigo', 'neutral'];
+  const colors = ['sky', 'green', 'yellow', 'red', 'purple', 'teal', 'amber', 'indigo', 'neutral']
   const predefinedBadges = [
     {
       emoji: '📝',
@@ -135,45 +135,45 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
       color: 'neutral',
       content: t('discussionTopic'),
     },
-  ];
+  ]
 
   const getBadgeColor = (color: string) => {
     switch (color) {
       case 'sky': {
-        return 'bg-sky-400 text-sky-50';
+        return 'bg-sky-400 text-sky-50'
       }
       case 'green': {
-        return 'bg-green-400 text-green-50';
+        return 'bg-green-400 text-green-50'
       }
       case 'yellow': {
-        return 'bg-yellow-400 text-black';
+        return 'bg-yellow-400 text-black'
       }
       case 'red': {
-        return 'bg-red-500 text-red-50';
+        return 'bg-red-500 text-red-50'
       }
       case 'purple': {
-        return 'bg-purple-400 text-purple-50';
+        return 'bg-purple-400 text-purple-50'
       }
       case 'pink': {
-        return 'bg-pink-400 text-pink-50';
+        return 'bg-pink-400 text-pink-50'
       }
       case 'teal': {
-        return 'bg-teal-400 text-teal-900';
+        return 'bg-teal-400 text-teal-900'
       }
       case 'amber': {
-        return 'bg-amber-600 text-amber-100';
+        return 'bg-amber-600 text-amber-100'
       }
       case 'indigo': {
-        return 'bg-indigo-400 text-indigo-50';
+        return 'bg-indigo-400 text-indigo-50'
       }
       case 'neutral': {
-        return 'bg-neutral-800 text-white';
+        return 'bg-neutral-800 text-white'
       }
       default: {
-        return 'bg-sky-400 text-white';
+        return 'bg-sky-400 text-white'
       }
     }
-  };
+  }
 
   return (
     <NodeViewWrapper>
@@ -189,7 +189,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
             {isEditable ? (
               <button
                 onClick={() => {
-                  setShowEmojiPicker(!showEmojiPicker);
+                  setShowEmojiPicker(!showEmojiPicker)
                 }}
               >
                 <ChevronDown size={14} />
@@ -201,7 +201,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
             <div className="relative flex items-center justify-center space-x-2">
               <button
                 onClick={() => {
-                  setShowColorPicker(!showColorPicker);
+                  setShowColorPicker(!showColorPicker)
                 }}
               >
                 <Palette size={14} />
@@ -212,12 +212,12 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
                   className="soft-shadow absolute left-full ml-2 rounded-full bg-white p-2"
                 >
                   <div className="flex space-x-2">
-                    {colors.map((c) => (
+                    {colors.map(c => (
                       <button
                         key={c}
                         className={`h-8 w-8 rounded-full ${getBadgeColor(c)} hover:ring-opacity-50 focus:ring-opacity-50 hover:ring-2 focus:ring-2 focus:outline-hidden`}
                         onClick={() => {
-                          handleColorSelect(c);
+                          handleColorSelect(c)
                         }}
                       />
                     ))}
@@ -231,7 +231,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
         {isEditable ? (
           <button
             onClick={() => {
-              setShowPredefinedCallouts(!showPredefinedCallouts);
+              setShowPredefinedCallouts(!showPredefinedCallouts)
             }}
             className="text-neutral-300 transition-colors hover:text-neutral-400"
           >
@@ -245,7 +245,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
               <button
                 key={index}
                 onClick={() => {
-                  handlePredefinedBadgeSelect(badge);
+                  handlePredefinedBadgeSelect(badge)
                 }}
                 className={`flex items-center space-x-2 rounded-xl px-3 py-1 text-xs ${getBadgeColor(badge.color)} subtle-shadow font-bold text-gray-600 transition-all duration-100 ease-linear hover:opacity-80`}
               >
@@ -272,7 +272,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
         </div>
       ) : null}
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default BadgesExtension;
+export default BadgesExtension

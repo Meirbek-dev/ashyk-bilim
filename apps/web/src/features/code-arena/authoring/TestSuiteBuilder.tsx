@@ -1,53 +1,60 @@
-'use client';
+'use client'
 
-import { Download, Plus, Trash2, Upload, ArrowUp, ArrowDown, Info } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { Download, Plus, Trash2, Upload, ArrowUp, ArrowDown, Info } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown';
-import type { CodeChallengeSettings, TestCase } from '@/services/courses/code-challenges';
-import { cn, generateUUID } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
+import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown'
+import type { CodeChallengeSettings, TestCase } from '@/services/courses/code-challenges'
+import { cn, generateUUID } from '@/lib/utils'
 
 interface TestSuiteBuilderProps {
-  draft: CodeChallengeSettings;
-  onChange: (patch: Partial<CodeChallengeSettings>) => void;
+  draft: CodeChallengeSettings
+  onChange: (patch: Partial<CodeChallengeSettings>) => void
 }
 
 export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const t = useTranslations('Activities.CodeChallenges')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
 
-  const tests = [...(draft.visible_tests ?? []), ...(draft.hidden_tests ?? [])];
+  const tests = [...(draft.visible_tests ?? []), ...(draft.hidden_tests ?? [])]
 
   // Find currently selected test case details
-  const selectedTestCase = tests.find((t) => t.id === selectedCaseId) ?? null;
+  const selectedTestCase = tests.find(t => t.id === selectedCaseId) ?? null
 
   const updateTest = (id: string, patch: Partial<TestCase>) => {
-    const next = tests.map((t) => (t.id === id ? { ...t, ...patch } : t));
+    const next = tests.map(t => (t.id === id ? { ...t, ...patch } : t))
     onChange({
-      visible_tests: next.filter((t) => t.is_visible),
-      hidden_tests: next.filter((t) => !t.is_visible),
-    });
-  };
+      visible_tests: next.filter(t => t.is_visible),
+      hidden_tests: next.filter(t => !t.is_visible),
+    })
+  }
 
   const removeTest = (id: string) => {
-    if (selectedCaseId === id) setSelectedCaseId(null);
-    const next = tests.filter((t) => t.id !== id);
+    if (selectedCaseId === id) setSelectedCaseId(null)
+    const next = tests.filter(t => t.id !== id)
     onChange({
-      visible_tests: next.filter((t) => t.is_visible),
-      hidden_tests: next.filter((t) => !t.is_visible),
-    });
-    toast.success(t('testCaseRemoved'));
-  };
+      visible_tests: next.filter(t => t.is_visible),
+      hidden_tests: next.filter(t => !t.is_visible),
+    })
+    toast.success(t('testCaseRemoved'))
+  }
 
   const addTest = (visible: boolean) => {
     const newCase: TestCase = {
@@ -58,44 +65,56 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
       is_visible: visible,
       weight: 1,
       match_mode: 'EXACT',
-    };
+    }
     onChange({
-      visible_tests: visible ? [...(draft.visible_tests ?? []), newCase] : (draft.visible_tests ?? []),
-      hidden_tests: !visible ? [...(draft.hidden_tests ?? []), newCase] : (draft.hidden_tests ?? []),
-    });
-    setSelectedCaseId(newCase.id);
-  };
+      visible_tests: visible
+        ? [...(draft.visible_tests ?? []), newCase]
+        : (draft.visible_tests ?? []),
+      hidden_tests: !visible
+        ? [...(draft.hidden_tests ?? []), newCase]
+        : (draft.hidden_tests ?? []),
+    })
+    setSelectedCaseId(newCase.id)
+  }
 
   const moveTest = (idx: number, direction: 'up' | 'down') => {
-    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= tests.length) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= tests.length) return
 
-    const next = [...tests];
-    const temp = next[idx]!;
-    next[idx] = next[targetIdx]!;
-    next[targetIdx] = temp;
+    const next = [...tests]
+    const temp = next[idx]!
+    next[idx] = next[targetIdx]!
+    next[targetIdx] = temp
 
     onChange({
-      visible_tests: next.filter((t) => t.is_visible),
-      hidden_tests: next.filter((t) => !t.is_visible),
-    });
-  };
+      visible_tests: next.filter(t => t.is_visible),
+      hidden_tests: next.filter(t => !t.is_visible),
+    })
+  }
 
   // CSV/JSON Export
   const handleExport = (format: 'json' | 'csv') => {
     try {
-      let dataStr = '';
-      let mimeType = '';
-      let filename = `test_cases_${draft.title || 'challenge'}`;
+      let dataStr = ''
+      let mimeType = ''
+      let filename = `test_cases_${draft.title || 'challenge'}`
 
       if (format === 'json') {
-        dataStr = JSON.stringify(tests, null, 2);
-        mimeType = 'application/json';
-        filename += '.json';
+        dataStr = JSON.stringify(tests, null, 2)
+        mimeType = 'application/json'
+        filename += '.json'
       } else {
         // Simple CSV serialize
-        const headers = ['id', 'is_visible', 'description', 'input', 'expected_output', 'weight', 'match_mode'];
-        const csvRows = [headers.join(',')];
+        const headers = [
+          'id',
+          'is_visible',
+          'description',
+          'input',
+          'expected_output',
+          'weight',
+          'match_mode',
+        ]
+        const csvRows = [headers.join(',')]
 
         for (const t of tests) {
           const values = [
@@ -106,46 +125,46 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
             `"${t.expected_output.replace(/"/g, '""')}"`,
             t.weight ?? 1,
             t.match_mode ?? 'EXACT',
-          ];
-          csvRows.push(values.join(','));
+          ]
+          csvRows.push(values.join(','))
         }
-        dataStr = csvRows.join('\n');
-        mimeType = 'text/csv';
-        filename += '.csv';
+        dataStr = csvRows.join('\n')
+        mimeType = 'text/csv'
+        filename += '.csv'
       }
 
-      const blob = new Blob([dataStr], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success(t('exportSuccess', { format: format.toUpperCase() }));
+      const blob = new Blob([dataStr], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+      toast.success(t('exportSuccess', { format: format.toUpperCase() }))
     } catch {
-      toast.error(t('exportFailed'));
+      toast.error(t('exportFailed'))
     }
-  };
+  }
 
   // CSV/JSON Import
   const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+    fileInputRef.current?.click()
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
+    const reader = new FileReader()
+    reader.onload = event => {
       try {
-        const text = event.target?.result as string;
-        let imported: TestCase[] = [];
+        const text = event.target?.result as string
+        let imported: TestCase[] = []
 
         if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(text);
+          const parsed = JSON.parse(text)
           if (Array.isArray(parsed)) {
-            imported = parsed.map((item) => ({
+            imported = parsed.map(item => ({
               id: item.id || `test_${generateUUID()}`,
               input: String(item.input ?? ''),
               expected_output: String(item.expected_output ?? ''),
@@ -153,21 +172,21 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               is_visible: Boolean(item.is_visible),
               weight: Number(item.weight ?? 1),
               match_mode: item.match_mode || 'EXACT',
-            }));
+            }))
           }
         } else if (file.name.endsWith('.csv')) {
           // Naive CSV parsing
-          const lines = text.split('\n').filter((l) => l.trim());
-          const headers = lines[0]?.split(',').map((h) => h.trim());
+          const lines = text.split('\n').filter(l => l.trim())
+          const headers = lines[0]?.split(',').map(h => h.trim())
 
           if (headers?.includes('input') && headers.includes('expected_output')) {
-            imported = lines.slice(1).map((line) => {
+            imported = lines.slice(1).map(line => {
               // Quick quote splits
-              const regex = /(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g;
-              const matches = [];
-              let match;
+              const regex = /(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))/g
+              const matches = []
+              let match
               while ((match = regex.exec(line)) !== null) {
-                matches.push(match[1] ? match[1].replace(/""/g, '"') : match[2]);
+                matches.push(match[1] ? match[1].replace(/""/g, '"') : match[2])
               }
 
               return {
@@ -178,32 +197,32 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                 expected_output: matches[4] || '',
                 weight: Number(matches[5] || 1),
                 match_mode: (matches[6] as any) || 'EXACT',
-              };
-            });
+              }
+            })
           } else {
-            throw new Error('CSV headers must include "input" and "expected_output".');
+            throw new Error('CSV headers must include "input" and "expected_output".')
           }
         }
 
         if (imported.length > 0) {
           onChange({
-            visible_tests: [...(draft.visible_tests ?? []), ...imported.filter((t) => t.is_visible)],
-            hidden_tests: [...(draft.hidden_tests ?? []), ...imported.filter((t) => !t.is_visible)],
-          });
-          toast.success(t('importSuccess', { count: imported.length }));
+            visible_tests: [...(draft.visible_tests ?? []), ...imported.filter(t => t.is_visible)],
+            hidden_tests: [...(draft.hidden_tests ?? []), ...imported.filter(t => !t.is_visible)],
+          })
+          toast.success(t('importSuccess', { count: imported.length }))
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('importFailed'));
+        toast.error(error instanceof Error ? error.message : t('importFailed'))
       }
-    };
-    reader.readAsText(file);
-    e.target.value = ''; // clear
-  };
+    }
+    reader.readAsText(file)
+    e.target.value = '' // clear
+  }
 
   // Math stats
-  const totalWeight = tests.reduce((sum, t) => sum + (t.weight ?? 1), 0);
-  const sampleCount = draft.visible_tests?.length ?? 0;
-  const hiddenCount = draft.hidden_tests?.length ?? 0;
+  const totalWeight = tests.reduce((sum, t) => sum + (t.weight ?? 1), 0)
+  const sampleCount = draft.visible_tests?.length ?? 0
+  const hiddenCount = draft.hidden_tests?.length ?? 0
 
   return (
     <div className="flex h-full min-h-0 grid-cols-[1fr_360px] flex-col overflow-hidden md:grid">
@@ -291,18 +310,18 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               </TableHeader>
               <TableBody>
                 {tests.map((test, index) => {
-                  const isSelected = test.id === selectedCaseId;
+                  const isSelected = test.id === selectedCaseId
                   return (
                     <TableRow
                       key={test.id}
-                      className={cn('cursor-pointer hover:bg-muted/10', isSelected ? 'bg-primary/5' : '')}
+                      className={cn(
+                        'cursor-pointer hover:bg-muted/10',
+                        isSelected ? 'bg-primary/5' : '',
+                      )}
                       onClick={() => setSelectedCaseId(test.id)}
                     >
                       <TableCell className="py-2.5">
-                        <div
-                          className="flex flex-col gap-0.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex flex-col gap-0.5" onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
                             disabled={index === 0}
@@ -322,10 +341,14 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()}>
                           <NativeSelect
                             value={test.is_visible ? 'visible' : 'hidden'}
-                            onChange={(e) => updateTest(test.id, { is_visible: e.target.value === 'visible' })}
+                            onChange={e =>
+                              updateTest(test.id, {
+                                is_visible: e.target.value === 'visible',
+                              })
+                            }
                             className="select-xs h-8 py-0"
                           >
                             <NativeSelectOption value="visible">{t('visible')}</NativeSelectOption>
@@ -334,21 +357,31 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()}>
                           <NativeSelect
                             value={test.match_mode ?? 'EXACT'}
-                            onChange={(e) => updateTest(test.id, { match_mode: e.target.value as any })}
+                            onChange={e =>
+                              updateTest(test.id, {
+                                match_mode: e.target.value as any,
+                              })
+                            }
                             className="select-xs h-8 py-0"
                           >
                             <NativeSelectOption value="EXACT">{t('exactMatch')}</NativeSelectOption>
-                            <NativeSelectOption value="TRIMMED">{t('trimmedMatch')}</NativeSelectOption>
-                            <NativeSelectOption value="IGNORE_WHITESPACE">{t('ignoreWhitespace')}</NativeSelectOption>
-                            <NativeSelectOption value="NUMERIC_TOLERANCE">{t('floatTolerance')}</NativeSelectOption>
+                            <NativeSelectOption value="TRIMMED">
+                              {t('trimmedMatch')}
+                            </NativeSelectOption>
+                            <NativeSelectOption value="IGNORE_WHITESPACE">
+                              {t('ignoreWhitespace')}
+                            </NativeSelectOption>
+                            <NativeSelectOption value="NUMERIC_TOLERANCE">
+                              {t('floatTolerance')}
+                            </NativeSelectOption>
                           </NativeSelect>
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
                             className="text-muted-foreground hover:bg-muted/30 h-8 w-full truncate rounded-md border px-2 text-left text-sm"
@@ -361,18 +394,22 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()}>
                           <Input
                             type="number"
                             min={1}
                             value={test.weight ?? 1}
-                            onChange={(e) => updateTest(test.id, { weight: Number(e.target.value) })}
+                            onChange={e =>
+                              updateTest(test.id, {
+                                weight: Number(e.target.value),
+                              })
+                            }
                             className="h-8 px-2"
                           />
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()}>
                           <Button
                             type="button"
                             variant="ghost"
@@ -385,7 +422,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
+                  )
                 })}
               </TableBody>
             </Table>
@@ -431,30 +468,40 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           {selectedTestCase ? (
             <div className="space-y-4 p-4">
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('descriptionLabel')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('descriptionLabel')}
+                </span>
                 <MarkdownEditor
                   value={selectedTestCase.description ?? ''}
-                  onChange={(description) => updateTest(selectedTestCase.id, { description })}
+                  onChange={description => updateTest(selectedTestCase.id, { description })}
                   preset="codeExampleExplanation"
                   placeholder={t('assertionDescriptionPlaceholder')}
                 />
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('stdinInput')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('stdinInput')}
+                </span>
                 <Textarea
                   value={selectedTestCase.input}
-                  onChange={(e) => updateTest(selectedTestCase.id, { input: e.target.value })}
+                  onChange={e => updateTest(selectedTestCase.id, { input: e.target.value })}
                   className="min-h-36 font-mono text-xs leading-relaxed"
                   placeholder={t('stdinPlaceholder')}
                 />
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('expectedStdout')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('expectedStdout')}
+                </span>
                 <Textarea
                   value={selectedTestCase.expected_output}
-                  onChange={(e) => updateTest(selectedTestCase.id, { expected_output: e.target.value })}
+                  onChange={e =>
+                    updateTest(selectedTestCase.id, {
+                      expected_output: e.target.value,
+                    })
+                  }
                   className="min-h-36 font-mono text-xs leading-relaxed"
                   placeholder={t('expectedAssertionPlaceholder')}
                 />
@@ -482,5 +529,5 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         </ScrollArea>
       </div>
     </div>
-  );
+  )
 }

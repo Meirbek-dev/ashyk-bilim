@@ -5,40 +5,40 @@
  * Returns true if user prefers reduced motion.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
 export function useReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof globalThis.window === 'undefined') return false;
-    return globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  });
+    if (typeof globalThis.window === 'undefined') return false
+    return globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
 
   useEffect(() => {
     // Check media query on mount
-    const mediaQuery = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
+    const mediaQuery = globalThis.matchMedia('(prefers-reduced-motion: reduce)')
 
     // Listen for changes
     const handleChange = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
+      setPrefersReducedMotion(event.matches)
+    }
 
     if ('addEventListener' in mediaQuery) {
-      mediaQuery.addEventListener('change', handleChange);
+      mediaQuery.addEventListener('change', handleChange)
     } else if ('addListener' in mediaQuery) {
       // Backwards compatibility
       // @ts-ignore
-      mediaQuery.addListener(handleChange);
+      mediaQuery.addListener(handleChange)
     }
 
     return () => {
       if ('removeEventListener' in mediaQuery) {
-        mediaQuery.removeEventListener('change', handleChange);
+        mediaQuery.removeEventListener('change', handleChange)
       } else if ('removeListener' in mediaQuery) {
         // @ts-ignore
-        mediaQuery.removeListener(handleChange);
+        mediaQuery.removeListener(handleChange)
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  return prefersReducedMotion;
+  return prefersReducedMotion
 }

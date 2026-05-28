@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { DayPicker, getDefaultClassNames } from '@daypicker/react';
-import type { DayButtonProps, Locale } from '@daypicker/react';
-import * as React from 'react';
+import { DayPicker, getDefaultClassNames } from '@daypicker/react'
+import type { DayButtonProps, Locale } from '@daypicker/react'
+import * as React from 'react'
 
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function Calendar({
   className,
@@ -22,21 +22,21 @@ function Calendar({
   maxDate,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
-  buttonVariant?: React.ComponentProps<typeof Button>['variant'];
-  minDate?: Date;
-  maxDate?: Date;
+  buttonVariant?: React.ComponentProps<typeof Button>['variant']
+  minDate?: Date
+  maxDate?: Date
 }) {
-  const defaultClassNames = getDefaultClassNames();
+  const defaultClassNames = getDefaultClassNames()
 
   // Default `toDate` to 50 years in the future so the year dropdown and navigation
   // don't stop at the end of the current year (e.g. 31.12.2025)
   const defaultMaxDate = (() => {
-    const d = maxDate ? new Date(maxDate) : new Date();
-    if (!maxDate) d.setFullYear(2077);
-    d.setMonth(11);
-    d.setDate(31);
-    return d;
-  })();
+    const d = maxDate ? new Date(maxDate) : new Date()
+    if (!maxDate) d.setFullYear(2077)
+    d.setMonth(11)
+    d.setDate(31)
+    return d
+  })()
 
   return (
     <DayPicker
@@ -50,14 +50,17 @@ function Calendar({
       captionLayout={captionLayout}
       locale={locale}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: 'short' }),
+        formatMonthDropdown: date => date.toLocaleString(locale?.code, { month: 'short' }),
         ...formatters,
       }}
       classNames={{
         root: cn('w-fit', defaultClassNames.root),
         months: cn('relative flex flex-col gap-4 md:flex-row', defaultClassNames.months),
         month: cn('flex w-full flex-col gap-4', defaultClassNames.month),
-        nav: cn('absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1', defaultClassNames.nav),
+        nav: cn(
+          'absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1',
+          defaultClassNames.nav,
+        ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
           'size-(--cell-size) p-0 select-none aria-disabled:opacity-50',
@@ -94,7 +97,10 @@ function Calendar({
         ),
         week: cn('mt-2 flex w-full', defaultClassNames.week),
         week_number_header: cn('w-(--cell-size) select-none', defaultClassNames.week_number_header),
-        week_number: cn('text-[0.8rem] text-muted-foreground select-none', defaultClassNames.week_number),
+        week_number: cn(
+          'text-[0.8rem] text-muted-foreground select-none',
+          defaultClassNames.week_number,
+        ),
         day: cn(
           'group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-e-(--cell-radius)',
           props.showWeekNumber
@@ -115,60 +121,40 @@ function Calendar({
           'rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none',
           defaultClassNames.today,
         ),
-        outside: cn('text-muted-foreground aria-selected:text-muted-foreground', defaultClassNames.outside),
+        outside: cn(
+          'text-muted-foreground aria-selected:text-muted-foreground',
+          defaultClassNames.outside,
+        ),
         disabled: cn('text-muted-foreground opacity-50', defaultClassNames.disabled),
         hidden: cn('invisible', defaultClassNames.hidden),
         ...classNames,
       }}
       components={{
         Root: ({ className, rootRef, ...props }) => {
-          return (
-            <div
-              data-slot="calendar"
-              ref={rootRef}
-              className={cn(className)}
-              {...props}
-            />
-          );
+          return <div data-slot="calendar" ref={rootRef} className={cn(className)} {...props} />
         },
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === 'left') {
-            return (
-              <ChevronLeftIcon
-                className={cn('rtl:rotate-180 size-4', className)}
-                {...props}
-              />
-            );
+            return <ChevronLeftIcon className={cn('rtl:rotate-180 size-4', className)} {...props} />
           }
 
           if (orientation === 'right') {
             return (
-              <ChevronRightIcon
-                className={cn('rtl:rotate-180 size-4', className)}
-                {...props}
-              />
-            );
+              <ChevronRightIcon className={cn('rtl:rotate-180 size-4', className)} {...props} />
+            )
           }
 
-          return (
-            <ChevronDownIcon
-              className={cn('size-4', className)}
-              {...props}
-            />
-          );
+          return <ChevronDownIcon className={cn('size-4', className)} {...props} />
         },
-        DayButton: ({ ...props }) => (
-          <CalendarDayButton
-            locale={locale}
-            {...props}
-          />
-        ),
+        DayButton: ({ ...props }) => <CalendarDayButton locale={locale} {...props} />,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
-              <div className="flex size-(--cell-size) items-center justify-center text-center">{children}</div>
+              <div className="flex size-(--cell-size) items-center justify-center text-center">
+                {children}
+              </div>
             </td>
-          );
+          )
         },
         ...components,
       }}
@@ -177,7 +163,7 @@ function Calendar({
       endMonth={defaultMaxDate}
       {...props}
     />
-  );
+  )
 }
 
 function CalendarDayButton({
@@ -187,12 +173,12 @@ function CalendarDayButton({
   locale,
   ...props
 }: DayButtonProps & { locale?: Partial<Locale> }) {
-  const defaultClassNames = getDefaultClassNames();
+  const defaultClassNames = getDefaultClassNames()
 
-  const ref = React.useRef<HTMLButtonElement>(null);
+  const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus();
-  }, [modifiers.focused]);
+    if (modifiers.focused) ref.current?.focus()
+  }, [modifiers.focused])
 
   return (
     <Button
@@ -201,7 +187,10 @@ function CalendarDayButton({
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}
       data-selected-single={
-        modifiers.selected && !modifiers.range_start && !modifiers.range_end && !modifiers.range_middle
+        modifiers.selected &&
+        !modifiers.range_start &&
+        !modifiers.range_end &&
+        !modifiers.range_middle
       }
       data-range-start={modifiers.range_start}
       data-range-end={modifiers.range_end}
@@ -213,7 +202,7 @@ function CalendarDayButton({
       )}
       {...props}
     />
-  );
+  )
 }
 
-export { Calendar, CalendarDayButton };
+export { Calendar, CalendarDayButton }

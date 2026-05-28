@@ -1,20 +1,20 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AdminHeaderClient from '@/app/_shared/dash/admin/AdminHeaderClient';
-import { getTranslations } from 'next-intl/server';
-import { Shield, Users } from 'lucide-react';
-import type { Metadata } from 'next';
-import { Link } from '@/i18n/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import AdminHeaderClient from '@/app/_shared/dash/admin/AdminHeaderClient'
+import { getTranslations } from 'next-intl/server'
+import { Shield, Users } from 'lucide-react'
+import type { Metadata } from 'next'
+import { Link } from '@/i18n/navigation'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('DashPage.Admin.Index');
+  const t = await getTranslations('DashPage.Admin.Index')
   return {
     title: t('title'),
     description: t('description'),
-  };
+  }
 }
 
 export default async function PlatformAdminPage() {
-  const t = await getTranslations('DashPage.Admin.Index');
+  const t = await getTranslations('DashPage.Admin.Index')
 
   const adminSections = [
     {
@@ -29,7 +29,7 @@ export default async function PlatformAdminPage() {
       href: 'admin/users',
       icon: Users,
     },
-  ];
+  ]
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -38,11 +38,8 @@ export default async function PlatformAdminPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {adminSections.map((section) => (
-          <Link
-            key={section.href}
-            href={section.href}
-          >
+        {adminSections.map(section => (
+          <Link key={section.href} href={section.href}>
             <Card className="hover:border-primary h-full cursor-pointer transition-colors">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -60,5 +57,5 @@ export default async function PlatformAdminPage() {
         ))}
       </div>
     </div>
-  );
+  )
 }

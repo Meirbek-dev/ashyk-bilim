@@ -5,9 +5,9 @@
  * activity type has been removed.
  */
 
-import type { ComponentType } from 'react';
-import { registerKind } from './index';
-import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index';
+import type { ComponentType } from 'react'
+import { registerKind } from './index'
+import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index'
 
 registerKind('TYPE_CUSTOM', async () => {
   const [
@@ -18,33 +18,33 @@ registerKind('TYPE_CUSTOM', async () => {
     import('@/features/assessments/studio/NativeItemStudio'),
     import('./exam/ExamAttemptContent'),
     import('@/features/grading/review/GradingReviewWorkspace'),
-  ]);
+  ])
 
-  const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
+  const OutlineSlot: ComponentType<KindAuthorProps> = _props => (
     <NativeItemOutline
       allowedKinds={['CHOICE', 'MATCHING']}
       itemNoun="Question"
       itemNounKey="question"
     />
-  );
+  )
 
-  const AuthorSlot: ComponentType<KindAuthorProps> = (_props) => (
-    <NativeItemAuthor
-      mode="exam"
-      itemNoun="Question"
-      itemNounKey="question"
-    />
-  );
+  const AuthorSlot: ComponentType<KindAuthorProps> = _props => (
+    <NativeItemAuthor mode="exam" itemNoun="Question" itemNounKey="question" />
+  )
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({
+    activityId,
+    submissionUuid,
+    title,
+  }) => {
     return (
       <GradingReviewWorkspace
         activityId={activityId}
         initialSubmissionUuid={submissionUuid ?? null}
         title={title}
       />
-    );
-  };
+    )
+  }
 
   return {
     label: 'Quiz',
@@ -54,5 +54,5 @@ registerKind('TYPE_CUSTOM', async () => {
     Author: AuthorSlot,
     Attempt: ExamAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
-  };
-});
+  }
+})

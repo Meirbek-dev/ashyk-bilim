@@ -1,62 +1,54 @@
-import AssessmentStudioWorkspace from '@/features/assessments/studio/AssessmentStudioWorkspace';
-import FileSubmissionStudio from '@/features/file-submissions/studio/FileSubmissionStudio';
-import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage';
-import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
-import { getActivity } from '@services/courses/activities';
-import { getCourseMetadata } from '@services/courses/courses';
-import EditorWrapper from '@/components/Objects/Editor/EditorWrapper';
-import { getTranslations } from 'next-intl/server';
-import { getSession } from '@/lib/auth/session';
-import { redirect } from '@/i18n/navigation';
-import { getLocale } from 'next-intl/server';
-import AccessDenied from '@/components/Errors/AccessDenied';
+import AssessmentStudioWorkspace from '@/features/assessments/studio/AssessmentStudioWorkspace'
+import FileSubmissionStudio from '@/features/file-submissions/studio/FileSubmissionStudio'
+import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
+import { getActivity } from '@services/courses/activities'
+import { getCourseMetadata } from '@services/courses/courses'
+import EditorWrapper from '@/components/Objects/Editor/EditorWrapper'
+import { getTranslations } from 'next-intl/server'
+import { getSession } from '@/lib/auth/session'
+import { redirect } from '@/i18n/navigation'
+import { getLocale } from 'next-intl/server'
+import AccessDenied from '@/components/Errors/AccessDenied'
 
 export default async function PlatformAssessmentStudioPage(props: {
-  params: Promise<{ courseuuid: string; activityid: string }>;
+  params: Promise<{ courseuuid: string; activityid: string }>
 }) {
-  const t = await getTranslations('Features.Assessments.Studio');
-  const { courseuuid, activityid } = await props.params;
+  const t = await getTranslations('Features.Assessments.Studio')
+  const { courseuuid, activityid } = await props.params
 
-  let activity;
-  let course;
-  let assessment;
+  let activity
+  let course
+  let assessment
 
   try {
-    [activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)]);
-    assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
+    ;[activity, course] = await Promise.all([
+      getActivity(activityid),
+      getCourseMetadata(courseuuid, undefined, true),
+    ])
+    assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
   } catch (error: any) {
     if (error.status === 401) {
-      const locale = await getLocale();
+      const locale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/activity/${activityid}/studio`)}`,
         locale,
-      });
+      })
     }
     if (error.status === 403) {
-      const activeSession = await getSession();
-      return (
-        <AccessDenied
-          courseuuid={courseuuid}
-          session={activeSession}
-        />
-      );
+      const activeSession = await getSession()
+      return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    throw error;
+    throw error
   }
 
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: 'curriculum',
     children: assessment ? (
-      <AssessmentStudioWorkspace
-        courseUuid={courseuuid}
-        activityUuid={activityid}
-      />
+      <AssessmentStudioWorkspace courseUuid={courseuuid} activityUuid={activityid} />
     ) : activity.activity_type === 'TYPE_FILE_SUBMISSION' ? (
-      <FileSubmissionStudio
-        courseUuid={courseuuid}
-        activityUuid={activityid}
-      />
+      <FileSubmissionStudio courseUuid={courseuuid} activityUuid={activityid} />
     ) : activity.activity_type === 'TYPE_DYNAMIC' ? (
       <div className="bg-background min-h-screen">
         <EditorWrapper
@@ -77,5 +69,5 @@ export default async function PlatformAssessmentStudioPage(props: {
         })}
       </div>
     ),
-  });
+  })
 }

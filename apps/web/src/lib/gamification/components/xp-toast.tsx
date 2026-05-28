@@ -8,42 +8,45 @@
  * - Less intrusive design
  */
 
-'use client';
+'use client'
 
-import { XPNotificationContainer, useXPNotificationQueue } from '@/lib/gamification/components/notification-queue';
-import type { XPNotification } from '@/lib/gamification/components/notification-queue';
-import { ParticleEffect } from '@/lib/gamification/components/level-indicators';
-import { AnimatedValue } from '@/lib/gamification/components/animated-value';
-import { useReducedData } from '@/hooks/use-reduced-data';
-import { getXPSourceTheme } from '@/lib/gamification';
+import {
+  XPNotificationContainer,
+  useXPNotificationQueue,
+} from '@/lib/gamification/components/notification-queue'
+import type { XPNotification } from '@/lib/gamification/components/notification-queue'
+import { ParticleEffect } from '@/lib/gamification/components/level-indicators'
+import { AnimatedValue } from '@/lib/gamification/components/animated-value'
+import { useReducedData } from '@/hooks/use-reduced-data'
+import { getXPSourceTheme } from '@/lib/gamification'
 
-import { useTranslations } from 'next-intl';
-import { motion } from 'motion/react';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl'
+import { motion } from 'motion/react'
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // XP Toast Component
 // ============================================================================
 
 interface XPToastProps {
-  notification: XPNotification & { batchCount: number; totalAmount: number };
-  onDismiss: () => void;
+  notification: XPNotification & { batchCount: number; totalAmount: number }
+  onDismiss: () => void
 }
 
 function XPToast({ notification, onDismiss }: XPToastProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const theme = getXPSourceTheme(notification.source);
-  const prefersReducedData = useReducedData();
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const theme = getXPSourceTheme(notification.source)
+  const prefersReducedData = useReducedData()
 
   const getSourceLabel = (sourceKey: string): string => {
-    const labelKey = `xpSources.${sourceKey}`;
-    const translated = t(labelKey);
-    return translated === labelKey ? sourceKey.replace(/_/g, ' ') : translated;
-  };
+    const labelKey = `xpSources.${sourceKey}`
+    const translated = t(labelKey)
+    return translated === labelKey ? sourceKey.replace(/_/g, ' ') : translated
+  }
 
-  const sourceLabel = getSourceLabel(notification.source);
-  const isBatched = notification.batchCount > 1;
+  const sourceLabel = getSourceLabel(notification.source)
+  const isBatched = notification.batchCount > 1
 
   return (
     <motion.div
@@ -75,13 +78,15 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
             <AnimatedValue
               value={notification.totalAmount}
               className={cn('text-lg font-bold tabular-nums', theme.color)}
-              format={(v) => Math.round(v).toLocaleString()}
+              format={v => Math.round(v).toLocaleString()}
             />
             <span className="text-muted-foreground text-sm">XP</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2">
             <p className="text-muted-foreground truncate text-xs">
-              {isBatched ? t('toast.fromActivities', { count: notification.batchCount }) : sourceLabel}
+              {isBatched
+                ? t('toast.fromActivities', { count: notification.batchCount })
+                : sourceLabel}
             </p>
           </div>
         </div>
@@ -105,13 +110,10 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
 
       {/* Particle effect for level ups (skip if reduced data) */}
       {notification.triggeredLevelUp && !prefersReducedData && (
-        <ParticleEffect
-          trigger
-          particleCount={15}
-        />
+        <ParticleEffect trigger particleCount={15} />
       )}
     </motion.div>
-  );
+  )
 }
 
 // ============================================================================
@@ -119,10 +121,10 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
 // ============================================================================
 
 export interface ShowXPToastOptions {
-  amount: number;
-  source?: string;
-  triggeredLevelUp?: boolean;
-  showSourceLabel?: boolean;
+  amount: number
+  source?: string
+  triggeredLevelUp?: boolean
+  showSourceLabel?: boolean
 }
 
 export function useXPToast() {
@@ -131,22 +133,23 @@ export function useXPToast() {
     batchWindowMs: 2000,
     displayDurationMs: 3000,
     position: 'bottom-right',
-  });
+  })
 
-  const showXPToast = ({ amount, source = 'default', triggeredLevelUp = false }: ShowXPToastOptions) => {
+  const showXPToast = ({
+    amount,
+    source = 'default',
+    triggeredLevelUp = false,
+  }: ShowXPToastOptions) => {
     addNotification({
       amount,
       source,
       triggeredLevelUp,
-    });
-  };
+    })
+  }
 
   const renderNotification = (notification: any) => (
-    <XPToast
-      notification={notification}
-      onDismiss={() => dismissNotification(notification.id)}
-    />
-  );
+    <XPToast notification={notification} onDismiss={() => dismissNotification(notification.id)} />
+  )
 
   // ToastContainer component
   const ToastContainer = () => {
@@ -157,11 +160,11 @@ export function useXPToast() {
         onDismiss={dismissNotification}
         renderNotification={renderNotification}
       />
-    );
-  };
+    )
+  }
 
   return {
     showXPToast,
     ToastContainer,
-  };
+  }
 }

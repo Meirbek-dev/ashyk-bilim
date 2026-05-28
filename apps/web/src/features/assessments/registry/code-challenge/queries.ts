@@ -1,21 +1,23 @@
-'use client';
+'use client'
 
-import { queryOptions } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/react-query/queryKeys';
+import { queryOptions } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import {
   getCodeChallengeSettings,
   getJudge0Languages,
   getSubmission,
   getSubmissions,
-} from '@/services/courses/code-challenges';
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
+} from '@/services/courses/code-challenges'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 
-export function codeChallengeSettingsQueryOptions<TSettings = CodeChallengeSettings>(activityUuid: string) {
+export function codeChallengeSettingsQueryOptions<TSettings = CodeChallengeSettings>(
+  activityUuid: string,
+) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.settings(activityUuid),
     queryFn: async () => (await getCodeChallengeSettings(activityUuid)) as TSettings | null,
     refetchOnWindowFocus: false,
-  });
+  })
 }
 
 export function judge0LanguagesQueryOptions() {
@@ -24,7 +26,7 @@ export function judge0LanguagesQueryOptions() {
     queryFn: getJudge0Languages,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-  });
+  })
 }
 
 export function codeChallengeSubmissionsQueryOptions<TSubmission = unknown>(activityUuid: string) {
@@ -32,7 +34,7 @@ export function codeChallengeSubmissionsQueryOptions<TSubmission = unknown>(acti
     queryKey: queryKeys.codeChallenges.submissions(activityUuid),
     queryFn: async () => (await getSubmissions(activityUuid)) as TSubmission,
     refetchOnWindowFocus: false,
-  });
+  })
 }
 
 export function codeChallengeSubmissionQueryOptions<TSubmission = unknown>(
@@ -43,5 +45,5 @@ export function codeChallengeSubmissionQueryOptions<TSubmission = unknown>(
     queryKey: queryKeys.codeChallenges.submission(activityUuid, submissionUuid),
     queryFn: async () => (await getSubmission(activityUuid, submissionUuid)) as TSubmission,
     refetchOnWindowFocus: false,
-  });
+  })
 }

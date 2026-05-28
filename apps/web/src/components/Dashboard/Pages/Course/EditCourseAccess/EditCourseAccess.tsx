@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertDialog,
@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -18,56 +18,57 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table';
-import LinkToUserGroup from '@components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup';
-import { AlertTriangle, Globe, Loader2, SquareUserRound, Users, X } from 'lucide-react';
-import { CourseChoiceCard } from '@components/Dashboard/Courses/courseWorkflowUi';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { unLinkResourcesToUserGroup } from '@services/usergroups/usergroups';
-import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader';
-import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { useSyncDirtySection } from '@/hooks/useSyncDirtySection';
-import { useCourse } from '@components/Contexts/CourseContext';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup } from '@/components/ui/radio-group';
-import { useSaveSection } from '@/hooks/useSaveSection';
-import { Button } from '@/components/ui/button';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+} from '@/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table'
+import LinkToUserGroup from '@components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup'
+import { AlertTriangle, Globe, Loader2, SquareUserRound, Users, X } from 'lucide-react'
+import { CourseChoiceCard } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { unLinkResourcesToUserGroup } from '@services/usergroups/usergroups'
+import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
+import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
+import { useCourse } from '@components/Contexts/CourseContext'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { RadioGroup } from '@/components/ui/radio-group'
+import { useSaveSection } from '@/hooks/useSaveSection'
+import { Button } from '@/components/ui/button'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 const EditCourseAccess = () => {
-  const course = useCourse();
-  const { courseStructure, editorData } = course;
-  const t = useTranslations('DashPage.Courses.Access');
-  const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '');
-  const [draftPublic, setDraftPublic] = useState<boolean | undefined>(() => courseStructure?.public);
-  const usergroups = editorData.linkedUserGroups.data ?? [];
-  const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null;
+  const course = useCourse()
+  const { courseStructure, editorData } = course
+  const t = useTranslations('DashPage.Courses.Access')
+  const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
+  const [draftPublic, setDraftPublic] = useState<boolean | undefined>(() => courseStructure?.public)
+  const usergroups = editorData.linkedUserGroups.data ?? []
+  const isUserGroupsLoading =
+    course.isEditorDataLoading && editorData.linkedUserGroups.data === null
 
-  const isDirtyRef = useRef(false);
-  isDirtyRef.current = draftPublic !== undefined && draftPublic !== courseStructure?.public;
-  const isDirty = isDirtyRef.current;
+  const isDirtyRef = useRef(false)
+  isDirtyRef.current = draftPublic !== undefined && draftPublic !== courseStructure?.public
+  const isDirty = isDirtyRef.current
 
-  useSyncDirtySection('access', isDirty);
+  useSyncDirtySection('access', isDirty)
 
-  const handleDiscard = () => setDraftPublic(courseStructure?.public);
+  const handleDiscard = () => setDraftPublic(courseStructure?.public)
 
   const { isSaving, save } = useSaveSection({
     section: 'access',
-  });
+  })
 
   // Rehydrate from server when not dirty (e.g. initial load, external update)
   useEffect(() => {
     if (!isDirtyRef.current) {
-      setDraftPublic(courseStructure?.public);
+      setDraftPublic(courseStructure?.public)
     }
-  }, [courseStructure?.public]);
+  }, [courseStructure?.public])
 
   const handleAccessSave = async () => {
-    if (!(draftPublic !== undefined) || !isDirty) return;
+    if (!(draftPublic !== undefined) || !isDirty) return
     await save(async () =>
       updateAccess(
         { public: draftPublic },
@@ -75,10 +76,10 @@ const EditCourseAccess = () => {
           lastKnownUpdateDate: courseStructure.update_date,
         },
       ),
-    );
-  };
+    )
+  }
 
-  if (!courseStructure) return null;
+  if (!courseStructure) return null
 
   return (
     <div className="space-y-6">
@@ -103,7 +104,7 @@ const EditCourseAccess = () => {
         <CardContent>
           <RadioGroup
             value={draftPublic === true ? 'public' : draftPublic === false ? 'private' : undefined}
-            onValueChange={(val) => setDraftPublic(val === 'public')}
+            onValueChange={val => setDraftPublic(val === 'public')}
             disabled={isSaving}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
           >
@@ -115,7 +116,7 @@ const EditCourseAccess = () => {
               description={t('publicDescription')}
               icon={Globe}
               disabled={isSaving}
-              onSelect={(value) => setDraftPublic(value === 'public')}
+              onSelect={value => setDraftPublic(value === 'public')}
             />
 
             <CourseChoiceCard
@@ -126,7 +127,7 @@ const EditCourseAccess = () => {
               description={t('usersOnlyDescription')}
               icon={Users}
               disabled={isSaving}
-              onSelect={(value) => setDraftPublic(value === 'public')}
+              onSelect={value => setDraftPublic(value === 'public')}
             />
           </RadioGroup>
         </CardContent>
@@ -134,19 +135,22 @@ const EditCourseAccess = () => {
 
       {/* User groups — only shown for private courses */}
       {draftPublic === false && (
-        <UserGroupsSection
-          usergroups={usergroups}
-          isLoading={isUserGroupsLoading}
-        />
+        <UserGroupsSection usergroups={usergroups} isLoading={isUserGroupsLoading} />
       )}
     </div>
-  );
-};
+  )
+}
 
-const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoading: boolean }) => {
-  const course = useCourse();
-  const [userGroupModal, setUserGroupModal] = useState(false);
-  const t = useTranslations('DashPage.Courses.Access');
+const UserGroupsSection = ({
+  usergroups,
+  isLoading,
+}: {
+  usergroups: any[]
+  isLoading: boolean
+}) => {
+  const course = useCourse()
+  const [userGroupModal, setUserGroupModal] = useState(false)
+  const t = useTranslations('DashPage.Courses.Access')
 
   return (
     <Card>
@@ -187,19 +191,8 @@ const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoa
         </ScrollArea>
 
         <div className="flex justify-end">
-          <Dialog
-            open={userGroupModal}
-            onOpenChange={setUserGroupModal}
-          >
-            <DialogTrigger
-              render={
-                <Button
-                  type="button"
-                  size="sm"
-                  className="min-w-40"
-                />
-              }
-            >
+          <Dialog open={userGroupModal} onOpenChange={setUserGroupModal}>
+            <DialogTrigger render={<Button type="button" size="sm" className="min-w-40" />}>
               <SquareUserRound className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>{t('linkToUserGroupButton')}</span>
             </DialogTrigger>
@@ -214,48 +207,41 @@ const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoa
         </div>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
 // Separate component for unlink row with its own dialog state
 const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: any; courseUuid: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const course = useCourse();
-  const t = useTranslations('DashPage.Courses.Access');
+  const [isOpen, setIsOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const course = useCourse()
+  const t = useTranslations('DashPage.Courses.Access')
 
   const removeUserGroupLink = () => {
     startTransition(async () => {
       try {
         const res = await unLinkResourcesToUserGroup(usergroup.id, courseUuid, {
           courseUuid,
-        });
+        })
         if (res.status === 200) {
-          toast.success(t('unlinkUserGroupSuccess'));
-          await course.refreshEditorData();
-          setIsOpen(false);
+          toast.success(t('unlinkUserGroupSuccess'))
+          await course.refreshEditorData()
+          setIsOpen(false)
         } else {
-          toast.error(t('unlinkUserGroupErrorDetailed', { error: res.data.detail }));
+          toast.error(t('unlinkUserGroupErrorDetailed', { error: res.data.detail }))
         }
       } catch {
-        toast.error(t('unlinkUserGroupErrorGeneric'));
+        toast.error(t('unlinkUserGroupErrorGeneric'))
       }
-    });
-  };
+    })
+  }
 
   return (
     <TableRow>
       <TableCell>{usergroup.name}</TableCell>
       <TableCell>
-        <AlertDialog
-          open={isOpen}
-          onOpenChange={setIsOpen}
-        >
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsOpen(true)}
-          >
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+          <Button variant="destructive" size="sm" onClick={() => setIsOpen(true)}>
             <X className="h-4 w-4" />
             <span>{t('deleteLinkButton')}</span>
           </Button>
@@ -288,7 +274,7 @@ const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: any; courseU
         </AlertDialog>
       </TableCell>
     </TableRow>
-  );
-};
+  )
+}
 
-export default EditCourseAccess;
+export default EditCourseAccess

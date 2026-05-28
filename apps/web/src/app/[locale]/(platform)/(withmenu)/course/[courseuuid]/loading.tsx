@@ -1,4 +1,4 @@
-import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 
 export default function CourseDetailLoading() {
   return (
@@ -52,5 +52,5 @@ export default function CourseDetailLoading() {
         </div>
       </GeneralWrapper>
     </div>
-  );
+  )
 }

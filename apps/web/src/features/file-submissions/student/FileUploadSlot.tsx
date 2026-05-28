@@ -1,50 +1,50 @@
-'use client';
+'use client'
 
-import { CheckCircle2, FileWarning, Loader2, Paperclip, Trash2, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { CheckCircle2, FileWarning, Loader2, Paperclip, Trash2, XCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type FileSlotStatus = 'queued' | 'uploading' | 'saved' | 'failed';
+export type FileSlotStatus = 'queued' | 'uploading' | 'saved' | 'failed'
 
 export interface PendingFileSlot {
-  id: string;
-  file: File;
-  upload_uuid?: string;
-  status: FileSlotStatus;
-  progress: number; // 0–100
-  error?: string;
+  id: string
+  file: File
+  upload_uuid?: string
+  status: FileSlotStatus
+  progress: number // 0–100
+  error?: string
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  return `${(bytes / 1024 ** idx).toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+  if (!bytes) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** idx).toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface FileUploadSlotProps {
-  slot: PendingFileSlot;
-  onRemove?: (id: string) => void;
+  slot: PendingFileSlot
+  onRemove?: (id: string) => void
   /** When true the remove button is hidden (e.g. after submit) */
-  readonly?: boolean;
+  readonly?: boolean
 }
 
 /**
  * A single row showing a file's upload state with a progress bar.
  */
 export default function FileUploadSlot({ slot, onRemove, readonly = false }: FileUploadSlotProps) {
-  const t = useTranslations('FileSubmission');
-  const isUploading = slot.status === 'uploading';
-  const isSaved = slot.status === 'saved';
-  const isFailed = slot.status === 'failed';
+  const t = useTranslations('FileSubmission')
+  const isUploading = slot.status === 'uploading'
+  const isSaved = slot.status === 'saved'
+  const isFailed = slot.status === 'failed'
 
   return (
     <div className="group border-border flex flex-col gap-1.5 border-b p-3 last:border-b-0">
@@ -107,5 +107,5 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
         </p>
       ) : null}
     </div>
-  );
+  )
 }

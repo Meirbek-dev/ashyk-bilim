@@ -1,25 +1,25 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import EmbedObjectsWithBoundary from './EmbedObjectsWithBoundary';
-import { nodeView } from '@components/Objects/Editor/core';
+import EmbedObjectsWithBoundary from './EmbedObjectsWithBoundary'
+import { nodeView } from '@components/Objects/Editor/core'
 
-export type EmbedObjectAlignment = 'left' | 'center';
+export type EmbedObjectAlignment = 'left' | 'center'
 
 export interface EmbedObjectAttrs {
-  embedUrl: string | null;
-  embedCode: string | null;
-  embedType: string | null;
-  embedHeight: number;
-  embedWidth: string;
-  alignment: EmbedObjectAlignment;
+  embedUrl: string | null
+  embedCode: string | null
+  embedType: string | null
+  embedHeight: number
+  embedWidth: string
+  alignment: EmbedObjectAlignment
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockEmbed: {
-      insertEmbedObject: () => ReturnType;
-    };
+      insertEmbedObject: () => ReturnType
+    }
   }
 }
 
@@ -47,7 +47,7 @@ export default Node.create({
       alignment: {
         default: 'left',
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -55,11 +55,11 @@ export default Node.create({
       {
         tag: 'block-embed',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-embed', mergeAttributes(HTMLAttributes), 0];
+    return ['block-embed', mergeAttributes(HTMLAttributes), 0]
   },
 
   addCommands() {
@@ -68,10 +68,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return nodeView(EmbedObjectsWithBoundary);
+    return nodeView(EmbedObjectsWithBoundary)
   },
-});
+})

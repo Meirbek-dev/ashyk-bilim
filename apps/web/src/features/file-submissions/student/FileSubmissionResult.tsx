@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import { CheckCircle2, MessageSquare, RotateCcw, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { CheckCircle2, MessageSquare, RotateCcw, XCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
-import { MarkdownContent } from '@/features/content-markdown';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
+import { MarkdownContent } from '@/features/content-markdown'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatScore(score: number | null | undefined): string {
-  if (score === null || score === undefined) return '-';
-  return `${Math.round(score * 100) / 100}%`;
+  if (score === null || score === undefined) return '-'
+  return `${Math.round(score * 100) / 100}%`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface FileSubmissionResultProps {
-  attempt: FileSubmissionAttempt;
+  attempt: FileSubmissionAttempt
   /** Called when the student chooses to revise. Only shown when status=RETURNED. */
-  onRevise?: () => void;
+  onRevise?: () => void
 }
 
 /**
@@ -28,11 +28,11 @@ interface FileSubmissionResultProps {
  * Shows score, late deduction, teacher feedback, and revision CTA.
  */
 export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissionResultProps) {
-  const t = useTranslations('FileSubmission');
-  const { status, final_score, late_penalty_pct, feedback } = attempt;
-  const isReturned = status === 'RETURNED';
-  const passing = final_score !== null && final_score !== undefined && final_score >= 60;
-  const feedbackText = typeof feedback?.feedback === 'string' ? feedback.feedback : null;
+  const t = useTranslations('FileSubmission')
+  const { status, final_score, late_penalty_pct, feedback } = attempt
+  const isReturned = status === 'RETURNED'
+  const passing = final_score !== null && final_score !== undefined && final_score >= 60
+  const feedbackText = typeof feedback?.feedback === 'string' ? feedback.feedback : null
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -42,7 +42,9 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
           <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
           <p className="text-4xl font-bold tabular-nums">{formatScore(final_score)}</p>
           {late_penalty_pct > 0 ? (
-            <p className="text-muted-foreground mt-1 text-xs">{t('latePenalty', { percent: late_penalty_pct })}</p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {t('latePenalty', { percent: late_penalty_pct })}
+            </p>
           ) : null}
         </div>
 
@@ -56,18 +58,12 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
               {t('returnedForRevision')}
             </Badge>
           ) : passing ? (
-            <Badge
-              variant="outline"
-              className="border-primary text-primary gap-1.5"
-            >
+            <Badge variant="outline" className="border-primary text-primary gap-1.5">
               <CheckCircle2 className="size-3" />
               {t('passed')}
             </Badge>
           ) : (
-            <Badge
-              variant="outline"
-              className="border-destructive text-destructive gap-1.5"
-            >
+            <Badge variant="outline" className="border-destructive text-destructive gap-1.5">
               <XCircle className="size-3" />
               {t('failed')}
             </Badge>
@@ -82,25 +78,19 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
             <MessageSquare className="size-4" />
             {t('teacherFeedback')}
           </h4>
-          <MarkdownContent
-            content={feedbackText}
-            mode="compactRichText"
-          />
+          <MarkdownContent content={feedbackText} mode="compactRichText" />
         </div>
       ) : null}
 
       {/* Revision CTA */}
       {isReturned && onRevise ? (
         <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={onRevise}
-          >
+          <Button type="button" onClick={onRevise}>
             <RotateCcw className="size-4" />
             {t('startRevision')}
           </Button>
         </div>
       ) : null}
     </div>
-  );
+  )
 }

@@ -8,46 +8,46 @@ import {
   Lightbulb,
   Square,
   X,
-} from 'lucide-react';
-import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
-import { AiMarkdownRenderer } from '@components/Shared/AI/AiMarkdownRenderer';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import appLogo from '@public/app_logo.svg';
-import appLogoLight from '@public/app_logo_light.svg';
-import type { ChangeEvent, KeyboardEvent } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import type { TextPart } from '@tanstack/ai-client';
-import { Spinner } from '@components/ui/spinner';
-import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
-import type { Variants } from 'motion/react';
-import type { Editor } from '@tiptap/react';
-import { useTiptap } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { useTheme } from '@/components/providers/theme-provider';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import { toast } from 'sonner';
+} from 'lucide-react'
+import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext'
+import { AiMarkdownRenderer } from '@components/Shared/AI/AiMarkdownRenderer'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import appLogo from '@public/app_logo.svg'
+import appLogoLight from '@public/app_logo_light.svg'
+import type { ChangeEvent, KeyboardEvent } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import type { TextPart } from '@tanstack/ai-client'
+import { Spinner } from '@components/ui/spinner'
+import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
+import type { Variants } from 'motion/react'
+import type { Editor } from '@tiptap/react'
+import { useTiptap } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { useTheme } from '@/components/providers/theme-provider'
+import { cn } from '@/lib/utils'
+import Image from 'next/image'
+import { toast } from 'sonner'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 // NOTE: 'GenerateQuiz' was removed — it was in TOOL_ICONS but never rendered.
-type ToolLabel = 'Writer' | 'ContinueWriting' | 'MakeLonger' | 'Translate' | 'Critisize';
-type CritisizeScope = 'selection' | 'lecture';
+type ToolLabel = 'Writer' | 'ContinueWriting' | 'MakeLonger' | 'Translate' | 'Critisize'
+type CritisizeScope = 'selection' | 'lecture'
 
 interface AIEditorToolkitProps {
-  activity: { activity_uuid: string };
-  isOpen: boolean;
-  onClose: () => void;
+  activity: { activity_uuid: string }
+  isOpen: boolean
+  onClose: () => void
 }
 
 interface AIPromptsLabels {
-  label: ToolLabel;
-  selection: string;
-  scope?: CritisizeScope;
-  targetLanguage?: string;
+  label: ToolLabel
+  selection: string
+  scope?: CritisizeScope
+  targetLanguage?: string
 }
 
 // ============================================================================
@@ -58,9 +58,9 @@ const MODAL_VARIANTS: Variants = {
   hidden: { y: 8, opacity: 0 },
   visible: { y: 0, opacity: 1 },
   exit: { y: 4, opacity: 0 },
-};
+}
 
-const SPRING_TRANSITION = { duration: 0.18, ease: 'easeOut' } as const;
+const SPRING_TRANSITION = { duration: 0.18, ease: 'easeOut' } as const
 
 const TOOL_ICONS: Record<ToolLabel, typeof Feather> = {
   Writer: Feather,
@@ -68,24 +68,24 @@ const TOOL_ICONS: Record<ToolLabel, typeof Feather> = {
   MakeLonger: FileStack,
   Translate: Languages,
   Critisize: Lightbulb,
-};
+}
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /** Removes all occurrences of `textToRemove` from `originalText`. */
 function removeOccurrences(textToRemove: string, originalText: string): string {
-  if (!textToRemove) return originalText;
+  if (!textToRemove) return originalText
   try {
-    const regex = new RegExp(escapeRegex(textToRemove), 'gi');
-    return originalText.replace(regex, '');
+    const regex = new RegExp(escapeRegex(textToRemove), 'gi')
+    return originalText.replace(regex, '')
   } catch {
-    return originalText;
+    return originalText
   }
 }
 
@@ -94,46 +94,46 @@ function removeOccurrences(textToRemove: string, originalText: string): string {
 // ============================================================================
 
 function useEditorOperations(editor: Editor) {
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef<AbortController | null>(null)
 
   const getSelectedText = useCallback(() => {
-    const { selection } = editor.state;
-    return editor.state.doc.textBetween(selection.from, selection.to);
-  }, [editor]);
+    const { selection } = editor.state
+    return editor.state.doc.textBetween(selection.from, selection.to)
+  }, [editor])
 
   const getSelectedBlockText = useCallback(() => {
-    const { $from } = editor.state.selection;
-    const start = $from.start($from.depth);
-    const end = $from.end($from.depth);
-    return editor.state.doc.textBetween(start, end, '\n', '\n');
-  }, [editor]);
+    const { $from } = editor.state.selection
+    const start = $from.start($from.depth)
+    const end = $from.end($from.depth)
+    return editor.state.doc.textBetween(start, end, '\n', '\n')
+  }, [editor])
 
   const getEntireText = useCallback(() => {
-    const { doc } = editor.state;
-    return doc.textBetween(0, doc.content.size, '\n', '\n');
-  }, [editor]);
+    const { doc } = editor.state
+    return doc.textBetween(0, doc.content.size, '\n', '\n')
+  }, [editor])
 
   const typeText = useCallback(
     (text: string, replaceSelection = false) => {
-      abortRef.current?.abort();
-      abortRef.current = new AbortController();
+      abortRef.current?.abort()
+      abortRef.current = new AbortController()
 
       if (replaceSelection) {
-        editor.chain().focus().deleteSelection().run();
+        editor.chain().focus().deleteSelection().run()
       }
 
       // Directly insert markdown as structured Tiptap nodes — no HTML intermediate,
       // no XSS risk from AI-generated content. tiptap-markdown patches insertContentAt
       // to parse the string as markdown before inserting.
-      const pos = editor.state.selection.to;
-      editor.chain().focus().insertContentAt(pos, text).run();
+      const pos = editor.state.selection.to
+      editor.chain().focus().insertContentAt(pos, text).run()
     },
     [editor],
-  );
+  )
 
   const cancelTyping = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
+    abortRef.current?.abort()
+  }, [])
 
   return {
     getSelectedText,
@@ -141,7 +141,7 @@ function useEditorOperations(editor: Editor) {
     getEntireText,
     typeText,
     cancelTyping,
-  };
+  }
 }
 
 // ============================================================================
@@ -149,16 +149,16 @@ function useEditorOperations(editor: Editor) {
 // ============================================================================
 
 interface ToolButtonProps {
-  label: ToolLabel;
-  selectedTool: ToolLabel;
-  onSelect: (label: ToolLabel) => void;
+  label: ToolLabel
+  selectedTool: ToolLabel
+  onSelect: (label: ToolLabel) => void
 }
 
 function AiEditorToolButton({ label, selectedTool, onSelect }: ToolButtonProps) {
-  const t = useTranslations('Activities.AIEditorToolkit');
+  const t = useTranslations('Activities.AIEditorToolkit')
 
-  const isSelected = selectedTool === label;
-  const Icon = TOOL_ICONS[label];
+  const isSelected = selectedTool === label
+  const Icon = TOOL_ICONS[label]
 
   return (
     <Button
@@ -176,7 +176,7 @@ function AiEditorToolButton({ label, selectedTool, onSelect }: ToolButtonProps) 
       <Icon size={13} />
       <span className="hidden sm:inline">{t(`${label}Label`)}</span>
     </Button>
-  );
+  )
 }
 
 // ============================================================================
@@ -184,18 +184,18 @@ function AiEditorToolButton({ label, selectedTool, onSelect }: ToolButtonProps) 
 // ============================================================================
 
 interface ActionScreenProps {
-  onExecute: () => void;
-  selectedTool: ToolLabel;
-  isLoading: boolean;
-  error: Error | undefined;
-  onDismissError: () => void;
-  critisizeScope: CritisizeScope;
-  onCritisizeScopeChange: (scope: CritisizeScope) => void;
-  chatInputValue: string;
-  onInputChange: (value: string) => void;
-  lastAiResponse: string;
+  onExecute: () => void
+  selectedTool: ToolLabel
+  isLoading: boolean
+  error: Error | undefined
+  onDismissError: () => void
+  critisizeScope: CritisizeScope
+  onCritisizeScopeChange: (scope: CritisizeScope) => void
+  chatInputValue: string
+  onInputChange: (value: string) => void
+  lastAiResponse: string
   /** Partial text arriving during a streaming generation. */
-  streamingPreview: string;
+  streamingPreview: string
 }
 
 function AiEditorActionScreen({
@@ -211,17 +211,14 @@ function AiEditorActionScreen({
   lastAiResponse,
   streamingPreview,
 }: ActionScreenProps) {
-  const t = useTranslations('Activities.AIEditorToolkit');
+  const t = useTranslations('Activities.AIEditorToolkit')
 
-  const hasAiResponse = lastAiResponse && !isLoading && selectedTool === 'Critisize';
+  const hasAiResponse = lastAiResponse && !isLoading && selectedTool === 'Critisize'
 
   if (error) {
     return (
       <div className="flex w-full items-start gap-3 rounded-lg border border-red-900/50 bg-red-950/40 p-3">
-        <AlertTriangle
-          size={15}
-          className="mt-0.5 shrink-0 text-red-400"
-        />
+        <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-red-300">{t('errorTitle')}</p>
           <p className="mt-0.5 text-xs text-red-400/80">{error.message}</p>
@@ -236,7 +233,7 @@ function AiEditorActionScreen({
           <X size={12} />
         </Button>
       </div>
-    );
+    )
   }
 
   if (isLoading) {
@@ -251,58 +248,44 @@ function AiEditorActionScreen({
           // "definite" height for ScrollArea's internal height:100% viewport.
           <div className="max-h-40 w-full overflow-y-auto rounded-md border border-zinc-700/60 bg-zinc-800/50">
             <div className="p-3">
-              <AiMarkdownRenderer
-                content={streamingPreview}
-                isStreaming
-              />
+              <AiMarkdownRenderer content={streamingPreview} isStreaming />
             </div>
           </div>
         )}
       </div>
-    );
+    )
   }
 
   if (selectedTool === 'Writer') {
     return (
       <div className="flex flex-col items-center gap-2 text-center">
-        <Feather
-          size={20}
-          className="text-zinc-500"
-        />
+        <Feather size={20} className="text-zinc-500" />
         <p className="text-sm font-medium text-zinc-300">{t('writerPlaceholder')}</p>
         <p className="text-xs text-zinc-500">{t('typePromptBelow')}</p>
       </div>
-    );
+    )
   }
 
   if (selectedTool === 'ContinueWriting') {
     return (
       <div className="flex flex-col items-center gap-3 text-center">
-        <Button
-          size="sm"
-          onClick={onExecute}
-          className="gap-2"
-        >
+        <Button size="sm" onClick={onExecute} className="gap-2">
           <FastForward size={13} />
           {t('continuePlaceholder')}
         </Button>
       </div>
-    );
+    )
   }
 
   if (selectedTool === 'MakeLonger') {
     return (
       <div className="flex flex-col items-center gap-3 text-center">
-        <Button
-          size="sm"
-          onClick={onExecute}
-          className="gap-2"
-        >
+        <Button size="sm" onClick={onExecute} className="gap-2">
           <FileStack size={13} />
           {t('longerPlaceholder')}
         </Button>
       </div>
-    );
+    )
   }
 
   if (selectedTool === 'Critisize') {
@@ -313,14 +296,14 @@ function AiEditorActionScreen({
             <AiMarkdownRenderer content={lastAiResponse} />
           </div>
         </div>
-      );
+      )
     }
 
     return (
       <div className="flex w-full flex-col items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs text-zinc-500">{t('critisizeScopeLabel')}:</span>
-          {(['selection', 'lecture'] as const).map((scope) => (
+          {(['selection', 'lecture'] as const).map(scope => (
             <Button
               key={scope}
               variant={critisizeScope === scope ? 'secondary' : 'ghost'}
@@ -329,23 +312,21 @@ function AiEditorActionScreen({
               aria-pressed={critisizeScope === scope}
               className={cn(
                 'h-7 rounded-md px-2.5 text-xs',
-                critisizeScope === scope ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200',
+                critisizeScope === scope
+                  ? 'bg-zinc-700 text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200',
               )}
             >
               {t(scope === 'selection' ? 'critisizeScopeSelection' : 'critisizeScopeLecture')}
             </Button>
           ))}
         </div>
-        <Button
-          size="sm"
-          onClick={onExecute}
-          className="gap-2"
-        >
+        <Button size="sm" onClick={onExecute} className="gap-2">
           <Lightbulb size={13} />
           {t('critisizePlaceholder')}
         </Button>
       </div>
-    );
+    )
   }
 
   if (selectedTool === 'Translate') {
@@ -357,19 +338,15 @@ function AiEditorActionScreen({
           placeholder={t('translateExample')}
           className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
         />
-        <Button
-          size="sm"
-          onClick={onExecute}
-          className="gap-2"
-        >
+        <Button size="sm" onClick={onExecute} className="gap-2">
           <Languages size={13} />
           {t('translatePlaceholder')}
         </Button>
       </div>
-    );
+    )
   }
 
-  return null;
+  return null
 }
 
 // ============================================================================
@@ -377,23 +354,23 @@ function AiEditorActionScreen({
 // ============================================================================
 
 interface FeedbackModalProps {
-  editor: Editor;
-  activity: { activity_uuid: string };
-  selectedTool: ToolLabel;
-  isUserInputEnabled: boolean;
-  chatInputValue: string;
-  critisizeScope: CritisizeScope;
-  isLoading: boolean;
-  error: Error | undefined;
-  lastAiResponse: string;
-  streamingPreview: string;
-  onToolChange: (tool: ToolLabel) => void;
-  onUserInputEnabledChange: (enabled: boolean) => void;
-  onInputChange: (value: string) => void;
-  onCritisizeScopeChange: (scope: CritisizeScope) => void;
-  onDismissError: () => void;
-  onCancel: () => void;
-  sendMessageAndGetResponse: (prompt: string) => Promise<string>;
+  editor: Editor
+  activity: { activity_uuid: string }
+  selectedTool: ToolLabel
+  isUserInputEnabled: boolean
+  chatInputValue: string
+  critisizeScope: CritisizeScope
+  isLoading: boolean
+  error: Error | undefined
+  lastAiResponse: string
+  streamingPreview: string
+  onToolChange: (tool: ToolLabel) => void
+  onUserInputEnabledChange: (enabled: boolean) => void
+  onInputChange: (value: string) => void
+  onCritisizeScopeChange: (scope: CritisizeScope) => void
+  onDismissError: () => void
+  onCancel: () => void
+  sendMessageAndGetResponse: (prompt: string) => Promise<string>
 }
 
 function UserFeedbackModal({
@@ -415,104 +392,115 @@ function UserFeedbackModal({
   onCancel,
   sendMessageAndGetResponse,
 }: FeedbackModalProps) {
-  const t = useTranslations('Activities.AIEditorToolkit');
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo;
+  const t = useTranslations('Activities.AIEditorToolkit')
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo
 
-  const { getSelectedText, getSelectedBlockText, getEntireText, typeText } = useEditorOperations(editor);
+  const { getSelectedText, getSelectedBlockText, getEntireText, typeText } =
+    useEditorOperations(editor)
 
   const getPrompt = useCallback(
     ({ label, selection, scope, targetLanguage }: AIPromptsLabels): string => {
-      if (!selection) return '';
+      if (!selection) return ''
 
       switch (label) {
         case 'Writer': {
-          return t('prompt_writer', { selection });
+          return t('prompt_writer', { selection })
         }
         case 'ContinueWriting': {
-          return t('prompt_continueWriting', { selection });
+          return t('prompt_continueWriting', { selection })
         }
         case 'MakeLonger': {
-          return t('prompt_makeLonger', { selection });
+          return t('prompt_makeLonger', { selection })
         }
         case 'Critisize': {
           return scope === 'lecture'
             ? t('prompt_critisizeLecture', { selection })
-            : t('prompt_critisize', { selection });
+            : t('prompt_critisize', { selection })
         }
         case 'Translate': {
-          return targetLanguage ? t('prompt_translateTo', { language: targetLanguage, selection }) : '';
+          return targetLanguage
+            ? t('prompt_translateTo', { language: targetLanguage, selection })
+            : ''
         }
       }
     },
     [t],
-  );
+  )
 
   const handleOperation = useCallback(
     async (label: ToolLabel, inputValue: string) => {
-      onToolChange(label);
+      onToolChange(label)
 
       switch (label) {
         case 'Writer': {
-          const prompt = getPrompt({ label, selection: inputValue });
-          if (!prompt) return;
+          const prompt = getPrompt({ label, selection: inputValue })
+          if (!prompt) return
 
-          onUserInputEnabledChange(false);
-          const response = await sendMessageAndGetResponse(prompt);
-          if (response) typeText(response);
-          onUserInputEnabledChange(true);
-          break;
+          onUserInputEnabledChange(false)
+          const response = await sendMessageAndGetResponse(prompt)
+          if (response) typeText(response)
+          onUserInputEnabledChange(true)
+          break
         }
 
         case 'ContinueWriting': {
-          const selection = getSelectedBlockText();
-          const prompt = getPrompt({ label, selection });
-          if (!prompt) return;
+          const selection = getSelectedBlockText()
+          const prompt = getPrompt({ label, selection })
+          if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt);
-          const cleanedResponse = removeOccurrences(selection, response);
-          if (cleanedResponse) typeText(cleanedResponse);
-          break;
+          const response = await sendMessageAndGetResponse(prompt)
+          const cleanedResponse = removeOccurrences(selection, response)
+          if (cleanedResponse) typeText(cleanedResponse)
+          break
         }
 
         case 'MakeLonger': {
-          const selection = getSelectedText();
-          const prompt = getPrompt({ label, selection });
-          if (!prompt) return;
+          const selection = getSelectedText()
+          const prompt = getPrompt({ label, selection })
+          if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt);
-          if (response) typeText(response, true);
-          break;
+          const response = await sendMessageAndGetResponse(prompt)
+          if (response) typeText(response, true)
+          break
         }
 
         case 'Critisize': {
-          const selection = critisizeScope === 'lecture' ? getEntireText() : getSelectedBlockText();
+          const selection = critisizeScope === 'lecture' ? getEntireText() : getSelectedBlockText()
 
           if (!selection) {
-            toast.error(critisizeScope === 'lecture' ? t('critisizeLectureMissing') : t('critisizeSelectionMissing'));
-            return;
+            toast.error(
+              critisizeScope === 'lecture'
+                ? t('critisizeLectureMissing')
+                : t('critisizeSelectionMissing'),
+            )
+            return
           }
 
-          const prompt = getPrompt({ label, selection, scope: critisizeScope });
-          if (!prompt) return;
+          const prompt = getPrompt({ label, selection, scope: critisizeScope })
+          if (!prompt) return
 
-          await sendMessageAndGetResponse(prompt);
-          break;
+          await sendMessageAndGetResponse(prompt)
+          break
         }
 
         case 'Translate': {
-          const selection = getSelectedText();
+          const selection = getSelectedText()
           if (!selection || !inputValue) {
-            toast.error(t('translateToLanguageMissing'));
-            return;
+            toast.error(t('translateToLanguageMissing'))
+            return
           }
 
-          const prompt = getPrompt({ label, selection, targetLanguage: inputValue });
-          if (!prompt) return;
+          const prompt = getPrompt({
+            label,
+            selection,
+            targetLanguage: inputValue,
+          })
+          if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt);
-          if (response) typeText(response, true);
-          break;
+          const response = await sendMessageAndGetResponse(prompt)
+          if (response) typeText(response, true)
+          break
         }
       }
     },
@@ -528,20 +516,20 @@ function UserFeedbackModal({
       onUserInputEnabledChange,
       t,
     ],
-  );
+  )
 
   const handleKeyPress = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        handleOperation(selectedTool, chatInputValue);
+        handleOperation(selectedTool, chatInputValue)
       }
     },
     [handleOperation, selectedTool, chatInputValue],
-  );
+  )
 
   const handleSubmit = useCallback(() => {
-    handleOperation(selectedTool, chatInputValue);
-  }, [handleOperation, selectedTool, chatInputValue]);
+    handleOperation(selectedTool, chatInputValue)
+  }, [handleOperation, selectedTool, chatInputValue])
 
   return (
     <motion.div
@@ -576,10 +564,7 @@ function UserFeedbackModal({
               className="h-7 gap-1.5 px-2 text-xs text-zinc-500 hover:text-red-400"
               aria-label={t('stop')}
             >
-              <Square
-                size={11}
-                className="fill-current"
-              />
+              <Square size={11} className="fill-current" />
               {t('stop')}
             </Button>
           )}
@@ -608,7 +593,7 @@ function UserFeedbackModal({
             <Input
               onKeyDown={handleKeyPress}
               value={chatInputValue}
-              onChange={(e) => onInputChange(e.target.value)}
+              onChange={e => onInputChange(e.target.value)}
               placeholder={t('askAI')}
               disabled={isLoading}
               aria-label={t('askAI')}
@@ -628,7 +613,7 @@ function UserFeedbackModal({
         )}
       </div>
     </motion.div>
-  );
+  )
 }
 
 // ============================================================================
@@ -636,76 +621,84 @@ function UserFeedbackModal({
 // ============================================================================
 
 export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorToolkitProps) {
-  const { editor } = useTiptap();
-  const t = useTranslations('Activities.AIEditorToolkit');
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo;
-  const { messages, sendMessageAndGetResponse, isLoading, error, clear, stop, abort, resetConversation } =
-    useActivityAIChat();
+  const { editor } = useTiptap()
+  const t = useTranslations('Activities.AIEditorToolkit')
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo
+  const {
+    messages,
+    sendMessageAndGetResponse,
+    isLoading,
+    error,
+    clear,
+    stop,
+    abort,
+    resetConversation,
+  } = useActivityAIChat()
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<ToolLabel>('Writer');
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
+  const [selectedTool, setSelectedTool] = useState<ToolLabel>('Writer')
   // Hidden by default — only shown for the Writer tool.
-  const [isUserInputEnabled, setIsUserInputEnabled] = useState(false);
-  const [critisizeScope, setCritisizeScope] = useState<CritisizeScope>('selection');
-  const [chatInputValue, setChatInputValue] = useState('');
+  const [isUserInputEnabled, setIsUserInputEnabled] = useState(false)
+  const [critisizeScope, setCritisizeScope] = useState<CritisizeScope>('selection')
+  const [chatInputValue, setChatInputValue] = useState('')
 
   // Abort any in-flight request when the toolkit is closed or unmounted.
   useEffect(() => {
     if (!isOpen) {
-      abort();
+      abort()
     }
     return () => {
-      abort();
-    };
-  }, [abort, isOpen]);
+      abort()
+    }
+  }, [abort, isOpen])
 
   // Derive the last AI text: committed response (for Critisize display)
   // and in-flight streaming preview (for all tools while loading).
   // Both come from the same message — combined into one useMemo.
   const { lastAiResponse, streamingPreview } = useMemo(() => {
-    const lastAssistant = [...messages].toReversed().find((m) => m.role === 'assistant');
+    const lastAssistant = [...messages].toReversed().find(m => m.role === 'assistant')
     const text =
       lastAssistant?.parts
         .filter((p): p is TextPart => p.type === 'text')
-        .map((p) => p.content)
-        .join('') ?? '';
+        .map(p => p.content)
+        .join('') ?? ''
     return {
       lastAiResponse: isLoading ? '' : text,
       streamingPreview: isLoading ? text : '',
-    };
-  }, [messages, isLoading]);
+    }
+  }, [messages, isLoading])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleClose = useCallback(() => {
-    setIsFeedbackModalOpen(false);
-    onClose();
-  }, [onClose]);
+    setIsFeedbackModalOpen(false)
+    onClose()
+  }, [onClose])
 
   const handleToolSelect = useCallback(
     (label: ToolLabel) => {
-      abort();
-      stop();
-      resetConversation();
+      abort()
+      stop()
+      resetConversation()
 
-      setSelectedTool(label);
-      setIsFeedbackModalOpen(true);
+      setSelectedTool(label)
+      setIsFeedbackModalOpen(true)
       // The Writer tool has a free-text input; all other tools don't need it.
-      setIsUserInputEnabled(label === 'Writer');
+      setIsUserInputEnabled(label === 'Writer')
     },
     [abort, resetConversation, stop],
-  );
+  )
 
   const handleCancel = useCallback(() => {
-    abort();
-    stop();
-  }, [abort, stop]);
+    abort()
+    stop()
+  }, [abort, stop])
 
   const handleDismissError = useCallback(() => {
-    clear();
-  }, [clear]);
+    clear()
+  }, [clear])
 
   return (
     <AnimatePresence>
@@ -759,7 +752,9 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
                   className="rounded-sm"
                   style={{ height: 'auto' }}
                 />
-                <span className="hidden text-xs font-semibold text-zinc-300 sm:block">{t('aiEditorTitle')}</span>
+                <span className="hidden text-xs font-semibold text-zinc-300 sm:block">
+                  {t('aiEditorTitle')}
+                </span>
               </div>
 
               <div className="h-5 w-px bg-zinc-700/60" />
@@ -810,5 +805,5 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }

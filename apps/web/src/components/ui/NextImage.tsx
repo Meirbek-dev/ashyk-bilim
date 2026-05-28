@@ -1,12 +1,12 @@
-import type { ImageProps } from 'next/image';
-import Image from 'next/image';
-import type { CSSProperties } from 'react';
+import type { ImageProps } from 'next/image'
+import Image from 'next/image'
+import type { CSSProperties } from 'react'
 
 const isBrowserOnlyImage = (src: ImageProps['src']): src is string =>
-  typeof src === 'string' && (src.startsWith('blob:') || src.startsWith('data:'));
+  typeof src === 'string' && (src.startsWith('blob:') || src.startsWith('data:'))
 
 const isUnconfiguredRemoteImage = (src: ImageProps['src']): src is string =>
-  typeof src === 'string' && /^https?:\/\//i.test(src);
+  typeof src === 'string' && /^https?:\/\//i.test(src)
 
 export default function NextImage({
   src,
@@ -32,17 +32,12 @@ export default function NextImage({
           }
         : null),
       ...props.style,
-    };
+    }
 
     return (
       // eslint-disable-next-line @next/next/no-img-element -- Arbitrary external preview images are not known at build time.
-      <img
-        {...props}
-        src={src}
-        alt={alt ?? ''}
-        style={imageStyle}
-      />
-    );
+      <img {...props} src={src} alt={alt ?? ''} style={imageStyle} />
+    )
   }
 
   return (
@@ -53,5 +48,5 @@ export default function NextImage({
       fill={fill}
       {...props}
     />
-  );
+  )
 }

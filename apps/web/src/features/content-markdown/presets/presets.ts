@@ -1,5 +1,13 @@
-import type { LucideIcon } from 'lucide-react';
-import { BookOpen, ClipboardCheck, Code2, FileText, GraduationCap, Lightbulb, MessageSquareText } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react'
+import {
+  BookOpen,
+  ClipboardCheck,
+  Code2,
+  FileText,
+  GraduationCap,
+  Lightbulb,
+  MessageSquareText,
+} from 'lucide-react'
 
 export type MarkdownEditorPreset =
   | 'assessmentDescription'
@@ -12,7 +20,7 @@ export type MarkdownEditorPreset =
   | 'codeExampleExplanation'
   | 'codeHint'
   | 'codeEditorial'
-  | 'courseDescription';
+  | 'courseDescription'
 
 export type MarkdownRenderMode =
   | 'prompt'
@@ -21,14 +29,14 @@ export type MarkdownRenderMode =
   | 'codeProblem'
   | 'codeSpec'
   | 'courseDescription'
-  | 'plainSummary';
+  | 'plainSummary'
 
-export type MarkdownEditorSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+export type MarkdownEditorSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 
 export interface MarkdownSnippet {
-  id: string;
-  label: string;
-  markdown: string;
+  id: string
+  label: string
+  markdown: string
 }
 
 /** Groups of toolbar actions for preset-driven toolbar composition. */
@@ -39,26 +47,26 @@ export type ToolbarGroup =
   | 'blocks' // Code block, blockquote
   | 'media' // Link, image
   | 'table' // Insert table
-  | 'math'; // Math inline / block
+  | 'math' // Math inline / block
 
 export interface MarkdownPresetConfig {
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  renderMode: MarkdownRenderMode;
-  placeholder: string;
-  minHeight: number;
-  maxHeight?: number;
-  maxLength: number;
+  label: string
+  description: string
+  icon: LucideIcon
+  renderMode: MarkdownRenderMode
+  placeholder: string
+  minHeight: number
+  maxHeight?: number
+  maxLength: number
   /** Feature gates — controls both toolbar visibility and extension registration. */
-  allowTaskList: boolean;
-  allowTable: boolean;
-  allowMath: boolean;
-  allowCodeBlock: boolean;
-  allowImages: boolean;
+  allowTaskList: boolean
+  allowTable: boolean
+  allowMath: boolean
+  allowCodeBlock: boolean
+  allowImages: boolean
   /** Ordered list of toolbar groups to render. */
-  toolbarGroups: ToolbarGroup[];
-  snippets: MarkdownSnippet[];
+  toolbarGroups: ToolbarGroup[]
+  snippets: MarkdownSnippet[]
 }
 
 // ── Snippet libraries ─────────────────────────────────────────────────────────
@@ -78,9 +86,10 @@ const taskSnippets: MarkdownSnippet[] = [
   {
     id: 'checklist',
     label: 'Checklist',
-    markdown: '- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n',
+    markdown:
+      '- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n',
   },
-];
+]
 
 const codeSnippets: MarkdownSnippet[] = [
   {
@@ -99,7 +108,7 @@ const codeSnippets: MarkdownSnippet[] = [
     label: 'Complexity target',
     markdown: '**Expected complexity:** `O(n)` time and `O(1)` extra memory.\n',
   },
-];
+]
 
 const courseSnippets: MarkdownSnippet[] = [
   {
@@ -110,14 +119,16 @@ const courseSnippets: MarkdownSnippet[] = [
   {
     id: 'prerequisites',
     label: 'Prerequisites',
-    markdown: '## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n',
+    markdown:
+      '## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n',
   },
   {
     id: 'outcomes',
     label: 'Learning outcomes',
-    markdown: '## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n',
+    markdown:
+      '## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n',
   },
-];
+]
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 
@@ -305,8 +316,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     toolbarGroups: ['formatting', 'headings', 'lists', 'media', 'table'],
     snippets: courseSnippets,
   },
-};
+}
 
 export function getMarkdownPreset(preset: MarkdownEditorPreset): MarkdownPresetConfig {
-  return MARKDOWN_PRESETS[preset];
+  return MARKDOWN_PRESETS[preset]
 }

@@ -1,81 +1,84 @@
-import { ArrowRight, CheckCircle, GitBranch, RefreshCcw, RotateCcw } from 'lucide-react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import NextImage from '@components/ui/NextImage';
-import { NodeViewWrapper } from '@tiptap/react';
-import ScenariosModal from './ScenariosModal';
-import { useTranslations } from 'next-intl';
-import React, { useState } from 'react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import { ArrowRight, CheckCircle, GitBranch, RefreshCcw, RotateCcw } from 'lucide-react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import NextImage from '@components/ui/NextImage'
+import { NodeViewWrapper } from '@tiptap/react'
+import ScenariosModal from './ScenariosModal'
+import { useTranslations } from 'next-intl'
+import React, { useState } from 'react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 
 interface ScenarioOption {
-  id: string;
-  text: string;
-  nextScenarioId: string | null;
+  id: string
+  text: string
+  nextScenarioId: string | null
 }
 
 interface Scenario {
-  id: string;
-  text: string;
-  imageUrl?: string;
-  options: ScenarioOption[];
+  id: string
+  text: string
+  imageUrl?: string
+  options: ScenarioOption[]
 }
 
 interface ScenarioNodeAttrs {
-  title: string;
-  scenarios: Scenario[];
-  currentScenarioId: string;
+  title: string
+  scenarios: Scenario[]
+  currentScenarioId: string
 }
 
-const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (props) => {
+const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = props => {
   // use translations for any UI text or fallbacks
-  const t = useTranslations('DashPage.Editor.Scenarios');
+  const t = useTranslations('DashPage.Editor.Scenarios')
 
   // Initialize node-local state with localized fallbacks when node attrs are empty
-  const initialNodeTitle: string = props.node?.attrs?.title || '';
-  const initialNodeScenarios: Scenario[] = props.node?.attrs?.scenarios || [];
-  const initialNodeCurrentId: string = props.node?.attrs?.currentScenarioId || (initialNodeScenarios[0]?.id ?? '1');
+  const initialNodeTitle: string = props.node?.attrs?.title || ''
+  const initialNodeScenarios: Scenario[] = props.node?.attrs?.scenarios || []
+  const initialNodeCurrentId: string =
+    props.node?.attrs?.currentScenarioId || (initialNodeScenarios[0]?.id ?? '1')
 
-  const [title, setTitle] = useState(initialNodeTitle || t('interactiveScenario'));
-  const [scenarios, setScenarios] = useState(initialNodeScenarios.length > 0 ? initialNodeScenarios : []);
-  const [currentScenarioId, setCurrentScenarioId] = useState(initialNodeCurrentId);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [scenarioComplete, setScenarioComplete] = useState(false);
-  const editorState = useEditorProvider();
-  const isEditable = editorState?.isEditable ?? true;
+  const [title, setTitle] = useState(initialNodeTitle || t('interactiveScenario'))
+  const [scenarios, setScenarios] = useState(
+    initialNodeScenarios.length > 0 ? initialNodeScenarios : [],
+  )
+  const [currentScenarioId, setCurrentScenarioId] = useState(initialNodeCurrentId)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [scenarioComplete, setScenarioComplete] = useState(false)
+  const editorState = useEditorProvider()
+  const isEditable = editorState?.isEditable ?? true
 
   const getCurrentScenario = (scenarioId: string = currentScenarioId): Scenario | null => {
-    return scenarios.find((s) => s.id === scenarioId) || null;
-  };
+    return scenarios.find(s => s.id === scenarioId) || null
+  }
 
   const handleSave = (newTitle: string, newScenarios: Scenario[], newCurrentScenarioId: string) => {
-    setTitle(newTitle);
-    setScenarios(newScenarios);
-    setCurrentScenarioId(newCurrentScenarioId);
+    setTitle(newTitle)
+    setScenarios(newScenarios)
+    setCurrentScenarioId(newCurrentScenarioId)
 
     props.updateAttributes({
       title: newTitle,
       scenarios: newScenarios,
       currentScenarioId: newCurrentScenarioId,
-    });
-  };
+    })
+  }
 
   const handleOptionClick = (nextScenarioId: string | null) => {
     if (nextScenarioId) {
-      setCurrentScenarioId(nextScenarioId);
-      setScenarioComplete(false);
+      setCurrentScenarioId(nextScenarioId)
+      setScenarioComplete(false)
     } else {
-      setScenarioComplete(true);
+      setScenarioComplete(true)
     }
-  };
+  }
 
   const resetScenario = () => {
-    setCurrentScenarioId(scenarios[0]?.id || '1');
-    setScenarioComplete(false);
-  };
+    setCurrentScenarioId(scenarios[0]?.id || '1')
+    setScenarioComplete(false)
+  }
 
   const getOptionLetter = (index: number) => {
-    return String.fromCharCode('A'.charCodeAt(0) + index);
-  };
+    return String.fromCharCode('A'.charCodeAt(0) + index)
+  }
 
   // NOTE: `t` is already declared above to keep hooks in order
 
@@ -85,10 +88,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
         {/* Header section */}
         <div className="flex flex-wrap items-center gap-2 pt-1 text-sm">
           <div className="flex items-center space-x-2 text-sm">
-            <GitBranch
-              className="text-slate-400"
-              size={15}
-            />
+            <GitBranch className="text-slate-400" size={15} />
             <p className="py-1 text-xs font-bold tracking-widest text-slate-400 uppercase">
               {t('interactiveScenario')}
             </p>
@@ -120,10 +120,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
                 className="cursor-pointer rounded-md p-1.5 hover:bg-slate-200"
                 title={t('resetScenario')}
               >
-                <RefreshCcw
-                  className="text-slate-500"
-                  size={15}
-                />
+                <RefreshCcw className="text-slate-500" size={15} />
               </div>
             </div>
           )}
@@ -138,9 +135,9 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
                   <input
                     value={title}
                     placeholder={t('scenarioTitlePlaceholder')}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      props.updateAttributes({ title: e.target.value });
+                    onChange={e => {
+                      setTitle(e.target.value)
+                      props.updateAttributes({ title: e.target.value })
                     }}
                     className="text-md bg-primary/10 w-full rounded-md border-2 border-dotted border-gray-200 p-2 font-bold text-slate-800"
                   />
@@ -151,7 +148,9 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
                 <p className="text-center text-sm text-slate-600">
                   {t('scenariosConfigured', { count: scenarios.length, max: 40 })}
                 </p>
-                <p className="mt-1 text-center text-xs text-slate-500">{t('clickEditToConfigure')}</p>
+                <p className="mt-1 text-center text-xs text-slate-500">
+                  {t('clickEditToConfigure')}
+                </p>
               </div>
             </div>
           </div>
@@ -159,13 +158,12 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
           <div className="space-y-2 pt-3">
             <div className="mx-auto max-w-md py-8 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle
-                  size={24}
-                  className="text-emerald-600"
-                />
+                <CheckCircle size={24} className="text-emerald-600" />
               </div>
               <h4 className="mb-2 text-xl font-bold text-slate-900">{t('scenarioComplete')}</h4>
-              <p className="mb-6 leading-relaxed text-slate-600">{t('scenarioCompleteDescription')}</p>
+              <p className="mb-6 leading-relaxed text-slate-600">
+                {t('scenarioCompleteDescription')}
+              </p>
               <button
                 onClick={resetScenario}
                 className="mx-auto flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md"
@@ -178,20 +176,19 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
         ) : (
           <div className="space-y-2 pt-3">
             {(() => {
-              const currentScenario = getCurrentScenario();
+              const currentScenario = getCurrentScenario()
               if (!currentScenario) {
                 return (
                   <div className="mx-auto max-w-md py-8 text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                      <GitBranch
-                        size={20}
-                        className="text-slate-400"
-                      />
+                      <GitBranch size={20} className="text-slate-400" />
                     </div>
-                    <h3 className="mb-2 text-base font-medium text-slate-900">{t('scenarioNotFound')}</h3>
+                    <h3 className="mb-2 text-base font-medium text-slate-900">
+                      {t('scenarioNotFound')}
+                    </h3>
                     <p className="text-sm text-slate-500">{t('scenarioNotFoundDescription')}</p>
                   </div>
-                );
+                )
               }
 
               return (
@@ -210,7 +207,9 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
                         />
                       </div>
                     )}
-                    <p className="text-base leading-relaxed font-medium text-slate-800">{currentScenario.text}</p>
+                    <p className="text-base leading-relaxed font-medium text-slate-800">
+                      {currentScenario.text}
+                    </p>
                   </div>
 
                   {/* Response Options */}
@@ -239,7 +238,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
                     ))}
                   </div>
                 </div>
-              );
+              )
             })()}
           </div>
         )}
@@ -254,7 +253,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (pro
         />
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default ScenariosExtension;
+export default ScenariosExtension

@@ -1,75 +1,79 @@
-'use server';
+'use server'
 
-import { errorHandling, getResponseMetadata } from '@/lib/api-client';
-import { apiFetch } from '@/lib/api-client';
-import { uploadFileChunked } from '@services/utils/chunked-upload';
-import type { CustomResponseTyping } from '@/lib/api-client';
-import type { components } from '@/lib/api/generated';
-import { getAPIUrl } from '@services/config/config';
-import { tags, courseTag } from '@/lib/cacheTags';
+import { errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { apiFetch } from '@/lib/api-client'
+import { uploadFileChunked } from '@services/utils/chunked-upload'
+import type { CustomResponseTyping } from '@/lib/api-client'
+import type { components } from '@/lib/api/generated'
+import { getAPIUrl } from '@services/config/config'
+import { tags, courseTag } from '@/lib/cacheTags'
 
-type ActivityRead = components['schemas']['ActivityRead'];
-type ActivityReadWithPermissions = components['schemas']['ActivityReadWithPermissions'];
-type ActivityDetailResponse = components['schemas']['ActivityDetailResponse'];
+type ActivityRead = components['schemas']['ActivityRead']
+type ActivityReadWithPermissions = components['schemas']['ActivityReadWithPermissions']
+type ActivityDetailResponse = components['schemas']['ActivityDetailResponse']
 
 export interface UrlPreviewResponse {
-  title?: string | null;
-  description?: string | null;
-  og_image?: string | null;
-  favicon?: string | null;
-  og_type?: string | null;
-  og_url?: string | null;
+  title?: string | null
+  description?: string | null
+  og_image?: string | null
+  favicon?: string | null
+  og_type?: string | null
+  og_url?: string | null
 }
 
 type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
-  data: T | null;
-};
+  data: T | null
+}
 
-const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000;
+const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000
 
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata(response);
+  return await getResponseMetadata(response)
 }
 
 interface UploadProgress {
-  percentage: number;
-  currentChunk?: number;
-  totalChunks?: number;
+  percentage: number
+  currentChunk?: number
+  totalChunks?: number
 }
 
 interface ActivityInvalidationOptions {
-  courseUuid?: string;
+  courseUuid?: string
 }
 
 async function invalidateActivityCache(courseUuid?: string) {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag(tags.activities, 'max');
-  revalidateTag(tags.courses, 'max');
-  if (courseUuid) revalidateTag(courseTag.detail(courseUuid), 'max');
+  const { revalidateTag } = await import('next/cache')
+  revalidateTag(tags.activities, 'max')
+  revalidateTag(tags.courses, 'max')
+  if (courseUuid) revalidateTag(courseTag.detail(courseUuid), 'max')
 }
 
-export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
+export async function createActivity(
+  data: any,
+  chapter_id: number,
+  options?: ActivityInvalidationOptions,
+) {
   if (!data || typeof data !== 'object') {
-    throw new Error('Activity payload is required');
+    throw new Error('Activity payload is required')
   }
 
   if (!data.content) {
-    data.content = {};
+    data.content = {}
   }
-  data.chapter_id = chapter_id;
+  data.chapter_id = chapter_id
 
   const result = await apiFetch('activities/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+  })
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
   if (metadata.success) {
-    await invalidateActivityCache(options?.courseUuid);
+    await invalidateActivityCache(options?.courseUuid)
   }
 
-  return metadata;
+  return metadata
 }
 
 /**
@@ -81,17 +85,17 @@ function buildVideoDetails(details: any): string {
     endTime: details.endTime || null,
     autoplay: details.autoplay,
     muted: details.muted,
-  };
+  }
 
   if (details.subtitles) {
     detailsToSend.subtitles = details.subtitles.map((subtitle: any) => ({
       id: subtitle.id,
       language: subtitle.language,
       label: subtitle.label,
-    }));
+    }))
   }
 
-  return JSON.stringify(detailsToSend);
+  return JSON.stringify(detailsToSend)
 }
 
 /**
@@ -100,7 +104,7 @@ function buildVideoDetails(details: any): string {
 function appendSubtitleFiles(formData: FormData, subtitles: any[]): void {
   for (const subtitle of subtitles) {
     if (subtitle.file) {
-      formData.append('subtitle_files', subtitle.file);
+      formData.append('subtitle_files', subtitle.file)
     }
   }
 }
@@ -117,33 +121,33 @@ async function uploadFormData(
     method: 'POST',
     body: formData,
     timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
-  });
+  })
 
   if (!result.ok) {
-    let detail = `Upload failed with status ${result.status}`;
+    let detail = `Upload failed with status ${result.status}`
     try {
-      const errorData = await result.json();
+      const errorData = await result.json()
       if (typeof errorData?.detail === 'string') {
-        ({ detail } = errorData);
+        ;({ detail } = errorData)
       }
     } catch {
       // Ignore JSON parse failures and preserve the generic message.
     }
-    const error: any = new Error(detail);
-    error.status = result.status;
-    error.detail = detail;
-    throw error;
+    const error: any = new Error(detail)
+    error.status = result.status
+    error.detail = detail
+    throw error
   }
 
-  const json = (await result.json()) as ActivityRead;
+  const json = (await result.json()) as ActivityRead
   if (onProgress) {
     try {
-      onProgress({ percentage: 100 });
+      onProgress({ percentage: 100 })
     } catch {
       // ignore
     }
   }
-  return json;
+  return json
 }
 
 /**
@@ -156,68 +160,68 @@ async function createVideoActivityChunked(
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const courseUuid = data.course_uuid;
+  const courseUuid = data.course_uuid
 
   if (!courseUuid) {
-    throw new Error('Missing course_uuid for chunked upload');
+    throw new Error('Missing course_uuid for chunked upload')
   }
 
-  const tempActivityUuid = `activity_temp_${Date.now()}`;
-  const videoFormat = file.name.split('.').pop() || 'mp4';
+  const tempActivityUuid = `activity_temp_${Date.now()}`
+  const videoFormat = file.name.split('.').pop() || 'mp4'
 
   await uploadFileChunked({
     file,
     directory: `courses/${courseUuid}/activities/${tempActivityUuid}/video`,
     typeOfDir: 'platform',
     filename: `video.${videoFormat}`,
-    onProgress: (progress) => {
+    onProgress: progress => {
       onProgress?.({
         percentage: progress.percentage,
         currentChunk: progress.currentChunk,
         totalChunks: progress.totalChunks,
-      });
+      })
     },
-  });
+  })
 
-  const formData = new FormData();
-  formData.append('chapter_id', chapterId.toString());
-  formData.append('name', data.name);
+  const formData = new FormData()
+  formData.append('chapter_id', chapterId.toString())
+  formData.append('name', data.name)
   formData.append(
     'video_uploaded_path',
     `courses/${courseUuid}/activities/${tempActivityUuid}/video/video.${videoFormat}`,
-  );
+  )
 
   if (data.details?.subtitles && Array.isArray(data.details.subtitles)) {
-    appendSubtitleFiles(formData, data.details.subtitles);
+    appendSubtitleFiles(formData, data.details.subtitles)
   }
 
   if (data.details) {
-    formData.append('details', buildVideoDetails(data.details));
+    formData.append('details', buildVideoDetails(data.details))
   }
 
   const result = await apiFetch('activities/video', {
     method: 'POST',
     body: formData,
     timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
-  });
+  })
 
   if (!result.ok) {
-    let detail = `Failed to create activity: ${result.status}`;
+    let detail = `Failed to create activity: ${result.status}`
     try {
-      const errorData = await result.json();
+      const errorData = await result.json()
       if (typeof errorData?.detail === 'string') {
-        ({ detail } = errorData);
+        ;({ detail } = errorData)
       }
     } catch {
       // Ignore JSON parse failures and preserve the generic message.
     }
-    const error: any = new Error(detail);
-    error.status = result.status;
-    error.detail = detail;
-    throw error;
+    const error: any = new Error(detail)
+    error.status = result.status
+    error.detail = detail
+    throw error
   }
 
-  return (await result.json()) as ActivityRead;
+  return (await result.json()) as ActivityRead
 }
 
 /**
@@ -230,20 +234,20 @@ async function createVideoActivityStandard(
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const formData = new FormData();
-  formData.append('chapter_id', chapterId.toString());
-  formData.append('name', data.name);
-  formData.append('video_file', file);
+  const formData = new FormData()
+  formData.append('chapter_id', chapterId.toString())
+  formData.append('name', data.name)
+  formData.append('video_file', file)
 
   if (data.details?.subtitles && Array.isArray(data.details.subtitles)) {
-    appendSubtitleFiles(formData, data.details.subtitles);
+    appendSubtitleFiles(formData, data.details.subtitles)
   }
 
   if (data.details) {
-    formData.append('details', buildVideoDetails(data.details));
+    formData.append('details', buildVideoDetails(data.details))
   }
 
-  return uploadFormData('activities/video', formData, onProgress);
+  return uploadFormData('activities/video', formData, onProgress)
 }
 
 /**
@@ -256,12 +260,12 @@ async function createPdfActivity(
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const formData = new FormData();
-  formData.append('chapter_id', chapterId.toString());
-  formData.append('pdf_file', file);
-  formData.append('name', data.name);
+  const formData = new FormData()
+  formData.append('chapter_id', chapterId.toString())
+  formData.append('pdf_file', file)
+  formData.append('name', data.name)
 
-  return uploadFormData('activities/documentpdf', formData, onProgress);
+  return uploadFormData('activities/documentpdf', formData, onProgress)
 }
 
 export async function createExternalVideoActivity(
@@ -270,15 +274,15 @@ export async function createExternalVideoActivity(
   chapter_id: number,
   options?: ActivityInvalidationOptions,
 ) {
-  data.chapter_id = chapter_id;
-  data.activity_id = activity.id;
+  data.chapter_id = chapter_id
+  data.activity_id = activity.id
 
   const defaultDetails = {
     startTime: 0,
     endTime: null,
     autoplay: false,
     muted: false,
-  };
+  }
   const videoDetails = data.details
     ? {
         startTime: data.details.startTime ?? defaultDetails.startTime,
@@ -286,20 +290,20 @@ export async function createExternalVideoActivity(
         autoplay: data.details.autoplay ?? defaultDetails.autoplay,
         muted: data.details.muted ?? defaultDetails.muted,
       }
-    : defaultDetails;
-  data.details = JSON.stringify(videoDetails);
+    : defaultDetails
+  data.details = JSON.stringify(videoDetails)
   const result = await apiFetch('activities/external_video', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+  })
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
   if (metadata.success) {
-    await invalidateActivityCache(options?.courseUuid);
+    await invalidateActivityCache(options?.courseUuid)
   }
 
-  return metadata;
+  return metadata
 }
 
 /**
@@ -308,32 +312,36 @@ export async function createExternalVideoActivity(
 async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPermissions> {
   // Support both raw and canonical UUID variants.
   // Some UI routes pass the raw suffix (e.g. "01KE..."), but API uses "activity_...".
-  const canonicalActivityUuid = activity_uuid.startsWith('activity_') ? activity_uuid : `activity_${activity_uuid}`;
+  const canonicalActivityUuid = activity_uuid.startsWith('activity_')
+    ? activity_uuid
+    : `activity_${activity_uuid}`
 
   const result = await apiFetch(`activities/${canonicalActivityUuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
-  });
-  return await errorHandling(result);
+  })
+  return await errorHandling(result)
 }
 
 export async function getActivity(activity_uuid: string, _next?: any) {
-  return fetchActivity(activity_uuid);
+  return fetchActivity(activity_uuid)
 }
 
 export async function deleteActivity(activity_uuid: string) {
-  const result = await apiFetch(`activities/${activity_uuid}`, { method: 'DELETE' });
-  const metadata = await getTypedResponseMetadata<ActivityDetailResponse>(result);
+  const result = await apiFetch(`activities/${activity_uuid}`, {
+    method: 'DELETE',
+  })
+  const metadata = await getTypedResponseMetadata<ActivityDetailResponse>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
-    revalidateTag(tags.courses, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.activities, 'max')
+    revalidateTag(tags.courses, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
@@ -341,18 +349,18 @@ export async function updateActivity(data: Record<string, unknown>, activity_uui
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+  })
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.activities, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function getUrlPreview(url: string): Promise<UrlPreviewResponse> {
-  const result = await apiFetch(`utils/link-preview?url=${url}`);
-  return (await result.json()) as UrlPreviewResponse;
+  const result = await apiFetch(`utils/link-preview?url=${url}`)
+  return (await result.json()) as UrlPreviewResponse
 }

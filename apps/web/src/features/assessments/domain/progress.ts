@@ -7,10 +7,10 @@
  * Re-exports the generated type and provides display helpers.
  */
 
-import type { components } from '@/lib/api/generated/schema';
+import type { components } from '@/lib/api/generated/schema'
 
-export type ActivityProgressState = components['schemas']['ActivityProgressState'];
-export type ActivityProgressCell = components['schemas']['ActivityProgressCell'];
+export type ActivityProgressState = components['schemas']['ActivityProgressState']
+export type ActivityProgressCell = components['schemas']['ActivityProgressCell']
 
 export const PROGRESS_STATE_LABELS: Record<ActivityProgressState, string> = {
   NOT_STARTED: 'Not started',
@@ -22,7 +22,7 @@ export const PROGRESS_STATE_LABELS: Record<ActivityProgressState, string> = {
   PASSED: 'Passed',
   FAILED: 'Failed',
   COMPLETED: 'Completed',
-};
+}
 
 /** Tailwind classes for each state pill. */
 export const PROGRESS_STATE_CLASSES: Record<ActivityProgressState, string> = {
@@ -35,17 +35,17 @@ export const PROGRESS_STATE_CLASSES: Record<ActivityProgressState, string> = {
   PASSED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   FAILED: 'border-rose-200 bg-rose-50 text-rose-800',
   COMPLETED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-};
+}
 
 export function isProgressComplete(state: ActivityProgressState): boolean {
-  return state === 'PASSED' || state === 'COMPLETED';
+  return state === 'PASSED' || state === 'COMPLETED'
 }
 
 export function isProgressOverdue(cell: ActivityProgressCell, now = Date.now()): boolean {
-  if (!cell.due_at || isProgressComplete(cell.state)) return false;
-  return new Date(cell.due_at).getTime() < now;
+  if (!cell.due_at || isProgressComplete(cell.state)) return false
+  return new Date(cell.due_at).getTime() < now
 }
 
 export function progressNeedsTeacherAction(cell: ActivityProgressCell): boolean {
-  return cell.teacher_action_required && Boolean(cell.latest_submission_uuid);
+  return cell.teacher_action_required && Boolean(cell.latest_submission_uuid)
 }

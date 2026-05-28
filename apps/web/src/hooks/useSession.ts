@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useSessionContext } from '@/components/providers/session-provider';
-import type { SessionContextValue, SessionStatus } from '@/components/providers/session-provider';
+import { useSessionContext } from '@/components/providers/session-provider'
+import type { SessionContextValue, SessionStatus } from '@/components/providers/session-provider'
 
 /**
  * Access the current session, user, permissions, and auth utilities.
@@ -18,7 +18,7 @@ import type { SessionContextValue, SessionStatus } from '@/components/providers/
  * ```
  */
 export function useSession(): SessionContextValue {
-  return useSessionContext();
+  return useSessionContext()
 }
 
-export type { SessionContextValue, SessionStatus };
+export type { SessionContextValue, SessionStatus }

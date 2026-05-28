@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { Bot, X, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl'
+import { Bot, X, Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 
 interface AiAssistantPanelProps {
-  open: boolean;
-  onClose: () => void;
-  runtime: StudentActivityRuntime;
+  open: boolean
+  onClose: () => void
+  runtime: StudentActivityRuntime
 }
 
 /**
@@ -30,9 +30,9 @@ interface AiAssistantPanelProps {
  * or click-outside backdrop.
  */
 export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistantPanelProps) {
-  const t = useTranslations('Activities.AiAssistantPanel');
-  const activityType = runtime.activity?.type ?? '';
-  const suggestions = getSuggestions(activityType, t);
+  const t = useTranslations('Activities.AiAssistantPanel')
+  const activityType = runtime.activity?.type ?? ''
+  const suggestions = getSuggestions(activityType, t)
 
   return (
     <>
@@ -88,7 +88,9 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           {/* Activity context info */}
           {runtime.activity ? (
             <div className="border-border bg-muted/30 mt-6 rounded-lg border p-3">
-              <p className="text-muted-foreground mb-1 text-xs font-medium">{t('currentActivity')}</p>
+              <p className="text-muted-foreground mb-1 text-xs font-medium">
+                {t('currentActivity')}
+              </p>
               <p className="text-sm font-medium">{runtime.activity.title}</p>
             </div>
           ) : null}
@@ -104,15 +106,9 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
       </div>
 
       {/* Click-outside backdrop */}
-      {open ? (
-        <div
-          className="fixed inset-0 z-20"
-          aria-hidden
-          onClick={onClose}
-        />
-      ) : null}
+      {open ? <div className="fixed inset-0 z-20" aria-hidden onClick={onClose} /> : null}
     </>
-  );
+  )
 }
 
 // ── Context-aware suggestions ─────────────────────────────────────────────────
@@ -125,7 +121,7 @@ function getSuggestions(activityType: string, t: any): string[] {
         t('suggestions.dynamic.explain'),
         t('suggestions.dynamic.takeaways'),
         t('suggestions.dynamic.quiz'),
-      ];
+      ]
     }
     case 'TYPE_CODE_CHALLENGE': {
       return [
@@ -133,24 +129,36 @@ function getSuggestions(activityType: string, t: any): string[] {
         t('suggestions.code.testcases'),
         t('suggestions.code.algorithm'),
         t('suggestions.code.error'),
-      ];
+      ]
     }
     case 'TYPE_EXAM':
     case 'TYPE_CUSTOM': {
-      return [t('suggestions.exam.hint'), t('suggestions.exam.concept'), t('suggestions.exam.review')];
+      return [
+        t('suggestions.exam.hint'),
+        t('suggestions.exam.concept'),
+        t('suggestions.exam.review'),
+      ]
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return [t('suggestions.file.include'), t('suggestions.file.criteria'), t('suggestions.file.structure')];
+      return [
+        t('suggestions.file.include'),
+        t('suggestions.file.criteria'),
+        t('suggestions.file.structure'),
+      ]
     }
     case 'TYPE_VIDEO': {
-      return [t('suggestions.video.summarize'), t('suggestions.video.explain'), t('suggestions.video.keypoints')];
+      return [
+        t('suggestions.video.summarize'),
+        t('suggestions.video.explain'),
+        t('suggestions.video.keypoints'),
+      ]
     }
     default: {
       return [
         t('suggestions.default.understand'),
         t('suggestions.default.concepts'),
         t('suggestions.default.guidance'),
-      ];
+      ]
     }
   }
 }

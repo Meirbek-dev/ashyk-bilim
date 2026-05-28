@@ -1,7 +1,7 @@
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client'
 
 export async function reportClientError(payload: Record<string, unknown>): Promise<void> {
-  const origin = typeof globalThis.window !== 'undefined' ? globalThis.location.origin : undefined;
+  const origin = typeof globalThis.window !== 'undefined' ? globalThis.location.origin : undefined
 
   await apiFetch('/api/log-error', {
     baseUrl: origin,
@@ -11,5 +11,5 @@ export async function reportClientError(payload: Record<string, unknown>): Promi
     },
     keepalive: true,
     method: 'POST',
-  });
+  })
 }

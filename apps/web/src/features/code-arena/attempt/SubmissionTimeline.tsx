@@ -1,20 +1,20 @@
-'use client';
+'use client'
 
-import { RotateCcw } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { RotateCcw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import type { CodeSubmission } from '../domain';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import type { CodeSubmission } from '../domain'
 
 interface SubmissionTimelineProps {
-  submissions: CodeSubmission[];
-  onRestoreSubmission?: (submission: CodeSubmission) => void;
+  submissions: CodeSubmission[]
+  onRestoreSubmission?: (submission: CodeSubmission) => void
 }
 
 export function SubmissionTimeline({ submissions, onRestoreSubmission }: SubmissionTimelineProps) {
-  const t = useTranslations('Activities.CodeChallenges');
+  const t = useTranslations('Activities.CodeChallenges')
 
   return (
     <ScrollArea className="h-full">
@@ -35,14 +35,18 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
                     <span className="text-sm font-semibold">
                       {t('attemptNumber', { number: submissions.length - index })}
                     </span>
-                    <Badge variant={submission.score === submission.max_score ? 'success' : 'secondary'}>
+                    <Badge
+                      variant={submission.score === submission.max_score ? 'success' : 'secondary'}
+                    >
                       {submission.score !== undefined
                         ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
                         : submission.status}
                     </Badge>
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {submission.created_at ? new Date(submission.created_at).toLocaleString() : 'Unknown time'}
+                    {submission.created_at
+                      ? new Date(submission.created_at).toLocaleString()
+                      : 'Unknown time'}
                     {submission.language_id ? ` - Language ${submission.language_id}` : ''}
                   </div>
                 </div>
@@ -63,5 +67,5 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
         )}
       </div>
     </ScrollArea>
-  );
+  )
 }

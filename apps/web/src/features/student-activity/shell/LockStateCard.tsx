@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import { Lock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import { Button } from '@/components/ui/button';
-import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
+import { Lock } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { Button } from '@/components/ui/button'
+import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 
 interface LockStateCardProps {
-  runtime: StudentActivityRuntime;
+  runtime: StudentActivityRuntime
 }
 
 function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activity_') {
-  return uuid?.replace(new RegExp(`^${prefix}`), '') ?? '';
+  return uuid?.replace(new RegExp(`^${prefix}`), '') ?? ''
 }
 
 /**
@@ -27,34 +27,34 @@ function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activit
  * The BottomActionBar still renders Prev/Next navigation.
  */
 export default function LockStateCard({ runtime }: LockStateCardProps) {
-  const t = useTranslations('ActivityPage');
-  const { state } = runtime.progress;
-  const { reason } = runtime.primary_action;
+  const t = useTranslations('ActivityPage')
+  const { state } = runtime.progress
+  const { reason } = runtime.primary_action
 
-  const isLocked = state === 'locked';
-  const isUnavailable = state === 'unavailable';
+  const isLocked = state === 'locked'
+  const isUnavailable = state === 'unavailable'
 
-  if (!isLocked && !isUnavailable) return null;
+  if (!isLocked && !isUnavailable) return null
 
-  const title = isLocked ? t('lockedTitle') : t('unpublishedActivity');
+  const title = isLocked ? t('lockedTitle') : t('unpublishedActivity')
   const body = (() => {
     switch (reason) {
       case 'locked': {
-        return t('lockedReasonLocked');
+        return t('lockedReasonLocked')
       }
       case 'unavailable': {
-        return t('unpublishedActivity');
+        return t('unpublishedActivity')
       }
       case 'authentication_required': {
-        return t('signInRequired');
+        return t('signInRequired')
       }
       default: {
-        return isLocked ? t('lockedReasonLocked') : t('unpublishedActivity');
+        return isLocked ? t('lockedReasonLocked') : t('unpublishedActivity')
       }
     }
-  })();
+  })()
 
-  const courseHref = `/course/${cleanUuid(runtime.course.uuid, 'course_')}`;
+  const courseHref = `/course/${cleanUuid(runtime.course.uuid, 'course_')}`
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-16 text-center">
@@ -63,13 +63,9 @@ export default function LockStateCard({ runtime }: LockStateCardProps) {
       </div>
       <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       <p className="text-muted-foreground text-sm leading-6">{body}</p>
-      <Button
-        variant="outline"
-        nativeButton={false}
-        render={<Link href={courseHref} />}
-      >
+      <Button variant="outline" nativeButton={false} render={<Link href={courseHref} />}>
         {t('backToCourse')}
       </Button>
     </div>
-  );
+  )
 }

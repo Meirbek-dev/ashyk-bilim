@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { createHighlighter } from 'shiki/bundle/web';
+import { createHighlighter } from 'shiki/bundle/web'
 
 /**
  * Singleton Shiki highlighter shared by:
@@ -10,7 +10,7 @@ import { createHighlighter } from 'shiki/bundle/web';
  *
  * Uses shiki/bundle/web for optimal browser bundle size.
  */
-let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
+let highlighterPromise: ReturnType<typeof createHighlighter> | null = null
 
 export const getHighlighter = () => {
   if (!highlighterPromise) {
@@ -36,24 +36,24 @@ export const getHighlighter = () => {
         'diff',
         'text',
       ],
-    });
+    })
   }
-  return highlighterPromise;
-};
+  return highlighterPromise
+}
 
 /**
  * Highlights code to themed HTML using Shiki dual-theme CSS variables.
  * Falls back to plain text if the language cannot be loaded.
  */
 export async function highlightCode(code: string, lang: string): Promise<string> {
-  const highlighter = await getHighlighter();
+  const highlighter = await getHighlighter()
 
-  const loaded = highlighter.getLoadedLanguages();
+  const loaded = highlighter.getLoadedLanguages()
   if (!loaded.includes(lang)) {
     try {
-      await highlighter.loadLanguage(lang as Parameters<typeof highlighter.loadLanguage>[0]);
+      await highlighter.loadLanguage(lang as Parameters<typeof highlighter.loadLanguage>[0])
     } catch {
-      lang = 'text';
+      lang = 'text'
     }
   }
 
@@ -64,7 +64,7 @@ export async function highlightCode(code: string, lang: string): Promise<string>
       dark: 'github-dark',
     },
     defaultColor: false,
-  });
+  })
 }
 
 /** Language display names for known identifiers. */
@@ -101,9 +101,9 @@ const LANG_DISPLAY: Record<string, string> = {
   diff: 'Diff',
   text: 'Text',
   txt: 'Text',
-};
+}
 
 export function getLanguageDisplayName(lang: string | undefined): string {
-  if (!lang) return 'Text';
-  return LANG_DISPLAY[lang.toLowerCase()] ?? lang.charAt(0).toUpperCase() + lang.slice(1);
+  if (!lang) return 'Text'
+  return LANG_DISPLAY[lang.toLowerCase()] ?? lang.charAt(0).toUpperCase() + lang.slice(1)
 }

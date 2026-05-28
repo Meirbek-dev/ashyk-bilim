@@ -1,18 +1,18 @@
 /** @vitest-environment jsdom */
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
-import AssessmentOperationsPanel from '@/components/Dashboard/Analytics/AssessmentOperationsPanel';
-import type { TeacherAssessmentDetailResponse } from '@/types/analytics';
+import AssessmentOperationsPanel from '@/components/Dashboard/Analytics/AssessmentOperationsPanel'
+import type { TeacherAssessmentDetailResponse } from '@/types/analytics'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'en-US',
-}));
+}))
 
-const createObjectUrlMock = vi.fn(() => 'blob:audit-history');
-const revokeObjectUrlMock = vi.fn();
+const createObjectUrlMock = vi.fn(() => 'blob:audit-history')
+const revokeObjectUrlMock = vi.fn()
 
 Object.defineProperty(globalThis, 'URL', {
   value: {
@@ -21,9 +21,11 @@ Object.defineProperty(globalThis, 'URL', {
     revokeObjectURL: revokeObjectUrlMock,
   },
   writable: true,
-});
+})
 
-function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}): TeacherAssessmentDetailResponse {
+function createDetail(
+  overrides: Partial<TeacherAssessmentDetailResponse> = {},
+): TeacherAssessmentDetailResponse {
   return {
     course_id: overrides.course_id ?? 1,
     generated_at: '2026-05-05T12:00:00Z',
@@ -145,31 +147,41 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
       },
     ],
     ...overrides,
-  };
+  }
 }
 
 describe('AssessmentOperationsPanel', () => {
   it('renders diagnostics, slo, migration, and audit details', () => {
-    render(<AssessmentOperationsPanel detail={createDetail()} />);
+    render(<AssessmentOperationsPanel detail={createDetail()} />)
 
-    expect(screen.getByText('pages.assessmentOpsTitle')).toBeInTheDocument();
+    expect(screen.getByText('pages.assessmentOpsTitle')).toBeInTheDocument()
     expect(
-      screen.getByText('ManualAssessments use canonical submission states and grading ledger history.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Backlog is approaching the release target for manual grading.')).toBeInTheDocument();
+      screen.getByText(
+        'ManualAssessments use canonical submission states and grading ledger history.',
+      ),
+    ).toBeInTheDocument()
     expect(
-      screen.getByText('Assessment analytics detail is backed by canonical submission and grading records.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Support follow-up is recommended for the active alerts.')).toBeInTheDocument();
-    expect(screen.getByText('Grading latency is outside the current service target.')).toBeInTheDocument();
-    expect(screen.getByText('Alpha Cohort')).toBeInTheDocument();
-    expect(screen.getByText('Awaiting teacher grading')).toBeInTheDocument();
-    expect(screen.getByText('Question 1')).toBeInTheDocument();
-    expect(screen.getByText('Release Grades for 8 learners')).toBeInTheDocument();
-    expect(screen.getByText('Teacher Analytics')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentOpsAuditRowCount')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument();
-  });
+      screen.getByText('Backlog is approaching the release target for manual grading.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Assessment analytics detail is backed by canonical submission and grading records.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Support follow-up is recommended for the active alerts.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Grading latency is outside the current service target.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Alpha Cohort')).toBeInTheDocument()
+    expect(screen.getByText('Awaiting teacher grading')).toBeInTheDocument()
+    expect(screen.getByText('Question 1')).toBeInTheDocument()
+    expect(screen.getByText('Release Grades for 8 learners')).toBeInTheDocument()
+    expect(screen.getByText('Teacher Analytics')).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentOpsAuditRowCount')).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument()
+  })
 
   it('shows the empty audit state when no operational events are available', () => {
     render(
@@ -207,20 +219,24 @@ describe('AssessmentOperationsPanel', () => {
           item_analytics: [],
         })}
       />,
-    );
+    )
 
-    expect(screen.getByText('pages.assessmentOpsAuditEmpty')).toBeInTheDocument();
-    expect(screen.getByText('ManualAssessments are reading only canonical submission rows.')).toBeInTheDocument();
-    expect(screen.getByText('Current grading latency is within target.')).toBeInTheDocument();
-    expect(screen.getByText('Support diagnostics are within the current operational envelope.')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentSupportAlertsEmpty')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentItemEmpty')).toBeInTheDocument();
-    expect(screen.getByText('pages.assessmentCohortEmpty')).toBeInTheDocument();
-  });
+    expect(screen.getByText('pages.assessmentOpsAuditEmpty')).toBeInTheDocument()
+    expect(
+      screen.getByText('ManualAssessments are reading only canonical submission rows.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Current grading latency is within target.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Support diagnostics are within the current operational envelope.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentSupportAlertsEmpty')).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentItemEmpty')).toBeInTheDocument()
+    expect(screen.getByText('pages.assessmentCohortEmpty')).toBeInTheDocument()
+  })
 
   it('filters and exports audit history from the current payload', () => {
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
     render(
       <AssessmentOperationsPanel
@@ -253,20 +269,20 @@ describe('AssessmentOperationsPanel', () => {
           ],
         })}
       />,
-    );
+    )
 
     fireEvent.change(screen.getByPlaceholderText('pages.assessmentOpsAuditSearchPlaceholder'), {
       target: { value: 'draft' },
-    });
+    })
 
-    expect(screen.getByText('Saved draft feedback for Dana')).toBeInTheDocument();
-    expect(screen.queryByText('Release Grades for 8 learners')).not.toBeInTheDocument();
+    expect(screen.getByText('Saved draft feedback for Dana')).toBeInTheDocument()
+    expect(screen.queryByText('Release Grades for 8 learners')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('pages.assessmentOpsAuditExport'));
+    fireEvent.click(screen.getByText('pages.assessmentOpsAuditExport'))
 
-    expect(createObjectUrlMock).toHaveBeenCalledTimes(1);
-    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
+    expect(clickSpy).toHaveBeenCalledTimes(1)
 
-    clickSpy.mockRestore();
-  });
-});
+    clickSpy.mockRestore()
+  })
+})

@@ -1,27 +1,24 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed';
-import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard';
-import TrailCourseElement from '@components/Pages/Trail/TrailCourseElement';
-import { useSession } from '@/hooks/useSession';
-import UserCertificates from '@components/Pages/Trail/UserCertificates';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useGamificationStore } from '@/stores/gamification';
-import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/useTrail';
-import { useTranslations } from 'next-intl';
-import { BookOpen } from 'lucide-react';
+'use client'
+import { useState, useEffect } from 'react'
+import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed'
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
+import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard'
+import TrailCourseElement from '@components/Pages/Trail/TrailCourseElement'
+import { useSession } from '@/hooks/useSession'
+import UserCertificates from '@components/Pages/Trail/UserCertificates'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useGamificationStore } from '@/stores/gamification'
+import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/useTrail'
+import { useTranslations } from 'next-intl'
+import { BookOpen } from 'lucide-react'
 
-const EMPTY_RECENT_TRANSACTIONS: any[] = [];
+const EMPTY_RECENT_TRANSACTIONS: any[] = []
 
 function TrailCourseSkeletons() {
   return (
     <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="border-border bg-card flex gap-4 rounded-xl border p-4"
-        >
+      {[1, 2, 3].map(i => (
+        <div key={i} className="border-border bg-card flex gap-4 rounded-xl border p-4">
           <Skeleton className="h-[76px] w-[108px] shrink-0 rounded-lg" />
           <div className="flex flex-1 flex-col justify-between gap-3 py-0.5">
             <div className="space-y-1.5">
@@ -39,33 +36,35 @@ function TrailCourseSkeletons() {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 const Trail = () => {
-  const { user: currentUser } = useSession();
-  const t = useTranslations('TrailPage');
+  const { user: currentUser } = useSession()
+  const t = useTranslations('TrailPage')
 
-  const { data: trail, isLoading: isTrailLoading } = useTrailCurrent();
+  const { data: trail, isLoading: isTrailLoading } = useTrailCurrent()
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
-  const gamificationProfile = useGamificationStore((s) => s.profile);
-  const recentTransactions = useGamificationStore((s) => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS);
-  const userRank = useGamificationStore((s) => s.dashboard?.user_rank);
-  const isGamificationLoading = useGamificationStore((s) => s.isLoading);
+  const gamificationProfile = useGamificationStore(s => s.profile)
+  const recentTransactions = useGamificationStore(
+    s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS,
+  )
+  const userRank = useGamificationStore(s => s.dashboard?.user_rank)
+  const isGamificationLoading = useGamificationStore(s => s.isLoading)
   const gamificationData = {
     profile: gamificationProfile,
     recent_transactions: recentTransactions,
     user_rank: userRank,
-  };
+  }
 
-  const { data: leaderboardData } = useTrailLeaderboard(10);
+  const { data: leaderboardData } = useTrailLeaderboard(10)
 
-  const userRankData = { rank: gamificationData.user_rank };
+  const userRankData = { rank: gamificationData.user_rank }
 
   return (
     <GeneralWrapper>
@@ -90,16 +89,14 @@ const Trail = () => {
                 <BookOpen className="text-muted-foreground h-6 w-6" />
               </div>
               <p className="text-foreground text-sm font-medium">{t('noCoursesInProgress')}</p>
-              <p className="text-muted-foreground mt-1 text-sm">{t('startACourseToSeeYourProgress')}</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {t('startACourseToSeeYourProgress')}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
               {trail.runs.map((run: any) => (
-                <TrailCourseElement
-                  key={run.course.course_uuid}
-                  run={run}
-                  course={run.course}
-                />
+                <TrailCourseElement key={run.course.course_uuid} run={run} course={run.course} />
               ))}
             </div>
           )}
@@ -122,7 +119,7 @@ const Trail = () => {
         </div>
       </div>
     </GeneralWrapper>
-  );
-};
+  )
+}
 
-export default Trail;
+export default Trail

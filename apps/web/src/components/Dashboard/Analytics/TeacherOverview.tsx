@@ -1,47 +1,51 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels';
-import type { AdminAnalyticsResponse, AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics';
-import { getAnalyticsExportUrl } from '@services/analytics/teacher';
-import type { AnalyticsFilterOption } from '@/types/analytics';
-import AnalyticsExportButton from './AnalyticsExportButton';
-import { useLocale, useTranslations } from 'next-intl';
-import TeacherFilterBar from './TeacherFilterBar';
-import { Badge } from '@/components/ui/badge';
-import { useRouter } from 'next/navigation';
-import { lazy, Suspense } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
+import type {
+  AdminAnalyticsResponse,
+  AnalyticsQuery,
+  TeacherOverviewResponse,
+} from '@/types/analytics'
+import { getAnalyticsExportUrl } from '@services/analytics/teacher'
+import type { AnalyticsFilterOption } from '@/types/analytics'
+import AnalyticsExportButton from './AnalyticsExportButton'
+import { useLocale, useTranslations } from 'next-intl'
+import TeacherFilterBar from './TeacherFilterBar'
+import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
+import { lazy, Suspense } from 'react'
+import { Link } from '@/i18n/navigation'
 
-const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'));
-const AnalyticsMultiSeriesTrendChart = lazy(() => import('./AnalyticsMultiSeriesTrendChart'));
-const AdminAnalyticsPanel = lazy(() => import('./AdminAnalyticsPanel'));
-const AnomalyPanel = lazy(() => import('./AnomalyPanel'));
-const AssessmentOutliersTable = lazy(() => import('./AssessmentOutliersTable'));
-const ContentBottlenecksTable = lazy(() => import('./ContentBottlenecksTable'));
-const DataQualityPanel = lazy(() => import('./DataQualityPanel'));
-const DrillThroughAuditPanel = lazy(() => import('./DrillThroughAuditPanel'));
-const ForecastingPanel = lazy(() => import('./ForecastingPanel'));
-const GradingBacklogPanel = lazy(() => import('./GradingBacklogPanel'));
-const SavedViewsBar = lazy(() => import('./SavedViewsBar'));
-const AtRiskLearnersTable = lazy(() => import('./AtRiskLearnersTable'));
-const CourseHealthTable = lazy(() => import('./CourseHealthTable'));
-const TeacherWorkloadPanel = lazy(() => import('./TeacherWorkloadPanel'));
-const TeacherKpiCharts = lazy(() => import('./TeacherKpiCharts'));
-const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'));
+const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'))
+const AnalyticsMultiSeriesTrendChart = lazy(() => import('./AnalyticsMultiSeriesTrendChart'))
+const AdminAnalyticsPanel = lazy(() => import('./AdminAnalyticsPanel'))
+const AnomalyPanel = lazy(() => import('./AnomalyPanel'))
+const AssessmentOutliersTable = lazy(() => import('./AssessmentOutliersTable'))
+const ContentBottlenecksTable = lazy(() => import('./ContentBottlenecksTable'))
+const DataQualityPanel = lazy(() => import('./DataQualityPanel'))
+const DrillThroughAuditPanel = lazy(() => import('./DrillThroughAuditPanel'))
+const ForecastingPanel = lazy(() => import('./ForecastingPanel'))
+const GradingBacklogPanel = lazy(() => import('./GradingBacklogPanel'))
+const SavedViewsBar = lazy(() => import('./SavedViewsBar'))
+const AtRiskLearnersTable = lazy(() => import('./AtRiskLearnersTable'))
+const CourseHealthTable = lazy(() => import('./CourseHealthTable'))
+const TeacherWorkloadPanel = lazy(() => import('./TeacherWorkloadPanel'))
+const TeacherKpiCharts = lazy(() => import('./TeacherKpiCharts'))
+const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'))
 
 const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
   <Card className="shadow-sm">
     <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
   </Card>
-);
+)
 
 interface TeacherOverviewProps {
-  query: AnalyticsQuery;
-  data: TeacherOverviewResponse;
-  adminData?: AdminAnalyticsResponse | null;
-  courseOptions?: AnalyticsFilterOption[];
-  cohortOptions?: AnalyticsFilterOption[];
+  query: AnalyticsQuery
+  data: TeacherOverviewResponse
+  adminData?: AdminAnalyticsResponse | null
+  courseOptions?: AnalyticsFilterOption[]
+  cohortOptions?: AnalyticsFilterOption[]
 }
 
 export default function TeacherOverview({
@@ -51,77 +55,81 @@ export default function TeacherOverview({
   courseOptions = [],
   cohortOptions = [],
 }: TeacherOverviewProps) {
-  const t = useTranslations('TeacherAnalytics');
-  const locale = useLocale();
-  const router = useRouter();
+  const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
+  const router = useRouter()
   const interventionSummary = (
     data as TeacherOverviewResponse & {
       intervention_summary?: {
-        total: number;
-        open: number;
-        resolved: number;
-        recovered_learners: number;
-        avg_risk_delta_after_intervention: number | null;
-      };
+        total: number
+        open: number
+        resolved: number
+        recovered_learners: number
+        avg_risk_delta_after_intervention: number | null
+      }
     }
-  ).intervention_summary;
+  ).intervention_summary
 
   const buildScopedHref = (pathname: string, overrides: Partial<AnalyticsQuery> = {}) => {
-    const params = new URLSearchParams();
-    const scopedQuery = { ...query, ...overrides };
-    if (scopedQuery.window) params.set('window', scopedQuery.window);
-    if (scopedQuery.compare) params.set('compare', scopedQuery.compare);
-    if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket);
-    if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids);
-    if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids);
-    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', String(scopedQuery.teacher_user_id));
-    if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone);
-    if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start);
-    if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by);
-    if (scopedQuery.sort_order) params.set('sort_order', scopedQuery.sort_order);
-    const serialized = params.toString();
-    return serialized ? `${pathname}?${serialized}` : pathname;
-  };
+    const params = new URLSearchParams()
+    const scopedQuery = { ...query, ...overrides }
+    if (scopedQuery.window) params.set('window', scopedQuery.window)
+    if (scopedQuery.compare) params.set('compare', scopedQuery.compare)
+    if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket)
+    if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids)
+    if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids)
+    if (scopedQuery.teacher_user_id)
+      params.set('teacher_user_id', String(scopedQuery.teacher_user_id))
+    if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone)
+    if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start)
+    if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by)
+    if (scopedQuery.sort_order) params.set('sort_order', scopedQuery.sort_order)
+    const serialized = params.toString()
+    return serialized ? `${pathname}?${serialized}` : pathname
+  }
 
   const resolveAlertHref = (href?: string | null) => {
     if (!href) {
-      return undefined;
+      return undefined
     }
     if (href.startsWith('/dash/analytics/')) {
-      return href;
+      return href
     }
-    return href;
-  };
+    return href
+  }
 
   function formatFreshness(seconds: number): string {
-    if (seconds <= 0) return t('freshness.live');
-    if (seconds < 60) return t('freshness.seconds', { seconds });
-    if (seconds < 3600) return t('freshness.minutes', { minutes: Math.round(seconds / 60) });
-    if (seconds < 86_400) return t('freshness.hours', { hours: Math.round(seconds / 3600) });
-    return t('freshness.days', { days: Math.round(seconds / 86_400) });
+    if (seconds <= 0) return t('freshness.live')
+    if (seconds < 60) return t('freshness.seconds', { seconds })
+    if (seconds < 3600) return t('freshness.minutes', { minutes: Math.round(seconds / 60) })
+    if (seconds < 86_400) return t('freshness.hours', { hours: Math.round(seconds / 3600) })
+    return t('freshness.days', { days: Math.round(seconds / 86_400) })
   }
 
   // Align trend series by the union of bucket timestamps so sparse series are not dropped.
   const allBuckets = [
     ...new Set([
-      ...data.trends.active_learners.map((point) => point.bucket_start),
-      ...data.trends.completions.map((point) => point.bucket_start),
-      ...data.trends.submissions.map((point) => point.bucket_start),
-      ...data.trends.grading_completed.map((point) => point.bucket_start),
+      ...data.trends.active_learners.map(point => point.bucket_start),
+      ...data.trends.completions.map(point => point.bucket_start),
+      ...data.trends.submissions.map(point => point.bucket_start),
+      ...data.trends.grading_completed.map(point => point.bucket_start),
     ]),
-  ].toSorted();
-  const completionsMap = new Map(data.trends.completions.map((p) => [p.bucket_start, p.value]));
-  const submissionsMap = new Map(data.trends.submissions.map((p) => [p.bucket_start, p.value]));
-  const gradingMap = new Map(data.trends.grading_completed.map((p) => [p.bucket_start, p.value]));
-  const activeMap = new Map(data.trends.active_learners.map((p) => [p.bucket_start, p.value]));
-  const trendData = allBuckets.map((bucketStart) => ({
+  ].toSorted()
+  const completionsMap = new Map(data.trends.completions.map(p => [p.bucket_start, p.value]))
+  const submissionsMap = new Map(data.trends.submissions.map(p => [p.bucket_start, p.value]))
+  const gradingMap = new Map(data.trends.grading_completed.map(p => [p.bucket_start, p.value]))
+  const activeMap = new Map(data.trends.active_learners.map(p => [p.bucket_start, p.value]))
+  const trendData = allBuckets.map(bucketStart => ({
     bucket_start: bucketStart,
-    bucket: new Date(bucketStart).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+    bucket: new Date(bucketStart).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+    }),
     active_learners: activeMap.get(bucketStart) ?? 0,
     completions: completionsMap.get(bucketStart) ?? 0,
     submissions: submissionsMap.get(bucketStart) ?? 0,
     grading_completed: gradingMap.get(bucketStart) ?? 0,
-  }));
+  }))
 
   // Build KPI cards with correct trend series.
   // Only active_learners has a true per-bucket time-series trend to display.
@@ -131,7 +139,7 @@ export default function TeacherOverview({
   const kpiCards = [
     {
       metric: data.summary.active_learners,
-      sparkline: data.trends.active_learners.map((p) => p.value),
+      sparkline: data.trends.active_learners.map(p => p.value),
       definition: t('kpi.definitions.activeLearners'),
     },
     {
@@ -142,7 +150,7 @@ export default function TeacherOverview({
     {
       metric: data.summary.completion_rate,
       // Completions count correlates directionally with the rate; explicitly labelled below.
-      sparkline: data.trends.completions.map((p) => p.value),
+      sparkline: data.trends.completions.map(p => p.value),
       definition: t('kpi.definitions.completionRate'),
     },
     {
@@ -160,31 +168,36 @@ export default function TeacherOverview({
       sparkline: [] as number[],
       definition: t('kpi.definitions.negativeCourses'),
     },
-  ];
+  ]
 
   // Context-aware chart click: if submissions > active_learners in the clicked bucket,
   // route to the filtered assessment list; otherwise route to the course health list (issue 14).
   const handleTrendClick = (
     bucketStart: string,
-    row?: { active_learners: number; submissions: number; grading_completed: number },
+    row?: {
+      active_learners: number
+      submissions: number
+      grading_completed: number
+    },
   ) => {
-    const params = new URLSearchParams();
-    if (query.window) params.set('window', query.window);
-    if (query.compare) params.set('compare', query.compare);
-    if (query.bucket) params.set('bucket', query.bucket);
-    if (query.course_ids) params.set('course_ids', query.course_ids);
-    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids);
-    if (query.timezone) params.set('timezone', query.timezone);
-    params.set('bucket_start', bucketStart);
+    const params = new URLSearchParams()
+    if (query.window) params.set('window', query.window)
+    if (query.compare) params.set('compare', query.compare)
+    if (query.bucket) params.set('bucket', query.bucket)
+    if (query.course_ids) params.set('course_ids', query.course_ids)
+    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
+    if (query.timezone) params.set('timezone', query.timezone)
+    params.set('bucket_start', bucketStart)
 
-    const isSubmissionDominant = row && row.submissions + row.grading_completed >= row.active_learners;
+    const isSubmissionDominant =
+      row && row.submissions + row.grading_completed >= row.active_learners
     if (isSubmissionDominant) {
-      params.set('sort_by', 'signals');
-      router.push(`/dash/analytics/assessments?${params.toString()}`);
+      params.set('sort_by', 'signals')
+      router.push(`/dash/analytics/assessments?${params.toString()}`)
     } else {
-      router.push(`/dash/analytics/courses?${params.toString()}`);
+      router.push(`/dash/analytics/courses?${params.toString()}`)
     }
-  };
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
@@ -230,10 +243,7 @@ export default function TeacherOverview({
       </Suspense>
 
       <Suspense fallback={<SectionFallback height="h-[420px]" />}>
-        <TeacherKpiCharts
-          metrics={data.summary}
-          trends={data.trends}
-        />
+        <TeacherKpiCharts metrics={data.summary} trends={data.trends} />
       </Suspense>
 
       <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
@@ -283,10 +293,7 @@ export default function TeacherOverview({
           <ContentBottlenecksTable rows={data.content_bottlenecks} />
         </Suspense>
         <Suspense fallback={<SectionFallback height="h-[420px]" />}>
-          <DrillThroughAuditPanel
-            query={query}
-            assessmentPreview={data.assessment_preview}
-          />
+          <DrillThroughAuditPanel query={query} assessmentPreview={data.assessment_preview} />
         </Suspense>
       </div>
 
@@ -323,10 +330,14 @@ export default function TeacherOverview({
               <div className="text-muted-foreground text-xs tracking-wider uppercase">
                 {t('overview.labelScopedCourses')}
               </div>
-              <div className="text-foreground mt-2 text-lg font-semibold">{data.scope.course_ids.length}</div>
+              <div className="text-foreground mt-2 text-lg font-semibold">
+                {data.scope.course_ids.length}
+              </div>
             </div>
             <div className="bg-muted rounded-lg border p-4">
-              <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('overview.labelCohorts')}</div>
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">
+                {t('overview.labelCohorts')}
+              </div>
               <div className="text-foreground mt-2 text-lg font-semibold">
                 {data.scope.cohort_ids.length || t('overview.cohortsAll')}
               </div>
@@ -348,11 +359,10 @@ export default function TeacherOverview({
               [t('overview.interventionSummary.resolved'), interventionSummary.resolved],
               [t('overview.interventionSummary.recovered'), interventionSummary.recovered_learners],
             ].map(([label, value]) => (
-              <div
-                key={label}
-                className="bg-muted rounded-lg border p-4"
-              >
-                <div className="text-muted-foreground text-xs tracking-wider uppercase">{label}</div>
+              <div key={label} className="bg-muted rounded-lg border p-4">
+                <div className="text-muted-foreground text-xs tracking-wider uppercase">
+                  {label}
+                </div>
                 <div className="text-foreground mt-2 text-2xl font-semibold">{value}</div>
               </div>
             ))}
@@ -367,7 +377,7 @@ export default function TeacherOverview({
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {data.alerts.length ? (
-            data.alerts.map((alert) => {
+            data.alerts.map(alert => {
               const alertCard = (
                 <>
                   <div className="mb-2 flex items-center gap-2">
@@ -389,8 +399,8 @@ export default function TeacherOverview({
                   <div className="text-foreground font-medium">{alert.title}</div>
                   <div className="text-muted-foreground mt-2 text-sm leading-6">{alert.body}</div>
                 </>
-              );
-              const alertHref = resolveAlertHref(alert.href);
+              )
+              const alertHref = resolveAlertHref(alert.href)
 
               if (alertHref) {
                 return (
@@ -401,17 +411,14 @@ export default function TeacherOverview({
                   >
                     {alertCard}
                   </Link>
-                );
+                )
               }
 
               return (
-                <div
-                  key={alert.id}
-                  className="bg-muted rounded-lg border p-4"
-                >
+                <div key={alert.id} className="bg-muted rounded-lg border p-4">
                   {alertCard}
                 </div>
-              );
+              )
             })
           ) : (
             <div className="text-muted-foreground text-sm">{t('overview.alertsEmpty')}</div>
@@ -423,10 +430,7 @@ export default function TeacherOverview({
         <div>
           {/* Preview badge always visible (issue 4) */}
           <div className="mb-2 flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="text-xs"
-            >
+            <Badge variant="outline" className="text-xs">
               {t('overview.previewLabel')}
             </Badge>
             <span className="text-muted-foreground text-xs">
@@ -434,10 +438,7 @@ export default function TeacherOverview({
             </span>
           </div>
           <Suspense fallback={<SectionFallback height="h-[320px]" />}>
-            <CourseHealthTable
-              rows={data.course_preview}
-              storageKey="overview-courses"
-            />
+            <CourseHealthTable rows={data.course_preview} storageKey="overview-courses" />
           </Suspense>
           <p className="text-muted-foreground mt-2 text-sm">
             <Link
@@ -450,10 +451,7 @@ export default function TeacherOverview({
         </div>
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="text-xs"
-            >
+            <Badge variant="outline" className="text-xs">
               {t('overview.previewLabel')}
             </Badge>
             <span className="text-muted-foreground text-xs">
@@ -480,10 +478,7 @@ export default function TeacherOverview({
       {/* At-risk section with preview badge + CTA (issue 4). */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="text-xs"
-          >
+          <Badge variant="outline" className="text-xs">
             {t('overview.previewLabel')}
           </Badge>
           <span className="text-muted-foreground text-xs">
@@ -514,5 +509,5 @@ export default function TeacherOverview({
         )}
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertDialog,
@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 import {
   AlertTriangle,
   BookCopy,
@@ -23,28 +23,28 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Sparkles,
-} from 'lucide-react';
-import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal';
-import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management';
-import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server';
-import { CourseProvider, useCourse } from '@components/Contexts/CourseContext';
-import type { CourseWorkspaceStage } from '@/lib/course-management';
-import { getAbsoluteUrl } from '@services/config/config';
-import { CourseStatusBadge } from './courseWorkflowUi';
-import { useDirtyGuard } from '@/hooks/useDirtyGuard';
-import { Button } from '@/components/ui/button';
-import AppLink from '@/components/ui/AppLink';
-import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+} from 'lucide-react'
+import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
+import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management'
+import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
+import { CourseProvider, useCourse } from '@components/Contexts/CourseContext'
+import type { CourseWorkspaceStage } from '@/lib/course-management'
+import { getAbsoluteUrl } from '@services/config/config'
+import { CourseStatusBadge } from './courseWorkflowUi'
+import { useDirtyGuard } from '@/hooks/useDirtyGuard'
+import { Button } from '@/components/ui/button'
+import AppLink from '@/components/ui/AppLink'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
+import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 interface CourseWorkspacePageShellProps {
-  courseuuid: string;
-  activeStage: CourseWorkspaceStage;
-  initialCourse: any;
-  capabilities: CourseWorkspaceCapabilities;
-  children: ReactNode;
+  courseuuid: string
+  activeStage: CourseWorkspaceStage
+  initialCourse: any
+  capabilities: CourseWorkspaceCapabilities
+  children: ReactNode
 }
 
 function CourseWorkspaceChrome({
@@ -53,19 +53,24 @@ function CourseWorkspaceChrome({
   capabilities,
   children,
 }: Omit<CourseWorkspacePageShellProps, 'initialCourse'>) {
-  const t = useTranslations('DashPage.CourseManagement.Workspace');
-  const course = useCourse();
-  const { readiness } = course;
-  const [mounted, setMounted] = useState(false);
+  const t = useTranslations('DashPage.CourseManagement.Workspace')
+  const course = useCourse()
+  const { readiness } = course
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
   const dirtyGuard = useDirtyGuard({
     interceptInAppNavigation: true,
     message: t('unsavedChangesWarning'),
-  });
+  })
   const stageConfig = [
-    { key: 'details', label: t('tabs.details'), icon: FileCog, capability: 'canEditDetails' },
+    {
+      key: 'details',
+      label: t('tabs.details'),
+      icon: FileCog,
+      capability: 'canEditDetails',
+    },
     {
       key: 'curriculum',
       label: t('tabs.content'),
@@ -78,23 +83,33 @@ function CourseWorkspaceChrome({
       icon: LayoutDashboard,
       capability: 'canReviewCourse',
     },
-    { key: 'access', label: t('tabs.settings'), icon: Globe, capability: 'canManageSettings' },
+    {
+      key: 'access',
+      label: t('tabs.settings'),
+      icon: Globe,
+      capability: 'canManageSettings',
+    },
     {
       key: 'certificate',
       label: t('tabs.certificate'),
       icon: Sparkles,
       capability: 'canManageCertificate',
     },
-    { key: 'review', label: t('tabs.publish'), icon: CheckCircle2, capability: 'canReviewCourse' },
-  ] as const;
-  const visibleStages = stageConfig.filter((stage) => capabilities[stage.capability]);
+    {
+      key: 'review',
+      label: t('tabs.publish'),
+      icon: CheckCircle2,
+      capability: 'canReviewCourse',
+    },
+  ] as const
+  const visibleStages = stageConfig.filter(stage => capabilities[stage.capability])
 
   return (
     <div className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
       <AlertDialog
         open={dirtyGuard.isPromptOpen}
-        onOpenChange={(open) => {
-          if (!open) dirtyGuard.cancelNavigation();
+        onOpenChange={open => {
+          if (!open) dirtyGuard.cancelNavigation()
         }}
       >
         <AlertDialogContent>
@@ -107,10 +122,7 @@ function CourseWorkspaceChrome({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('unsavedDialogStay')}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={dirtyGuard.confirmNavigation}
-            >
+            <AlertDialogAction variant="destructive" onClick={dirtyGuard.confirmNavigation}>
               {t('unsavedDialogLeave')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -169,9 +181,9 @@ function CourseWorkspaceChrome({
 
         {/* Tab nav row */}
         <div className="border-border/50 flex h-12 items-end gap-0 overflow-x-auto border-t px-4 lg:px-8">
-          {visibleStages.map((stage) => {
-            const Icon = stage.icon;
-            const isActive = stage.key === activeStage;
+          {visibleStages.map(stage => {
+            const Icon = stage.icon
+            const isActive = stage.key === activeStage
             return (
               <AppLink
                 key={stage.key}
@@ -186,13 +198,16 @@ function CourseWorkspaceChrome({
               >
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
                 <span className="hidden whitespace-nowrap sm:inline">{stage.label}</span>
-                {mounted && stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
+                {mounted &&
+                stage.key === 'review' &&
+                !readiness.readyToPublish &&
+                readiness.issues.length > 0 ? (
                   <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
                     {readiness.issues.length}
                   </span>
                 ) : null}
               </AppLink>
-            );
+            )
           })}
         </div>
       </header>
@@ -202,7 +217,7 @@ function CourseWorkspaceChrome({
         {children}
       </main>
     </div>
-  );
+  )
 }
 
 export default function CourseWorkspacePageShell({
@@ -226,5 +241,5 @@ export default function CourseWorkspacePageShell({
         {children}
       </CourseWorkspaceChrome>
     </CourseProvider>
-  );
+  )
 }

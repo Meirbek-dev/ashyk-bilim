@@ -1,27 +1,27 @@
-import { ThemeScript } from '@/components/providers/theme-script';
-import { defaultLocale } from '@/i18n/config';
-import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes';
+import { ThemeScript } from '@/components/providers/theme-script'
+import { defaultLocale } from '@/i18n/config'
+import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
 import {
   getThemeFontStylesheetHref,
   resolveThemeFontFamilies,
   THEME_FONT_FAMILIES_ATTRIBUTE,
   THEME_FONT_LINK_ATTRIBUTE,
-} from '@/lib/theme-fonts';
-import type { CSSProperties } from 'react';
-import { Suspense } from 'react';
+} from '@/lib/theme-fonts'
+import type { CSSProperties } from 'react'
+import { Suspense } from 'react'
 
-import '@styles/globals.css';
+import '@styles/globals.css'
 
 function getThemeStyle(theme: ReturnType<typeof getTheme>): CSSProperties {
   return {
     colorScheme: theme.resolvedTheme,
     ...Object.fromEntries(Object.entries(theme.tokens).map(([key, value]) => [`--${key}`, value])),
-  };
+  }
 }
 
-const initialTheme = getTheme(DEFAULT_THEME_NAME, DEFAULT_THEME_MODE);
-const initialThemeFontHref = getThemeFontStylesheetHref(initialTheme.tokens);
-const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens);
+const initialTheme = getTheme(DEFAULT_THEME_NAME, DEFAULT_THEME_MODE)
+const initialThemeFontHref = getThemeFontStylesheetHref(initialTheme.tokens)
+const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens)
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -33,19 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {initialThemeFontHref && (
           <link
             rel="stylesheet"
@@ -59,10 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeScript initialTheme={initialTheme} />
       </head>
 
-      <body
-        className="relative"
-        suppressHydrationWarning
-      >
+      <body className="relative" suppressHydrationWarning>
         <div className="relative isolate flex min-h-svh flex-col">
           {/*
            * LocaleLayout (and all its children) awaits `params`, `cookies()`,
@@ -80,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <main className="flex min-h-svh items-center justify-center">
                 <svg
                   aria-label="Loading"
-                  className="size-8 animate-spin text-primary"
+                  className="text-primary size-8 animate-spin"
                   fill="none"
                   role="status"
                   viewBox="0 0 24 24"
@@ -108,5 +95,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
       </body>
     </html>
-  );
+  )
 }

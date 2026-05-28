@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   SiCrewai,
@@ -9,8 +9,8 @@ import {
   SiGooglemaps,
   SiNotion,
   SiYoutube,
-} from '@icons-pack/react-simple-icons';
-import { YouTubeEmbed } from '@next/third-parties/google';
+} from '@icons-pack/react-simple-icons'
+import { YouTubeEmbed } from '@next/third-parties/google'
 import {
   AlignCenter,
   BoxIcon,
@@ -23,45 +23,50 @@ import {
   LinkIcon,
   Trash2,
   X,
-} from 'lucide-react';
-import type { CSSProperties, ChangeEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Textarea } from '@components/ui/textarea';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import DOMPurify from 'dompurify';
-import { getYouTubeVideoId } from '@/lib/utils';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+} from 'lucide-react'
+import type {
+  CSSProperties,
+  ChangeEvent,
+  KeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+} from 'react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Textarea } from '@components/ui/textarea'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import DOMPurify from 'dompurify'
+import { getYouTubeVideoId } from '@/lib/utils'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 
 // ============================================================================
 // TYPES & CONSTANTS
 // ============================================================================
 
-type EmbedType = 'url' | 'code';
-type Alignment = 'left' | 'center';
-type ActiveInput = 'none' | 'url' | 'code';
+type EmbedType = 'url' | 'code'
+type Alignment = 'left' | 'center'
+type ActiveInput = 'none' | 'url' | 'code'
 
 interface ScriptEmbedConfig {
-  src: string;
-  identifier: string;
+  src: string
+  identifier: string
 }
 
 interface SupportedProduct {
-  name: string;
-  icon: any;
-  color: string;
-  guide: string;
+  name: string
+  icon: any
+  color: string
+  guide: string
 }
 
 interface EmbedNodeAttrs {
-  embedUrl: string | null;
-  embedCode: string | null;
-  embedType: EmbedType | null;
-  embedHeight: number;
-  embedWidth: string;
-  alignment: Alignment;
+  embedUrl: string | null
+  embedCode: string | null
+  embedType: EmbedType | null
+  embedHeight: number
+  embedWidth: string
+  alignment: Alignment
 }
 
 const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
@@ -77,7 +82,7 @@ const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
     src: 'https://www.tiktok.com/embed.js',
     identifier: 'tiktok-embed',
   },
-};
+}
 
 const SUPPORTED_PRODUCTS: SupportedProduct[] = [
   {
@@ -92,7 +97,12 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
     color: '#FF0000',
     guide: 'https://support.google.com/youtube/answer/171780?hl=en',
   },
-  { name: 'GitHub', icon: SiGithub, color: '#181717', guide: 'https://emgithub.com/' },
+  {
+    name: 'GitHub',
+    icon: SiGithub,
+    color: '#181717',
+    guide: 'https://emgithub.com/',
+  },
 
   {
     name: 'CodePen',
@@ -161,33 +171,33 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
     color: '#34A853',
     guide: 'https://support.google.com/docs/answer/2839588',
   },
-];
+]
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 const sanitizeUrl = (url: string): string => {
-  const trimmed = url.trim();
-  if (!trimmed) return '';
+  const trimmed = url.trim()
+  if (!trimmed) return ''
 
-  const sanitized = DOMPurify.sanitize(trimmed);
-  if (!sanitized) return '';
+  const sanitized = DOMPurify.sanitize(trimmed)
+  if (!sanitized) return ''
 
   try {
-    const parsed = new URL(sanitized);
+    const parsed = new URL(sanitized)
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      parsed.protocol = 'https:';
-      return parsed.toString();
+      parsed.protocol = 'https:'
+      return parsed.toString()
     }
-    return sanitized;
+    return sanitized
   } catch {
     if (!/^[A-Za-z]+:\/\//.test(sanitized)) {
-      return `https://${sanitized}`;
+      return `https://${sanitized}`
     }
-    return sanitized;
+    return sanitized
   }
-};
+}
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -199,35 +209,35 @@ const EmbedContent = ({
   embedType,
   embeddedTitle,
 }: {
-  embedUrl: string;
-  sanitizedEmbedCode: string;
-  embedType: EmbedType;
-  embeddedTitle?: string;
+  embedUrl: string
+  sanitizedEmbedCode: string
+  embedType: EmbedType
+  embeddedTitle?: string
 }) => {
   useEffect(() => {
-    if (embedType !== 'code' || !sanitizedEmbedCode) return;
+    if (embedType !== 'code' || !sanitizedEmbedCode) return
 
     const matchingPlatform = Object.entries(SCRIPT_BASED_EMBEDS).find(([_, config]) =>
       sanitizedEmbedCode.includes(config.identifier),
-    );
+    )
 
-    if (!matchingPlatform) return;
+    if (!matchingPlatform) return
 
-    const [_, config] = matchingPlatform;
-    const script = document.createElement('script');
-    script.src = config.src;
-    script.async = true;
-    document.body.append(script);
+    const [_, config] = matchingPlatform
+    const script = document.createElement('script')
+    script.src = config.src
+    script.async = true
+    document.body.append(script)
 
     return () => {
       if (document.body.contains(script)) {
-        document.body.removeChild(script);
+        document.body.removeChild(script)
       }
-    };
-  }, [embedType, sanitizedEmbedCode]);
+    }
+  }, [embedType, sanitizedEmbedCode])
 
   if (embedType === 'url' && embedUrl) {
-    const videoId = getYouTubeVideoId(embedUrl);
+    const videoId = getYouTubeVideoId(embedUrl)
 
     if (videoId) {
       return (
@@ -236,7 +246,7 @@ const EmbedContent = ({
           style="height: 100%; width: 100%; max-width: none;"
           params="autoplay=0&rel=0"
         />
-      );
+      )
     }
 
     return (
@@ -246,24 +256,21 @@ const EmbedContent = ({
         allowFullScreen
         title={embeddedTitle ?? 'Embedded content'}
       />
-    );
+    )
   }
 
   if (embedType === 'code' && sanitizedEmbedCode) {
     return (
-      <div
-        dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }}
-        className="h-full w-full"
-      />
-    );
+      <div dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }} className="h-full w-full" />
+    )
   }
 
-  return null;
-};
+  return null
+}
 
 const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick: () => void }) => {
-  const isMobile = useIsMobile();
-  const t = useTranslations('DashPage.Editor.EmbedObjects');
+  const isMobile = useIsMobile()
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
 
   return (
     <button
@@ -275,15 +282,14 @@ const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick:
         className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm transition-shadow group-hover:shadow-md sm:h-12 sm:w-12"
         style={{ backgroundColor: product.color }}
       >
-        <product.icon
-          size={isMobile ? 20 : 26}
-          color="#FFFFFF"
-        />
+        <product.icon size={isMobile ? 20 : 26} color="#FFFFFF" />
       </div>
-      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{product.name}</span>
+      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">
+        {product.name}
+      </span>
     </button>
-  );
-};
+  )
+}
 
 const EmbedToolbar = ({
   onEdit,
@@ -292,11 +298,11 @@ const EmbedToolbar = ({
   alignment,
   t,
 }: {
-  onEdit: () => void;
-  onCenter: () => void;
-  onRemove: () => void;
-  alignment: Alignment;
-  t: any;
+  onEdit: () => void
+  onCenter: () => void
+  onRemove: () => void
+  alignment: Alignment
+  t: any
 }) => (
   <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100">
     <button
@@ -321,7 +327,7 @@ const EmbedToolbar = ({
       <Trash2 size={16} />
     </button>
   </div>
-);
+)
 
 const InputModal = ({
   activeInput,
@@ -335,38 +341,38 @@ const InputModal = ({
   onOpenDocs,
   t,
 }: {
-  activeInput: ActiveInput;
-  embedUrl: string;
-  embedCode: string;
-  selectedProduct: SupportedProduct | null;
-  onClose: () => void;
-  onUrlChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onCodeChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
-  onSubmit: (formData: FormData) => void;
-  onOpenDocs: () => void;
-  t: any;
+  activeInput: ActiveInput
+  embedUrl: string
+  embedCode: string
+  selectedProduct: SupportedProduct | null
+  onClose: () => void
+  onUrlChange: (e: ChangeEvent<HTMLInputElement>) => void
+  onCodeChange: (e: ChangeEvent<HTMLTextAreaElement>) => void
+  onSubmit: (formData: FormData) => void
+  onOpenDocs: () => void
+  t: any
 }) => {
-  const urlInputRef = useRef<HTMLInputElement>(null);
-  const codeInputRef = useRef<HTMLTextAreaElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null)
+  const codeInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       requestAnimationFrame(() => {
-        if (activeInput === 'url') urlInputRef.current?.focus();
-        else if (activeInput === 'code') codeInputRef.current?.focus();
-      });
-    }, 50);
-    return () => clearTimeout(timeout);
-  }, [activeInput]);
+        if (activeInput === 'url') urlInputRef.current?.focus()
+        else if (activeInput === 'code') codeInputRef.current?.focus()
+      })
+    }, 50)
+    return () => clearTimeout(timeout)
+  }, [activeInput])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onClose()
     },
     [onClose],
-  );
+  )
 
-  const isValid = (activeInput === 'url' && embedUrl) || (activeInput === 'code' && embedCode);
+  const isValid = (activeInput === 'url' && embedUrl) || (activeInput === 'code' && embedCode)
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/20 p-4 backdrop-blur-sm">
@@ -383,16 +389,15 @@ const InputModal = ({
                 className="flex h-9 w-9 items-center justify-center rounded-lg"
                 style={{ backgroundColor: selectedProduct.color }}
               >
-                <selectedProduct.icon
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <selectedProduct.icon size={20} color="#FFFFFF" />
               </div>
             )}
             <h3 className="text-lg font-semibold text-gray-900">
               {activeInput === 'url'
                 ? selectedProduct
-                  ? t('addProductEmbedTitle', { productName: selectedProduct.name })
+                  ? t('addProductEmbedTitle', {
+                      productName: selectedProduct.name,
+                    })
                   : t('addEmbedUrlTitle')
                 : t('addEmbedCodeTitle')}
             </h3>
@@ -410,10 +415,7 @@ const InputModal = ({
         {activeInput === 'url' ? (
           <div className="mb-3">
             <div className="relative">
-              <Link
-                className="absolute top-1/2 left-3 -translate-y-1/2 text-blue-500"
-                size={18}
-              />
+              <Link className="absolute top-1/2 left-3 -translate-y-1/2 text-blue-500" size={18} />
               <input
                 ref={urlInputRef}
                 name="embedUrl"
@@ -423,7 +425,9 @@ const InputModal = ({
                 className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 py-3 pr-4 pl-11 transition-all focus:border-blue-500 focus:bg-white focus:outline-hidden"
                 placeholder={
                   selectedProduct
-                    ? t('productUrlPlaceholder', { productName: selectedProduct.name })
+                    ? t('productUrlPlaceholder', {
+                        productName: selectedProduct.name,
+                      })
                     : t('urlPlaceholder')
                 }
               />
@@ -475,8 +479,8 @@ const InputModal = ({
         </div>
       </form>
     </div>
-  );
-};
+  )
+}
 
 const EmptyState = ({
   onProductSelect,
@@ -485,17 +489,17 @@ const EmptyState = ({
   isEditable,
   t,
 }: {
-  onProductSelect: (product: SupportedProduct) => void;
-  onUrlClick: () => void;
-  onCodeClick: () => void;
-  isEditable: boolean;
-  t: any;
+  onProductSelect: (product: SupportedProduct) => void
+  onUrlClick: () => void
+  onCodeClick: () => void
+  isEditable: boolean
+  t: any
 }) => (
   <div className="flex h-full w-full flex-col items-center justify-center p-6">
     <p className="mb-5 text-center text-lg font-medium text-gray-700">{t('addEmbedFrom')}</p>
 
     <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
-      {SUPPORTED_PRODUCTS.map((product) => (
+      {SUPPORTED_PRODUCTS.map(product => (
         <ProductIcon
           key={product.name}
           product={product}
@@ -525,232 +529,231 @@ const EmptyState = ({
       </div>
     )}
   </div>
-);
+)
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
-  const t = useTranslations('DashPage.Editor.EmbedObjects');
-  const { updateAttributes } = props;
-  const isMobile = useIsMobile();
-  const { isEditable } = useEditorProvider();
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
+  const { updateAttributes } = props
+  const isMobile = useIsMobile()
+  const { isEditable } = useEditorProvider()
 
   // State
-  const [embedType, setEmbedType] = useState<EmbedType>(props.node.attrs.embedType || 'url');
-  const [embedUrl, setEmbedUrl] = useState(props.node.attrs.embedUrl || '');
-  const [embedCode, setEmbedCode] = useState(props.node.attrs.embedCode || '');
-  const [embedHeight, setEmbedHeight] = useState(props.node.attrs.embedHeight || 300);
-  const [embedWidth, setEmbedWidth] = useState(props.node.attrs.embedWidth || '100%');
-  const [alignment, setAlignment] = useState<Alignment>(props.node.attrs.alignment || 'left');
-  const [isResizing, setIsResizing] = useState(false);
-  const [parentWidth, setParentWidth] = useState<number | null>(null);
-  const [activeInput, setActiveInput] = useState<ActiveInput>('none');
-  const [selectedProduct, setSelectedProduct] = useState<SupportedProduct | null>(null);
+  const [embedType, setEmbedType] = useState<EmbedType>(props.node.attrs.embedType || 'url')
+  const [embedUrl, setEmbedUrl] = useState(props.node.attrs.embedUrl || '')
+  const [embedCode, setEmbedCode] = useState(props.node.attrs.embedCode || '')
+  const [embedHeight, setEmbedHeight] = useState(props.node.attrs.embedHeight || 300)
+  const [embedWidth, setEmbedWidth] = useState(props.node.attrs.embedWidth || '100%')
+  const [alignment, setAlignment] = useState<Alignment>(props.node.attrs.alignment || 'left')
+  const [isResizing, setIsResizing] = useState(false)
+  const [parentWidth, setParentWidth] = useState<number | null>(null)
+  const [activeInput, setActiveInput] = useState<ActiveInput>('none')
+  const [selectedProduct, setSelectedProduct] = useState<SupportedProduct | null>(null)
 
   // Refs
-  const resizeRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dimensionsRef = useRef({ width: embedWidth, height: embedHeight });
-  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
-  const mouseUpHandlerRef = useRef<(() => void) | null>(null);
+  const resizeRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dimensionsRef = useRef({ width: embedWidth, height: embedHeight })
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null)
+  const mouseUpHandlerRef = useRef<(() => void) | null>(null)
 
   // Sanitized embed code
   const sanitizedEmbedCode = useMemo(
     () =>
-      embedType === 'code' && embedCode ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] }) : '',
+      embedType === 'code' && embedCode
+        ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] })
+        : '',
     [embedType, embedCode],
-  );
+  )
 
   // Handlers
   const handleUrlChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const sanitized = sanitizeUrl(e.target.value);
-      setEmbedUrl(sanitized);
-      updateAttributes({ embedUrl: sanitized, embedType: 'url' });
+      const sanitized = sanitizeUrl(e.target.value)
+      setEmbedUrl(sanitized)
+      updateAttributes({ embedUrl: sanitized, embedType: 'url' })
     },
     [updateAttributes],
-  );
+  )
 
   const handleCodeChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
-      const { value } = e.target;
+      const { value } = e.target
       if (value === '' || value.trim()) {
-        setEmbedCode(value);
-        updateAttributes({ embedCode: value, embedType: 'code' });
+        setEmbedCode(value)
+        updateAttributes({ embedCode: value, embedType: 'code' })
       }
     },
     [updateAttributes],
-  );
+  )
 
   const handleProductSelection = useCallback((product: SupportedProduct) => {
-    setEmbedType('url');
-    setActiveInput('url');
-    setSelectedProduct(product);
-  }, []);
+    setEmbedType('url')
+    setActiveInput('url')
+    setSelectedProduct(product)
+  }, [])
 
   const handleCenterBlock = useCallback(() => {
-    const newAlignment: Alignment = alignment === 'center' ? 'left' : 'center';
-    setAlignment(newAlignment);
-    updateAttributes({ alignment: newAlignment });
-  }, [alignment, updateAttributes]);
+    const newAlignment: Alignment = alignment === 'center' ? 'left' : 'center'
+    setAlignment(newAlignment)
+    updateAttributes({ alignment: newAlignment })
+  }, [alignment, updateAttributes])
 
   const handleRemove = useCallback(() => {
-    setEmbedUrl('');
-    setEmbedCode('');
-    updateAttributes({ embedUrl: '', embedCode: '' });
-  }, [updateAttributes]);
+    setEmbedUrl('')
+    setEmbedCode('')
+    updateAttributes({ embedUrl: '', embedCode: '' })
+  }, [updateAttributes])
 
   const handleInputSubmit = useCallback(
     (formData: FormData) => {
       if (activeInput === 'url') {
-        const nextUrl = sanitizeUrl(String(formData.get('embedUrl') ?? ''));
-        setEmbedType('url');
-        setEmbedUrl(nextUrl);
-        updateAttributes({ embedUrl: nextUrl, embedType: 'url' });
+        const nextUrl = sanitizeUrl(String(formData.get('embedUrl') ?? ''))
+        setEmbedType('url')
+        setEmbedUrl(nextUrl)
+        updateAttributes({ embedUrl: nextUrl, embedType: 'url' })
       }
 
       if (activeInput === 'code') {
-        const nextCode = String(formData.get('embedCode') ?? '');
+        const nextCode = String(formData.get('embedCode') ?? '')
         if (nextCode === '' || nextCode.trim()) {
-          setEmbedType('code');
-          setEmbedCode(nextCode);
-          updateAttributes({ embedCode: nextCode, embedType: 'code' });
+          setEmbedType('code')
+          setEmbedCode(nextCode)
+          updateAttributes({ embedCode: nextCode, embedType: 'code' })
         }
       }
 
-      setActiveInput('none');
+      setActiveInput('none')
     },
     [activeInput, updateAttributes],
-  );
+  )
 
   const handleOpenDocs = useCallback(() => {
     if (selectedProduct) {
-      window.open(selectedProduct.guide, '_blank', 'noopener,noreferrer');
+      window.open(selectedProduct.guide, '_blank', 'noopener,noreferrer')
     }
-  }, [selectedProduct]);
+  }, [selectedProduct])
 
   const handleResizeStart = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>, direction: 'horizontal' | 'vertical') => {
-      e.preventDefault();
-      setIsResizing(true);
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startWidth = resizeRef.current?.offsetWidth || 0;
-      const startHeight = resizeRef.current?.offsetHeight || 0;
+      e.preventDefault()
+      setIsResizing(true)
+      const startX = e.clientX
+      const startY = e.clientY
+      const startWidth = resizeRef.current?.offsetWidth || 0
+      const startHeight = resizeRef.current?.offsetHeight || 0
 
       const handleMouseMove = (e: MouseEvent) => {
-        if (!resizeRef.current) return;
+        if (!resizeRef.current) return
 
         if (direction === 'horizontal') {
-          const newWidth = startWidth + e.clientX - startX;
-          const parentWidth = resizeRef.current.parentElement?.offsetWidth || 1;
-          const widthPercentage = Math.min(100, Math.max(10, (newWidth / parentWidth) * 100));
-          const newWidthValue = `${widthPercentage}%`;
-          dimensionsRef.current.width = newWidthValue;
-          resizeRef.current.style.width = newWidthValue;
+          const newWidth = startWidth + e.clientX - startX
+          const parentWidth = resizeRef.current.parentElement?.offsetWidth || 1
+          const widthPercentage = Math.min(100, Math.max(10, (newWidth / parentWidth) * 100))
+          const newWidthValue = `${widthPercentage}%`
+          dimensionsRef.current.width = newWidthValue
+          resizeRef.current.style.width = newWidthValue
         } else {
-          const newHeight = Math.max(100, startHeight + e.clientY - startY);
-          dimensionsRef.current.height = newHeight;
-          resizeRef.current.style.height = `${newHeight}px`;
+          const newHeight = Math.max(100, startHeight + e.clientY - startY)
+          dimensionsRef.current.height = newHeight
+          resizeRef.current.style.height = `${newHeight}px`
         }
-      };
+      }
 
       const handleMouseUp = () => {
-        setIsResizing(false);
-        setEmbedWidth(dimensionsRef.current.width);
-        setEmbedHeight(dimensionsRef.current.height);
+        setIsResizing(false)
+        setEmbedWidth(dimensionsRef.current.width)
+        setEmbedHeight(dimensionsRef.current.height)
         updateAttributes({
           embedWidth: dimensionsRef.current.width,
           embedHeight: dimensionsRef.current.height,
-        });
+        })
 
         if (mouseMoveHandlerRef.current) {
-          document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
-          mouseMoveHandlerRef.current = null;
+          document.removeEventListener('mousemove', mouseMoveHandlerRef.current)
+          mouseMoveHandlerRef.current = null
         }
         if (mouseUpHandlerRef.current) {
-          document.removeEventListener('mouseup', mouseUpHandlerRef.current);
-          mouseUpHandlerRef.current = null;
+          document.removeEventListener('mouseup', mouseUpHandlerRef.current)
+          mouseUpHandlerRef.current = null
         }
-      };
+      }
 
-      mouseMoveHandlerRef.current = handleMouseMove;
-      mouseUpHandlerRef.current = handleMouseUp;
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      mouseMoveHandlerRef.current = handleMouseMove
+      mouseUpHandlerRef.current = handleMouseUp
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
     },
     [updateAttributes],
-  );
+  )
 
   // Responsive styles
   const getResponsiveStyles = useCallback((): CSSProperties => {
     const styles: CSSProperties = {
       height: `${embedHeight}px`,
       width: embedWidth,
-    };
+    }
 
     if (parentWidth) {
       if (isMobile) {
-        styles.width = '100%';
-        styles.minWidth = 'unset';
+        styles.width = '100%'
+        styles.minWidth = 'unset'
       } else {
-        styles.minWidth = `${Math.min(parentWidth, 400)}px`;
-        styles.maxWidth = '100%';
+        styles.minWidth = `${Math.min(parentWidth, 400)}px`
+        styles.maxWidth = '100%'
       }
     }
 
-    return styles;
-  }, [embedHeight, embedWidth, parentWidth, isMobile]);
+    return styles
+  }, [embedHeight, embedWidth, parentWidth, isMobile])
 
   // Effects
   useEffect(() => {
     const updateDimensions = () => {
-      if (!containerRef.current?.parentElement) return;
+      if (!containerRef.current?.parentElement) return
 
-      const newParentWidth = containerRef.current.parentElement.offsetWidth;
-      setParentWidth(newParentWidth);
+      const newParentWidth = containerRef.current.parentElement.offsetWidth
+      setParentWidth(newParentWidth)
 
       if (typeof embedWidth === 'string' && embedWidth.endsWith('%')) {
-        const percentage = Number.parseInt(embedWidth, 10);
-        const newWidth = `${Math.min(100, percentage)}%`;
-        setEmbedWidth(newWidth);
-        updateAttributes({ embedWidth: newWidth });
+        const percentage = Number.parseInt(embedWidth, 10)
+        const newWidth = `${Math.min(100, percentage)}%`
+        setEmbedWidth(newWidth)
+        updateAttributes({ embedWidth: newWidth })
       } else if (newParentWidth < Number.parseInt(embedWidth, 10)) {
-        setEmbedWidth('100%');
-        updateAttributes({ embedWidth: '100%' });
+        setEmbedWidth('100%')
+        updateAttributes({ embedWidth: '100%' })
       }
-    };
-
-    updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (containerRef.current?.parentElement) {
-      resizeObserver.observe(containerRef.current.parentElement);
     }
 
-    return () => resizeObserver.disconnect();
-  }, [embedWidth, updateAttributes]);
+    updateDimensions()
+    const resizeObserver = new ResizeObserver(updateDimensions)
+    if (containerRef.current?.parentElement) {
+      resizeObserver.observe(containerRef.current.parentElement)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [embedWidth, updateAttributes])
 
   useEffect(() => {
     return () => {
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        document.removeEventListener('mousemove', mouseMoveHandlerRef.current)
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        document.removeEventListener('mouseup', mouseUpHandlerRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Render
-  const hasContent = embedUrl || sanitizedEmbedCode;
+  const hasContent = embedUrl || sanitizedEmbedCode
 
   return (
-    <NodeViewWrapper
-      className="embed-block w-full"
-      ref={containerRef}
-    >
+    <NodeViewWrapper className="embed-block w-full" ref={containerRef}>
       <div
         ref={resizeRef}
         className={`group relative flex items-center justify-center overflow-hidden rounded-xl bg-gray-100 transition-shadow hover:shadow-sm ${
@@ -782,12 +785,12 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
           <EmptyState
             onProductSelect={handleProductSelection}
             onUrlClick={() => {
-              setEmbedType('url');
-              setActiveInput('url');
+              setEmbedType('url')
+              setActiveInput('url')
             }}
             onCodeClick={() => {
-              setEmbedType('code');
-              setActiveInput('code');
+              setEmbedType('code')
+              setActiveInput('code')
             }}
             isEditable={isEditable}
             t={t}
@@ -815,35 +818,29 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
               className="absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
               role="button"
               tabIndex={0}
-              onMouseDown={(e) => handleResizeStart(e, 'horizontal')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'horizontal');
+              onMouseDown={e => handleResizeStart(e, 'horizontal')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'horizontal')
               }}
             >
-              <GripVertical
-                size={16}
-                className="text-gray-600"
-              />
+              <GripVertical size={16} className="text-gray-600" />
             </div>
             <div
               className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
               role="button"
               tabIndex={0}
-              onMouseDown={(e) => handleResizeStart(e, 'vertical')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'vertical');
+              onMouseDown={e => handleResizeStart(e, 'vertical')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'vertical')
               }}
             >
-              <GripHorizontal
-                size={16}
-                className="text-gray-600"
-              />
+              <GripHorizontal size={16} className="text-gray-600" />
             </div>
           </>
         )}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default EmbedObjectsComponent;
+export default EmbedObjectsComponent

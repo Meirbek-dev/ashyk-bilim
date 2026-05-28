@@ -1,53 +1,53 @@
-'use client';
+'use client'
 
-import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
-import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
-import { useSession } from '@/hooks/useSession';
-import type { Session } from '@/lib/auth/types';
-import { AlertTriangle, BadgeInfo, NotebookTabs, X } from 'lucide-react';
-import { AiMessageBubble } from '@components/Shared/AI/AiMessageBubble';
-import { AiChatInput } from '@components/Shared/AI/AiChatInput';
-import appLogoLight from '@public/app_logo_light.svg';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { ScrollArea } from '@components/ui/scroll-area';
-import { AnimatePresence, motion } from 'motion/react';
-import type { KeyboardEvent, ReactNode } from 'react';
-import { Separator } from '@components/ui/separator';
-import type { TextPart } from '@tanstack/ai-client';
-import { Spinner } from '@components/ui/spinner';
-import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext'
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
+import { useSession } from '@/hooks/useSession'
+import type { Session } from '@/lib/auth/types'
+import { AlertTriangle, BadgeInfo, NotebookTabs, X } from 'lucide-react'
+import { AiMessageBubble } from '@components/Shared/AI/AiMessageBubble'
+import { AiChatInput } from '@components/Shared/AI/AiChatInput'
+import appLogoLight from '@public/app_logo_light.svg'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { ScrollArea } from '@components/ui/scroll-area'
+import { AnimatePresence, motion } from 'motion/react'
+import type { KeyboardEvent, ReactNode } from 'react'
+import { Separator } from '@components/ui/separator'
+import type { TextPart } from '@tanstack/ai-client'
+import { Spinner } from '@components/ui/spinner'
+import { Button } from '@components/ui/button'
+import { Badge } from '@components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Activity {
-  activity_uuid: string;
-  [key: string]: unknown;
+  activity_uuid: string
+  [key: string]: unknown
 }
 
 interface AIActivityAskProps {
-  activity: Activity;
+  activity: Activity
 }
 
-type PredefinedQuestionType = 'about' | 'flashcards' | 'examples';
+type PredefinedQuestionType = 'about' | 'flashcards' | 'examples'
 
 // ── Main Trigger Button ────────────────────────────────────────────────────────
 
 const AIActivityAsk = ({ activity: _activity }: AIActivityAskProps) => {
-  const t = useTranslations('Activities.AIActivityAsk');
-  const { isModalOpen, openModal, setIsModalOpen } = useActivityAIChat();
+  const t = useTranslations('Activities.AIActivityAsk')
+  const { isModalOpen, openModal, setIsModalOpen } = useActivityAIChat()
 
   const handleToggleModal = () => {
     if (isModalOpen) {
-      setIsModalOpen(false);
+      setIsModalOpen(false)
     } else {
-      openModal();
+      openModal()
     }
-  };
+  }
 
   return (
     <>
@@ -73,14 +73,14 @@ const AIActivityAsk = ({ activity: _activity }: AIActivityAskProps) => {
         <span className="text-xs font-semibold">{t('askAI')}</span>
       </Button>
     </>
-  );
-};
+  )
+}
 
 // ── Chat Panel ─────────────────────────────────────────────────────────────────
 
 const ActivityChatPanel = () => {
-  const t = useTranslations('Activities.AIActivityAsk');
-  const { user: viewer } = useSession();
+  const t = useTranslations('Activities.AIActivityAsk')
+  const { user: viewer } = useSession()
 
   const {
     messages,
@@ -94,26 +94,26 @@ const ActivityChatPanel = () => {
     setIsModalOpen,
     inputValue,
     setInputValue,
-  } = useActivityAIChat();
+  } = useActivityAIChat()
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const hasMessages = messages.length > 0;
-  const hasError = error !== undefined;
+  const hasMessages = messages.length > 0
+  const hasError = error !== undefined
 
   // Auto-scroll to the latest message.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoading])
 
   const handleSend = () => {
     if (!isLoading && inputValue.trim()) {
-      sendMessage(inputValue);
-      setInputValue('');
+      sendMessage(inputValue)
+      setInputValue('')
     }
-  };
+  }
 
-  const closePanel = () => setIsModalOpen(false);
+  const closePanel = () => setIsModalOpen(false)
 
   return (
     <AnimatePresence>
@@ -187,7 +187,9 @@ const ActivityChatPanel = () => {
               </div>
 
               {/* Status hint */}
-              {statusMessage && <p className="mb-2 flex-shrink-0 text-xs text-zinc-500">{statusMessage}</p>}
+              {statusMessage && (
+                <p className="mb-2 flex-shrink-0 text-xs text-zinc-500">{statusMessage}</p>
+              )}
 
               {/* Messages area */}
               <div className="mb-3 min-h-0 flex-1 overflow-hidden">
@@ -197,10 +199,10 @@ const ActivityChatPanel = () => {
                       {messages.map((message, index) => {
                         const text = message.parts
                           .filter((p): p is TextPart => p.type === 'text')
-                          .map((p) => p.content)
-                          .join('');
-                        const isLast = index === messages.length - 1;
-                        const isStreamingThis = isLast && isLoading && message.role === 'assistant';
+                          .map(p => p.content)
+                          .join('')
+                        const isLast = index === messages.length - 1
+                        const isStreamingThis = isLast && isLoading && message.role === 'assistant'
                         return (
                           <AiMessageBubble
                             key={message.id ?? index}
@@ -208,21 +210,17 @@ const ActivityChatPanel = () => {
                             content={text}
                             isStreaming={isStreamingThis}
                           />
-                        );
+                        )
                       })}
                       <div ref={messagesEndRef} />
                     </div>
                   </ScrollArea>
                 ) : hasError ? (
-                  <ErrorDisplay
-                    errorMessage={error?.message}
-                    onDismiss={clear}
-                    t={t}
-                  />
+                  <ErrorDisplay errorMessage={error?.message} onDismiss={clear} t={t} />
                 ) : (
                   <AIMessagePlaceHolder
-                    sendMessage={(msg) => {
-                      sendMessage(msg);
+                    sendMessage={msg => {
+                      sendMessage(msg)
                     }}
                     viewer={viewer}
                   />
@@ -248,26 +246,20 @@ const ActivityChatPanel = () => {
         </>
       )}
     </AnimatePresence>
-  );
-};
+  )
+}
 
 // ── Error Display ──────────────────────────────────────────────────────────────
 
 interface ErrorDisplayProps {
-  errorMessage?: string;
-  onDismiss: () => void;
-  t: (key: string) => string;
+  errorMessage?: string
+  onDismiss: () => void
+  t: (key: string) => string
 }
 
 const ErrorDisplay = ({ errorMessage, onDismiss, t }: ErrorDisplayProps) => (
-  <div
-    className="flex h-full items-center justify-center"
-    role="alert"
-  >
-    <Alert
-      variant="destructive"
-      className="max-w-md"
-    >
+  <div className="flex h-full items-center justify-center" role="alert">
+    <Alert variant="destructive" className="max-w-md">
       <AlertTriangle className="h-4 w-4" />
       <AlertTitle>{t('errorTitle')}</AlertTitle>
       <AlertDescription className="mt-1">{errorMessage || t('errorTitle')}</AlertDescription>
@@ -283,19 +275,19 @@ const ErrorDisplay = ({ errorMessage, onDismiss, t }: ErrorDisplayProps) => (
       </div>
     </Alert>
   </div>
-);
+)
 
 // ── Placeholder ────────────────────────────────────────────────────────────────
 
 interface AIMessagePlaceHolderProps {
-  sendMessage: (message: string) => void;
-  viewer: Session['user'] | null;
+  sendMessage: (message: string) => void
+  viewer: Session['user'] | null
 }
 
 const AIMessagePlaceHolder = ({ sendMessage, viewer }: AIMessagePlaceHolderProps) => {
-  const t = useTranslations('Activities.AIActivityAsk');
+  const t = useTranslations('Activities.AIActivityAsk')
 
-  const userName = viewer?.first_name || viewer?.username || t('defaultUser');
+  const userName = viewer?.first_name || viewer?.username || t('defaultUser')
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5">
@@ -303,10 +295,7 @@ const AIMessagePlaceHolder = ({ sendMessage, viewer }: AIMessagePlaceHolderProps
         <p className="flex flex-wrap items-center justify-center gap-1.5 text-sm font-medium text-zinc-400">
           <span>{t('hello')}</span>
           <span className="flex items-center gap-1.5 capitalize">
-            <UserAvatar
-              size="sm"
-              variant="outline"
-            />
+            <UserAvatar size="sm" variant="outline" />
             <span className="text-zinc-300">{userName},</span>
           </span>
           <span>{t('howCanWeHelp')}</span>
@@ -314,53 +303,44 @@ const AIMessagePlaceHolder = ({ sendMessage, viewer }: AIMessagePlaceHolderProps
       </div>
 
       <div className="flex flex-wrap justify-center gap-2">
-        <AIChatPredefinedQuestion
-          sendMessage={sendMessage}
-          label="about"
-        />
-        <AIChatPredefinedQuestion
-          sendMessage={sendMessage}
-          label="flashcards"
-        />
-        <AIChatPredefinedQuestion
-          sendMessage={sendMessage}
-          label="examples"
-        />
+        <AIChatPredefinedQuestion sendMessage={sendMessage} label="about" />
+        <AIChatPredefinedQuestion sendMessage={sendMessage} label="flashcards" />
+        <AIChatPredefinedQuestion sendMessage={sendMessage} label="examples" />
       </div>
     </div>
-  );
-};
+  )
+}
 
 // ── Predefined Question Badge ──────────────────────────────────────────────────
 
 interface AIChatPredefinedQuestionProps {
-  sendMessage: (message: string) => void;
-  label: PredefinedQuestionType;
+  sendMessage: (message: string) => void
+  label: PredefinedQuestionType
 }
 
 const AIChatPredefinedQuestion = ({ sendMessage, label }: AIChatPredefinedQuestionProps) => {
-  const t = useTranslations('Activities.AIActivityAsk');
+  const t = useTranslations('Activities.AIActivityAsk')
 
   const questions: Record<PredefinedQuestionType, string> = {
     about: t('questionAbout'),
     flashcards: t('questionFlashcards'),
     examples: t('questionExamples'),
-  };
+  }
 
   const icons: Record<PredefinedQuestionType, ReactNode> = {
     about: <BadgeInfo className="h-3.5 w-3.5" />,
     flashcards: <NotebookTabs className="h-3.5 w-3.5" />,
     examples: <span className="text-xs leading-none font-bold">{t('examplesAbbr')}</span>,
-  };
+  }
 
-  const question = questions[label];
+  const question = questions[label]
 
   const handleKeyDown = (e: KeyboardEvent<HTMLSpanElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      sendMessage(question);
+      e.preventDefault()
+      sendMessage(question)
     }
-  };
+  }
 
   return (
     <Badge
@@ -374,7 +354,7 @@ const AIChatPredefinedQuestion = ({ sendMessage, label }: AIChatPredefinedQuesti
       {icons[label]}
       <span className="text-xs">{question}</span>
     </Badge>
-  );
-};
+  )
+}
 
-export default AIActivityAsk;
+export default AIActivityAsk

@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import UserAvatar from '@components/Objects/UserAvatar';
-import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
-import { Send, Square } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type { KeyboardEvent } from 'react';
+import UserAvatar from '@components/Objects/UserAvatar'
+import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
+import { Send, Square } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import type { KeyboardEvent } from 'react'
 
 interface AiChatInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onSend: () => void;
-  disabled?: boolean;
-  placeholder?: string;
+  value: string
+  onChange: (value: string) => void
+  onSend: () => void
+  disabled?: boolean
+  placeholder?: string
   /** Whether to show the user avatar to the left of the input. */
-  showAvatar?: boolean;
+  showAvatar?: boolean
   /**
    * When provided and `disabled` is true, the send button is replaced by a
    * stop button that calls this handler — allowing the user to cancel an
    * in-progress generation.
    */
-  onStop?: () => void;
+  onStop?: () => void
 }
 
 /**
@@ -38,29 +38,24 @@ export function AiChatInput({
   showAvatar = true,
   onStop,
 }: AiChatInputProps) {
-  const t = useTranslations('Components.AiChat');
-  const resolvedPlaceholder = placeholder ?? t('placeholder');
+  const t = useTranslations('Components.AiChat')
+  const resolvedPlaceholder = placeholder ?? t('placeholder')
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !disabled && value.trim()) {
-      e.preventDefault();
-      onSend();
+      e.preventDefault()
+      onSend()
     }
-  };
+  }
 
-  const showStop = disabled && onStop !== undefined;
+  const showStop = disabled && onStop !== undefined
 
   return (
     <div className="flex items-center gap-2">
-      {showAvatar && (
-        <UserAvatar
-          size="sm"
-          variant="outline"
-        />
-      )}
+      {showAvatar && <UserAvatar size="sm" variant="outline" />}
       <Input
         value={value}
-        onChange={(e) => onChange(e.currentTarget.value)}
+        onChange={e => onChange(e.currentTarget.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder={resolvedPlaceholder}
@@ -92,5 +87,5 @@ export function AiChatInput({
         </Button>
       )}
     </div>
-  );
+  )
 }

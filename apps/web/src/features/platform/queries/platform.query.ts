@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { listAllPermissions } from '@services/rbac';
-import { apiFetcher } from '@/lib/api-client';
-import { queryOptions } from '@tanstack/react-query';
-import type { Platform } from '@/types/platform';
-import { queryKeys } from '@/lib/react-query/queryKeys';
+import { listAllPermissions } from '@services/rbac'
+import { apiFetcher } from '@/lib/api-client'
+import { queryOptions } from '@tanstack/react-query'
+import type { Platform } from '@/types/platform'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
-const PLATFORM_CONFIG_STALE_TIME_MS = 15 * 60_000;
+const PLATFORM_CONFIG_STALE_TIME_MS = 15 * 60_000
 
 export function platformConfigQueryOptions() {
   return queryOptions({
@@ -15,7 +15,7 @@ export function platformConfigQueryOptions() {
     staleTime: PLATFORM_CONFIG_STALE_TIME_MS,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-  });
+  })
 }
 
 export function platformPermissionsQueryOptions() {
@@ -23,5 +23,5 @@ export function platformPermissionsQueryOptions() {
     queryKey: queryKeys.platform.permissions(),
     queryFn: () => listAllPermissions(),
     staleTime: 3_600_000,
-  });
+  })
 }

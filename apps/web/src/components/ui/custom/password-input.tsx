@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import { forwardRef, useId, useState } from 'react';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import { forwardRef, useId, useState } from 'react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  className?: string;
-  placeholder?: string;
+  className?: string
+  placeholder?: string
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, placeholder, id: propId, ...props }, ref) => {
-    const generatedId = useId();
-    const id = propId || generatedId;
-    const [isVisible, setIsVisible] = useState(false);
-    const t = useTranslations('Auth');
+    const generatedId = useId()
+    const id = propId || generatedId
+    const [isVisible, setIsVisible] = useState(false)
+    const t = useTranslations('Auth')
 
     const toggleVisibility = () => {
-      setIsVisible((prevState) => !prevState);
-    };
+      setIsVisible(prevState => !prevState)
+    }
 
     return (
       <div className="relative">
@@ -41,22 +41,16 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           aria-controls={id}
         >
           {isVisible ? (
-            <EyeOffIcon
-              size={16}
-              aria-hidden="true"
-            />
+            <EyeOffIcon size={16} aria-hidden="true" />
           ) : (
-            <EyeIcon
-              size={16}
-              aria-hidden="true"
-            />
+            <EyeIcon size={16} aria-hidden="true" />
           )}
         </button>
       </div>
-    );
+    )
   },
-);
+)
 
-PasswordInput.displayName = 'PasswordInput';
+PasswordInput.displayName = 'PasswordInput'
 
-export default PasswordInput;
+export default PasswordInput

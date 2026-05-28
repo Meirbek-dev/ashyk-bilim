@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useServerInsertedHTML } from 'next/navigation';
-import { useEffect } from 'react';
+import { useServerInsertedHTML } from 'next/navigation'
+import { useEffect } from 'react'
 
 interface HtmlLangSyncProps {
-  locale: string;
+  locale: string
 }
 
 export function HtmlLangSync({ locale }: HtmlLangSyncProps) {
@@ -15,13 +15,12 @@ export function HtmlLangSync({ locale }: HtmlLangSyncProps) {
           __html: `document.documentElement.lang=${JSON.stringify(locale)};`,
         }}
       />
-    );
-  });
+    )
+  })
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    document.documentElement.lang = locale
+  }, [locale])
 
-  return null;
+  return null
 }
-

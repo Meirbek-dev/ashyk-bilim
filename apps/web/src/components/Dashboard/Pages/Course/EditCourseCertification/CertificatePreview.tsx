@@ -1,44 +1,44 @@
-'use client';
+'use client'
 
-import { Award, Building, Calendar, CheckCircle, Hash, QrCode, User } from 'lucide-react';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { getLogoMediaDirectory } from '@services/media/media';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import type React from 'react';
-import QRCode from 'qrcode';
+import { Award, Building, Calendar, CheckCircle, Hash, QrCode, User } from 'lucide-react'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { getLogoMediaDirectory } from '@services/media/media'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
+import Image from 'next/image'
+import type React from 'react'
+import QRCode from 'qrcode'
 
 interface CertificatePreviewProps {
-  certificationName: string;
-  certificationDescription: string;
-  certificationType: string;
-  certificatePattern: string;
-  certificateInstructor?: string;
-  certificateId?: string;
-  awardedDate?: string;
-  qrCodeLink?: string;
+  certificationName: string
+  certificationDescription: string
+  certificationType: string
+  certificatePattern: string
+  certificateInstructor?: string
+  certificateId?: string
+  awardedDate?: string
+  qrCodeLink?: string
 }
 
-type CertificateLayout = 'classic' | 'double' | 'minimal' | 'split';
+type CertificateLayout = 'classic' | 'double' | 'minimal' | 'split'
 
 function getCertificateLayout(pattern: string): CertificateLayout {
   switch (pattern) {
     case 'royal':
     case 'academic': {
-      return 'double';
+      return 'double'
     }
     case 'tech':
     case 'modern': {
-      return 'split';
+      return 'split'
     }
     case 'minimal':
     case 'professional': {
-      return 'minimal';
+      return 'minimal'
     }
     default: {
-      return 'classic';
+      return 'classic'
     }
   }
 }
@@ -46,16 +46,16 @@ function getCertificateLayout(pattern: string): CertificateLayout {
 function getCertificateShellClass(layout: CertificateLayout) {
   switch (layout) {
     case 'double': {
-      return 'border-2 border-border p-5 shadow-sm';
+      return 'border-2 border-border p-5 shadow-sm'
     }
     case 'minimal': {
-      return 'border border-border p-6';
+      return 'border border-border p-6'
     }
     case 'split': {
-      return 'overflow-hidden border border-border p-0';
+      return 'overflow-hidden border border-border p-0'
     }
     default: {
-      return 'border border-border p-5 shadow-sm';
+      return 'border border-border p-5 shadow-sm'
     }
   }
 }
@@ -63,10 +63,10 @@ function getCertificateShellClass(layout: CertificateLayout) {
 function getCertificateBodyClass(layout: CertificateLayout) {
   switch (layout) {
     case 'split': {
-      return 'grid gap-0 md:grid-cols-[1fr_14rem]';
+      return 'grid gap-0 md:grid-cols-[1fr_14rem]'
     }
     default: {
-      return 'flex h-full flex-col';
+      return 'flex h-full flex-col'
     }
   }
 }
@@ -81,30 +81,30 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   awardedDate,
   qrCodeLink,
 }) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const platform = usePlatform();
-  const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes');
-  const t = useTranslations('Certificates.CertificatePreview');
-  const layout = getCertificateLayout(certificatePattern);
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const platform = usePlatform()
+  const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes')
+  const t = useTranslations('Certificates.CertificatePreview')
+  const layout = getCertificateLayout(certificatePattern)
 
   useEffect(() => {
     const generateQRCode = async () => {
       try {
-        const certificateData = qrCodeLink || `${certificateId}`;
+        const certificateData = qrCodeLink || `${certificateId}`
         const qrUrl = await QRCode.toDataURL(certificateData, {
           width: 185,
           margin: 1,
           errorCorrectionLevel: 'M',
           type: 'image/png',
-        });
-        setQrCodeUrl(qrUrl);
+        })
+        setQrCodeUrl(qrUrl)
       } catch (error) {
-        console.error('Error generating QR code:', error);
+        console.error('Error generating QR code:', error)
       }
-    };
+    }
 
-    generateQRCode();
-  }, [certificateId, qrCodeLink]);
+    generateQRCode()
+  }, [certificateId, qrCodeLink])
 
   return (
     <div className="bg-card rounded-xl border p-4">
@@ -117,17 +117,27 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         {layout === 'double' ? (
           <div className="border-border pointer-events-none absolute inset-3 rounded-md border" />
         ) : null}
-        {layout === 'classic' ? <div className="bg-border pointer-events-none absolute inset-x-10 top-6 h-px" /> : null}
+        {layout === 'classic' ? (
+          <div className="bg-border pointer-events-none absolute inset-x-10 top-6 h-px" />
+        ) : null}
 
         <div className={getCertificateBodyClass(layout)}>
-          <div className={cn('relative flex flex-col', layout === 'split' ? 'p-6 md:p-8' : 'h-full')}>
+          <div
+            className={cn('relative flex flex-col', layout === 'split' ? 'p-6 md:p-8' : 'h-full')}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-[0.18em] uppercase">
                   <Hash className="size-3.5" />
-                  <span>{t('certificateIdInline', { id: certificateId || 'OU-2025-001' })}</span>
+                  <span>
+                    {t('certificateIdInline', {
+                      id: certificateId || 'OU-2025-001',
+                    })}
+                  </span>
                 </div>
-                <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">{t('certificate')}</div>
+                <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
+                  {t('certificate')}
+                </div>
               </div>
 
               {layout !== 'split' ? (
@@ -164,7 +174,11 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
               <div className="bg-muted mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
                 <CheckCircle className="size-4" />
-                <span>{tTypes(certificationType, { defaultValue: tTypes('completion') })}</span>
+                <span>
+                  {tTypes(certificationType, {
+                    defaultValue: tTypes('completion'),
+                  })}
+                </span>
               </div>
             </div>
 
@@ -204,7 +218,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <Calendar className="size-3.5" />
                   <span>{t('awardedLabel')}</span>
                 </div>
-                <div className="text-foreground text-sm font-medium">{awardedDate || t('completedOn')}</div>
+                <div className="text-foreground text-sm font-medium">
+                  {awardedDate || t('completedOn')}
+                </div>
               </div>
             </div>
           </div>
@@ -252,7 +268,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CertificatePreview;
+export default CertificatePreview

@@ -1,27 +1,27 @@
-'use client';
+'use client'
 
-import UserGamificationSettings from '@components/Dashboard/Pages/UserAccount/UserGamificationSettings/UserGamificationSettings';
-import UserEditPassword from '@components/Dashboard/Pages/UserAccount/UserEditPassword/UserEditPassword';
-import UserEditGeneral from '@components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral';
-import UserProfile from '@components/Dashboard/Pages/UserAccount/UserProfile/UserProfile';
-import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader';
-import { Info, Lock, Trophy, User as UserIcon } from 'lucide-react';
-import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs';
-import { getAbsoluteUrl } from '@services/config/config';
-import type { LucideIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type { ComponentType } from 'react';
-import { useMemo } from 'react';
+import UserGamificationSettings from '@components/Dashboard/Pages/UserAccount/UserGamificationSettings/UserGamificationSettings'
+import UserEditPassword from '@components/Dashboard/Pages/UserAccount/UserEditPassword/UserEditPassword'
+import UserEditGeneral from '@components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral'
+import UserProfile from '@components/Dashboard/Pages/UserAccount/UserProfile/UserProfile'
+import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader'
+import { Info, Lock, Trophy, User as UserIcon } from 'lucide-react'
+import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs'
+import { getAbsoluteUrl } from '@services/config/config'
+import type { LucideIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import type { ComponentType } from 'react'
+import { useMemo } from 'react'
 
 interface NavigationItem {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  component: ComponentType;
+  id: string
+  label: string
+  icon: LucideIcon
+  component: ComponentType
 }
 
 export default function AppUserSettingsClient({ subpage }: { subpage: string }) {
-  const t = useTranslations('DashPage.UserAccountSettings');
+  const t = useTranslations('DashPage.UserAccountSettings')
 
   const navigationItems: NavigationItem[] = useMemo(
     () => [
@@ -33,28 +33,35 @@ export default function AppUserSettingsClient({ subpage }: { subpage: string }) 
         icon: Trophy,
         component: UserGamificationSettings,
       },
-      { id: 'security', label: 'password', icon: Lock, component: UserEditPassword },
+      {
+        id: 'security',
+        label: 'password',
+        icon: Lock,
+        component: UserEditPassword,
+      },
     ],
     [],
-  );
+  )
 
   const tabs = useMemo(
-    () => navigationItems.map((it) => ({ id: it.id, labelKey: it.label, icon: it.icon })),
+    () =>
+      navigationItems.map(it => ({
+        id: it.id,
+        labelKey: it.label,
+        icon: it.icon,
+      })),
     [navigationItems],
-  );
+  )
 
-  const CurrentComponent = navigationItems.find((item) => item.id === subpage)?.component;
+  const CurrentComponent = navigationItems.find(item => item.id === subpage)?.component
 
   return (
     <div className="flex h-full w-full flex-col">
-      <SettingsHeader
-        breadcrumbType="user"
-        title={t('title')}
-      >
+      <SettingsHeader breadcrumbType="user" title={t('title')}>
         <SettingsTabs
           value={subpage}
           tabs={tabs}
-          getHref={(tab) => `${getAbsoluteUrl('')}/dash/user-account/settings/${tab.id}`}
+          getHref={tab => `${getAbsoluteUrl('')}/dash/user-account/settings/${tab.id}`}
           translationNamespace="DashPage.UserAccountSettings"
         />
       </SettingsHeader>
@@ -62,5 +69,5 @@ export default function AppUserSettingsClient({ subpage }: { subpage: string }) 
 
       {CurrentComponent ? <CurrentComponent /> : null}
     </div>
-  );
+  )
 }

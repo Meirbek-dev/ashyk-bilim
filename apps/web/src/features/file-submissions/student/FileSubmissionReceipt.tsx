@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { CheckCircle2, Clock, Files, Hash } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { CheckCircle2, Clock, Files, Hash } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
+import { Badge } from '@/components/ui/badge'
+import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -12,13 +12,13 @@ function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }).format(new Date(value))
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface FileSubmissionReceiptProps {
-  attempt: FileSubmissionAttempt;
+  attempt: FileSubmissionAttempt
 }
 
 /**
@@ -26,7 +26,7 @@ interface FileSubmissionReceiptProps {
  * Displays submitted timestamp, attempt number, file list, and late indicator.
  */
 export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceiptProps) {
-  const t = useTranslations('FileSubmission');
+  const t = useTranslations('FileSubmission')
   return (
     <div className="bg-muted/30 border-border mx-auto max-w-2xl space-y-4 rounded-xl border p-6">
       {/* Header */}
@@ -39,10 +39,7 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
           ) : null}
         </div>
         {attempt.is_late ? (
-          <Badge
-            variant="destructive"
-            className="ml-auto"
-          >
+          <Badge variant="destructive" className="ml-auto">
             {t('late')}
           </Badge>
         ) : null}
@@ -70,7 +67,7 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
       {/* File list */}
       {attempt.files.length > 0 ? (
         <div className="border-border divide-border rounded-lg border">
-          {attempt.files.map((file) => (
+          {attempt.files.map(file => (
             <div
               key={file.attempt_file_uuid}
               className="flex items-center gap-3 p-3 text-sm last:border-b-0"
@@ -82,7 +79,7 @@ export default function FileSubmissionReceipt({ attempt }: FileSubmissionReceipt
         </div>
       ) : null}
     </div>
-  );
+  )
 }
 
 function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -94,5 +91,5 @@ function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string
       </span>
       <span className="font-medium">{value}</span>
     </div>
-  );
+  )
 }

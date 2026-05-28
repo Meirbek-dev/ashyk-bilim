@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GamificationProfileSection } from '@/components/Dashboard/Gamification';
-import { updatePreferencesAction } from '@/app/actions/gamification';
-import { useGamificationStore } from '@/stores/gamification';
-import { Check, Loader2, Save } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { GamificationProfileSection } from '@/components/Dashboard/Gamification'
+import { updatePreferencesAction } from '@/app/actions/gamification'
+import { useGamificationStore } from '@/stores/gamification'
+import { Check, Loader2, Save } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 /**
  * Gamification Settings
@@ -22,46 +22,48 @@ import { toast } from 'sonner';
  */
 
 interface GamificationPreferences {
-  showOnLeaderboard: boolean;
-  xpGainNotifications: boolean;
-  animatedEffects: boolean;
+  showOnLeaderboard: boolean
+  xpGainNotifications: boolean
+  animatedEffects: boolean
 }
 
 const DEFAULT_PREFERENCES: GamificationPreferences = {
   showOnLeaderboard: true,
   xpGainNotifications: true,
   animatedEffects: true,
-};
+}
 
 export default function UserGamificationSettings() {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const profile = useGamificationStore((s) => s.profile);
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const profile = useGamificationStore(s => s.profile)
 
-  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES)
+  const [isSaving, setIsSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Load preferences from profile
   useEffect(() => {
     if (profile?.preferences) {
-      const prefs = profile.preferences as any;
+      const prefs = profile.preferences as any
       setPreferences({
-        showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
-        xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
+        showOnLeaderboard:
+          prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
+        xpGainNotifications:
+          prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
         animatedEffects: prefs?.display?.animatedEffects ?? DEFAULT_PREFERENCES.animatedEffects,
-      });
+      })
     }
-  }, [profile]);
+  }, [profile])
 
   const handlePreferenceChange = (key: keyof GamificationPreferences, value: boolean) => {
-    setPreferences((prev) => ({ ...prev, [key]: value }));
-    setHasChanges(true);
-    setSaveSuccess(false);
-  };
+    setPreferences(prev => ({ ...prev, [key]: value }))
+    setHasChanges(true)
+    setSaveSuccess(false)
+  }
 
   const handleSave = async () => {
-    setIsSaving(true);
+    setIsSaving(true)
     try {
       // Map simplified preferences to full structure
       const fullPreferences = {
@@ -74,40 +76,37 @@ export default function UserGamificationSettings() {
         display: {
           animatedEffects: preferences.animatedEffects,
         },
-      };
+      }
 
-      await updatePreferencesAction(fullPreferences);
+      await updatePreferencesAction(fullPreferences)
 
-      setHasChanges(false);
-      setSaveSuccess(true);
-      toast.success(t('settings.saved'));
+      setHasChanges(false)
+      setSaveSuccess(true)
+      toast.success(t('settings.saved'))
 
       // Reset success indicator after 2 seconds
-      if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current);
+      if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current)
       saveSuccessTimeoutRef.current = globalThis.setTimeout(() => {
-        setSaveSuccess(false);
-      }, 2000);
+        setSaveSuccess(false)
+      }, 2000)
     } catch (error) {
-      console.error('Failed to save preferences:', error);
-      toast.error(t('settings.saveFailed'));
+      console.error('Failed to save preferences:', error)
+      toast.error(t('settings.saveFailed'))
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   useEffect(() => {
     return () => {
-      if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current);
-    };
-  }, []);
+      if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current)
+    }
+  }, [])
 
   return (
     <div className="mx-8 space-y-6">
       {/* Profile Overview */}
-      <GamificationProfileSection
-        variant="full"
-        showUnlocks
-      />
+      <GamificationProfileSection variant="full" showUnlocks />
 
       {/* Settings Card */}
       <Card>
@@ -120,12 +119,14 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="show-leaderboard">{t('settings.showOnLeaderboard')}</Label>
-              <p className="text-muted-foreground text-sm">{t('settings.showOnLeaderboardDescription')}</p>
+              <p className="text-muted-foreground text-sm">
+                {t('settings.showOnLeaderboardDescription')}
+              </p>
             </div>
             <Switch
               id="show-leaderboard"
               checked={preferences.showOnLeaderboard}
-              onCheckedChange={(checked) => handlePreferenceChange('showOnLeaderboard', checked)}
+              onCheckedChange={checked => handlePreferenceChange('showOnLeaderboard', checked)}
             />
           </div>
 
@@ -133,12 +134,14 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="xp-notifications">{t('settings.xpGainNotifications')}</Label>
-              <p className="text-muted-foreground text-sm">{t('settings.xpGainNotificationsDescription')}</p>
+              <p className="text-muted-foreground text-sm">
+                {t('settings.xpGainNotificationsDescription')}
+              </p>
             </div>
             <Switch
               id="xp-notifications"
               checked={preferences.xpGainNotifications}
-              onCheckedChange={(checked) => handlePreferenceChange('xpGainNotifications', checked)}
+              onCheckedChange={checked => handlePreferenceChange('xpGainNotifications', checked)}
             />
           </div>
 
@@ -146,12 +149,14 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="animated-effects">{t('settings.animatedEffects')}</Label>
-              <p className="text-muted-foreground text-sm">{t('settings.animatedEffectsDescription')}</p>
+              <p className="text-muted-foreground text-sm">
+                {t('settings.animatedEffectsDescription')}
+              </p>
             </div>
             <Switch
               id="animated-effects"
               checked={preferences.animatedEffects}
-              onCheckedChange={(checked) => handlePreferenceChange('animatedEffects', checked)}
+              onCheckedChange={checked => handlePreferenceChange('animatedEffects', checked)}
             />
           </div>
 
@@ -184,5 +189,5 @@ export default function UserGamificationSettings() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

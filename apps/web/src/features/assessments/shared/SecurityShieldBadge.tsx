@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { Shield, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 export interface AntiCheatState {
-  copyPasteProtection: boolean;
-  tabSwitchDetection: boolean;
-  devtoolsDetection: boolean;
-  rightClickDisable: boolean;
-  fullscreenEnforcement: boolean;
+  copyPasteProtection: boolean
+  tabSwitchDetection: boolean
+  devtoolsDetection: boolean
+  rightClickDisable: boolean
+  fullscreenEnforcement: boolean
 }
 
 function computeSecurityLevel(state: AntiCheatState): 'low' | 'medium' | 'high' {
@@ -20,21 +20,21 @@ function computeSecurityLevel(state: AntiCheatState): 'low' | 'medium' | 'high' 
     state.devtoolsDetection,
     state.rightClickDisable,
     state.fullscreenEnforcement,
-  ].filter(Boolean).length;
+  ].filter(Boolean).length
 
-  if (count >= 4) return 'high';
-  if (count >= 2) return 'medium';
-  return 'low';
+  if (count >= 4) return 'high'
+  if (count >= 2) return 'medium'
+  return 'low'
 }
 
 interface SecurityShieldBadgeProps {
-  state: AntiCheatState;
-  className?: string;
+  state: AntiCheatState
+  className?: string
 }
 
 export default function SecurityShieldBadge({ state, className }: SecurityShieldBadgeProps) {
-  const t = useTranslations('Features.Assessments.Studio.SecurityShield');
-  const level = computeSecurityLevel(state);
+  const t = useTranslations('Features.Assessments.Studio.SecurityShield')
+  const level = computeSecurityLevel(state)
 
   const config = {
     low: {
@@ -57,9 +57,9 @@ export default function SecurityShieldBadge({ state, className }: SecurityShield
       className:
         'text-emerald-700 border-emerald-400 bg-emerald-50 dark:text-emerald-300 dark:border-emerald-700 dark:bg-emerald-950/30',
     },
-  } as const;
+  } as const
 
-  const { Icon, label, description, className: levelClass } = config[level];
+  const { Icon, label, description, className: levelClass } = config[level]
 
   return (
     <Tooltip>
@@ -77,12 +77,9 @@ export default function SecurityShieldBadge({ state, className }: SecurityShield
           </div>
         }
       />
-      <TooltipContent
-        side="bottom"
-        className="max-w-xs"
-      >
+      <TooltipContent side="bottom" className="max-w-xs">
         <p className="text-xs">{description}</p>
       </TooltipContent>
     </Tooltip>
-  );
+  )
 }

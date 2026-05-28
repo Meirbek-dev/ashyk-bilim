@@ -1,9 +1,9 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import type { ComponentType } from 'react';
-import { useTranslations } from 'next-intl';
-import { AlertTriangle, LoaderCircle, Maximize2, ShieldAlert } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import type { ComponentType } from 'react'
+import { useTranslations } from 'next-intl'
+import { AlertTriangle, LoaderCircle, Maximize2, ShieldAlert } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -15,28 +15,28 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import type { AttemptConflictState } from './AssessmentActionBar';
-import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
-import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
-import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment';
-import { loadKindModule } from '@/features/assessments/registry';
-import type { KindModule } from '@/features/assessments/registry';
-import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard';
+} from '@/components/ui/alert-dialog'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import type { AttemptConflictState } from './AssessmentActionBar'
+import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy'
+import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
+import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment'
+import { loadKindModule } from '@/features/assessments/registry'
+import type { KindModule } from '@/features/assessments/registry'
+import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard'
 
-import { AssessmentChrome } from './AssessmentChrome';
-import { ActionBarContext, AssessmentActionBar, useActionBarState } from './AssessmentActionBar';
-import type { AttemptRecoveryState } from './AssessmentActionBar';
+import { AssessmentChrome } from './AssessmentChrome'
+import { ActionBarContext, AssessmentActionBar, useActionBarState } from './AssessmentActionBar'
+import type { AttemptRecoveryState } from './AssessmentActionBar'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface AssessmentLayoutProps {
-  activityUuid: string;
-  courseUuid: string;
+  activityUuid: string
+  courseUuid: string
   /** Pre-fetched view model. When supplied, skips the internal activity fetch. */
-  vm?: AttemptViewModel;
+  vm?: AttemptViewModel
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -54,51 +54,55 @@ interface AssessmentLayoutProps {
  *
  * Previously: `features/assessments/shared/AttemptShell.tsx`
  */
-export default function AssessmentLayout({ activityUuid, courseUuid, vm: suppliedVm }: AssessmentLayoutProps) {
-  const assessment = useAssessmentAttemptData(suppliedVm ? null : activityUuid);
+export default function AssessmentLayout({
+  activityUuid,
+  courseUuid,
+  vm: suppliedVm,
+}: AssessmentLayoutProps) {
+  const assessment = useAssessmentAttemptData(suppliedVm ? null : activityUuid)
   const resolved = suppliedVm
     ? ({ surface: 'ATTEMPT', vm: suppliedVm, kind: suppliedVm.kind } as const)
     : assessment.vm?.surface === 'ATTEMPT'
       ? assessment.vm
-      : null;
-  const vm = resolved?.vm ?? null;
+      : null
+  const vm = resolved?.vm ?? null
 
-  const [kindModule, setKindModule] = useState<KindModule | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
-  const { controls, contextValue } = useActionBarState();
-  const t = useTranslations('Features.Assessments.Attempt.Exam');
+  const [kindModule, setKindModule] = useState<KindModule | null>(null)
+  const [isOnline, setIsOnline] = useState(true)
+  const { controls, contextValue } = useActionBarState()
+  const t = useTranslations('Features.Assessments.Attempt.Exam')
 
   // ── Load kind module ───────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!vm?.kind) return;
-    let cancelled = false;
-    void loadKindModule(vm.kind).then((mod) => {
-      if (!cancelled) setKindModule(mod);
-    });
+    if (!vm?.kind) return
+    let cancelled = false
+    void loadKindModule(vm.kind).then(mod => {
+      if (!cancelled) setKindModule(mod)
+    })
     return () => {
-      cancelled = true;
-    };
-  }, [vm?.kind]);
+      cancelled = true
+    }
+  }, [vm?.kind])
 
   // ── Focus mode (persisted across page loads) ───────────────────────────────
 
   useEffect(() => {
-    if (typeof navigator === 'undefined') return;
-    const update = () => setIsOnline(navigator.onLine);
-    update();
-    globalThis.addEventListener('online', update);
-    globalThis.addEventListener('offline', update);
+    if (typeof navigator === 'undefined') return
+    const update = () => setIsOnline(navigator.onLine)
+    update()
+    globalThis.addEventListener('online', update)
+    globalThis.addEventListener('offline', update)
     return () => {
-      globalThis.removeEventListener('online', update);
-      globalThis.removeEventListener('offline', update);
-    };
-  }, []);
+      globalThis.removeEventListener('online', update)
+      globalThis.removeEventListener('offline', update)
+    }
+  }, [])
 
   // ── Policy / guard ─────────────────────────────────────────────────────────
 
-  const policy = controls.policy ?? vm?.policy ?? null;
-  const antiCheatEnabled = Boolean(policy && isAntiCheatEnabled(policy.antiCheat));
+  const policy = controls.policy ?? vm?.policy ?? null
+  const antiCheatEnabled = Boolean(policy && isAntiCheatEnabled(policy.antiCheat))
 
   const guard = useAttemptGuard(policy ?? DEFAULT_POLICY_VIEW, {
     enabled: antiCheatEnabled,
@@ -106,21 +110,21 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     initialViolationCount: controls.initialViolationCount,
     onViolation: controls.onViolation,
     onThresholdReached: controls.onGuardAutoSubmit,
-  });
+  })
 
   // ── Kind component ─────────────────────────────────────────────────────────
 
   const AttemptContent = kindModule
     ? (kindModule.Attempt as ComponentType<{
-        activityUuid: string;
-        courseUuid: string;
-        vm?: AttemptViewModel;
+        activityUuid: string
+        courseUuid: string
+        vm?: AttemptViewModel
       }>)
-    : null;
+    : null
 
   // ── Derived display state ──────────────────────────────────────────────────
 
-  const returned = vm?.isReturnedForRevision || controls.status === 'RETURNED';
+  const returned = vm?.isReturnedForRevision || controls.status === 'RETURNED'
 
   // ── Loading ────────────────────────────────────────────────────────────────
 
@@ -129,7 +133,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       <div className="flex min-h-[320px] items-center justify-center">
         <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
       </div>
-    );
+    )
   }
 
   // ── Code Challenge: full-viewport fixed layout ────────────────────────────
@@ -147,32 +151,34 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {kindModule?.label ?? 'Code Challenge'}
               </span>
-              <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
+              <span className="text-foreground min-w-0 truncate text-sm font-semibold">
+                {vm.title}
+              </span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
-                <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
+                <span className="text-sm font-medium tabular-nums">
+                  {formatTimerDisplay(guard.remainingSeconds)}
+                </span>
               ) : null}
             </div>
           </div>
           {/* Editor fills remaining height; pb-16 leaves space for fixed AssessmentActionBar */}
           <div className="min-h-0 flex-1 overflow-hidden pb-16">
-            <AttemptContent
-              activityUuid={vm.activityUuid}
-              courseUuid={courseUuid}
-              vm={vm}
-            />
+            <AttemptContent activityUuid={vm.activityUuid} courseUuid={courseUuid} vm={vm} />
           </div>
         </div>
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
+          primaryButtonLabelKey={
+            controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null
+          }
         />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
       </ActionBarContext.Provider>
-    );
+    )
   }
 
   return (
@@ -183,7 +189,9 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           <div className="bg-card text-card-foreground border-destructive/50 w-full max-w-md rounded-lg border p-6 shadow-2xl">
             <div className="text-destructive flex items-center gap-3 text-lg font-semibold">
               <ShieldAlert className="size-6 animate-pulse" />
-              {t('securityViolationAlertTitle', { defaultValue: 'Security Violation Detected' })}
+              {t('securityViolationAlertTitle', {
+                defaultValue: 'Security Violation Detected',
+              })}
             </div>
             <p className="text-muted-foreground mt-3 text-sm">
               {t('securityViolationAlertDescription', {
@@ -211,7 +219,9 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               </Button>
             ) : (
               <p className="text-muted-foreground animate-pulse text-center text-xs">
-                {t('clickBackToResume', { defaultValue: 'Click back or refocus to resume.' })}
+                {t('clickBackToResume', {
+                  defaultValue: 'Click back or refocus to resume.',
+                })}
               </p>
             )}
           </div>
@@ -226,15 +236,13 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               <Maximize2 className="size-5" />
               {t('fullscreenRequired')}
             </div>
-            <p className="text-muted-foreground mt-2 text-sm">{t('fullscreenRequiredDescription')}</p>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {t('fullscreenRequiredDescription')}
+            </p>
             {guard.fullscreenError ? (
               <p className="text-muted-foreground mt-3 text-sm">{guard.fullscreenError}</p>
             ) : null}
-            <Button
-              type="button"
-              className="mt-5 w-full"
-              onClick={guard.requestFullscreen}
-            >
+            <Button type="button" className="mt-5 w-full" onClick={guard.requestFullscreen}>
               <Maximize2 className="size-4" />
               {t('enterFullscreen')}
             </Button>
@@ -269,18 +277,16 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           ) : null}
 
           <main className="min-h-[420px]">
-            <AttemptContent
-              activityUuid={vm.activityUuid}
-              courseUuid={courseUuid}
-              vm={vm}
-            />
+            <AttemptContent activityUuid={vm.activityUuid} courseUuid={courseUuid} vm={vm} />
           </main>
         </div>
 
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
+          primaryButtonLabelKey={
+            controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null
+          }
         />
       </div>
 
@@ -288,13 +294,13 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       <RecoveryDialog recovery={controls.recovery ?? null} />
       <ConflictDialog conflict={controls.conflict ?? null} />
     </ActionBarContext.Provider>
-  );
+  )
 }
 
 // ── Recovery dialog ───────────────────────────────────────────────────────────
 
 function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null }) {
-  const t = useTranslations('Features.Assessments.Attempt.Exam');
+  const t = useTranslations('Features.Assessments.Attempt.Exam')
   return (
     <AlertDialog open={Boolean(recovery?.open)}>
       <AlertDialogContent>
@@ -305,7 +311,9 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
           <AlertDialogTitle>{t('recoverPreviousAnswers')}</AlertDialogTitle>
           <AlertDialogDescription>
             {recovery?.lastSavedAt
-              ? t('recoverLocalDraftWithTime', { time: formatDate(recovery.lastSavedAt) })
+              ? t('recoverLocalDraftWithTime', {
+                  time: formatDate(recovery.lastSavedAt),
+                })
               : t('recoverLocalDraft')}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -315,11 +323,11 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
 function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null }) {
-  const t = useTranslations('Features.Assessments.Attempt.Exam');
+  const t = useTranslations('Features.Assessments.Attempt.Exam')
   return (
     <AlertDialog open={Boolean(conflict?.open)}>
       <AlertDialogContent>
@@ -346,26 +354,33 @@ function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null })
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>{t('keepMyLocalVersion')}</AlertDialogCancel>
-          <AlertDialogAction onClick={conflict?.onUseServerVersion}>{t('useLatestSavedVersion')}</AlertDialogAction>
+          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>
+            {t('keepMyLocalVersion')}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={conflict?.onUseServerVersion}>
+            {t('useLatestSavedVersion')}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
 function formatDate(value: string | number): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
 }
 
 function formatTimerDisplay(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
   if (h > 0) {
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }

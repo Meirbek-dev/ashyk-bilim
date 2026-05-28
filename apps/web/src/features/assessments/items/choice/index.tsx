@@ -1,69 +1,75 @@
-'use client';
+'use client'
 
-import { Check, Circle, Plus, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Check, Circle, Plus, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import { registerItemKind } from '../registry';
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry'
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry'
 
-export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING';
+export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING'
 
 export interface ChoiceOption {
-  id: string | number;
-  text: string;
-  isCorrect?: boolean;
+  id: string | number
+  text: string
+  isCorrect?: boolean
 }
 
 export interface MatchingPair {
-  id: string | number;
-  left: string;
-  right: string;
+  id: string | number
+  left: string
+  right: string
 }
 
 export type ChoiceAuthorValue =
   | {
-      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE';
-      prompt: string;
-      points?: number;
-      options: ChoiceOption[];
+      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
+      prompt: string
+      points?: number
+      options: ChoiceOption[]
     }
   | {
-      kind: 'MATCHING';
-      prompt: string;
-      points?: number;
-      pairs: MatchingPair[];
-    };
+      kind: 'MATCHING'
+      prompt: string
+      points?: number
+      pairs: MatchingPair[]
+    }
 
 export type ChoiceAttemptItem =
   | {
-      id: string | number;
-      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE';
-      prompt: string;
-      points?: number;
-      options: ChoiceOption[];
+      id: string | number
+      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
+      prompt: string
+      points?: number
+      options: ChoiceOption[]
     }
   | {
-      id: string | number;
-      kind: 'MATCHING';
-      prompt: string;
-      points?: number;
-      pairs: MatchingPair[];
-    };
+      id: string | number
+      kind: 'MATCHING'
+      prompt: string
+      points?: number
+      pairs: MatchingPair[]
+    }
 
-export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined;
+export type ChoiceAnswer =
+  | string
+  | number
+  | (string | number)[]
+  | Record<string, string>
+  | null
+  | undefined
 
 function optionId(option: ChoiceOption, index: number) {
-  return option.id ?? index;
+  return option.id ?? index
 }
 
 export function ChoiceItemAttempt({
@@ -72,15 +78,15 @@ export function ChoiceItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<ChoiceAttemptItem, ChoiceAnswer>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (item.kind === 'MATCHING') {
-    const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {};
-    const rightOptions = item.pairs.map((pair) => pair.right);
+    const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {}
+    const rightOptions = item.pairs.map(pair => pair.right)
 
     return (
       <div className="space-y-3">
-        {item.pairs.map((pair) => (
+        {item.pairs.map(pair => (
           <div
             key={pair.id}
             className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
@@ -89,21 +95,14 @@ export function ChoiceItemAttempt({
             <NativeSelect
               value={current[pair.left] ?? ''}
               disabled={disabled}
-              onChange={(event) => onAnswerChange({ ...current, [pair.left]: event.target.value })}
+              onChange={event => onAnswerChange({ ...current, [pair.left]: event.target.value })}
               aria-label={t('matching.matchLabel', { term: pair.left })}
             >
-              <NativeSelectOption
-                value=""
-                disabled
-                hidden
-              >
+              <NativeSelectOption value="" disabled hidden>
                 {t('selectMatch')}
               </NativeSelectOption>
-              {rightOptions.map((right) => (
-                <NativeSelectOption
-                  key={right}
-                  value={right}
-                >
+              {rightOptions.map(right => (
+                <NativeSelectOption key={right} value={right}>
                   {right}
                 </NativeSelectOption>
               ))}
@@ -111,15 +110,15 @@ export function ChoiceItemAttempt({
           </div>
         ))}
       </div>
-    );
+    )
   }
 
   if (item.kind === 'CHOICE_MULTIPLE') {
-    const selected = Array.isArray(answer) ? answer : [];
+    const selected = Array.isArray(answer) ? answer : []
     return (
       <div className="space-y-2">
         {item.options.map((option, index) => {
-          const id = optionId(option, index);
+          const id = optionId(option, index)
           return (
             <label
               key={String(id)}
@@ -128,9 +127,11 @@ export function ChoiceItemAttempt({
               <Checkbox
                 checked={selected.includes(id)}
                 disabled={disabled}
-                onCheckedChange={(checked) => {
-                  const next = checked ? [...selected, id] : selected.filter((itemId) => itemId !== id);
-                  onAnswerChange(next);
+                onCheckedChange={checked => {
+                  const next = checked
+                    ? [...selected, id]
+                    : selected.filter(itemId => itemId !== id)
+                  onAnswerChange(next)
                 }}
               />
               <div className="min-w-0 flex-1 text-sm leading-relaxed">
@@ -141,22 +142,22 @@ export function ChoiceItemAttempt({
                 />
               </div>
             </label>
-          );
+          )
         })}
       </div>
-    );
+    )
   }
 
-  const current = answer === null || answer === undefined ? '' : String(answer);
+  const current = answer === null || answer === undefined ? '' : String(answer)
   return (
     <RadioGroup
       value={current}
-      onValueChange={(value) => onAnswerChange(Number.isNaN(Number(value)) ? value : Number(value))}
+      onValueChange={value => onAnswerChange(Number.isNaN(Number(value)) ? value : Number(value))}
       className="space-y-2"
       disabled={disabled}
     >
       {item.options.map((option, index) => {
-        const id = optionId(option, index);
+        const id = optionId(option, index)
         return (
           <label
             key={String(id)}
@@ -171,14 +172,18 @@ export function ChoiceItemAttempt({
               />
             </div>
           </label>
-        );
+        )
       })}
     </RadioGroup>
-  );
+  )
 }
 
-export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+export function ChoiceItemAuthor({
+  value,
+  disabled,
+  onChange,
+}: ItemAuthorProps<ChoiceAuthorValue>) {
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   const setKind = (kind: ChoiceItemKind) => {
     if (kind === 'MATCHING') {
@@ -194,8 +199,8 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
                 left: option.text,
                 right: '',
               })),
-      });
-      return;
+      })
+      return
     }
 
     onChange({
@@ -217,10 +222,14 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
               },
             ]
           : value.kind === 'MATCHING'
-            ? value.pairs.map((pair) => ({ id: pair.id, text: pair.left, isCorrect: false }))
+            ? value.pairs.map(pair => ({
+                id: pair.id,
+                text: pair.left,
+                isCorrect: false,
+              }))
             : value.options,
-    });
-  };
+    })
+  }
 
   return (
     <div className="space-y-5">
@@ -232,7 +241,7 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
             disabled={disabled}
             placeholder={t('promptPlaceholder')}
             preset="questionPrompt"
-            onChange={(md) => onChange({ ...value, prompt: md })}
+            onChange={md => onChange({ ...value, prompt: md })}
           />
         </div>
         <div className="space-y-2">
@@ -241,7 +250,7 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
             id="choice-kind"
             value={value.kind}
             disabled={disabled}
-            onChange={(event) => setKind(event.target.value as ChoiceItemKind)}
+            onChange={event => setKind(event.target.value as ChoiceItemKind)}
           >
             <NativeSelectOption value="CHOICE_SINGLE">{t('kinds.single')}</NativeSelectOption>
             <NativeSelectOption value="CHOICE_MULTIPLE">{t('kinds.multiple')}</NativeSelectOption>
@@ -252,20 +261,12 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       </div>
 
       {value.kind === 'MATCHING' ? (
-        <MatchingAuthor
-          value={value}
-          disabled={disabled}
-          onChange={onChange}
-        />
+        <MatchingAuthor value={value} disabled={disabled} onChange={onChange} />
       ) : (
-        <OptionsAuthor
-          value={value}
-          disabled={disabled}
-          onChange={onChange}
-        />
+        <OptionsAuthor value={value} disabled={disabled} onChange={onChange} />
       )}
     </div>
-  );
+  )
 }
 
 function OptionsAuthor({
@@ -273,9 +274,9 @@ function OptionsAuthor({
   disabled,
   onChange,
 }: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
-  const isMultiple = value.kind === 'CHOICE_MULTIPLE';
-  const isTrueFalse = value.kind === 'TRUE_FALSE';
+  const t = useTranslations('Features.Assessments.Items.Choice')
+  const isMultiple = value.kind === 'CHOICE_MULTIPLE'
+  const isTrueFalse = value.kind === 'TRUE_FALSE'
 
   const toggleCorrect = (index: number) => {
     const options = value.options.map((option, candidateIndex) => ({
@@ -285,9 +286,9 @@ function OptionsAuthor({
           ? !option.isCorrect
           : option.isCorrect
         : candidateIndex === index,
-    }));
-    onChange({ ...value, options });
-  };
+    }))
+    onChange({ ...value, options })
+  }
 
   return (
     <div className="space-y-2">
@@ -337,13 +338,15 @@ function OptionsAuthor({
           {/* Option text input */}
           <input
             value={option.text}
-            placeholder={t('optionPlaceholder', { label: String.fromCodePoint(65 + index) })}
+            placeholder={t('optionPlaceholder', {
+              label: String.fromCodePoint(65 + index),
+            })}
             disabled={disabled || isTrueFalse}
             className={cn(
               'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60',
               disabled && 'cursor-not-allowed',
             )}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 ...value,
                 options: value.options.map((candidate, candidateIndex) =>
@@ -365,7 +368,12 @@ function OptionsAuthor({
             <button
               type="button"
               disabled={disabled || value.options.length <= 1}
-              onClick={() => onChange({ ...value, options: value.options.filter((_, i) => i !== index) })}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  options: value.options.filter((_, i) => i !== index),
+                })
+              }
               className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
               aria-label={t('removeOption')}
             >
@@ -382,7 +390,14 @@ function OptionsAuthor({
           onClick={() =>
             onChange({
               ...value,
-              options: [...value.options, { id: `option_${crypto.randomUUID()}`, text: '', isCorrect: false }],
+              options: [
+                ...value.options,
+                {
+                  id: `option_${crypto.randomUUID()}`,
+                  text: '',
+                  isCorrect: false,
+                },
+              ],
             })
           }
           className={cn(
@@ -396,7 +411,7 @@ function OptionsAuthor({
         </button>
       ) : null}
     </div>
-  );
+  )
 }
 
 function MatchingAuthor({
@@ -404,19 +419,16 @@ function MatchingAuthor({
   disabled,
   onChange,
 }: ItemAuthorProps<Extract<ChoiceAuthorValue, { kind: 'MATCHING' }>>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+  const t = useTranslations('Features.Assessments.Items.Choice')
   return (
     <div className="space-y-2">
       {value.pairs.map((pair, index) => (
-        <div
-          key={String(pair.id)}
-          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
-        >
+        <div key={String(pair.id)} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <Input
             value={pair.left}
             placeholder={t('matching.left')}
             disabled={disabled}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 ...value,
                 pairs: value.pairs.map((candidate, candidateIndex) =>
@@ -429,11 +441,13 @@ function MatchingAuthor({
             value={pair.right}
             placeholder={t('matching.right')}
             disabled={disabled}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 ...value,
                 pairs: value.pairs.map((candidate, candidateIndex) =>
-                  candidateIndex === index ? { ...candidate, right: event.target.value } : candidate,
+                  candidateIndex === index
+                    ? { ...candidate, right: event.target.value }
+                    : candidate,
                 ),
               })
             }
@@ -444,7 +458,10 @@ function MatchingAuthor({
             size="icon"
             disabled={disabled || value.pairs.length <= 1}
             onClick={() =>
-              onChange({ ...value, pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index) })
+              onChange({
+                ...value,
+                pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index),
+              })
             }
           >
             <Trash2 className="size-4" />
@@ -467,30 +484,33 @@ function MatchingAuthor({
         {t('matching.addPair')}
       </Button>
     </div>
-  );
+  )
 }
 
-export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+export function ChoiceItemReviewDetail({
+  item,
+  answer,
+}: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (!item) {
-    return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>;
+    return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>
   }
 
   const answerLabel = (() => {
-    if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2);
+    if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2)
     if (item.kind === 'CHOICE_MULTIPLE') {
-      const ids = Array.isArray(answer) ? answer : [];
+      const ids = Array.isArray(answer) ? answer : []
       return item.options
         .filter((option, index) => ids.includes(optionId(option, index)))
-        .map((option) => option.text)
-        .join(', ');
+        .map(option => option.text)
+        .join(', ')
     }
     return (
-      item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ??
-      String(answer ?? '-')
-    );
-  })();
+      item.options.find((option, index) => String(optionId(option, index)) === String(answer))
+        ?.text ?? String(answer ?? '-')
+    )
+  })()
 
   return (
     <div className="bg-card rounded-md border p-3">
@@ -500,24 +520,28 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
           <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
         ) : null}
       </div>
-      <MarkdownContent
-        mode="compactRichText"
-        content={item.prompt}
-        compact
-      />
-      <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
+      <MarkdownContent mode="compactRichText" content={item.prompt} compact />
+      <pre
+        className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}
+      >
         {answerLabel}
       </pre>
     </div>
-  );
+  )
 }
 
-for (const kind of ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const) {
+for (const kind of [
+  'CHOICE',
+  'CHOICE_SINGLE',
+  'CHOICE_MULTIPLE',
+  'TRUE_FALSE',
+  'MATCHING',
+] as const) {
   registerItemKind({
     kind,
     label: kind.replaceAll('_', ' ').toLowerCase(),
     Author: ChoiceItemAuthor,
     Attempt: ChoiceItemAttempt,
     ReviewDetail: ChoiceItemReviewDetail,
-  });
+  })
 }

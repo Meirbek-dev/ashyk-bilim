@@ -1,28 +1,30 @@
-'use client';
+'use client'
 
-import type { Platform } from '@/types/platform';
-import { createContext, use } from 'react';
-import type { ReactNode } from 'react';
-import { usePlatformConfig } from '@/features/platform/hooks/usePlatform';
+import type { Platform } from '@/types/platform'
+import { createContext, use } from 'react'
+import type { ReactNode } from 'react'
+import { usePlatformConfig } from '@/features/platform/hooks/usePlatform'
 
-export const PlatformContext = createContext<Platform | null>(null);
+export const PlatformContext = createContext<Platform | null>(null)
 
 export const PlatformContextProvider = ({
   children,
   initialPlatform,
 }: {
-  children: ReactNode;
-  initialPlatform?: any;
+  children: ReactNode
+  initialPlatform?: any
 }) => {
-  return <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>;
-};
+  return (
+    <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>
+  )
+}
 
 export function usePlatform(): Platform | null {
-  const platform = use(PlatformContext);
+  const platform = use(PlatformContext)
   const { data } = usePlatformConfig({
     enabled: platform === null,
     staleTime: 60_000,
-  });
+  })
 
-  return platform ?? data ?? null;
+  return platform ?? data ?? null
 }

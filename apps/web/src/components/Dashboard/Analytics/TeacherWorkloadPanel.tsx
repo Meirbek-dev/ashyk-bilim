@@ -1,22 +1,31 @@
-'use client';
+'use client'
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { TeacherWorkloadSummary } from '@/types/analytics';
-import { Clock4, Inbox, TimerReset } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import type { TeacherWorkloadSummary } from '@/types/analytics'
+import { Clock4, Inbox, TimerReset } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface TeacherWorkloadPanelProps {
-  workload: TeacherWorkloadSummary;
+  workload: TeacherWorkloadSummary
 }
 
 export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelProps) {
-  const locale = useLocale();
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const t = useTranslations('Components.DashboardAnalytics');
+  const locale = useLocale()
+  const numberFormatter = new Intl.NumberFormat(locale)
+  const t = useTranslations('Components.DashboardAnalytics')
   const hours = (value: number | null | undefined) =>
-    value === null || value === undefined ? t('teacherWorkloadPanel.na') : `${numberFormatter.format(value)}h`;
+    value === null || value === undefined
+      ? t('teacherWorkloadPanel.na')
+      : `${numberFormatter.format(value)}h`
 
   return (
     <Card className="shadow-sm">
@@ -72,7 +81,8 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
             {t('teacherWorkloadPanel.bucket7dPlus')} {workload.aging_buckets.d7_plus}
           </Badge>
           <Badge variant="outline">
-            {t('teacherWorkloadPanel.medianFeedback')} {hours(workload.median_feedback_latency_hours)}
+            {t('teacherWorkloadPanel.medianFeedback')}{' '}
+            {hours(workload.median_feedback_latency_hours)}
           </Badge>
         </div>
 
@@ -86,20 +96,21 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {workload.backlog_by_manual_assessment.slice(0, 5).map((item) => (
+            {workload.backlog_by_manual_assessment.slice(0, 5).map(item => (
               <TableRow key={`${item.assessment_id}-${item.course_id}`}>
-                <TableCell className="max-w-[260px] font-medium whitespace-normal">{item.title}</TableCell>
-                <TableCell className="max-w-[220px] whitespace-normal">{item.course_name}</TableCell>
+                <TableCell className="max-w-[260px] font-medium whitespace-normal">
+                  {item.title}
+                </TableCell>
+                <TableCell className="max-w-[220px] whitespace-normal">
+                  {item.course_name}
+                </TableCell>
                 <TableCell>{item.awaiting_review}</TableCell>
                 <TableCell>{hours(item.age_hours)}</TableCell>
               </TableRow>
             ))}
             {!workload.backlog_by_manual_assessment.length ? (
               <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-muted-foreground"
-                >
+                <TableCell colSpan={4} className="text-muted-foreground">
                   {t('teacherWorkloadPanel.noSubmissions')}
                 </TableCell>
               </TableRow>
@@ -108,5 +119,5 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
         </Table>
       </CardContent>
     </Card>
-  );
+  )
 }

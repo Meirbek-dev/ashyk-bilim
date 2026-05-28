@@ -1,74 +1,74 @@
-'use client';
+'use client'
 
-import { Play, CheckCircle2, XCircle, Loader2, Code2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { Play, CheckCircle2, XCircle, Loader2, Code2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { apiFetch } from '@/lib/api-client';
-import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { apiFetch } from '@/lib/api-client'
+import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges'
+import { cn } from '@/lib/utils'
 
 interface ReferenceSolutionRunnerProps {
-  draft: CodeChallengeSettings;
-  languages: Judge0Language[];
+  draft: CodeChallengeSettings
+  languages: Judge0Language[]
 }
 
 interface ValidationResultDetail {
-  test_id: string;
-  passed: boolean;
-  status_description: string;
-  time?: number;
-  memory?: number;
+  test_id: string
+  passed: boolean
+  status_description: string
+  time?: number
+  memory?: number
 }
 
 interface ValidationResultLanguage {
-  ok: boolean;
-  status: string;
-  passed?: number;
-  total?: number;
-  score?: number;
-  compile_output?: string;
-  message?: string;
-  details?: ValidationResultDetail[];
+  ok: boolean
+  status: string
+  passed?: number
+  total?: number
+  score?: number
+  compile_output?: string
+  message?: string
+  details?: ValidationResultDetail[]
 }
 
 export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionRunnerProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [isValidating, setIsValidating] = useState(false);
-  const [results, setResults] = useState<Record<number, ValidationResultLanguage> | null>(null);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [isValidating, setIsValidating] = useState(false)
+  const [results, setResults] = useState<Record<number, ValidationResultLanguage> | null>(null)
 
   const selectedLanguages = draft.allowed_languages
-    .map((id) => languages.find((lang) => lang.id === id))
-    .filter(Boolean) as Judge0Language[];
+    .map(id => languages.find(lang => lang.id === id))
+    .filter(Boolean) as Judge0Language[]
 
   const runValidation = async () => {
     if (selectedLanguages.length === 0) {
-      toast.error(t('selectLanguageBeforeValidation'));
-      return;
+      toast.error(t('selectLanguageBeforeValidation'))
+      return
     }
-    setIsValidating(true);
-    setResults(null);
+    setIsValidating(true)
+    setResults(null)
     try {
       const response = await apiFetch(`assessments/${draft.uuid}/code-challenge/validate`, {
         method: 'POST',
-      });
+      })
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || t('validationEndpointFailed'));
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.detail || t('validationEndpointFailed'))
       }
-      const data = await response.json();
-      setResults(data.results);
-      toast.success(t('referenceValidationFinished'));
+      const data = await response.json()
+      setResults(data.results)
+      toast.success(t('referenceValidationFinished'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('referenceValidationFailed'));
+      toast.error(error instanceof Error ? error.message : t('referenceValidationFailed'))
     } finally {
-      setIsValidating(false);
+      setIsValidating(false)
     }
-  };
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -84,7 +84,11 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
           disabled={isValidating || selectedLanguages.length === 0}
           className="h-7 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
         >
-          {isValidating ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
+          {isValidating ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Play className="size-3.5" />
+          )}
           {t('validateSolutions')}
         </Button>
       </div>
@@ -98,10 +102,10 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
             </div>
           ) : (
             <div className="space-y-4">
-              {selectedLanguages.map((lang) => {
-                const starter = draft.starter_code?.[lang.id];
-                const solution = draft.reference_solutions?.[lang.id];
-                const runResult = results?.[lang.id];
+              {selectedLanguages.map(lang => {
+                const starter = draft.starter_code?.[lang.id]
+                const solution = draft.reference_solutions?.[lang.id]
+                const runResult = results?.[lang.id]
 
                 return (
                   <div
@@ -115,10 +119,12 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                           <h3 className="text-sm font-semibold">{lang.name}</h3>
                           <div className="text-muted-foreground mt-0.5 flex gap-3 text-xs font-medium">
                             <span className="flex items-center gap-1">
-                              {t('starterCodeStatus')}: {starter?.trim() ? t('present') : t('missing')}
+                              {t('starterCodeStatus')}:{' '}
+                              {starter?.trim() ? t('present') : t('missing')}
                             </span>
                             <span className="flex items-center gap-1">
-                              {t('solutionStatus')}: {solution?.trim() ? t('present') : t('missing')}
+                              {t('solutionStatus')}:{' '}
+                              {solution?.trim() ? t('present') : t('missing')}
                             </span>
                           </div>
                         </div>
@@ -128,18 +134,12 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                         {runResult ? (
                           <div className="flex items-center gap-2">
                             {runResult.ok ? (
-                              <Badge
-                                variant="success"
-                                className="gap-1 text-[10px] font-bold"
-                              >
+                              <Badge variant="success" className="gap-1 text-[10px] font-bold">
                                 <CheckCircle2 className="size-3" />
                                 {t('passesTests')}
                               </Badge>
                             ) : (
-                              <Badge
-                                variant="destructive"
-                                className="gap-1 text-[10px] font-bold"
-                              >
+                              <Badge variant="destructive" className="gap-1 text-[10px] font-bold">
                                 <XCircle className="size-3" />
                                 {runResult.status}
                               </Badge>
@@ -151,10 +151,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                             )}
                           </div>
                         ) : (
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] font-bold"
-                          >
+                          <Badge variant="secondary" className="text-[10px] font-bold">
                             {t('awaitingRun')}
                           </Badge>
                         )}
@@ -180,7 +177,9 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                             <h4 className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                               {t('errorDetails')}
                             </h4>
-                            <p className="text-muted-foreground text-xs leading-relaxed">{runResult.message}</p>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              {runResult.message}
+                            </p>
                           </div>
                         )}
 
@@ -210,11 +209,15 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                                     className="truncate text-[10px] opacity-75"
                                     title={caseDetail.status_description}
                                   >
-                                    {caseDetail.passed ? t('passed') : caseDetail.status_description}
+                                    {caseDetail.passed
+                                      ? t('passed')
+                                      : caseDetail.status_description}
                                   </div>
                                   {typeof caseDetail.time === 'number' && (
                                     <div className="mt-1 font-mono text-[9px] opacity-60">
-                                      {t('timeMsValue', { value: Math.round(caseDetail.time * 1000) })}
+                                      {t('timeMsValue', {
+                                        value: Math.round(caseDetail.time * 1000),
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -225,12 +228,12 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                       </div>
                     )}
                   </div>
-                );
+                )
               })}
             </div>
           )}
         </div>
       </ScrollArea>
     </div>
-  );
+  )
 }

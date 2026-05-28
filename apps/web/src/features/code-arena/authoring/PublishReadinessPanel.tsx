@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { CheckCircle2, AlertTriangle } from 'lucide-react'
+import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
-import { cn } from '@/lib/utils';
-import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain';
+import { Badge } from '@/components/ui/badge'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
+import { cn } from '@/lib/utils'
+import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain'
 
 interface PublishReadinessPanelProps {
-  draft: CodeChallengeSettings;
+  draft: CodeChallengeSettings
 }
 
 export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t]);
-  const blockersCount = readiness.items.filter((item) => !item.ok).length;
+  const t = useTranslations('Activities.CodeChallenges')
+  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
+  const blockersCount = readiness.items.filter(item => !item.ok).length
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -43,16 +43,20 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
               )}
               {blockersCount > 0 ? t('checklistPending') : t('checklistAllPassed')}
             </h3>
-            <p className="text-muted-foreground text-xs leading-relaxed">{t('publishReadinessDescription')}</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              {t('publishReadinessDescription')}
+            </p>
           </div>
 
           <div className="grid gap-3">
-            {readiness.items.map((item) => (
+            {readiness.items.map(item => (
               <div
                 key={item.label}
                 className={cn(
                   'flex items-start gap-3 rounded-lg border p-4 transition-all duration-200',
-                  item.ok ? 'border-emerald-500/10 bg-emerald-500/[0.01]' : 'border-amber-500/25 bg-amber-500/[0.01]',
+                  item.ok
+                    ? 'border-emerald-500/10 bg-emerald-500/[0.01]'
+                    : 'border-amber-500/25 bg-amber-500/[0.01]',
                 )}
               >
                 <div className="mt-0.5 shrink-0">
@@ -79,15 +83,15 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function buildReadiness(settings: CodeChallengeSettings, t: any) {
-  const visible = settings.visible_tests ?? [];
-  const hidden = settings.hidden_tests ?? [];
-  const referenceSolutions = settings.reference_solutions ?? {};
-  const starterCode = settings.starter_code ?? {};
-  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings);
+  const visible = settings.visible_tests ?? []
+  const hidden = settings.hidden_tests ?? []
+  const referenceSolutions = settings.reference_solutions ?? {}
+  const starterCode = settings.starter_code ?? {}
+  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings)
 
   const items = [
     {
@@ -99,12 +103,16 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: t('readiness.languages.label'),
       ok:
         (settings.allowed_languages ?? []).length > 0 &&
-        settings.allowed_languages.every((id) => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
+        settings.allowed_languages.every(
+          id => starterCode[id]?.trim() && referenceSolutions[id]?.trim(),
+        ),
       detail: t('readiness.languages.detail'),
     },
     {
       label: t('readiness.visible.label'),
-      ok: visible.length > 0 && visible.some((test) => test.input.trim() || test.expected_output.trim()),
+      ok:
+        visible.length > 0 &&
+        visible.some(test => test.input.trim() || test.expected_output.trim()),
       detail: t('readiness.visible.detail'),
     },
     {
@@ -124,8 +132,8 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
         ? `${markdownIssue.field}: ${markdownIssue.issue.message}`
         : 'Problem text, sample explanations, and hints pass Markdown safety checks.',
     },
-  ];
+  ]
   return {
     items,
-  };
+  }
 }

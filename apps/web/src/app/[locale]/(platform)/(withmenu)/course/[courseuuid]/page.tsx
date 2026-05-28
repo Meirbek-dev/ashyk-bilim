@@ -1,30 +1,30 @@
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { getCourseMetadata } from '@services/courses/courses';
-import { getCourseDiscussions } from '@services/courses/discussions';
-import { getCurrentTrail } from '@services/courses/activity';
-import { getSession } from '@/lib/auth/session';
-import { APP_NAME } from '@/lib/constants';
-import { cache } from 'react';
-import type { Metadata } from 'next';
-import { redirect } from '@/i18n/navigation';
-import { getLocale } from 'next-intl/server';
-import AccessDenied from '@/components/Errors/AccessDenied';
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { getCourseMetadata } from '@services/courses/courses'
+import { getCourseDiscussions } from '@services/courses/discussions'
+import { getCurrentTrail } from '@services/courses/activity'
+import { getSession } from '@/lib/auth/session'
+import { APP_NAME } from '@/lib/constants'
+import { cache } from 'react'
+import type { Metadata } from 'next'
+import { redirect } from '@/i18n/navigation'
+import { getLocale } from 'next-intl/server'
+import AccessDenied from '@/components/Errors/AccessDenied'
 
-import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course';
+import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course'
 
 interface MetadataProps {
-  params: Promise<{ courseuuid: string }>;
+  params: Promise<{ courseuuid: string }>
 }
 
 const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession();
-  return await getCourseMetadata(courseuuid, undefined, !!session);
-});
+  const session = await getSession()
+  return await getCourseMetadata(courseuuid, undefined, !!session)
+})
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const params = await props.params;
+  const params = await props.params
   try {
-    const course_meta = await fetchCourseMetadata(params.courseuuid);
+    const course_meta = await fetchCourseMetadata(params.courseuuid)
 
     return {
       title: `${course_meta.name} - ${APP_NAME}`,
@@ -35,8 +35,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         follow: true,
         nocache: true,
         googleBot: {
-          'index': true,
-          'follow': true,
+          index: true,
+          follow: true,
           'max-image-preview': 'large',
         },
       },
@@ -45,7 +45,10 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         description: course_meta.description || '',
         images: [
           {
-            url: getCourseThumbnailMediaDirectory(course_meta?.course_uuid, course_meta?.thumbnail_image),
+            url: getCourseThumbnailMediaDirectory(
+              course_meta?.course_uuid,
+              course_meta?.thumbnail_image,
+            ),
             width: 800,
             height: 600,
             alt: course_meta.name,
@@ -55,39 +58,39 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         publishedTime: course_meta.creation_date || '',
         tags: course_meta.learnings || [],
       },
-    };
+    }
   } catch (error: any) {
     if (error.status === 401 || error.status === 403) {
       return {
         title: `Access Denied - ${APP_NAME}`,
-      };
+      }
     }
-    throw error;
+    throw error
   }
 }
 
-export default async function PlatformCoursePage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params;
+export default async function PlatformCoursePage(props: {
+  params: Promise<{ courseuuid: string }>
+}) {
+  const { courseuuid } = await props.params
 
-  let course_meta;
-  let session;
+  let course_meta
+  let session
   try {
-    [course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()]);
+    ;[course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()])
   } catch (error: any) {
     if (error.status === 401) {
-      const locale = await getLocale();
-      redirect({ href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}`)}`, locale });
+      const locale = await getLocale()
+      redirect({
+        href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}`)}`,
+        locale,
+      })
     }
     if (error.status === 403) {
-      const activeSession = await getSession();
-      return (
-        <AccessDenied
-          courseuuid={courseuuid}
-          session={activeSession}
-        />
-      );
+      const activeSession = await getSession()
+      return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    throw error;
+    throw error
   }
 
   const [discussions, trailData] = await Promise.all([
@@ -95,7 +98,7 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
       ? getCourseDiscussions(course_meta.course_uuid, true, 50, 0)
       : Promise.resolve([]),
     session?.user ? getCurrentTrail() : Promise.resolve(null),
-  ]);
+  ])
 
   return (
     <CourseClient
@@ -104,5 +107,5 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
       initialDiscussions={discussions}
       trailData={trailData}
     />
-  );
+  )
 }

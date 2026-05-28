@@ -1,9 +1,9 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import EmbedObjectsComponent from './EmbedObjectsComponent';
-import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import { useTranslations } from 'next-intl'
+import EmbedObjectsComponent from './EmbedObjectsComponent'
+import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 
 /**
  * Thin wrapper that renders EmbedObjectsComponent inside an error boundary.
@@ -12,15 +12,12 @@ import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
  * in place of the node and does NOT crash or unmount the editor.
  */
 const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<any>) => {
-  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects');
+  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects')
   return (
-    <EmbedObjectsErrorBoundary
-      title={t('embeddedContent')}
-      message={t('embeddedBlockRenderError')}
-    >
+    <EmbedObjectsErrorBoundary title={t('embeddedContent')} message={t('embeddedBlockRenderError')}>
       <EmbedObjectsComponent {...props} />
     </EmbedObjectsErrorBoundary>
-  );
-};
+  )
+}
 
-export default EmbedObjectsWithBoundary;
+export default EmbedObjectsWithBoundary

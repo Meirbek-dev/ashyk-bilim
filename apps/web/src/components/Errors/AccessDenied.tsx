@@ -1,30 +1,30 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { ShieldAlert, LogOut, Home } from 'lucide-react';
-import { logout } from '@services/auth/auth';
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
-import { Button } from '@components/ui/button';
+import { useTranslations } from 'next-intl'
+import { ShieldAlert, LogOut, Home } from 'lucide-react'
+import { logout } from '@services/auth/auth'
+import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
+import { Button } from '@components/ui/button'
 
 interface AccessDeniedProps {
-  courseuuid?: string;
-  session?: any;
+  courseuuid?: string
+  session?: any
 }
 
 export default function AccessDenied({ courseuuid, session }: AccessDeniedProps) {
-  const tErrors = useTranslations('Errors');
-  const tGeneral = useTranslations('General');
-  const tHeader = useTranslations('Header');
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const tErrors = useTranslations('Errors')
+  const tGeneral = useTranslations('General')
+  const tHeader = useTranslations('Header')
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   const handleLogout = () => {
     startTransition(async () => {
-      await logout();
-      router.push('/login');
-    });
-  };
+      await logout()
+      router.push('/login')
+    })
+  }
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center p-6 text-center">
@@ -37,7 +37,9 @@ export default function AccessDenied({ courseuuid, session }: AccessDeniedProps)
           {tErrors('accessDenied')}
         </h1>
 
-        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">{tErrors('accessDeniedMessage')}</p>
+        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+          {tErrors('accessDeniedMessage')}
+        </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button
@@ -63,5 +65,5 @@ export default function AccessDenied({ courseuuid, session }: AccessDeniedProps)
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertDialog,
@@ -10,26 +10,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { PermissionTooltip } from '@/components/Utils/PermissionTooltip';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { deleteCollection } from '@services/courses/collections';
-import { Crown, Layers, Loader2, Trash2 } from 'lucide-react';
-import { revalidateTags } from '@/lib/cache/revalidate';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useState, useTransition } from 'react';
-import { Badge } from '@components/ui/badge';
-import { Button } from '@components/ui/button';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/alert-dialog'
+import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { deleteCollection } from '@services/courses/collections'
+import { Crown, Layers, Loader2, Trash2 } from 'lucide-react'
+import { revalidateTags } from '@/lib/cache/revalidate'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useState, useTransition } from 'react'
+import { Badge } from '@components/ui/badge'
+import { Button } from '@components/ui/button'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { cn } from '@/lib/utils'
 
 interface PropsType {
-  collection: any;
+  collection: any
 }
 
-const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '');
+const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '')
 
 const CollectionMosaic = ({ courses }: { courses: any[] }) => {
   if (!courses || courses.length === 0) {
@@ -37,19 +37,19 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
       <div className="bg-muted flex h-full w-full items-center justify-center">
         <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
-    );
+    )
   }
 
   const courseImages = courses
-    .filter((c) => c.thumbnail_image)
-    .map((c) => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image));
+    .filter(c => c.thumbnail_image)
+    .map(c => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image))
 
   if (courseImages.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
         <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
-    );
+    )
   }
 
   if (courseImages.length === 1) {
@@ -58,7 +58,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
         className="h-full w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${courseImages[0]})` }}
       />
-    );
+    )
   }
 
   if (courseImages.length === 2) {
@@ -73,7 +73,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
           style={{ backgroundImage: `url(${courseImages[1]})` }}
         />
       </div>
-    );
+    )
   }
 
   if (courseImages.length === 3) {
@@ -94,7 +94,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
           />
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -116,15 +116,15 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
         style={{ backgroundImage: `url(${courseImages[3]})` }}
       />
     </div>
-  );
-};
+  )
+}
 
 const CollectionThumbnail = ({ collection }: PropsType) => {
-  const t = useTranslations('Components.CollectionThumbnail');
-  const tCommon = useTranslations('Common');
+  const t = useTranslations('Components.CollectionThumbnail')
+  const tCommon = useTranslations('Common')
 
-  const isOwner = collection.is_owner ?? false;
-  const canDelete = collection.can_delete ?? false;
+  const isOwner = collection.is_owner ?? false
+  const canDelete = collection.can_delete ?? false
 
   return (
     <div className="group border-border bg-card hover:border-primary/20 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md">
@@ -147,7 +147,9 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
-            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
+            href={getAbsoluteUrl(
+              `/collection/${removeCollectionPrefix(collection.collection_uuid)}`,
+            )}
             className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >
             {collection.name}
@@ -157,13 +159,12 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         <div className="mt-auto flex items-center justify-between pt-2">
           <div className="text-muted-foreground flex items-center gap-1.5">
             <Layers className="h-4 w-4" />
-            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses.length })}</p>
+            <p className="text-sm font-medium">
+              {t('courseCount', { count: collection.courses.length })}
+            </p>
           </div>
           {isOwner && (
-            <Badge
-              variant="secondary"
-              className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
-            >
+            <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
               <Crown className="h-3 w-3" />
               {tCommon('owner')}
             </Badge>
@@ -171,41 +172,35 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const CollectionDeleteAction = ({
   collection_uuid,
   collection,
   canDelete,
 }: {
-  collection_uuid: string;
-  collection: any;
-  canDelete: boolean;
+  collection_uuid: string
+  collection: any
+  canDelete: boolean
 }) => {
-  const t = useTranslations('Components.CollectionThumbnail');
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const t = useTranslations('Components.CollectionThumbnail')
+  const router = useRouter()
+  const [isOpen, setIsOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   async function handleDelete() {
     startTransition(async () => {
-      await deleteCollection(collection_uuid);
-      await revalidateTags(['collections']);
-      setIsOpen(false);
-      router.refresh();
-    });
+      await deleteCollection(collection_uuid)
+      await revalidateTags(['collections'])
+      setIsOpen(false)
+      router.refresh()
+    })
   }
 
   return (
-    <PermissionTooltip
-      enabled={canDelete}
-      action="delete"
-    >
-      <AlertDialog
-        open={isOpen}
-        onOpenChange={setIsOpen}
-      >
+    <PermissionTooltip enabled={canDelete} action="delete">
+      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
         <AlertDialogTrigger
           render={
             <Button
@@ -224,7 +219,9 @@ const CollectionDeleteAction = ({
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('deleteConfirmationTitle', { collectionName: collection.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -247,7 +244,7 @@ const CollectionDeleteAction = ({
         </AlertDialogContent>
       </AlertDialog>
     </PermissionTooltip>
-  );
-};
+  )
+}
 
-export default CollectionThumbnail;
+export default CollectionThumbnail

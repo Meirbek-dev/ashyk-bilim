@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertTriangle,
@@ -15,85 +15,92 @@ import {
   TextCursorInput,
   Trash2,
   X,
-} from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+} from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { useTranslations } from 'next-intl';
-import { useTransition, useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useTranslations } from 'next-intl'
+import { useTransition, useCallback, useState, useRef, useEffect, useMemo } from 'react'
+import { toast } from 'sonner'
 
-import type { AssessmentItem } from '@/features/assessments/domain/items';
-import type { AssessmentItemMetadata } from '@/features/assessments/domain/items';
-import type { UnifiedItemKind } from '@/features/assessments/domain/items';
+import type { AssessmentItem } from '@/features/assessments/domain/items'
+import type { AssessmentItemMetadata } from '@/features/assessments/domain/items'
+import type { UnifiedItemKind } from '@/features/assessments/domain/items'
 import {
   classifyValidationIssue,
   dedupeIssues,
   itemIssues as persistedItemIssues,
   localItemValidationIssues,
-} from '@/features/assessments/domain/readiness';
-import type { ValidationIssue } from '@/features/assessments/domain/view-models';
-import type { EditableItem } from '@/features/assessments/studio/studioTypes';
-import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
-import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
-import QuestionInspectorPanel from './QuestionInspectorPanel';
-import { apiFetch } from '@/lib/api-client';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@/features/assessments/domain/readiness'
+import type { ValidationIssue } from '@/features/assessments/domain/view-models'
+import type { EditableItem } from '@/features/assessments/studio/studioTypes'
+import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
+import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
+import QuestionInspectorPanel from './QuestionInspectorPanel'
+import { apiFetch } from '@/lib/api-client'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
-type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
+type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 
 const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   CHOICE: ListTodo,
   OPEN_TEXT: BookOpen,
   FORM: TextCursorInput,
   MATCHING: GitCompareArrows,
-};
+}
 
 interface BuilderCanvasTabProps {
-  assessmentUuid: string;
-  items: AssessmentItem[];
-  selectedItemUuid: string | null;
-  allowedKinds: SupportedStudioItemKind[];
-  itemNoun: string;
-  isEditable: boolean;
-  validationIssues: ValidationIssue[];
-  totalPoints: number;
-  itemState: EditableItem | null;
-  itemSaveState: SaveState;
-  onSelectItem: (uuid: string) => void;
-  onItemCreated: (uuid: string) => Promise<void>;
-  onItemDeleted: () => Promise<void>;
-  onItemDuplicated: (uuid: string) => Promise<void>;
-  onReorder: (orderedUuids: string[]) => Promise<void>;
-  onItemMetadataChange: (itemUuid: string, metadata: AssessmentItemMetadata) => Promise<void>;
-  onItemChange: (nextItem: EditableItem) => void;
-  renderItemBodyEditor: (item: EditableItem) => React.ReactNode;
+  assessmentUuid: string
+  items: AssessmentItem[]
+  selectedItemUuid: string | null
+  allowedKinds: SupportedStudioItemKind[]
+  itemNoun: string
+  isEditable: boolean
+  validationIssues: ValidationIssue[]
+  totalPoints: number
+  itemState: EditableItem | null
+  itemSaveState: SaveState
+  onSelectItem: (uuid: string) => void
+  onItemCreated: (uuid: string) => Promise<void>
+  onItemDeleted: () => Promise<void>
+  onItemDuplicated: (uuid: string) => Promise<void>
+  onReorder: (orderedUuids: string[]) => Promise<void>
+  onItemMetadataChange: (itemUuid: string, metadata: AssessmentItemMetadata) => Promise<void>
+  onItemChange: (nextItem: EditableItem) => void
+  renderItemBodyEditor: (item: EditableItem) => React.ReactNode
 }
 
 // ─── Exam Sections ───────────────────────────────────────────────────────────
 
 export interface ExamSection {
-  id: string;
-  label: string;
+  id: string
+  label: string
   /** This section header appears immediately before the item with this uuid */
-  beforeItemUuid: string;
+  beforeItemUuid: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -118,73 +125,81 @@ export default function BuilderCanvasTab({
   onItemChange,
   renderItemBodyEditor,
 }: BuilderCanvasTabProps) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
-  const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas');
-  const [isCreating, startCreateTransition] = useTransition();
-  const [isDuplicating, startDuplicateTransition] = useTransition();
-  const [isDeleting, startDeleteTransition] = useTransition();
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
+  const [isCreating, startCreateTransition] = useTransition()
+  const [isDuplicating, startDuplicateTransition] = useTransition()
+  const [isDeleting, startDeleteTransition] = useTransition()
+  const [inspectorOpen, setInspectorOpen] = useState(true)
   const sections = useMemo(
     () =>
-      items.flatMap((item) => {
-        const sectionLabel = item.metadata?.section_label;
-        return sectionLabel ? [{ id: item.item_uuid, label: sectionLabel, beforeItemUuid: item.item_uuid }] : [];
+      items.flatMap(item => {
+        const sectionLabel = item.metadata?.section_label
+        return sectionLabel
+          ? [
+              {
+                id: item.item_uuid,
+                label: sectionLabel,
+                beforeItemUuid: item.item_uuid,
+              },
+            ]
+          : []
       }),
     [items],
-  );
+  )
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),
     FORM: t('kindLabels.form'),
     MATCHING: t('kindLabels.matching'),
-  };
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  )
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
+      const { active, over } = event
+      if (!over || active.id === over.id) return
 
-      const oldIndex = items.findIndex((item) => item.item_uuid === active.id);
-      const newIndex = items.findIndex((item) => item.item_uuid === over.id);
-      if (oldIndex === -1 || newIndex === -1) return;
+      const oldIndex = items.findIndex(item => item.item_uuid === active.id)
+      const newIndex = items.findIndex(item => item.item_uuid === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
 
-      const reordered = [...items];
-      const [moved] = reordered.splice(oldIndex, 1);
-      if (moved) reordered.splice(newIndex, 0, moved);
-      void onReorder(reordered.map((item) => item.item_uuid));
+      const reordered = [...items]
+      const [moved] = reordered.splice(oldIndex, 1)
+      if (moved) reordered.splice(newIndex, 0, moved)
+      void onReorder(reordered.map(item => item.item_uuid))
     },
     [items, onReorder],
-  );
+  )
 
   const createItem = (kind: SupportedStudioItemKind) => {
     startCreateTransition(async () => {
       try {
-        const body = buildDefaultItemPayload(kind, t('defaultItemTitle'));
+        const body = buildDefaultItemPayload(kind, t('defaultItemTitle'))
         const response = await apiFetch(`assessments/${assessmentUuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error('Failed to create item');
-        const created = (await response.json()) as { item_uuid?: string };
-        toast.success(t('itemCreated', { itemNoun }));
+        })
+        if (!response.ok) throw new Error('Failed to create item')
+        const created = (await response.json()) as { item_uuid?: string }
+        toast.success(t('itemCreated', { itemNoun }))
         if (typeof created.item_uuid === 'string') {
-          await onItemCreated(created.item_uuid);
+          await onItemCreated(created.item_uuid)
         }
       } catch {
-        toast.error(t('createFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(t('createFailed', { itemNoun: itemNoun.toLowerCase() }))
       }
-    });
-  };
+    })
+  }
 
   const handleDuplicate = () => {
-    if (!itemState) return;
+    if (!itemState) return
     startDuplicateTransition(async () => {
       try {
         const response = await apiFetch(`assessments/${assessmentUuid}/items`, {
@@ -192,46 +207,51 @@ export default function BuilderCanvasTab({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
+            title: itemState.title
+              ? t('copyOf', { title: itemState.title })
+              : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
             metadata: structuredClone(itemState.metadata),
           }),
-        });
-        if (!response.ok) throw new Error('Failed to duplicate item');
-        const created = (await response.json()) as { item_uuid?: string };
-        toast.success(t('itemDuplicated', { itemNoun }));
+        })
+        if (!response.ok) throw new Error('Failed to duplicate item')
+        const created = (await response.json()) as { item_uuid?: string }
+        toast.success(t('itemDuplicated', { itemNoun }))
         if (typeof created.item_uuid === 'string') {
-          await onItemDuplicated(created.item_uuid);
+          await onItemDuplicated(created.item_uuid)
         }
       } catch {
-        toast.error(t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }))
       }
-    });
-  };
+    })
+  }
 
   const handleDelete = () => {
-    if (!itemState) return;
+    if (!itemState) return
     startDeleteTransition(async () => {
       try {
-        const response = await apiFetch(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) throw new Error('Failed to delete item');
-        toast.success(t('itemDeleted', { itemNoun }));
-        await onItemDeleted();
+        const response = await apiFetch(
+          `assessments/${assessmentUuid}/items/${itemState.item_uuid}`,
+          {
+            method: 'DELETE',
+          },
+        )
+        if (!response.ok) throw new Error('Failed to delete item')
+        toast.success(t('itemDeleted', { itemNoun }))
+        await onItemDeleted()
       } catch {
-        toast.error(t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }))
       }
-    });
-  };
+    })
+  }
 
   const patchItemMetadata = useCallback(
     async (itemUuid: string, metadata: AssessmentItemMetadata) => {
-      await onItemMetadataChange(itemUuid, metadata);
+      await onItemMetadataChange(itemUuid, metadata)
     },
     [onItemMetadataChange],
-  );
+  )
 
   return (
     <div className="flex h-[calc(100vh-120px)] overflow-hidden">
@@ -240,7 +260,9 @@ export default function BuilderCanvasTab({
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
-            <p className="text-muted-foreground text-xs">{t('outlinePoints', { points: totalPoints })}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('outlinePoints', { points: totalPoints })}
+            </p>
           </div>
         </div>
 
@@ -250,31 +272,25 @@ export default function BuilderCanvasTab({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button
-                    type="button"
-                    className="w-full justify-center"
-                    disabled={isCreating}
-                  >
-                    {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                  <Button type="button" className="w-full justify-center" disabled={isCreating}>
+                    {isCreating ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Plus className="size-4" />
+                    )}
                     {tBuilder('newQuestion')}
                   </Button>
                 }
               />
-              <DropdownMenuContent
-                align="start"
-                className="w-64"
-              >
-                {allowedKinds.map((kind) => {
-                  const Icon = KIND_ICONS[kind];
+              <DropdownMenuContent align="start" className="w-64">
+                {allowedKinds.map(kind => {
+                  const Icon = KIND_ICONS[kind]
                   return (
-                    <DropdownMenuItem
-                      key={kind}
-                      onSelect={() => createItem(kind)}
-                    >
+                    <DropdownMenuItem key={kind} onSelect={() => createItem(kind)}>
                       <Icon className="mr-2 size-4" />
                       {kindLabels[kind]}
                     </DropdownMenuItem>
-                  );
+                  )
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -294,34 +310,38 @@ export default function BuilderCanvasTab({
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={items.map((item) => item.item_uuid)}
+                items={items.map(item => item.item_uuid)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-1">
                   {items.map((item, index) => {
-                    const itemSections = sections.filter((s) => s.beforeItemUuid === item.item_uuid);
+                    const itemSections = sections.filter(s => s.beforeItemUuid === item.item_uuid)
                     return (
                       <div key={item.item_uuid}>
-                        {itemSections.map((section) => (
+                        {itemSections.map(section => (
                           <SectionHeader
                             key={section.id}
                             section={section}
                             isEditable={isEditable}
-                            onRename={(label) => {
-                              const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
-                              if (!item) return;
+                            onRename={label => {
+                              const item = items.find(
+                                candidate => candidate.item_uuid === section.beforeItemUuid,
+                              )
+                              if (!item) return
                               void patchItemMetadata(item.item_uuid, {
                                 ...defaultMetadata(item.metadata),
                                 section_label: label,
-                              });
+                              })
                             }}
                             onDelete={() => {
-                              const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
-                              if (!item) return;
+                              const item = items.find(
+                                candidate => candidate.item_uuid === section.beforeItemUuid,
+                              )
+                              if (!item) return
                               void patchItemMetadata(item.item_uuid, {
                                 ...defaultMetadata(item.metadata),
                                 section_label: null,
-                              });
+                              })
                             }}
                           />
                         ))}
@@ -338,13 +358,15 @@ export default function BuilderCanvasTab({
                               ? () =>
                                   void patchItemMetadata(item.item_uuid, {
                                     ...defaultMetadata(item.metadata),
-                                    section_label: tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
+                                    section_label: tBuilder('defaultSectionLabel', {
+                                      n: sections.length + 1,
+                                    }),
                                   })
                               : undefined
                           }
                         />
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </SortableContext>
@@ -365,7 +387,9 @@ export default function BuilderCanvasTab({
                 {t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}
               </h3>
               <p className="text-muted-foreground mt-1.5 text-sm">
-                {t('noItemSelectedDescription', { itemNoun: itemNoun.toLowerCase() })}
+                {t('noItemSelectedDescription', {
+                  itemNoun: itemNoun.toLowerCase(),
+                })}
               </p>
               {isEditable && allowedKinds.length > 0 ? (
                 <Button
@@ -405,12 +429,12 @@ export default function BuilderCanvasTab({
           item={itemState}
           isEditable={isEditable}
           isOpen={inspectorOpen}
-          onToggle={() => setInspectorOpen((v) => !v)}
+          onToggle={() => setInspectorOpen(v => !v)}
           onChange={onItemChange}
         />
       ) : null}
     </div>
-  );
+  )
 }
 
 function SectionHeader({
@@ -419,25 +443,25 @@ function SectionHeader({
   onRename,
   onDelete,
 }: {
-  section: ExamSection;
-  isEditable: boolean;
-  onRename: (label: string) => void;
-  onDelete: () => void;
+  section: ExamSection
+  isEditable: boolean
+  onRename: (label: string) => void
+  onDelete: () => void
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(section.label);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(section.label)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (editing) inputRef.current?.select();
-  }, [editing]);
+    if (editing) inputRef.current?.select()
+  }, [editing])
 
   const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed) onRename(trimmed);
-    else setDraft(section.label);
-    setEditing(false);
-  };
+    const trimmed = draft.trim()
+    if (trimmed) onRename(trimmed)
+    else setDraft(section.label)
+    setEditing(false)
+  }
 
   return (
     <div className="group mt-2 mb-1 flex items-center gap-1 px-1">
@@ -446,13 +470,13 @@ function SectionHeader({
         <Input
           ref={inputRef}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={e => setDraft(e.target.value)}
           onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commit();
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit()
             if (e.key === 'Escape') {
-              setDraft(section.label);
-              setEditing(false);
+              setDraft(section.label)
+              setEditing(false)
             }
           }}
           className="text-muted-foreground h-5 w-32 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase focus-visible:ring-1"
@@ -486,7 +510,7 @@ function SectionHeader({
       ) : null}
       <div className="bg-border h-px flex-1" />
     </div>
-  );
+  )
 }
 
 function SortableOutlineItem({
@@ -499,33 +523,33 @@ function SortableOutlineItem({
   onSelect,
   onAddSectionBefore,
 }: {
-  item: AssessmentItem;
-  index: number;
-  selected: boolean;
-  kindLabel: string;
-  validationIssues: ValidationIssue[];
-  disabled: boolean;
-  onSelect: () => void;
-  onAddSectionBefore?: () => void;
+  item: AssessmentItem
+  index: number
+  selected: boolean
+  kindLabel: string
+  validationIssues: ValidationIssue[]
+  disabled: boolean
+  onSelect: () => void
+  onAddSectionBefore?: () => void
 }) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
-  const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas');
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.item_uuid,
     disabled,
-  });
+  })
 
   const issues = dedupeIssues([
     ...localItemValidationIssues(item),
     ...persistedItemIssues(validationIssues, item.item_uuid),
-  ]);
-  const hasIssues = issues.length > 0;
-  const Icon = KIND_ICONS[item.kind as SupportedStudioItemKind] ?? BookOpen;
+  ])
+  const hasIssues = issues.length > 0
+  const Icon = KIND_ICONS[item.kind as SupportedStudioItemKind] ?? BookOpen
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
+  }
 
   return (
     <div
@@ -538,16 +562,18 @@ function SortableOutlineItem({
         tabIndex={0}
         id={`item-${item.item_uuid}`}
         onClick={onSelect}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSelect();
+            e.preventDefault()
+            onSelect()
           }
         }}
         className={cn(
           'h-auto w-full rounded-lg border p-3 text-left transition-all duration-150 cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           'hover:bg-muted/50',
-          selected ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'bg-background border-border',
+          selected
+            ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
+            : 'bg-background border-border',
         )}
       >
         <div className="flex items-start gap-2">
@@ -557,7 +583,7 @@ function SortableOutlineItem({
               {...attributes}
               {...listeners}
               className="mt-0.5 shrink-0 cursor-grab touch-none opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               <GripVertical className="text-muted-foreground size-3.5" />
             </div>
@@ -575,11 +601,10 @@ function SortableOutlineItem({
           </div>
           {hasIssues ? (
             <Tooltip>
-              <TooltipTrigger render={<AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />} />
-              <TooltipContent
-                side="right"
-                className="max-w-[200px]"
-              >
+              <TooltipTrigger
+                render={<AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />}
+              />
+              <TooltipContent side="right" className="max-w-[200px]">
                 <ul className="space-y-1 text-xs">
                   {issues.slice(0, 3).map((issue, i) => (
                     <li key={i}>• {issue.message}</li>
@@ -600,9 +625,9 @@ function SortableOutlineItem({
                     variant="ghost"
                     size="icon"
                     className="mt-0.5 h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddSectionBefore();
+                    onClick={e => {
+                      e.stopPropagation()
+                      onAddSectionBefore()
                     }}
                   >
                     <FolderPlus className="text-muted-foreground size-3.5" />
@@ -617,7 +642,7 @@ function SortableOutlineItem({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function ItemCanvas({
@@ -636,29 +661,30 @@ function ItemCanvas({
   onDelete,
   renderBodyEditor,
 }: {
-  item: EditableItem;
-  items: AssessmentItem[];
-  totalPoints: number;
-  itemNoun: string;
-  kindLabel: string;
-  saveState: SaveState;
-  isEditable: boolean;
-  isDuplicating: boolean;
-  isDeleting: boolean;
-  validationIssues: ValidationIssue[];
-  onChange: (nextItem: EditableItem) => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-  renderBodyEditor: (item: EditableItem) => React.ReactNode;
+  item: EditableItem
+  items: AssessmentItem[]
+  totalPoints: number
+  itemNoun: string
+  kindLabel: string
+  saveState: SaveState
+  isEditable: boolean
+  isDuplicating: boolean
+  isDeleting: boolean
+  validationIssues: ValidationIssue[]
+  onChange: (nextItem: EditableItem) => void
+  onDuplicate: () => void
+  onDelete: () => void
+  renderBodyEditor: (item: EditableItem) => React.ReactNode
 }) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const itemIssueList = dedupeIssues([
     ...localItemValidationIssues(item),
     ...persistedItemIssues(validationIssues, item.item_uuid),
-  ]).map(classifyValidationIssue);
-  const itemMetadataIssues = itemIssueList.filter((issue) => issue.area === 'item-metadata');
-  const hasMetadataIssue = (field: string) => itemMetadataIssues.some((issue) => issue.field === field);
-  const itemIndex = items.findIndex((i) => i.item_uuid === item.item_uuid);
+  ]).map(classifyValidationIssue)
+  const itemMetadataIssues = itemIssueList.filter(issue => issue.area === 'item-metadata')
+  const hasMetadataIssue = (field: string) =>
+    itemMetadataIssues.some(issue => issue.field === field)
+  const itemIndex = items.findIndex(i => i.item_uuid === item.item_uuid)
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 md:px-8">
@@ -666,19 +692,15 @@ function ItemCanvas({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="text-xs"
-            >
+            <Badge variant="outline" className="text-xs">
               {kindLabel}
             </Badge>
-            {itemIndex !== -1 ? <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span> : null}
+            {itemIndex !== -1 ? (
+              <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span>
+            ) : null}
             <SaveStateBadge state={saveState} />
             {!isEditable ? (
-              <Badge
-                variant="secondary"
-                className="text-xs"
-              >
+              <Badge variant="secondary" className="text-xs">
                 {t('readOnlyBadge')}
               </Badge>
             ) : null}
@@ -701,7 +723,11 @@ function ItemCanvas({
             disabled={!isEditable || isDuplicating}
             onClick={onDuplicate}
           >
-            {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+            {isDuplicating ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : (
+              <Copy className="size-3.5" />
+            )}
             {t('duplicate')}
           </Button>
           <Button
@@ -711,7 +737,11 @@ function ItemCanvas({
             disabled={!isEditable || isDeleting}
             onClick={onDelete}
           >
-            {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+            {isDeleting ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="size-3.5" />
+            )}
             {t('delete')}
           </Button>
         </div>
@@ -728,8 +758,10 @@ function ItemCanvas({
               value={item.title}
               disabled={!isEditable}
               aria-invalid={hasMetadataIssue('title')}
-              className={cn(hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={(e) => onChange({ ...item, title: e.target.value })}
+              className={cn(
+                hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40',
+              )}
+              onChange={e => onChange({ ...item, title: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -742,8 +774,15 @@ function ItemCanvas({
               value={item.max_score}
               disabled={!isEditable}
               aria-invalid={hasMetadataIssue('max_score')}
-              className={cn(hasMetadataIssue('max_score') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={(e) => onChange({ ...item, max_score: e.target.value ? Number(e.target.value) : 0 })}
+              className={cn(
+                hasMetadataIssue('max_score') && 'border-amber-500 focus-visible:ring-amber-500/40',
+              )}
+              onChange={e =>
+                onChange({
+                  ...item,
+                  max_score: e.target.value ? Number(e.target.value) : 0,
+                })
+              }
             />
           </div>
         </div>
@@ -755,7 +794,7 @@ function ItemCanvas({
         {renderBodyEditor(item)}
       </section>
     </div>
-  );
+  )
 }
 
 function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: string) {
@@ -771,10 +810,15 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
         multiple: false,
         variant: 'SINGLE_CHOICE',
       },
-    };
+    }
   }
   if (kind === 'MATCHING') {
-    return { kind, title: defaultTitle, max_score: 1, body: { kind, prompt: '', pairs: [{ left: '', right: '' }] } };
+    return {
+      kind,
+      title: defaultTitle,
+      max_score: 1,
+      body: { kind, prompt: '', pairs: [{ left: '', right: '' }] },
+    }
   }
   if (kind === 'FORM') {
     return {
@@ -784,23 +828,37 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
       body: {
         kind,
         prompt: '',
-        fields: [{ id: `field_${crypto.randomUUID()}`, label: '', field_type: 'text', required: false }],
+        fields: [
+          {
+            id: `field_${crypto.randomUUID()}`,
+            label: '',
+            field_type: 'text',
+            required: false,
+          },
+        ],
       },
-    };
+    }
   }
-  return { kind, title: defaultTitle, max_score: 1, body: { kind, prompt: '', min_words: null, rubric: null } };
+  return {
+    kind,
+    title: defaultTitle,
+    max_score: 1,
+    body: { kind, prompt: '', min_words: null, rubric: null },
+  }
 }
 
 function createChoiceOption() {
-  return { id: `option_${crypto.randomUUID()}`, text: '', is_correct: false };
+  return { id: `option_${crypto.randomUUID()}`, text: '', is_correct: false }
 }
 
-function defaultMetadata(metadata: AssessmentItemMetadata | null | undefined): AssessmentItemMetadata {
+function defaultMetadata(
+  metadata: AssessmentItemMetadata | null | undefined,
+): AssessmentItemMetadata {
   return {
     section_label: metadata?.section_label ?? null,
     difficulty: metadata?.difficulty ?? null,
     tags: metadata?.tags ?? [],
     outcome_ids: metadata?.outcome_ids ?? [],
     estimated_minutes: metadata?.estimated_minutes ?? null,
-  };
+  }
 }

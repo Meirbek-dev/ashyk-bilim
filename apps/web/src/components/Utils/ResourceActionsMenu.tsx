@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Archive,
@@ -14,36 +14,36 @@ import {
   Star,
   Trash2,
   UserPlus,
-} from 'lucide-react';
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import type { LucideIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { Fragment } from 'react';
-import type React from 'react';
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import type { LucideIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Fragment } from 'react'
+import type React from 'react'
 
 export interface ResourceAction {
-  id: string;
-  label?: string;
-  labelKey?: string;
-  icon?: LucideIcon;
-  onClick: () => void;
-  variant?: 'default' | 'destructive';
-  requiresAction?: string;
-  separator?: boolean;
+  id: string
+  label?: string
+  labelKey?: string
+  icon?: LucideIcon
+  onClick: () => void
+  variant?: 'default' | 'destructive'
+  requiresAction?: string
+  separator?: boolean
 }
 
 interface ResourceActionsMenuProps {
-  availableActions: string[];
-  actions: ResourceAction[];
-  trigger?: React.ReactElement;
-  align?: 'start' | 'center' | 'end';
+  availableActions: string[]
+  actions: ResourceAction[]
+  trigger?: React.ReactElement
+  align?: 'start' | 'center' | 'end'
 }
 
 /**
@@ -80,59 +80,62 @@ interface ResourceActionsMenuProps {
  * />
  * ```
  */
-export function ResourceActionsMenu({ availableActions, actions, trigger, align = 'end' }: ResourceActionsMenuProps) {
-  const t = useTranslations('Components.ResourceActionsMenu');
+export function ResourceActionsMenu({
+  availableActions,
+  actions,
+  trigger,
+  align = 'end',
+}: ResourceActionsMenuProps) {
+  const t = useTranslations('Components.ResourceActionsMenu')
 
   // Filter actions based on available_actions from backend
-  const filteredActions = actions.filter((action) => {
+  const filteredActions = actions.filter(action => {
     // If requiresAction is specified, check if it's in availableActions
     if (action.requiresAction) {
-      return availableActions.includes(action.requiresAction);
+      return availableActions.includes(action.requiresAction)
     }
     // If no requiresAction specified, always show (for custom logic)
-    return true;
-  });
+    return true
+  })
 
   // Don't render menu if no actions are available
   if (filteredActions.length === 0) {
-    return null;
+    return null
   }
 
   const defaultTrigger = (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="h-8 w-8 p-0"
-    >
+    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
       <MoreVertical className="h-4 w-4" />
       <span className="sr-only">{t('openMenu', { default: 'Open menu' })}</span>
     </Button>
-  );
+  )
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={trigger ?? defaultTrigger} />
       <DropdownMenuContent align={align}>
         {filteredActions.map((action, index) => {
-          const Icon = action.icon;
-          const showSeparator = action.separator && index < filteredActions.length - 1;
+          const Icon = action.icon
+          const showSeparator = action.separator && index < filteredActions.length - 1
 
           return (
             <Fragment key={action.id}>
               <DropdownMenuItem
                 onClick={action.onClick}
-                className={action.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''}
+                className={
+                  action.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''
+                }
               >
                 {Icon && <Icon className="mr-2 h-4 w-4" />}
                 {action.labelKey ? t(action.labelKey) : action.label}
               </DropdownMenuItem>
               {showSeparator && <DropdownMenuSeparator />}
             </Fragment>
-          );
+          )
         })}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
 
 /**
@@ -227,6 +230,6 @@ export const CommonActions = {
     requiresAction: 'manage',
     separator: true,
   }),
-};
+}
 
-export default ResourceActionsMenu;
+export default ResourceActionsMenu

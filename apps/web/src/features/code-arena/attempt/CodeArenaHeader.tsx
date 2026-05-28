@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import { ChevronLeft, ChevronRight, Clock, List, Play, Rocket, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { ChevronLeft, ChevronRight, Clock, List, Play, Rocket, Send } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import type { CodeChallengeProblem, CodeVerdict } from '../domain';
-import { verdictLabel } from '../domain';
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import type { CodeChallengeProblem, CodeVerdict } from '../domain'
+import { verdictLabel } from '../domain'
 
 interface CodeArenaHeaderProps {
-  problem: CodeChallengeProblem;
-  verdict: CodeVerdict | null;
-  isRunning: boolean;
-  onRunCustom: () => void;
-  onRunTests: () => void;
-  onSubmit: () => void;
-  disabled?: boolean;
+  problem: CodeChallengeProblem
+  verdict: CodeVerdict | null
+  isRunning: boolean
+  onRunCustom: () => void
+  onRunTests: () => void
+  onSubmit: () => void
+  disabled?: boolean
 }
 
 export function CodeArenaHeader({
@@ -35,21 +35,21 @@ export function CodeArenaHeader({
   onSubmit,
   disabled = false,
 }: CodeArenaHeaderProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [timeElapsed, setTimeElapsed] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+      setTimeElapsed(prev => prev + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }
 
   return (
     <div className="bg-muted/40 flex h-14 shrink-0 items-center justify-between border-b px-4">
@@ -77,29 +77,19 @@ export function CodeArenaHeader({
           <DropdownMenuContent align="start">
             <DropdownMenuItem className="font-semibold">{problem.title}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-muted-foreground text-xs">{t('practiceModeActive')}</DropdownMenuItem>
+            <DropdownMenuItem className="text-muted-foreground text-xs">
+              {t('practiceModeActive')}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <div className="bg-border h-4 w-px" />
 
         <div className="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled
-          >
+          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
             <ChevronLeft className="size-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled
-          >
+          <Button type="button" variant="ghost" size="icon" className="size-8" disabled>
             <ChevronRight className="size-4" />
           </Button>
         </div>
@@ -167,11 +157,11 @@ export function CodeArenaHeader({
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
-  if (!verdict) return null;
+  if (!verdict) return null
 
   return (
     <span className="text-muted-foreground hidden items-center gap-1.5 text-xs md:inline-flex">
@@ -189,16 +179,16 @@ function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
       />
       {verdictLabel(verdict)}
     </span>
-  );
+  )
 }
 
 function DropdownMenuSeparator() {
-  return <div className="bg-border my-1 h-px" />;
+  return <div className="bg-border my-1 h-px" />
 }
 
 function difficultyTone(difficulty: string): 'success' | 'warning' | 'destructive' | 'secondary' {
-  if (difficulty === 'EASY') return 'success';
-  if (difficulty === 'MEDIUM') return 'warning';
-  if (difficulty === 'HARD') return 'destructive';
-  return 'secondary';
+  if (difficulty === 'EASY') return 'success'
+  if (difficulty === 'MEDIUM') return 'warning'
+  if (difficulty === 'HARD') return 'destructive'
+  return 'secondary'
 }

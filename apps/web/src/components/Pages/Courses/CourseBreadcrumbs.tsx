@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Breadcrumb,
@@ -7,18 +7,18 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { getAbsoluteUrl } from '@services/config/config';
-import Link from '@components/ui/ServerLink';
-import { useTranslations } from 'next-intl';
-import { Book } from 'lucide-react';
+} from '@/components/ui/breadcrumb'
+import { getAbsoluteUrl } from '@services/config/config'
+import Link from '@components/ui/ServerLink'
+import { useTranslations } from 'next-intl'
+import { Book } from 'lucide-react'
 
 interface CourseBreadcrumbsProps {
-  course: any;
+  course: any
 }
 
 export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
-  const t = useTranslations('CourseBreadcrumbs');
+  const t = useTranslations('CourseBreadcrumbs')
   return (
     <div className="pt-2">
       <Breadcrumb>
@@ -28,10 +28,7 @@ export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
               render={<Link href={`${getAbsoluteUrl('')}/courses`} />}
               className="flex items-center space-x-2"
             >
-              <Book
-                className="text-gray"
-                size={14}
-              />
+              <Book className="text-gray" size={14} />
               <span>{t('courses')}</span>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -42,5 +39,5 @@ export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
         </BreadcrumbList>
       </Breadcrumb>
     </div>
-  );
+  )
 }

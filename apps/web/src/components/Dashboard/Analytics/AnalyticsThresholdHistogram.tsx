@@ -1,19 +1,24 @@
-'use client';
+'use client'
 
-import { ChartContainer, ChartEmptyState, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
-import type { HistogramBucket } from '@/types/analytics';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
+import {
+  ChartContainer,
+  ChartEmptyState,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts'
+import type { HistogramBucket } from '@/types/analytics'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
 
 interface AnalyticsThresholdHistogramProps {
-  title: string;
-  description: string;
-  data: HistogramBucket[];
-  thresholdLabel?: string;
+  title: string
+  description: string
+  data: HistogramBucket[]
+  thresholdLabel?: string
   /** Label value of the bucket at the passing threshold, used to draw a vertical reference line */
-  thresholdBucketLabel?: string;
+  thresholdBucketLabel?: string
 }
 
 export default function AnalyticsThresholdHistogram({
@@ -23,7 +28,7 @@ export default function AnalyticsThresholdHistogram({
   thresholdLabel,
   thresholdBucketLabel,
 }: AnalyticsThresholdHistogramProps) {
-  const t = useTranslations('TeacherAnalytics');
+  const t = useTranslations('TeacherAnalytics')
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -43,38 +48,23 @@ export default function AnalyticsThresholdHistogram({
               count: {
                 label: t('histogram.learners'),
                 color: 'var(--chart-3)',
-                valueFormatter: (value) => `${value ?? 0} ${t('histogram.learners')}`,
+                valueFormatter: value => `${value ?? 0} ${t('histogram.learners')}`,
               },
             }}
           >
             <BarChart data={data}>
-              <CartesianGrid
-                vertical={false}
-                strokeDasharray="3 3"
-              />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-              />
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} allowDecimals={false} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
                     nameKey="label"
-                    formatter={(v) => [`${v} ${t('histogram.learners')}`, '']}
+                    formatter={v => [`${v} ${t('histogram.learners')}`, '']}
                   />
                 }
               />
-              <Bar
-                dataKey="count"
-                radius={10}
-                fill="var(--color-count)"
-              />
+              <Bar dataKey="count" radius={10} fill="var(--color-count)" />
               {thresholdBucketLabel ? (
                 <ReferenceLine
                   x={thresholdBucketLabel}
@@ -95,5 +85,5 @@ export default function AnalyticsThresholdHistogram({
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

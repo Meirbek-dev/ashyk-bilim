@@ -1,27 +1,35 @@
-'use client';
+'use client'
 
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, XCircle, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  XCircle,
+  Loader2,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import type { CodeResultTab, CodeVerdict, TestCaseResult } from '../domain';
-import { firstFailingResult, verdictLabel, verdictTone } from '../domain';
-import { CodeDiffViewer } from '../review/CodeDiffViewer';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import type { CodeResultTab, CodeVerdict, TestCaseResult } from '../domain'
+import { firstFailingResult, verdictLabel, verdictTone } from '../domain'
+import { CodeDiffViewer } from '../review/CodeDiffViewer'
 
 interface ResultsDockProps {
-  activeTab: CodeResultTab;
-  onTabChange: (tab: CodeResultTab) => void;
-  customInput: string;
-  onCustomInputChange: (value: string) => void;
-  consoleOutput: string;
-  results: TestCaseResult[] | null;
-  verdict: CodeVerdict | null;
+  activeTab: CodeResultTab
+  onTabChange: (tab: CodeResultTab) => void
+  customInput: string
+  onCustomInputChange: (value: string) => void
+  consoleOutput: string
+  results: TestCaseResult[] | null
+  verdict: CodeVerdict | null
 }
 
 export function ResultsDock({
@@ -33,42 +41,42 @@ export function ResultsDock({
   results,
   verdict,
 }: ResultsDockProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const t = useTranslations('Activities.CodeChallenges')
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
 
   // Auto-expand the first failing test case when results change
   useEffect(() => {
     if (results && results.length > 0) {
-      const firstFail = results.find((r) => !r.passed);
+      const firstFail = results.find(r => !r.passed)
       if (firstFail) {
-        setExpandedRows({ [firstFail.test_case_id]: true });
+        setExpandedRows({ [firstFail.test_case_id]: true })
       } else if (results[0]) {
-        setExpandedRows({ [results[0].test_case_id]: true });
+        setExpandedRows({ [results[0].test_case_id]: true })
       }
     }
-  }, [results]);
+  }, [results])
 
   const toggleRow = (id: string) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   const handleFocusFailedCase = (caseId: string) => {
-    setExpandedRows({ [caseId]: true });
-  };
+    setExpandedRows({ [caseId]: true })
+  }
 
-  const passed = results?.filter((result) => result.passed).length ?? 0;
-  const total = results?.length ?? 0;
+  const passed = results?.filter(result => result.passed).length ?? 0
+  const total = results?.length ?? 0
 
   // Split results into visible and hidden
-  const visibleResults = results?.filter((r) => r.is_visible !== false) ?? [];
-  const hiddenResults = results?.filter((r) => r.is_visible === false) ?? [];
-  const hiddenPassed = hiddenResults.filter((r) => r.passed).length;
-  const hiddenTotal = hiddenResults.length;
+  const visibleResults = results?.filter(r => r.is_visible !== false) ?? []
+  const hiddenResults = results?.filter(r => r.is_visible === false) ?? []
+  const hiddenPassed = hiddenResults.filter(r => r.passed).length
+  const hiddenTotal = hiddenResults.length
 
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(value) => onTabChange(value as CodeResultTab)}
+      onValueChange={value => onTabChange(value as CodeResultTab)}
       className="flex h-full min-h-0 flex-col"
     >
       <div className="bg-background flex shrink-0 items-center border-b">
@@ -85,10 +93,7 @@ export function ResultsDock({
           >
             {t('resultTab')}
             {results ? (
-              <Badge
-                className="ml-2"
-                variant={passed === total ? 'success' : 'secondary'}
-              >
+              <Badge className="ml-2" variant={passed === total ? 'success' : 'secondary'}>
                 {passed}/{total}
               </Badge>
             ) : null}
@@ -102,10 +107,7 @@ export function ResultsDock({
         </TabsList>
       </div>
 
-      <TabsContent
-        value="testcase"
-        className="min-h-0 flex-1 overflow-hidden"
-      >
+      <TabsContent value="testcase" className="min-h-0 flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
             <div>
@@ -113,7 +115,7 @@ export function ResultsDock({
             </div>
             <Textarea
               value={customInput}
-              onChange={(event) => onCustomInputChange(event.target.value)}
+              onChange={event => onCustomInputChange(event.target.value)}
               className="min-h-28 resize-none font-mono text-xs"
               placeholder={t('enterCustomInput')}
             />
@@ -121,10 +123,7 @@ export function ResultsDock({
         </ScrollArea>
       </TabsContent>
 
-      <TabsContent
-        value="result"
-        className="min-h-0 flex-1 overflow-hidden"
-      >
+      <TabsContent value="result" className="min-h-0 flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
             <VerdictBanner
@@ -161,7 +160,10 @@ export function ResultsDock({
                         <span className="text-sm font-semibold">{t('hiddenTestCases')}</span>
                       </div>
                       <Badge variant={hiddenPassed === hiddenTotal ? 'success' : 'destructive'}>
-                        {t('passedFraction', { passed: hiddenPassed, total: hiddenTotal })}
+                        {t('passedFraction', {
+                          passed: hiddenPassed,
+                          total: hiddenTotal,
+                        })}
                       </Badge>
                     </div>
                     <p className="text-muted-foreground mt-2 text-xs">{t('diagnosticsHidden')}</p>
@@ -196,10 +198,7 @@ export function ResultsDock({
         </ScrollArea>
       </TabsContent>
 
-      <TabsContent
-        value="console"
-        className="min-h-0 flex-1 overflow-hidden"
-      >
+      <TabsContent value="console" className="min-h-0 flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4">
             <pre className="bg-muted/40 min-h-28 rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
@@ -209,7 +208,7 @@ export function ResultsDock({
         </ScrollArea>
       </TabsContent>
     </Tabs>
-  );
+  )
 }
 
 function VerdictBanner({
@@ -217,15 +216,21 @@ function VerdictBanner({
   results,
   onFocusFailedCase,
 }: {
-  verdict: CodeVerdict | null;
-  results: TestCaseResult[] | null;
-  onFocusFailedCase: (caseId: string) => void;
+  verdict: CodeVerdict | null
+  results: TestCaseResult[] | null
+  onFocusFailedCase: (caseId: string) => void
 }) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const firstFail = firstFailingResult(results);
+  const t = useTranslations('Activities.CodeChallenges')
+  const firstFail = firstFailingResult(results)
   const Icon =
-    verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle;
-  const isRunning = verdict === 'RUNNING';
+    verdict === 'ACCEPTED'
+      ? CheckCircle2
+      : verdict === 'RUNNING'
+        ? Loader2
+        : verdict
+          ? XCircle
+          : AlertTriangle
+  const isRunning = verdict === 'RUNNING'
 
   return (
     <div
@@ -245,7 +250,7 @@ function VerdictBanner({
         </div>
         <Badge variant={verdictTone(verdict)}>
           {results
-            ? `${results.filter((result) => result.passed).length}/${results.length}`
+            ? `${results.filter(result => result.passed).length}/${results.length}`
             : isRunning
               ? t('runningState')
               : t('idleState')}
@@ -254,7 +259,8 @@ function VerdictBanner({
       {firstFail ? (
         <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
           <span>
-            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
+            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>.{' '}
+            {firstFail.status_description}
           </span>
           <Button
             type="button"
@@ -268,33 +274,33 @@ function VerdictBanner({
         </div>
       ) : null}
     </div>
-  );
+  )
 }
 
 function RunProgressTimeline() {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [phase, setPhase] = useState<'queue' | 'compile' | 'run' | 'judge'>('queue');
+  const t = useTranslations('Activities.CodeChallenges')
+  const [phase, setPhase] = useState<'queue' | 'compile' | 'run' | 'judge'>('queue')
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('compile'), 800);
-    const t2 = setTimeout(() => setPhase('run'), 2000);
-    const t3 = setTimeout(() => setPhase('judge'), 3800);
+    const t1 = setTimeout(() => setPhase('compile'), 800)
+    const t2 = setTimeout(() => setPhase('run'), 2000)
+    const t3 = setTimeout(() => setPhase('judge'), 3800)
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, []);
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
+  }, [])
 
   const steps = [
     { key: 'queue', label: t('status.inQueue') },
     { key: 'compile', label: t('status.processing') },
     { key: 'run', label: t('runningTests') },
     { key: 'judge', label: t('status.processing') },
-  ];
+  ]
 
-  const currentIdx = steps.findIndex((s) => s.key === phase);
+  const currentIdx = steps.findIndex(s => s.key === phase)
 
   return (
     <div className="bg-muted/20 space-y-3.5 rounded-lg border p-4">
@@ -311,14 +317,11 @@ function RunProgressTimeline() {
         />
 
         {steps.map((step, idx) => {
-          const isActive = idx <= currentIdx;
-          const isCurrent = idx === currentIdx;
+          const isActive = idx <= currentIdx
+          const isCurrent = idx === currentIdx
 
           return (
-            <div
-              key={step.key}
-              className="z-10 flex flex-col items-center"
-            >
+            <div key={step.key} className="z-10 flex flex-col items-center">
               <div
                 className={cn(
                   'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors duration-300',
@@ -332,28 +335,32 @@ function RunProgressTimeline() {
                 {isActive && !isCurrent ? '✓' : idx + 1}
               </div>
               <span
-                className={cn('text-[10px] mt-1.5 font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}
+                className={cn(
+                  'text-[10px] mt-1.5 font-medium',
+                  isActive ? 'text-foreground' : 'text-muted-foreground',
+                )}
               >
                 {step.label}
               </span>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
 
 interface ResultRowProps {
-  result: TestCaseResult;
-  index: number;
-  isExpanded: boolean;
-  onToggle: () => void;
+  result: TestCaseResult
+  index: number
+  isExpanded: boolean
+  onToggle: () => void
 }
 
 function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const diffExists = !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string';
+  const t = useTranslations('Activities.CodeChallenges')
+  const diffExists =
+    !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string'
 
   return (
     <div
@@ -372,7 +379,9 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           ) : (
             <XCircle className="size-4 text-rose-500" />
           )}
-          <span className="truncate text-xs font-semibold">{t('caseNumber', { number: index + 1 })}</span>
+          <span className="truncate text-xs font-semibold">
+            {t('caseNumber', { number: index + 1 })}
+          </span>
           <Badge
             variant={result.passed ? 'success' : 'destructive'}
             className="px-1 py-0 text-[10px]"
@@ -381,8 +390,12 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           </Badge>
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
-          {typeof result.time_ms === 'number' ? <span>{t('timeLimitValue', { value: result.time_ms })}</span> : null}
-          {typeof result.memory_kb === 'number' ? <span>{(result.memory_kb / 1024).toFixed(1)}MB</span> : null}
+          {typeof result.time_ms === 'number' ? (
+            <span>{t('timeLimitValue', { value: result.time_ms })}</span>
+          ) : null}
+          {typeof result.memory_kb === 'number' ? (
+            <span>{(result.memory_kb / 1024).toFixed(1)}MB</span>
+          ) : null}
           {isExpanded ? (
             <ChevronUp className="text-muted-foreground size-3.5" />
           ) : (
@@ -398,7 +411,9 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
               <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">
                 {t('input')}
               </div>
-              <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">{result.stdin}</pre>
+              <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">
+                {result.stdin}
+              </pre>
             </div>
           )}
 
@@ -407,42 +422,32 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
               <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                 {t('difference')}
               </div>
-              <CodeDiffViewer
-                expected={result.expected!}
-                actual={result.stdout!}
-              />
+              <CodeDiffViewer expected={result.expected!} actual={result.stdout!} />
             </div>
           ) : (
-            result.stdout && (
-              <Output
-                label="Actual output"
-                value={result.stdout}
-              />
-            )
+            result.stdout && <Output label="Actual output" value={result.stdout} />
           )}
 
-          {result.stderr && (
-            <Output
-              label="Stderr"
-              value={result.stderr}
-              destructive
-            />
-          )}
+          {result.stderr && <Output label="Stderr" value={result.stderr} destructive />}
 
           {result.compile_output && (
-            <Output
-              label="Compile output"
-              value={result.compile_output}
-              destructive
-            />
+            <Output label="Compile output" value={result.compile_output} destructive />
           )}
         </div>
       )}
     </div>
-  );
+  )
 }
 
-function Output({ label, value, destructive = false }: { label: string; value: string; destructive?: boolean }) {
+function Output({
+  label,
+  value,
+  destructive = false,
+}: {
+  label: string
+  value: string
+  destructive?: boolean
+}) {
   return (
     <div>
       <div className="text-muted-foreground mb-1 flex items-center justify-between text-[10px] font-bold tracking-wider uppercase">
@@ -468,5 +473,5 @@ function Output({ label, value, destructive = false }: { label: string; value: s
         {value}
       </pre>
     </div>
-  );
+  )
 }

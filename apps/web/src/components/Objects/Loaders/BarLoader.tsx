@@ -1,13 +1,18 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 interface BarLoaderProps {
-  width?: number;
-  color?: string;
-  className?: string;
-  cssOverride?: React.CSSProperties;
+  width?: number
+  color?: string
+  className?: string
+  cssOverride?: React.CSSProperties
 }
 
-export const BarLoader: React.FC<BarLoaderProps> = ({ width = 60, color = '#000000', className, cssOverride }) => {
+export const BarLoader: React.FC<BarLoaderProps> = ({
+  width = 60,
+  color = '#000000',
+  className,
+  cssOverride,
+}) => {
   return (
     <>
       <style>
@@ -50,5 +55,5 @@ export const BarLoader: React.FC<BarLoaderProps> = ({ width = 60, color = '#0000
         />
       </div>
     </>
-  );
-};
+  )
+}

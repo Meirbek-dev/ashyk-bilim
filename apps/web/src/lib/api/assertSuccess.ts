@@ -8,38 +8,43 @@
  */
 
 export class APIError extends Error {
-  public status: number;
-  public code: string;
-  public detail: unknown;
+  public status: number
+  public code: string
+  public detail: unknown
 
   public constructor(response: unknown) {
-    const r = response as Record<string, any> | null | undefined;
+    const r = response as Record<string, any> | null | undefined
     const message: string =
       (typeof r?.data?.detail === 'string' ? r.data.detail : null) ??
       formatIssueDetail(r?.data?.detail) ??
       r?.HTTPmessage ??
       r?.message ??
-      'Request failed';
+      'Request failed'
 
-    super(message);
-    this.name = 'APIError';
-    this.status = r?.status ?? 500;
-    this.code = r?.data?.code ?? 'UNKNOWN';
-    this.detail = r?.data;
+    super(message)
+    this.name = 'APIError'
+    this.status = r?.status ?? 500
+    this.code = r?.data?.code ?? 'UNKNOWN'
+    this.detail = r?.data
   }
 }
 
 function formatIssueDetail(detail: unknown): string | null {
-  if (!detail || typeof detail !== 'object' || !('issues' in detail)) return null;
-  const { issues } = detail as { issues?: unknown };
-  if (!Array.isArray(issues) || issues.length === 0) return null;
+  if (!detail || typeof detail !== 'object' || !('issues' in detail)) return null
+  const { issues } = detail as { issues?: unknown }
+  if (!Array.isArray(issues) || issues.length === 0) return null
   const firstMessages = issues
-    .map((issue) => (issue && typeof issue === 'object' ? (issue as { message?: unknown }).message : null))
-    .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
-    .slice(0, 3);
-  if (firstMessages.length === 0) return null;
-  const suffix = issues.length > firstMessages.length ? ` (+${issues.length - firstMessages.length})` : '';
-  return `${firstMessages.join(' ')}${suffix}`;
+    .map(issue =>
+      issue && typeof issue === 'object' ? (issue as { message?: unknown }).message : null,
+    )
+    .filter(
+      (message): message is string => typeof message === 'string' && message.trim().length > 0,
+    )
+    .slice(0, 3)
+  if (firstMessages.length === 0) return null
+  const suffix =
+    issues.length > firstMessages.length ? ` (+${issues.length - firstMessages.length})` : ''
+  return `${firstMessages.join(' ')}${suffix}`
 }
 
 /**
@@ -51,6 +56,6 @@ function formatIssueDetail(detail: unknown): string | null {
  * already throw on non-2xx, so you don't need this for them.
  */
 export function assertSuccess<T extends { success?: boolean }>(response: T): T {
-  if (response?.success) return response;
-  throw new APIError(response);
+  if (response?.success) return response
+  throw new APIError(response)
 }

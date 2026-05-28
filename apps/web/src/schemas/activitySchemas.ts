@@ -1,4 +1,4 @@
-import * as v from 'valibot';
+import * as v from 'valibot'
 
 export const activityTypeEnum = v.picklist([
   'TYPE_VIDEO',
@@ -8,7 +8,7 @@ export const activityTypeEnum = v.picklist([
   'TYPE_EXAM',
   'TYPE_CODE_CHALLENGE',
   'TYPE_CUSTOM',
-] as const);
+] as const)
 
 export const activitySubTypeEnum = v.picklist([
   'SUBTYPE_DYNAMIC_PAGE',
@@ -16,7 +16,7 @@ export const activitySubTypeEnum = v.picklist([
   'SUBTYPE_VIDEO_HOSTED',
   'SUBTYPE_DOCUMENT_PDF',
   'SUBTYPE_FILE_SUBMISSION_STANDARD',
-] as const);
+] as const)
 
 export const activityCreateSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
@@ -25,10 +25,10 @@ export const activityCreateSchema = v.object({
   published: v.optional(v.boolean()),
   content: v.optional(v.unknown()),
   details: v.optional(v.unknown()),
-});
+})
 
-export type ActivityCreateValues = v.InferOutput<typeof activityCreateSchema>;
+export type ActivityCreateValues = v.InferOutput<typeof activityCreateSchema>
 
-export const activityUpdateSchema = v.partial(activityCreateSchema);
+export const activityUpdateSchema = v.partial(activityCreateSchema)
 
-export type ActivityUpdateValues = v.InferOutput<typeof activityUpdateSchema>;
+export type ActivityUpdateValues = v.InferOutput<typeof activityUpdateSchema>

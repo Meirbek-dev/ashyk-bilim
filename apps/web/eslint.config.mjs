@@ -1,18 +1,18 @@
 // eslint.config.mjs
 // @ts-check
-import i18next from 'eslint-plugin-i18next';
-import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
-import js from '@eslint/js';
+import i18next from 'eslint-plugin-i18next'
+import { defineConfig } from 'eslint/config'
+import tseslint from 'typescript-eslint'
+import js from '@eslint/js'
 
 // Plugins
-import unusedImports from 'eslint-plugin-unused-imports';
-import reactHooks from 'eslint-plugin-react-hooks';
-import jsxA11y from 'eslint-plugin-jsx-a11y';
-import next from '@next/eslint-plugin-next';
-import react from 'eslint-plugin-react';
-import pluginQuery from '@tanstack/eslint-plugin-query';
-import reactCompiler from 'eslint-plugin-react-compiler';
+import unusedImports from 'eslint-plugin-unused-imports'
+import reactHooks from 'eslint-plugin-react-hooks'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+import next from '@next/eslint-plugin-next'
+import react from 'eslint-plugin-react'
+import pluginQuery from '@tanstack/eslint-plugin-query'
+import reactCompiler from 'eslint-plugin-react-compiler'
 
 /* -------------------------------------------------------------------------- */
 /* Shared rules                                                               */
@@ -60,12 +60,12 @@ const COMMON_RULES = {
   'no-console': 'off',
   'no-var': 'error',
   'prefer-const': 'warn',
-  'eqeqeq': ['error', 'always', { null: 'always' }],
+  eqeqeq: ['error', 'always', { null: 'always' }],
   'no-unused-expressions': ['warn', { allowShortCircuit: true, allowTernary: true }],
   'no-empty': ['warn', { allowEmptyCatch: false }],
   'no-redeclare': 'warn',
   'no-unused-vars': 'off',
-};
+}
 
 /* -------------------------------------------------------------------------- */
 /* Config                                                                     */
@@ -224,7 +224,12 @@ export default defineConfig(
 
   {
     name: 'tests',
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'tests/**/*.{ts,tsx}', 'src/tests/**/*.{ts,tsx}'],
+    files: [
+      '**/*.test.{ts,tsx}',
+      '**/*.spec.{ts,tsx}',
+      'tests/**/*.{ts,tsx}',
+      'src/tests/**/*.{ts,tsx}',
+    ],
     rules: {
       'i18next/no-literal-string': 'off',
       'react-compiler/react-compiler': 'off',
@@ -261,4 +266,4 @@ export default defineConfig(
       },
     },
   },
-);
+)

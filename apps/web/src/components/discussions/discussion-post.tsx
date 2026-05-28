@@ -1,58 +1,61 @@
-'use client';
+'use client'
 
-import { ArrowBigDown, ArrowBigUp, Clock, Edit, Reply, Send, Trash2 } from 'lucide-react';
-import { PermissionTooltip } from '@/components/Utils/PermissionTooltip';
-import { useFormatter, useNow, useTranslations } from 'next-intl';
-import RichContentRenderer from './rich-content-renderer';
-import { Card, CardContent } from '@/components/ui/card';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { Separator } from '@/components/ui/separator';
-import DiscussionReply from './discussion-reply';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import dynamic from 'next/dynamic';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import { hasMeaningfulText } from './text';
+import { ArrowBigDown, ArrowBigUp, Clock, Edit, Reply, Send, Trash2 } from 'lucide-react'
+import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
+import RichContentRenderer from './rich-content-renderer'
+import { Card, CardContent } from '@/components/ui/card'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { Separator } from '@/components/ui/separator'
+import DiscussionReply from './discussion-reply'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import dynamic from 'next/dynamic'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { hasMeaningfulText } from './text'
 
 const RichTextEditor = dynamic(
-  () => import('@components/Objects/Editor/views/DiscussionEditor').then((m) => ({ default: m.DiscussionEditor })),
+  () =>
+    import('@components/Objects/Editor/views/DiscussionEditor').then(m => ({
+      default: m.DiscussionEditor,
+    })),
   {
     ssr: false,
     loading: () => <div className="bg-muted/40 h-[120px] w-full animate-pulse rounded-lg border" />,
   },
-);
+)
 
 interface DiscussionPostData {
-  id: string;
-  postMessage: string;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  createDate: string;
-  updateDate?: string;
-  upvotes: number;
-  downvotes: number;
-  userVote?: 'up' | 'down';
-  replies?: any[];
-  can_update?: boolean;
-  can_delete?: boolean;
-  can_moderate?: boolean;
-  is_owner?: boolean;
-  is_creator?: boolean;
-  available_actions?: string[];
+  id: string
+  postMessage: string
+  username: string
+  firstName?: string
+  lastName?: string
+  createDate: string
+  updateDate?: string
+  upvotes: number
+  downvotes: number
+  userVote?: 'up' | 'down'
+  replies?: any[]
+  can_update?: boolean
+  can_delete?: boolean
+  can_moderate?: boolean
+  is_owner?: boolean
+  is_creator?: boolean
+  available_actions?: string[]
 }
 
 interface DiscussionPostProps {
-  post: DiscussionPostData;
-  currentUser: any;
-  onVotePost: (postId: string, voteType: 'up' | 'down') => void;
-  onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void;
-  onDeletePost: (postId: string) => void;
-  onDeleteReply: (postId: string, replyId: string) => void;
-  onEditPost: (postId: string, newMessage: string) => void;
-  onEditReply: (postId: string, replyId: string, newMessage: string) => void;
-  onSubmitReply: (postId: string, replyText: string) => void;
+  post: DiscussionPostData
+  currentUser: any
+  onVotePost: (postId: string, voteType: 'up' | 'down') => void
+  onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
+  onDeletePost: (postId: string) => void
+  onDeleteReply: (postId: string, replyId: string) => void
+  onEditPost: (postId: string, newMessage: string) => void
+  onEditReply: (postId: string, replyId: string, newMessage: string) => void
+  onSubmitReply: (postId: string, replyText: string) => void
 }
 
 export default function DiscussionPost({
@@ -66,73 +69,65 @@ export default function DiscussionPost({
   onEditReply,
   onSubmitReply,
 }: DiscussionPostProps) {
-  const t = useTranslations('CoursePage');
-  const [replyingTo, setReplyingTo] = useState(false);
-  const [replyContent, setReplyContent] = useState('');
-  const [editingPost, setEditingPost] = useState(false);
-  const [editContent, setEditContent] = useState(post.postMessage);
-  const format = useFormatter();
-  const now = useNow();
+  const t = useTranslations('CoursePage')
+  const [replyingTo, setReplyingTo] = useState(false)
+  const [replyContent, setReplyContent] = useState('')
+  const [editingPost, setEditingPost] = useState(false)
+  const [editContent, setEditContent] = useState(post.postMessage)
+  const format = useFormatter()
+  const now = useNow()
 
   // Use backend permission metadata
-  const canUpdate = post.can_update ?? false;
-  const canDelete = post.can_delete ?? false;
-  const canModerate = post.can_moderate ?? false;
-  const isOwner = post.is_owner ?? false;
+  const canUpdate = post.can_update ?? false
+  const canDelete = post.can_delete ?? false
+  const canModerate = post.can_moderate ?? false
+  const isOwner = post.is_owner ?? false
 
-  const netScore = post.upvotes - post.downvotes;
+  const netScore = post.upvotes - post.downvotes
 
   const getUserDisplayName = (firstName?: string, lastName?: string) => {
-    const first = firstName || '';
-    const last = lastName || '';
-    return `${first} ${last}`.trim() || post.username;
-  };
+    const first = firstName || ''
+    const last = lastName || ''
+    return `${first} ${last}`.trim() || post.username
+  }
 
   const handleSubmitReply = (formData: FormData) => {
-    const nextReplyContent = String(formData.get('replyContent') ?? '');
+    const nextReplyContent = String(formData.get('replyContent') ?? '')
 
-    if (!hasMeaningfulText(nextReplyContent)) return;
-    onSubmitReply(post.id, nextReplyContent);
-    setReplyContent('');
-    setReplyingTo(false);
-  };
+    if (!hasMeaningfulText(nextReplyContent)) return
+    onSubmitReply(post.id, nextReplyContent)
+    setReplyContent('')
+    setReplyingTo(false)
+  }
 
   const handleEditSubmit = (formData: FormData) => {
-    const nextEditContent = String(formData.get('editContent') ?? '');
+    const nextEditContent = String(formData.get('editContent') ?? '')
 
-    if (!hasMeaningfulText(nextEditContent)) return;
-    onEditPost(post.id, nextEditContent);
-    setEditingPost(false);
-  };
+    if (!hasMeaningfulText(nextEditContent)) return
+    onEditPost(post.id, nextEditContent)
+    setEditingPost(false)
+  }
 
   return (
     <Card className="group overflow-hidden rounded-lg border shadow-sm">
       <CardContent className="bg-card text-card-foreground">
         <div className="p-5">
           <div className="flex items-start gap-4">
-            <UserAvatar
-              size="md"
-              variant="default"
-              username={post.username}
-            />
+            <UserAvatar size="md" variant="default" username={post.username} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="text-foreground font-semibold">{getUserDisplayName(post.firstName, post.lastName)}</h4>
+                  <h4 className="text-foreground font-semibold">
+                    {getUserDisplayName(post.firstName, post.lastName)}
+                  </h4>
                   <span className="text-muted-foreground text-sm">@{post.username}</span>
                   {canModerate && (
-                    <Badge
-                      variant="destructive"
-                      className="h-auto px-1.5 py-0.5 text-xs"
-                    >
+                    <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
                       {t('moderator')}
                     </Badge>
                   )}
                   {isOwner && (
-                    <Badge
-                      variant="secondary"
-                      className="h-auto px-1.5 py-0.5 text-xs"
-                    >
+                    <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
                       {t('author')}
                     </Badge>
                   )}
@@ -141,23 +136,21 @@ export default function DiscussionPost({
                     <span>{format.relativeTime(new Date(post.createDate), now)}</span>
                     {post.updateDate &&
                       post.createDate &&
-                      new Date(post.updateDate).getTime() !== new Date(post.createDate).getTime() && (
+                      new Date(post.updateDate).getTime() !==
+                        new Date(post.createDate).getTime() && (
                         <span className="text-muted-foreground text-xs">({t('edited')})</span>
                       )}
                   </div>
                 </div>
                 {(canDelete || canUpdate) && !editingPost && (
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <PermissionTooltip
-                      enabled={canUpdate}
-                      action="update"
-                    >
+                    <PermissionTooltip enabled={canUpdate} action="update">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setEditingPost(true);
-                          setEditContent(post.postMessage);
+                          setEditingPost(true)
+                          setEditContent(post.postMessage)
                         }}
                         disabled={!canUpdate}
                         className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
@@ -165,10 +158,7 @@ export default function DiscussionPost({
                         <Edit size={12} />
                       </Button>
                     </PermissionTooltip>
-                    <PermissionTooltip
-                      enabled={canDelete}
-                      action="delete"
-                    >
+                    <PermissionTooltip enabled={canDelete} action="delete">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -184,15 +174,8 @@ export default function DiscussionPost({
               </div>
 
               {editingPost ? (
-                <form
-                  action={handleEditSubmit}
-                  className="mt-3"
-                >
-                  <input
-                    type="hidden"
-                    name="editContent"
-                    value={editContent}
-                  />
+                <form action={handleEditSubmit} className="mt-3">
+                  <input type="hidden" name="editContent" value={editContent} />
                   <RichTextEditor
                     content={editContent}
                     onChange={setEditContent}
@@ -205,16 +188,12 @@ export default function DiscussionPost({
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setEditingPost(false);
+                        setEditingPost(false)
                       }}
                     >
                       {t('cancel')}
                     </Button>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={!hasMeaningfulText(editContent)}
-                    >
+                    <Button type="submit" size="sm" disabled={!hasMeaningfulText(editContent)}>
                       {t('save')}
                     </Button>
                   </div>
@@ -239,10 +218,7 @@ export default function DiscussionPost({
                           : 'text-muted-foreground hover:bg-muted/70 hover:text-emerald-600',
                       )}
                     >
-                      <ArrowBigUp
-                        size={16}
-                        className="mr-1"
-                      />
+                      <ArrowBigUp size={16} className="mr-1" />
                       <span className="text-sm font-medium">{post.upvotes}</span>
                     </Button>
 
@@ -257,10 +233,7 @@ export default function DiscussionPost({
                           : 'text-slate-600 hover:bg-slate-100 hover:text-red-600',
                       )}
                     >
-                      <ArrowBigDown
-                        size={16}
-                        className="mr-1"
-                      />
+                      <ArrowBigDown size={16} className="mr-1" />
                       <span className="text-sm font-medium">{post.downvotes}</span>
                     </Button>
                   </div>
@@ -290,10 +263,7 @@ export default function DiscussionPost({
                     replyingTo && 'bg-primary/10 text-primary',
                   )}
                 >
-                  <Reply
-                    size={16}
-                    className="mr-1"
-                  />
+                  <Reply size={16} className="mr-1" />
                   <span>{t('reply')}</span>
                   {post.replies && post.replies.length > 0 && (
                     <span className="bg-secondary/20 text-muted-foreground ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
@@ -304,21 +274,10 @@ export default function DiscussionPost({
               </div>
 
               {replyingTo ? (
-                <form
-                  action={handleSubmitReply}
-                  className="mt-4"
-                >
-                  <input
-                    type="hidden"
-                    name="replyContent"
-                    value={replyContent}
-                  />
+                <form action={handleSubmitReply} className="mt-4">
+                  <input type="hidden" name="replyContent" value={replyContent} />
                   <div className="flex items-start gap-3">
-                    <UserAvatar
-                      size="xs"
-                      variant="default"
-                      username={currentUser?.username}
-                    />
+                    <UserAvatar size="xs" variant="default" username={currentUser?.username} />
                     <div className="flex-1">
                       <RichTextEditor
                         content={replyContent}
@@ -332,8 +291,8 @@ export default function DiscussionPost({
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setReplyingTo(false);
-                            setReplyContent('');
+                            setReplyingTo(false)
+                            setReplyContent('')
                           }}
                         >
                           {t('cancel')}
@@ -377,5 +336,5 @@ export default function DiscussionPost({
         ) : null}
       </CardContent>
     </Card>
-  );
+  )
 }

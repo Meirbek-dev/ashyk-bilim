@@ -1,5 +1,5 @@
-import { createElement } from 'react';
-import type { ComponentType, ReactNode } from 'react';
+import { createElement } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 
 export type ItemKind =
   | 'CHOICE'
@@ -9,54 +9,54 @@ export type ItemKind =
   | 'MATCHING'
   | 'OPEN_TEXT'
   | 'FORM'
-  | 'CODE';
+  | 'CODE'
 
 export interface ItemAuthorProps<TValue = unknown> {
-  value: TValue;
-  disabled?: boolean;
-  onChange: (nextValue: TValue) => void;
+  value: TValue
+  disabled?: boolean
+  onChange: (nextValue: TValue) => void
 }
 
 export interface ItemAttemptProps<TItem = unknown, TAnswer = unknown> {
-  item: TItem;
-  answer: TAnswer;
-  disabled?: boolean;
-  onAnswerChange: (nextAnswer: TAnswer) => void;
+  item: TItem
+  answer: TAnswer
+  disabled?: boolean
+  onAnswerChange: (nextAnswer: TAnswer) => void
 }
 
 export interface ItemReviewDetailProps<TItem = unknown, TAnswer = unknown> {
-  item?: TItem;
-  answer: TAnswer;
+  item?: TItem
+  answer: TAnswer
 }
 
 export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttemptAnswer = any> {
-  kind: ItemKind;
-  label: string;
-  Author: ComponentType<ItemAuthorProps<TAuthorValue>>;
-  Attempt: ComponentType<ItemAttemptProps<TAttemptItem, TAttemptAnswer>>;
-  ReviewDetail: ComponentType<ItemReviewDetailProps<TAttemptItem, TAttemptAnswer>>;
+  kind: ItemKind
+  label: string
+  Author: ComponentType<ItemAuthorProps<TAuthorValue>>
+  Attempt: ComponentType<ItemAttemptProps<TAttemptItem, TAttemptAnswer>>
+  ReviewDetail: ComponentType<ItemReviewDetailProps<TAttemptItem, TAttemptAnswer>>
 }
 
 function getRegistry(): Map<ItemKind, ItemKindModule> {
-  const f = getRegistry as any;
-  if (!f.map) f.map = new Map<ItemKind, ItemKindModule>();
-  return f.map;
+  const f = getRegistry as any
+  if (!f.map) f.map = new Map<ItemKind, ItemKindModule>()
+  return f.map
 }
 
 export function registerItemKind(module: ItemKindModule): void {
-  getRegistry().set(module.kind, module);
+  getRegistry().set(module.kind, module)
 }
 
 export function getItemKindModule(kind: ItemKind): ItemKindModule {
-  const module = getRegistry().get(kind);
+  const module = getRegistry().get(kind)
   if (!module) {
-    throw new Error(`ItemKindRegistry: no module registered for item kind "${kind}"`);
+    throw new Error(`ItemKindRegistry: no module registered for item kind "${kind}"`)
   }
-  return module;
+  return module
 }
 
 export function listItemKindModules(): ItemKindModule[] {
-  return [...getRegistry().values()];
+  return [...getRegistry().values()]
 }
 
 export function UnsupportedItemAuthor({ value }: ItemAuthorProps): ReactNode {
@@ -64,15 +64,17 @@ export function UnsupportedItemAuthor({ value }: ItemAuthorProps): ReactNode {
     'pre',
     { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },
     JSON.stringify(value, null, 2),
-  );
+  )
 }
 
 export function UnsupportedItemAttempt({ item }: ItemAttemptProps): ReactNode {
   return createElement(
     'div',
-    { className: 'text-muted-foreground rounded-md border border-dashed p-4 text-sm' },
+    {
+      className: 'text-muted-foreground rounded-md border border-dashed p-4 text-sm',
+    },
     `Unsupported item: ${JSON.stringify(item)}`,
-  );
+  )
 }
 
 export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactNode {
@@ -80,11 +82,11 @@ export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactN
     'pre',
     { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },
     JSON.stringify(answer, null, 2),
-  );
+  )
 }
 
-import './choice';
-import './form';
-import './matching';
-import './open-text';
-import './code';
+import './choice'
+import './form'
+import './matching'
+import './open-text'
+import './code'

@@ -1,41 +1,38 @@
-'use client';
+'use client'
 
-import type { Editor } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { createInsertItems, INSERT_CATEGORY_LABELS } from './insert-items';
+import type { Editor } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { createInsertItems, INSERT_CATEGORY_LABELS } from './insert-items'
 
 interface InsertButtonsProps {
-  editor: Editor;
+  editor: Editor
 }
 
 export function InsertButtons({ editor }: InsertButtonsProps) {
-  const t = useTranslations('DashPage.Editor.Toolbar');
-  const items = createInsertItems(t).filter((item) => item.includeInToolbar);
+  const t = useTranslations('DashPage.Editor.Toolbar')
+  const items = createInsertItems(t).filter(item => item.includeInToolbar)
 
   const groups = (['basic', 'media', 'interactive'] as const)
-    .map((category) => ({
+    .map(category => ({
       category,
-      items: items.filter((item) => item.category === category),
+      items: items.filter(item => item.category === category),
     }))
-    .filter((group) => group.items.length > 0);
+    .filter(group => group.items.length > 0)
 
   return (
     <TooltipProvider delay={150}>
       <div className="flex flex-wrap items-center gap-1">
         {groups.map((group, index) => (
-          <div
-            key={group.category}
-            className="flex items-center gap-1"
-          >
+          <div key={group.category} className="flex items-center gap-1">
             <div
               className="border-border/70 bg-muted/30 flex flex-wrap items-center gap-1 rounded-xl border px-1 py-1"
               role="group"
               aria-label={t(INSERT_CATEGORY_LABELS[group.category])}
             >
-              {group.items.map((item) => (
+              {group.items.map(item => (
                 <Tooltip key={item.id}>
                   <TooltipTrigger
                     render={
@@ -62,14 +59,11 @@ export function InsertButtons({ editor }: InsertButtonsProps) {
               ))}
             </div>
             {index < groups.length - 1 ? (
-              <Separator
-                orientation="vertical"
-                className="mx-1 h-6"
-              />
+              <Separator orientation="vertical" className="mx-1 h-6" />
             ) : null}
           </div>
         ))}
       </div>
     </TooltipProvider>
-  );
+  )
 }

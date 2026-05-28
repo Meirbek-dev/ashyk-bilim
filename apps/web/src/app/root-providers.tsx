@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import NextTopLoader from 'nextjs-toploader';
-import { Toaster } from '@/components/ui/sonner';
-import { SessionProvider } from '@/components/providers/session-provider';
-import { ThemeProvider, useTheme } from '@/components/providers/theme-provider';
-import { ValibotProvider } from '@/components/providers/valibot-provider';
-import { ReactQueryProvider } from '@/lib/react-query/providers';
-import type { Session } from '@/lib/auth/types';
-import type { ThemeMode } from '@/lib/themes';
-import type { ReactNode } from 'react';
+import NextTopLoader from 'nextjs-toploader'
+import { Toaster } from '@/components/ui/sonner'
+import { SessionProvider } from '@/components/providers/session-provider'
+import { ThemeProvider, useTheme } from '@/components/providers/theme-provider'
+import { ValibotProvider } from '@/components/providers/valibot-provider'
+import { ReactQueryProvider } from '@/lib/react-query/providers'
+import type { Session } from '@/lib/auth/types'
+import type { ThemeMode } from '@/lib/themes'
+import type { ReactNode } from 'react'
 
 interface RootProvidersProps {
-  children: ReactNode;
-  initialSession?: Session | null;
-  initialThemeMode?: ThemeMode;
+  children: ReactNode
+  initialSession?: Session | null
+  initialThemeMode?: ThemeMode
 }
 
 function TopLoaderWithTheme({ children }: { children: ReactNode }) {
-  const { theme: currentTheme } = useTheme();
+  const { theme: currentTheme } = useTheme()
 
   const topLoaderProps = {
     color: currentTheme.colors.primary,
@@ -29,7 +29,7 @@ function TopLoaderWithTheme({ children }: { children: ReactNode }) {
     showSpinner: false,
     shadow: `0 0 10px ${currentTheme.colors.primary}, 0 0 5px ${currentTheme.colors.primary}`,
     crawl: true,
-  };
+  }
 
   return (
     <>
@@ -37,10 +37,14 @@ function TopLoaderWithTheme({ children }: { children: ReactNode }) {
       {children}
       <Toaster />
     </>
-  );
+  )
 }
 
-export default function RootProviders({ children, initialSession, initialThemeMode }: RootProvidersProps) {
+export default function RootProviders({
+  children,
+  initialSession,
+  initialThemeMode,
+}: RootProvidersProps) {
   return (
     <ReactQueryProvider>
       <SessionProvider initialSession={initialSession}>
@@ -54,5 +58,5 @@ export default function RootProviders({ children, initialSession, initialThemeMo
         </ThemeProvider>
       </SessionProvider>
     </ReactQueryProvider>
-  );
+  )
 }

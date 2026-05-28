@@ -1,31 +1,40 @@
-'use client';
+'use client'
 
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { Eye, EyeOff, Plus, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown';
-import { generateUUID } from '@/lib/utils';
-import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown'
+import { generateUUID } from '@/lib/utils'
+import type { CodeChallengeSettingsForm } from './CodeChallengeStudio'
 
 interface TestCaseListEditorProps {
-  name: 'visible_tests' | 'hidden_tests';
-  title: string;
-  visible?: boolean;
+  name: 'visible_tests' | 'hidden_tests'
+  title: string
+  visible?: boolean
 }
 
-export default function TestCaseListEditor({ name, title, visible = false }: TestCaseListEditorProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const form = useFormContext<CodeChallengeSettingsForm>();
-  const tests = useWatch({ control: form.control, name }) ?? [];
-  const { fields, append, remove } = useFieldArray({ control: form.control, name });
-  const Icon = visible ? Eye : EyeOff;
+export default function TestCaseListEditor({
+  name,
+  title,
+  visible = false,
+}: TestCaseListEditorProps) {
+  const t = useTranslations('Activities.CodeChallenges')
+  const form = useFormContext<CodeChallengeSettingsForm>()
+  const tests = useWatch({ control: form.control, name }) ?? []
+  const { fields, append, remove } = useFieldArray({ control: form.control, name })
+  const Icon = visible ? Eye : EyeOff
 
   const addTest = () =>
     append({
@@ -35,7 +44,7 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
       is_visible: visible,
       description: '',
       weight: 1,
-    });
+    })
 
   return (
     <Card>
@@ -50,12 +59,7 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
               {visible ? t('visibleTestCasesDescription') : t('hiddenTestCasesDescription')}
             </CardDescription>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addTest}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={addTest}>
             <Plus className="size-4" />
             {t('addTestCase')}
           </Button>
@@ -69,14 +73,13 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
         ) : (
           <Accordion defaultValue={fields.map((_, index) => `${name}-${index}`)}>
             {fields.map((field, index) => (
-              <AccordionItem
-                key={field.id}
-                value={`${name}-${index}`}
-              >
+              <AccordionItem key={field.id} value={`${name}-${index}`}>
                 <AccordionTrigger className="hover:no-underline">
                   <span className="truncate text-sm">
                     {visible ? t('testCase') : t('hiddenTest')} #{index + 1}
-                    {tests[index]?.description ? ` - ${extractMarkdownSummary(tests[index]?.description, 80)}` : ''}
+                    {tests[index]?.description
+                      ? ` - ${extractMarkdownSummary(tests[index]?.description, 80)}`
+                      : ''}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 px-1 pt-4">
@@ -143,7 +146,7 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                           min={1}
                           max={100}
                           value={field.value ?? 1}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onChange={e => field.onChange(Number(e.target.value))}
                         />
                         <FieldDescription>{t('testWeightDescription')}</FieldDescription>
                       </Field>
@@ -168,5 +171,5 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

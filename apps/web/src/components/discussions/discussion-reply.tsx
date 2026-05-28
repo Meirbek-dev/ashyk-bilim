@@ -1,33 +1,36 @@
-'use client';
+'use client'
 
-import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react';
-import { useFormatter, useNow, useTranslations } from 'next-intl';
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import RichContentRenderer from './rich-content-renderer';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { useSession } from '@/hooks/useSession';
-import { Button } from '@/components/ui/button';
-import { useState, useTransition } from 'react';
-import { Badge } from '@/components/ui/badge';
-import dynamic from 'next/dynamic';
-import { cn } from '@/lib/utils';
-import { hasMeaningfulText } from './text';
+import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import RichContentRenderer from './rich-content-renderer'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { useSession } from '@/hooks/useSession'
+import { Button } from '@/components/ui/button'
+import { useState, useTransition } from 'react'
+import { Badge } from '@/components/ui/badge'
+import dynamic from 'next/dynamic'
+import { cn } from '@/lib/utils'
+import { hasMeaningfulText } from './text'
 
 const RichTextEditor = dynamic(
-  () => import('@components/Objects/Editor/views/DiscussionEditor').then((m) => ({ default: m.DiscussionEditor })),
+  () =>
+    import('@components/Objects/Editor/views/DiscussionEditor').then(m => ({
+      default: m.DiscussionEditor,
+    })),
   {
     ssr: false,
     loading: () => <div className="bg-muted/40 h-[80px] w-full animate-pulse rounded-lg border" />,
   },
-);
+)
 
 interface DiscussionReplyProps {
-  reply: any;
-  postId: string;
-  currentUser: any;
-  onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void;
-  onDeleteReply: (postId: string, replyId: string) => void;
-  onEditReply: (postId: string, replyId: string, newMessage: string) => void;
+  reply: any
+  postId: string
+  currentUser: any
+  onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
+  onDeleteReply: (postId: string, replyId: string) => void
+  onEditReply: (postId: string, replyId: string, newMessage: string) => void
 }
 
 export default function DiscussionReply({
@@ -38,40 +41,40 @@ export default function DiscussionReply({
   onDeleteReply,
   onEditReply,
 }: DiscussionReplyProps) {
-  const t = useTranslations('CoursePage');
-  const [editing, setEditing] = useState(false);
-  const [editContent, setEditContent] = useState(reply.replyMessage);
-  const [_isPending, startTransition] = useTransition();
-  const format = useFormatter();
-  const now = useNow();
-  const { can } = useSession();
-  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.APP);
+  const t = useTranslations('CoursePage')
+  const [editing, setEditing] = useState(false)
+  const [editContent, setEditContent] = useState(reply.replyMessage)
+  const [_isPending, startTransition] = useTransition()
+  const format = useFormatter()
+  const now = useNow()
+  const { can } = useSession()
+  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.APP)
 
-  const isOwnReply = reply.username === currentUser?.username;
-  const netScore = reply.upvotes - reply.downvotes;
+  const isOwnReply = reply.username === currentUser?.username
+  const netScore = reply.upvotes - reply.downvotes
 
   const getUserDisplayName = (firstName?: string, lastName?: string) => {
-    const first = firstName || '';
-    const last = lastName || '';
-    return `${first} ${last}`.trim() || reply.username;
-  };
+    const first = firstName || ''
+    const last = lastName || ''
+    return `${first} ${last}`.trim() || reply.username
+  }
 
   const handleEditSubmit = (formData: FormData) => {
-    const nextEditContent = String(formData.get('editContent') ?? '');
+    const nextEditContent = String(formData.get('editContent') ?? '')
 
-    if (!hasMeaningfulText(nextEditContent)) return;
+    if (!hasMeaningfulText(nextEditContent)) return
     startTransition(() => {
-      onEditReply(postId, reply.id, nextEditContent);
-      setEditing(false);
-    });
-  };
+      onEditReply(postId, reply.id, nextEditContent)
+      setEditing(false)
+    })
+  }
 
   // Helper to check if a given user is a platform admin
   const isAuthorAdmin = (username: string) => {
-    if (!reply?.username) return false;
+    if (!reply?.username) return false
     // If current user is admin and is the author, show badge
-    return canModerateDiscussion && username === currentUser?.username;
-  };
+    return canModerateDiscussion && username === currentUser?.username
+  }
 
   return (
     <div className="group border-border hover:border-muted-foreground relative ml-6 border-l-2 py-4 pl-6 transition-colors">
@@ -79,12 +82,7 @@ export default function DiscussionReply({
       <div className="bg-border group-hover:bg-foreground absolute top-6 left-[-5px] h-2 w-2 rounded-full transition-colors" />
 
       <div className="flex gap-3">
-        <UserAvatar
-          size="sm"
-          variant="default"
-          username={reply.username}
-          className="shrink-0"
-        />
+        <UserAvatar size="sm" variant="default" username={reply.username} className="shrink-0" />
 
         <div className="min-w-0 flex-1">
           {/* Header */}
@@ -95,10 +93,7 @@ export default function DiscussionReply({
               </span>
               <span className="text-muted-foreground truncate text-sm">@{reply.username}</span>
               {isAuthorAdmin(reply.username) && (
-                <Badge
-                  variant="destructive"
-                  className="h-auto px-1.5 py-0.5 text-xs"
-                >
+                <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
                   {t('admin')}
                 </Badge>
               )}
@@ -121,8 +116,8 @@ export default function DiscussionReply({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setEditing(true);
-                      setEditContent(reply.replyMessage);
+                      setEditing(true)
+                      setEditContent(reply.replyMessage)
                     }}
                     className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                   >
@@ -143,15 +138,8 @@ export default function DiscussionReply({
 
           {/* Content */}
           {editing ? (
-            <form
-              action={handleEditSubmit}
-              className="space-y-3"
-            >
-              <input
-                type="hidden"
-                name="editContent"
-                value={editContent}
-              />
+            <form action={handleEditSubmit} className="space-y-3">
+              <input type="hidden" name="editContent" value={editContent} />
               <RichTextEditor
                 content={editContent}
                 onChange={setEditContent}
@@ -201,10 +189,7 @@ export default function DiscussionReply({
                         : 'text-muted-foreground hover:bg-muted/70 hover:text-emerald-600',
                     )}
                   >
-                    <ArrowBigUp
-                      size={14}
-                      className="mr-1"
-                    />
+                    <ArrowBigUp size={14} className="mr-1" />
                     <span className="text-sm font-medium">{reply.upvotes}</span>
                   </Button>
 
@@ -219,10 +204,7 @@ export default function DiscussionReply({
                         : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
                     )}
                   >
-                    <ArrowBigDown
-                      size={14}
-                      className="mr-1"
-                    />
+                    <ArrowBigDown size={14} className="mr-1" />
                     <span className="text-sm font-medium">{reply.downvotes}</span>
                   </Button>
                 </div>
@@ -247,5 +229,5 @@ export default function DiscussionReply({
         </div>
       </div>
     </div>
-  );
+  )
 }

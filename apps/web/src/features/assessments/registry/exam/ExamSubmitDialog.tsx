@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -12,38 +12,38 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
+} from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface UnansweredQuestion {
-  index: number;
-  id: string;
-  question_text: string;
+  index: number
+  id: string
+  question_text: string
 }
 
 interface ExamSubmitDialogProps {
-  open: boolean;
-  totalQuestions: number;
-  answeredCount: number;
-  flaggedCount?: number;
-  unansweredQuestions?: UnansweredQuestion[];
-  isSubmitting: boolean;
+  open: boolean
+  totalQuestions: number
+  answeredCount: number
+  flaggedCount?: number
+  unansweredQuestions?: UnansweredQuestion[]
+  isSubmitting: boolean
   labels: {
-    confirmSubmission: string;
-    confirmSubmissionMessage: string;
-    totalQuestions: string;
-    answered: string;
-    unanswered: string;
-    reviewQuestions: string;
-    submitting: string;
-    confirmAndSubmit: string;
-    unansweredQuestions: string;
-    flaggedForReview: string;
-  };
-  onCancel: () => void;
-  onSubmit: () => void;
-  onNavigateTo?: (index: number) => void;
+    confirmSubmission: string
+    confirmSubmissionMessage: string
+    totalQuestions: string
+    answered: string
+    unanswered: string
+    reviewQuestions: string
+    submitting: string
+    confirmAndSubmit: string
+    unansweredQuestions: string
+    flaggedForReview: string
+  }
+  onCancel: () => void
+  onSubmit: () => void
+  onNavigateTo?: (index: number) => void
 }
 
 export default function ExamSubmitDialog({
@@ -58,15 +58,12 @@ export default function ExamSubmitDialog({
   onSubmit,
   onNavigateTo,
 }: ExamSubmitDialogProps) {
-  const tQuestion = useTranslations('Features.Assessments.Shared.PostSubmissionFeedback');
-  const unansweredCount = totalQuestions - answeredCount;
-  const hasWarning = unansweredCount > 0 || flaggedCount > 0;
+  const tQuestion = useTranslations('Features.Assessments.Shared.PostSubmissionFeedback')
+  const unansweredCount = totalQuestions - answeredCount
+  const hasWarning = unansweredCount > 0 || flaggedCount > 0
 
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(nextOpen) => !nextOpen && onCancel()}
-    >
+    <AlertDialog open={open} onOpenChange={nextOpen => !nextOpen && onCancel()}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogMedia>
@@ -81,26 +78,15 @@ export default function ExamSubmitDialog({
 
           {/* Summary stats */}
           <div className="bg-muted rounded-lg border p-4 text-sm">
-            <SummaryRow
-              label={labels.totalQuestions}
-              value={totalQuestions}
-            />
-            <SummaryRow
-              label={labels.answered}
-              value={answeredCount}
-              variant="success"
-            />
+            <SummaryRow label={labels.totalQuestions} value={totalQuestions} />
+            <SummaryRow label={labels.answered} value={answeredCount} variant="success" />
             <SummaryRow
               label={labels.unanswered}
               value={unansweredCount}
               variant={unansweredCount > 0 ? 'warning' : 'neutral'}
             />
             {flaggedCount > 0 ? (
-              <SummaryRow
-                label={labels.flaggedForReview}
-                value={flaggedCount}
-                variant="amber"
-              />
+              <SummaryRow label={labels.flaggedForReview} value={flaggedCount} variant="amber" />
             ) : null}
           </div>
 
@@ -110,7 +96,7 @@ export default function ExamSubmitDialog({
               <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                 {labels.unansweredQuestions}
               </p>
-              {unansweredQuestions.map((q) => (
+              {unansweredQuestions.map(q => (
                 <button
                   key={q.id}
                   type="button"
@@ -145,12 +131,20 @@ export default function ExamSubmitDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
-type Variant = 'success' | 'warning' | 'amber' | 'neutral';
+type Variant = 'success' | 'warning' | 'amber' | 'neutral'
 
-function SummaryRow({ label, value, variant = 'neutral' }: { label: string; value: number; variant?: Variant }) {
+function SummaryRow({
+  label,
+  value,
+  variant = 'neutral',
+}: {
+  label: string
+  value: number
+  variant?: Variant
+}) {
   return (
     <div className="flex justify-between py-0.5">
       <span className="text-muted-foreground">{label}:</span>
@@ -165,5 +159,5 @@ function SummaryRow({ label, value, variant = 'neutral' }: { label: string; valu
         {value}
       </span>
     </div>
-  );
+  )
 }

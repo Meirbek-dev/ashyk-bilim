@@ -1,36 +1,36 @@
-import { getTeacherCourseList, normalizeAnalyticsQuery } from '@services/analytics/teacher';
-import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState';
-import CourseHealthTable from '@components/Dashboard/Analytics/CourseHealthTable';
-import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getTranslations } from 'next-intl/server';
-import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
+import { getTeacherCourseList, normalizeAnalyticsQuery } from '@services/analytics/teacher'
+import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
+import CourseHealthTable from '@components/Dashboard/Analytics/CourseHealthTable'
+import TeacherFilterBar from '@components/Dashboard/Analytics/TeacherFilterBar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getTranslations } from 'next-intl/server'
+import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
 
 export default function PlatformAnalyticsCoursesPage(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />;
+  return <PlatformAnalyticsCoursesPageInner searchParams={props.searchParams} />
 }
 
 async function PlatformAnalyticsCoursesPageInner(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const query = normalizeAnalyticsQuery(await props.searchParams);
-  const t = await getTranslations('TeacherAnalytics');
+  const query = normalizeAnalyticsQuery(await props.searchParams)
+  const t = await getTranslations('TeacherAnalytics')
 
   try {
-    const courseList = await getTeacherCourseList(query);
-    const totalPages = Math.max(1, Math.ceil(courseList.total / courseList.page_size));
-    const params = new URLSearchParams();
-    if (query.window) params.set('window', query.window);
-    if (query.compare) params.set('compare', query.compare);
-    if (query.bucket) params.set('bucket', query.bucket);
-    if (query.course_ids) params.set('course_ids', query.course_ids);
-    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids);
-    if (query.timezone) params.set('timezone', query.timezone);
-    if (query.sort_by) params.set('sort_by', query.sort_by);
-    if (query.sort_order) params.set('sort_order', query.sort_order);
+    const courseList = await getTeacherCourseList(query)
+    const totalPages = Math.max(1, Math.ceil(courseList.total / courseList.page_size))
+    const params = new URLSearchParams()
+    if (query.window) params.set('window', query.window)
+    if (query.compare) params.set('compare', query.compare)
+    if (query.bucket) params.set('bucket', query.bucket)
+    if (query.course_ids) params.set('course_ids', query.course_ids)
+    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
+    if (query.timezone) params.set('timezone', query.timezone)
+    if (query.sort_by) params.set('sort_by', query.sort_by)
+    if (query.sort_order) params.set('sort_order', query.sort_order)
 
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
@@ -38,7 +38,9 @@ async function PlatformAnalyticsCoursesPageInner(props: {
           <CardHeader>
             <CardTitle>{t('pages.courseRankingTitle')}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-600">{t('pages.courseRankingDescription')}</CardContent>
+          <CardContent className="text-sm text-slate-600">
+            {t('pages.courseRankingDescription')}
+          </CardContent>
         </Card>
         <Card className="bg-background border-slate-200 shadow-sm">
           <CardContent>
@@ -60,11 +62,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
             })}
           </span>
         </div>
-        <CourseHealthTable
-          rows={courseList.items}
-          storageKey="courses-page"
-          serverPaginated
-        />
+        <CourseHealthTable rows={courseList.items} storageKey="courses-page" serverPaginated />
         {totalPages > 1 ? (
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -97,13 +95,13 @@ async function PlatformAnalyticsCoursesPageInner(props: {
           </div>
         ) : null}
       </div>
-    );
+    )
   } catch (error) {
     return (
       <AnalyticsEmptyState
         title={t('pages.coursesUnavailableTitle')}
         description={error instanceof Error ? error.message : t('pages.coursesLoadError')}
       />
-    );
+    )
   }
 }

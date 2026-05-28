@@ -1,27 +1,27 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import VideoBlockComponent from './VideoBlockComponent';
+import VideoBlockComponent from './VideoBlockComponent'
 
 export interface VideoBlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
-  size?: 'small' | 'medium' | 'large' | 'full';
+    file_id: string
+    file_format: string
+  }
+  size?: 'small' | 'medium' | 'large' | 'full'
 }
 
 export interface VideoBlockAttrs {
-  blockObject: VideoBlockObject | null;
+  blockObject: VideoBlockObject | null
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockVideo: {
-      insertVideoBlock: () => ReturnType;
-    };
+      insertVideoBlock: () => ReturnType
+    }
   }
 }
 
@@ -35,7 +35,7 @@ export default Node.create({
       blockObject: {
         default: null,
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -43,11 +43,11 @@ export default Node.create({
       {
         tag: 'block-video',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-video', mergeAttributes(HTMLAttributes)];
+    return ['block-video', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -56,10 +56,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(VideoBlockComponent);
+    return ReactNodeViewRenderer(VideoBlockComponent)
   },
-});
+})

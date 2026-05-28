@@ -1,30 +1,30 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import ImageBlockComponent from './ImageBlockComponent';
+import ImageBlockComponent from './ImageBlockComponent'
 
-export type ImageBlockAlignment = 'left' | 'center' | 'right';
+export type ImageBlockAlignment = 'left' | 'center' | 'right'
 
 export interface ImageBlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
+    file_id: string
+    file_format: string
+  }
 }
 
 export interface ImageBlockAttrs {
-  blockObject: ImageBlockObject | null;
-  size: { width: number };
-  alignment: ImageBlockAlignment;
+  blockObject: ImageBlockObject | null
+  size: { width: number }
+  alignment: ImageBlockAlignment
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockImage: {
-      insertImageBlock: () => ReturnType;
-    };
+      insertImageBlock: () => ReturnType
+    }
   }
 }
 
@@ -47,7 +47,7 @@ export default Node.create({
       alignment: {
         default: 'center',
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -55,11 +55,11 @@ export default Node.create({
       {
         tag: 'block-image',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-image', mergeAttributes(HTMLAttributes)];
+    return ['block-image', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -68,10 +68,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ImageBlockComponent);
+    return ReactNodeViewRenderer(ImageBlockComponent)
   },
-});
+})

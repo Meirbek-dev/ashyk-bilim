@@ -9,4 +9,4 @@ export {
   useAttemptGuard,
   type AttemptGuardOptions,
   type AttemptTimerConfig,
-} from '@/features/assessments/shared/hooks/useAttemptGuard';
+} from '@/features/assessments/shared/hooks/useAttemptGuard'

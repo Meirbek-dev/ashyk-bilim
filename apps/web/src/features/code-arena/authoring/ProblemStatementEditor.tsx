@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import { FileText, Eye, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { FileText, Eye, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Input } from '@/components/ui/input';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
+import { Input } from '@/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 
 interface ProblemStatementEditorProps {
-  draft: CodeChallengeSettings;
-  onChange: (patch: Partial<CodeChallengeSettings>) => void;
+  draft: CodeChallengeSettings
+  onChange: (patch: Partial<CodeChallengeSettings>) => void
 }
 
 export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEditorProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [isPreview, setIsPreview] = useState(false);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [isPreview, setIsPreview] = useState(false)
 
-  const constraintsList = draft.constraints ?? [];
+  const constraintsList = draft.constraints ?? []
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -63,19 +63,23 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
           <div className="mx-auto max-w-4xl space-y-6 p-6">
             <div className="grid gap-4 md:grid-cols-[1fr_160px_160px]">
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.title')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('form.title')}
+                </span>
                 <Input
                   value={draft.title ?? ''}
-                  onChange={(e) => onChange({ title: e.target.value })}
+                  onChange={e => onChange({ title: e.target.value })}
                   placeholder={t('form.titlePlaceholder')}
                 />
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('form.difficulty')}
+                </span>
                 <NativeSelect
                   value={draft.difficulty ?? 'EASY'}
-                  onChange={(e) => onChange({ difficulty: e.target.value as any })}
+                  onChange={e => onChange({ difficulty: e.target.value as any })}
                 >
                   <NativeSelectOption value="EASY">{t('difficulty.easy')}</NativeSelectOption>
                   <NativeSelectOption value="MEDIUM">{t('difficulty.medium')}</NativeSelectOption>
@@ -84,12 +88,14 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('maxScore')}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">
+                  {t('maxScore')}
+                </span>
                 <Input
                   type="number"
                   min={1}
                   value={draft.points ?? 100}
-                  onChange={(e) => onChange({ points: Number(e.target.value) })}
+                  onChange={e => onChange({ points: Number(e.target.value) })}
                 />
               </label>
             </div>
@@ -100,7 +106,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               </span>
               <MarkdownEditor
                 value={draft.prompt ?? ''}
-                onChange={(prompt) => onChange({ prompt })}
+                onChange={prompt => onChange({ prompt })}
                 preset="codeProblemStatement"
                 placeholder={t('form.promptPlaceholder')}
               />
@@ -113,7 +119,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 </span>
                 <MarkdownEditor
                   value={draft.input_spec ?? ''}
-                  onChange={(input_spec) => onChange({ input_spec })}
+                  onChange={input_spec => onChange({ input_spec })}
                   preset="codeInputSpec"
                   placeholder={t('form.inputSpecPlaceholder')}
                 />
@@ -124,7 +130,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 </span>
                 <MarkdownEditor
                   value={draft.output_spec ?? ''}
-                  onChange={(output_spec) => onChange({ output_spec })}
+                  onChange={output_spec => onChange({ output_spec })}
                   preset="codeOutputSpec"
                   placeholder={t('form.outputSpecPlaceholder')}
                 />
@@ -137,11 +143,11 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               </span>
               <Textarea
                 value={constraintsList.join('\n')}
-                onChange={(e) =>
+                onChange={e =>
                   onChange({
                     constraints: e.target.value
                       .split('\n')
-                      .map((l) => l.trim())
+                      .map(l => l.trim())
                       .filter(Boolean),
                   })
                 }
@@ -157,7 +163,11 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               <div className="flex items-center gap-2">
                 <Badge
                   variant={
-                    draft.difficulty === 'EASY' ? 'success' : draft.difficulty === 'MEDIUM' ? 'warning' : 'destructive'
+                    draft.difficulty === 'EASY'
+                      ? 'success'
+                      : draft.difficulty === 'MEDIUM'
+                        ? 'warning'
+                        : 'destructive'
                   }
                 >
                   {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}` as any)}
@@ -171,7 +181,9 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl font-bold tracking-normal">{draft.title || t('untitledChallenge')}</h1>
+              <h1 className="text-2xl font-bold tracking-normal">
+                {draft.title || t('untitledChallenge')}
+              </h1>
             </header>
 
             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -184,20 +196,14 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
             {draft.input_spec && (
               <div className="space-y-1">
                 <h3 className="text-foreground text-sm font-bold">{t('inputFormat')}</h3>
-                <MarkdownContent
-                  content={draft.input_spec}
-                  mode="codeSpec"
-                />
+                <MarkdownContent content={draft.input_spec} mode="codeSpec" />
               </div>
             )}
 
             {draft.output_spec && (
               <div className="space-y-1">
                 <h3 className="text-foreground text-sm font-bold">{t('outputFormat')}</h3>
-                <MarkdownContent
-                  content={draft.output_spec}
-                  mode="codeSpec"
-                />
+                <MarkdownContent content={draft.output_spec} mode="codeSpec" />
               </div>
             )}
 
@@ -206,12 +212,11 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 <h3 className="text-foreground text-sm font-bold">{t('constraints')}</h3>
                 <ul className="space-y-1.5">
                   {constraintsList.map((constraint, idx) => (
-                    <li
-                      key={`preview-const-${idx}`}
-                      className="flex items-start gap-2 text-xs"
-                    >
+                    <li key={`preview-const-${idx}`} className="flex items-start gap-2 text-xs">
                       <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
-                      <code className="bg-muted text-foreground rounded px-1 py-0.5 font-mono">{constraint}</code>
+                      <code className="bg-muted text-foreground rounded px-1 py-0.5 font-mono">
+                        {constraint}
+                      </code>
                     </li>
                   ))}
                 </ul>
@@ -221,5 +226,5 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
         )}
       </div>
     </div>
-  );
+  )
 }

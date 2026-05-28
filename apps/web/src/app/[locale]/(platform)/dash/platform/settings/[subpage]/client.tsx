@@ -1,24 +1,24 @@
-'use client';
+'use client'
 
-import EditSocials from '@/components/Dashboard/Pages/Platform/EditSocials/EditSocials';
-import EditLanding from '@/components/Dashboard/Pages/Platform/EditLanding/EditLanding';
-import EditImages from '@/components/Dashboard/Pages/Platform/EditImages/EditImages';
-import { ImageIcon, LayoutDashboardIcon, Share2Icon } from 'lucide-react';
-import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader';
-import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs';
-import { getAbsoluteUrl } from '@services/config/config';
-import { AnimatePresence, motion } from 'motion/react';
-import { Separator } from '@/components/ui/separator';
-import type { LucideIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import EditSocials from '@/components/Dashboard/Pages/Platform/EditSocials/EditSocials'
+import EditLanding from '@/components/Dashboard/Pages/Platform/EditLanding/EditLanding'
+import EditImages from '@/components/Dashboard/Pages/Platform/EditImages/EditImages'
+import { ImageIcon, LayoutDashboardIcon, Share2Icon } from 'lucide-react'
+import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader'
+import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs'
+import { getAbsoluteUrl } from '@services/config/config'
+import { AnimatePresence, motion } from 'motion/react'
+import { Separator } from '@/components/ui/separator'
+import type { LucideIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
 
 interface TabItem {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  titleKey: string;
-  descriptionKey: string;
+  id: string
+  label: string
+  icon: LucideIcon
+  titleKey: string
+  descriptionKey: string
 }
 
 const SETTING_TABS: TabItem[] = [
@@ -43,29 +43,29 @@ const SETTING_TABS: TabItem[] = [
     titleKey: 'socialsTitle',
     descriptionKey: 'socialsDescription',
   },
-];
+]
 
 export default function AppSettingsClient({ subpage }: { subpage: string }) {
-  const t = useTranslations('DashPage.PlatformSettings');
+  const t = useTranslations('DashPage.PlatformSettings')
 
   const currentTab = useMemo<TabItem>(() => {
-    const tab = SETTING_TABS.find((tabItem) => tabItem.id === subpage);
-    return tab ?? SETTING_TABS[0]!;
-  }, [subpage]);
-  const pageTitle = useMemo(() => t(currentTab.titleKey), [currentTab, t]);
-  const pageDescription = useMemo(() => t(currentTab.descriptionKey), [currentTab, t]);
+    const tab = SETTING_TABS.find(tabItem => tabItem.id === subpage)
+    return tab ?? SETTING_TABS[0]!
+  }, [subpage])
+  const pageTitle = useMemo(() => t(currentTab.titleKey), [currentTab, t])
+  const pageDescription = useMemo(() => t(currentTab.descriptionKey), [currentTab, t])
 
   return (
     <div className="bg-background flex h-full w-full flex-col">
-      <SettingsHeader
-        breadcrumbType="platform"
-        title={pageTitle}
-        description={pageDescription}
-      >
+      <SettingsHeader breadcrumbType="platform" title={pageTitle} description={pageDescription}>
         <SettingsTabs
           value={subpage}
-          tabs={SETTING_TABS.map((tab) => ({ id: tab.id, labelKey: tab.label, icon: tab.icon }))}
-          getHref={(tab) => `${getAbsoluteUrl('')}/dash/platform/settings/${tab.id}`}
+          tabs={SETTING_TABS.map(tab => ({
+            id: tab.id,
+            labelKey: tab.label,
+            icon: tab.icon,
+          }))}
+          getHref={tab => `${getAbsoluteUrl('')}/dash/platform/settings/${tab.id}`}
           translationNamespace="DashPage.PlatformSettings"
         />
       </SettingsHeader>
@@ -80,26 +80,26 @@ export default function AppSettingsClient({ subpage }: { subpage: string }) {
         </div>
       </main>
     </div>
-  );
+  )
 }
 
 const ContentRenderer = ({ subpage }: { subpage: string }) => {
   const content = useMemo(() => {
     switch (subpage) {
       case 'previews': {
-        return <EditImages />;
+        return <EditImages />
       }
       case 'socials': {
-        return <EditSocials />;
+        return <EditSocials />
       }
       case 'landing': {
-        return <EditLanding />;
+        return <EditLanding />
       }
       default: {
-        return null;
+        return null
       }
     }
-  }, [subpage]);
+  }, [subpage])
 
   return (
     <AnimatePresence mode="wait">
@@ -114,5 +114,5 @@ const ContentRenderer = ({ subpage }: { subpage: string }) => {
         {content}
       </motion.div>
     </AnimatePresence>
-  );
-};
+  )
+}

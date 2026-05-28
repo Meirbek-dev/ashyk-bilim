@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   CalendarClock,
@@ -13,37 +13,41 @@ import {
   Target,
   Timer,
   UserCheck,
-} from 'lucide-react';
-import { useTranslations } from 'next-intl';
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import SecurityShieldBadge from '@/features/assessments/shared/SecurityShieldBadge';
-import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
-import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
-import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes';
-import type { classifyValidationIssue } from '@/features/assessments/domain/readiness';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { MarkdownEditor } from '@/features/content-markdown';
+import SecurityShieldBadge from '@/features/assessments/shared/SecurityShieldBadge'
+import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge'
+import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
+import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
+import type { classifyValidationIssue } from '@/features/assessments/domain/readiness'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { MarkdownEditor } from '@/features/content-markdown'
 
 interface GeneralSettingsTabProps {
-  state: AssessmentEditorState;
-  saveState: SaveState;
-  disabled: boolean;
-  issues: ReturnType<typeof classifyValidationIssue>[];
-  onChange: (nextState: AssessmentEditorState) => void;
+  state: AssessmentEditorState
+  saveState: SaveState
+  disabled: boolean
+  issues: ReturnType<typeof classifyValidationIssue>[]
+  onChange: (nextState: AssessmentEditorState) => void
 }
 
 const ANTI_CHEAT_FEATURES: {
   key: keyof Pick<
     AssessmentEditorState,
-    'copyPasteProtection' | 'tabSwitchDetection' | 'devtoolsDetection' | 'rightClickDisable' | 'fullscreenEnforcement'
-  >;
-  icon: typeof Shield;
-  labelKey: string;
-  descKey: string;
+    | 'copyPasteProtection'
+    | 'tabSwitchDetection'
+    | 'devtoolsDetection'
+    | 'rightClickDisable'
+    | 'fullscreenEnforcement'
+  >
+  icon: typeof Shield
+  labelKey: string
+  descKey: string
 }[] = [
   {
     key: 'copyPasteProtection',
@@ -75,13 +79,19 @@ const ANTI_CHEAT_FEATURES: {
     labelKey: 'fullscreenEnforcementLabel',
     descKey: 'fullscreenEnforcementDesc',
   },
-];
+]
 
-export default function GeneralSettingsTab({ state, saveState, disabled, issues, onChange }: GeneralSettingsTabProps) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
-  const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab');
+export default function GeneralSettingsTab({
+  state,
+  saveState,
+  disabled,
+  issues,
+  onChange,
+}: GeneralSettingsTabProps) {
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
 
-  const hasIssue = (field: string) => issues.some((issue) => issue.field === field);
+  const hasIssue = (field: string) => issues.some(issue => issue.field === field)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-6">
@@ -104,8 +114,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               value={state.title}
               disabled={disabled}
               aria-invalid={hasIssue('title')}
-              className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={(e) => onChange({ ...state, title: e.target.value })}
+              className={cn(
+                hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40',
+              )}
+              onChange={e => onChange({ ...state, title: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -115,7 +127,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               disabled={disabled}
               preset="assessmentDescription"
               minHeight={220}
-              onChange={(description) => onChange({ ...state, description })}
+              onChange={description => onChange({ ...state, description })}
             />
           </div>
         </div>
@@ -135,7 +147,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               type="datetime-local"
               value={state.availableFrom}
               disabled={disabled}
-              onChange={(e) => onChange({ ...state, availableFrom: e.target.value })}
+              onChange={e => onChange({ ...state, availableFrom: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -146,8 +158,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               value={state.dueAt}
               disabled={disabled}
               aria-invalid={hasIssue('dueAt')}
-              className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={(e) => onChange({ ...state, dueAt: e.target.value })}
+              className={cn(
+                hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40',
+              )}
+              onChange={e => onChange({ ...state, dueAt: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -159,8 +173,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               value={state.maxAttempts}
               disabled={disabled}
               aria-invalid={hasIssue('maxAttempts')}
-              className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={(e) => onChange({ ...state, maxAttempts: e.target.value })}
+              className={cn(
+                hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40',
+              )}
+              onChange={e => onChange({ ...state, maxAttempts: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -175,7 +191,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                 disabled={disabled}
                 className="pl-9"
                 aria-invalid={hasIssue('timeLimitMinutes')}
-                onChange={(e) => onChange({ ...state, timeLimitMinutes: e.target.value })}
+                onChange={e => onChange({ ...state, timeLimitMinutes: e.target.value })}
               />
             </div>
           </div>
@@ -185,11 +201,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
           <div className="flex items-center gap-2">
             <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
             <Tooltip>
-              <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-              <TooltipContent
-                side="right"
-                className="max-w-xs"
-              >
+              <TooltipTrigger
+                render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
+              />
+              <TooltipContent side="right" className="max-w-xs">
                 <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
               </TooltipContent>
             </Tooltip>
@@ -200,7 +215,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             min={0}
             value={state.gracePeriodMinutes}
             disabled={disabled}
-            onChange={(e) => onChange({ ...state, gracePeriodMinutes: e.target.value })}
+            onChange={e => onChange({ ...state, gracePeriodMinutes: e.target.value })}
           />
         </div>
       </SettingsCard>
@@ -216,11 +231,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             <div className="flex items-center gap-2">
               <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
               <Tooltip>
-                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent
-                  side="right"
-                  className="max-w-xs"
-                >
+                <TooltipTrigger
+                  render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
+                />
+                <TooltipContent side="right" className="max-w-xs">
                   <p className="text-xs">{tSetup('passThresholdDesc')}</p>
                 </TooltipContent>
               </Tooltip>
@@ -235,20 +249,21 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                 disabled={disabled}
                 placeholder="60"
                 className="pr-8"
-                onChange={(e) => onChange({ ...state, passThreshold: e.target.value })}
+                onChange={e => onChange({ ...state, passThreshold: e.target.value })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">
+                %
+              </span>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
               <Tooltip>
-                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent
-                  side="right"
-                  className="max-w-xs"
-                >
+                <TooltipTrigger
+                  render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
+                />
+                <TooltipContent side="right" className="max-w-xs">
                   <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
                 </TooltipContent>
               </Tooltip>
@@ -263,9 +278,11 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                 disabled={disabled}
                 placeholder={tSetup('negativeMarkingPlaceholder')}
                 className="pr-8"
-                onChange={(e) => onChange({ ...state, negativeMarkingPercent: e.target.value })}
+                onChange={e => onChange({ ...state, negativeMarkingPercent: e.target.value })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">
+                %
+              </span>
             </div>
           </div>
         </div>
@@ -275,7 +292,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             description={tSetup('partialCreditDesc')}
             checked={state.partialCredit}
             disabled={disabled}
-            onChange={(checked) => onChange({ ...state, partialCredit: checked })}
+            onChange={checked => onChange({ ...state, partialCredit: checked })}
           />
         </div>
       </SettingsCard>
@@ -292,14 +309,14 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             description={tSetup('randomizeQuestionsDesc')}
             checked={state.randomizeQuestions}
             disabled={disabled}
-            onChange={(checked) => onChange({ ...state, randomizeQuestions: checked })}
+            onChange={checked => onChange({ ...state, randomizeQuestions: checked })}
           />
           <ToggleFeatureRow
             label={tSetup('randomizeOptionsLabel')}
             description={tSetup('randomizeOptionsDesc')}
             checked={state.randomizeOptions}
             disabled={disabled}
-            onChange={(checked) => onChange({ ...state, randomizeOptions: checked })}
+            onChange={checked => onChange({ ...state, randomizeOptions: checked })}
           />
         </div>
       </SettingsCard>
@@ -316,14 +333,14 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             description={tSetup('allowResultReviewDesc')}
             checked={state.allowResultReview}
             disabled={disabled}
-            onChange={(checked) => onChange({ ...state, allowResultReview: checked })}
+            onChange={checked => onChange({ ...state, allowResultReview: checked })}
           />
           <ToggleFeatureRow
             label={t('showCorrectAnswersLabel')}
             description={tSetup('showCorrectAnswersDesc')}
             checked={state.showCorrectAnswers}
             disabled={disabled}
-            onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}
+            onChange={checked => onChange({ ...state, showCorrectAnswers: checked })}
           />
         </div>
       </SettingsCard>
@@ -368,7 +385,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   <Switch
                     checked={state[key]}
                     disabled={disabled}
-                    onCheckedChange={(checked) => onChange({ ...state, [key]: checked })}
+                    onCheckedChange={checked => onChange({ ...state, [key]: checked })}
                     className="shrink-0"
                   />
                 </div>
@@ -389,14 +406,13 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               disabled={disabled}
               className="max-w-32"
               aria-invalid={hasIssue('violationThreshold')}
-              onChange={(e) => onChange({ ...state, violationThreshold: e.target.value })}
+              onChange={e => onChange({ ...state, violationThreshold: e.target.value })}
             />
             <Tooltip>
-              <TooltipTrigger render={<Info className="text-muted-foreground size-4 shrink-0 cursor-help" />} />
-              <TooltipContent
-                side="right"
-                className="max-w-xs"
-              >
+              <TooltipTrigger
+                render={<Info className="text-muted-foreground size-4 shrink-0 cursor-help" />}
+              />
+              <TooltipContent side="right" className="max-w-xs">
                 <p className="text-xs">{tSetup('violationThresholdDesc')}</p>
               </TooltipContent>
             </Tooltip>
@@ -404,7 +420,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
         </div>
       </SettingsCard>
     </div>
-  );
+  )
 }
 
 function SettingsCard({
@@ -414,11 +430,11 @@ function SettingsCard({
   headerAction,
   children,
 }: {
-  icon: typeof Shield;
-  title: string;
-  description: string;
-  headerAction?: React.ReactNode;
-  children: React.ReactNode;
+  icon: typeof Shield
+  title: string
+  description: string
+  headerAction?: React.ReactNode
+  children: React.ReactNode
 }) {
   return (
     <section className="bg-card rounded-2xl border p-5 shadow-sm">
@@ -436,7 +452,7 @@ function SettingsCard({
       </div>
       {children}
     </section>
-  );
+  )
 }
 
 function ToggleFeatureRow({
@@ -446,11 +462,11 @@ function ToggleFeatureRow({
   disabled,
   onChange,
 }: {
-  label: string;
-  description: string;
-  checked: boolean;
-  disabled: boolean;
-  onChange: (checked: boolean) => void;
+  label: string
+  description: string
+  checked: boolean
+  disabled: boolean
+  onChange: (checked: boolean) => void
 }) {
   return (
     <div className="flex items-start justify-between gap-4 rounded-xl border p-3">
@@ -465,5 +481,5 @@ function ToggleFeatureRow({
         className="shrink-0"
       />
     </div>
-  );
+  )
 }

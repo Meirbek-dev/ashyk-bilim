@@ -1,9 +1,9 @@
-import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
-import { LandingContent } from '@/app/_shared/withmenu/LandingContent';
-import { getPlatformThumbnailImage } from '@services/media/media';
-import { PageSuspense } from '@components/Utils/PageSuspense';
-import { getTranslations } from 'next-intl/server';
-import type { Metadata } from 'next';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
+import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
+import { getPlatformThumbnailImage } from '@services/media/media'
+import { PageSuspense } from '@components/Utils/PageSuspense'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
 
 function CourseGridSkeleton() {
   return (
@@ -15,10 +15,7 @@ function CourseGridSkeleton() {
           </div>
           <div className="grid w-full grid-cols-1 justify-items-center gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex w-full max-w-sm justify-center"
-              >
+              <div key={i} className="flex w-full max-w-sm justify-center">
                 <div className="w-full animate-pulse overflow-hidden rounded-lg border shadow-md">
                   <div className="bg-muted aspect-video w-full" />
                   <div className="space-y-2 p-4">
@@ -39,15 +36,15 @@ function CourseGridSkeleton() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 interface MetadataProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
-  const t = await getTranslations('General');
+  const t = await getTranslations('General')
 
   return {
     title: `${t('home')} - ${APP_NAME}`,
@@ -57,8 +54,8 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
       follow: true,
       nocache: true,
       googleBot: {
-        'index': true,
-        'follow': true,
+        index: true,
+        follow: true,
         'max-image-preview': 'large',
       },
     },
@@ -75,7 +72,7 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
         },
       ],
     },
-  };
+  }
 }
 
 export default async function PlatformHomePage() {
@@ -85,5 +82,5 @@ export default async function PlatformHomePage() {
         <LandingContent />
       </PageSuspense>
     </div>
-  );
+  )
 }

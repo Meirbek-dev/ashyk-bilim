@@ -13,29 +13,29 @@ import type {
   RoleAuditListResponse,
   UpdateRoleBody,
   UserRoleAssignment,
-} from '@/types/permissions';
-import { apiFetch } from '@/lib/api-client';
+} from '@/types/permissions'
+import { apiFetch } from '@/lib/api-client'
 
 // ============================================================================
 // Internal helpers
 // ============================================================================
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const headers = new Headers(options?.headers);
-  headers.set('Content-Type', 'application/json');
+  const headers = new Headers(options?.headers)
+  headers.set('Content-Type', 'application/json')
 
   const res = await apiFetch(path, {
     method: options?.method,
     body: options?.body,
     headers,
-  });
+  })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `RBAC API error: ${res.status}`);
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || `RBAC API error: ${res.status}`)
   }
 
-  return res.json();
+  return res.json()
 }
 
 // ============================================================================
@@ -47,7 +47,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // ============================================================================
 
 export function listAllPermissions(): Promise<Permission[]> {
-  return request('roles/permissions/all');
+  return request('roles/permissions/all')
 }
 
 // ============================================================================
@@ -55,37 +55,37 @@ export function listAllPermissions(): Promise<Permission[]> {
 // ============================================================================
 
 export function listRoles(): Promise<Role[]> {
-  return request('roles');
+  return request('roles')
 }
 
 export function getRole(roleId: number): Promise<Role> {
-  return request(`roles/${roleId}`);
+  return request(`roles/${roleId}`)
 }
 
 export function getRolePermissions(roleId: number): Promise<Permission[]> {
-  return request(`roles/${roleId}/permissions`);
+  return request(`roles/${roleId}/permissions`)
 }
 
 export function createRole(body: CreateRoleBody): Promise<Role> {
   return request('roles', {
     method: 'POST',
     body: JSON.stringify(body),
-  });
+  })
 }
 
 export function updateRole(roleId: number, body: UpdateRoleBody): Promise<Role> {
   return request(`roles/${roleId}`, {
     method: 'PUT',
     body: JSON.stringify(body),
-  });
+  })
 }
 
 export function deleteRole(roleId: number): Promise<void> {
-  return request(`roles/${roleId}`, { method: 'DELETE' });
+  return request(`roles/${roleId}`, { method: 'DELETE' })
 }
 
 export function listRoleAuditLog(page = 1, pageSize = 20): Promise<RoleAuditListResponse> {
-  return request(`roles/audit-log?page=${page}&page_size=${pageSize}`);
+  return request(`roles/audit-log?page=${page}&page_size=${pageSize}`)
 }
 
 // ============================================================================
@@ -96,13 +96,13 @@ export function addPermissionToRole(roleId: number, permissionId: number): Promi
   return request(`roles/${roleId}/permissions`, {
     method: 'POST',
     body: JSON.stringify({ permission_id: permissionId }),
-  });
+  })
 }
 
 export function removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
   return request(`roles/${roleId}/permissions/${permissionId}`, {
     method: 'DELETE',
-  });
+  })
 }
 
 // ============================================================================
@@ -110,21 +110,21 @@ export function removePermissionFromRole(roleId: number, permissionId: number): 
 // ============================================================================
 
 export function listUserRoles(): Promise<UserRoleAssignment[]> {
-  return request<UserRoleAssignment[]>('rbac/user-roles');
+  return request<UserRoleAssignment[]>('rbac/user-roles')
 }
 
 export function assignRoleToUser(userId: number, roleId: number): Promise<void> {
   return request('rbac/roles/assign', {
     method: 'POST',
     body: JSON.stringify({ user_id: userId, role_id: roleId }),
-  });
+  })
 }
 
 export function removeRoleFromUser(userId: number, roleId: number): Promise<void> {
   return request('rbac/roles/revoke', {
     method: 'POST',
     body: JSON.stringify({ user_id: userId, role_id: roleId }),
-  });
+  })
 }
 
 // ============================================================================
@@ -132,12 +132,12 @@ export function removeRoleFromUser(userId: number, roleId: number): Promise<void
 // ============================================================================
 
 export function listUsers(limit = 100): Promise<UserBasic[]> {
-  return request<UserBasic[] | { users: (UserBasic | { user: UserBasic })[] }>(`members?per_page=${limit}`).then(
-    (data) => {
-      const rows = Array.isArray(data) ? data : data.users;
-      return rows
-        .map((row) => ('user' in row ? row.user : row))
-        .filter((user): user is UserBasic => typeof user?.id === 'number');
-    },
-  );
+  return request<UserBasic[] | { users: (UserBasic | { user: UserBasic })[] }>(
+    `members?per_page=${limit}`,
+  ).then(data => {
+    const rows = Array.isArray(data) ? data : data.users
+    return rows
+      .map(row => ('user' in row ? row.user : row))
+      .filter((user): user is UserBasic => typeof user?.id === 'number')
+  })
 }

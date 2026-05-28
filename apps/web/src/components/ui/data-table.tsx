@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import * as React from 'react';
+import { useTranslations } from 'next-intl'
+import * as React from 'react'
 
 import {
   flexRender,
@@ -10,9 +10,24 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Settings2 } from 'lucide-react';
-import type { ColumnDef, PaginationState, RowData, SortingState, VisibilityState } from '@tanstack/react-table';
+} from '@tanstack/react-table'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Search,
+  Settings2,
+} from 'lucide-react'
+import type {
+  ColumnDef,
+  PaginationState,
+  RowData,
+  SortingState,
+  VisibilityState,
+} from '@tanstack/react-table'
 
 import {
   DropdownMenu,
@@ -22,75 +37,82 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+} from '@/components/ui/dropdown-menu'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
-    label?: string;
-    exportable?: boolean;
-    exportValue?: (row: TData) => unknown;
+    label?: string
+    exportable?: boolean
+    exportValue?: (row: TData) => unknown
   }
 }
 
 interface DataTableLabels {
-  searchPlaceholder?: string;
-  emptyMessage?: string;
-  visibleRows?: (count: number) => string;
-  showingRows?: (args: { from: number; to: number; total: number }) => string;
-  page?: (args: { current: number; total: number }) => string;
-  prev?: string;
-  next?: string;
-  rowsPerPage?: string;
-  columns?: string;
-  exportCsv?: string;
-  exportStarted?: string;
+  searchPlaceholder?: string
+  emptyMessage?: string
+  visibleRows?: (count: number) => string
+  showingRows?: (args: { from: number; to: number; total: number }) => string
+  page?: (args: { current: number; total: number }) => string
+  prev?: string
+  next?: string
+  rowsPerPage?: string
+  columns?: string
+  exportCsv?: string
+  exportStarted?: string
 }
 
 interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[];
-  data: TData[];
-  className?: string;
-  pageSize?: number;
-  pageSizeOptions?: number[];
-  storageKey?: string;
+  columns: ColumnDef<TData>[]
+  data: TData[]
+  className?: string
+  pageSize?: number
+  pageSizeOptions?: number[]
+  storageKey?: string
   /** Set when the server handles pagination. Disables client-side getPaginationRowModel. */
-  serverPaginated?: boolean;
+  serverPaginated?: boolean
   /**
    * Total page count when using server-side pagination.
    * When omitted, the table derives page count from `data.length`.
    */
-  pageCount?: number;
+  pageCount?: number
   /**
    * Called when sort state changes (server-side sorting).
    * When provided, `manualSorting` is enabled automatically.
    */
-  onSortingChange?: (sorting: SortingState) => void;
+  onSortingChange?: (sorting: SortingState) => void
   /**
    * Called when the search filter changes (server-side filtering).
    * When provided, `manualFiltering` is enabled automatically.
    */
-  onGlobalFilterChange?: (filter: string) => void;
+  onGlobalFilterChange?: (filter: string) => void
   /**
    * Called when pagination state changes (server-side pagination).
    * Receives current `{ pageIndex, pageSize }`.
    */
-  onPaginationChange?: (pagination: PaginationState) => void;
-  labels?: DataTableLabels;
-  toolbarContent?: React.ReactNode;
-  enableColumnVisibility?: boolean;
-  enableCsvExport?: boolean;
-  csvFileName?: string;
+  onPaginationChange?: (pagination: PaginationState) => void
+  labels?: DataTableLabels
+  toolbarContent?: React.ReactNode
+  enableColumnVisibility?: boolean
+  enableCsvExport?: boolean
+  csvFileName?: string
 }
 
 const escapeCsv = (value: unknown) => {
-  const normalized = value === null || value === undefined ? '' : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
-};
+  const normalized = value === null || value === undefined ? '' : String(value)
+  return `"${normalized.replace(/"/g, '""')}"`
+}
 
 export default function DataTable<TData>({
   columns,
@@ -110,11 +132,11 @@ export default function DataTable<TData>({
   enableCsvExport = false,
   csvFileName = `table-${new Date().toISOString()}.csv`,
 }: DataTableProps<TData>) {
-  const t = useTranslations('Common.DataTable');
+  const t = useTranslations('Common.DataTable')
   const defaultLabels: Required<DataTableLabels> = {
     searchPlaceholder: t('searchPlaceholder'),
     emptyMessage: t('emptyMessage'),
-    visibleRows: (count) => t('visibleRows', { count }),
+    visibleRows: count => t('visibleRows', { count }),
     showingRows: ({ from, to, total }) => t('showingRows', { from, to, total }),
     page: ({ current, total }) => t('page', { current, total }),
     prev: t('prev'),
@@ -123,55 +145,55 @@ export default function DataTable<TData>({
     columns: t('columns'),
     exportCsv: t('exportCsv'),
     exportStarted: t('exportStarted'),
-  };
-  const resolvedLabels = { ...defaultLabels, ...labels };
+  }
+  const resolvedLabels = { ...defaultLabels, ...labels }
 
   // Derive whether server-side modes are active from prop presence
-  const isServerSorted = !!onSortingChangeProp;
-  const isServerFiltered = !!onGlobalFilterChangeProp;
-  const isServerPaginated = serverPaginated || !!onPaginationChangeProp;
+  const isServerSorted = !!onSortingChangeProp
+  const isServerFiltered = !!onGlobalFilterChangeProp
+  const isServerPaginated = serverPaginated || !!onPaginationChangeProp
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = React.useState('')
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: isServerPaginated ? data.length || pageSize : pageSize,
-  });
+  })
 
   React.useEffect(() => {
-    if (!storageKey || typeof globalThis.window === 'undefined') return;
-    const raw = globalThis.sessionStorage.getItem(`data-table:${storageKey}`);
-    if (!raw) return;
+    if (!storageKey || typeof globalThis.window === 'undefined') return
+    const raw = globalThis.sessionStorage.getItem(`data-table:${storageKey}`)
+    if (!raw) return
 
     try {
       const parsed = JSON.parse(raw) as {
-        sorting?: SortingState;
-        globalFilter?: string;
-        columnVisibility?: VisibilityState;
-        pagination?: PaginationState;
-      };
+        sorting?: SortingState
+        globalFilter?: string
+        columnVisibility?: VisibilityState
+        pagination?: PaginationState
+      }
 
-      if (parsed.sorting) setSorting(parsed.sorting);
-      if (typeof parsed.globalFilter === 'string') setGlobalFilter(parsed.globalFilter);
-      if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility);
-      if (!isServerPaginated && parsed.pagination) setPagination(parsed.pagination);
+      if (parsed.sorting) setSorting(parsed.sorting)
+      if (typeof parsed.globalFilter === 'string') setGlobalFilter(parsed.globalFilter)
+      if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility)
+      if (!isServerPaginated && parsed.pagination) setPagination(parsed.pagination)
     } catch {
-      globalThis.sessionStorage.removeItem(`data-table:${storageKey}`);
+      globalThis.sessionStorage.removeItem(`data-table:${storageKey}`)
     }
-  }, [storageKey, isServerPaginated]);
+  }, [storageKey, isServerPaginated])
 
   React.useEffect(() => {
     if (isServerPaginated) {
       setPagination(() => ({
         pageIndex: 0,
         pageSize: data.length || pageSize,
-      }));
+      }))
     }
-  }, [data.length, pageSize, isServerPaginated]);
+  }, [data.length, pageSize, isServerPaginated])
 
   React.useEffect(() => {
-    if (!storageKey || typeof globalThis.window === 'undefined') return;
+    if (!storageKey || typeof globalThis.window === 'undefined') return
 
     globalThis.sessionStorage.setItem(
       `data-table:${storageKey}`,
@@ -180,39 +202,39 @@ export default function DataTable<TData>({
           ? { sorting, globalFilter, columnVisibility }
           : { sorting, globalFilter, columnVisibility, pagination },
       ),
-    );
-  }, [columnVisibility, globalFilter, pagination, sorting, storageKey, isServerPaginated]);
+    )
+  }, [columnVisibility, globalFilter, pagination, sorting, storageKey, isServerPaginated])
 
   // Propagate state changes to server-side callbacks
   const handleSortingChange = React.useCallback(
     (updater: React.SetStateAction<SortingState>) => {
-      setSorting((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater;
-        onSortingChangeProp?.(next);
-        return next;
-      });
+      setSorting(prev => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        onSortingChangeProp?.(next)
+        return next
+      })
     },
     [onSortingChangeProp],
-  );
+  )
 
   const handleGlobalFilterChange = React.useCallback(
     (value: string) => {
-      setGlobalFilter(value);
-      onGlobalFilterChangeProp?.(value);
+      setGlobalFilter(value)
+      onGlobalFilterChangeProp?.(value)
     },
     [onGlobalFilterChangeProp],
-  );
+  )
 
   const handlePaginationChange = React.useCallback(
     (updater: React.SetStateAction<PaginationState>) => {
-      setPagination((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater;
-        onPaginationChangeProp?.(next);
-        return next;
-      });
+      setPagination(prev => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        onPaginationChangeProp?.(next)
+        return next
+      })
     },
     [onPaginationChangeProp],
-  );
+  )
 
   const table = useReactTable({
     data,
@@ -233,63 +255,63 @@ export default function DataTable<TData>({
     // Supply controlled page count when the server knows the total
     ...(controlledPageCount !== undefined ? { pageCount: controlledPageCount } : {}),
     globalFilterFn: (row, _columnId, filterValue) => {
-      const normalizedFilter = String(filterValue).toLowerCase();
-      return row.getVisibleCells().some((cell) =>
+      const normalizedFilter = String(filterValue).toLowerCase()
+      return row.getVisibleCells().some(cell =>
         String(cell.getValue() ?? '')
           .toLowerCase()
           .includes(normalizedFilter),
-      );
+      )
     },
-  });
+  })
 
-  const { rows } = table.getRowModel();
+  const { rows } = table.getRowModel()
   const totalFiltered = isServerPaginated
     ? (controlledPageCount ?? 1) * pagination.pageSize
-    : table.getFilteredRowModel().rows.length;
-  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination;
-  const resolvedPageCount = table.getPageCount();
-  const from = totalFiltered > 0 ? pageIndex * currentPageSize + 1 : 0;
-  const to = totalFiltered > 0 ? Math.min(from + rows.length - 1, totalFiltered) : 0;
+    : table.getFilteredRowModel().rows.length
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const resolvedPageCount = table.getPageCount()
+  const from = totalFiltered > 0 ? pageIndex * currentPageSize + 1 : 0
+  const to = totalFiltered > 0 ? Math.min(from + rows.length - 1, totalFiltered) : 0
 
-  const exportableColumns = table.getAllLeafColumns().filter((column) => {
-    const hasAccessor = 'accessorKey' in column.columnDef || 'accessorFn' in column.columnDef;
+  const exportableColumns = table.getAllLeafColumns().filter(column => {
+    const hasAccessor = 'accessorKey' in column.columnDef || 'accessorFn' in column.columnDef
     return (
       column.getIsVisible() &&
       column.columnDef.meta?.exportable !== false &&
       (hasAccessor || typeof column.columnDef.meta?.exportValue === 'function')
-    );
-  });
+    )
+  })
 
   const handleExportCsv = () => {
-    const sourceRows = serverPaginated ? table.getRowModel().rows : table.getSortedRowModel().rows;
-    if (sourceRows.length === 0 || exportableColumns.length === 0) return;
+    const sourceRows = serverPaginated ? table.getRowModel().rows : table.getSortedRowModel().rows
+    if (sourceRows.length === 0 || exportableColumns.length === 0) return
 
-    const headerRow = exportableColumns.map((column) => {
+    const headerRow = exportableColumns.map(column => {
       const label =
         column.columnDef.meta?.label ??
-        (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
-      return escapeCsv(label);
-    });
+        (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)
+      return escapeCsv(label)
+    })
 
-    const bodyRows = sourceRows.map((row) =>
-      exportableColumns.map((column) => {
+    const bodyRows = sourceRows.map(row =>
+      exportableColumns.map(column => {
         const value = column.columnDef.meta?.exportValue
           ? column.columnDef.meta.exportValue(row.original)
-          : row.getValue(column.id);
-        return escapeCsv(value);
+          : row.getValue(column.id)
+        return escapeCsv(value)
       }),
-    );
+    )
 
-    const csv = [headerRow.join(','), ...bodyRows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = csvFileName;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(resolvedLabels.exportStarted);
-  };
+    const csv = [headerRow.join(','), ...bodyRows.map(row => row.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = csvFileName
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success(resolvedLabels.exportStarted)
+  }
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -299,9 +321,9 @@ export default function DataTable<TData>({
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               value={globalFilter}
-              onChange={(event) => {
-                handleGlobalFilterChange(event.target.value);
-                setPagination((current) => ({ ...current, pageIndex: 0 }));
+              onChange={event => {
+                handleGlobalFilterChange(event.target.value)
+                setPagination(current => ({ ...current, pageIndex: 0 }))
               }}
               placeholder={resolvedLabels.searchPlaceholder}
               className="pl-9"
@@ -311,10 +333,7 @@ export default function DataTable<TData>({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button variant="outline" size="sm">
                     <Settings2 className="h-4 w-4" />
                     {resolvedLabels.columns}
                   </Button>
@@ -327,21 +346,23 @@ export default function DataTable<TData>({
                 <DropdownMenuSeparator />
                 {table
                   .getAllLeafColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
+                  .filter(column => column.getCanHide())
+                  .map(column => {
                     const label =
                       column.columnDef.meta?.label ??
-                      (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+                      (typeof column.columnDef.header === 'string'
+                        ? column.columnDef.header
+                        : column.id)
 
                     return (
                       <DropdownMenuCheckboxItem
                         key={column.id}
                         checked={column.getIsVisible()}
-                        onCheckedChange={(checked) => column.toggleVisibility(checked)}
+                        onCheckedChange={checked => column.toggleVisibility(checked)}
                       >
                         {label}
                       </DropdownMenuCheckboxItem>
-                    );
+                    )
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -368,17 +389,14 @@ export default function DataTable<TData>({
 
       <Table>
         <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
+          {table.getHeaderGroups().map(headerGroup => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const canSort = header.column.getCanSort();
-                const sortState = header.column.getIsSorted();
+              {headerGroup.headers.map(header => {
+                const canSort = header.column.getCanSort()
+                const sortState = header.column.getIsSorted()
 
                 return (
-                  <TableHead
-                    key={header.id}
-                    className="bg-secondary/40 dark:bg-secondary/20"
-                  >
+                  <TableHead key={header.id} className="bg-secondary/40 dark:bg-secondary/20">
                     {header.isPlaceholder ? null : canSort ? (
                       <Button
                         variant="ghost"
@@ -399,20 +417,17 @@ export default function DataTable<TData>({
                       flexRender(header.column.columnDef.header, header.getContext())
                     )}
                   </TableHead>
-                );
+                )
               })}
             </TableRow>
           ))}
         </TableHeader>
         <TableBody>
           {rows.length ? (
-            rows.map((row) => (
+            rows.map(row => (
               <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className="align-top whitespace-normal"
-                  >
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id} className="align-top whitespace-normal">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -437,14 +452,11 @@ export default function DataTable<TData>({
             <span>{resolvedLabels.rowsPerPage}</span>
             <select
               value={currentPageSize}
-              onChange={(event) => table.setPageSize(Number(event.target.value))}
+              onChange={event => table.setPageSize(Number(event.target.value))}
               className="bg-background rounded-md border px-2 py-1 text-sm"
             >
-              {pageSizeOptions.map((option) => (
-                <option
-                  key={option}
-                  value={option}
-                >
+              {pageSizeOptions.map(option => (
+                <option key={option} value={option}>
                   {option}
                 </option>
               ))}
@@ -462,7 +474,10 @@ export default function DataTable<TData>({
                 {resolvedLabels.prev}
               </Button>
               <span className="text-muted-foreground text-sm">
-                {resolvedLabels.page({ current: pageIndex + 1, total: resolvedPageCount })}
+                {resolvedLabels.page({
+                  current: pageIndex + 1,
+                  total: resolvedPageCount,
+                })}
               </span>
               <Button
                 variant="outline"
@@ -478,5 +493,5 @@ export default function DataTable<TData>({
         </div>
       )}
     </div>
-  );
+  )
 }

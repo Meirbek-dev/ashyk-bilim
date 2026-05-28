@@ -16,5 +16,5 @@ export default function GradebookLoading() {
         <div className="h-[560px] animate-pulse bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" />
       </div>
     </div>
-  );
+  )
 }

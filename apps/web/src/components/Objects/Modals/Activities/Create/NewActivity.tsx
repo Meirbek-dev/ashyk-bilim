@@ -1,38 +1,59 @@
-'use client';
+'use client'
 
-import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, Sparkles, Video } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import {
+  ArrowLeft,
+  ChevronRight,
+  Code2,
+  FileArchive,
+  FileText,
+  GraduationCap,
+  Sparkles,
+  Video,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 
-import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal';
-import DocumentPdfModal from './NewActivityModal/DocumentActivityModal';
-import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal';
-import VideoModal from './NewActivityModal/VideoActivityModal';
-import Exam from './NewActivityModal/ExamActivityModal';
-import FileSubmission from './NewActivityModal/FileSubmissionActivityModal';
+import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal'
+import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
+import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal'
+import VideoModal from './NewActivityModal/VideoActivityModal'
+import Exam from './NewActivityModal/ExamActivityModal'
+import FileSubmission from './NewActivityModal/FileSubmissionActivityModal'
 
-type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'exams' | 'codechallenge';
+type ViewType =
+  | 'home'
+  | 'dynamic'
+  | 'video'
+  | 'documentpdf'
+  | 'filesubmission'
+  | 'exams'
+  | 'codechallenge'
 
 interface ActivityTypeConfig {
-  id: ViewType;
-  labelKey: string;
-  descriptionKey: string;
-  icon: LucideIcon;
-  iconClass: string;
+  id: ViewType
+  labelKey: string
+  descriptionKey: string
+  icon: LucideIcon
+  iconClass: string
 }
 
 interface NewActivityModalProps {
-  closeModal: () => void;
-  submitActivity: (data?: any) => Promise<any>;
-  submitFileActivity: (params: { file: any; type: any; activity: any; chapterId: number }) => Promise<void>;
-  submitExternalVideo: (external_video_data: any, activity: any, chapterId: number) => Promise<void>;
-  createAndOpenActivity: (kind: 'dynamic' | 'codechallenge') => Promise<void>;
-  chapterId: number;
-  course: unknown;
+  closeModal: () => void
+  submitActivity: (data?: any) => Promise<any>
+  submitFileActivity: (params: {
+    file: any
+    type: any
+    activity: any
+    chapterId: number
+  }) => Promise<void>
+  submitExternalVideo: (external_video_data: any, activity: any, chapterId: number) => Promise<void>
+  createAndOpenActivity: (kind: 'dynamic' | 'codechallenge') => Promise<void>
+  chapterId: number
+  course: unknown
 }
 
 const ACTIVITY_TYPES: ActivityTypeConfig[] = [
@@ -78,7 +99,7 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     icon: Code2,
     iconClass: 'text-teal-500',
   },
-];
+]
 
 export default function NewActivityModal({
   closeModal,
@@ -89,35 +110,37 @@ export default function NewActivityModal({
   chapterId,
   course,
 }: NewActivityModalProps) {
-  const t = useTranslations('Components.NewActivity');
-  const [selectedView, setSelectedView] = useState<ViewType>('home');
-  const [isQuickCreating, setIsQuickCreating] = useState<ViewType | null>(null);
+  const t = useTranslations('Components.NewActivity')
+  const [selectedView, setSelectedView] = useState<ViewType>('home')
+  const [isQuickCreating, setIsQuickCreating] = useState<ViewType | null>(null)
 
-  const handleBack = useCallback(() => setSelectedView('home'), []);
+  const handleBack = useCallback(() => setSelectedView('home'), [])
 
   const handleTypeSelect = useCallback(
     async (view: ViewType) => {
       if (view !== 'dynamic' && view !== 'codechallenge') {
-        setSelectedView(view);
-        return;
+        setSelectedView(view)
+        return
       }
 
-      setIsQuickCreating(view);
+      setIsQuickCreating(view)
       try {
-        await createAndOpenActivity(view);
+        await createAndOpenActivity(view)
       } finally {
-        setIsQuickCreating(null);
+        setIsQuickCreating(null)
       }
     },
     [createAndOpenActivity],
-  );
+  )
 
-  const sharedProps = { chapterId, course, closeModal };
+  const sharedProps = { chapterId, course, closeModal }
 
   if (selectedView === 'home') {
     return (
       <div className="w-full space-y-3">
-        <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase">{t('chooseType')}</p>
+        <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase">
+          {t('chooseType')}
+        </p>
         <div className="overflow-hidden rounded-xl border border-gray-200">
           {ACTIVITY_TYPES.map((activity, index) => (
             <ActivityTypeRow
@@ -132,7 +155,7 @@ export default function NewActivityModal({
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -148,10 +171,7 @@ export default function NewActivityModal({
       </Button>
 
       {selectedView === 'dynamic' && (
-        <DynamicCanvaModal
-          submitActivity={submitActivity}
-          {...sharedProps}
-        />
+        <DynamicCanvaModal submitActivity={submitActivity} {...sharedProps} />
       )}
       {selectedView === 'video' && (
         <VideoModal
@@ -169,29 +189,21 @@ export default function NewActivityModal({
         />
       )}
       {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
-      {selectedView === 'exams' && (
-        <Exam
-          submitActivity={submitActivity}
-          {...sharedProps}
-        />
-      )}
+      {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}
       {selectedView === 'codechallenge' && (
-        <CodeChallenge
-          submitActivity={submitActivity}
-          {...sharedProps}
-        />
+        <CodeChallenge submitActivity={submitActivity} {...sharedProps} />
       )}
     </div>
-  );
+  )
 }
 
 interface ActivityTypeRowProps {
-  config: ActivityTypeConfig;
-  label: string;
-  description: string;
-  onClick: () => void;
-  isLoading?: boolean;
-  isLast?: boolean;
+  config: ActivityTypeConfig
+  label: string
+  description: string
+  onClick: () => void
+  isLoading?: boolean
+  isLast?: boolean
 }
 
 function ActivityTypeRow({
@@ -202,7 +214,7 @@ function ActivityTypeRow({
   isLoading = false,
   isLast = false,
 }: ActivityTypeRowProps) {
-  const Icon = config.icon;
+  const Icon = config.icon
 
   return (
     <button
@@ -238,5 +250,5 @@ function ActivityTypeRow({
         )}
       />
     </button>
-  );
+  )
 }

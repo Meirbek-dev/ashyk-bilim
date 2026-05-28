@@ -1,32 +1,39 @@
-'use client';
+'use client'
 
-import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface ExamQuestionNavigationProps {
-  totalQuestions: number;
-  currentQuestionIndex: number;
-  answeredQuestions: Set<number>;
-  flaggedQuestions?: Set<number>;
-  onQuestionSelect: (index: number) => void;
+  totalQuestions: number
+  currentQuestionIndex: number
+  answeredQuestions: Set<number>
+  flaggedQuestions?: Set<number>
+  onQuestionSelect: (index: number) => void
 }
 
 interface ExamQuestionNavigationMobileProps extends ExamQuestionNavigationProps {
-  onPrevious: () => void;
-  onNext: () => void;
-  onSubmit?: () => void;
-  canGoNext?: boolean;
-  canGoPrevious?: boolean;
+  onPrevious: () => void
+  onNext: () => void
+  onSubmit?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
 }
 
-function getButtonStyle(i: number, currentIndex: number, answered: Set<number>, flagged: Set<number>): string {
-  if (i === currentIndex) return 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30';
+function getButtonStyle(
+  i: number,
+  currentIndex: number,
+  answered: Set<number>,
+  flagged: Set<number>,
+): string {
+  if (i === currentIndex)
+    return 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30'
   if (flagged.has(i) && answered.has(i))
-    return 'bg-amber-100 text-amber-800 ring-1 ring-amber-400 dark:bg-amber-900/40 dark:text-amber-200';
+    return 'bg-amber-100 text-amber-800 ring-1 ring-amber-400 dark:bg-amber-900/40 dark:text-amber-200'
   if (flagged.has(i))
-    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/20 dark:text-amber-300';
-  if (answered.has(i)) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
-  return 'bg-muted text-muted-foreground hover:bg-muted/80';
+    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/20 dark:text-amber-300'
+  if (answered.has(i))
+    return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+  return 'bg-muted text-muted-foreground hover:bg-muted/80'
 }
 
 export default function ExamQuestionNavigation({
@@ -36,8 +43,8 @@ export default function ExamQuestionNavigation({
   flaggedQuestions = new Set(),
   onQuestionSelect,
 }: ExamQuestionNavigationProps) {
-  const t = useTranslations('Features.Assessments.Exam');
-  const answeredCount = answeredQuestions.size;
+  const t = useTranslations('Features.Assessments.Exam')
+  const answeredCount = answeredQuestions.size
 
   return (
     <div className="bg-card sticky top-4 rounded-lg border p-4">
@@ -63,21 +70,15 @@ export default function ExamQuestionNavigation({
       </div>
       {/* Legend */}
       <div className="mt-3 space-y-1">
-        <LegendItem
-          color="bg-emerald-100 dark:bg-emerald-900/30"
-          label={t('legendAnswered')}
-        />
+        <LegendItem color="bg-emerald-100 dark:bg-emerald-900/30" label={t('legendAnswered')} />
         <LegendItem
           color="bg-amber-50 ring-1 ring-amber-300 dark:bg-amber-900/20"
           label={t('legendFlagged')}
         />
-        <LegendItem
-          color="bg-muted"
-          label={t('legendNotAnswered')}
-        />
+        <LegendItem color="bg-muted" label={t('legendNotAnswered')} />
       </div>
     </div>
-  );
+  )
 }
 
 function LegendItem({ color, label }: { color: string; label: string }) {
@@ -86,7 +87,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
       <span className={cn('size-3 rounded-sm', color)} />
       <span className="text-muted-foreground text-[11px]">{label}</span>
     </div>
-  );
+  )
 }
 
 export function ExamQuestionNavigationMobile({
@@ -132,5 +133,5 @@ export function ExamQuestionNavigationMobile({
         →
       </button>
     </div>
-  );
+  )
 }

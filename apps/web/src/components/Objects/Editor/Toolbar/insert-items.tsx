@@ -1,5 +1,5 @@
-import type { ReactNode, RefObject } from 'react';
-import type { Editor } from '@tiptap/react';
+import type { ReactNode, RefObject } from 'react'
+import type { Editor } from '@tiptap/react'
 import {
   AlertCircle,
   AlertTriangle,
@@ -17,29 +17,29 @@ import {
   Tags,
   User,
   Video,
-} from 'lucide-react';
-import { SiYoutube } from '@icons-pack/react-simple-icons';
-import { useEmbedPanelStore } from './EmbedPanel/EmbedPanelStore';
+} from 'lucide-react'
+import { SiYoutube } from '@icons-pack/react-simple-icons'
+import { useEmbedPanelStore } from './EmbedPanel/EmbedPanelStore'
 
-type ToolbarTranslator = (key: string, values?: Record<string, string | number>) => string;
+type ToolbarTranslator = (key: string, values?: Record<string, string | number>) => string
 
-export type InsertCategory = 'basic' | 'media' | 'interactive';
+export type InsertCategory = 'basic' | 'media' | 'interactive'
 
 export interface InsertItem {
-  id: string;
-  label: string;
-  description: string;
-  icon: ReactNode;
-  category: InsertCategory;
-  includeInToolbar: boolean;
-  run: (editor: Editor) => void;
+  id: string
+  label: string
+  description: string
+  icon: ReactNode
+  category: InsertCategory
+  includeInToolbar: boolean
+  run: (editor: Editor) => void
 }
 
 export const INSERT_CATEGORY_LABELS: Record<InsertCategory, string> = {
   basic: 'insertGroups.text',
   media: 'insertGroups.media',
   interactive: 'insertGroups.interactive',
-};
+}
 
 export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
   return [
@@ -50,7 +50,8 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Table2 className="size-4" />,
       category: 'basic',
       includeInToolbar: false,
-      run: (editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      run: editor =>
+        editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
     },
     {
       id: 'codeblock',
@@ -59,7 +60,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Code className="size-4" />,
       category: 'basic',
       includeInToolbar: true,
-      run: (editor) => editor.chain().focus().toggleCodeBlock().run(),
+      run: editor => editor.chain().focus().toggleCodeBlock().run(),
     },
     {
       id: 'infocallout',
@@ -68,7 +69,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <AlertCircle className="size-4" />,
       category: 'basic',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertInfoCallout(),
+      run: editor => editor.commands.insertInfoCallout(),
     },
     {
       id: 'warningcallout',
@@ -77,7 +78,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <AlertTriangle className="size-4" />,
       category: 'basic',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertWarningCallout(),
+      run: editor => editor.commands.insertWarningCallout(),
     },
     {
       id: 'badge',
@@ -86,7 +87,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Tags className="size-4" />,
       category: 'basic',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertBadge(),
+      run: editor => editor.commands.insertBadge(),
     },
     {
       id: 'button',
@@ -95,7 +96,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <MousePointerClick className="size-4" />,
       category: 'basic',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertButton(),
+      run: editor => editor.commands.insertButton(),
     },
     {
       id: 'image',
@@ -104,7 +105,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <ImagePlus className="size-4" />,
       category: 'media',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertImageBlock(),
+      run: editor => editor.commands.insertImageBlock(),
     },
     {
       id: 'video',
@@ -113,7 +114,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Video className="size-4" />,
       category: 'media',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertVideoBlock(),
+      run: editor => editor.commands.insertVideoBlock(),
     },
     {
       id: 'youtubeembed',
@@ -122,7 +123,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <SiYoutube className="size-4" />,
       category: 'media',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertEmbedObject(),
+      run: editor => editor.commands.insertEmbedObject(),
     },
     {
       // Embed entry for the new EmbedBlock panel (Requirements 9.1, 9.2, 9.3).
@@ -138,8 +139,8 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       category: 'media',
       includeInToolbar: false,
       run: (_editor: Editor) => {
-        const nullRef: RefObject<HTMLButtonElement | null> = { current: null };
-        useEmbedPanelStore.getState().open(nullRef);
+        const nullRef: RefObject<HTMLButtonElement | null> = { current: null }
+        useEmbedPanelStore.getState().open(nullRef)
       },
     },
     {
@@ -149,7 +150,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <FileText className="size-4" />,
       category: 'media',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertPDFBlock(),
+      run: editor => editor.commands.insertPDFBlock(),
     },
     {
       id: 'webpreview',
@@ -158,7 +159,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Globe className="size-4" />,
       category: 'media',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertWebPreview(),
+      run: editor => editor.commands.insertWebPreview(),
     },
     {
       id: 'math',
@@ -167,7 +168,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Sigma className="size-4" />,
       category: 'interactive',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertMathEquation(),
+      run: editor => editor.commands.insertMathEquation(),
     },
     {
       id: 'quiz',
@@ -176,7 +177,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <BadgeHelp className="size-4" />,
       category: 'interactive',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertInlineQuiz(),
+      run: editor => editor.commands.insertInlineQuiz(),
     },
     {
       id: 'flipcard',
@@ -185,16 +186,18 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <RotateCw className="size-4" />,
       category: 'interactive',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertFlipcard(),
+      run: editor => editor.commands.insertFlipcard(),
     },
     {
       id: 'scenarios',
       label: t('interactiveScenarios'),
-      description: t('slashInsertDescription', { label: t('interactiveScenarios') }),
+      description: t('slashInsertDescription', {
+        label: t('interactiveScenarios'),
+      }),
       icon: <GitBranch className="size-4" />,
       category: 'interactive',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertScenarios(),
+      run: editor => editor.commands.insertScenarios(),
     },
     {
       id: 'user',
@@ -203,7 +206,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <User className="size-4" />,
       category: 'interactive',
       includeInToolbar: true,
-      run: (editor) => editor.commands.insertUserBlock(),
+      run: editor => editor.commands.insertUserBlock(),
     },
-  ];
+  ]
 }

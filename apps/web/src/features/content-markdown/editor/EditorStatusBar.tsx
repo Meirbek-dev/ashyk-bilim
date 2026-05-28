@@ -1,29 +1,36 @@
-'use client';
+'use client'
 
-import { AlertTriangle, Info } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import type { MarkdownEditorSaveState, MarkdownPresetConfig } from '../presets/presets';
-import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation';
-import { getHighestMarkdownIssueSeverity } from '../hooks/useMarkdownValidation';
-import { useTranslations } from 'next-intl';
+import { AlertTriangle, Info } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import type { MarkdownEditorSaveState, MarkdownPresetConfig } from '../presets/presets'
+import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation'
+import { getHighestMarkdownIssueSeverity } from '../hooks/useMarkdownValidation'
+import { useTranslations } from 'next-intl'
 
 interface EditorStatusBarProps {
-  config: MarkdownPresetConfig;
-  charCount: number;
-  wordCount: number;
-  isEmpty: boolean;
-  saveState: MarkdownEditorSaveState;
-  issues: MarkdownValidationIssue[];
+  config: MarkdownPresetConfig
+  charCount: number
+  wordCount: number
+  isEmpty: boolean
+  saveState: MarkdownEditorSaveState
+  issues: MarkdownValidationIssue[]
 }
 
-export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveState, issues }: EditorStatusBarProps) {
-  const t = useTranslations('MarkdownEditor');
-  const [showAllIssues, setShowAllIssues] = useState(false);
-  const severity = getHighestMarkdownIssueSeverity(issues);
-  const firstIssue = issues[0];
-  const nearLimit = charCount > config.maxLength * 0.9;
-  const overLimit = charCount > config.maxLength;
+export function EditorStatusBar({
+  config,
+  charCount,
+  wordCount,
+  isEmpty,
+  saveState,
+  issues,
+}: EditorStatusBarProps) {
+  const t = useTranslations('MarkdownEditor')
+  const [showAllIssues, setShowAllIssues] = useState(false)
+  const severity = getHighestMarkdownIssueSeverity(issues)
+  const firstIssue = issues[0]
+  const nearLimit = charCount > config.maxLength * 0.9
+  const overLimit = charCount > config.maxLength
 
   const saveLabel = {
     idle: null,
@@ -31,7 +38,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
     saving: t('statusBar.saving'),
     saved: t('statusBar.saved'),
     error: t('statusBar.saveFailed'),
-  }[saveState];
+  }[saveState]
 
   return (
     <div
@@ -67,21 +74,27 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
           <div className="relative">
             <button
               type="button"
-              onClick={() => setShowAllIssues((v) => !v)}
+              onClick={() => setShowAllIssues(v => !v)}
               className={cn(
                 'flex items-center gap-1 rounded px-1 transition-colors',
                 severity === 'error' ? 'text-destructive' : 'text-amber-600',
               )}
               aria-label={t('statusBar.issueToggle', { count: issues.length })}
             >
-              {severity === 'error' ? <AlertTriangle className="size-3" /> : <Info className="size-3" />}
+              {severity === 'error' ? (
+                <AlertTriangle className="size-3" />
+              ) : (
+                <Info className="size-3" />
+              )}
               <span>{firstIssue.message}</span>
-              {issues.length > 1 && <span className="text-muted-foreground/60">+{issues.length - 1}</span>}
+              {issues.length > 1 && (
+                <span className="text-muted-foreground/60">+{issues.length - 1}</span>
+              )}
             </button>
 
             {showAllIssues && issues.length > 1 && (
               <div className="bg-popover border-border absolute right-0 bottom-6 z-10 w-64 rounded-lg border p-2 shadow-lg">
-                {issues.map((issue) => (
+                {issues.map(issue => (
                   <div
                     key={issue.code}
                     className={cn(
@@ -112,5 +125,5 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
         </span>
       </div>
     </div>
-  );
+  )
 }

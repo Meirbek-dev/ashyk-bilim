@@ -1,14 +1,14 @@
-import type { AssessmentItem } from '@/features/assessments/domain/items';
-import type { CodeChallengeProblem, CodeChallengeSettings } from './codeChallenge.types';
+import type { AssessmentItem } from '@/features/assessments/domain/items'
+import type { CodeChallengeProblem, CodeChallengeSettings } from './codeChallenge.types'
 
 export function codeItemToProblem(params: {
-  activityUuid: string;
-  title?: string | null;
-  description?: string | null;
-  item: AssessmentItem;
-  settings: CodeChallengeSettings;
+  activityUuid: string
+  title?: string | null
+  description?: string | null
+  item: AssessmentItem
+  settings: CodeChallengeSettings
 }): CodeChallengeProblem {
-  const body = params.item.body.kind === 'CODE' ? params.item.body : null;
+  const body = params.item.body.kind === 'CODE' ? params.item.body : null
 
   return {
     activityUuid: params.activityUuid,
@@ -22,10 +22,13 @@ export function codeItemToProblem(params: {
     points: params.settings.points ?? params.item.max_score,
     timeLimitSeconds: params.settings.time_limit,
     memoryLimitMb: params.settings.memory_limit,
-  };
+  }
 }
 
-export function normalizeStarterCode(settings: CodeChallengeSettings | null | undefined, languageId: number): string {
-  if (!settings || languageId <= 0) return '';
-  return settings.starter_code?.[String(languageId)] ?? '';
+export function normalizeStarterCode(
+  settings: CodeChallengeSettings | null | undefined,
+  languageId: number,
+): string {
+  if (!settings || languageId <= 0) return ''
+  return settings.starter_code?.[String(languageId)] ?? ''
 }

@@ -1,29 +1,34 @@
-'use client';
+'use client'
 
-import { CalendarClock, Lock, ShieldAlert, SlidersHorizontal, Trophy } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { CalendarClock, Lock, ShieldAlert, SlidersHorizontal, Trophy } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
-import type { NormalizedScore } from '@/features/assessments/domain/score';
-import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
-import type { PolicyView } from '@/features/assessments/domain/policy';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
-import ScoreSummary from './ScoreSummary';
+import type { NormalizedScore } from '@/features/assessments/domain/score'
+import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
+import type { PolicyView } from '@/features/assessments/domain/policy'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { Badge } from '@/components/ui/badge'
+import ScoreSummary from './ScoreSummary'
 
 interface PolicyInspectorProps {
-  policy: PolicyView;
-  score?: NormalizedScore;
-  accessItems?: string[];
-  scheduleItems?: string[];
-  title?: string;
+  policy: PolicyView
+  score?: NormalizedScore
+  accessItems?: string[]
+  scheduleItems?: string[]
+  title?: string
 }
 
 interface InspectorSection {
-  value: string;
-  label: string;
-  icon: typeof CalendarClock;
-  body: ReactNode;
+  value: string
+  label: string
+  icon: typeof CalendarClock
+  body: ReactNode
 }
 
 export default function PolicyInspector({
@@ -33,9 +38,9 @@ export default function PolicyInspector({
   scheduleItems = [],
   title,
 }: PolicyInspectorProps) {
-  const t = useTranslations('Components.PolicyInspector');
-  const effectiveTitle = title ?? t('title');
-  const antiCheatEnabled = isAntiCheatEnabled(policy.antiCheat);
+  const t = useTranslations('Components.PolicyInspector')
+  const effectiveTitle = title ?? t('title')
+  const antiCheatEnabled = isAntiCheatEnabled(policy.antiCheat)
   const possibleSections: (InspectorSection | null)[] = [
     policy.dueAt || scheduleItems.length
       ? {
@@ -48,11 +53,8 @@ export default function PolicyInspector({
                 label={t('due')}
                 value={policy.dueAt ? new Date(policy.dueAt).toLocaleString() : t('notSet')}
               />
-              {scheduleItems.map((item) => (
-                <div
-                  key={item}
-                  className="text-muted-foreground"
-                >
+              {scheduleItems.map(item => (
+                <div key={item} className="text-muted-foreground">
                   {item}
                 </div>
               ))}
@@ -71,10 +73,7 @@ export default function PolicyInspector({
                 label={t('maximumAttempts')}
                 value={policy.maxAttempts ? String(policy.maxAttempts) : t('unlimited')}
               />
-              <PolicyRow
-                label={t('latePenalty')}
-                value={`${policy.latePolicy.penaltyPercent}%`}
-              />
+              <PolicyRow label={t('latePenalty')} value={`${policy.latePolicy.penaltyPercent}%`} />
             </div>
           ),
         }
@@ -102,11 +101,8 @@ export default function PolicyInspector({
           icon: Lock,
           body: (
             <div className="space-y-2">
-              {accessItems.map((item) => (
-                <Badge
-                  key={item}
-                  variant="outline"
-                >
+              {accessItems.map(item => (
+                <Badge key={item} variant="outline">
                   {item}
                 </Badge>
               ))}
@@ -114,8 +110,8 @@ export default function PolicyInspector({
           ),
         }
       : null,
-  ];
-  const sections = possibleSections.filter(isInspectorSection);
+  ]
+  const sections = possibleSections.filter(isInspectorSection)
 
   return (
     <div className="space-y-4 p-4 xl:sticky xl:top-[88px] xl:h-[calc(100vh-88px)] xl:overflow-y-auto">
@@ -124,17 +120,11 @@ export default function PolicyInspector({
         <p className="text-muted-foreground text-xs">{t('description')}</p>
       </div>
       {sections.length ? (
-        <Accordion
-          defaultValue={sections.map((section) => section.value)}
-          className="w-full"
-        >
-          {sections.map((section) => {
-            const Icon = section.icon;
+        <Accordion defaultValue={sections.map(section => section.value)} className="w-full">
+          {sections.map(section => {
+            const Icon = section.icon
             return (
-              <AccordionItem
-                key={section.value}
-                value={section.value}
-              >
+              <AccordionItem key={section.value} value={section.value}>
                 <AccordionTrigger className="text-sm hover:no-underline">
                   <span className="flex items-center gap-2">
                     <Icon className="size-4" />
@@ -143,14 +133,16 @@ export default function PolicyInspector({
                 </AccordionTrigger>
                 <AccordionContent>{section.body}</AccordionContent>
               </AccordionItem>
-            );
+            )
           })}
         </Accordion>
       ) : (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{t('noPolicySections')}</div>
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
+          {t('noPolicySections')}
+        </div>
       )}
     </div>
-  );
+  )
 }
 
 function PolicyRow({ label, value }: { label: string; value: string }) {
@@ -159,30 +151,27 @@ function PolicyRow({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>
-  );
+  )
 }
 
 function isInspectorSection(section: InspectorSection | null): section is InspectorSection {
-  return section !== null;
+  return section !== null
 }
 
 function AntiCheatSummary({ policy }: { policy: PolicyView }) {
-  const t = useTranslations('Components.PolicyInspector');
+  const t = useTranslations('Components.PolicyInspector')
   const items = [
     policy.antiCheat.copyPasteProtection ? t('antiCheatItems.copyPasteBlocked') : null,
     policy.antiCheat.tabSwitchDetection ? t('antiCheatItems.tabSwitchesTracked') : null,
     policy.antiCheat.devtoolsDetection ? t('antiCheatItems.devToolsTracked') : null,
     policy.antiCheat.rightClickDisabled ? t('antiCheatItems.rightClickBlocked') : null,
     policy.antiCheat.fullscreenEnforced ? t('antiCheatItems.fullscreenRequired') : null,
-  ].filter(Boolean);
+  ].filter(Boolean)
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Badge
-            key={item}
-            variant="outline"
-          >
+        {items.map(item => (
+          <Badge key={item} variant="outline">
             {item}
           </Badge>
         ))}
@@ -192,5 +181,5 @@ function AntiCheatSummary({ policy }: { policy: PolicyView }) {
         value={policy.antiCheat.violationThreshold?.toString() ?? t('notSet')}
       />
     </div>
-  );
+  )
 }

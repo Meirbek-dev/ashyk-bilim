@@ -1,36 +1,36 @@
-'use client';
+'use client'
 
-import { useQueryClient } from '@tanstack/react-query';
-import { SiFacebook, SiInstagram, SiTiktok, SiX, SiYoutube } from '@icons-pack/react-simple-icons';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { updatePlatform } from '@/services/settings/platform';
-import { revalidateTags } from '@/lib/cache/revalidate';
-import { Field, FieldLabel } from '@components/ui/field';
-import { Controller, useForm } from 'react-hook-form';
-import { Plus, X as XIcon } from 'lucide-react';
-import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
-import { useTranslations } from 'next-intl';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query'
+import { SiFacebook, SiInstagram, SiTiktok, SiX, SiYoutube } from '@icons-pack/react-simple-icons'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { updatePlatform } from '@/services/settings/platform'
+import { revalidateTags } from '@/lib/cache/revalidate'
+import { Field, FieldLabel } from '@components/ui/field'
+import { Controller, useForm } from 'react-hook-form'
+import { Plus, X as XIcon } from 'lucide-react'
+import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
+import { useTranslations } from 'next-intl'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 
 interface SocialMediaData {
   socials: {
-    twitter?: string;
-    facebook?: string;
-    instagram?: string;
-    linkedin?: string;
-    youtube?: string;
-    tiktok?: string;
-  };
-  links: Record<string, string>;
+    twitter?: string
+    facebook?: string
+    instagram?: string
+    linkedin?: string
+    youtube?: string
+    tiktok?: string
+  }
+  links: Record<string, string>
 }
 
 export default function EditSocials() {
-  const queryClient = useQueryClient();
-  const platform = usePlatform() as any;
-  const t = useTranslations('DashPage.PlatformSettings.Socials');
+  const queryClient = useQueryClient()
+  const platform = usePlatform() as any
+  const t = useTranslations('DashPage.PlatformSettings.Socials')
 
   const socialDefaults = {
     twitter: '',
@@ -39,7 +39,7 @@ export default function EditSocials() {
     linkedin: '',
     youtube: '',
     tiktok: '',
-  };
+  }
 
   const defaultValues = {
     socials: {
@@ -47,85 +47,72 @@ export default function EditSocials() {
       ...platform?.socials,
     },
     links: platform?.links || {},
-  };
+  }
 
   const form = useForm<SocialMediaData>({
     defaultValues,
-  });
+  })
 
-  const links = form.watch('links');
-  const [isPending, startTransition] = useTransition();
+  const links = form.watch('links')
+  const [isPending, startTransition] = useTransition()
 
   const updatePlatformSettings = async (values: SocialMediaData) => {
-    const loadingToast = toast.loading(t('updatingPlatform'));
+    const loadingToast = toast.loading(t('updatingPlatform'))
     try {
-      await updatePlatform(values);
-      await revalidateTags(['platform']);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.platform.config() });
-      toast.success(t('platformUpdatedSuccess'), { id: loadingToast });
+      await updatePlatform(values)
+      await revalidateTags(['platform'])
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.platform.config(),
+      })
+      toast.success(t('platformUpdatedSuccess'), { id: loadingToast })
     } catch {
-      toast.error(t('platformUpdateFailed'), { id: loadingToast });
+      toast.error(t('platformUpdateFailed'), { id: loadingToast })
     }
-  };
+  }
 
   const handleLinkChange = (oldKey: string, newKey: string, value: string) => {
-    const currentLinks = form.getValues('links');
-    const newLinks = { ...currentLinks };
+    const currentLinks = form.getValues('links')
+    const newLinks = { ...currentLinks }
     if (oldKey !== newKey) {
-      delete newLinks[oldKey];
+      delete newLinks[oldKey]
     }
-    newLinks[newKey] = value;
-    form.setValue('links', newLinks);
-  };
+    newLinks[newKey] = value
+    form.setValue('links', newLinks)
+  }
 
   const removeLink = (key: string) => {
-    const currentLinks = form.getValues('links');
-    const newLinks = { ...currentLinks };
-    delete newLinks[key];
-    form.setValue('links', newLinks);
-  };
+    const currentLinks = form.getValues('links')
+    const newLinks = { ...currentLinks }
+    delete newLinks[key]
+    form.setValue('links', newLinks)
+  }
 
   const addNewLink = () => {
-    const currentLinks = form.getValues('links');
-    const newLinks = { ...currentLinks };
-    newLinks[`${t('Form.newCustomLinkDefaultLabel')} ${Object.keys(newLinks).length + 1}`] = '';
-    form.setValue('links', newLinks);
-  };
+    const currentLinks = form.getValues('links')
+    const newLinks = { ...currentLinks }
+    newLinks[`${t('Form.newCustomLinkDefaultLabel')} ${Object.keys(newLinks).length + 1}`] = ''
+    form.setValue('links', newLinks)
+  }
 
-  const linksEntries = Object.entries(links || {});
+  const linksEntries = Object.entries(links || {})
 
   const socialFields = [
     {
       name: 'socials.instagram' as const,
       placeholder: t('Form.instagramPlaceholder'),
-      icon: (
-        <SiInstagram
-          size={16}
-          color="#E4405F"
-        />
-      ),
+      icon: <SiInstagram size={16} color="#E4405F" />,
       bgColor: 'bg-[#E4405F]/10',
     },
     {
       name: 'socials.facebook' as const,
       placeholder: t('Form.facebookPlaceholder'),
-      icon: (
-        <SiFacebook
-          size={16}
-          color="#1877F2"
-        />
-      ),
+      icon: <SiFacebook size={16} color="#1877F2" />,
       bgColor: 'bg-[#1877F2]/10',
     },
     {
       name: 'socials.youtube' as const,
       placeholder: t('Form.youtubePlaceholder'),
-      icon: (
-        <SiYoutube
-          size={16}
-          color="#FF0000"
-        />
-      ),
+      icon: <SiYoutube size={16} color="#FF0000" />,
       bgColor: 'bg-[#FF0000]/10',
     },
     {
@@ -140,14 +127,14 @@ export default function EditSocials() {
       icon: <SiX size={16} />,
       bgColor: 'bg-[#707577]/10',
     },
-  ];
+  ]
 
   return (
     <div className="bg-background mx-0 rounded-3xl sm:mx-10">
       <form
-        onSubmit={form.handleSubmit((values) =>
+        onSubmit={form.handleSubmit(values =>
           startTransition(() => {
-            void updatePlatformSettings(values);
+            void updatePlatformSettings(values)
           }),
         )}
       >
@@ -163,7 +150,7 @@ export default function EditSocials() {
                 <FieldLabel className="text-lg font-semibold">{t('socialLinksTitle')}</FieldLabel>
                 <div className="border-border bg-muted/20 mt-2 space-y-3 rounded-3xl border p-4">
                   <div className="grid gap-3">
-                    {socialFields.map((field) => (
+                    {socialFields.map(field => (
                       <Controller
                         key={field.name}
                         control={form.control}
@@ -171,7 +158,9 @@ export default function EditSocials() {
                         render={({ field: socialField }) => (
                           <Field>
                             <div className="flex items-center gap-3">
-                              <div className={`flex h-8 w-8 items-center justify-center rounded-md ${field.bgColor}`}>
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-md ${field.bgColor}`}
+                              >
                                 {field.icon}
                               </div>
                               <Input
@@ -194,10 +183,7 @@ export default function EditSocials() {
                 <FieldLabel className="text-lg font-semibold">{t('customLinksTitle')}</FieldLabel>
                 <div className="border-border bg-muted/20 mt-2 space-y-3 rounded-3xl border p-4">
                   {linksEntries.map(([linkKey, linkValue], index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3"
-                    >
+                    <div key={index} className="flex items-center gap-3">
                       <div className="bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-md text-xs font-medium">
                         {index + 1}
                       </div>
@@ -206,16 +192,16 @@ export default function EditSocials() {
                           placeholder={t('Form.customLinkLabelPlaceholder')}
                           value={linkKey}
                           className="bg-background h-9 w-1/3"
-                          onChange={(e) => {
-                            handleLinkChange(linkKey, e.target.value, linkValue);
+                          onChange={e => {
+                            handleLinkChange(linkKey, e.target.value, linkValue)
                           }}
                         />
                         <Input
                           placeholder={t('Form.customLinkUrlPlaceholder')}
                           value={linkValue}
                           className="bg-background h-9 flex-1"
-                          onChange={(e) => {
-                            handleLinkChange(linkKey, linkKey, e.target.value);
+                          onChange={e => {
+                            handleLinkChange(linkKey, linkKey, e.target.value)
                           }}
                         />
                         <Button
@@ -223,7 +209,7 @@ export default function EditSocials() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            removeLink(linkKey);
+                            removeLink(linkKey)
                           }}
                         >
                           <XIcon className="h-4 w-4" />
@@ -245,22 +231,23 @@ export default function EditSocials() {
                     </Button>
                   )}
 
-                  <p className="text-muted-foreground mt-2 text-xs">{t('Form.customLinkInfo', { count: 3 })}</p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {t('Form.customLinkInfo', { count: 3 })}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mx-5 mt-3 mb-5 flex flex-row-reverse">
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting || isPending}
-            >
-              {form.formState.isSubmitting || isPending ? t('Form.savingButton') : t('Form.saveButton')}
+            <Button type="submit" disabled={form.formState.isSubmitting || isPending}>
+              {form.formState.isSubmitting || isPending
+                ? t('Form.savingButton')
+                : t('Form.saveButton')}
             </Button>
           </div>
         </div>
       </form>
     </div>
-  );
+  )
 }

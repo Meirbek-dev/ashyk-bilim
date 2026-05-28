@@ -1,87 +1,94 @@
-'use client';
+'use client'
 
-import { X as RemoveIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import React from 'react';
+import { X as RemoveIcon } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import React from 'react'
 
 /**
  * used for identifying the split char and use will pasting
  */
-const SPLITTER_REGEX = /[\t\n#&,./=?-]+/;
+const SPLITTER_REGEX = /[\t\n#&,./=?-]+/
 
 /**
  * used for formatting the pasted element for the correct value format to be added
  */
 
-const FORMATTING_REGEX = /^[^\dA-Za-z]*|[^\dA-Za-z]*$/g;
+const FORMATTING_REGEX = /^[^\dA-Za-z]*|[^\dA-Za-z]*$/g
 
 interface TagsInputProps extends React.HTMLAttributes<HTMLDivElement> {
-  value: string[];
-  onValueChange: (value: string[]) => void;
-  placeholder?: string;
-  maxItems?: number;
-  minItems?: number;
+  value: string[]
+  onValueChange: (value: string[]) => void
+  placeholder?: string
+  maxItems?: number
+  minItems?: number
 }
 
 interface TagsInputContextProps {
-  value: string[];
-  onValueChange: (value: any) => void;
-  inputValue: string;
-  setInputValue: React.Dispatch<React.SetStateAction<string>>;
-  activeIndex: number;
-  setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
+  value: string[]
+  onValueChange: (value: any) => void
+  inputValue: string
+  setInputValue: React.Dispatch<React.SetStateAction<string>>
+  activeIndex: number
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>
 }
 
-const TagInputContext = React.createContext<TagsInputContextProps | null>(null);
+const TagInputContext = React.createContext<TagsInputContextProps | null>(null)
 
 export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
-  ({ children, value, onValueChange, placeholder, maxItems, minItems, className, dir, ...props }, ref) => {
-    const t = useTranslations('Components.TagsInput');
-    const [activeIndex, setActiveIndex] = React.useState(-1);
-    const [inputValue, setInputValue] = React.useState('');
-    const [disableInput, setDisableInput] = React.useState(false);
-    const [disableButton, setDisableButton] = React.useState(false);
-    const [isValueSelected, setIsValueSelected] = React.useState(false);
-    const [selectedValue, setSelectedValue] = React.useState('');
+  (
+    { children, value, onValueChange, placeholder, maxItems, minItems, className, dir, ...props },
+    ref,
+  ) => {
+    const t = useTranslations('Components.TagsInput')
+    const [activeIndex, setActiveIndex] = React.useState(-1)
+    const [inputValue, setInputValue] = React.useState('')
+    const [disableInput, setDisableInput] = React.useState(false)
+    const [disableButton, setDisableButton] = React.useState(false)
+    const [isValueSelected, setIsValueSelected] = React.useState(false)
+    const [selectedValue, setSelectedValue] = React.useState('')
 
-    const parseMinItems = minItems ?? 0;
-    const parseMaxItems = maxItems ?? 30;
+    const parseMinItems = minItems ?? 0
+    const parseMaxItems = maxItems ?? 30
 
     function onValueChangeHandler(val: string) {
       if (!value.includes(val) && value.length < parseMaxItems) {
-        onValueChange([...value, val]);
+        onValueChange([...value, val])
       }
     }
 
     function RemoveValue(val: string) {
       if (value.includes(val) && value.length > parseMinItems) {
-        onValueChange(value.filter((item) => item !== val));
+        onValueChange(value.filter(item => item !== val))
       }
     }
 
     function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
-      e.preventDefault();
-      const tags = e.clipboardData.getData('text').split(SPLITTER_REGEX);
-      const newValue = [...value];
-      tags.forEach((item) => {
-        const parsedItem = item.replaceAll(FORMATTING_REGEX, '').trim();
-        if (parsedItem.length > 0 && !newValue.includes(parsedItem) && newValue.length < parseMaxItems) {
-          newValue.push(parsedItem);
+      e.preventDefault()
+      const tags = e.clipboardData.getData('text').split(SPLITTER_REGEX)
+      const newValue = [...value]
+      tags.forEach(item => {
+        const parsedItem = item.replaceAll(FORMATTING_REGEX, '').trim()
+        if (
+          parsedItem.length > 0 &&
+          !newValue.includes(parsedItem) &&
+          newValue.length < parseMaxItems
+        ) {
+          newValue.push(parsedItem)
         }
-      });
-      onValueChange(newValue);
-      setInputValue('');
+      })
+      onValueChange(newValue)
+      setInputValue('')
     }
 
     function handleSelect(e: React.SyntheticEvent<HTMLInputElement>) {
-      const target = e.currentTarget;
-      const selection = target.value.substring(target.selectionStart ?? 0, target.selectionEnd ?? 0);
+      const target = e.currentTarget
+      const selection = target.value.substring(target.selectionStart ?? 0, target.selectionEnd ?? 0)
 
-      setSelectedValue(selection);
-      setIsValueSelected(selection === inputValue);
+      setSelectedValue(selection)
+      setIsValueSelected(selection === inputValue)
     }
 
     // ? suggest : a refactor rather then using a useEffect
@@ -89,18 +96,18 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
     React.useEffect(() => {
       const VerifyDisable = () => {
         if (value.length - 1 >= parseMinItems) {
-          setDisableButton(false);
+          setDisableButton(false)
         } else {
-          setDisableButton(true);
+          setDisableButton(true)
         }
         if (value.length + 1 <= parseMaxItems) {
-          setDisableInput(false);
+          setDisableInput(false)
         } else {
-          setDisableInput(true);
+          setDisableInput(true)
         }
-      };
-      VerifyDisable();
-    }, [value, parseMinItems, parseMaxItems]);
+      }
+      VerifyDisable()
+    }, [value, parseMinItems, parseMaxItems])
 
     // ? check: Under build , default option support
     // * support : for the uncontrolled && controlled ui
@@ -111,23 +118,23 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
     }, []); */
 
     function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-      e.stopPropagation();
+      e.stopPropagation()
 
       const moveNext = () => {
-        const nextIndex = activeIndex + 1 > value.length - 1 ? -1 : activeIndex + 1;
-        setActiveIndex(nextIndex);
-      };
+        const nextIndex = activeIndex + 1 > value.length - 1 ? -1 : activeIndex + 1
+        setActiveIndex(nextIndex)
+      }
 
       const movePrev = () => {
-        const prevIndex = activeIndex - 1 < 0 ? value.length - 1 : activeIndex - 1;
-        setActiveIndex(prevIndex);
-      };
+        const prevIndex = activeIndex - 1 < 0 ? value.length - 1 : activeIndex - 1
+        setActiveIndex(prevIndex)
+      }
 
       const moveCurrent = () => {
-        const newIndex = activeIndex - 1 <= 0 ? (value.length - 1 === 0 ? -1 : 0) : activeIndex - 1;
-        setActiveIndex(newIndex);
-      };
-      const target = e.currentTarget;
+        const newIndex = activeIndex - 1 <= 0 ? (value.length - 1 === 0 ? -1 : 0) : activeIndex - 1
+        setActiveIndex(newIndex)
+      }
+      const target = e.currentTarget
 
       // ? Suggest : the multi select should support the same pattern
 
@@ -135,70 +142,70 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
         case 'ArrowLeft': {
           if (dir === 'rtl') {
             if (value.length > 0 && activeIndex !== -1) {
-              moveNext();
+              moveNext()
             }
           } else if (value.length > 0 && target.selectionStart === 0) {
-            movePrev();
+            movePrev()
           }
-          break;
+          break
         }
 
         case 'ArrowRight': {
           if (dir === 'rtl') {
             if (value.length > 0 && target.selectionStart === 0) {
-              movePrev();
+              movePrev()
             }
           } else if (value.length > 0 && activeIndex !== -1) {
-            moveNext();
+            moveNext()
           }
-          break;
+          break
         }
 
         case 'Backspace':
         case 'Delete': {
           if (value.length > 0) {
             if (activeIndex !== -1 && activeIndex < value.length) {
-              const tag = value[activeIndex];
+              const tag = value[activeIndex]
               if (typeof tag === 'string') {
-                RemoveValue(tag);
+                RemoveValue(tag)
               }
-              moveCurrent();
+              moveCurrent()
             } else if (target.selectionStart === 0) {
               if (selectedValue === inputValue || isValueSelected) {
-                const lastTag = value[value.length - 1];
+                const lastTag = value[value.length - 1]
                 if (typeof lastTag === 'string') {
-                  RemoveValue(lastTag);
+                  RemoveValue(lastTag)
                 }
               }
             }
           }
-          break;
+          break
         }
 
         case 'Escape': {
-          const newIndex = activeIndex === -1 ? value.length - 1 : -1;
-          setActiveIndex(newIndex);
-          break;
+          const newIndex = activeIndex === -1 ? value.length - 1 : -1
+          setActiveIndex(newIndex)
+          break
         }
 
         case 'Enter': {
           if (inputValue.trim() !== '') {
-            e.preventDefault();
-            onValueChangeHandler(inputValue);
-            setInputValue('');
+            e.preventDefault()
+            onValueChangeHandler(inputValue)
+            setInputValue('')
           }
-          break;
+          break
         }
       }
     }
 
     function mousePreventDefault(e: React.MouseEvent) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault()
+      e.stopPropagation()
     }
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-      setInputValue(e.currentTarget.value);
+      setInputValue(e.currentTarget.value)
     }
 
     return (
@@ -242,7 +249,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
                 disabled={disableButton}
                 onMouseDown={mousePreventDefault}
                 onClick={() => {
-                  RemoveValue(item);
+                  RemoveValue(item)
                 }}
                 className="disabled:cursor-not-allowed"
               >
@@ -262,7 +269,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
             onChange={activeIndex === -1 ? handleChange : undefined}
             placeholder={placeholder}
             onClick={() => {
-              setActiveIndex(-1);
+              setActiveIndex(-1)
             }}
             className={cn(
               'h-auto min-h-0 min-w-fit flex-1 border-none bg-transparent px-0 py-0 shadow-none outline-0 focus-visible:border-0 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0',
@@ -271,8 +278,8 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
           />
         </div>
       </TagInputContext.Provider>
-    );
+    )
   },
-);
+)
 
-TagsInput.displayName = 'TagsInput';
+TagsInput.displayName = 'TagsInput'

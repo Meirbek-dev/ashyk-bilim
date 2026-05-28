@@ -1,35 +1,44 @@
-'use client';
+'use client'
 
-import { CheckCircle2, Code2, FileText, FlaskConical, Loader2, Save, Sparkles, ClipboardCheck } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import {
+  CheckCircle2,
+  Code2,
+  FileText,
+  FlaskConical,
+  Loader2,
+  Save,
+  Sparkles,
+  ClipboardCheck,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor'
 import {
   useCodeChallengeSettings,
   useJudge0Languages,
   useSaveCodeChallengeSettings,
-} from '@/features/assessments/registry/code-challenge/hooks';
-import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain';
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
-import { cn } from '@/lib/utils';
+} from '@/features/assessments/registry/code-challenge/hooks'
+import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
+import { cn } from '@/lib/utils'
 
 // Import our modular authoring builder subcomponents
-import { ProblemStatementEditor } from './ProblemStatementEditor';
-import { TestSuiteBuilder } from './TestSuiteBuilder';
-import { ReferenceSolutionRunner } from './ReferenceSolutionRunner';
-import { PublishReadinessPanel } from './PublishReadinessPanel';
+import { ProblemStatementEditor } from './ProblemStatementEditor'
+import { TestSuiteBuilder } from './TestSuiteBuilder'
+import { ReferenceSolutionRunner } from './ReferenceSolutionRunner'
+import { PublishReadinessPanel } from './PublishReadinessPanel'
 
 interface CodeChallengeBuilderProps {
-  activityUuid: string;
+  activityUuid: string
 }
 
-type BuilderTab = 'problem' | 'languages' | 'tests' | 'verify' | 'review';
+type BuilderTab = 'problem' | 'languages' | 'tests' | 'verify' | 'review'
 
 const DEFAULT_SETTINGS: CodeChallengeSettings = {
   uuid: '',
@@ -53,27 +62,34 @@ const DEFAULT_SETTINGS: CodeChallengeSettings = {
   starter_code: {},
   reference_solutions: {},
   hints: [],
-};
+}
 
 export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [tab, setTab] = useState<BuilderTab>('problem');
-  const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS);
-  const { data: settings, isLoading } = useCodeChallengeSettings<CodeChallengeSettings>(activityUuid);
-  const { data: languages = [] } = useJudge0Languages();
-  const saveSettings = useSaveCodeChallengeSettings(activityUuid);
+  const t = useTranslations('Activities.CodeChallenges')
+  const [tab, setTab] = useState<BuilderTab>('problem')
+  const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS)
+  const { data: settings, isLoading } =
+    useCodeChallengeSettings<CodeChallengeSettings>(activityUuid)
+  const { data: languages = [] } = useJudge0Languages()
+  const saveSettings = useSaveCodeChallengeSettings(activityUuid)
 
   const selectedLanguages = useMemo(
-    () => draft.allowed_languages.map((id) => languages.find((language) => language.id === id)).filter(Boolean),
+    () =>
+      draft.allowed_languages
+        .map(id => languages.find(language => language.id === id))
+        .filter(Boolean),
     [draft.allowed_languages, languages],
-  );
+  )
 
-  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t]);
-  const blockersCount = readiness.items.filter((item) => !item.ok).length;
-  const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft]);
+  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
+  const blockersCount = readiness.items.filter(item => !item.ok).length
+  const firstMarkdownIssue = useMemo(
+    () => getFirstBlockingCodeChallengeMarkdownIssue(draft),
+    [draft],
+  )
 
   useEffect(() => {
-    if (!settings) return;
+    if (!settings) return
     setDraft({
       ...DEFAULT_SETTINGS,
       ...settings,
@@ -86,37 +102,41 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       hidden_tests: settings.hidden_tests ?? [],
       starter_code: settings.starter_code ?? {},
       reference_solutions: settings.reference_solutions ?? settings.solution_code ?? {},
-    });
-  }, [settings]);
+    })
+  }, [settings])
 
   const updateDraft = (patch: Partial<CodeChallengeSettings>) => {
-    setDraft((current) => ({ ...current, ...patch }));
-  };
+    setDraft(current => ({ ...current, ...patch }))
+  }
 
   const save = async () => {
     if (firstMarkdownIssue) {
-      toast.error(`${firstMarkdownIssue.field}: ${firstMarkdownIssue.issue.message}`);
-      return;
+      toast.error(`${firstMarkdownIssue.field}: ${firstMarkdownIssue.issue.message}`)
+      return
     }
 
     try {
       await saveSettings.mutateAsync({
         ...draft,
-        visible_tests: (draft.visible_tests ?? []).map((test) => Object.assign(test, { is_visible: true })),
-        hidden_tests: (draft.hidden_tests ?? []).map((test) => Object.assign(test, { is_visible: false })),
-      });
-      toast.success(t('configSaved'));
+        visible_tests: (draft.visible_tests ?? []).map(test =>
+          Object.assign(test, { is_visible: true }),
+        ),
+        hidden_tests: (draft.hidden_tests ?? []).map(test =>
+          Object.assign(test, { is_visible: false }),
+        ),
+      })
+      toast.success(t('configSaved'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('configSaveFailed'));
+      toast.error(error instanceof Error ? error.message : t('configSaveFailed'))
     }
-  };
+  }
 
   if (isLoading) {
     return (
       <div className="flex min-h-[360px] items-center justify-center">
         <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
-    );
+    )
   }
 
   return (
@@ -124,9 +144,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       {/* Header bar */}
       <div className="bg-muted/10 flex h-14 shrink-0 items-center justify-between border-b px-4 select-none">
         <div className="min-w-0">
-          <div className="text-foreground truncate text-sm font-semibold">{draft.title || t('configureChallenge')}</div>
+          <div className="text-foreground truncate text-sm font-semibold">
+            {draft.title || t('configureChallenge')}
+          </div>
           <div className="text-muted-foreground mt-0.5 text-xs font-medium">
-            {blockersCount > 0 ? t('requirementsPending', { count: blockersCount }) : t('allChecksPassed')}
+            {blockersCount > 0
+              ? t('requirementsPending', { count: blockersCount })
+              : t('allChecksPassed')}
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -142,7 +166,11 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
             disabled={saveSettings.isPending || Boolean(firstMarkdownIssue)}
             className="h-8 gap-1.5 text-xs font-semibold"
           >
-            {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            {saveSettings.isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
             {t('saveSettings')}
           </Button>
         </div>
@@ -150,7 +178,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
 
       <Tabs
         value={tab}
-        onValueChange={(value) => setTab(value as BuilderTab)}
+        onValueChange={value => setTab(value as BuilderTab)}
         className="flex min-h-0 flex-1 flex-col"
       >
         {/* Tab triggers */}
@@ -195,20 +223,11 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         </div>
 
         {/* Tab Contents */}
-        <TabsContent
-          value="problem"
-          className="min-h-0 flex-1 overflow-hidden"
-        >
-          <ProblemStatementEditor
-            draft={draft}
-            onChange={updateDraft}
-          />
+        <TabsContent value="problem" className="min-h-0 flex-1 overflow-hidden">
+          <ProblemStatementEditor draft={draft} onChange={updateDraft} />
         </TabsContent>
 
-        <TabsContent
-          value="languages"
-          className="min-h-0 flex-1 overflow-hidden"
-        >
+        <TabsContent value="languages" className="min-h-0 flex-1 overflow-hidden">
           <div className="grid h-full min-h-0 grid-cols-[280px_1fr] overflow-hidden">
             {/* Allowed checkbox side pane */}
             <ScrollArea className="bg-muted/5 border-r">
@@ -216,8 +235,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                 <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
                   {t('allowedLanguages')}
                 </h3>
-                {languages.map((language) => {
-                  const selected = draft.allowed_languages.includes(language.id);
+                {languages.map(language => {
+                  const selected = draft.allowed_languages.includes(language.id)
                   return (
                     <button
                       key={language.id}
@@ -225,7 +244,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                       onClick={() =>
                         updateDraft({
                           allowed_languages: selected
-                            ? draft.allowed_languages.filter((id) => id !== language.id)
+                            ? draft.allowed_languages.filter(id => id !== language.id)
                             : [...draft.allowed_languages, language.id],
                         })
                       }
@@ -239,7 +258,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                       {language.name}
                       {selected ? <CheckCircle2 className="size-4 text-emerald-600" /> : null}
                     </button>
-                  );
+                  )
                 })}
               </div>
             </ScrollArea>
@@ -252,7 +271,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                     {t('selectLanguagePrompt')}
                   </div>
                 ) : (
-                  selectedLanguages.map((language) => (
+                  selectedLanguages.map(language => (
                     <section
                       key={language!.id}
                       className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs"
@@ -282,8 +301,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                           </span>
                           <CodeEditor
                             value={draft.starter_code?.[language!.id] ?? ''}
-                            onChange={(value) =>
-                              updateDraft({ starter_code: { ...draft.starter_code, [language!.id]: value } })
+                            onChange={value =>
+                              updateDraft({
+                                starter_code: {
+                                  ...draft.starter_code,
+                                  [language!.id]: value,
+                                },
+                              })
                             }
                             languageId={language!.id}
                             monacoLanguage={language!.monaco_language}
@@ -297,9 +321,12 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                           </span>
                           <CodeEditor
                             value={draft.reference_solutions?.[language!.id] ?? ''}
-                            onChange={(value) =>
+                            onChange={value =>
                               updateDraft({
-                                reference_solutions: { ...draft.reference_solutions, [language!.id]: value },
+                                reference_solutions: {
+                                  ...draft.reference_solutions,
+                                  [language!.id]: value,
+                                },
                               })
                             }
                             languageId={language!.id}
@@ -317,43 +344,28 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
           </div>
         </TabsContent>
 
-        <TabsContent
-          value="tests"
-          className="min-h-0 flex-1 overflow-hidden"
-        >
-          <TestSuiteBuilder
-            draft={draft}
-            onChange={updateDraft}
-          />
+        <TabsContent value="tests" className="min-h-0 flex-1 overflow-hidden">
+          <TestSuiteBuilder draft={draft} onChange={updateDraft} />
         </TabsContent>
 
-        <TabsContent
-          value="verify"
-          className="min-h-0 flex-1 overflow-hidden"
-        >
-          <ReferenceSolutionRunner
-            draft={draft}
-            languages={languages}
-          />
+        <TabsContent value="verify" className="min-h-0 flex-1 overflow-hidden">
+          <ReferenceSolutionRunner draft={draft} languages={languages} />
         </TabsContent>
 
-        <TabsContent
-          value="review"
-          className="min-h-0 flex-1 overflow-hidden"
-        >
+        <TabsContent value="review" className="min-h-0 flex-1 overflow-hidden">
           <PublishReadinessPanel draft={draft} />
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
 
 function buildReadiness(settings: CodeChallengeSettings, t: any) {
-  const visible = settings.visible_tests ?? [];
-  const hidden = settings.hidden_tests ?? [];
-  const referenceSolutions = settings.reference_solutions ?? {};
-  const starterCode = settings.starter_code ?? {};
-  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings);
+  const visible = settings.visible_tests ?? []
+  const hidden = settings.hidden_tests ?? []
+  const referenceSolutions = settings.reference_solutions ?? {}
+  const starterCode = settings.starter_code ?? {}
+  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings)
 
   const items = [
     {
@@ -364,11 +376,15 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: t('readiness.languages.label'),
       ok:
         settings.allowed_languages.length > 0 &&
-        settings.allowed_languages.every((id) => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
+        settings.allowed_languages.every(
+          id => starterCode[id]?.trim() && referenceSolutions[id]?.trim(),
+        ),
     },
     {
       label: t('readiness.visible.label'),
-      ok: visible.length > 0 && visible.some((test) => test.input.trim() || test.expected_output.trim()),
+      ok:
+        visible.length > 0 &&
+        visible.some(test => test.input.trim() || test.expected_output.trim()),
     },
     {
       label: t('readiness.hidden.label'),
@@ -382,9 +398,9 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: 'Markdown safety',
       ok: !markdownIssue,
     },
-  ];
+  ]
   return {
     items,
-    blockers: items.filter((item) => !item.ok),
-  };
+    blockers: items.filter(item => !item.ok),
+  }
 }

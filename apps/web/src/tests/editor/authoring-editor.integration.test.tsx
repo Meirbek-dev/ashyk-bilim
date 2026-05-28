@@ -11,16 +11,16 @@
  * Validates: Requirements 10.1, 10.2
  */
 
-import { Editor, getSchema } from '@tiptap/core';
-import { Node as PMNode } from '@tiptap/pm/model';
-import { afterEach, describe, expect, it } from 'vitest';
+import { Editor, getSchema } from '@tiptap/core'
+import { Node as PMNode } from '@tiptap/pm/model'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core';
+import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core'
 
 const activity = {
   activity_uuid: 'test-activity-uuid',
   name: 'Integration test activity',
-};
+}
 
 // A document containing both a legacy blockEmbed node and a new embedBlock node
 const mixedDocument = {
@@ -57,97 +57,97 @@ const mixedDocument = {
       content: [{ type: 'text', text: 'After embeds' }],
     },
   ],
-};
+}
 
 describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', () => {
-  let editor: Editor | null = null;
+  let editor: Editor | null = null
 
   afterEach(() => {
-    editor?.destroy();
-    editor = null;
-  });
+    editor?.destroy()
+    editor = null
+  })
 
   it('schema accepts both blockEmbed and embedBlock node types without conflict', () => {
-    const extensions = createAuthoringEditorExtensions(activity);
-    const schema = getSchema(extensions);
+    const extensions = createAuthoringEditorExtensions(activity)
+    const schema = getSchema(extensions)
 
     // Both node types must be registered in the schema
-    expect(schema.nodes.blockEmbed).toBeDefined();
-    expect(schema.nodes.embedBlock).toBeDefined();
+    expect(schema.nodes.blockEmbed).toBeDefined()
+    expect(schema.nodes.embedBlock).toBeDefined()
 
     // Node names must not conflict
-    expect(schema.nodes.blockEmbed).not.toBe(schema.nodes.embedBlock);
-  });
+    expect(schema.nodes.blockEmbed).not.toBe(schema.nodes.embedBlock)
+  })
 
   it('parses a document containing both blockEmbed and embedBlock nodes without errors', () => {
-    const extensions = createAuthoringEditorExtensions(activity);
-    const schema = getSchema(extensions);
+    const extensions = createAuthoringEditorExtensions(activity)
+    const schema = getSchema(extensions)
 
     // PMNode.fromJSON will throw if the document is invalid for the schema
-    let parsedDoc: PMNode | null = null;
+    let parsedDoc: PMNode | null = null
     expect(() => {
-      parsedDoc = PMNode.fromJSON(schema, mixedDocument);
-    }).not.toThrow();
+      parsedDoc = PMNode.fromJSON(schema, mixedDocument)
+    }).not.toThrow()
 
-    expect(parsedDoc).not.toBeNull();
-  });
+    expect(parsedDoc).not.toBeNull()
+  })
 
   it('preserves both node types through a JSON round-trip', () => {
-    const extensions = createAuthoringEditorExtensions(activity);
-    const schema = getSchema(extensions);
+    const extensions = createAuthoringEditorExtensions(activity)
+    const schema = getSchema(extensions)
 
-    const parsedDoc = PMNode.fromJSON(schema, mixedDocument);
-    const serialized = parsedDoc.toJSON();
+    const parsedDoc = PMNode.fromJSON(schema, mixedDocument)
+    const serialized = parsedDoc.toJSON()
 
     // The document should contain 4 nodes: paragraph, blockEmbed, embedBlock, paragraph
-    expect(serialized.content).toHaveLength(4);
+    expect(serialized.content).toHaveLength(4)
 
-    const blockEmbedNode = serialized.content[1];
-    expect(blockEmbedNode.type).toBe('blockEmbed');
-    expect(blockEmbedNode.attrs.embedUrl).toBe('https://example.com/embed');
-    expect(blockEmbedNode.attrs.embedType).toBe('url');
+    const blockEmbedNode = serialized.content[1]
+    expect(blockEmbedNode.type).toBe('blockEmbed')
+    expect(blockEmbedNode.attrs.embedUrl).toBe('https://example.com/embed')
+    expect(blockEmbedNode.attrs.embedType).toBe('url')
 
-    const embedBlockNode = serialized.content[2];
-    expect(embedBlockNode.type).toBe('embedBlock');
-    expect(embedBlockNode.attrs.type).toBe('youtube');
-    expect(embedBlockNode.attrs.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    expect(embedBlockNode.attrs.height).toBe(500);
-  });
+    const embedBlockNode = serialized.content[2]
+    expect(embedBlockNode.type).toBe('embedBlock')
+    expect(embedBlockNode.attrs.type).toBe('youtube')
+    expect(embedBlockNode.attrs.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    expect(embedBlockNode.attrs.height).toBe(500)
+  })
 
   it('loads the mixed document into a live Editor instance without errors', () => {
-    const extensions = createAuthoringEditorExtensions(activity);
+    const extensions = createAuthoringEditorExtensions(activity)
 
     expect(() => {
       editor = new Editor({
         extensions,
         content: mixedDocument,
-      });
-    }).not.toThrow();
+      })
+    }).not.toThrow()
 
-    expect(editor).not.toBeNull();
+    expect(editor).not.toBeNull()
 
-    const json = editor!.getJSON();
-    const content = json.content ?? [];
-    expect(content).toHaveLength(4);
+    const json = editor!.getJSON()
+    const content = json.content ?? []
+    expect(content).toHaveLength(4)
 
     // Verify blockEmbed node is present and intact
-    const blockEmbedNode = content[1];
-    expect(blockEmbedNode).toBeDefined();
-    if (!blockEmbedNode) throw new Error('Expected blockEmbed node');
-    expect(blockEmbedNode.type).toBe('blockEmbed');
-    expect(blockEmbedNode.attrs?.embedUrl).toBe('https://example.com/embed');
+    const blockEmbedNode = content[1]
+    expect(blockEmbedNode).toBeDefined()
+    if (!blockEmbedNode) throw new Error('Expected blockEmbed node')
+    expect(blockEmbedNode.type).toBe('blockEmbed')
+    expect(blockEmbedNode.attrs?.embedUrl).toBe('https://example.com/embed')
 
     // Verify embedBlock node is present and intact
-    const embedBlockNode = content[2];
-    expect(embedBlockNode).toBeDefined();
-    if (!embedBlockNode) throw new Error('Expected embedBlock node');
-    expect(embedBlockNode.type).toBe('embedBlock');
-    expect(embedBlockNode.attrs?.type).toBe('youtube');
-    expect(embedBlockNode.attrs?.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-  });
+    const embedBlockNode = content[2]
+    expect(embedBlockNode).toBeDefined()
+    if (!embedBlockNode) throw new Error('Expected embedBlock node')
+    expect(embedBlockNode.type).toBe('embedBlock')
+    expect(embedBlockNode.attrs?.type).toBe('youtube')
+    expect(embedBlockNode.attrs?.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+  })
 
   it('can insert an embedBlock node into a document that already contains a blockEmbed node', () => {
-    const extensions = createAuthoringEditorExtensions(activity);
+    const extensions = createAuthoringEditorExtensions(activity)
 
     editor = new Editor({
       extensions,
@@ -171,22 +171,22 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
           },
         ],
       },
-    });
+    })
 
     // Move cursor to the paragraph and insert an embedBlock
-    editor.commands.focus('end');
+    editor.commands.focus('end')
     const result = editor.commands.insertEmbedBlock({
       type: 'excalidraw',
       url: 'https://excalidraw.com/#room=abc123',
-    });
+    })
 
-    expect(result).toBe(true);
+    expect(result).toBe(true)
 
-    const json = editor.getJSON();
-    const nodeTypes = (json.content ?? []).map((n) => n.type);
+    const json = editor.getJSON()
+    const nodeTypes = (json.content ?? []).map(n => n.type)
 
     // Both node types should coexist in the document
-    expect(nodeTypes).toContain('blockEmbed');
-    expect(nodeTypes).toContain('embedBlock');
-  });
-});
+    expect(nodeTypes).toContain('blockEmbed')
+    expect(nodeTypes).toContain('embedBlock')
+  })
+})

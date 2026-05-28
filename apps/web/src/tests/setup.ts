@@ -1,15 +1,15 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Polyfill process.env for browser environment
 if (typeof process === 'undefined') {
-  (globalThis as any).process = { env: {} };
+  ;(globalThis as any).process = { env: {} }
 }
 
 // Mock window.matchMedia which is often missing in test environments
 Object.defineProperty(globalThis, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
@@ -19,27 +19,27 @@ Object.defineProperty(globalThis, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-});
+})
 
 class MockResizeObserver {
-  public observe = vi.fn();
-  public unobserve = vi.fn();
-  public disconnect = vi.fn();
+  public observe = vi.fn()
+  public unobserve = vi.fn()
+  public disconnect = vi.fn()
 }
 
 class MockIntersectionObserver {
-  public root = null;
-  public rootMargin = '';
-  public scrollMargin = '';
-  public thresholds = [];
-  public observe = vi.fn();
-  public unobserve = vi.fn();
-  public disconnect = vi.fn();
-  public takeRecords = vi.fn(() => []);
+  public root = null
+  public rootMargin = ''
+  public scrollMargin = ''
+  public thresholds = []
+  public observe = vi.fn()
+  public unobserve = vi.fn()
+  public disconnect = vi.fn()
+  public takeRecords = vi.fn(() => [])
 }
 
-globalThis.ResizeObserver = MockResizeObserver;
-globalThis.IntersectionObserver = MockIntersectionObserver;
+globalThis.ResizeObserver = MockResizeObserver
+globalThis.IntersectionObserver = MockIntersectionObserver
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -58,4 +58,4 @@ vi.mock('next/navigation', () => ({
   notFound: vi.fn(),
   redirect: vi.fn(),
   permanentRedirect: vi.fn(),
-}));
+}))

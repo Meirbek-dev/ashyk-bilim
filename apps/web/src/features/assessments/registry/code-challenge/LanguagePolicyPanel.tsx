@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import { Controller, useFormContext } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
+import { Controller, useFormContext } from 'react-hook-form'
+import { useTranslations } from 'next-intl'
 
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import ComboboxMultiple from '@/components/ui/custom/multiple-combobox';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useJudge0Languages } from '@/features/assessments/hooks/code-challenge';
-import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import ComboboxMultiple from '@/components/ui/custom/multiple-combobox'
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useJudge0Languages } from '@/features/assessments/hooks/code-challenge'
+import type { CodeChallengeSettingsForm } from './CodeChallengeStudio'
 
 export default function LanguagePolicyPanel() {
-  const t = useTranslations('Activities.CodeChallenges');
-  const form = useFormContext<CodeChallengeSettingsForm>();
-  const { data: judge0Languages = [], isError: languagesUnavailable } = useJudge0Languages();
+  const t = useTranslations('Activities.CodeChallenges')
+  const form = useFormContext<CodeChallengeSettingsForm>()
+  const { data: judge0Languages = [], isError: languagesUnavailable } = useJudge0Languages()
 
   return (
     <Card>
@@ -42,9 +42,9 @@ export default function LanguagePolicyPanel() {
               <ComboboxMultiple<{ id: number; name: string }>
                 options={judge0Languages}
                 value={field.value}
-                onChange={(values) => field.onChange(values.map(Number))}
-                getOptionValue={(option) => option.id}
-                getOptionLabel={(option) => option.name}
+                onChange={values => field.onChange(values.map(Number))}
+                getOptionValue={option => option.id}
+                getOptionLabel={option => option.name}
                 placeholder={t('selectLanguages')}
                 searchPlaceholder={t('searchLanguages')}
                 emptyMessage={t('noLanguagesFound')}
@@ -54,16 +54,11 @@ export default function LanguagePolicyPanel() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => field.onChange(judge0Languages.map((l) => l.id))}
+                  onClick={() => field.onChange(judge0Languages.map(l => l.id))}
                 >
                   {t('selectAll')}
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => field.onChange([])}
-                >
+                <Button type="button" size="sm" variant="ghost" onClick={() => field.onChange([])}>
                   {t('deselectAll')}
                 </Button>
               </div>
@@ -73,24 +68,9 @@ export default function LanguagePolicyPanel() {
         />
 
         <div className="grid gap-4 md:grid-cols-3">
-          <NumberField
-            name="time_limit"
-            label={t('timeLimit')}
-            min={1}
-            max={60}
-          />
-          <NumberField
-            name="memory_limit"
-            label={t('memoryLimit')}
-            min={16}
-            max={2048}
-          />
-          <NumberField
-            name="points"
-            label={t('points')}
-            min={0}
-            max={10_000}
-          />
+          <NumberField name="time_limit" label={t('timeLimit')} min={1} max={60} />
+          <NumberField name="memory_limit" label={t('memoryLimit')} min={16} max={2048} />
+          <NumberField name="points" label={t('points')} min={0} max={10_000} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -127,24 +107,18 @@ export default function LanguagePolicyPanel() {
           control={form.control}
           name="allow_custom_input"
           render={({ field }) => (
-            <Field
-              orientation="horizontal"
-              className="justify-between rounded-md border p-3"
-            >
+            <Field orientation="horizontal" className="justify-between rounded-md border p-3">
               <div>
                 <FieldLabel>{t('allowCustomInput')}</FieldLabel>
                 <FieldDescription>{t('allowCustomInputDescription')}</FieldDescription>
               </div>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
             </Field>
           )}
         />
       </CardContent>
     </Card>
-  );
+  )
 }
 
 function NumberField({
@@ -153,12 +127,12 @@ function NumberField({
   min,
   max,
 }: {
-  name: keyof CodeChallengeSettingsForm;
-  label: string;
-  min: number;
-  max: number;
+  name: keyof CodeChallengeSettingsForm
+  label: string
+  min: number
+  max: number
 }) {
-  const form = useFormContext<CodeChallengeSettingsForm>();
+  const form = useFormContext<CodeChallengeSettingsForm>()
   return (
     <Controller
       control={form.control}
@@ -172,12 +146,12 @@ function NumberField({
             min={min}
             max={max}
             value={Number(field.value ?? 0)}
-            onChange={(e) => field.onChange(Number(e.target.value))}
+            onChange={e => field.onChange(Number(e.target.value))}
           />
         </Field>
       )}
     />
-  );
+  )
 }
 
 function SelectField({
@@ -185,11 +159,11 @@ function SelectField({
   label,
   options,
 }: {
-  name: keyof CodeChallengeSettingsForm;
-  label: string;
-  options: [string, string][];
+  name: keyof CodeChallengeSettingsForm
+  label: string
+  options: [string, string][]
 }) {
-  const form = useFormContext<CodeChallengeSettingsForm>();
+  const form = useFormContext<CodeChallengeSettingsForm>()
   return (
     <Controller
       control={form.control}
@@ -199,13 +173,10 @@ function SelectField({
           <FieldLabel>{label}</FieldLabel>
           <NativeSelect
             value={String(field.value)}
-            onChange={(event) => field.onChange(event.target.value)}
+            onChange={event => field.onChange(event.target.value)}
           >
             {options.map(([value, optionLabel]) => (
-              <NativeSelectOption
-                key={value}
-                value={value}
-              >
+              <NativeSelectOption key={value} value={value}>
                 {optionLabel}
               </NativeSelectOption>
             ))}
@@ -213,5 +184,5 @@ function SelectField({
         </Field>
       )}
     />
-  );
+  )
 }

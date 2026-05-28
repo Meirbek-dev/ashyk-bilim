@@ -1,114 +1,119 @@
-'use client';
+'use client'
 
-import { LoaderCircle, Search, ShieldCheck, UserRoundCheck, UsersRound } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { LoaderCircle, Search, ShieldCheck, UserRoundCheck, UsersRound } from 'lucide-react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { apiFetch, apiFetcher } from '@/lib/api-client';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { apiFetch, apiFetcher } from '@/lib/api-client'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
-type AccessMode = 'ALL_COURSE_LEARNERS' | 'RESTRICTED';
+type AccessMode = 'ALL_COURSE_LEARNERS' | 'RESTRICTED'
 
 interface AccessUser {
-  id: number;
-  user_uuid: string;
-  username: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email: string;
+  id: number
+  user_uuid: string
+  username: string
+  first_name?: string | null
+  last_name?: string | null
+  email: string
 }
 
 interface AccessUserGroup {
-  id: number;
-  usergroup_uuid: string;
-  name: string;
-  description: string;
-  member_count: number;
+  id: number
+  usergroup_uuid: string
+  name: string
+  description: string
+  member_count: number
 }
 
 interface AccessRead {
-  mode: AccessMode;
-  users: AccessUser[];
-  usergroups: AccessUserGroup[];
-  effective_user_count: number;
+  mode: AccessMode
+  users: AccessUser[]
+  usergroups: AccessUserGroup[]
+  effective_user_count: number
 }
 
 interface AccessManagementTabProps {
-  assessmentUuid: string;
-  disabled: boolean;
+  assessmentUuid: string
+  disabled: boolean
 }
 
-export default function AccessManagementTab({ assessmentUuid, disabled }: AccessManagementTabProps) {
-  const t = useTranslations('Features.Assessments.Studio.AccessManagement');
-  const [access, setAccess] = useState<AccessRead | null>(null);
-  const [eligibleUsers, setEligibleUsers] = useState<AccessUser[]>([]);
-  const [eligibleGroups, setEligibleGroups] = useState<AccessUserGroup[]>([]);
-  const [mode, setMode] = useState<AccessMode>('ALL_COURSE_LEARNERS');
-  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
-  const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set());
-  const [query, setQuery] = useState('');
-  const [groupQuery, setGroupQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
+export default function AccessManagementTab({
+  assessmentUuid,
+  disabled,
+}: AccessManagementTabProps) {
+  const t = useTranslations('Features.Assessments.Studio.AccessManagement')
+  const [access, setAccess] = useState<AccessRead | null>(null)
+  const [eligibleUsers, setEligibleUsers] = useState<AccessUser[]>([])
+  const [eligibleGroups, setEligibleGroups] = useState<AccessUserGroup[]>([])
+  const [mode, setMode] = useState<AccessMode>('ALL_COURSE_LEARNERS')
+  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set())
+  const [selectedGroups, setSelectedGroups] = useState<Set<number>>(new Set())
+  const [query, setQuery] = useState('')
+  const [groupQuery, setGroupQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
     async function load() {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
         const [accessData, usersData, groupsData] = await Promise.all([
           apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
           apiFetcher<AccessUser[]>(`assessments/${assessmentUuid}/access/eligible-learners`),
           apiFetcher<AccessUserGroup[]>(`assessments/${assessmentUuid}/access/eligible-usergroups`),
-        ]);
-        if (cancelled) return;
-        setAccess(accessData);
-        setEligibleUsers(usersData);
-        setEligibleGroups(groupsData);
-        setMode(accessData.mode);
-        setSelectedUsers(new Set(accessData.users.map((user) => user.id)));
-        setSelectedGroups(new Set(accessData.usergroups.map((group) => group.id)));
+        ])
+        if (cancelled) return
+        setAccess(accessData)
+        setEligibleUsers(usersData)
+        setEligibleGroups(groupsData)
+        setMode(accessData.mode)
+        setSelectedUsers(new Set(accessData.users.map(user => user.id)))
+        setSelectedGroups(new Set(accessData.usergroups.map(group => group.id)))
       } catch {
-        if (!cancelled) toast.error(t('loadFailed'));
+        if (!cancelled) toast.error(t('loadFailed'))
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) setIsLoading(false)
       }
     }
-    void load();
+    void load()
     return () => {
-      cancelled = true;
-    };
-  }, [assessmentUuid, t]);
+      cancelled = true
+    }
+  }, [assessmentUuid, t])
 
   const filteredUsers = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return eligibleUsers;
-    return eligibleUsers.filter((user) =>
+    const normalized = query.trim().toLowerCase()
+    if (!normalized) return eligibleUsers
+    return eligibleUsers.filter(user =>
       [user.username, user.first_name, user.last_name, user.email]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(normalized)),
-    );
-  }, [eligibleUsers, query]);
+        .some(value => String(value).toLowerCase().includes(normalized)),
+    )
+  }, [eligibleUsers, query])
 
   const filteredGroups = useMemo(() => {
-    const normalized = groupQuery.trim().toLowerCase();
-    if (!normalized) return eligibleGroups;
-    return eligibleGroups.filter((group) =>
-      [group.name, group.description].filter(Boolean).some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [eligibleGroups, groupQuery]);
+    const normalized = groupQuery.trim().toLowerCase()
+    if (!normalized) return eligibleGroups
+    return eligibleGroups.filter(group =>
+      [group.name, group.description]
+        .filter(Boolean)
+        .some(value => value.toLowerCase().includes(normalized)),
+    )
+  }, [eligibleGroups, groupQuery])
 
   const effectiveLocalCount = useMemo(() => {
-    if (mode === 'ALL_COURSE_LEARNERS') return eligibleUsers.length;
-    return Math.max(access?.effective_user_count ?? 0, selectedUsers.size);
-  }, [access?.effective_user_count, eligibleUsers.length, mode, selectedUsers.size]);
+    if (mode === 'ALL_COURSE_LEARNERS') return eligibleUsers.length
+    return Math.max(access?.effective_user_count ?? 0, selectedUsers.size)
+  }, [access?.effective_user_count, eligibleUsers.length, mode, selectedUsers.size])
 
   const save = () => {
     startTransition(async () => {
@@ -121,19 +126,19 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             user_ids: mode === 'RESTRICTED' ? [...selectedUsers] : [],
             usergroup_ids: mode === 'RESTRICTED' ? [...selectedGroups] : [],
           }),
-        });
-        if (!response.ok) throw new Error(response.statusText);
-        const next = (await response.json()) as AccessRead;
-        setAccess(next);
-        setMode(next.mode);
-        setSelectedUsers(new Set(next.users.map((user) => user.id)));
-        setSelectedGroups(new Set(next.usergroups.map((group) => group.id)));
-        toast.success(t('saved'));
+        })
+        if (!response.ok) throw new Error(response.statusText)
+        const next = (await response.json()) as AccessRead
+        setAccess(next)
+        setMode(next.mode)
+        setSelectedUsers(new Set(next.users.map(user => user.id)))
+        setSelectedGroups(new Set(next.usergroups.map(group => group.id)))
+        toast.success(t('saved'))
       } catch {
-        toast.error(t('saveFailed'));
+        toast.error(t('saveFailed'))
       }
-    });
-  };
+    })
+  }
 
   if (isLoading) {
     return (
@@ -141,7 +146,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         {t('loading')}
       </div>
-    );
+    )
   }
 
   return (
@@ -156,21 +161,15 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             <ShieldCheck className="text-primary size-5 shrink-0" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Metric
-              label={t('eligible')}
-              value={eligibleUsers.length}
-            />
-            <Metric
-              label={t('effective')}
-              value={effectiveLocalCount}
-            />
+            <Metric label={t('eligible')} value={eligibleUsers.length} />
+            <Metric label={t('effective')} value={effectiveLocalCount} />
           </div>
         </section>
 
         <section className="bg-card rounded-lg border p-4">
           <RadioGroup
             value={mode}
-            onValueChange={(value) => setMode(value as AccessMode)}
+            onValueChange={value => setMode(value as AccessMode)}
             className="space-y-3"
             disabled={disabled}
           >
@@ -189,12 +188,12 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
               active={mode === 'RESTRICTED'}
             />
           </RadioGroup>
-          <Button
-            className="mt-4 w-full"
-            disabled={disabled || isPending}
-            onClick={save}
-          >
-            {isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />}
+          <Button className="mt-4 w-full" disabled={disabled || isPending} onClick={save}>
+            {isPending ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <UserRoundCheck className="size-4" />
+            )}
             {t('save')}
           </Button>
         </section>
@@ -208,7 +207,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
           searchPlaceholder={t('searchStudents')}
           onSearch={setQuery}
         >
-          {filteredUsers.map((user) => (
+          {filteredUsers.map(user => (
             <Button
               key={user.id}
               type="button"
@@ -234,7 +233,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
           searchPlaceholder={t('searchGroups')}
           onSearch={setGroupQuery}
         >
-          {filteredGroups.map((group) => (
+          {filteredGroups.map(group => (
             <Button
               key={group.id}
               type="button"
@@ -246,7 +245,9 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
               <Checkbox checked={selectedGroups.has(group.id)} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{group.name}</p>
-                <p className="text-muted-foreground truncate text-xs">{group.description || t('noGroupDescription')}</p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {group.description || t('noGroupDescription')}
+                </p>
               </div>
               <Badge variant="secondary">
                 <UsersRound className="size-3" />
@@ -257,7 +258,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
         </AccessList>
       </main>
     </div>
-  );
+  )
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
@@ -266,7 +267,7 @@ function Metric({ label, value }: { label: string; value: number }) {
       <p className="text-muted-foreground text-xs">{label}</p>
       <p className="text-xl font-semibold">{value}</p>
     </div>
-  );
+  )
 }
 
 function ModeOption({
@@ -276,11 +277,11 @@ function ModeOption({
   description,
   active,
 }: {
-  id: string;
-  value: AccessMode;
-  title: string;
-  description: string;
-  active: boolean;
+  id: string
+  value: AccessMode
+  title: string
+  description: string
+  active: boolean
 }) {
   return (
     <Label
@@ -290,17 +291,13 @@ function ModeOption({
         active && 'border-primary bg-primary/5',
       )}
     >
-      <RadioGroupItem
-        id={id}
-        value={value}
-        className="mt-0.5"
-      />
+      <RadioGroupItem id={id} value={value} className="mt-0.5" />
       <span>
         <span className="block text-sm font-medium">{title}</span>
         <span className="text-muted-foreground block text-xs">{description}</span>
       </span>
     </Label>
-  );
+  )
 }
 
 function AccessList({
@@ -311,12 +308,12 @@ function AccessList({
   onSearch,
   children,
 }: {
-  title: string;
-  count: number;
-  search: string;
-  searchPlaceholder: string;
-  onSearch: (value: string) => void;
-  children: React.ReactNode;
+  title: string
+  count: number
+  search: string
+  searchPlaceholder: string
+  onSearch: (value: string) => void
+  children: React.ReactNode
 }) {
   return (
     <section className="bg-card flex min-h-[520px] flex-col rounded-lg border">
@@ -329,7 +326,7 @@ function AccessList({
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             value={search}
-            onChange={(event) => onSearch(event.target.value)}
+            onChange={event => onSearch(event.target.value)}
             placeholder={searchPlaceholder}
             className="pl-9"
           />
@@ -337,19 +334,19 @@ function AccessList({
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">{children}</div>
     </section>
-  );
+  )
 }
 
 function toggleSet(setter: React.Dispatch<React.SetStateAction<Set<number>>>, id: number) {
-  setter((current) => {
-    const next = new Set(current);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return next;
-  });
+  setter(current => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
 }
 
 function displayUser(user: AccessUser) {
-  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
-  return name || user.username;
+  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
+  return name || user.username
 }

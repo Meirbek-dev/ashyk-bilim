@@ -1,45 +1,45 @@
-'use client';
+'use client'
 
-import { getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics';
-import { createTeacherIntervention } from '@services/analytics/teacher';
-import type { ColumnDef } from '@tanstack/react-table';
-import AnalyticsDataTable from './AnalyticsDataTable';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics'
+import { createTeacherIntervention } from '@services/analytics/teacher'
+import type { ColumnDef } from '@tanstack/react-table'
+import AnalyticsDataTable from './AnalyticsDataTable'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 interface AtRiskLearnersTableProps {
-  title?: string;
-  description?: string;
-  rows: AtRiskLearnerRow[];
-  storageKey?: string;
-  serverPaginated?: boolean;
-  query?: AnalyticsQuery;
+  title?: string
+  description?: string
+  rows: AtRiskLearnerRow[]
+  storageKey?: string
+  serverPaginated?: boolean
+  query?: AnalyticsQuery
 }
 
 type EnhancedAtRiskLearnerRow = AtRiskLearnerRow & {
-  risk_trend?: 'newly_at_risk' | 'worsening' | 'improving' | 'recovered' | 'stable';
-  previous_risk_score?: number | null;
-  risk_score_delta?: number | null;
-  top_contributing_factor?: string | null;
-  confidence_level?: 'low' | 'medium' | 'high';
-  why_now?: string | null;
-  intervention_count?: number;
-  last_intervention_type?: string | null;
-  last_intervention_at?: string | null;
-  last_intervention_outcome?: string | null;
-};
+  risk_trend?: 'newly_at_risk' | 'worsening' | 'improving' | 'recovered' | 'stable'
+  previous_risk_score?: number | null
+  risk_score_delta?: number | null
+  top_contributing_factor?: string | null
+  confidence_level?: 'low' | 'medium' | 'high'
+  why_now?: string | null
+  intervention_count?: number
+  last_intervention_type?: string | null
+  last_intervention_at?: string | null
+  last_intervention_outcome?: string | null
+}
 
 const riskVariant = (level: AtRiskLearnerRow['risk_level']) => {
-  if (level === 'high') return 'destructive';
-  if (level === 'medium') return 'warning';
-  return 'outline';
-};
+  if (level === 'high') return 'destructive'
+  if (level === 'medium') return 'warning'
+  return 'outline'
+}
 
 export default function AtRiskLearnersTable({
   title,
@@ -49,16 +49,16 @@ export default function AtRiskLearnersTable({
   serverPaginated,
   query,
 }: AtRiskLearnersTableProps) {
-  const t = useTranslations('TeacherAnalytics');
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
-  const resolvedTitle = title ?? t('atRisk.defaultTitle');
-  const resolvedDescription = description ?? t('atRisk.defaultDescription');
+  const t = useTranslations('TeacherAnalytics')
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const resolvedTitle = title ?? t('atRisk.defaultTitle')
+  const resolvedDescription = description ?? t('atRisk.defaultDescription')
   const logIntervention = async (
     row: EnhancedAtRiskLearnerRow,
     interventionType: 'message_sent' | 'meeting_scheduled' | 'learner_recovered',
   ) => {
-    const key = `${row.course_id}:${row.user_id}:${interventionType}`;
-    setPendingKey(key);
+    const key = `${row.course_id}:${row.user_id}:${interventionType}`
+    setPendingKey(key)
     try {
       await createTeacherIntervention(
         {
@@ -69,20 +69,22 @@ export default function AtRiskLearnersTable({
           outcome: interventionType === 'learner_recovered' ? 'Recovered from risk' : null,
         },
         query,
-      );
-      toast.success(t('atRisk.interventionLogged'));
+      )
+      toast.success(t('atRisk.interventionLogged'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('atRisk.interventionLogFailed'));
+      toast.error(error instanceof Error ? error.message : t('atRisk.interventionLogFailed'))
     } finally {
-      setPendingKey(null);
+      setPendingKey(null)
     }
-  };
+  }
   const columns: ColumnDef<AtRiskLearnerRow>[] = [
     {
       accessorKey: 'user_display_name',
       header: t('atRisk.colLearner'),
       cell: ({ row }) => {
-        const courseHref = row.original.course_uuid ? `/dash/analytics/courses/${row.original.course_uuid}` : undefined;
+        const courseHref = row.original.course_uuid
+          ? `/dash/analytics/courses/${row.original.course_uuid}`
+          : undefined
         return (
           <div>
             <div className="text-foreground font-medium">{row.original.user_display_name}</div>
@@ -98,7 +100,7 @@ export default function AtRiskLearnersTable({
               </Link>
             )}
           </div>
-        );
+        )
       },
     },
     { accessorKey: 'course_name', header: t('atRisk.colCourse') },
@@ -111,20 +113,22 @@ export default function AtRiskLearnersTable({
       accessorKey: 'days_since_last_activity',
       header: t('atRisk.colInactivity'),
       cell: ({ row }) =>
-        row.original.days_since_last_activity === null ? t('atRisk.na') : `${row.original.days_since_last_activity}d`,
+        row.original.days_since_last_activity === null
+          ? t('atRisk.na')
+          : `${row.original.days_since_last_activity}d`,
     },
     {
       accessorKey: 'risk_score',
       header: t('atRisk.colRisk'),
       cell: ({ row }) => {
-        const riskRow = row.original as EnhancedAtRiskLearnerRow;
+        const riskRow = row.original as EnhancedAtRiskLearnerRow
         const c = riskRow.risk_components ?? {
           inactivity: 0,
           progress: 0,
           failures: 0,
           missing: 0,
           grading: 0,
-        };
+        }
         return (
           <div className="space-y-1">
             <Badge variant={riskVariant(riskRow.risk_level)}>
@@ -152,7 +156,7 @@ export default function AtRiskLearnersTable({
                 .join(' · ')}
             </div>
           </div>
-        );
+        )
       },
     },
     {
@@ -160,9 +164,11 @@ export default function AtRiskLearnersTable({
       header: t('atRisk.colReasons'),
       cell: ({ row }) => (
         <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
-          {row.original.reason_codes.map((code) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
+          {row.original.reason_codes.map(code => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
           {(row.original as EnhancedAtRiskLearnerRow).why_now && (
-            <div className="mt-1 text-[11px]">{(row.original as EnhancedAtRiskLearnerRow).why_now}</div>
+            <div className="mt-1 text-[11px]">
+              {(row.original as EnhancedAtRiskLearnerRow).why_now}
+            </div>
           )}
         </div>
       ),
@@ -171,9 +177,11 @@ export default function AtRiskLearnersTable({
       accessorKey: 'recommended_action',
       header: t('atRisk.colAction'),
       cell: ({ row }) => {
-        const riskRow = row.original as EnhancedAtRiskLearnerRow;
-        const hasGradingBlock = riskRow.open_grading_blocks > 0;
-        const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses';
+        const riskRow = row.original as EnhancedAtRiskLearnerRow
+        const hasGradingBlock = riskRow.open_grading_blocks > 0
+        const gradingHref = riskRow.course_uuid
+          ? `/dash/analytics/courses/${riskRow.course_uuid}`
+          : '/dash/courses'
         return (
           <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
             <span>{riskRow.recommended_action}</span>
@@ -183,11 +191,11 @@ export default function AtRiskLearnersTable({
                 : 'No interventions logged'}
             </div>
             {hasGradingBlock && gradingHref && (
-              <Link
-                href={gradingHref}
-                className="block text-xs text-emerald-700 hover:underline"
-              >
-                {t('atRisk.gradeSubmissions', { count: riskRow.open_grading_blocks })} →
+              <Link href={gradingHref} className="block text-xs text-emerald-700 hover:underline">
+                {t('atRisk.gradeSubmissions', {
+                  count: riskRow.open_grading_blocks,
+                })}{' '}
+                →
               </Link>
             )}
             <div className="flex flex-wrap gap-1 pt-1">
@@ -196,7 +204,7 @@ export default function AtRiskLearnersTable({
                 ['meeting_scheduled', 'Meeting'],
                 ['learner_recovered', 'Recovered'],
               ].map(([type, label]) => {
-                const key = `${riskRow.course_id}:${riskRow.user_id}:${type}`;
+                const key = `${riskRow.course_id}:${riskRow.user_id}:${type}`
                 return (
                   <Button
                     key={type}
@@ -206,19 +214,22 @@ export default function AtRiskLearnersTable({
                     className="h-7 px-2 text-xs"
                     disabled={pendingKey === key}
                     onClick={() =>
-                      logIntervention(riskRow, type as 'message_sent' | 'meeting_scheduled' | 'learner_recovered')
+                      logIntervention(
+                        riskRow,
+                        type as 'message_sent' | 'meeting_scheduled' | 'learner_recovered',
+                      )
                     }
                   >
                     {label}
                   </Button>
-                );
+                )
               })}
             </div>
           </div>
-        );
+        )
       },
     },
-  ];
+  ]
 
   return (
     <Card className="shadow-sm">
@@ -237,5 +248,5 @@ export default function AtRiskLearnersTable({
         />
       </CardContent>
     </Card>
-  );
+  )
 }

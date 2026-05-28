@@ -1,13 +1,13 @@
 /** @vitest-environment jsdom */
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout';
-import { useAttemptShellControls } from '@/features/assessments/shell';
-import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
+import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
+import { useAttemptShellControls } from '@/features/assessments/shell'
+import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 
 const mocks = vi.hoisted(() => ({
   apiFetchMock: vi.fn(),
@@ -17,33 +17,33 @@ const mocks = vi.hoisted(() => ({
   useAssessmentAttemptPersistenceMock: vi.fn(),
   keepLocalMock: vi.fn(),
   applyServerMock: vi.fn(),
-}));
+}))
 
 vi.mock('sonner', () => ({
   toast: {
     success: mocks.toastSuccessMock,
     error: mocks.toastErrorMock,
   },
-}));
+}))
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'en',
-}));
+}))
 
-import type * as ApiClient from '@/lib/api-client';
+import type * as ApiClient from '@/lib/api-client'
 
-vi.mock('@/lib/api-client', async (importOriginal) => {
-  const actual = await importOriginal<typeof ApiClient>();
+vi.mock('@/lib/api-client', async importOriginal => {
+  const actual = await importOriginal<typeof ApiClient>()
   return {
     ...actual,
     apiFetch: mocks.apiFetchMock,
-  };
-});
+  }
+})
 
 vi.mock('@/features/assessments/hooks/useAssessment', () => ({
   useAssessmentAttempt: () => ({ vm: null, isLoading: false, error: null }),
-}));
+}))
 
 vi.mock('@/features/assessments/shared/hooks/useAttemptGuard', () => ({
   useAttemptGuard: () => ({
@@ -53,7 +53,7 @@ vi.mock('@/features/assessments/shared/hooks/useAttemptGuard', () => ({
     remainingSeconds: null,
     violationCount: 0,
   }),
-}));
+}))
 
 vi.mock('@/features/assessments/registry', () => ({
   loadKindModule: () =>
@@ -61,15 +61,15 @@ vi.mock('@/features/assessments/registry', () => ({
       label: 'File submission',
       Attempt: DummyAttempt,
     }),
-}));
+}))
 
 vi.mock('@/features/assessments/hooks/useAssessmentSubmission', () => ({
   useAssessmentSubmission: (...args: unknown[]) => mocks.useAssessmentSubmissionMock(...args),
-}));
+}))
 
 vi.mock('@/features/assessments/shell/hooks/useAssessmentAttempt', () => ({
   useAssessmentAttempt: (...args: unknown[]) => mocks.useAssessmentAttemptPersistenceMock(...args),
-}));
+}))
 
 function DummyAttempt() {
   useAttemptShellControls({
@@ -88,35 +88,35 @@ function DummyAttempt() {
       onKeepLocalVersion: mocks.keepLocalMock,
       onUseServerVersion: mocks.applyServerMock,
     },
-  });
+  })
 
-  return <div>Attempt content</div>;
+  return <div>Attempt content</div>
 }
 
 function renderWithClient(children: ReactNode) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  return render(<QueryClientProvider client={client}>{children}</QueryClientProvider>);
+  })
+  return render(<QueryClientProvider client={client}>{children}</QueryClientProvider>)
 }
 
 function installLocalStorageMock() {
-  const store = new Map<string, string>();
+  const store = new Map<string, string>()
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
     value: {
       getItem: vi.fn((key: string) => store.get(key) ?? null),
       setItem: vi.fn((key: string, value: string) => {
-        store.set(key, value);
+        store.set(key, value)
       }),
       removeItem: vi.fn((key: string) => {
-        store.delete(key);
+        store.delete(key)
       }),
       clear: vi.fn(() => {
-        store.clear();
+        store.clear()
       }),
     },
-  });
+  })
 }
 
 function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptViewModel {
@@ -179,22 +179,22 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     timeRemainingSeconds: null,
     contentVersion: 1,
     policyVersion: 1,
-  } satisfies AttemptViewModel;
-  return { ...vm, ...overrides };
+  } satisfies AttemptViewModel
+  return { ...vm, ...overrides }
 }
 
 describe('assessment runtime convergence', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    installLocalStorageMock();
-    globalThis.localStorage.clear();
-    mocks.apiFetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.clearAllMocks()
+    installLocalStorageMock()
+    globalThis.localStorage.clear()
+    mocks.apiFetchMock.mockResolvedValue({ ok: true, json: async () => ({}) })
     mocks.useAssessmentAttemptPersistenceMock.mockReturnValue({
       saveAnswers: vi.fn(),
       clearSavedAnswers: vi.fn(),
       getRecoverableData: () => null,
-    });
-  });
+    })
+  })
 
   it('shows the shared draft conflict dialog and allows both resolution paths', async () => {
     renderWithClient(
@@ -203,16 +203,16 @@ describe('assessment runtime convergence', () => {
         courseUuid="course_runtime"
         vm={createAttemptVm()}
       />,
-    );
+    )
 
-    expect(await screen.findByText('resolveDraftConflict')).toBeInTheDocument();
-    expect(screen.getByText('draftConflictDescription')).toBeInTheDocument();
-    expect(screen.getByText('draftConflictAnswerCounts')).toBeInTheDocument();
+    expect(await screen.findByText('resolveDraftConflict')).toBeInTheDocument()
+    expect(screen.getByText('draftConflictDescription')).toBeInTheDocument()
+    expect(screen.getByText('draftConflictAnswerCounts')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'keepMyLocalVersion' }));
-    expect(mocks.keepLocalMock).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'keepMyLocalVersion' }))
+    expect(mocks.keepLocalMock).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'useLatestSavedVersion' }));
-    expect(mocks.applyServerMock).toHaveBeenCalledTimes(1);
-  });
-});
+    fireEvent.click(screen.getByRole('button', { name: 'useLatestSavedVersion' }))
+    expect(mocks.applyServerMock).toHaveBeenCalledTimes(1)
+  })
+})

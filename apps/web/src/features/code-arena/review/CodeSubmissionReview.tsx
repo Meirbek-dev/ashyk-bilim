@@ -1,39 +1,39 @@
-'use client';
+'use client'
 
-import { CheckCircle2, XCircle, Code2, Columns, FileSpreadsheet } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { CheckCircle2, XCircle, Code2, Columns, FileSpreadsheet } from 'lucide-react'
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
-import { CodeDiffViewer } from './CodeDiffViewer';
-import type { ItemAnswer } from '@/features/assessments/domain/items';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor'
+import { CodeDiffViewer } from './CodeDiffViewer'
+import type { ItemAnswer } from '@/features/assessments/domain/items'
+import { cn } from '@/lib/utils'
 
 interface CodeSubmissionReviewProps {
-  answer: ItemAnswer | null | undefined;
-  starterTemplate?: string;
+  answer: ItemAnswer | null | undefined
+  starterTemplate?: string
 }
 
-type ReviewTab = 'code' | 'diff' | 'diagnostics';
+type ReviewTab = 'code' | 'diff' | 'diagnostics'
 
 export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmissionReviewProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const [activeTab, setActiveTab] = useState<ReviewTab>('code');
+  const t = useTranslations('Activities.CodeChallenges')
+  const [activeTab, setActiveTab] = useState<ReviewTab>('code')
 
   if (answer?.kind !== 'CODE') {
     return (
       <div className="text-muted-foreground bg-muted/10 rounded-lg border border-dashed p-6 text-center text-sm">
         {t('noCodeAnswerSubmitted')}
       </div>
-    );
+    )
   }
 
-  const latestRun = answer.latest_run;
-  const passed = latestRun?.passed ?? 0;
-  const total = latestRun?.total ?? 0;
-  const accepted = total > 0 && passed === total;
+  const latestRun = answer.latest_run
+  const passed = latestRun?.passed ?? 0
+  const total = latestRun?.total ?? 0
+  const accepted = total > 0 && passed === total
 
   return (
     <div className="grid gap-4 select-none">
@@ -63,10 +63,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
             {t('testCasesPassed', { passed, total })}
           </Badge>
           {typeof latestRun?.score === 'number' ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] font-bold"
-            >
+            <Badge variant="outline" className="text-[10px] font-bold">
               {t('gradeValue', { score: Math.round(latestRun.score) })}
             </Badge>
           ) : null}
@@ -76,7 +73,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
       {/* Review Tab Layout */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as ReviewTab)}
+        onValueChange={val => setActiveTab(val as ReviewTab)}
         className="bg-card flex flex-col overflow-hidden rounded-lg border"
       >
         <div className="bg-muted/15 border-b px-3">
@@ -100,15 +97,14 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
               className="data-[state=active]:border-primary h-10 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <FileSpreadsheet className="size-3.5" />
-              {t('diagnosticLogsCount', { count: latestRun?.details?.length ?? 0 })}
+              {t('diagnosticLogsCount', {
+                count: latestRun?.details?.length ?? 0,
+              })}
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent
-          value="code"
-          className="border-0 p-0 outline-none"
-        >
+        <TabsContent value="code" className="border-0 p-0 outline-none">
           <CodeEditor
             value={answer.source}
             onChange={() => undefined}
@@ -120,10 +116,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
           />
         </TabsContent>
 
-        <TabsContent
-          value="diff"
-          className="border-0 p-4 outline-none"
-        >
+        <TabsContent value="diff" className="border-0 p-4 outline-none">
           <CodeDiffViewer
             expected={starterTemplate}
             actual={answer.source}
@@ -132,20 +125,18 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
           />
         </TabsContent>
 
-        <TabsContent
-          value="diagnostics"
-          className="space-y-3 border-0 p-4 outline-none"
-        >
+        <TabsContent value="diagnostics" className="space-y-3 border-0 p-4 outline-none">
           {latestRun?.details?.length ? (
             <div className="grid gap-2.5">
               {latestRun.details.map((detail: Record<string, unknown>, index: number) => {
-                const passedCase = Boolean(detail.passed);
+                const passedCase = Boolean(detail.passed)
                 const testId =
                   typeof detail.test_id === 'string' || typeof detail.test_id === 'number'
                     ? String(detail.test_id)
-                    : null;
-                const message = typeof detail.message === 'string' ? detail.message : null;
-                const compileOutput = typeof detail.compile_output === 'string' ? detail.compile_output : null;
+                    : null
+                const message = typeof detail.message === 'string' ? detail.message : null
+                const compileOutput =
+                  typeof detail.compile_output === 'string' ? detail.compile_output : null
 
                 return (
                   <div
@@ -166,7 +157,9 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                         )}
                         {t('caseNumber', { number: index + 1 })}
                         {testId ? (
-                          <span className="text-muted-foreground font-mono text-[10px] font-normal">({testId})</span>
+                          <span className="text-muted-foreground font-mono text-[10px] font-normal">
+                            ({testId})
+                          </span>
                         ) : null}
                       </div>
                       <Badge
@@ -177,7 +170,11 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                       </Badge>
                     </div>
 
-                    {message ? <p className="text-muted-foreground mt-2 text-xs leading-relaxed">{message}</p> : null}
+                    {message ? (
+                      <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
+                        {message}
+                      </p>
+                    ) : null}
 
                     {compileOutput ? (
                       <pre className="mt-2.5 overflow-x-auto rounded border border-rose-500/20 bg-rose-500/10 p-2.5 font-mono text-xs text-rose-700 dark:text-rose-300">
@@ -185,7 +182,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                       </pre>
                     ) : null}
                   </div>
-                );
+                )
               })}
             </div>
           ) : (
@@ -196,5 +193,5 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

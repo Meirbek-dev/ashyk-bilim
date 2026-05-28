@@ -1,28 +1,31 @@
-'use client';
+'use client'
 
-import { CheckCircle2, ChevronDown, Clock, RotateCcw, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { CheckCircle2, ChevronDown, Clock, RotateCcw, XCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { formatPercent } from '@/features/assessments/domain/score';
-import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { formatPercent } from '@/features/assessments/domain/score'
+import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface AttemptResultCardProps {
-  vm: AttemptViewModel;
-  onRetry?: () => void;
-  onNext?: () => void;
-  onStartRevision?: () => void;
+  vm: AttemptViewModel
+  onRetry?: () => void
+  onNext?: () => void
+  onStartRevision?: () => void
 }
 
 /**
@@ -35,14 +38,19 @@ interface AttemptResultCardProps {
  * they are secondary actions. The BottomActionBar handles the primary
  * "Next Activity" CTA via runtime.primary_action.
  */
-export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision }: AttemptResultCardProps) {
-  const t = useTranslations('Features.ActivityWorkspace');
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
+export default function AttemptResultCard({
+  vm,
+  onRetry,
+  onNext,
+  onStartRevision,
+}: AttemptResultCardProps) {
+  const t = useTranslations('Features.ActivityWorkspace')
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
 
-  const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm;
-  const pct = score.percent;
-  const passing = pct !== null && pct >= 60;
-  const showScore = isResultVisible && pct !== null;
+  const { isResultVisible, score, isReturnedForRevision, canStartRevision, canSubmit } = vm
+  const pct = score.percent
+  const passing = pct !== null && pct >= 60
+  const showScore = isResultVisible && pct !== null
 
   return (
     <div className="mx-auto w-full max-w-2xl py-6">
@@ -75,27 +83,18 @@ export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision
               </Badge>
             ) : showScore ? (
               passing ? (
-                <Badge
-                  variant="outline"
-                  className="border-primary text-primary gap-1.5"
-                >
+                <Badge variant="outline" className="border-primary text-primary gap-1.5">
                   <CheckCircle2 className="size-3" />
                   {t('passed')}
                 </Badge>
               ) : (
-                <Badge
-                  variant="outline"
-                  className="border-destructive text-destructive gap-1.5"
-                >
+                <Badge variant="outline" className="border-destructive text-destructive gap-1.5">
                   <XCircle className="size-3" />
                   {t('failed')}
                 </Badge>
               )
             ) : (
-              <Badge
-                variant="secondary"
-                className="gap-1.5"
-              >
+              <Badge variant="secondary" className="gap-1.5">
                 <Clock className="size-3" />
                 {t('pendingGrade')}
               </Badge>
@@ -103,11 +102,15 @@ export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision
           </div>
 
           <p className="text-xl font-semibold">
-            {showScore ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}` : t('assessmentSubmitted')}
+            {showScore
+              ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}`
+              : t('assessmentSubmitted')}
           </p>
 
           {vm.startedAt ? (
-            <p className="text-muted-foreground text-xs">{t('submittedOn', { date: formatDate(vm.startedAt) })}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('submittedOn', { date: formatDate(vm.startedAt) })}
+            </p>
           ) : null}
         </div>
       </div>
@@ -123,21 +126,21 @@ export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision
           <button
             type="button"
             className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium"
-            onClick={() => setBreakdownOpen((v) => !v)}
+            onClick={() => setBreakdownOpen(v => !v)}
             aria-expanded={breakdownOpen}
           >
             <span>{t('breakdown')}</span>
             <ChevronDown
-              className={cn('text-muted-foreground size-4 transition-transform', breakdownOpen && 'rotate-180')}
+              className={cn(
+                'text-muted-foreground size-4 transition-transform',
+                breakdownOpen && 'rotate-180',
+              )}
             />
           </button>
           {breakdownOpen ? (
             <div className="border-border divide-border divide-y border-t text-sm">
               {vm.items.map((item, i) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between px-4 py-2"
-                >
+                <div key={item.id} className="flex items-center justify-between px-4 py-2">
                   <span className="text-muted-foreground line-clamp-2 flex-1 pr-4">
                     {i + 1}. {item.title}
                   </span>
@@ -154,25 +157,19 @@ export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision
       {/* Follow-up actions (secondary — Next Activity is in BottomActionBar) */}
       <div className="flex flex-wrap gap-3">
         {canStartRevision && onStartRevision ? (
-          <Button
-            variant="default"
-            onClick={onStartRevision}
-          >
+          <Button variant="default" onClick={onStartRevision}>
             <RotateCcw className="size-4" />
             {t('startRevision')}
           </Button>
         ) : null}
 
         {canSubmit && onRetry ? (
-          <Button
-            variant="outline"
-            onClick={onRetry}
-          >
+          <Button variant="outline" onClick={onRetry}>
             <RotateCcw className="size-4" />
             {t('retryAssessment')}
           </Button>
         ) : null}
       </div>
     </div>
-  );
+  )
 }

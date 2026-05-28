@@ -11,4 +11,4 @@ export {
   themes,
   type ThemeDefinition as Theme,
   type ThemeMode,
-} from './theme-registry';
+} from './theme-registry'

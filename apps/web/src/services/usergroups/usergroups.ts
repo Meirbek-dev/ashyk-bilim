@@ -1,49 +1,53 @@
-'use server';
+'use server'
 
-import { getResponseMetadata } from '@/lib/api-client';
-import { apiFetch } from '@/lib/api-client';
-import { courseTag, tags } from '@/lib/cacheTags';
+import { getResponseMetadata } from '@/lib/api-client'
+import { apiFetch } from '@/lib/api-client'
+import { courseTag, tags } from '@/lib/cacheTags'
 
 export async function createUserGroup(body: any) {
   const result = await apiFetch('usergroups/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  const metadata = await getResponseMetadata(result);
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.platform, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.platform, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function linkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, { method: 'POST' });
-  const metadata = await getResponseMetadata(result);
+  const result = await apiFetch(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, {
+    method: 'POST',
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.platform, 'max');
-    revalidateTag(tags.users, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.platform, 'max')
+    revalidateTag(tags.users, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function unLinkUserToUserGroup(usergroup_id: number, user_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, { method: 'DELETE' });
-  const metadata = await getResponseMetadata(result);
+  const result = await apiFetch(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, {
+    method: 'DELETE',
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.platform, 'max');
-    revalidateTag(tags.users, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.platform, 'max')
+    revalidateTag(tags.users, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function updateUserGroup(usergroup_id: number, data: any) {
@@ -51,46 +55,48 @@ export async function updateUserGroup(usergroup_id: number, data: any) {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getResponseMetadata(result);
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.platform, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.platform, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function deleteUserGroup(usergroup_id: number) {
-  const result = await apiFetch(`usergroups/${usergroup_id}`, { method: 'DELETE' });
-  const metadata = await getResponseMetadata(result);
+  const result = await apiFetch(`usergroups/${usergroup_id}`, {
+    method: 'DELETE',
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.platform, 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.platform, 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 interface UserGroupCourseInvalidationOptions {
-  courseUuid?: string;
+  courseUuid?: string
 }
 
 async function revalidateUserGroupCourseTags(options?: UserGroupCourseInvalidationOptions) {
-  const { revalidateTag } = await import('next/cache');
-  const tagsToRevalidate = new Set<string>([tags.platform]);
+  const { revalidateTag } = await import('next/cache')
+  const tagsToRevalidate = new Set<string>([tags.platform])
 
   if (options?.courseUuid) {
-    tagsToRevalidate.add(courseTag.detail(options.courseUuid));
-    tagsToRevalidate.add(courseTag.access(options.courseUuid));
+    tagsToRevalidate.add(courseTag.detail(options.courseUuid))
+    tagsToRevalidate.add(courseTag.access(options.courseUuid))
   }
 
-  tagsToRevalidate.add(tags.courses);
+  tagsToRevalidate.add(tags.courses)
 
   for (const tag of tagsToRevalidate) {
-    revalidateTag(tag, 'max');
+    revalidateTag(tag, 'max')
   }
 }
 
@@ -99,16 +105,19 @@ export async function linkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
-    method: 'POST',
-  });
-  const metadata = await getResponseMetadata(result);
+  const result = await apiFetch(
+    `usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`,
+    {
+      method: 'POST',
+    },
+  )
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    await revalidateUserGroupCourseTags(options);
+    await revalidateUserGroupCourseTags(options)
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function unLinkResourcesToUserGroup(
@@ -116,14 +125,17 @@ export async function unLinkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
-    method: 'DELETE',
-  });
-  const metadata = await getResponseMetadata(result);
+  const result = await apiFetch(
+    `usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`,
+    {
+      method: 'DELETE',
+    },
+  )
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    await revalidateUserGroupCourseTags(options);
+    await revalidateUserGroupCourseTags(options)
   }
 
-  return metadata;
+  return metadata
 }

@@ -1,66 +1,90 @@
-'use client';
+'use client'
 import {
   getLogoMediaDirectory,
   getPlatformThumbnailImage,
   getPreviewMediaDirectory,
   getThumbnailMediaDirectory,
-} from '@services/media/media';
+} from '@services/media/media'
 import {
   updatePlatform,
   uploadPlatformLogo,
   uploadPlatformPreview,
   uploadPlatformThumbnail,
-} from '@/services/settings/platform';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
-import { GripVertical, ImageIcon, Images, Info, Plus, StarIcon, UploadCloud, X } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { SiLoom, SiYoutube } from '@icons-pack/react-simple-icons';
-import { constructAcceptValue } from '@/lib/constants';
-import type { ChangeEvent, MouseEvent } from 'react';
-import NextImage from '@components/ui/NextImage';
-import { useMemo, useState, useTransition } from 'react';
-import { Button } from '@components/ui/button';
-import { Input } from '@components/ui/input';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { compressImage } from '@/lib/image-compression';
+} from '@/services/settings/platform'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@components/ui/dialog'
+import { GripVertical, ImageIcon, Images, Info, Plus, StarIcon, UploadCloud, X } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { SiLoom, SiYoutube } from '@icons-pack/react-simple-icons'
+import { constructAcceptValue } from '@/lib/constants'
+import type { ChangeEvent, MouseEvent } from 'react'
+import NextImage from '@components/ui/NextImage'
+import { useMemo, useState, useTransition } from 'react'
+import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { compressImage } from '@/lib/image-compression'
 
-const SUPPORTED_FILES = constructAcceptValue(['png', 'jpg', 'webp', 'avif']);
+const SUPPORTED_FILES = constructAcceptValue(['png', 'jpg', 'webp', 'avif'])
 
 interface Preview {
-  id: string;
-  url: string;
-  type: 'image' | 'youtube' | 'loom';
-  filename?: string;
-  thumbnailUrl?: string;
-  order: number;
+  id: string
+  url: string
+  type: 'image' | 'youtube' | 'loom'
+  filename?: string
+  thumbnailUrl?: string
+  order: number
 }
 
 // Update the height constant
-const PREVIEW_HEIGHT = 'h-28'; // Reduced height
+const PREVIEW_HEIGHT = 'h-28' // Reduced height
 
 function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory }: any) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: preview.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: preview.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
-  };
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={cn('group relative shrink-0', 'inline-block w-auto', isDragging ? 'scale-105' : 'hover:scale-102')}
+      className={cn(
+        'group relative shrink-0',
+        'inline-block w-auto',
+        isDragging ? 'scale-105' : 'hover:scale-102',
+      )}
     >
       <button
         onClick={() => removePreview(preview.id)}
@@ -122,17 +146,21 @@ function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory 
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // Add this type for the video service selection
-type VideoService = 'youtube' | 'loom' | null;
+type VideoService = 'youtube' | 'loom' | null
 
 // Add this constant for consistent sizing
-const DIALOG_ICON_SIZE = 'w-16 h-16';
+const DIALOG_ICON_SIZE = 'w-16 h-16'
 
 // Function to get translated preview options
-const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelectedService: Function) => [
+const getAddPreviewOptions = (
+  t: Function,
+  isPreviewUploading: boolean,
+  setSelectedService: Function,
+) => [
   {
     id: 'image',
     title: t('Dialog.AddPreview.imageTitle'),
@@ -160,18 +188,18 @@ const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelec
     onClick: () => setSelectedService('loom'),
     disabled: false,
   },
-];
+]
 
 export default function EditImages() {
-  const router = useRouter();
-  const platform = usePlatform() as any;
-  const tNotify = useTranslations('DashPage.Notifications');
-  const t = useTranslations('DashPage.PlatformSettings.Images');
-  const [localLogo, setLocalLogo] = useState<string | null>(null);
-  const [localThumbnail, setLocalThumbnail] = useState<string | null>(null);
-  const [isLogoUploading, setIsLogoUploading] = useState(false);
-  const [isThumbnailUploading, setIsThumbnailUploading] = useState(false);
-  const [_isPending, startTransition] = useTransition();
+  const router = useRouter()
+  const platform = usePlatform() as any
+  const tNotify = useTranslations('DashPage.Notifications')
+  const t = useTranslations('DashPage.PlatformSettings.Images')
+  const [localLogo, setLocalLogo] = useState<string | null>(null)
+  const [localThumbnail, setLocalThumbnail] = useState<string | null>(null)
+  const [isLogoUploading, setIsLogoUploading] = useState(false)
+  const [isThumbnailUploading, setIsThumbnailUploading] = useState(false)
+  const [_isPending, startTransition] = useTransition()
   const [previews, setPreviews] = useState<Preview[]>(() => {
     // Initialize with image previews
     const imagePreviews = (platform?.previews?.images || [])
@@ -182,7 +210,7 @@ export default function EditImages() {
         filename: item.filename,
         type: 'image' as const,
         order: item.order ?? index, // Use existing order or fallback to index
-      }));
+      }))
 
     // Initialize with video previews
     const videoPreviews = (platform?.previews?.videos || [])
@@ -191,184 +219,201 @@ export default function EditImages() {
         id: video.id,
         url: video.url,
         type: video.type as 'youtube' | 'loom',
-        thumbnailUrl: video.type === 'youtube' ? `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg` : '',
+        thumbnailUrl:
+          video.type === 'youtube'
+            ? `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`
+            : '',
         filename: '',
         order: video.order ?? imagePreviews.length + index, // Use existing order or fallback to index after images
-      }));
+      }))
 
-    const allPreviews = [...imagePreviews, ...videoPreviews];
-    return allPreviews.toSorted((a, b) => a.order - b.order);
-  });
-  const [isPreviewUploading, setIsPreviewUploading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<VideoService>(null);
+    const allPreviews = [...imagePreviews, ...videoPreviews]
+    return allPreviews.toSorted((a, b) => a.order - b.order)
+  })
+  const [isPreviewUploading, setIsPreviewUploading] = useState(false)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false)
+  const [selectedService, setSelectedService] = useState<VideoService>(null)
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
+      const file = event.target.files[0]
       if (file) {
-        const optimized = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.82 });
-        setLocalLogo(URL.createObjectURL(optimized));
-        startTransition(() => setIsLogoUploading(true));
-        const loadingToast = toast.loading(tNotify('uploadingLogo'));
+        const optimized = await compressImage(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.82,
+        })
+        setLocalLogo(URL.createObjectURL(optimized))
+        startTransition(() => setIsLogoUploading(true))
+        const loadingToast = toast.loading(tNotify('uploadingLogo'))
         try {
-          await uploadPlatformLogo(optimized);
-          await new Promise((r) => setTimeout(r, 1500));
-          toast.success(tNotify('logoUpdatedSuccess'), { id: loadingToast });
-          router.refresh();
+          await uploadPlatformLogo(optimized)
+          await new Promise(r => setTimeout(r, 1500))
+          toast.success(tNotify('logoUpdatedSuccess'), { id: loadingToast })
+          router.refresh()
         } catch {
-          toast.error(tNotify('logoUploadFailed'), { id: loadingToast });
+          toast.error(tNotify('logoUploadFailed'), { id: loadingToast })
         } finally {
-          startTransition(() => setIsLogoUploading(false));
+          startTransition(() => setIsLogoUploading(false))
         }
       }
     }
-  };
+  }
 
   const handleThumbnailChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
+      const file = event.target.files[0]
       if (file) {
-        const optimized = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.82 });
-        setLocalThumbnail(URL.createObjectURL(optimized));
-        startTransition(() => setIsThumbnailUploading(true));
-        const loadingToast = toast.loading(tNotify('uploadingThumbnail'));
+        const optimized = await compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.82,
+        })
+        setLocalThumbnail(URL.createObjectURL(optimized))
+        startTransition(() => setIsThumbnailUploading(true))
+        const loadingToast = toast.loading(tNotify('uploadingThumbnail'))
         try {
-          await uploadPlatformThumbnail(optimized);
-          await new Promise((r) => setTimeout(r, 1500));
-          toast.success(tNotify('thumbnailUpdatedSuccess'), { id: loadingToast });
-          router.refresh();
+          await uploadPlatformThumbnail(optimized)
+          await new Promise(r => setTimeout(r, 1500))
+          toast.success(tNotify('thumbnailUpdatedSuccess'), { id: loadingToast })
+          router.refresh()
         } catch {
-          toast.error(tNotify('thumbnailUploadFailed'), { id: loadingToast });
+          toast.error(tNotify('thumbnailUploadFailed'), { id: loadingToast })
         } finally {
-          startTransition(() => setIsThumbnailUploading(false));
+          startTransition(() => setIsThumbnailUploading(false))
         }
       }
     }
-  };
+  }
 
   const handleImageButtonClick = (inputId: string) => (event: MouseEvent) => {
-    event.preventDefault();
-    document.getElementById(inputId)?.click();
-  };
+    event.preventDefault()
+    document.getElementById(inputId)?.click()
+  }
 
   const handlePreviewUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      const files = [...event.target.files];
-      const remainingSlots = 4 - previews.length;
+      const files = [...event.target.files]
+      const remainingSlots = 4 - previews.length
 
       if (files.length > remainingSlots) {
-        toast.error(t('Errors.maxPreviewsError', { count: remainingSlots }));
-        return;
+        toast.error(t('Errors.maxPreviewsError', { count: remainingSlots }))
+        return
       }
 
-      startTransition(() => setIsPreviewUploading(true));
-      const loadingToast = toast.loading(tNotify('uploadingPreviews', { count: files.length }));
+      startTransition(() => setIsPreviewUploading(true))
+      const loadingToast = toast.loading(tNotify('uploadingPreviews', { count: files.length }))
 
       try {
-        const uploadPromises = files.map(async (file) => {
-          const optimized = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
-          const response = await uploadPlatformPreview(optimized);
+        const uploadPromises = files.map(async file => {
+          const optimized = await compressImage(file, {
+            maxWidth: 2400,
+            maxHeight: 1600,
+            quality: 0.82,
+          })
+          const response = await uploadPlatformPreview(optimized)
           return {
             id: response.name_in_disk,
             url: URL.createObjectURL(optimized),
             filename: response.name_in_disk,
             type: 'image' as const,
             order: previews.length, // Add new items at the end
-          };
-        });
+          }
+        })
 
-        const newPreviews = await Promise.all(uploadPromises);
-        const updatedPreviews = [...previews, ...newPreviews];
+        const newPreviews = await Promise.all(uploadPromises)
+        const updatedPreviews = [...previews, ...newPreviews]
 
         await updatePlatform({
           previews: {
             images: updatedPreviews
-              .filter((p) => p.type === 'image')
-              .map((p) => ({
+              .filter(p => p.type === 'image')
+              .map(p => ({
                 filename: p.filename,
                 order: p.order,
               })),
             videos: updatedPreviews
-              .filter((p) => p.type === 'youtube' || p.type === 'loom')
-              .map((p) => ({
+              .filter(p => p.type === 'youtube' || p.type === 'loom')
+              .map(p => ({
                 type: p.type,
                 url: p.url,
                 id: p.id,
                 order: p.order,
               })),
           },
-        });
+        })
 
-        setPreviews(updatedPreviews);
+        setPreviews(updatedPreviews)
         toast.success(tNotify('previewsAddedSuccess', { count: files.length }), {
           id: loadingToast,
-        });
-        router.refresh();
+        })
+        router.refresh()
       } catch {
-        toast.error(tNotify('previewsUploadFailed'), { id: loadingToast });
+        toast.error(tNotify('previewsUploadFailed'), { id: loadingToast })
       } finally {
-        startTransition(() => setIsPreviewUploading(false));
+        startTransition(() => setIsPreviewUploading(false))
       }
     }
-  };
+  }
 
   const removePreview = async (id: string) => {
-    const loadingToast = toast.loading(tNotify('removingPreview'));
+    const loadingToast = toast.loading(tNotify('removingPreview'))
     try {
-      const updatedPreviews = previews.filter((p) => p.id !== id);
-      const updatedPreviewFilenames = updatedPreviews.map((p) => p.filename);
+      const updatedPreviews = previews.filter(p => p.id !== id)
+      const updatedPreviewFilenames = updatedPreviews.map(p => p.filename)
 
       await updatePlatform({
         previews: {
           images: updatedPreviewFilenames,
         },
-      });
+      })
 
-      startTransition(() => setPreviews(updatedPreviews));
-      toast.success(tNotify('previewRemovedSuccess'), { id: loadingToast });
-      router.refresh();
+      startTransition(() => setPreviews(updatedPreviews))
+      toast.success(tNotify('previewRemovedSuccess'), { id: loadingToast })
+      router.refresh()
     } catch {
-      toast.error(tNotify('previewRemoveFailed'), { id: loadingToast });
+      toast.error(tNotify('previewRemoveFailed'), { id: loadingToast })
     }
-  };
+  }
 
   const extractVideoId = (url: string, type: 'youtube' | 'loom'): string | null => {
     if (type === 'youtube') {
-      const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/;
-      const match = regex.exec(url);
-      return match ? match[1] || null : null;
+      const regex =
+        /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
+      const match = regex.exec(url)
+      return match ? match[1] || null : null
     }
     if (type === 'loom') {
-      const regex = /loom\.com\/(?:share|embed)\/([\dA-Za-z]+)/;
-      const match = regex.exec(url);
-      return match ? match[1] || null : null;
+      const regex = /loom\.com\/(?:share|embed)\/([\dA-Za-z]+)/
+      const match = regex.exec(url)
+      return match ? match[1] || null : null
     }
-    return null;
-  };
+    return null
+  }
 
   const handleVideoSubmit = async (type: 'youtube' | 'loom') => {
-    const videoId = extractVideoId(videoUrl, type);
+    const videoId = extractVideoId(videoUrl, type)
     if (!videoId) {
       toast.error(
         t('Errors.invalidVideoUrl', {
           type: t(`Dialog.AddPreview.${type}Title`),
         }),
-      );
-      return;
+      )
+      return
     }
 
     // Check if video already exists
-    if (previews.some((preview) => preview.id === videoId)) {
-      toast.error(t('Errors.videoAlreadyAddedError'));
-      return;
+    if (previews.some(preview => preview.id === videoId)) {
+      toast.error(t('Errors.videoAlreadyAddedError'))
+      return
     }
 
-    const loadingToast = toast.loading(tNotify('addingVideoPreview'));
+    const loadingToast = toast.loading(tNotify('addingVideoPreview'))
 
     try {
-      const thumbnailUrl = type === 'youtube' ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
+      const thumbnailUrl =
+        type === 'youtube' ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : ''
 
       const newPreview: Preview = {
         id: videoId,
@@ -377,93 +422,93 @@ export default function EditImages() {
         thumbnailUrl,
         filename: '',
         order: previews.length, // Add new items at the end
-      };
+      }
 
-      const updatedPreviews = [...previews, newPreview];
+      const updatedPreviews = [...previews, newPreview]
 
       await updatePlatform({
         previews: {
           images: updatedPreviews
-            .filter((p) => p.type === 'image')
-            .map((p) => ({
+            .filter(p => p.type === 'image')
+            .map(p => ({
               filename: p.filename,
               order: p.order,
             })),
           videos: updatedPreviews
-            .filter((p) => p.type === 'youtube' || p.type === 'loom')
-            .map((p) => ({
+            .filter(p => p.type === 'youtube' || p.type === 'loom')
+            .map(p => ({
               type: p.type,
               url: p.url,
               id: p.id,
               order: p.order,
             })),
         },
-      });
+      })
 
-      setPreviews(updatedPreviews);
-      setVideoUrl('');
-      setVideoDialogOpen(false);
-      toast.success(tNotify('videoPreviewAddedSuccess'), { id: loadingToast });
-      router.refresh();
+      setPreviews(updatedPreviews)
+      setVideoUrl('')
+      setVideoDialogOpen(false)
+      toast.success(tNotify('videoPreviewAddedSuccess'), { id: loadingToast })
+      router.refresh()
     } catch {
-      toast.error(tNotify('videoPreviewAddFailed'), { id: loadingToast });
+      toast.error(tNotify('videoPreviewAddFailed'), { id: loadingToast })
     }
-  };
+  }
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over } = event
 
     if (!over || active.id === over.id) {
-      return;
+      return
     }
 
-    const items = [...previews];
-    const oldIndex = items.findIndex((item) => item.id === active.id);
-    const newIndex = items.findIndex((item) => item.id === over.id);
+    const items = [...previews]
+    const oldIndex = items.findIndex(item => item.id === active.id)
+    const newIndex = items.findIndex(item => item.id === over.id)
 
     const reorderedItems = arrayMove(items, oldIndex, newIndex).map((item, index) =>
       Object.assign(item, { order: index }),
-    );
+    )
 
-    setPreviews(reorderedItems);
+    setPreviews(reorderedItems)
 
     // Update the order in the backend
-    const loadingToast = toast.loading(tNotify('updatingPreviewOrder'));
+    const loadingToast = toast.loading(tNotify('updatingPreviewOrder'))
     try {
       await updatePlatform({
         previews: {
           images: reorderedItems
-            .filter((p) => p.type === 'image')
-            .map((p) => ({
+            .filter(p => p.type === 'image')
+            .map(p => ({
               filename: p.filename,
               order: p.order,
             })),
           videos: reorderedItems
-            .filter((p) => p.type === 'youtube' || p.type === 'loom')
-            .map((p) => ({
+            .filter(p => p.type === 'youtube' || p.type === 'loom')
+            .map(p => ({
               type: p.type,
               url: p.url,
               id: p.id,
               order: p.order,
             })),
         },
-      });
+      })
 
       toast.success(tNotify('previewOrderUpdatedSuccess'), {
         id: loadingToast,
-      });
-      router.refresh();
+      })
+      router.refresh()
     } catch {
-      toast.error(tNotify('previewOrderUpdateFailed'), { id: loadingToast });
-      setPreviews(previews);
+      toast.error(tNotify('previewOrderUpdateFailed'), { id: loadingToast })
+      setPreviews(previews)
     }
-  };
+  }
 
   // Add function to reset video dialog state
   const resetVideoDialog = () => {
-    setSelectedService(null);
-    setVideoUrl('');
-  };
+    setSelectedService(null)
+    setVideoUrl('')
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -472,10 +517,10 @@ export default function EditImages() {
       },
     }),
     useSensor(KeyboardSensor),
-  );
+  )
 
-  const previewIds = useMemo(() => previews.map((p) => p.id), [previews]);
-  const announcements = useDndAnnouncements(previewIds);
+  const previewIds = useMemo(() => previews.map(p => p.id), [previews])
+  const announcements = useDndAnnouncements(previewIds)
 
   return (
     <div className="bg-background mx-0 mb-16 rounded-3xl sm:mx-10 sm:mb-0">
@@ -483,10 +528,7 @@ export default function EditImages() {
         <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
         <h2 className="text-muted-foreground text-base">{t('description')}</h2>
       </div>
-      <Tabs
-        defaultValue="logo"
-        className="w-full"
-      >
+      <Tabs defaultValue="logo" className="w-full">
         <TabsList className="bg-muted grid w-full grid-cols-3 rounded-lg p-1">
           <TabsTrigger
             value="logo"
@@ -511,10 +553,7 @@ export default function EditImages() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent
-          value="logo"
-          className="mt-2"
-        >
+        <TabsContent value="logo" className="mt-2">
           <div className="flex w-full flex-col space-y-5">
             <div className="bg-muted/20 w-full rounded-3xl py-8 transition-all duration-300">
               <div className="flex flex-col items-center justify-center gap-8">
@@ -563,7 +602,9 @@ export default function EditImages() {
                       size={18}
                       className={cn('', isLogoUploading && 'animate-bounce')}
                     />
-                    <span>{isLogoUploading ? t('Buttons.uploadingLogo') : t('Buttons.uploadNewLogo')}</span>
+                    <span>
+                      {isLogoUploading ? t('Buttons.uploadingLogo') : t('Buttons.uploadNewLogo')}
+                    </span>
                   </button>
 
                   <div className="flex flex-col items-center space-y-2 text-xs text-gray-500">
@@ -579,10 +620,7 @@ export default function EditImages() {
           </div>
         </TabsContent>
 
-        <TabsContent
-          value="thumbnail"
-          className="mt-2"
-        >
+        <TabsContent value="thumbnail" className="mt-2">
           <div className="flex w-full flex-col space-y-5">
             <div className="bg-muted/20 w-full rounded-3xl py-8 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-8">
@@ -631,7 +669,9 @@ export default function EditImages() {
                       className={cn('', isThumbnailUploading && 'animate-bounce')}
                     />
                     <span>
-                      {isThumbnailUploading ? t('Buttons.uploadingThumbnail') : t('Buttons.uploadNewThumbnail')}
+                      {isThumbnailUploading
+                        ? t('Buttons.uploadingThumbnail')
+                        : t('Buttons.uploadNewThumbnail')}
                     </span>
                   </button>
 
@@ -648,10 +688,7 @@ export default function EditImages() {
           </div>
         </TabsContent>
 
-        <TabsContent
-          value="previews"
-          className="mt-4"
-        >
+        <TabsContent value="previews" className="mt-4">
           <div className="flex w-full flex-col space-y-5">
             <div className="bg-muted/20 w-full rounded-3xl py-6 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-6">
@@ -668,10 +705,10 @@ export default function EditImages() {
                     )}
                   >
                     <SortableContext
-                      items={previews.map((preview) => preview.id)}
+                      items={previews.map(preview => preview.id)}
                       strategy={horizontalListSortingStrategy}
                     >
-                      {previews.map((preview) => (
+                      {previews.map(preview => (
                         <SortablePreviewItem
                           key={preview.id}
                           preview={preview}
@@ -684,9 +721,9 @@ export default function EditImages() {
                       <div className={cn('w-48 shrink-0', previews.length === 0 && 'm-0')}>
                         <Dialog
                           open={videoDialogOpen}
-                          onOpenChange={(open) => {
-                            setVideoDialogOpen(open);
-                            if (!open) resetVideoDialog();
+                          onOpenChange={open => {
+                            setVideoDialogOpen(open)
+                            if (!open) resetVideoDialog()
                           }}
                         >
                           <DialogTrigger
@@ -702,24 +739,29 @@ export default function EditImages() {
                             }
                           >
                             <div className="rounded-full bg-blue-50 p-2 transition-colors duration-200 group-hover:bg-blue-100">
-                              <Plus
-                                size={20}
-                                className="text-blue-500"
-                              />
+                              <Plus size={20} className="text-blue-500" />
                             </div>
-                            <span className="text-sm font-medium text-gray-600">{t('Buttons.addPreview')}</span>
+                            <span className="text-sm font-medium text-gray-600">
+                              {t('Buttons.addPreview')}
+                            </span>
                           </DialogTrigger>
-                          <DialogContent
-                            className="sm:max-w-[600px]"
-                            aria-describedby={undefined}
-                          >
+                          <DialogContent className="sm:max-w-[600px]" aria-describedby={undefined}>
                             <DialogHeader>
                               <DialogTitle>{t('Dialog.AddPreview.title')}</DialogTitle>
                             </DialogHeader>
-                            <div className={cn('p-6', selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6')}>
+                            <div
+                              className={cn(
+                                'p-6',
+                                selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6',
+                              )}
+                            >
                               {!selectedService ? (
                                 <>
-                                  {getAddPreviewOptions(t, isPreviewUploading, setSelectedService).map((option) => (
+                                  {getAddPreviewOptions(
+                                    t,
+                                    isPreviewUploading,
+                                    setSelectedService,
+                                  ).map(option => (
                                     <button
                                       key={option.id}
                                       onClick={option.onClick}
@@ -739,11 +781,15 @@ export default function EditImages() {
                                           'flex items-center justify-center',
                                         )}
                                       >
-                                        <option.icon className={`text- h-8 w-8${option.color}-500`} />
+                                        <option.icon
+                                          className={`text- h-8 w-8${option.color}-500`}
+                                        />
                                       </div>
                                       <div className="text-center">
                                         <p className="font-medium text-gray-700">{option.title}</p>
-                                        <p className="mt-1 text-sm text-gray-500">{option.description}</p>
+                                        <p className="mt-1 text-sm text-gray-500">
+                                          {option.description}
+                                        </p>
                                       </div>
                                     </button>
                                   ))}
@@ -765,7 +811,9 @@ export default function EditImages() {
                                       <div
                                         className={cn(
                                           'flex h-10 w-10 items-center justify-center rounded-full',
-                                          selectedService === 'youtube' ? 'bg-red-50' : 'bg-blue-50',
+                                          selectedService === 'youtube'
+                                            ? 'bg-red-50'
+                                            : 'bg-blue-50',
                                         )}
                                       >
                                         {selectedService === 'youtube' ? (
@@ -789,7 +837,7 @@ export default function EditImages() {
                                     </div>
                                     <button
                                       onClick={() => {
-                                        setSelectedService(null);
+                                        setSelectedService(null)
                                       }}
                                       className="text-gray-400 transition-colors hover:text-gray-500"
                                     >
@@ -806,8 +854,8 @@ export default function EditImages() {
                                           : t('Dialog.AddVideo.loomPlaceholder')
                                       }
                                       value={videoUrl}
-                                      onChange={(e) => {
-                                        setVideoUrl(e.target.value);
+                                      onChange={e => {
+                                        setVideoUrl(e.target.value)
                                       }}
                                       className="w-full"
                                     />
@@ -844,5 +892,5 @@ export default function EditImages() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

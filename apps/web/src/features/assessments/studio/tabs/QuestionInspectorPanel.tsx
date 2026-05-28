@@ -1,50 +1,50 @@
-'use client';
+'use client'
 
-import { ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import type { EditableItem } from '@/features/assessments/studio/studioTypes';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import { MarkdownEditor } from '@/features/content-markdown';
+import type { EditableItem } from '@/features/assessments/studio/studioTypes'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { MarkdownEditor } from '@/features/content-markdown'
 
 interface QuestionInspectorPanelProps {
-  item: EditableItem;
-  isEditable: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
-  onChange: (next: EditableItem) => void;
+  item: EditableItem
+  isEditable: boolean
+  isOpen: boolean
+  onToggle: () => void
+  onChange: (next: EditableItem) => void
 }
 
-const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const;
-type Difficulty = (typeof DIFFICULTY_OPTIONS)[number];
+const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const
+type Difficulty = (typeof DIFFICULTY_OPTIONS)[number]
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   easy: 'bg-emerald-100 text-emerald-800 ring-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300',
   medium: 'bg-amber-100 text-amber-800 ring-amber-300 dark:bg-amber-900/30 dark:text-amber-300',
   hard: 'bg-red-100 text-red-800 ring-red-300 dark:bg-red-900/30 dark:text-red-300',
-};
+}
 
 /** Extracts explanation from CHOICE or MATCHING item bodies. */
 function getExplanation(item: EditableItem): string {
-  if (item.body.kind === 'CHOICE') return item.body.explanation ?? '';
-  if (item.body.kind === 'MATCHING') return item.body.explanation ?? '';
-  return '';
+  if (item.body.kind === 'CHOICE') return item.body.explanation ?? ''
+  if (item.body.kind === 'MATCHING') return item.body.explanation ?? ''
+  return ''
 }
 
 function setExplanation(item: EditableItem, value: string): EditableItem {
   if (item.body.kind === 'CHOICE') {
-    return { ...item, body: { ...item.body, explanation: value || null } };
+    return { ...item, body: { ...item.body, explanation: value || null } }
   }
   if (item.body.kind === 'MATCHING') {
-    return { ...item, body: { ...item.body, explanation: value || null } };
+    return { ...item, body: { ...item.body, explanation: value || null } }
   }
-  return item;
+  return item
 }
 
-const SUPPORTS_EXPLANATION = new Set<string>(['CHOICE', 'MATCHING']);
+const SUPPORTS_EXPLANATION = new Set<string>(['CHOICE', 'MATCHING'])
 
 export default function QuestionInspectorPanel({
   item,
@@ -53,16 +53,16 @@ export default function QuestionInspectorPanel({
   onToggle,
   onChange,
 }: QuestionInspectorPanelProps) {
-  const t = useTranslations('Features.Assessments.Studio.Inspector');
+  const t = useTranslations('Features.Assessments.Studio.Inspector')
 
-  const explanation = getExplanation(item);
-  const supportsExplanation = SUPPORTS_EXPLANATION.has(item.kind);
+  const explanation = getExplanation(item)
+  const supportsExplanation = SUPPORTS_EXPLANATION.has(item.kind)
 
-  const difficulty: Difficulty = item.metadata.difficulty ?? 'medium';
+  const difficulty: Difficulty = item.metadata.difficulty ?? 'medium'
 
   const setDifficulty = (d: Difficulty) => {
-    onChange({ ...item, metadata: { ...item.metadata, difficulty: d } });
-  };
+    onChange({ ...item, metadata: { ...item.metadata, difficulty: d } })
+  }
 
   return (
     <>
@@ -76,7 +76,9 @@ export default function QuestionInspectorPanel({
           className="bg-card hover:bg-muted flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border border-l px-1.5 py-3"
         >
           <SlidersHorizontal className="text-muted-foreground size-4" />
-          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">{t('title')}</span>
+          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">
+            {t('title')}
+          </span>
         </Button>
       )}
 
@@ -111,10 +113,7 @@ export default function QuestionInspectorPanel({
             <div className="flex-1 space-y-5 overflow-y-auto p-4">
               {/* Points */}
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="inspector-points"
-                  className="text-xs font-medium"
-                >
+                <Label htmlFor="inspector-points" className="text-xs font-medium">
                   {t('pointsLabel')}
                 </Label>
                 <Input
@@ -125,10 +124,10 @@ export default function QuestionInspectorPanel({
                   value={item.max_score ?? 0}
                   disabled={!isEditable}
                   className="h-8 text-sm"
-                  onChange={(e) => {
-                    const val = Number.parseFloat(e.target.value);
+                  onChange={e => {
+                    const val = Number.parseFloat(e.target.value)
                     if (!Number.isNaN(val) && val >= 0) {
-                      onChange({ ...item, max_score: val });
+                      onChange({ ...item, max_score: val })
                     }
                   }}
                 />
@@ -138,7 +137,7 @@ export default function QuestionInspectorPanel({
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">{t('difficultyLabel')}</Label>
                 <div className="flex gap-1.5">
-                  {DIFFICULTY_OPTIONS.map((d) => (
+                  {DIFFICULTY_OPTIONS.map(d => (
                     <Button
                       key={d}
                       type="button"
@@ -148,7 +147,9 @@ export default function QuestionInspectorPanel({
                       onClick={() => setDifficulty(d)}
                       className={cn(
                         'flex-1 rounded px-2 py-1 text-[11px] font-medium ring-1 transition-all h-auto',
-                        difficulty === d ? DIFFICULTY_COLORS[d] : 'bg-muted text-muted-foreground ring-transparent',
+                        difficulty === d
+                          ? DIFFICULTY_COLORS[d]
+                          : 'bg-muted text-muted-foreground ring-transparent',
                         !isEditable && 'cursor-not-allowed opacity-50',
                       )}
                     >
@@ -162,10 +163,7 @@ export default function QuestionInspectorPanel({
               {/* Explanation */}
               {supportsExplanation && (
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="inspector-explanation"
-                    className="text-xs font-medium"
-                  >
+                  <Label htmlFor="inspector-explanation" className="text-xs font-medium">
                     {t('explanationLabel')}
                   </Label>
                   <MarkdownEditor
@@ -174,7 +172,7 @@ export default function QuestionInspectorPanel({
                     disabled={!isEditable}
                     preset="explanation"
                     minHeight={140}
-                    onChange={(markdown) => onChange(setExplanation(item, markdown))}
+                    onChange={markdown => onChange(setExplanation(item, markdown))}
                   />
                   <p className="text-muted-foreground text-[10px]">{t('explanationDesc')}</p>
                 </div>
@@ -184,5 +182,5 @@ export default function QuestionInspectorPanel({
         )}
       </aside>
     </>
-  );
+  )
 }

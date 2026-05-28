@@ -1,37 +1,37 @@
-import NewCollectionButton from '@/components/Objects/Elements/Buttons/NewCollectionButton';
-import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle';
-import { LoginBonusHandler } from '@/app/_shared/withmenu/_components/LoginBonusHandler';
-import CollectionThumbnail from '@components/Objects/Thumbnails/CollectionThumbnail';
-import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { GamificationProvider } from '@/components/Contexts/GamificationContext';
-import { HeroSection } from '@/components/Dashboard/Gamification/hero-section';
-import PermissionGuard from '@components/Security/PermissionGuard';
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import type { DashboardData } from '@/types/gamification';
-import { getAbsoluteUrl } from '@services/config/config';
-import CreateCourseTrigger from './CreateCourseTrigger';
-import { BookOpen, FolderKanban } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
-import CourseGridClient from './CourseGridClient';
-import Link from '@/components/ui/ServerLink';
-import { cn } from '@/lib/utils';
+import NewCollectionButton from '@/components/Objects/Elements/Buttons/NewCollectionButton'
+import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle'
+import { LoginBonusHandler } from '@/app/_shared/withmenu/_components/LoginBonusHandler'
+import CollectionThumbnail from '@components/Objects/Thumbnails/CollectionThumbnail'
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
+import { GamificationProvider } from '@/components/Contexts/GamificationContext'
+import { HeroSection } from '@/components/Dashboard/Gamification/hero-section'
+import PermissionGuard from '@components/Security/PermissionGuard'
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import type { DashboardData } from '@/types/gamification'
+import { getAbsoluteUrl } from '@services/config/config'
+import CreateCourseTrigger from './CreateCourseTrigger'
+import { BookOpen, FolderKanban } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import CourseGridClient from './CourseGridClient'
+import Link from '@/components/ui/ServerLink'
+import { cn } from '@/lib/utils'
 
 // Types
 interface LandingClassicProps {
-  courses: any[];
-  totalCourses: number;
-  collections: any[];
-  gamificationData?: DashboardData | null;
-  trailData: any;
-  isAuthenticated: boolean;
+  courses: any[]
+  totalCourses: number
+  collections: any[]
+  gamificationData?: DashboardData | null
+  trailData: any
+  isAuthenticated: boolean
 }
 
 interface EmptyStateProps {
-  t: any;
+  t: any
 }
 
 interface GridProps {
-  collections: any[];
+  collections: any[]
 }
 
 // Empty State Components
@@ -41,10 +41,10 @@ const EmptyState = ({
   description,
   className,
 }: {
-  icon: React.ElementType;
-  title: string;
-  description: React.ReactNode;
-  className?: string;
+  icon: React.ElementType
+  title: string
+  description: React.ReactNode
+  className?: string
 }) => (
   <div className={cn('col-span-full flex items-center justify-center py-16', className)}>
     <div className="max-w-md space-y-4 text-center">
@@ -57,7 +57,7 @@ const EmptyState = ({
       </div>
     </div>
   </div>
-);
+)
 
 const EmptyCollectionsState = ({ t }: EmptyStateProps) => (
   <EmptyState
@@ -65,7 +65,7 @@ const EmptyCollectionsState = ({ t }: EmptyStateProps) => (
     title={t('Collections.noContent')}
     description={t('Collections.noContentDescription')}
   />
-);
+)
 
 const EmptyCoursesState = ({ t }: EmptyStateProps) => (
   <EmptyState
@@ -73,7 +73,7 @@ const EmptyCoursesState = ({ t }: EmptyStateProps) => (
     title={t('Courses.noContent')}
     description={t('Courses.noContentDescription')}
   />
-);
+)
 
 // Collection Grid Component
 const CollectionGrid = ({ collections }: GridProps) => (
@@ -87,18 +87,23 @@ const CollectionGrid = ({ collections }: GridProps) => (
       </div>
     ))}
   </div>
-);
+)
 
 // Section Header Component
-const SectionHeader = ({ title, type, action }: { title: string; type: 'cou' | 'col'; action?: React.ReactNode }) => (
+const SectionHeader = ({
+  title,
+  type,
+  action,
+}: {
+  title: string
+  type: 'cou' | 'col'
+  action?: React.ReactNode
+}) => (
   <div className="flex items-center justify-between gap-4">
-    <TypeOfContentTitle
-      title={title}
-      type={type}
-    />
+    <TypeOfContentTitle title={title} type={type} />
     {action && <div className="flex-shrink-0">{action}</div>}
   </div>
-);
+)
 
 // Main Component
 const LandingClassic = async ({
@@ -109,12 +114,12 @@ const LandingClassic = async ({
   trailData,
   isAuthenticated,
 }: LandingClassicProps) => {
-  const t = await getTranslations('HomePage');
-  const gamificationProfile = gamificationData?.profile;
-  const userRank = gamificationData?.user_rank;
+  const t = await getTranslations('HomePage')
+  const gamificationProfile = gamificationData?.profile
+  const userRank = gamificationData?.user_rank
 
-  const hasCourses = courses.length > 0 || totalCourses > 0;
-  const hasCollections = collections.length > 0;
+  const hasCourses = courses.length > 0 || totalCourses > 0
+  const hasCollections = collections.length > 0
 
   return (
     <GamificationProvider initialData={{ dashboard: gamificationData }}>
@@ -125,10 +130,7 @@ const LandingClassic = async ({
             {/* Gamification Hero Section */}
             {gamificationProfile && (
               <section className="animate-in fade-in slide-in-from-top-4 duration-500">
-                <HeroSection
-                  profile={gamificationProfile}
-                  userRank={userRank}
-                />
+                <HeroSection profile={gamificationProfile} userRank={userRank} />
               </section>
             )}
 
@@ -177,14 +179,18 @@ const LandingClassic = async ({
               />
 
               <div className="min-h-[200px]">
-                {hasCollections ? <CollectionGrid collections={collections} /> : <EmptyCollectionsState t={t} />}
+                {hasCollections ? (
+                  <CollectionGrid collections={collections} />
+                ) : (
+                  <EmptyCollectionsState t={t} />
+                )}
               </div>
             </section>
           </div>
         </GeneralWrapper>
       </div>
     </GamificationProvider>
-  );
-};
+  )
+}
 
-export default LandingClassic;
+export default LandingClassic

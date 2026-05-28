@@ -1,32 +1,32 @@
-import ScenariosExtension from './ScenariosExtension';
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
-import { nodeView } from '@components/Objects/Editor/core';
+import ScenariosExtension from './ScenariosExtension'
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
+import { nodeView } from '@components/Objects/Editor/core'
 
 export interface ScenarioOption {
-  id: string;
-  text: string;
-  nextScenarioId: string | null;
+  id: string
+  text: string
+  nextScenarioId: string | null
 }
 
 export interface Scenario {
-  id: string;
-  text: string;
-  imageUrl?: string;
-  options: ScenarioOption[];
+  id: string
+  text: string
+  imageUrl?: string
+  options: ScenarioOption[]
 }
 
 export interface ScenarioAttrs {
-  title: string;
-  scenarios: Scenario[];
-  currentScenarioId: string;
+  title: string
+  scenarios: Scenario[]
+  currentScenarioId: string
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     scenarios: {
-      insertScenarios: () => ReturnType;
-    };
+      insertScenarios: () => ReturnType
+    }
   }
 }
 
@@ -55,7 +55,7 @@ export default Node.create({
         // from the node view. Use '1' as a neutral placeholder.
         default: '1',
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -63,11 +63,11 @@ export default Node.create({
       {
         tag: 'scenarios-block',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['scenarios-block', mergeAttributes(HTMLAttributes)];
+    return ['scenarios-block', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -76,10 +76,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return nodeView(ScenariosExtension);
+    return nodeView(ScenariosExtension)
   },
-});
+})

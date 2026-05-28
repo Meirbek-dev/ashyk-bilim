@@ -1,5 +1,5 @@
-import { getTheme, THEME_CACHE_STORAGE_KEY, THEME_MODE_STORAGE_KEY } from '@/lib/themes';
-import type { Theme } from '@/lib/themes';
+import { getTheme, THEME_CACHE_STORAGE_KEY, THEME_MODE_STORAGE_KEY } from '@/lib/themes'
+import type { Theme } from '@/lib/themes'
 import {
   GOOGLE_FONT_QUERY_BY_FAMILY,
   GOOGLE_FONTS_ASSET_ORIGIN,
@@ -8,22 +8,22 @@ import {
   THEME_FONT_FAMILIES_ATTRIBUTE,
   THEME_FONT_LINK_ATTRIBUTE,
   THEME_FONT_TOKENS,
-} from '@/lib/theme-fonts';
+} from '@/lib/theme-fonts'
 
 function safeJson(value: unknown): string {
-  const json = JSON.stringify(value);
-  return json === undefined ? 'undefined' : json.replace(/</g, '\\u003c');
+  const json = JSON.stringify(value)
+  return json === undefined ? 'undefined' : json.replace(/</g, '\\u003c')
 }
 
 interface ThemeScriptProps {
-  initialTheme: Theme;
+  initialTheme: Theme
 }
 
 export function ThemeScript({ initialTheme }: ThemeScriptProps) {
   const defaultTokensByMode = {
     light: getTheme(initialTheme.name, 'light').tokens,
     dark: getTheme(initialTheme.name, 'dark').tokens,
-  };
+  }
 
   const scriptContent = `
     (function() {
@@ -33,7 +33,7 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
       var cacheStorageKey = ${safeJson(THEME_CACHE_STORAGE_KEY)};
       var defaultTokensByMode = ${safeJson(defaultTokensByMode)};
       var fontTokens = ${safeJson(THEME_FONT_TOKENS)};
-      var systemFonts = ${safeJson(Object.fromEntries(SYSTEM_FONT_FAMILY_KEYS.map((family) => [family, true])))};
+      var systemFonts = ${safeJson(Object.fromEntries(SYSTEM_FONT_FAMILY_KEYS.map(family => [family, true])))};
       var googleFontQueries = ${safeJson(GOOGLE_FONT_QUERY_BY_FAMILY)};
       var googleFontsStylesheetOrigin = ${safeJson(GOOGLE_FONTS_STYLESHEET_ORIGIN)};
       var googleFontsAssetOrigin = ${safeJson(GOOGLE_FONTS_ASSET_ORIGIN)};
@@ -233,12 +233,7 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
         console.warn("Theme font initialization failed:", error);
       }
     })();
-  `;
+  `
 
-  return (
-    <script
-      dangerouslySetInnerHTML={{ __html: scriptContent }}
-      suppressHydrationWarning
-    />
-  );
+  return <script dangerouslySetInnerHTML={{ __html: scriptContent }} suppressHydrationWarning />
 }

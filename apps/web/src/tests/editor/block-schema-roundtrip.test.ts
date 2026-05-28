@@ -1,18 +1,18 @@
-import { getSchema } from '@tiptap/core';
-import { Node as PMNode } from '@tiptap/pm/model';
-import { describe, expect, it } from 'vitest';
+import { getSchema } from '@tiptap/core'
+import { Node as PMNode } from '@tiptap/pm/model'
+import { describe, expect, it } from 'vitest'
 
-import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core';
+import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core'
 
 const schema = getSchema(
   createAuthoringEditorExtensions({
     activity_uuid: 'activity_123',
     name: 'Schema activity',
   }),
-);
+)
 
 function roundTrip(json: object): object {
-  return PMNode.fromJSON(schema, json).toJSON();
+  return PMNode.fromJSON(schema, json).toJSON()
 }
 
 const serializationCases: Array<{ title: string; doc: object }> = [
@@ -23,7 +23,12 @@ const serializationCases: Array<{ title: string; doc: object }> = [
       content: [
         {
           type: 'calloutInfo',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Remember this.' }] }],
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Remember this.' }],
+            },
+          ],
         },
       ],
     },
@@ -60,7 +65,12 @@ const serializationCases: Array<{ title: string; doc: object }> = [
       content: [
         {
           type: 'button',
-          attrs: { emoji: '🔗', link: 'https://example.com', color: 'blue', alignment: 'left' },
+          attrs: {
+            emoji: '🔗',
+            link: 'https://example.com',
+            color: 'blue',
+            alignment: 'left',
+          },
           content: [{ type: 'text', text: 'Visit site' }],
         },
       ],
@@ -126,7 +136,12 @@ const serializationCases: Array<{ title: string; doc: object }> = [
     title: 'math equation',
     doc: {
       type: 'doc',
-      content: [{ type: 'blockMathEquation', attrs: { math_equation: 'x^2 + y^2 = z^2', html: '' } }],
+      content: [
+        {
+          type: 'blockMathEquation',
+          attrs: { math_equation: 'x^2 + y^2 = z^2', html: '' },
+        },
+      ],
     },
   },
   {
@@ -235,12 +250,12 @@ const serializationCases: Array<{ title: string; doc: object }> = [
       ],
     },
   },
-];
+]
 
 describe('custom block schema round-trip', () => {
   for (const testCase of serializationCases) {
     it(`preserves ${testCase.title}`, () => {
-      expect(roundTrip(testCase.doc)).toEqual(testCase.doc);
-    });
+      expect(roundTrip(testCase.doc)).toEqual(testCase.doc)
+    })
   }
-});
+})

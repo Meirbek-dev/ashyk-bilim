@@ -1,36 +1,36 @@
-'use client';
+'use client'
 
-import { useCallback, useMemo, useRef } from 'react';
-import Editor from '@monaco-editor/react';
-import type { OnChange, OnMount } from '@monaco-editor/react';
+import { useCallback, useMemo, useRef } from 'react'
+import Editor from '@monaco-editor/react'
+import type { OnChange, OnMount } from '@monaco-editor/react'
 
-import { useTheme } from '@/components/providers/theme-provider';
-import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/providers/theme-provider'
+import { cn } from '@/lib/utils'
 
 export interface Language {
-  id: number;
-  name: string;
-  monacoLanguage?: string;
+  id: number
+  name: string
+  monacoLanguage?: string
 }
 
 function getMonacoLanguage(_languageId: number): string {
-  return 'plaintext';
+  return 'plaintext'
 }
 
 interface CodeEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  languageId: number;
-  monacoLanguage?: string;
-  readOnly?: boolean;
-  height?: string | number;
-  className?: string;
-  onMount?: OnMount;
-  options?: Record<string, unknown>;
-  readOnlyMessage?: string;
+  value: string
+  onChange: (value: string) => void
+  languageId: number
+  monacoLanguage?: string
+  readOnly?: boolean
+  height?: string | number
+  className?: string
+  onMount?: OnMount
+  options?: Record<string, unknown>
+  readOnlyMessage?: string
 }
 
-const DEFAULT_OPTIONS = {};
+const DEFAULT_OPTIONS = {}
 
 export function CodeEditor({
   value,
@@ -44,23 +44,23 @@ export function CodeEditor({
   options = DEFAULT_OPTIONS,
   readOnlyMessage,
 }: CodeEditorProps) {
-  const { resolvedTheme } = useTheme();
-  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const { resolvedTheme } = useTheme()
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
 
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
-      editorRef.current = editor;
-      onMount?.(editor, monaco);
+      editorRef.current = editor
+      onMount?.(editor, monaco)
     },
     [onMount],
-  );
+  )
 
   const handleChange: OnChange = useCallback(
-    (newValue) => {
-      onChange(newValue || '');
+    newValue => {
+      onChange(newValue || '')
     },
     [onChange],
-  );
+  )
 
   const editorOptions = useMemo(
     () => ({
@@ -85,7 +85,7 @@ export function CodeEditor({
       ...options,
     }),
     [readOnly, options, readOnlyMessage],
-  );
+  )
 
   return (
     <div className={cn('relative overflow-hidden rounded-lg border', className)}>
@@ -105,14 +105,16 @@ export function CodeEditor({
         loading={
           <div
             className="bg-muted flex animate-pulse items-center justify-center rounded-lg"
-            style={{ height: typeof height === 'number' ? `${height}px` : height }}
+            style={{
+              height: typeof height === 'number' ? `${height}px` : height,
+            }}
           >
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
           </div>
         }
       />
     </div>
-  );
+  )
 }
 
-export default CodeEditor;
+export default CodeEditor

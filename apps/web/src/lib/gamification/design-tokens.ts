@@ -23,7 +23,7 @@ export const spacing = {
     md: 'gap-3',
     lg: 'gap-4',
   },
-} as const;
+} as const
 
 // ============================================
 // ANIMATIONS
@@ -46,7 +46,7 @@ export const animations = {
     slow: 'transition-all duration-300 ease-in-out',
     smooth: 'transition-all duration-200 cubic-bezier(0.4, 0, 0.2, 1)',
   },
-} as const;
+} as const
 
 // ============================================
 // COLORS (Semantic + Accessibility)
@@ -86,7 +86,7 @@ export const colors = {
     25: 'text-orange-500',
     50: 'text-red-500',
   },
-} as const;
+} as const
 
 // ============================================
 // SHADOWS & EFFECTS
@@ -102,18 +102,18 @@ export const effects = {
     md: 'backdrop-blur-md',
     lg: 'backdrop-blur-lg',
   },
-} as const;
+} as const
 
 // ============================================
 // SIZES
 // ============================================
 export const sizes = {
   avatar: {
-    'xs': 'h-6 w-6',
-    'sm': 'h-8 w-8',
-    'md': 'h-10 w-10',
-    'lg': 'h-12 w-12',
-    'xl': 'h-16 w-16',
+    xs: 'h-6 w-6',
+    sm: 'h-8 w-8',
+    md: 'h-10 w-10',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16',
     '2xl': 'h-20 w-20',
     '3xl': 'h-32 w-32',
   },
@@ -129,7 +129,7 @@ export const sizes = {
     md: 'px-3 py-1 text-sm',
     lg: 'px-4 py-1.5 text-base',
   },
-} as const;
+} as const
 
 // ============================================
 // FRAMER MOTION VARIANTS
@@ -168,7 +168,7 @@ export const motionVariants = {
     },
     exit: { opacity: 0, scale: 0.8 },
   },
-} as const;
+} as const
 
 // ============================================
 // NOTIFICATION POSITIONS
@@ -180,4 +180,4 @@ export const notificationPositions = {
   'bottom-left': 'bottom-4 left-4',
   'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
   'bottom-right': 'bottom-4 right-4',
-} as const;
+} as const

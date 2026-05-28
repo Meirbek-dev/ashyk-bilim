@@ -1,33 +1,37 @@
-'use client';
+'use client'
 
-import type { Editor } from '@tiptap/react';
-import { useTiptap } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { Bold, Code, Italic, Link2, Strikethrough, ChevronDown } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
+import type { Editor } from '@tiptap/react'
+import { useTiptap } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { Bold, Code, Italic, Link2, Strikethrough, ChevronDown } from 'lucide-react'
+import { Toggle } from '@/components/ui/toggle'
+import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
-import LinkInputTooltip from '../Toolbar/LinkInputTooltip';
+} from '@/components/ui/dropdown-menu'
+import { useState } from 'react'
+import LinkInputTooltip from '../Toolbar/LinkInputTooltip'
 
 // BubbleToolbar renders the inline formatting controls that appear inside the
 // BubbleMenu wrapper in AuthoringEditor. It accesses the editor via useTiptap()
 // rather than receiving it as a prop (Requirement 1.1, 1.5).
 export function BubbleToolbar() {
-  const { editor } = useTiptap();
-  const t = useTranslations('DashPage.Editor.Toolbar');
-  const [showLinkInput, setShowLinkInput] = useState(false);
+  const { editor } = useTiptap()
+  const t = useTranslations('DashPage.Editor.Toolbar')
+  const [showLinkInput, setShowLinkInput] = useState(false)
 
   const handleLinkSave = (url: string) => {
-    editor.chain().focus().setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run();
-    setShowLinkInput(false);
-  };
+    editor
+      .chain()
+      .focus()
+      .setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' })
+      .run()
+    setShowLinkInput(false)
+  }
 
   return (
     <>
@@ -35,25 +39,17 @@ export function BubbleToolbar() {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              className="h-7 gap-0.5 px-1.5 text-xs"
-            >
+            <Button variant="ghost" size="sm" type="button" className="h-7 gap-0.5 px-1.5 text-xs">
               <span className="font-medium">{getActiveBlockLabel(editor, t)}</span>
               <ChevronDown className="size-3 opacity-60" />
             </Button>
           }
         />
-        <DropdownMenuContent
-          side="bottom"
-          align="start"
-        >
+        <DropdownMenuContent side="bottom" align="start">
           <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>
             {t('paragraph')}
           </DropdownMenuItem>
-          {([1, 2, 3] as const).map((level) => (
+          {([1, 2, 3] as const).map(level => (
             <DropdownMenuItem
               key={level}
               onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
@@ -73,10 +69,7 @@ export function BubbleToolbar() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Separator
-        orientation="vertical"
-        className="mx-0.5 h-4"
-      />
+      <Separator orientation="vertical" className="mx-0.5 h-4" />
 
       {/* Inline marks */}
       <Toggle
@@ -116,23 +109,20 @@ export function BubbleToolbar() {
         <Code className="size-3.5" />
       </Toggle>
 
-      <Separator
-        orientation="vertical"
-        className="mx-0.5 h-4"
-      />
+      <Separator orientation="vertical" className="mx-0.5 h-4" />
 
       {/* Link */}
       <div className="relative">
         <Toggle
           size="sm"
           pressed={editor.isActive('link')}
-          onPressedChange={(pressed) => {
+          onPressedChange={pressed => {
             if (!pressed && editor.isActive('link')) {
-              editor.chain().focus().unsetLink().run();
-              setShowLinkInput(false);
-              return;
+              editor.chain().focus().unsetLink().run()
+              setShowLinkInput(false)
+              return
             }
-            setShowLinkInput(true);
+            setShowLinkInput(true)
           }}
           aria-label={t('link')}
           className="h-7 w-7"
@@ -148,15 +138,15 @@ export function BubbleToolbar() {
         ) : null}
       </div>
     </>
-  );
+  )
 }
 
 function getActiveBlockLabel(editor: Editor, t: ReturnType<typeof useTranslations>): string {
-  if (editor.isActive('heading', { level: 1 })) return t('headingLevel', { level: 1 });
-  if (editor.isActive('heading', { level: 2 })) return t('headingLevel', { level: 2 });
-  if (editor.isActive('heading', { level: 3 })) return t('headingLevel', { level: 3 });
-  if (editor.isActive('bulletList')) return t('listOptions.bulletList');
-  if (editor.isActive('orderedList')) return t('listOptions.orderedList');
-  if (editor.isActive('codeBlock')) return t('codeBlock');
-  return t('paragraph');
+  if (editor.isActive('heading', { level: 1 })) return t('headingLevel', { level: 1 })
+  if (editor.isActive('heading', { level: 2 })) return t('headingLevel', { level: 2 })
+  if (editor.isActive('heading', { level: 3 })) return t('headingLevel', { level: 3 })
+  if (editor.isActive('bulletList')) return t('listOptions.bulletList')
+  if (editor.isActive('orderedList')) return t('listOptions.orderedList')
+  if (editor.isActive('codeBlock')) return t('codeBlock')
+  return t('paragraph')
 }

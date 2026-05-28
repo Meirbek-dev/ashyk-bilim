@@ -1,20 +1,20 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import WarningCalloutComponent from './WarningCalloutComponent';
+import WarningCalloutComponent from './WarningCalloutComponent'
 
 export interface WarningCalloutAttrs {
-  dismissible?: boolean;
-  variant?: 'default' | 'filled' | 'outlined';
-  size?: 'sm' | 'md' | 'lg';
+  dismissible?: boolean
+  variant?: 'default' | 'filled' | 'outlined'
+  size?: 'sm' | 'md' | 'lg'
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     calloutWarning: {
-      insertWarningCallout: () => ReturnType;
-    };
+      insertWarningCallout: () => ReturnType
+    }
   }
 }
 
@@ -29,11 +29,11 @@ export default Node.create({
       {
         tag: 'callout-warning',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['callout-warning', mergeAttributes(HTMLAttributes), 0];
+    return ['callout-warning', mergeAttributes(HTMLAttributes), 0]
   },
 
   addCommands() {
@@ -45,12 +45,12 @@ export default Node.create({
             type: this.name,
             content: [{ type: 'paragraph' }],
           }),
-    };
+    }
   },
 
   addNodeView() {
     return ReactNodeViewRenderer(WarningCalloutComponent, {
       contentDOMElementTag: 'div',
-    });
+    })
   },
-});
+})

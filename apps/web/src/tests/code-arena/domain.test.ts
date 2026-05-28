@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 
-import type { AssessmentItem } from '@/features/assessments/domain/items';
-import type { CodeChallengeSettings, TestCaseResult } from '@/services/courses/code-challenges';
-import { codeItemToProblem } from '@/features/code-arena/domain/codeChallenge.mappers';
+import type { AssessmentItem } from '@/features/assessments/domain/items'
+import type { CodeChallengeSettings, TestCaseResult } from '@/services/courses/code-challenges'
+import { codeItemToProblem } from '@/features/code-arena/domain/codeChallenge.mappers'
 import {
   firstFailingResult,
   verdictFromResults,
   verdictFromRun,
   verdictLabel,
-} from '@/features/code-arena/domain/verdicts';
+} from '@/features/code-arena/domain/verdicts'
 
 describe('code arena domain', () => {
   it('maps canonical code items into a problem model', () => {
@@ -32,7 +32,7 @@ describe('code arena domain', () => {
         reference_solutions: { 71: 'print(int(input()) * 2)' },
         tests: [],
       },
-    };
+    }
     const settings = {
       uuid: 'assessment_1',
       difficulty: 'EASY',
@@ -41,7 +41,7 @@ describe('code arena domain', () => {
       memory_limit: 256,
       grading_strategy: 'PARTIAL_CREDIT',
       allowed_languages: [71],
-    } satisfies CodeChallengeSettings;
+    } satisfies CodeChallengeSettings
 
     expect(codeItemToProblem({ activityUuid: 'activity_1', item, settings })).toMatchObject({
       activityUuid: 'activity_1',
@@ -52,21 +52,31 @@ describe('code arena domain', () => {
       outputSpec: 'The doubled value.',
       constraints: ['1 <= n <= 100'],
       difficulty: 'EASY',
-    });
-  });
+    })
+  })
 
   it('derives verdicts from run status and result rows', () => {
-    expect(verdictFromRun('ACCEPTED', 3, 3)).toBe('ACCEPTED');
-    expect(verdictFromRun('ACCEPTED', 2, 3)).toBe('WRONG_ANSWER');
-    expect(verdictFromRun('COMPILE_ERROR', 0, 1)).toBe('COMPILE_ERROR');
-    expect(verdictLabel('TIME_LIMIT')).toBe('Time Limit');
+    expect(verdictFromRun('ACCEPTED', 3, 3)).toBe('ACCEPTED')
+    expect(verdictFromRun('ACCEPTED', 2, 3)).toBe('WRONG_ANSWER')
+    expect(verdictFromRun('COMPILE_ERROR', 0, 1)).toBe('COMPILE_ERROR')
+    expect(verdictLabel('TIME_LIMIT')).toBe('Time Limit')
 
     const results: TestCaseResult[] = [
-      { test_case_id: 'a', status: 3, status_description: 'Accepted', passed: true },
-      { test_case_id: 'b', status: 4, status_description: 'WRONG_ANSWER', passed: false },
-    ];
+      {
+        test_case_id: 'a',
+        status: 3,
+        status_description: 'Accepted',
+        passed: true,
+      },
+      {
+        test_case_id: 'b',
+        status: 4,
+        status_description: 'WRONG_ANSWER',
+        passed: false,
+      },
+    ]
 
-    expect(verdictFromResults(results)).toBe('WRONG_ANSWER');
-    expect(firstFailingResult(results)?.test_case_id).toBe('b');
-  });
-});
+    expect(verdictFromResults(results)).toBe('WRONG_ANSWER')
+    expect(firstFailingResult(results)?.test_case_id).toBe('b')
+  })
+})

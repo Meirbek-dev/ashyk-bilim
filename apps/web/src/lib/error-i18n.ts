@@ -9,7 +9,8 @@
 export const ERROR_MESSAGES = {
   'ru-RU': {
     title: 'Что-то пошло не так',
-    description: 'Не удалось отобразить страницу. Вы можете повторить попытку или перезагрузить страницу, если ошибка повторится.',
+    description:
+      'Не удалось отобразить страницу. Вы можете повторить попытку или перезагрузить страницу, если ошибка повторится.',
     globalDescription: 'Произошла непредвиденная ошибка при загрузке страницы',
     error: 'Ошибка',
     errorId: 'Идентификатор ошибки:',
@@ -21,7 +22,8 @@ export const ERROR_MESSAGES = {
   },
   'en-US': {
     title: 'Something went wrong',
-    description: 'The page failed to render. You can retry, or reload if the error keeps returning.',
+    description:
+      'The page failed to render. You can retry, or reload if the error keeps returning.',
     globalDescription: 'An unexpected error occurred while loading the page',
     error: 'Error',
     errorId: 'Error ID:',
@@ -44,11 +46,11 @@ export const ERROR_MESSAGES = {
     retry: 'Қайталау',
     defaultError: 'Сұранысты дұрыс өңдеу мүмкін болмады. Қайталап көріңіз.',
   },
-} as const;
+} as const
 
-export type SupportedLocale = keyof typeof ERROR_MESSAGES;
+export type SupportedLocale = keyof typeof ERROR_MESSAGES
 
-const SUPPORTED_LOCALES = Object.keys(ERROR_MESSAGES) as SupportedLocale[];
+const SUPPORTED_LOCALES = Object.keys(ERROR_MESSAGES) as SupportedLocale[]
 
 /**
  * Detect the user's locale from the `NEXT_LOCALE` cookie, with a
@@ -58,19 +60,19 @@ const SUPPORTED_LOCALES = Object.keys(ERROR_MESSAGES) as SupportedLocale[];
  */
 export function detectLocale(): SupportedLocale {
   // 1. NEXT_LOCALE cookie (most reliable — set by next-intl middleware)
-  const cookieMatch = /NEXT_LOCALE=([^;]+)/.exec(document.cookie);
-  const cookieLocale = cookieMatch?.[1] as SupportedLocale | undefined;
+  const cookieMatch = /NEXT_LOCALE=([^;]+)/.exec(document.cookie)
+  const cookieLocale = cookieMatch?.[1] as SupportedLocale | undefined
   if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
-    return cookieLocale;
+    return cookieLocale
   }
 
   // 2. navigator.language (e.g. "ru", "en-US", "kk")
-  const navLang = navigator.language;
+  const navLang = navigator.language
   const navMatch = SUPPORTED_LOCALES.find(
-    (l) => l === navLang || l.startsWith(navLang) || navLang.startsWith(l.split('-')[0] ?? ''),
-  );
-  if (navMatch) return navMatch;
+    l => l === navLang || l.startsWith(navLang) || navLang.startsWith(l.split('-')[0] ?? ''),
+  )
+  if (navMatch) return navMatch
 
   // 3. Hard default
-  return 'ru-RU';
+  return 'ru-RU'
 }

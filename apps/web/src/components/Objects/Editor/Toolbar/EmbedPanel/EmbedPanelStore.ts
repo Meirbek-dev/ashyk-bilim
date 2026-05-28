@@ -1,21 +1,21 @@
-'use client';
+'use client'
 
-import type { RefObject } from 'react';
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+import type { RefObject } from 'react'
+import { create } from 'zustand'
+import { devtools } from 'zustand/middleware'
+import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
-export type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+export type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface EmbedPanelState {
-  isOpen: boolean;
-  mode: 'insert' | 'edit';
-  nodePos: number | null;
-  initialType: EmbedType | null;
-  initialUrl: string;
-  triggerRef: RefObject<HTMLButtonElement | null> | null;
+  isOpen: boolean
+  mode: 'insert' | 'edit'
+  nodePos: number | null
+  initialType: EmbedType | null
+  initialUrl: string
+  triggerRef: RefObject<HTMLButtonElement | null> | null
 }
 
 interface EmbedPanelActions {
@@ -24,7 +24,7 @@ interface EmbedPanelActions {
    * @param triggerRef - Ref to the button that triggered the panel, used to
    *   return focus on close (Requirement 12.6).
    */
-  open: (triggerRef: RefObject<HTMLButtonElement | null>) => void;
+  open: (triggerRef: RefObject<HTMLButtonElement | null>) => void
 
   /**
    * Open the panel in edit mode, pre-populated with the existing embed's
@@ -38,13 +38,13 @@ interface EmbedPanelActions {
     nodePos: number,
     attrs: { type: EmbedType; url: string },
     triggerRef: RefObject<HTMLButtonElement | null>,
-  ) => void;
+  ) => void
 
   /**
    * Close the panel and reset transient state (Requirements 3.6, 3.4).
    * Focus return to `triggerRef` is handled by the EmbedPanel component.
    */
-  close: () => void;
+  close: () => void
 }
 
 // ── Initial state ─────────────────────────────────────────────────────────────
@@ -56,16 +56,16 @@ const initialState: EmbedPanelState = {
   initialType: null,
   initialUrl: '',
   triggerRef: null,
-};
+}
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useEmbedPanelStore = create<EmbedPanelState & EmbedPanelActions>()(
   devtools(
-    (set) => ({
+    set => ({
       ...initialState,
 
-      open: (triggerRef) =>
+      open: triggerRef =>
         set(
           {
             isOpen: true,
@@ -107,4 +107,4 @@ export const useEmbedPanelStore = create<EmbedPanelState & EmbedPanelActions>()(
     }),
     { name: 'EmbedPanelStore', enabled: process.env.NODE_ENV === 'development' },
   ),
-);
+)

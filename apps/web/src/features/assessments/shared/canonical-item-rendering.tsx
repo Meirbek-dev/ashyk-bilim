@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Textarea } from '@/components/ui/textarea';
-import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
-import { normalizeFormItem } from '@/features/assessments/items/form';
-import { getItemKindModule } from '@/features/assessments/items/registry';
-import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items';
-import { MarkdownContent } from '@/features/content-markdown';
+import { useTranslations } from 'next-intl'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { Textarea } from '@/components/ui/textarea'
+import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
+import { normalizeFormItem } from '@/features/assessments/items/form'
+import { getItemKindModule } from '@/features/assessments/items/registry'
+import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items'
+import { MarkdownContent } from '@/features/content-markdown'
 
 export function CanonicalAttemptItem({
   item,
@@ -19,87 +19,74 @@ export function CanonicalAttemptItem({
   assessmentUuid,
   onChange,
 }: {
-  item: AssessmentItem;
-  answer: ItemAnswer | undefined;
-  disabled: boolean;
-  assessmentUuid: string;
-  onChange: (answer: ItemAnswer) => void;
+  item: AssessmentItem
+  answer: ItemAnswer | undefined
+  disabled: boolean
+  assessmentUuid: string
+  onChange: (answer: ItemAnswer) => void
 }) {
-  const { body } = item;
-  const t = useTranslations('Features.Assessments.Items');
+  const { body } = item
+  const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE');
-    const ChoiceAttempt = choiceModule.Attempt;
+    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const ChoiceAttempt = choiceModule.Attempt
     const choiceItem = {
       id: item.item_uuid,
       kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
       prompt: body.prompt,
       points: item.max_score,
-      options: body.options.map((option) => ({
+      options: body.options.map(option => ({
         id: option.id,
         text: option.text,
         isCorrect: option.is_correct,
       })),
-    };
+    }
     const choiceAnswer = body.multiple
       ? answer?.kind === 'CHOICE'
         ? answer.selected
         : []
       : answer?.kind === 'CHOICE'
         ? (answer.selected[0] ?? null)
-        : null;
+        : null
     return (
       <ChoiceAttempt
         item={choiceItem}
         answer={choiceAnswer}
         disabled={disabled}
-        onAnswerChange={(nextAnswer) => {
+        onAnswerChange={nextAnswer => {
           const selected = Array.isArray(nextAnswer)
             ? nextAnswer.map(String)
             : nextAnswer === null || nextAnswer === undefined || nextAnswer === ''
               ? []
-              : [String(nextAnswer)];
-          onChange({ kind: 'CHOICE', selected });
+              : [String(nextAnswer)]
+          onChange({ kind: 'CHOICE', selected })
         }}
       />
-    );
+    )
   }
 
   if (body.kind === 'OPEN_TEXT') {
     return (
       <div className="space-y-3">
-        {body.prompt ? (
-          <MarkdownContent
-            content={body.prompt}
-            mode="prompt"
-          />
-        ) : null}
+        {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
         <Textarea
           value={answer?.kind === 'OPEN_TEXT' ? answer.text : ''}
           disabled={disabled}
           className="min-h-36"
-          onChange={(event) => onChange({ kind: 'OPEN_TEXT', text: event.target.value })}
+          onChange={event => onChange({ kind: 'OPEN_TEXT', text: event.target.value })}
         />
       </div>
-    );
+    )
   }
 
   if (body.kind === 'FORM') {
-    const currentValues = answer?.kind === 'FORM' ? answer.values : {};
+    const currentValues = answer?.kind === 'FORM' ? answer.values : {}
     return (
       <div className="space-y-4">
-        {body.prompt ? (
-          <MarkdownContent
-            content={body.prompt}
-            mode="prompt"
-          />
-        ) : null}
+        {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
         {body.fields.map((field, fieldIndex) => (
-          <div
-            key={field.id}
-            className="space-y-2"
-          >
+          <div key={field.id} className="space-y-2">
             <Label htmlFor={`${item.item_uuid}-${field.id}`}>
               {field.label || `Field ${fieldIndex + 1}`}
               {field.required ? ' *' : ''}
@@ -110,7 +97,7 @@ export function CanonicalAttemptItem({
                 value={currentValues[field.id] ?? ''}
                 disabled={disabled}
                 className="min-h-28"
-                onChange={(event) =>
+                onChange={event =>
                   onChange({
                     kind: 'FORM',
                     values: {
@@ -123,10 +110,16 @@ export function CanonicalAttemptItem({
             ) : (
               <Input
                 id={`${item.item_uuid}-${field.id}`}
-                type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                type={
+                  field.field_type === 'number'
+                    ? 'number'
+                    : field.field_type === 'date'
+                      ? 'date'
+                      : 'text'
+                }
                 value={currentValues[field.id] ?? ''}
                 disabled={disabled}
-                onChange={(event) =>
+                onChange={event =>
                   onChange({
                     kind: 'FORM',
                     values: {
@@ -140,20 +133,20 @@ export function CanonicalAttemptItem({
           </div>
         ))}
       </div>
-    );
+    )
   }
 
   if (body.kind === 'MATCHING') {
-    const rightOptions = body.pairs.map((pair) => pair.right);
+    const rightOptions = body.pairs.map(pair => pair.right)
     const currentMatches = new Map<string, string>(
-      answer?.kind === 'MATCHING' ? answer.matches.map((pair) => [pair.left, pair.right]) : [],
-    );
+      answer?.kind === 'MATCHING' ? answer.matches.map(pair => [pair.left, pair.right]) : [],
+    )
     const updateMatch = (left: string, right: string) => {
-      const next = new Map(currentMatches);
+      const next = new Map(currentMatches)
       if (right) {
-        next.set(left, right);
+        next.set(left, right)
       } else {
-        next.delete(left);
+        next.delete(left)
       }
       onChange({
         kind: 'MATCHING',
@@ -163,17 +156,12 @@ export function CanonicalAttemptItem({
             right: matchRight,
           }),
         ),
-      });
-    };
+      })
+    }
 
     return (
       <div className="space-y-3">
-        {body.prompt ? (
-          <MarkdownContent
-            content={body.prompt}
-            mode="prompt"
-          />
-        ) : null}
+        {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
         {body.pairs.map((pair, pairIndex) => (
           <div
             key={`${pair.left}-${pairIndex}`}
@@ -183,15 +171,12 @@ export function CanonicalAttemptItem({
             <NativeSelect
               value={currentMatches.get(pair.left) ?? ''}
               disabled={disabled}
-              onChange={(event) => updateMatch(pair.left, event.target.value)}
+              onChange={event => updateMatch(pair.left, event.target.value)}
               className="sm:max-w-xs"
             >
               <NativeSelectOption value="">{t('Matching.selectMatch')}</NativeSelectOption>
-              {rightOptions.map((option) => (
-                <NativeSelectOption
-                  key={option}
-                  value={option}
-                >
+              {rightOptions.map(option => (
+                <NativeSelectOption key={option} value={option}>
                   {option}
                 </NativeSelectOption>
               ))}
@@ -199,29 +184,29 @@ export function CanonicalAttemptItem({
           </div>
         ))}
       </div>
-    );
+    )
   }
 
   if (body.kind === 'CODE') {
     const currentAnswer =
       answer?.kind === 'CODE'
         ? answer
-        : { kind: 'CODE' as const, language: body.languages[0] ?? 0, source: '', latest_run: undefined };
+        : {
+            kind: 'CODE' as const,
+            language: body.languages[0] ?? 0,
+            source: '',
+            latest_run: undefined,
+          }
     return (
       <div className="space-y-4">
-        {body.prompt ? (
-          <MarkdownContent
-            content={body.prompt}
-            mode="codeProblem"
-          />
-        ) : null}
+        {body.prompt ? <MarkdownContent content={body.prompt} mode="codeProblem" /> : null}
         <div className="space-y-2">
           <Label htmlFor={`${item.item_uuid}-language`}>{t('Code.language')}</Label>
           <NativeSelect
             id={`${item.item_uuid}-language`}
             value={String(currentAnswer.language)}
             disabled={disabled}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 kind: 'CODE',
                 language: Number(event.target.value),
@@ -230,11 +215,8 @@ export function CanonicalAttemptItem({
               })
             }
           >
-            {body.languages.map((language) => (
-              <NativeSelectOption
-                key={language}
-                value={String(language)}
-              >
+            {body.languages.map(language => (
+              <NativeSelectOption key={language} value={String(language)}>
                 {t('Code.languageValue', { language })}
               </NativeSelectOption>
             ))}
@@ -244,7 +226,7 @@ export function CanonicalAttemptItem({
           value={currentAnswer.source}
           disabled={disabled}
           className="min-h-[20rem] font-mono text-sm"
-          onChange={(event) =>
+          onChange={event =>
             onChange({
               kind: 'CODE',
               language: currentAnswer.language,
@@ -254,55 +236,52 @@ export function CanonicalAttemptItem({
           }
         />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('unsupportedItem')}</div>
-  );
+    <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+      {t('unsupportedItem')}
+    </div>
+  )
 }
 
 export function CanonicalReviewAnswer({
   item,
   answer,
 }: {
-  item: AssessmentItem;
-  answer: ItemAnswer | null | undefined;
+  item: AssessmentItem
+  answer: ItemAnswer | null | undefined
 }) {
-  const { body } = item;
-  const t = useTranslations('Features.Assessments.Items');
+  const { body } = item
+  const t = useTranslations('Features.Assessments.Items')
 
   if (body.kind === 'CHOICE') {
-    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE');
-    const { ReviewDetail } = choiceModule;
+    const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE')
+    const { ReviewDetail } = choiceModule
     const reviewItem: ChoiceAttemptItem = {
       id: item.item_uuid,
       kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
       prompt: body.prompt,
       points: item.max_score,
-      options: body.options.map((option) => ({
+      options: body.options.map(option => ({
         id: option.id,
         text: option.text,
         isCorrect: option.is_correct,
       })),
-    };
+    }
     const reviewAnswer: ChoiceAnswer = body.multiple
       ? answer?.kind === 'CHOICE'
         ? answer.selected
         : []
       : answer?.kind === 'CHOICE'
         ? (answer.selected[0] ?? null)
-        : null;
-    return (
-      <ReviewDetail
-        item={reviewItem}
-        answer={reviewAnswer}
-      />
-    );
+        : null
+    return <ReviewDetail item={reviewItem} answer={reviewAnswer} />
   }
 
   if (body.kind === 'OPEN_TEXT') {
-    const { ReviewDetail } = getItemKindModule('OPEN_TEXT');
+    const { ReviewDetail } = getItemKindModule('OPEN_TEXT')
     return (
       <div className="space-y-3">
         <ReviewDetail
@@ -312,18 +291,15 @@ export function CanonicalReviewAnswer({
         {body.rubric ? (
           <div className="rounded-md border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-950">
             <div className="mb-1 font-medium">{t('OpenText.rubricGuidance')}</div>
-            <MarkdownContent
-              content={body.rubric}
-              mode="compactRichText"
-            />
+            <MarkdownContent content={body.rubric} mode="compactRichText" />
           </div>
         ) : null}
       </div>
-    );
+    )
   }
 
   if (body.kind === 'FORM') {
-    const { ReviewDetail } = getItemKindModule('FORM');
+    const { ReviewDetail } = getItemKindModule('FORM')
     return (
       <ReviewDetail
         item={normalizeFormItem({
@@ -331,31 +307,28 @@ export function CanonicalReviewAnswer({
             {
               questionUUID: item.item_uuid,
               questionText: body.prompt,
-              blanks: body.fields.map((field) => ({
+              blanks: body.fields.map(field => ({
                 blankUUID: field.id,
                 placeholder: field.label,
               })),
             },
           ],
         })}
-        answer={{ form_data: { answers: answer?.kind === 'FORM' ? answer.values : {} } }}
+        answer={{
+          form_data: { answers: answer?.kind === 'FORM' ? answer.values : {} },
+        }}
       />
-    );
+    )
   }
 
   if (body.kind === 'MATCHING') {
-    const { ReviewDetail } = getItemKindModule('MATCHING');
-    return (
-      <ReviewDetail
-        item={body}
-        answer={answer?.kind === 'MATCHING' ? answer : null}
-      />
-    );
+    const { ReviewDetail } = getItemKindModule('MATCHING')
+    return <ReviewDetail item={body} answer={answer?.kind === 'MATCHING' ? answer : null} />
   }
 
   if (body.kind === 'CODE') {
-    const { ReviewDetail } = getItemKindModule('CODE');
-    return <ReviewDetail answer={answer?.kind === 'CODE' ? answer : null} />;
+    const { ReviewDetail } = getItemKindModule('CODE')
+    return <ReviewDetail answer={answer?.kind === 'CODE' ? answer : null} />
   }
 
   return (
@@ -367,5 +340,5 @@ export function CanonicalReviewAnswer({
         {JSON.stringify(answer ?? {}, null, 2)}
       </pre>
     </div>
-  );
+  )
 }

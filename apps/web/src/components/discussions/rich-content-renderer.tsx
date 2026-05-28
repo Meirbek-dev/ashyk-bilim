@@ -1,34 +1,36 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { renderEditorHtml } from '@components/Objects/Editor/core';
-import DOMPurify from 'dompurify';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react'
+import { renderEditorHtml } from '@components/Objects/Editor/core'
+import DOMPurify from 'dompurify'
+import { cn } from '@/lib/utils'
 
 interface RichContentRendererProps {
-  content: string;
-  className?: string;
+  content: string
+  className?: string
 }
 
 /** Resolve content: JSON string → HTML via Tiptap schema; raw HTML → pass through. */
 function resolveToHtml(content: string): string {
-  if (!content) return '';
+  if (!content) return ''
   try {
-    return renderEditorHtml(JSON.parse(content) as Record<string, unknown>, { preset: 'viewing' });
+    return renderEditorHtml(JSON.parse(content) as Record<string, unknown>, {
+      preset: 'viewing',
+    })
   } catch {
     // not JSON – treat as legacy HTML
   }
-  return content;
+  return content
 }
 
 export default function RichContentRenderer({ content, className = '' }: RichContentRendererProps) {
-  const [isMounted, setIsMounted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setIsMounted(true)
+  }, [])
 
-  const html = isMounted ? resolveToHtml(content) : '';
+  const html = isMounted ? resolveToHtml(content) : ''
 
   // Sanitize the HTML content to prevent XSS attacks
   const sanitizedContent =
@@ -76,7 +78,7 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
           ALLOWED_URI_REGEXP:
             /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data):|[^a-z]|[+.a-z-]+(?:[^+.:a-z-]|$))/i,
         })
-      : html;
+      : html
 
   return (
     <div
@@ -103,5 +105,5 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
       )}
       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
     />
-  );
+  )
 }

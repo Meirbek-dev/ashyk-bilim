@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import type { LandingSection } from '@/components/Dashboard/Pages/Platform/EditLanding/landing_types';
-import { LoginBonusHandler } from '@/app/_shared/withmenu/_components/LoginBonusHandler';
-import { GamificationProvider } from '@/components/Contexts/GamificationContext';
-import { usePlatformCourses } from '@/features/platform/hooks/usePlatform';
-import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail';
-import type { DashboardData } from '@/types/gamification';
-import UserAvatar from '@components/Objects/UserAvatar';
-import NextImage from '@components/ui/NextImage';
-import { useTranslations } from 'next-intl';
+import type { LandingSection } from '@/components/Dashboard/Pages/Platform/EditLanding/landing_types'
+import { LoginBonusHandler } from '@/app/_shared/withmenu/_components/LoginBonusHandler'
+import { GamificationProvider } from '@/components/Contexts/GamificationContext'
+import { usePlatformCourses } from '@/features/platform/hooks/usePlatform'
+import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
+import type { DashboardData } from '@/types/gamification'
+import UserAvatar from '@components/Objects/UserAvatar'
+import NextImage from '@components/ui/NextImage'
+import { useTranslations } from 'next-intl'
 
 interface LandingCustomProps {
   landing: {
-    sections: LandingSection[];
-    enabled: boolean;
-  };
-  gamificationData?: DashboardData | null;
+    sections: LandingSection[]
+    enabled: boolean
+  }
+  gamificationData?: DashboardData | null
 }
 
 const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
-  const t = useTranslations('LandingCustom');
+  const t = useTranslations('LandingCustom')
 
   // Fetch all courses for the platform
-  const { data: coursesData } = usePlatformCourses();
-  const allCourses = coursesData?.courses;
+  const { data: coursesData } = usePlatformCourses()
+  const allCourses = coursesData?.courses
 
   const renderSection = (section: LandingSection) => {
     switch (section.type) {
@@ -119,21 +119,20 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
               </div>
             </div>
           </div>
-        );
+        )
       }
       case 'text-and-image': {
         return (
-          <div
-            key={`text-image-${section.title}`}
-            className="mx-2 w-full py-16 sm:mx-4 lg:mx-16"
-          >
+          <div key={`text-image-${section.title}`} className="mx-2 w-full py-16 sm:mx-4 lg:mx-16">
             <div
               className={`soft-shadow bg-card flex flex-col items-center gap-8 rounded-xl p-6 md:flex-row md:gap-12 md:p-8 lg:p-12 ${
                 section.flow === 'right' ? 'md:flex-row-reverse' : ''
               }`}
             >
               <div className="w-full max-w-2xl flex-1">
-                <h2 className="text-foreground mb-4 text-2xl font-bold tracking-tight md:text-3xl">{section.title}</h2>
+                <h2 className="text-foreground mb-4 text-2xl font-bold tracking-tight md:text-3xl">
+                  {section.title}
+                </h2>
                 <div className="prose prose-lg prose-gray max-w-none">
                   <p className="text-base leading-relaxed whitespace-pre-line text-gray-600 md:text-lg">
                     {section.text}
@@ -172,24 +171,20 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
               </div>
             </div>
           </div>
-        );
+        )
       }
       case 'logos': {
         return (
-          <div
-            key={`logos-${section.type}`}
-            className="mx-2 w-full py-16 sm:mx-4 lg:mx-16"
-          >
+          <div key={`logos-${section.type}`} className="mx-2 w-full py-16 sm:mx-4 lg:mx-16">
             {section.title ? (
-              <h2 className="text-foreground mb-16 text-left text-2xl font-bold md:text-3xl">{section.title}</h2>
+              <h2 className="text-foreground mb-16 text-left text-2xl font-bold md:text-3xl">
+                {section.title}
+              </h2>
             ) : null}
             <div className="flex w-full justify-center">
               <div className="flex max-w-7xl flex-wrap justify-center gap-16">
                 {section.logos.map((logo, index) => (
-                  <div
-                    key={index}
-                    className="flex h-[120px] w-[220px] items-center justify-center"
-                  >
+                  <div key={index} className="flex h-[120px] w-[220px] items-center justify-center">
                     {logo.url && logo.url.trim() !== '' ? (
                       <NextImage
                         src={logo.url}
@@ -204,21 +199,17 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
               </div>
             </div>
           </div>
-        );
+        )
       }
       case 'people': {
         return (
-          <div
-            key={`people-${section.title}`}
-            className="mx-2 w-full py-16 sm:mx-4 lg:mx-16"
-          >
-            <h2 className="text-foreground mb-10 text-left text-2xl font-bold md:text-3xl">{section.title}</h2>
+          <div key={`people-${section.title}`} className="mx-2 w-full py-16 sm:mx-4 lg:mx-16">
+            <h2 className="text-foreground mb-10 text-left text-2xl font-bold md:text-3xl">
+              {section.title}
+            </h2>
             <div className="flex flex-wrap justify-center gap-x-20 gap-y-8">
               {section.people.map((person, index) => (
-                <div
-                  key={index}
-                  className="flex w-[140px] flex-col items-center"
-                >
+                <div key={index} className="flex w-[140px] flex-col items-center">
                   <div className="mb-4 h-24 w-24">
                     {person.username ? (
                       <UserAvatar
@@ -243,13 +234,15 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
                       </div>
                     )}
                   </div>
-                  <h3 className="text-foreground text-center text-lg font-semibold">{person.name}</h3>
+                  <h3 className="text-foreground text-center text-lg font-semibold">
+                    {person.name}
+                  </h3>
                   <p className="mt-1 text-center text-sm text-gray-600">{person.description}</p>
                 </div>
               ))}
             </div>
           </div>
-        );
+        )
       }
       case 'featured-courses': {
         if (!allCourses) {
@@ -258,50 +251,55 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
               key={`featured-courses-${section.title}`}
               className="mx-2 w-full py-16 sm:mx-4 lg:mx-16"
             >
-              <h2 className="text-foreground mb-6 text-left text-2xl font-bold md:text-3xl">{section.title}</h2>
+              <h2 className="text-foreground mb-6 text-left text-2xl font-bold md:text-3xl">
+                {section.title}
+              </h2>
               <div className="text-muted-foreground py-6 text-center">{t('loadingCourses')}</div>
             </div>
-          );
+          )
         }
 
-        const featuredCourses = allCourses.filter((course: any) => section.courses.includes(course.course_uuid));
+        const featuredCourses = allCourses.filter((course: any) =>
+          section.courses.includes(course.course_uuid),
+        )
 
         return (
           <div
             key={`featured-courses-${section.title}`}
             className="mx-2 w-full py-16 sm:mx-4 lg:mx-16"
           >
-            <h2 className="text-foreground mb-6 text-left text-2xl font-bold md:text-3xl">{section.title}</h2>
+            <h2 className="text-foreground mb-6 text-left text-2xl font-bold md:text-3xl">
+              {section.title}
+            </h2>
             <div className="grid w-full grid-cols-1 gap-6 pb-12 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {featuredCourses.map((course: any) => (
-                <div
-                  key={course.course_uuid}
-                  className="mx-auto w-full max-w-[300px]"
-                >
+                <div key={course.course_uuid} className="mx-auto w-full max-w-[300px]">
                   <CourseThumbnail course={course} />
                 </div>
               ))}
               {featuredCourses.length === 0 && (
-                <div className="text-muted-foreground col-span-full py-6 text-center">{t('noFeaturedCourses')}</div>
+                <div className="text-muted-foreground col-span-full py-6 text-center">
+                  {t('noFeaturedCourses')}
+                </div>
               )}
             </div>
           </div>
-        );
+        )
       }
       default: {
-        return null;
+        return null
       }
     }
-  };
+  }
 
   return (
     <GamificationProvider initialData={{ dashboard: gamificationData }}>
       <LoginBonusHandler />
       <div className="mx-auto flex h-full w-full max-w-(--breakpoint-2xl) flex-col items-center justify-between px-4 sm:px-6 lg:px-16">
-        {landing.sections.map((section) => renderSection(section))}
+        {landing.sections.map(section => renderSection(section))}
       </div>
     </GamificationProvider>
-  );
-};
+  )
+}
 
-export default LandingCustom;
+export default LandingCustom

@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import type { CSSProperties, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 const gridPatternStyle: CSSProperties = {
   backgroundImage: `
@@ -20,11 +20,11 @@ const gridPatternStyle: CSSProperties = {
   `,
   maskComposite: 'intersect',
   WebkitMaskComposite: 'source-in',
-};
+}
 
 interface AuthCardProps {
-  children: ReactNode;
-  className?: string;
+  children: ReactNode
+  className?: string
 }
 
 const AuthCard = ({ children, className }: AuthCardProps) => (
@@ -35,13 +35,10 @@ const AuthCard = ({ children, className }: AuthCardProps) => (
         className,
       )}
     >
-      <div
-        className="absolute inset-0 -top-px -left-px z-0"
-        style={gridPatternStyle}
-      />
+      <div className="absolute inset-0 -top-px -left-px z-0" style={gridPatternStyle} />
       <div className="relative isolate flex w-full flex-col items-center">{children}</div>
     </div>
   </div>
-);
+)
 
-export default AuthCard;
+export default AuthCard

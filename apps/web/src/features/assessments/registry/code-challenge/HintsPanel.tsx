@@ -1,21 +1,24 @@
-'use client';
+'use client'
 
-import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
-import { Lightbulb, Plus, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form'
+import { Lightbulb, Plus, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MarkdownEditor } from '@/features/content-markdown';
-import { generateUUID } from '@/lib/utils';
-import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { MarkdownEditor } from '@/features/content-markdown'
+import { generateUUID } from '@/lib/utils'
+import type { CodeChallengeSettingsForm } from './CodeChallengeStudio'
 
 export default function HintsPanel() {
-  const t = useTranslations('Activities.CodeChallenges');
-  const form = useFormContext<CodeChallengeSettingsForm>();
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'hints' });
+  const t = useTranslations('Activities.CodeChallenges')
+  const form = useFormContext<CodeChallengeSettingsForm>()
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'hints',
+  })
 
   return (
     <Card>
@@ -33,7 +36,12 @@ export default function HintsPanel() {
             variant="outline"
             size="sm"
             onClick={() =>
-              append({ id: `hint_${generateUUID()}`, order: fields.length + 1, content: '', xp_penalty: 5 })
+              append({
+                id: `hint_${generateUUID()}`,
+                order: fields.length + 1,
+                content: '',
+                xp_penalty: 5,
+              })
             }
           >
             <Plus className="size-4" />
@@ -48,18 +56,12 @@ export default function HintsPanel() {
           </div>
         ) : (
           fields.map((hint, index) => (
-            <div
-              key={hint.id}
-              className="space-y-3 rounded-md border p-3"
-            >
+            <div key={hint.id} className="space-y-3 rounded-md border p-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="text-sm font-medium">{t('hintsPanel.hintNumber', { number: index + 1 })}</div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(index)}
-                >
+                <div className="text-sm font-medium">
+                  {t('hintsPanel.hintNumber', { number: index + 1 })}
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                   <Trash2 className="size-4" />
                 </Button>
               </div>
@@ -92,7 +94,7 @@ export default function HintsPanel() {
                       min={0}
                       max={100}
                       value={field.value ?? 5}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={e => field.onChange(Number(e.target.value))}
                     />
                   </Field>
                 )}
@@ -102,5 +104,5 @@ export default function HintsPanel() {
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

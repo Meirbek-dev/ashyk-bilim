@@ -1,6 +1,6 @@
-import type { StreakInfo, UserGamificationProfile } from './profile';
-import type { PlatformLeaderboard } from './leaderboard';
-import * as v from 'valibot';
+import type { StreakInfo, UserGamificationProfile } from './profile'
+import type { PlatformLeaderboard } from './leaderboard'
+import * as v from 'valibot'
 
 /**
  * Dashboard and Aggregate Types
@@ -9,21 +9,21 @@ import * as v from 'valibot';
 
 // Main dashboard data
 export interface DashboardData {
-  profile: UserGamificationProfile;
-  recent_transactions: any[];
-  leaderboard: PlatformLeaderboard;
-  user_rank: number | null;
-  streak_info: StreakInfo;
+  profile: UserGamificationProfile
+  recent_transactions: any[]
+  leaderboard: PlatformLeaderboard
+  user_rank: number | null
+  streak_info: StreakInfo
 }
 
 // Streak update response
 export interface StreakUpdate {
-  type: 'login' | 'learning';
-  current_streak: number;
-  longest_streak: number;
-  streak_maintained: boolean;
-  streak_broken: boolean;
-  bonus_xp_awarded: number;
+  type: 'login' | 'learning'
+  current_streak: number
+  longest_streak: number
+  streak_maintained: boolean
+  streak_broken: boolean
+  bonus_xp_awarded: number
 }
 
 export const DashboardDataSchema = v.object({
@@ -43,7 +43,7 @@ export const DashboardDataSchema = v.object({
       lastDate: v.nullable(v.string()),
     }),
   }),
-});
+})
 
 export const StreakUpdateSchema = v.object({
   type: v.picklist(['login', 'learning']),
@@ -52,4 +52,4 @@ export const StreakUpdateSchema = v.object({
   streak_maintained: v.boolean(),
   streak_broken: v.boolean(),
   bonus_xp_awarded: v.number(),
-});
+})

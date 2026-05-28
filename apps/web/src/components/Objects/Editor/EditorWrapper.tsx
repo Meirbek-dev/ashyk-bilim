@@ -1,48 +1,50 @@
-'use client';
+'use client'
 
-import { useActivityAutosave } from '@/hooks/useActivityAutosave';
+import { useActivityAutosave } from '@/hooks/useActivityAutosave'
 
-import { PlatformContextProvider } from '@/components/Contexts/PlatformContext';
-import type { ActivityRef } from '@components/Objects/Editor/core';
-import { useTranslations } from 'next-intl';
-import type { JSX } from 'react';
-import { toast } from 'sonner';
+import { PlatformContextProvider } from '@/components/Contexts/PlatformContext'
+import type { ActivityRef } from '@components/Objects/Editor/core'
+import { useTranslations } from 'next-intl'
+import type { JSX } from 'react'
+import { toast } from 'sonner'
 
-import { AuthoringEditor } from './views';
+import { AuthoringEditor } from './views'
 
 interface EditorWrapperProps {
-  content: unknown;
-  activity: ActivityRef;
+  content: unknown
+  activity: ActivityRef
   course: {
-    course_uuid: string;
-    name: string;
-    thumbnail_image?: string | null;
-  };
-  platform: unknown;
+    course_uuid: string
+    name: string
+    thumbnail_image?: string | null
+  }
+  platform: unknown
 }
 
 const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
-  const t = useTranslations('DashPage.Editor.EditorWrapper');
+  const t = useTranslations('DashPage.Editor.EditorWrapper')
   const activityAutosave = useActivityAutosave({
     activityUuid: props.activity.activity_uuid,
     courseUuid: props.course.course_uuid,
-  });
+  })
 
   async function setContent(content: unknown) {
-    const { activity } = props;
+    const { activity } = props
 
-    const plainContent = structuredClone(content);
-    const updatedActivity = { ...activity, content: plainContent };
+    const plainContent = structuredClone(content)
+    const updatedActivity = { ...activity, content: plainContent }
 
     toast.promise(activityAutosave.flush(updatedActivity), {
       loading: t('saving'),
       success: () => <b>{t('saveSuccess')}</b>,
-      error: (err) => {
-        const errorMessage = err?.data?.detail || err?.data?.message || t('saveError');
-        const status = err?.status;
-        return <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>;
+      error: err => {
+        const errorMessage = err?.data?.detail || err?.data?.message || t('saveError')
+        const status = err?.status
+        return (
+          <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>
+        )
       },
-    });
+    })
   }
 
   return (
@@ -52,16 +54,16 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
         course={props.course}
         activity={props.activity}
         content={props.content}
-        onContentChange={(content) => {
-          const plainContent = structuredClone(content);
-          const updatedActivity = { ...props.activity, content: plainContent };
-          activityAutosave.onChange(updatedActivity);
+        onContentChange={content => {
+          const plainContent = structuredClone(content)
+          const updatedActivity = { ...props.activity, content: plainContent }
+          activityAutosave.onChange(updatedActivity)
         }}
         saveState={activityAutosave.saveStatus}
         setContent={setContent}
       />
     </PlatformContextProvider>
-  );
-};
+  )
+}
 
-export default EditorWrapper;
+export default EditorWrapper

@@ -1,20 +1,23 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAnalyticsStatusLabel } from '@/lib/analytics/labels';
-import type { AssessmentLearnerRow } from '@/types/analytics';
-import type { ColumnDef } from '@tanstack/react-table';
-import { useLocale, useTranslations } from 'next-intl';
-import DataTable from '@/components/ui/data-table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
+import type { AssessmentLearnerRow } from '@/types/analytics'
+import type { ColumnDef } from '@tanstack/react-table'
+import { useLocale, useTranslations } from 'next-intl'
+import DataTable from '@/components/ui/data-table'
 
 interface AssessmentLearnerRowsTableProps {
-  rows: AssessmentLearnerRow[];
-  storageKey?: string;
+  rows: AssessmentLearnerRow[]
+  storageKey?: string
 }
 
-export default function AssessmentLearnerRowsTable({ rows, storageKey }: AssessmentLearnerRowsTableProps) {
-  const t = useTranslations('TeacherAnalytics');
-  const locale = useLocale();
+export default function AssessmentLearnerRowsTable({
+  rows,
+  storageKey,
+}: AssessmentLearnerRowsTableProps) {
+  const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
 
   const columns: ColumnDef<AssessmentLearnerRow>[] = [
     {
@@ -39,15 +42,17 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
       accessorKey: 'submitted_at',
       header: t('pages.assessmentColSubmitted'),
       cell: ({ row }) =>
-        row.original.submitted_at ? new Date(row.original.submitted_at).toLocaleString(locale) : t('atRisk.na'),
+        row.original.submitted_at
+          ? new Date(row.original.submitted_at).toLocaleString(locale)
+          : t('atRisk.na'),
     },
     {
-      accessorFn: (row) => row.status || '',
+      accessorFn: row => row.status || '',
       id: 'status',
       header: t('pages.assessmentColStatus'),
       cell: ({ row }) => getAnalyticsStatusLabel(t, row.original.status),
     },
-  ];
+  ]
 
   return (
     <Card className="shadow-sm">
@@ -67,5 +72,5 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
         />
       </CardContent>
     </Card>
-  );
+  )
 }

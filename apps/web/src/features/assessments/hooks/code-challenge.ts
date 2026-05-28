@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 export {
   useCodeChallengeSubmissions,
@@ -7,4 +7,4 @@ export {
   useRunCodeChallengeTests,
   useSubmitCodeChallenge,
   useJudge0Languages,
-} from '@/features/assessments/registry/code-challenge/hooks';
+} from '@/features/assessments/registry/code-challenge/hooks'

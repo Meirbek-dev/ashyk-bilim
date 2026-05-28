@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Dialog,
@@ -7,49 +7,49 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import NewActivityModal from '@components/Objects/Modals/Activities/Create/NewActivity';
-import { useActivityMutations } from '@/hooks/mutations/useActivityMutations';
-import { useCourse } from '@components/Contexts/CourseContext';
-import { apiFetch } from '@/lib/api-client';
-import { Button } from '@/components/ui/button';
-import { useTranslations } from 'next-intl';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
-import { courseKeys } from '@/hooks/courses/courseKeys';
+} from '@/components/ui/dialog'
+import NewActivityModal from '@components/Objects/Modals/Activities/Create/NewActivity'
+import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
+import { useCourse } from '@components/Contexts/CourseContext'
+import { apiFetch } from '@/lib/api-client'
+import { Button } from '@/components/ui/button'
+import { useTranslations } from 'next-intl'
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import { courseKeys } from '@/hooks/courses/courseKeys'
 
 interface NewActivityButtonProps {
-  chapterId: number;
+  chapterId: number
 }
 
 const NewActivityButton = (props: NewActivityButtonProps) => {
-  const [newActivityModal, setNewActivityModal] = useState(false);
-  const course = useCourse();
-  const queryClient = useQueryClient();
-  const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true);
-  const t = useTranslations('CourseEdit.NewActivityModal');
-  const tNotify = useTranslations('DashPage.Notifications');
+  const [newActivityModal, setNewActivityModal] = useState(false)
+  const course = useCourse()
+  const queryClient = useQueryClient()
+  const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true)
+  const t = useTranslations('CourseEdit.NewActivityModal')
+  const tNotify = useTranslations('DashPage.Notifications')
 
   const closeNewActivityModal = async () => {
-    setNewActivityModal(false);
-  };
+    setNewActivityModal(false)
+  }
 
   const submitActivity = async (activity: any) => {
-    const toast_loading = toast.loading(tNotify('creatingActivity'));
+    const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
-      const response = await activityMutations.createActivity(activity, props.chapterId);
-      toast.success(tNotify('activityCreatedSuccess'));
-      setNewActivityModal(false);
-      return response;
+      const response = await activityMutations.createActivity(activity, props.chapterId)
+      toast.success(tNotify('activityCreatedSuccess'))
+      setNewActivityModal(false)
+      return response
     } catch (error: any) {
-      toast.error(error?.message || tNotify('uploadFailed'));
-      throw error;
+      toast.error(error?.message || tNotify('uploadFailed'))
+      throw error
     } finally {
-      toast.dismiss(toast_loading);
+      toast.dismiss(toast_loading)
     }
-  };
+  }
 
   const submitFileActivity = async ({
     file,
@@ -57,50 +57,58 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     activity,
     chapterId,
   }: {
-    file: any;
-    type: any;
-    activity: any;
-    chapterId: number;
+    file: any
+    type: any
+    activity: any
+    chapterId: number
   }) => {
-    const toast_loading = toast.loading(tNotify('uploadingAndCreating'));
-    const courseUuid = course.courseStructure.course_uuid;
-    const activityPayload = courseUuid ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid } : activity;
+    const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
+    const courseUuid = course.courseStructure.course_uuid
+    const activityPayload = courseUuid
+      ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid }
+      : activity
 
     try {
-      await activityMutations.createFileActivity(file, type, activityPayload, chapterId, (progress) => {
-        toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
-          id: toast_loading,
-        });
-      });
+      await activityMutations.createFileActivity(
+        file,
+        type,
+        activityPayload,
+        chapterId,
+        progress => {
+          toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
+            id: toast_loading,
+          })
+        },
+      )
 
-      setNewActivityModal(false);
-      toast.dismiss(toast_loading);
-      toast.success(tNotify('fileUploadSuccess'));
-      toast.success(tNotify('activityCreatedSuccess'));
+      setNewActivityModal(false)
+      toast.dismiss(toast_loading)
+      toast.success(tNotify('fileUploadSuccess'))
+      toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: any) {
-      toast.dismiss(toast_loading);
-      toast.error(error?.message || tNotify('uploadFailed'));
+      toast.dismiss(toast_loading)
+      toast.error(error?.message || tNotify('uploadFailed'))
     }
-  };
+  }
 
   const submitExternalVideo = async (external_video_data: any, activity: any) => {
-    const toast_loading = toast.loading(tNotify('creatingActivity'));
+    const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
-      await activityMutations.createExternalVideo(external_video_data, activity, props.chapterId);
-      setNewActivityModal(false);
-      toast.success(tNotify('activityCreatedSuccess'));
+      await activityMutations.createExternalVideo(external_video_data, activity, props.chapterId)
+      setNewActivityModal(false)
+      toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: any) {
-      toast.error(error?.message || tNotify('uploadFailed'));
+      toast.error(error?.message || tNotify('uploadFailed'))
     } finally {
-      toast.dismiss(toast_loading);
+      toast.dismiss(toast_loading)
     }
-  };
+  }
 
   const createAndOpenActivity = async (kind: 'dynamic' | 'codechallenge') => {
     if (kind === 'codechallenge') {
-      const toast_loading = toast.loading(tNotify('creatingActivity'));
+      const toast_loading = toast.loading(tNotify('creatingActivity'))
       try {
-        const courseId = course.courseStructure.id;
+        const courseId = course.courseStructure.id
         const response = await apiFetch('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,26 +128,26 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
               },
             },
           }),
-        });
-        const payload = await response.json().catch(() => ({}));
+        })
+        const payload = await response.json().catch(() => ({}))
         if (!response.ok) {
-          throw new Error(payload.detail?.message || payload.detail || tNotify('uploadFailed'));
+          throw new Error(payload.detail?.message || payload.detail || tNotify('uploadFailed'))
         }
 
         // Invalidate course structure queries so the new activity appears on the page
         await queryClient.invalidateQueries({
           queryKey: courseKeys.structure(course.courseStructure.course_uuid, true),
-        });
+        })
 
-        toast.success(tNotify('activityCreatedSuccess'));
-        setNewActivityModal(false);
+        toast.success(tNotify('activityCreatedSuccess'))
+        setNewActivityModal(false)
       } catch (error: any) {
-        toast.error(error?.message || tNotify('uploadFailed'));
-        throw error;
+        toast.error(error?.message || tNotify('uploadFailed'))
+        throw error
       } finally {
-        toast.dismiss(toast_loading);
+        toast.dismiss(toast_loading)
       }
-      return;
+      return
     }
 
     const activityPayload = {
@@ -147,17 +155,14 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
       chapter_id: props.chapterId,
       activity_type: 'TYPE_DYNAMIC',
       activity_sub_type: 'SUBTYPE_DYNAMIC_PAGE',
-    };
+    }
 
-    await submitActivity(activityPayload);
-  };
+    await submitActivity(activityPayload)
+  }
 
   return (
     <div className="flex justify-center">
-      <Dialog
-        open={newActivityModal}
-        onOpenChange={setNewActivityModal}
-      >
+      <Dialog open={newActivityModal} onOpenChange={setNewActivityModal}>
         <DialogTrigger render={<Button className="h-10" />}>
           <Plus className="h-3.5 w-3.5" />
           {t('title')}
@@ -179,7 +184,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default NewActivityButton;
+export default NewActivityButton

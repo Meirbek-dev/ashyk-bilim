@@ -1,6 +1,6 @@
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import { requireAnyPermission } from '@/lib/auth/permissions';
-import type { ReactNode } from 'react';
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import { requireAnyPermission } from '@/lib/auth/permissions'
+import type { ReactNode } from 'react'
 
 export default async function PlatformCoursesLayout({ children }: { children: ReactNode }) {
   await requireAnyPermission([
@@ -9,7 +9,7 @@ export default async function PlatformCoursesLayout({ children }: { children: Re
     { action: Actions.UPDATE, resource: Resources.COURSE, scope: Scopes.OWN },
     { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.APP },
     { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.OWN },
-  ]);
+  ])
 
-  return <>{children}</>;
+  return <>{children}</>
 }

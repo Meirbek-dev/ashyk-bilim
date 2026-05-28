@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 /**
  * AnnotatableText
@@ -10,66 +10,72 @@
  * Character offsets are computed against the raw `text` prop (not the DOM),
  * so they are stable regardless of how the text is rendered.
  */
-import { useRef, useState } from 'react';
-import { X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useRef, useState } from 'react'
+import { X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import type { TextAnnotation } from '../AnnotationContext';
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import type { TextAnnotation } from '../AnnotationContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SelectionState {
-  start: number;
-  end: number;
-  selectedText: string;
+  start: number
+  end: number
+  selectedText: string
   /** Approximate rect used to anchor the add-comment toolbar */
-  rect: DOMRect;
+  rect: DOMRect
 }
 
 // ─── Segment model ────────────────────────────────────────────────────────────
 
-type Segment = { type: 'plain'; text: string } | { type: 'annotated'; text: string; annotation: TextAnnotation };
+type Segment =
+  | { type: 'plain'; text: string }
+  | { type: 'annotated'; text: string; annotation: TextAnnotation }
 
 function buildSegments(text: string, annotations: TextAnnotation[]): Segment[] {
-  if (!annotations.length) return [{ type: 'plain', text }];
+  if (!annotations.length) return [{ type: 'plain', text }]
 
   // Sort and merge overlapping ranges so we never double-highlight
-  const sorted = [...annotations].toSorted((a, b) => a.start - b.start);
-  const merged: TextAnnotation[] = [];
+  const sorted = [...annotations].toSorted((a, b) => a.start - b.start)
+  const merged: TextAnnotation[] = []
   for (const ann of sorted) {
-    const prev = merged.at(-1);
+    const prev = merged.at(-1)
     if (prev && ann.start < prev.end) {
       // Extend prev range (keep first annotation's comment)
-      prev.end = Math.max(prev.end, ann.end);
+      prev.end = Math.max(prev.end, ann.end)
     } else {
-      merged.push({ ...ann });
+      merged.push({ ...ann })
     }
   }
 
-  const segments: Segment[] = [];
-  let cursor = 0;
+  const segments: Segment[] = []
+  let cursor = 0
   for (const ann of merged) {
-    const start = Math.max(0, ann.start);
-    const end = Math.min(text.length, ann.end);
-    if (cursor < start) segments.push({ type: 'plain', text: text.slice(cursor, start) });
-    segments.push({ type: 'annotated', text: text.slice(start, end), annotation: ann });
-    cursor = end;
+    const start = Math.max(0, ann.start)
+    const end = Math.min(text.length, ann.end)
+    if (cursor < start) segments.push({ type: 'plain', text: text.slice(cursor, start) })
+    segments.push({
+      type: 'annotated',
+      text: text.slice(start, end),
+      annotation: ann,
+    })
+    cursor = end
   }
-  if (cursor < text.length) segments.push({ type: 'plain', text: text.slice(cursor) });
-  return segments;
+  if (cursor < text.length) segments.push({ type: 'plain', text: text.slice(cursor) })
+  return segments
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface AnnotatableTextProps {
-  text: string;
-  annotations: TextAnnotation[];
-  readOnly?: boolean;
-  onAdd: (a: Omit<TextAnnotation, 'id' | 'itemUuid'>) => void;
-  onRemove: (annotationId: string) => void;
+  text: string
+  annotations: TextAnnotation[]
+  readOnly?: boolean
+  onAdd: (a: Omit<TextAnnotation, 'id' | 'itemUuid'>) => void
+  onRemove: (annotationId: string) => void
 }
 
 export default function AnnotatableText({
@@ -79,49 +85,49 @@ export default function AnnotatableText({
   onAdd,
   onRemove,
 }: AnnotatableTextProps) {
-  const t = useTranslations('Features.Grading.Annotation');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [selection, setSelection] = useState<SelectionState | null>(null);
-  const [comment, setComment] = useState('');
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const t = useTranslations('Features.Grading.Annotation')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [selection, setSelection] = useState<SelectionState | null>(null)
+  const [comment, setComment] = useState('')
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   const handleMouseUp = () => {
-    if (readOnly) return;
-    const sel = globalThis.getSelection();
-    if (!sel || sel.isCollapsed || !containerRef.current) return;
-    if (!containerRef.current.contains(sel.anchorNode)) return;
+    if (readOnly) return
+    const sel = globalThis.getSelection()
+    if (!sel || sel.isCollapsed || !containerRef.current) return
+    if (!containerRef.current.contains(sel.anchorNode)) return
 
-    const range = sel.getRangeAt(0);
-    const preRange = range.cloneRange();
-    preRange.selectNodeContents(containerRef.current);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
-    const selectedText = sel.toString().trim();
-    if (!selectedText) return;
-    const end = start + selectedText.length;
-    const rect = range.getBoundingClientRect();
-    setSelection({ start, end, selectedText, rect });
-    setComment('');
-  };
+    const range = sel.getRangeAt(0)
+    const preRange = range.cloneRange()
+    preRange.selectNodeContents(containerRef.current)
+    preRange.setEnd(range.startContainer, range.startOffset)
+    const start = preRange.toString().length
+    const selectedText = sel.toString().trim()
+    if (!selectedText) return
+    const end = start + selectedText.length
+    const rect = range.getBoundingClientRect()
+    setSelection({ start, end, selectedText, rect })
+    setComment('')
+  }
 
   const cancelSelection = () => {
-    setSelection(null);
-    setComment('');
-    globalThis.getSelection()?.removeAllRanges();
-  };
+    setSelection(null)
+    setComment('')
+    globalThis.getSelection()?.removeAllRanges()
+  }
 
   const confirmAnnotation = () => {
-    if (!selection || !comment.trim()) return;
+    if (!selection || !comment.trim()) return
     onAdd({
       start: selection.start,
       end: selection.end,
       selectedText: selection.selectedText,
       comment: comment.trim(),
-    });
-    cancelSelection();
-  };
+    })
+    cancelSelection()
+  }
 
-  const segments = buildSegments(text, annotations);
+  const segments = buildSegments(text, annotations)
 
   return (
     <div className="space-y-2">
@@ -155,9 +161,9 @@ export default function AnnotatableText({
                 <button
                   type="button"
                   aria-label={t('removeAnnotation')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(seg.annotation.id);
+                  onClick={e => {
+                    e.stopPropagation()
+                    onRemove(seg.annotation.id)
                   }}
                   className="bg-destructive text-destructive-foreground absolute -top-2 -right-2 z-10 flex size-4 items-center justify-center rounded-full shadow"
                 >
@@ -174,35 +180,29 @@ export default function AnnotatableText({
         <div className="space-y-2 rounded-md border bg-amber-50/80 p-3 dark:bg-amber-900/20">
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
             {t('addNoteFor', {
-              text: selection.selectedText.slice(0, 60) + (selection.selectedText.length > 60 ? '…' : ''),
+              text:
+                selection.selectedText.slice(0, 60) +
+                (selection.selectedText.length > 60 ? '…' : ''),
             })}
           </p>
           <Textarea
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={e => setComment(e.target.value)}
             placeholder={t('commentPlaceholder')}
             className="min-h-16 text-sm"
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                confirmAnnotation();
+                e.preventDefault()
+                confirmAnnotation()
               }
-              if (e.key === 'Escape') cancelSelection();
+              if (e.key === 'Escape') cancelSelection()
             }}
           />
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={confirmAnnotation}
-              disabled={!comment.trim()}
-            >
+            <Button size="sm" onClick={confirmAnnotation} disabled={!comment.trim()}>
               {t('addNote')}
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={cancelSelection}
-            >
+            <Button size="sm" variant="ghost" onClick={cancelSelection}>
               {t('cancel')}
             </Button>
             <span className="text-muted-foreground ml-auto text-xs">{t('ctrlEnterHint')}</span>
@@ -224,7 +224,9 @@ export default function AnnotatableText({
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <span className="text-muted-foreground line-clamp-1 italic">"{ann.selectedText}"</span>
+                <span className="text-muted-foreground line-clamp-1 italic">
+                  "{ann.selectedText}"
+                </span>
                 <span className="ml-1 font-medium">{ann.comment}</span>
               </div>
               {!readOnly && (
@@ -242,5 +244,5 @@ export default function AnnotatableText({
         </ul>
       )}
     </div>
-  );
+  )
 }

@@ -1,51 +1,63 @@
-'use client';
+'use client'
 
-import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
-import { AuthErrorBanner, AuthSuccessBanner, AuthSubmitButton } from '@components/auth/AuthForm';
-import { ArrowLeft } from 'lucide-react';
-import { getAbsoluteUrl } from '@services/config/config';
-import { sendResetLink } from '@services/auth/auth';
-import { useActionState } from 'react';
-import AuthLogo from '@components/auth/logo';
-import AuthCard from '@components/auth/card';
-import { Input } from '@components/ui/input';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import * as v from 'valibot';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
+import { AuthErrorBanner, AuthSuccessBanner, AuthSubmitButton } from '@components/auth/AuthForm'
+import { ArrowLeft } from 'lucide-react'
+import { getAbsoluteUrl } from '@services/config/config'
+import { sendResetLink } from '@services/auth/auth'
+import { useActionState } from 'react'
+import AuthLogo from '@components/auth/logo'
+import AuthCard from '@components/auth/card'
+import { Input } from '@components/ui/input'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import * as v from 'valibot'
 
 interface ForgotState {
-  error: string | null;
-  message: string | null;
-  fieldErrors: { email?: string };
+  error: string | null
+  message: string | null
+  fieldErrors: { email?: string }
 }
 
 const ForgotPasswordClient = () => {
-  const t = useTranslations('Auth.Forgot');
-  const validationT = useTranslations('Validation');
+  const t = useTranslations('Auth.Forgot')
+  const validationT = useTranslations('Validation')
 
   const schema = v.object({
-    email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
-  });
+    email: v.pipe(
+      v.string(),
+      v.minLength(1, validationT('required')),
+      v.email(validationT('invalidEmail')),
+    ),
+  })
 
   const [state, action, isPending] = useActionState(
     async (_prev: ForgotState, formData: FormData): Promise<ForgotState> => {
-      const result = v.safeParse(schema, { email: formData.get('email') });
+      const result = v.safeParse(schema, { email: formData.get('email') })
 
       if (!result.success) {
-        const flat = v.flatten(result.issues);
-        return { error: null, message: null, fieldErrors: { email: flat.nested?.email?.[0] } };
+        const flat = v.flatten(result.issues)
+        return {
+          error: null,
+          message: null,
+          fieldErrors: { email: flat.nested?.email?.[0] },
+        }
       }
 
-      const res = await sendResetLink(result.output.email);
+      const res = await sendResetLink(result.output.email)
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { detail?: string };
-        return { error: body?.detail ?? t('unknownError'), message: null, fieldErrors: {} };
+        const body = (await res.json().catch(() => ({}))) as { detail?: string }
+        return {
+          error: body?.detail ?? t('unknownError'),
+          message: null,
+          fieldErrors: {},
+        }
       }
 
-      return { error: null, message: t('checkEmail'), fieldErrors: {} };
+      return { error: null, message: t('checkEmail'), fieldErrors: {} }
     },
     { error: null, message: null, fieldErrors: {} },
-  );
+  )
 
   return (
     <AuthCard>
@@ -66,10 +78,7 @@ const ForgotPasswordClient = () => {
         </div>
       ) : null}
 
-      <form
-        className="mt-6 w-full space-y-4"
-        action={action}
-      >
+      <form className="mt-6 w-full space-y-4" action={action}>
         <Field>
           <FieldLabel>{t('email')}</FieldLabel>
           <FieldContent>
@@ -99,7 +108,7 @@ const ForgotPasswordClient = () => {
         {t('backToLogin')}
       </Link>
     </AuthCard>
-  );
-};
+  )
+}
 
-export default ForgotPasswordClient;
+export default ForgotPasswordClient

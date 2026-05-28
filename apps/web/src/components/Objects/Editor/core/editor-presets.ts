@@ -1,14 +1,14 @@
-import type { EditorMode } from './editor-modes';
+import type { EditorMode } from './editor-modes'
 
-export type EditorPresetName = 'authoring' | 'interactive' | 'viewing' | 'discussion';
+export type EditorPresetName = 'authoring' | 'interactive' | 'viewing' | 'discussion'
 
 export interface EditorPresetDefinition {
-  name: EditorPresetName;
-  mode: EditorMode;
-  isEditable: boolean;
-  supportsAI: boolean;
-  supportsOutline: boolean;
-  requiresActivity: boolean;
+  name: EditorPresetName
+  mode: EditorMode
+  isEditable: boolean
+  supportsAI: boolean
+  supportsOutline: boolean
+  requiresActivity: boolean
 }
 
 const EDITOR_PRESETS: Record<EditorPresetName, EditorPresetDefinition> = {
@@ -44,8 +44,8 @@ const EDITOR_PRESETS: Record<EditorPresetName, EditorPresetDefinition> = {
     supportsOutline: false,
     requiresActivity: false,
   },
-};
+}
 
 export function getEditorPresetDefinition(preset: EditorPresetName): EditorPresetDefinition {
-  return EDITOR_PRESETS[preset];
+  return EDITOR_PRESETS[preset]
 }
