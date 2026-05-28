@@ -34,15 +34,15 @@ export function getExamTimeLimitSeconds(settings: ExamSettingsRecord): number | 
 
 export function buildExamAntiCheatSettings(settings: ExamSettingsRecord) {
   return {
-    copy_paste_protection: settings.copy_paste_protection === true,
-    tab_switch_detection: settings.tab_switch_detection === true,
-    devtools_detection: settings.devtools_detection === true,
-    right_click_disable: settings.right_click_disable === true,
-    fullscreen_enforcement: settings.fullscreen_enforcement === true,
+    copy_paste_protection: settings['copy_paste_protection'] === true,
+    tab_switch_detection: settings['tab_switch_detection'] === true,
+    devtools_detection: settings['devtools_detection'] === true,
+    right_click_disable: settings['right_click_disable'] === true,
+    fullscreen_enforcement: settings['fullscreen_enforcement'] === true,
     violation_threshold:
-      typeof settings.violation_threshold === 'number' &&
-      Number.isInteger(settings.violation_threshold)
-        ? settings.violation_threshold
+      typeof settings['violation_threshold'] === 'number' &&
+      Number.isInteger(settings['violation_threshold'])
+        ? settings['violation_threshold']
         : null,
   }
 }
@@ -57,16 +57,16 @@ export function normalizeExamPolicySettings(
   const timeLimitSeconds = getExamTimeLimitSeconds(normalized)
 
   if (dueAt !== null) {
-    normalized.due_at = dueAt
-    normalized.due_date_iso = dueAt
+    normalized['due_at'] = dueAt
+    normalized['due_date_iso'] = dueAt
   }
   if (maxAttempts !== null) {
-    normalized.max_attempts = maxAttempts
-    normalized.attempt_limit = maxAttempts
+    normalized['max_attempts'] = maxAttempts
+    normalized['attempt_limit'] = maxAttempts
   }
   if (timeLimitSeconds !== null) {
-    normalized.time_limit_seconds = timeLimitSeconds
-    normalized.time_limit = Math.floor(timeLimitSeconds / 60)
+    normalized['time_limit_seconds'] = timeLimitSeconds
+    normalized['time_limit'] = Math.floor(timeLimitSeconds / 60)
   }
 
   return normalized

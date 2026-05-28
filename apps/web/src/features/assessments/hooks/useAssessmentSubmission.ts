@@ -35,7 +35,7 @@ export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'confl
 function answersFromSubmission(
   submission: AssessmentSubmissionRead | null | undefined,
 ): Record<string, ItemAnswer> {
-  const answers = submission?.answers_json?.answers
+  const answers = submission?.answers_json?.['answers']
   return answers && typeof answers === 'object' ? (answers as Record<string, ItemAnswer>) : {}
 }
 
@@ -457,8 +457,10 @@ export function useAssessmentSubmission(
     (options?: SubmitOptions) =>
       submitMutateAsync({
         answers: localAnswersRef.current,
-        violationCount: options?.violationCount,
-        autoSubmit: options?.autoSubmit,
+        ...(options?.violationCount !== undefined
+          ? { violationCount: options.violationCount }
+          : {}),
+        ...(options?.autoSubmit !== undefined ? { autoSubmit: options.autoSubmit } : {}),
       }),
     [submitMutateAsync],
   )

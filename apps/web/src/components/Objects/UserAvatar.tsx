@@ -83,9 +83,9 @@ const UserAvatar = (props: UserAvatarProps) => {
   const avatarUrl = useMemo(
     () =>
       resolveAvatarUrl({
-        avatarUrl: avatar_url,
-        predefinedAvatar: predefined_avatar,
-        user: resolvedUser,
+        ...(avatar_url !== undefined ? { avatarUrl: avatar_url } : {}),
+        ...(predefined_avatar !== undefined ? { predefinedAvatar: predefined_avatar } : {}),
+        ...(resolvedUser !== null ? { user: resolvedUser } : {}),
       }),
     [avatar_url, predefined_avatar, resolvedUser],
   )

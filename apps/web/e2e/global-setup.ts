@@ -22,6 +22,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { STORAGE_STATE_DIR, STORAGE_STATE } from './auth-states'
+import { getEnvOr, requireEnv } from './env'
 
 export { STORAGE_STATE_DIR, STORAGE_STATE }
 
@@ -51,8 +52,8 @@ function loadEnvFile(filePath: string): void {
 loadEnvFile(path.join(__dirname, '.env.test'))
 loadEnvFile(path.join(__dirname, '.env.test.local')) // overrides
 
-const API_URL = process.env.E2E_API_URL ?? 'http://localhost:1338/api/v1'
-const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+const API_URL = getEnvOr('E2E_API_URL', 'http://localhost:1338/api/v1')
+const BASE_URL = getEnvOr('E2E_BASE_URL', 'http://localhost:3000')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -66,7 +67,8 @@ async function registerUser(opts: {
   lastName: string
 }): Promise<{ id: number; email: string } | null> {
   // Derive a username from the email local-part (e.g. e2e-teacher@example.com → e2e_teacher)
-  const username = opts.email.split('@')[0]!.replace(/[^a-zA-Z0-9_]/g, '_')
+  const usernameSource = opts.email.split('@')[0] ?? opts.email
+  const username = usernameSource.replace(/[^a-zA-Z0-9_]/g, '_')
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,7 +86,7 @@ async function registerUser(opts: {
     // Handle "already exists" responses — both FastAPI-Users and platform-custom formats
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
     const alreadyExists =
-      body?.detail === 'REGISTER_USER_ALREADY_EXISTS' ||
+      body['detail'] === 'REGISTER_USER_ALREADY_EXISTS' ||
       (body as { error_code?: string })?.error_code === 'email_taken' ||
       (body as { error_code?: string })?.error_code === 'username_taken'
     if (alreadyExists) {
@@ -234,18 +236,18 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   // Ensure output directory exists
   fs.mkdirSync(STORAGE_STATE_DIR, { recursive: true })
 
-  const teacherEmail = process.env.E2E_TEACHER_EMAIL!
-  const teacherPassword = process.env.E2E_TEACHER_PASSWORD!
-  const teacherFirstName = process.env.E2E_TEACHER_FIRST_NAME ?? 'Eve'
-  const teacherLastName = process.env.E2E_TEACHER_LAST_NAME ?? 'Teach'
+  const teacherEmail = requireEnv('E2E_TEACHER_EMAIL')
+  const teacherPassword = requireEnv('E2E_TEACHER_PASSWORD')
+  const teacherFirstName = getEnvOr('E2E_TEACHER_FIRST_NAME', 'Eve')
+  const teacherLastName = getEnvOr('E2E_TEACHER_LAST_NAME', 'Teach')
 
-  const studentEmail = process.env.E2E_STUDENT_EMAIL!
-  const studentPassword = process.env.E2E_STUDENT_PASSWORD!
-  const studentFirstName = process.env.E2E_STUDENT_FIRST_NAME ?? 'Sam'
-  const studentLastName = process.env.E2E_STUDENT_LAST_NAME ?? 'Learn'
+  const studentEmail = requireEnv('E2E_STUDENT_EMAIL')
+  const studentPassword = requireEnv('E2E_STUDENT_PASSWORD')
+  const studentFirstName = getEnvOr('E2E_STUDENT_FIRST_NAME', 'Sam')
+  const studentLastName = getEnvOr('E2E_STUDENT_LAST_NAME', 'Learn')
 
-  const adminEmail = process.env.E2E_ADMIN_EMAIL!
-  const adminPassword = process.env.E2E_ADMIN_PASSWORD!
+  const adminEmail = requireEnv('E2E_ADMIN_EMAIL')
+  const adminPassword = requireEnv('E2E_ADMIN_PASSWORD')
 
   // 1. Register Teacher + Student (idempotent — existing users are OK)
   await Promise.all([
@@ -269,7 +271,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
   // 3. Resolve the teacher role id (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
   const roles = await listRoles(adminCookie)
-  const teacherRoleSlug = process.env.E2E_TEACHER_ROLE_SLUG ?? 'instructor'
+  const teacherRoleSlug = getEnvOr('E2E_TEACHER_ROLE_SLUG', 'instructor')
   const teacherRole = roles.find(r => r.slug === teacherRoleSlug)
   if (!teacherRole) {
     throw new Error(

@@ -25,7 +25,7 @@ export default defineConfig({
     browser: {
       enabled: false,
       provider: playwright(),
-      headless: !!process.env.CI,
+      headless: !!process.env['CI'],
       // Fix: Added the mandatory "name" property to each instance
       instances: [
         { name: 'chromium', browser: 'chromium' },

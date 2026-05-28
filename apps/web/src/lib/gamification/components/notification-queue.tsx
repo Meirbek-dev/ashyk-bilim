@@ -297,8 +297,8 @@ export function BatchIndicator({ count, className }: BatchIndicatorProps) {
     <motion.div
       initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-      transition={prefersReducedMotion ? { duration: 0.15 } : undefined}
       className={`bg-primary text-primary-foreground inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${className}`}
+      {...(prefersReducedMotion ? { transition: { duration: 0.15 } } : {})}
     >
       ×{count}
     </motion.div>

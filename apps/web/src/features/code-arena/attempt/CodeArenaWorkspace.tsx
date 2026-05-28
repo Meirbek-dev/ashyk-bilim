@@ -43,7 +43,7 @@ import { HintDrawer } from './HintDrawer'
 interface CodeArenaWorkspaceProps {
   problem: CodeChallengeProblem
   settings: CodeChallengeSettings
-  answer?: CodeAnswer
+  answer: CodeAnswer | undefined
   initialLanguageId: number
   initialCode: string
   disabled?: boolean

@@ -55,7 +55,7 @@ function createQuestion(): FormQuestion {
 }
 
 export function normalizeFormItem(raw: Record<string, unknown> | null | undefined): FormItemValue {
-  const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [createQuestion()]
+  const rawQuestions = Array.isArray(raw?.['questions']) ? raw['questions'] : [createQuestion()]
   return {
     kind: 'FORM',
     questions: rawQuestions.map((rawQuestion, questionIndex): FormQuestion => {
@@ -63,22 +63,23 @@ export function normalizeFormItem(raw: Record<string, unknown> | null | undefine
         rawQuestion && typeof rawQuestion === 'object'
           ? (rawQuestion as Record<string, unknown>)
           : {}
-      const rawBlanks = Array.isArray(question.blanks) ? question.blanks : [createBlank()]
+      const rawBlanks = Array.isArray(question['blanks']) ? question['blanks'] : [createBlank()]
       return {
         questionUUID:
-          typeof question.questionUUID === 'string'
-            ? question.questionUUID
+          typeof question['questionUUID'] === 'string'
+            ? question['questionUUID']
             : `question_${questionIndex}`,
-        questionText: typeof question.questionText === 'string' ? question.questionText : '',
+        questionText: typeof question['questionText'] === 'string' ? question['questionText'] : '',
         blanks: rawBlanks.map((rawBlank, blankIndex): FormBlank => {
           const blank =
             rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {}
           return {
             blankUUID:
-              typeof blank.blankUUID === 'string' ? blank.blankUUID : `blank_${blankIndex}`,
-            placeholder: typeof blank.placeholder === 'string' ? blank.placeholder : '',
-            correctAnswer: typeof blank.correctAnswer === 'string' ? blank.correctAnswer : '',
-            hint: typeof blank.hint === 'string' ? blank.hint : '',
+              typeof blank['blankUUID'] === 'string' ? blank['blankUUID'] : `blank_${blankIndex}`,
+            placeholder: typeof blank['placeholder'] === 'string' ? blank['placeholder'] : '',
+            correctAnswer:
+              typeof blank['correctAnswer'] === 'string' ? blank['correctAnswer'] : '',
+            hint: typeof blank['hint'] === 'string' ? blank['hint'] : '',
           }
         }),
       }
@@ -107,9 +108,9 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
               <MarkdownEditor
                 value={question.questionText}
                 placeholder={t('questionPlaceholder')}
-                disabled={disabled}
                 preset="questionPrompt"
                 minHeight={120}
+                {...(disabled !== undefined ? { disabled } : {})}
                 onChange={questionText =>
                   onChange({
                     ...value,
@@ -282,7 +283,6 @@ export function FormItemAttempt({
   const normalized = answer?.form_data?.answers ?? {}
   const updateBlankAnswer = (blankId: string, value: string) => {
     onAnswerChange({
-      task_uuid: item.taskUuid,
       content_type: 'form',
       form_data: {
         answers: {
@@ -290,6 +290,7 @@ export function FormItemAttempt({
           [blankId]: value,
         },
       },
+      ...(item.taskUuid ? { task_uuid: item.taskUuid } : {}),
     })
   }
 

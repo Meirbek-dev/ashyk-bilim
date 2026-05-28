@@ -21,7 +21,7 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
       ...issue,
       severity: 'blocker',
       area: 'assessment-metadata',
-      field: issue.code === 'assessment.title_missing' ? 'title' : undefined,
+      ...(issue.code === 'assessment.title_missing' ? { field: 'title' } : {}),
     }
   }
 
@@ -30,16 +30,15 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
       ...issue,
       severity: 'blocker',
       area: 'assessment-policy',
-      field:
-        issue.code === 'policy.max_attempts_invalid'
-          ? 'maxAttempts'
-          : issue.code === 'policy.time_limit_invalid'
-            ? 'timeLimitMinutes'
-            : issue.code === 'policy.violation_threshold_invalid'
-              ? 'violationThreshold'
-              : issue.code === 'schedule.after_due_at'
-                ? 'dueAt'
-                : undefined,
+      ...(issue.code === 'policy.max_attempts_invalid'
+        ? { field: 'maxAttempts' }
+        : issue.code === 'policy.time_limit_invalid'
+          ? { field: 'timeLimitMinutes' }
+          : issue.code === 'policy.violation_threshold_invalid'
+            ? { field: 'violationThreshold' }
+            : issue.code === 'schedule.after_due_at'
+              ? { field: 'dueAt' }
+              : {}),
     }
   }
 

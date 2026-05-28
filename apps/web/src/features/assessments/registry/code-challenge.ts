@@ -25,7 +25,7 @@ registerKind('TYPE_CODE_CHALLENGE', async () => {
     return GradingReviewWorkspace({
       activityId,
       initialSubmissionUuid: submissionUuid ?? null,
-      title,
+      ...(title !== undefined ? { title } : {}),
     })
   }
 

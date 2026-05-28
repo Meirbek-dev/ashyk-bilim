@@ -66,24 +66,24 @@ const registry: Record<string, ThemePreset> = Object.fromEntries(
   (rawRegistry.items ?? []).map(item => [
     item.name,
     {
-      label: item.title,
       styles: {
         light: { ...item.cssVars.theme, ...item.cssVars.light },
         dark: { ...item.cssVars.theme, ...item.cssVars.dark },
       },
+      ...(item.title ? { label: item.title } : {}),
     },
   ]),
 )
 
 function buildColors(tokens: ThemeTokenMap): ThemeColors {
-  const bg = tokens.background ?? 'oklch(1 0 0)'
-  const fg = tokens.foreground ?? 'oklch(0.145 0 0)'
+  const bg = tokens['background'] ?? 'oklch(1 0 0)'
+  const fg = tokens['foreground'] ?? 'oklch(0.145 0 0)'
   return {
     background: bg,
     foreground: fg,
-    primary: tokens.primary ?? fg,
-    secondary: tokens.secondary ?? bg,
-    accent: tokens.accent ?? tokens.secondary ?? bg,
+    primary: tokens['primary'] ?? fg,
+    secondary: tokens['secondary'] ?? bg,
+    accent: tokens['accent'] ?? tokens['secondary'] ?? bg,
   }
 }
 

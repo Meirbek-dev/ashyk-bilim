@@ -14,18 +14,19 @@ export class APIError extends Error {
 
   public constructor(response: unknown) {
     const r = response as Record<string, any> | null | undefined
+    const data = typeof r?.['data'] === 'object' && r['data'] !== null ? r['data'] : undefined
     const message: string =
-      (typeof r?.data?.detail === 'string' ? r.data.detail : null) ??
-      formatIssueDetail(r?.data?.detail) ??
-      r?.HTTPmessage ??
-      r?.message ??
+      (typeof data?.['detail'] === 'string' ? data['detail'] : null) ??
+      formatIssueDetail(data?.['detail']) ??
+      (typeof r?.['HTTPmessage'] === 'string' ? r['HTTPmessage'] : null) ??
+      (typeof r?.['message'] === 'string' ? r['message'] : null) ??
       'Request failed'
 
     super(message)
     this.name = 'APIError'
-    this.status = r?.status ?? 500
-    this.code = r?.data?.code ?? 'UNKNOWN'
-    this.detail = r?.data
+    this.status = typeof r?.['status'] === 'number' ? r['status'] : 500
+    this.code = typeof data?.['code'] === 'string' ? data['code'] : 'UNKNOWN'
+    this.detail = data
   }
 }
 

@@ -81,7 +81,10 @@ function parseSetCookieHeader(setCookieHeader: string): ParsedSetCookie | null {
     } else if (key === 'path' && optionValue) {
       options.path = optionValue
     } else if (key === 'samesite' && optionValue) {
-      options.sameSite = parseSameSite(optionValue)
+      const sameSite = parseSameSite(optionValue)
+      if (sameSite) {
+        options.sameSite = sameSite
+      }
     } else if (key === 'secure') {
       options.secure = true
     }

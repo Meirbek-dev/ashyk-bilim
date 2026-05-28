@@ -18,6 +18,7 @@
  */
 
 import { testAsStudent as test, expect } from '../fixtures'
+import { getEnv, setEnv } from '../env'
 import { COURSE, CORRECT_PYTHON_SOLUTION, SAMPLE_PDF } from '../fixtures/test-data'
 import { ensureFixtureFiles } from '../utils/fixtures'
 
@@ -25,7 +26,7 @@ test.describe.serial('Student – Learning Journey', () => {
   let courseUuid: string
 
   test.beforeAll(async () => {
-    courseUuid = process.env.E2E_COURSE_UUID ?? ''
+    courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
     if (!courseUuid) {
       throw new Error(
         'E2E_COURSE_UUID not set. Run the course-creation spec first, or set it manually.',
@@ -118,7 +119,8 @@ test.describe.serial('Student – Learning Journey', () => {
 
     // Store the activity id for grading spec
     const match = /\/activity\/([^/]+)/.exec(page.url())
-    if (match) process.env.E2E_FILE_SUBMISSION_ACTIVITY_ID = match[1]
+    const activityId = match?.[1]
+    if (activityId) setEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID', activityId)
   })
 
   /**
@@ -129,8 +131,11 @@ test.describe.serial('Student – Learning Journey', () => {
     page,
     fileSubmissionPage,
   }) => {
-    const activityId = process.env.E2E_FILE_SUBMISSION_ACTIVITY_ID
-    if (!activityId) test.skip(true, 'File submission activity ID not captured in prior test')
+    const activityId = getEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID')
+    if (!activityId) {
+      test.skip(true, 'File submission activity ID not captured in prior test')
+      return
+    }
 
     await page.goto(`/en/course/${courseUuid}/activity/${activityId}`)
     await page.waitForLoadState('networkidle')
@@ -155,7 +160,8 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForURL(/\/activity\//, { timeout: 10_000 })
 
     const match = /\/activity\/([^/]+)/.exec(page.url())
-    if (match) process.env.E2E_EXAM_STUDENT_ACTIVITY_ID = match[1]
+  const activityId = match?.[1]
+  if (activityId) setEnv('E2E_EXAM_STUDENT_ACTIVITY_ID', activityId)
   })
 
   /**
@@ -163,8 +169,11 @@ test.describe.serial('Student – Learning Journey', () => {
    * If the assessment shell fails to render, the test MUST fail.
    */
   test('student can start an exam attempt', async ({ page, assessmentPage }) => {
-    const activityId = process.env.E2E_EXAM_STUDENT_ACTIVITY_ID
-    if (!activityId) test.skip(true, 'Exam activity ID not captured in prior test')
+    const activityId = getEnv('E2E_EXAM_STUDENT_ACTIVITY_ID')
+    if (!activityId) {
+      test.skip(true, 'Exam activity ID not captured in prior test')
+      return
+    }
 
     await page.goto(`/en/course/${courseUuid}/activity/${activityId}`)
     await page.waitForLoadState('networkidle')
@@ -179,8 +188,11 @@ test.describe.serial('Student – Learning Journey', () => {
   })
 
   test('student can answer exam questions and submit', async ({ page, assessmentPage }) => {
-    const activityId = process.env.E2E_EXAM_STUDENT_ACTIVITY_ID
-    if (!activityId) test.skip(true, 'Exam activity ID not captured in prior test')
+    const activityId = getEnv('E2E_EXAM_STUDENT_ACTIVITY_ID')
+    if (!activityId) {
+      test.skip(true, 'Exam activity ID not captured in prior test')
+      return
+    }
 
     await page.goto(`/en/course/${courseUuid}/activity/${activityId}`)
     await page.waitForLoadState('networkidle')
@@ -233,7 +245,8 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForURL(/\/activity\//, { timeout: 10_000 })
 
     const match = /\/activity\/([^/]+)/.exec(page.url())
-    if (match) process.env.E2E_CODE_ACTIVITY_ID = match[1]
+  const activityId = match?.[1]
+  if (activityId) setEnv('E2E_CODE_ACTIVITY_ID', activityId)
 
     // Fill and submit the code solution
     if (await assessmentPage.codeEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -257,7 +270,6 @@ test.describe.serial('Student – Learning Journey', () => {
    * This test documents the expected (correct) state.
    */
   test('certificate is not yet available before teacher grades work', async ({
-    page,
     coursePlayerPage,
   }) => {
     await coursePlayerPage.gotoCourseLanding(courseUuid)

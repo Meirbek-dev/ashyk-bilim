@@ -24,10 +24,10 @@ const createRemotePattern = (value: string | undefined, pathname: string): Remot
 
 const imageRemotePatterns = [
   createRemotePattern(
-    process.env.NEXT_PUBLIC_MEDIA_URL ?? process.env.NEXT_PUBLIC_SITE_URL,
+    process.env['NEXT_PUBLIC_MEDIA_URL'] ?? process.env['NEXT_PUBLIC_SITE_URL'],
     '/content/platform/**',
   ),
-  createRemotePattern(process.env.NEXT_PUBLIC_SITE_URL, '/app_logo_full.svg'),
+  createRemotePattern(process.env['NEXT_PUBLIC_SITE_URL'], '/app_logo_full.svg'),
 ].filter((pattern): pattern is RemotePattern => pattern !== null)
 
 /** @type {import('next').NextConfig} */
@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
     // Optimized for avatars and course thumbnails
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     remotePatterns: imageRemotePatterns,
-    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
+    dangerouslyAllowLocalIP: process.env['NODE_ENV'] === 'development',
   },
 
   // Build & Environment

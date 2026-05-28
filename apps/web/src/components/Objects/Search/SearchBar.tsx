@@ -316,9 +316,9 @@ export const SearchBar: FC<SearchBarProps> = ({
                       ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image)
                       : ''
                   }
-                  predefined_avatar={user.avatar_image ? undefined : 'empty'}
                   userId={user.id}
                   showProfilePopup
+                  {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

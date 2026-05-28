@@ -57,6 +57,9 @@ function buildOptimisticContributor(user: ContributorDraftUser) {
   }
 }
 
+const buildMutationOptions = (lastKnownUpdateDate: string | null | undefined): MutationOptions =>
+  lastKnownUpdateDate !== undefined ? { lastKnownUpdateDate } : {}
+
 export function updateCourseMetadataMutationOptions(
   courseUuid: string,
   queryClient: QueryClient,
@@ -72,9 +75,7 @@ export function updateCourseMetadataMutationOptions(
       payload: Partial<CourseGeneralValues>
     }) =>
       assertSuccess(
-        await updateCourseMetadata(courseUuid, payload, {
-          lastKnownUpdateDate: options.lastKnownUpdateDate,
-        }),
+        await updateCourseMetadata(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate)),
       ),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
@@ -112,9 +113,7 @@ export function updateCourseAccessMutationOptions(
       payload: Partial<CourseAccessValues & { open_to_contributors?: boolean }>
     }) =>
       assertSuccess(
-        await updateCourseAccess(courseUuid, payload, {
-          lastKnownUpdateDate: options.lastKnownUpdateDate,
-        }),
+        await updateCourseAccess(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate)),
       ),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
@@ -146,9 +145,7 @@ export function updateCourseThumbnailMutationOptions(
   return mutationOptions({
     mutationFn: async ({ formData, options }: { formData: FormData; options: MutationOptions }) =>
       assertSuccess(
-        await updateCourseThumbnail(courseUuid, formData, {
-          lastKnownUpdateDate: options.lastKnownUpdateDate,
-        }),
+        await updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
       ),
     onSuccess: async (response: any) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)

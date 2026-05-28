@@ -3,6 +3,7 @@ import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
 import { getSession } from '@/lib/auth/session'
+import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'
 import { Actions, Resources, Scopes, perm } from '@/types/permissions'
 import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'
@@ -13,7 +14,7 @@ import Courses from '@/app/_shared/withmenu/courses/courses'
 import CoursesLoading from './loading'
 
 interface MetadataProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }
 
 export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
@@ -50,7 +51,7 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
 }
 
 interface CoursesContentProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }
 
 function sortCoursesByProgress(courses: any[], trailData: any) {
@@ -101,7 +102,7 @@ function sortCoursesByProgress(courses: any[], trailData: any) {
 
 async function CoursesContent({ searchParams }: CoursesContentProps) {
   const params = await searchParams
-  const pageStr = Array.isArray(params.page) ? params.page[0] : params.page
+  const pageStr = getSearchParam(params, 'page')
   const page = pageStr ? Number.parseInt(pageStr, 10) : 1
 
   const session = await getSession()
@@ -132,7 +133,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
 }
 
 export default async function PlatformCoursesPage(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }) {
   return (
     <Suspense fallback={<CoursesLoading />}>

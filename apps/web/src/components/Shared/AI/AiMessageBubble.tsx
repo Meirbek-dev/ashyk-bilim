@@ -48,7 +48,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
       <UserAvatar
         size="sm"
         variant="outline"
-        predefined_avatar={role === 'assistant' ? 'ai' : undefined}
+        {...(role === 'assistant' ? { predefined_avatar: 'ai' } : {})}
       />
 
       <div

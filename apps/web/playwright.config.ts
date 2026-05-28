@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 import * as fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as path from 'node:path'
+import { getEnv, getEnvOr } from './e2e/env'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -24,8 +25,9 @@ function loadEnv(file: string): void {
 loadEnv(path.join(__dirname, 'e2e/.env.test'))
 loadEnv(path.join(__dirname, 'e2e/.env.test.local'))
 
-const PORT = process.env.PORT || 3000
-const BASE_URL = process.env.E2E_BASE_URL || `http://localhost:${PORT}`
+const PORT = getEnvOr('PORT', '3000')
+const BASE_URL = getEnvOr('E2E_BASE_URL', `http://localhost:${PORT}`)
+const isCi = getEnv('CI') !== undefined
 
 export default defineConfig({
   testDir: './e2e/specs',
@@ -33,9 +35,9 @@ export default defineConfig({
   // fully parallel — they share state via process.env. Within a single spec
   // file, test.describe.serial handles ordering.
   fullyParallel: false,
-  forbidOnly: !!process.env.CI,
+  forbidOnly: isCi,
   // On CI, retry once to surface flakiness without masking genuine bugs.
-  retries: process.env.CI ? 1 : 0,
+  retries: isCi ? 1 : 0,
   workers: 1, // serial workflows require a single worker
   reporter: [
     // HTML report with screenshots + traces — open with: npx playwright show-report
@@ -99,7 +101,7 @@ export default defineConfig({
   webServer: {
     command: 'bun run dev',
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !isCi,
     stdout: 'ignore',
     stderr: 'pipe',
     timeout: 120 * 1000,

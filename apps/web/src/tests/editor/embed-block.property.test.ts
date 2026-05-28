@@ -66,10 +66,10 @@ function htmlRoundTrip(attrs: { type: EmbedType; url: string; width: string; hei
   }
 
   return {
-    type: parsedNode.attrs.type as string | null,
-    url: parsedNode.attrs.url as string | null,
-    width: parsedNode.attrs.width as string,
-    height: parsedNode.attrs.height as number,
+    type: parsedNode.attrs['type'] as string | null,
+    url: parsedNode.attrs['url'] as string | null,
+    width: parsedNode.attrs['width'] as string,
+    height: parsedNode.attrs['height'] as number,
   }
 }
 

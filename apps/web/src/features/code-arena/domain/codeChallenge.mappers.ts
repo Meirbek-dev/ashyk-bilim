@@ -9,8 +9,7 @@ export function codeItemToProblem(params: {
   settings: CodeChallengeSettings
 }): CodeChallengeProblem {
   const body = params.item.body.kind === 'CODE' ? params.item.body : null
-
-  return {
+  const problem = {
     activityUuid: params.activityUuid,
     itemUuid: params.item.item_uuid,
     title: params.title || params.item.title || 'Code challenge',
@@ -18,11 +17,17 @@ export function codeItemToProblem(params: {
     inputSpec: body?.input_spec ?? '',
     outputSpec: body?.output_spec ?? '',
     constraints: body?.constraints ?? [],
-    difficulty: params.settings.difficulty,
     points: params.settings.points ?? params.item.max_score,
-    timeLimitSeconds: params.settings.time_limit,
-    memoryLimitMb: params.settings.memory_limit,
+    ...(params.settings.difficulty ? { difficulty: params.settings.difficulty } : {}),
+    ...(params.settings.time_limit !== undefined
+      ? { timeLimitSeconds: params.settings.time_limit }
+      : {}),
+    ...(params.settings.memory_limit !== undefined
+      ? { memoryLimitMb: params.settings.memory_limit }
+      : {}),
   }
+
+  return problem
 }
 
 export function normalizeStarterCode(

@@ -18,6 +18,7 @@
  */
 
 import { testAsTeacher as test, expect } from '../fixtures'
+import { getEnv, setEnv } from '../env'
 import { COURSE } from '../fixtures/test-data'
 import { ActivityStudioPage } from '../page-objects/ActivityStudioPage'
 
@@ -44,7 +45,7 @@ test.describe.serial('Teacher – Course Creation', () => {
     })
 
     // Store globally for downstream specs to read
-    process.env.E2E_COURSE_UUID = courseUuid
+    setEnv('E2E_COURSE_UUID', courseUuid)
 
     expect(courseUuid).toBeTruthy()
     expect(page.url()).toContain(`/courses/${courseUuid}/curriculum`)
@@ -109,17 +110,25 @@ test.describe.serial('Teacher – Course Creation', () => {
 
     await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 })
     const match = /\/activity\/([^/]+)\/studio/.exec(page.url())
-    expect(match).not.toBeNull()
-    const activityId = match![1]
-    process.env.E2E_LECTURE_ACTIVITY_ID = activityId
+    if (!match) {
+      throw new Error('Could not extract lecture activity id from the studio URL.')
+    }
+    const activityId = match[1]
+    if (!activityId) {
+      throw new Error('Lecture activity id capture group was empty.')
+    }
+    setEnv('E2E_LECTURE_ACTIVITY_ID', activityId)
 
     const studio = new ActivityStudioPage(page)
     await studio.typeInEditor('Introduction to the Course')
   })
 
   test('teacher can insert a callout block in the lecture', async ({ page }) => {
-    const activityId = process.env.E2E_LECTURE_ACTIVITY_ID!
-    if (!activityId) test.skip(true, 'Lecture activity not created in prior test')
+    const activityId = getEnv('E2E_LECTURE_ACTIVITY_ID')
+    if (!activityId) {
+      test.skip(true, 'Lecture activity not created in prior test')
+      return
+    }
 
     const studio = new ActivityStudioPage(page)
     await studio.goto(courseUuid, activityId)
@@ -165,8 +174,14 @@ test.describe.serial('Teacher – Course Creation', () => {
     await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 })
 
     const match = /\/activity\/([^/]+)\/studio/.exec(page.url())
-    expect(match).not.toBeNull()
-    process.env.E2E_EXAM_ACTIVITY_ID = match![1]
+    if (!match) {
+      throw new Error('Could not extract exam activity id from the studio URL.')
+    }
+    const examActivityId = match[1]
+    if (!examActivityId) {
+      throw new Error('Exam activity id capture group was empty.')
+    }
+    setEnv('E2E_EXAM_ACTIVITY_ID', examActivityId)
 
     const studio = new ActivityStudioPage(page)
 
@@ -187,8 +202,11 @@ test.describe.serial('Teacher – Course Creation', () => {
   })
 
   test('teacher can add a True/False question to the exam', async ({ page }) => {
-    const examActivityId = process.env.E2E_EXAM_ACTIVITY_ID!
-    if (!examActivityId) test.skip(true, 'Exam activity not created in prior test')
+    const examActivityId = getEnv('E2E_EXAM_ACTIVITY_ID')
+    if (!examActivityId) {
+      test.skip(true, 'Exam activity not created in prior test')
+      return
+    }
 
     const studio = new ActivityStudioPage(page)
     await studio.goto(courseUuid, examActivityId)
@@ -204,8 +222,11 @@ test.describe.serial('Teacher – Course Creation', () => {
   })
 
   test('teacher can add a multi-select question to the exam', async ({ page }) => {
-    const examActivityId = process.env.E2E_EXAM_ACTIVITY_ID!
-    if (!examActivityId) test.skip(true, 'Exam activity not created in prior test')
+    const examActivityId = getEnv('E2E_EXAM_ACTIVITY_ID')
+    if (!examActivityId) {
+      test.skip(true, 'Exam activity not created in prior test')
+      return
+    }
 
     const studio = new ActivityStudioPage(page)
     await studio.goto(courseUuid, examActivityId)

@@ -141,7 +141,7 @@ export function MarkdownContent({
               <MarkdownHeading
                 level={1}
                 anchorId={nextHeadingId(children)}
-                onAnchorClick={onHeadingAnchorClick}
+                {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
@@ -154,7 +154,7 @@ export function MarkdownContent({
               <MarkdownHeading
                 level={2}
                 anchorId={nextHeadingId(children)}
-                onAnchorClick={onHeadingAnchorClick}
+                {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
@@ -167,7 +167,7 @@ export function MarkdownContent({
               <MarkdownHeading
                 level={3}
                 anchorId={nextHeadingId(children)}
-                onAnchorClick={onHeadingAnchorClick}
+                {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
@@ -216,7 +216,7 @@ export function MarkdownContent({
             return (
               <MarkdownCodeBlock
                 code={code}
-                language={match?.[1]}
+                {...(match?.[1] ? { language: match[1] } : {})}
                 compact={compact || mode === 'compactRichText'}
               />
             )
@@ -240,7 +240,13 @@ export function MarkdownContent({
               )
             }
             const safeHref = sanitizeMarkdownImageUrl(typeof src === 'string' ? src : undefined)
-            return <MarkdownImage src={safeHref} alt={alt} title={title} />
+            return (
+              <MarkdownImage
+                {...(safeHref ? { src: safeHref } : {})}
+                {...(alt ? { alt } : {})}
+                {...(title ? { title } : {})}
+              />
+            )
           },
 
           // ── Paragraphs (streaming cursor) ──────────────────────────────────

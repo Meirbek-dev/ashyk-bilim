@@ -79,13 +79,13 @@ export default function StudentActivityWorkspace({
 
   useEffect(() => {
     if (focusMode) {
-      document.documentElement.dataset.activityFocus = 'true'
+      document.documentElement.dataset['activityFocus'] = 'true'
       return () => {
-        delete document.documentElement.dataset.activityFocus
+        delete document.documentElement.dataset['activityFocus']
       }
     }
 
-    delete document.documentElement.dataset.activityFocus
+    delete document.documentElement.dataset['activityFocus']
     return undefined
   }, [focusMode])
 

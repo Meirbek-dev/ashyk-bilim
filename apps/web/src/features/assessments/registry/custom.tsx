@@ -41,7 +41,7 @@ registerKind('TYPE_CUSTOM', async () => {
       <GradingReviewWorkspace
         activityId={activityId}
         initialSubmissionUuid={submissionUuid ?? null}
-        title={title}
+        {...(title !== undefined ? { title } : {})}
       />
     )
   }

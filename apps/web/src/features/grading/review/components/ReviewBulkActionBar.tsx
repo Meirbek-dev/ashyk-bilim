@@ -35,7 +35,7 @@ interface BulkActionSummary {
 }
 
 export default function ReviewBulkActionBar({
-  activityId,
+  activityId: _activityId,
   assessmentUuid,
   submissions,
   disabled,

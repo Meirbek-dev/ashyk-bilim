@@ -72,11 +72,11 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
     const schema = getSchema(extensions)
 
     // Both node types must be registered in the schema
-    expect(schema.nodes.blockEmbed).toBeDefined()
-    expect(schema.nodes.embedBlock).toBeDefined()
+    expect(schema.nodes['blockEmbed']).toBeDefined()
+    expect(schema.nodes['embedBlock']).toBeDefined()
 
     // Node names must not conflict
-    expect(schema.nodes.blockEmbed).not.toBe(schema.nodes.embedBlock)
+    expect(schema.nodes['blockEmbed']).not.toBe(schema.nodes['embedBlock'])
   })
 
   it('parses a document containing both blockEmbed and embedBlock nodes without errors', () => {
@@ -104,14 +104,14 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
 
     const blockEmbedNode = serialized.content[1]
     expect(blockEmbedNode.type).toBe('blockEmbed')
-    expect(blockEmbedNode.attrs.embedUrl).toBe('https://example.com/embed')
-    expect(blockEmbedNode.attrs.embedType).toBe('url')
+    expect(blockEmbedNode.attrs['embedUrl']).toBe('https://example.com/embed')
+    expect(blockEmbedNode.attrs['embedType']).toBe('url')
 
     const embedBlockNode = serialized.content[2]
     expect(embedBlockNode.type).toBe('embedBlock')
-    expect(embedBlockNode.attrs.type).toBe('youtube')
-    expect(embedBlockNode.attrs.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
-    expect(embedBlockNode.attrs.height).toBe(500)
+    expect(embedBlockNode.attrs['type']).toBe('youtube')
+    expect(embedBlockNode.attrs['url']).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    expect(embedBlockNode.attrs['height']).toBe(500)
   })
 
   it('loads the mixed document into a live Editor instance without errors', () => {
@@ -135,15 +135,15 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
     expect(blockEmbedNode).toBeDefined()
     if (!blockEmbedNode) throw new Error('Expected blockEmbed node')
     expect(blockEmbedNode.type).toBe('blockEmbed')
-    expect(blockEmbedNode.attrs?.embedUrl).toBe('https://example.com/embed')
+    expect(blockEmbedNode.attrs?.['embedUrl']).toBe('https://example.com/embed')
 
     // Verify embedBlock node is present and intact
     const embedBlockNode = content[2]
     expect(embedBlockNode).toBeDefined()
     if (!embedBlockNode) throw new Error('Expected embedBlock node')
     expect(embedBlockNode.type).toBe('embedBlock')
-    expect(embedBlockNode.attrs?.type).toBe('youtube')
-    expect(embedBlockNode.attrs?.url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    expect(embedBlockNode.attrs?.['type']).toBe('youtube')
+    expect(embedBlockNode.attrs?.['url']).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
   })
 
   it('can insert an embedBlock node into a document that already contains a blockEmbed node', () => {

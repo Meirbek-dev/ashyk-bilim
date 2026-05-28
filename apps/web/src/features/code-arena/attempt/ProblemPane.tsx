@@ -239,7 +239,10 @@ export function ProblemPane({
         </TabsContent>
 
         <TabsContent value="submissions" className="min-h-0 flex-1 overflow-hidden">
-          <SubmissionTimeline submissions={submissions} onRestoreSubmission={onRestoreSubmission} />
+          <SubmissionTimeline
+            submissions={submissions}
+            {...(onRestoreSubmission ? { onRestoreSubmission } : {})}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -4,12 +4,12 @@ export async function reportClientError(payload: Record<string, unknown>): Promi
   const origin = typeof globalThis.window !== 'undefined' ? globalThis.location.origin : undefined
 
   await apiFetch('/api/log-error', {
-    baseUrl: origin,
     body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
     },
     keepalive: true,
     method: 'POST',
+    ...(origin ? { baseUrl: origin } : {}),
   })
 }

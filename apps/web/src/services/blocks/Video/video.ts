@@ -25,19 +25,25 @@ export async function uploadNewVideoFile(
     }
 
     try {
+      const uploadProgress = onProgress
+        ? (progress: {
+            percentage: number
+            currentChunk: number
+            totalChunks: number
+          }) =>
+            onProgress({
+              percentage: progress.percentage,
+              currentChunk: progress.currentChunk,
+              totalChunks: progress.totalChunks,
+            })
+        : undefined
+
       const result = await uploadFileChunked({
         file,
         directory: `courses/${course_uuid}/activities/${activity_uuid}/dynamic/blocks/videoBlock/${block_uuid}`,
         typeOfDir: 'platform',
         filename: `block_${Date.now()}.${file.name.split('.').pop()}`,
-        onProgress: onProgress
-          ? progress =>
-              onProgress({
-                percentage: progress.percentage,
-                currentChunk: progress.currentChunk,
-                totalChunks: progress.totalChunks,
-              })
-          : undefined,
+        ...(uploadProgress ? { onProgress: uploadProgress } : {}),
       })
 
       const savedFilename = result.filename

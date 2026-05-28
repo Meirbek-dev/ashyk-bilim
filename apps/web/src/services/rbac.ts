@@ -25,9 +25,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   headers.set('Content-Type', 'application/json')
 
   const res = await apiFetch(path, {
-    method: options?.method,
-    body: options?.body,
     headers,
+    ...(options?.method ? { method: options.method } : {}),
+    ...(options?.body !== undefined ? { body: options.body } : {}),
   })
 
   if (!res.ok) {

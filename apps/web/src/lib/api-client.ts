@@ -164,7 +164,7 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   try {
     const response = await fetch(url, {
       ...options,
-      signal: combinedSignal?.signal,
+      ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
     })
 
     if (!isServer && response.status === 401 && !authRedirectPending) {

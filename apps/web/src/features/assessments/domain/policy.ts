@@ -92,16 +92,18 @@ export function policyFromAssessmentPolicy(
       typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
     latePolicy: {
       penaltyPercent:
-        typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
+        typeof latePolicy['penalty_percent'] === 'number' ? latePolicy['penalty_percent'] : 0,
     },
     antiCheat: {
-      copyPasteProtection: Boolean(antiCheat.copy_paste_protection),
-      tabSwitchDetection: Boolean(antiCheat.tab_switch_detection),
-      devtoolsDetection: Boolean(antiCheat.devtools_detection),
-      rightClickDisabled: Boolean(antiCheat.right_click_disable),
-      fullscreenEnforced: Boolean(antiCheat.fullscreen_enforcement),
+      copyPasteProtection: Boolean(antiCheat['copy_paste_protection']),
+      tabSwitchDetection: Boolean(antiCheat['tab_switch_detection']),
+      devtoolsDetection: Boolean(antiCheat['devtools_detection']),
+      rightClickDisabled: Boolean(antiCheat['right_click_disable']),
+      fullscreenEnforced: Boolean(antiCheat['fullscreen_enforcement']),
       violationThreshold:
-        typeof antiCheat.violation_threshold === 'number' ? antiCheat.violation_threshold : null,
+        typeof antiCheat['violation_threshold'] === 'number'
+          ? antiCheat['violation_threshold']
+          : null,
     },
   }
 }

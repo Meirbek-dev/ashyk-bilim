@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { getAvatarInitials, normalizeAvatarUrl, resolveAvatarUrl } from '@/services/media/avatar'
 
-process.env.NEXT_PUBLIC_SITE_URL = 'https://app.test'
-process.env.NEXT_PUBLIC_API_URL = 'https://api.test'
-process.env.NEXT_PUBLIC_MEDIA_URL = 'https://media.test/static/'
+process.env['NEXT_PUBLIC_SITE_URL'] = 'https://app.test'
+process.env['NEXT_PUBLIC_API_URL'] = 'https://api.test'
+process.env['NEXT_PUBLIC_MEDIA_URL'] = 'https://media.test/static/'
 
 describe('avatar URL normalization', () => {
   it('proxies Google profile image URLs through the app', () => {

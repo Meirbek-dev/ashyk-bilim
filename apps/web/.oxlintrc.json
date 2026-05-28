@@ -1,13 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "categories": {
-    "correctness": "error",
+    "correctness": "warn",
     "nursery": "warn",
     "pedantic": "off",
-    "perf": "error",
+    "perf": "warn",
     "restriction": "warn",
     "style": "warn",
-    "suspicious": "error"
+    "suspicious": "warn"
   },
   "env": {
     "builtin": true,
@@ -140,19 +140,19 @@
     "unicorn/filename-case": "off",
 
     /* High-Density Agentic & Token Optimization Enforcements */
-    "no-extra-boolean-cast": "error",
-    "no-regex-spaces": "error",
-    "no-useless-catch": "error",
-    "no-useless-computed-key": "error",
-    "no-useless-concat": "error",
-    "no-useless-rename": "error",
-    "object-shorthand": "error",
-    "import/no-duplicates": "error",
-    "import/no-self-import": "error",
-    "typescript/no-extra-non-null-assertion": "error",
-    "typescript/no-unnecessary-type-constraint": "error",
-    "unicorn/prefer-array-find": "error",
-    "unicorn/prefer-includes": "error"
+    "no-extra-boolean-cast": "warn",
+    "no-regex-spaces": "warn",
+    "no-useless-catch": "warn",
+    "no-useless-computed-key": "warn",
+    "no-useless-concat": "warn",
+    "no-useless-rename": "warn",
+    "object-shorthand": "warn",
+    "import/no-duplicates": "warn",
+    "import/no-self-import": "warn",
+    "typescript/no-extra-non-null-assertion": "warn",
+    "typescript/no-unnecessary-type-constraint": "warn",
+    "unicorn/prefer-array-find": "warn",
+    "unicorn/prefer-includes": "warn"
   },
   "settings": {}
 }

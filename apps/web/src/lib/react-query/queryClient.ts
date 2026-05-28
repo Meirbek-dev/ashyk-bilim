@@ -80,5 +80,5 @@ export function createQueryPersister() {
 }
 
 export function shouldPersistQuery(query: Query) {
-  return query.meta?.persist === true && query.state.status === 'success'
+  return query.meta?.['persist'] === true && query.state.status === 'success'
 }

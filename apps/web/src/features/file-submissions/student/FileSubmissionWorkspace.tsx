@@ -412,20 +412,20 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
     const showResult =
       status === 'PUBLISHED' || (status === 'RETURNED' && activeAttempt.final_score !== null)
     const canRevise = status === 'RETURNED'
+    const handleRevise = canRevise
+      ? async () => {
+          await queryClient.invalidateQueries({
+            queryKey: queryKey(activityUuid),
+          })
+        }
+      : undefined
+
     return (
       <div className="space-y-6">
         {showResult ? (
           <FileSubmissionResult
             attempt={activeAttempt}
-            onRevise={
-              canRevise
-                ? async () => {
-                    await queryClient.invalidateQueries({
-                      queryKey: queryKey(activityUuid),
-                    })
-                  }
-                : undefined
-            }
+            {...(handleRevise ? { onRevise: handleRevise } : {})}
           />
         ) : null}
         {canRevise ? (
@@ -458,12 +458,12 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
     <div className="space-y-6">
       <Header
         instructions={data.instructions}
-        dueAt={data.due_at}
         allowedMimes={data.allowed_mime_types}
         maxFiles={maxFiles}
-        maxFileSizeMb={data.max_file_size_mb}
         lifecycle={data.lifecycle}
         attempt={activeAttempt}
+        {...(data.due_at !== undefined ? { dueAt: data.due_at } : {})}
+        {...(data.max_file_size_mb !== undefined ? { maxFileSizeMb: data.max_file_size_mb } : {})}
       />
       <DraftEditor
         data={data}

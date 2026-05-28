@@ -2,11 +2,12 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { getSession } from '@/lib/auth/session'
+import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
 import { getAssessmentByUuid } from '@services/assessments/assessments'
 
 interface Props {
   params: Promise<{ assessmentUuid: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
@@ -31,7 +32,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 export default async function AssessmentAttemptPage(props: Props) {
   const { assessmentUuid } = await props.params
   const searchParams = await props.searchParams
-  const reviewSubmissionUuid = typeof searchParams.review === 'string' ? searchParams.review : null
+  const reviewSubmissionUuid = getSearchParam(searchParams, 'review') ?? null
 
   const [assessment, initialSession] = await Promise.all([
     getAssessmentByUuid(assessmentUuid),

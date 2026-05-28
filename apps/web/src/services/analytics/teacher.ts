@@ -96,24 +96,38 @@ async function analyticsRequest<T>(
 export function normalizeAnalyticsQuery(
   searchParams: Record<string, string | string[] | undefined>,
 ): AnalyticsQuery {
-  const teacherUserId = getFirstQueryValue(searchParams.teacher_user_id)
-  const page = getFirstQueryValue(searchParams.page)
-  const pageSize = getFirstQueryValue(searchParams.page_size)
+  const teacherUserId = getFirstQueryValue(searchParams['teacher_user_id'])
+  const page = getFirstQueryValue(searchParams['page'])
+  const pageSize = getFirstQueryValue(searchParams['page_size'])
+
   return {
-    window: (getFirstQueryValue(searchParams.window) as AnalyticsQuery['window']) || '28d',
+    window: (getFirstQueryValue(searchParams['window']) as AnalyticsQuery['window']) || '28d',
     compare:
-      (getFirstQueryValue(searchParams.compare) as AnalyticsQuery['compare']) || 'previous_period',
-    bucket: (getFirstQueryValue(searchParams.bucket) as AnalyticsQuery['bucket']) || 'day',
-    course_ids: getFirstQueryValue(searchParams.course_ids),
-    cohort_ids: getFirstQueryValue(searchParams.cohort_ids),
-    teacher_user_id: getOptionalInteger(teacherUserId),
-    timezone: getFirstQueryValue(searchParams.timezone) || 'UTC',
+      (getFirstQueryValue(searchParams['compare']) as AnalyticsQuery['compare']) ||
+      'previous_period',
+    bucket: (getFirstQueryValue(searchParams['bucket']) as AnalyticsQuery['bucket']) || 'day',
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
-    sort_by: getFirstQueryValue(searchParams.sort_by),
     sort_order:
-      (getFirstQueryValue(searchParams.sort_order) as AnalyticsQuery['sort_order']) || 'desc',
-    bucket_start: getFirstQueryValue(searchParams.bucket_start),
+      (getFirstQueryValue(searchParams['sort_order']) as AnalyticsQuery['sort_order']) || 'desc',
+    ...(getFirstQueryValue(searchParams['course_ids'])
+      ? { course_ids: getFirstQueryValue(searchParams['course_ids']) }
+      : {}),
+    ...(getFirstQueryValue(searchParams['cohort_ids'])
+      ? { cohort_ids: getFirstQueryValue(searchParams['cohort_ids']) }
+      : {}),
+    ...(getOptionalInteger(teacherUserId) !== undefined
+      ? { teacher_user_id: getOptionalInteger(teacherUserId) }
+      : {}),
+    ...(getFirstQueryValue(searchParams['timezone'])
+      ? { timezone: getFirstQueryValue(searchParams['timezone']) }
+      : { timezone: 'UTC' }),
+    ...(getFirstQueryValue(searchParams['sort_by'])
+      ? { sort_by: getFirstQueryValue(searchParams['sort_by']) }
+      : {}),
+    ...(getFirstQueryValue(searchParams['bucket_start'])
+      ? { bucket_start: getFirstQueryValue(searchParams['bucket_start']) }
+      : {}),
   }
 }
 

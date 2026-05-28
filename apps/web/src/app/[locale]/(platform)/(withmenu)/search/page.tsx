@@ -1,21 +1,20 @@
 import { getPlatformThumbnailImage } from '@services/media/media'
 import { APP_NAME } from '@/lib/constants'
+import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
 import SearchPage from '@/app/_shared/withmenu/search/search'
 
 interface MetadataProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const searchParams = await props.searchParams
   const t = await getTranslations('General')
-  const searchQuery = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q || ''
-  const searchType = Array.isArray(searchParams.type)
-    ? searchParams.type[0]
-    : searchParams.type || 'all'
+  const searchQuery = getSearchParam(searchParams, 'q') ?? ''
+  const searchType = getSearchParam(searchParams, 'type') ?? 'all'
 
   let title = `${t('search')} - ${APP_NAME}`
   let description = `${t('searchContent')} ${APP_NAME}. ${t('discoverCourses')}, ${t('collections')}, ${t('andUsers')}.`

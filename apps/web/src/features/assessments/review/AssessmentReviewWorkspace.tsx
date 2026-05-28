@@ -105,7 +105,7 @@ export default function AssessmentReviewWorkspace({
       title={reviewProjection.title}
       initialSubmissionUuid={initialSubmissionUuid ?? null}
       initialFilter={initialSubmissionUuid ? 'ALL' : (reviewProjection.default_filter ?? 'ALL')}
-      kindModule={kindModule}
+      {...(kindModule ? { kindModule } : {})}
     />
   )
 }

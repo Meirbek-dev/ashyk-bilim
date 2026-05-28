@@ -233,8 +233,8 @@ export function GlowingLevelBadge({
   return (
     <motion.div
       className={cn('relative inline-flex items-center justify-center', className)}
-      whileHover={shouldAnimate ? { scale: 1.08 } : undefined}
       transition={{ duration: 0.2 }}
+      {...(shouldAnimate ? { whileHover: { scale: 1.08 } } : {})}
     >
       {/* Subtle background glow */}
       <div

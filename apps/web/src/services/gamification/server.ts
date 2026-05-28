@@ -44,7 +44,6 @@ function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamifica
   const updatedAt = stringOrNull(payload.updated_at) ?? createdAt
 
   const profile: UserGamificationProfile = {
-    id: undefined,
     user_id: numberOr(payload.user_id),
     total_xp: Math.max(0, numberOr(payload.total_xp)),
     level: Math.max(1, numberOr(payload.level, 1)),
@@ -69,6 +68,15 @@ function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamifica
     created_at: createdAt,
     updated_at: updatedAt,
     preferences: recordOrEmpty(payload.preferences),
+    ...(payload.xp_to_next_level !== undefined
+      ? { xp_to_next_level: numberOr(payload.xp_to_next_level) }
+      : {}),
+    ...(payload.level_progress_percent !== undefined
+      ? { level_progress_percent: numberOr(payload.level_progress_percent) }
+      : {}),
+    ...(payload.xp_in_current_level !== undefined
+      ? { xp_in_current_level: numberOr(payload.xp_in_current_level) }
+      : {}),
   }
 
   return profile
@@ -102,7 +110,7 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
         first_name: 'first_name' in data ? (data.first_name ?? null) : null,
         last_name: 'last_name' in data ? (data.last_name ?? null) : null,
         avatar_url: 'avatar_url' in data ? (data.avatar_url ?? null) : null,
-        rank_change: typeof data.rank_change === 'number' ? data.rank_change : undefined,
+        ...(typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {}),
       }
     }),
     total_participants: Math.max(0, numberOr(payload?.total_participants)),
@@ -243,9 +251,9 @@ async function revalidateGamificationTags() {
 export async function awardXPOnServer(payload: XPAwardRequest): Promise<XPAwardResponse> {
   const body: ApiXPAwardRequest = {
     source: payload.source,
-    source_id: payload.source_id,
-    custom_amount: payload.amount,
-    idempotency_key: payload.idempotency_key,
+    ...(payload.source_id !== undefined ? { source_id: payload.source_id } : {}),
+    ...(payload.amount !== undefined ? { custom_amount: payload.amount } : {}),
+    ...(payload.idempotency_key !== undefined ? { idempotency_key: payload.idempotency_key } : {}),
   }
   const res = await apiFetch('gamification/xp', {
     method: 'POST',

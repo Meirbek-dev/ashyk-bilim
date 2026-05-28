@@ -53,7 +53,7 @@ describe('MarkdownEditor', () => {
       content: 'hello',
     })
 
-    expect(editor.schema.nodes.codeBlock).toBeUndefined()
+    expect(editor.schema.nodes['codeBlock']).toBeUndefined()
   })
 
   it('supports source mode editing against the canonical Markdown string', async () => {

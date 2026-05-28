@@ -9,25 +9,26 @@
 
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { getEnvOr } from '../env'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export const USERS = {
   admin: {
-    email: process.env.E2E_ADMIN_EMAIL ?? 'admin@test.local',
-    password: process.env.E2E_ADMIN_PASSWORD ?? 'Admin1234!',
+    email: getEnvOr('E2E_ADMIN_EMAIL', 'admin@test.local'),
+    password: getEnvOr('E2E_ADMIN_PASSWORD', 'Admin1234!'),
   },
   teacher: {
-    email: process.env.E2E_TEACHER_EMAIL ?? 'teacher@test.local',
-    password: process.env.E2E_TEACHER_PASSWORD ?? 'Teacher1234!',
-    firstName: process.env.E2E_TEACHER_FIRST_NAME ?? 'Eve',
-    lastName: process.env.E2E_TEACHER_LAST_NAME ?? 'Teach',
+    email: getEnvOr('E2E_TEACHER_EMAIL', 'teacher@test.local'),
+    password: getEnvOr('E2E_TEACHER_PASSWORD', 'Teacher1234!'),
+    firstName: getEnvOr('E2E_TEACHER_FIRST_NAME', 'Eve'),
+    lastName: getEnvOr('E2E_TEACHER_LAST_NAME', 'Teach'),
   },
   student: {
-    email: process.env.E2E_STUDENT_EMAIL ?? 'student@test.local',
-    password: process.env.E2E_STUDENT_PASSWORD ?? 'Student1234!',
-    firstName: process.env.E2E_STUDENT_FIRST_NAME ?? 'Sam',
-    lastName: process.env.E2E_STUDENT_LAST_NAME ?? 'Learn',
+    email: getEnvOr('E2E_STUDENT_EMAIL', 'student@test.local'),
+    password: getEnvOr('E2E_STUDENT_PASSWORD', 'Student1234!'),
+    firstName: getEnvOr('E2E_STUDENT_FIRST_NAME', 'Sam'),
+    lastName: getEnvOr('E2E_STUDENT_LAST_NAME', 'Learn'),
   },
 } as const
 

@@ -53,10 +53,10 @@ export default function ReviewLayout({
             </div>
             <ReviewBulkActionBar
               activityId={activityId}
-              assessmentUuid={assessmentUuid}
               submissions={selectedSubmissions}
               disabled={selectedSubmissions.length === 0}
               onRefresh={onBulkRefresh}
+              {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
             />
           </div>
           <StatsGrid stats={stats} />

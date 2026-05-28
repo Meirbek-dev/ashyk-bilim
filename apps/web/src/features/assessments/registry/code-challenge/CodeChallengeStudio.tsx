@@ -80,8 +80,9 @@ const DEFAULT_VALUES: CodeChallengeSettingsForm = {
 
 export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudioProps) {
   const t = useTranslations('Activities.CodeChallenges')
-  const { data: settings, isLoading } =
-    useCodeChallengeSettings<Partial<CodeChallengeSettingsForm>>(activityUuid)
+  const { data: settings, isLoading } = useCodeChallengeSettings<Partial<CodeChallengeSettingsForm>>(
+    activityUuid,
+  )
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
   const form = useForm<CodeChallengeSettingsForm>({
     defaultValues: DEFAULT_VALUES,

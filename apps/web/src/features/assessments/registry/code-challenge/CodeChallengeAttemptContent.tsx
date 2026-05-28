@@ -57,26 +57,27 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
             activityUuid: normalizedActivityUuid,
             item: codeItem,
             settings,
-            title: vm?.title,
-            description: vm?.description,
+            ...(vm?.title !== undefined ? { title: vm.title } : {}),
+            ...(vm?.description !== undefined ? { description: vm.description } : {}),
           })
         : null,
     [codeItem, normalizedActivityUuid, settings, vm?.description, vm?.title],
   )
 
-  const shellControls = useMemo(
-    () => ({
+  const shellControls = useMemo(() => {
+    const onSave =
+      Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty'
+        ? () => submissionState.save()
+        : undefined
+    const onSubmit = vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined
+
+    return {
       saveState: mapSaveState(submissionState.saveState, submissionState.status),
       status: submissionState.status,
       canSave: Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty',
       canSubmit: Boolean(vm?.canSubmit && submitControl?.canSubmit),
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting || Boolean(submitControl?.isSubmitting),
-      onSave:
-        Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty'
-          ? () => submissionState.save()
-          : undefined,
-      onSubmit: vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined,
       conflict: submissionState.conflict
         ? {
             open: true,
@@ -88,9 +89,10 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
             onUseServerVersion: submissionState.conflict.onUseServerVersion,
           }
         : null,
-    }),
-    [submissionState, submitControl, vm?.canSaveDraft, vm?.canSubmit],
-  )
+      ...(onSave ? { onSave } : {}),
+      ...(onSubmit ? { onSubmit } : {}),
+    }
+  }, [submissionState, submitControl, vm?.canSaveDraft, vm?.canSubmit])
   useAttemptShellControls(shellControls)
 
   useEffect(() => {
@@ -190,10 +192,10 @@ function toCodeChallengeTestCase(test: {
     id: test.id,
     input: test.input,
     expected_output: test.expected_output,
-    description: test.description ?? undefined,
     is_visible: test.is_visible,
     weight: test.weight,
     match_mode: test.match_mode ?? 'EXACT',
+    ...(test.description ? { description: test.description } : {}),
   }
 }
 

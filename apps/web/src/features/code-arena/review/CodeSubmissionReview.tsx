@@ -129,14 +129,14 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
           {latestRun?.details?.length ? (
             <div className="grid gap-2.5">
               {latestRun.details.map((detail: Record<string, unknown>, index: number) => {
-                const passedCase = Boolean(detail.passed)
+                const passedCase = Boolean(detail['passed'])
                 const testId =
-                  typeof detail.test_id === 'string' || typeof detail.test_id === 'number'
-                    ? String(detail.test_id)
+                  typeof detail['test_id'] === 'string' || typeof detail['test_id'] === 'number'
+                    ? String(detail['test_id'])
                     : null
-                const message = typeof detail.message === 'string' ? detail.message : null
+                const message = typeof detail['message'] === 'string' ? detail['message'] : null
                 const compileOutput =
-                  typeof detail.compile_output === 'string' ? detail.compile_output : null
+                  typeof detail['compile_output'] === 'string' ? detail['compile_output'] : null
 
                 return (
                   <div

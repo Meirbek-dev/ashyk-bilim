@@ -22,9 +22,11 @@ export function getMarkdownSaveGate(
   options: { intent?: MarkdownSaveIntent; required?: boolean } = {},
 ): MarkdownSaveGate {
   const intent = options.intent ?? 'draft'
-  const issues = validateMarkdownContent(markdown, preset, {
-    required: options.required,
-  })
+  const issues = validateMarkdownContent(
+    markdown,
+    preset,
+    options.required !== undefined ? { required: options.required } : {},
+  )
   const errors = issues.filter(issue => issue.severity === 'error')
   const warnings = issues.filter(issue => issue.severity === 'warning')
   const info = issues.filter(issue => issue.severity === 'info')

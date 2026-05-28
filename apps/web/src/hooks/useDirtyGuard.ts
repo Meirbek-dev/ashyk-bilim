@@ -12,7 +12,7 @@ export function useDirtyGuard(options?: DirtyGuardOptions) {
   const hasDrafts = useCourseEditorStore(selectHasDirtySections)
   const guard = useUnsavedChangesGuard(hasDrafts, {
     interceptInAppNavigation: options?.interceptInAppNavigation ?? true,
-    message: options?.message,
+    ...(options?.message !== undefined ? { message: options.message } : {}),
   })
 
   return {

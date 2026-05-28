@@ -160,8 +160,8 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
     mini_description: course.description ?? '',
     tags: normalizeTags(course.tags),
     thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
     thumbnail_video: course.thumbnail_video ?? '',
+    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
   }
 }
 
@@ -177,8 +177,8 @@ function normalizeCourseWithPermissions(
     mini_description: course.description ?? '',
     tags: normalizeTags(course.tags),
     thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
     thumbnail_video: course.thumbnail_video ?? '',
+    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
   }
 }
 
@@ -189,15 +189,15 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     authors: normalizeAuthors(course.authors),
     chapters: course.chapters ?? [],
     course_uuid: course.course_uuid ?? '',
-    creation_date: course.creation_date ?? undefined,
     description: course.description ?? '',
     learnings: course.learnings ?? '',
     mini_description: course.description ?? '',
     tags: normalizeTags(course.tags),
     thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
     thumbnail_video: course.thumbnail_video ?? '',
-    update_date: course.update_date ?? undefined,
+    ...(course.creation_date !== undefined ? { creation_date: course.creation_date } : {}),
+    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
+    ...(course.update_date !== undefined ? { update_date: course.update_date } : {}),
   }
 }
 

@@ -23,11 +23,13 @@ export interface OpenTextAnswer {
 
 export function normalizeOpenText(raw: Record<string, unknown> | null | undefined): OpenTextValue {
   const body =
-    raw?.body && typeof raw.body === 'object' ? (raw.body as Record<string, unknown>) : {}
+    raw?.['body'] && typeof raw['body'] === 'object'
+      ? (raw['body'] as Record<string, unknown>)
+      : {}
   return {
     kind: 'OPEN_TEXT',
     body: {
-      prompt: typeof body.prompt === 'string' ? body.prompt : '',
+      prompt: typeof body['prompt'] === 'string' ? body['prompt'] : '',
     },
   }
 }
@@ -47,9 +49,9 @@ export function OpenTextAuthor({ value, disabled, onChange }: ItemAuthorProps<Op
       <MarkdownEditor
         value={value.body.prompt}
         placeholder={t('promptPlaceholder')}
-        disabled={disabled}
         preset="questionPrompt"
         onChange={prompt => onChange({ ...value, body: { prompt } })}
+        {...(disabled !== undefined ? { disabled } : {})}
       />
     </div>
   )
@@ -70,9 +72,9 @@ export function OpenTextAttempt({
         className="min-h-36"
         onChange={event =>
           onAnswerChange({
-            task_uuid: item.taskUuid,
             content_type: 'text',
             text: event.target.value,
+            ...(item.taskUuid ? { task_uuid: item.taskUuid } : {}),
           })
         }
       />

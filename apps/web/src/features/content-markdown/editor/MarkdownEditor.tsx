@@ -63,7 +63,12 @@ export function MarkdownEditor({
   const isInternalUpdateRef = useRef(false)
 
   const issues = useMemo(
-    () => validateMarkdownContent(normalizedValue, preset, { required }),
+    () =>
+      validateMarkdownContent(
+        normalizedValue,
+        preset,
+        required ? { required } : {},
+      ),
     [normalizedValue, preset, required],
   )
 
@@ -78,7 +83,7 @@ export function MarkdownEditor({
 
   // Stable extensions array — rebuilt only when preset changes
   const extensions = useMemo(
-    () => buildEditorExtensions({ config, placeholder }),
+    () => buildEditorExtensions(placeholder ? { config, placeholder } : { config }),
     [config, placeholder],
   )
 
@@ -88,7 +93,13 @@ export function MarkdownEditor({
     editable: !disabled,
     autofocus: autoFocus,
     immediatelyRender: false,
-    onBlur,
+    ...(onBlur
+      ? {
+          onBlur: () => {
+            onBlur()
+          },
+        }
+      : {}),
     onUpdate: ({ editor: activeEditor }) => {
       const markdown = (activeEditor.storage as MarkdownStorage).markdown?.getMarkdown?.()
       if (markdown === undefined) return

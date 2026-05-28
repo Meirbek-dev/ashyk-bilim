@@ -76,13 +76,15 @@ export function normalizeActivityProgress(
   return {
     state,
     complete: state === 'complete' || state === 'passed' || Boolean(cell.completed_at),
-    score: cell.score,
-    passed: cell.passed,
-    dueAt: cell.due_at,
     isLate: cell.is_late,
     teacherActionRequired: cell.teacher_action_required,
     attemptCount: cell.attempt_count,
-    latestSubmissionUuid: cell.latest_submission_uuid,
+    ...(cell.score !== undefined ? { score: cell.score } : {}),
+    ...(cell.passed !== undefined ? { passed: cell.passed } : {}),
+    ...(cell.due_at !== undefined ? { dueAt: cell.due_at } : {}),
+    ...(cell.latest_submission_uuid !== undefined
+      ? { latestSubmissionUuid: cell.latest_submission_uuid }
+      : {}),
   }
 }
 
@@ -160,7 +162,9 @@ export function derivePrimaryAction(options: {
     return {
       id: 'next_activity',
       enabled: true,
-      targetActivityUuid: options.nextActivityUuid,
+      ...(options.nextActivityUuid !== undefined
+        ? { targetActivityUuid: options.nextActivityUuid }
+        : {}),
     }
   }
   if (options.canMarkComplete) {

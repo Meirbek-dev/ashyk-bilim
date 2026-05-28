@@ -45,12 +45,16 @@ function codeChallengeSubmissionHookOptions(
   return queryOptions({
     ...codeChallengeSubmissionQueryOptions(normalizedActivityUuid, normalizedSubmissionUuid),
     enabled: Boolean(activityUuid && submissionUuid),
-    refetchInterval: options?.refetchInterval,
+    ...(options?.refetchInterval !== undefined
+      ? { refetchInterval: options.refetchInterval }
+      : {}),
   })
 }
 
-export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions(activityUuid))
+export function useCodeChallengeSettings<TSettings = unknown>(
+  activityUuid: string | null | undefined,
+) {
+  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid))
 }
 
 export function useJudge0Languages() {

@@ -74,15 +74,18 @@ export default function GradingReviewWorkspace({
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null)
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())
 
-  const { submissions, total, pages, page, setPage, isLoading, mutate } = useSubmissions({
+  const submissionOptions = {
     activityId,
-    assessmentUuid,
-    status: activeFilter === 'ALL' ? undefined : activeFilter,
-    search: search || undefined,
+    assessmentUuid: assessmentUuid ?? null,
     sortBy,
     pageSize: 20,
-  })
-  const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid)
+    ...(activeFilter === 'ALL' ? {} : { status: activeFilter }),
+    ...(search ? { search } : {}),
+  }
+
+  const { submissions, total, pages, page, setPage, isLoading, mutate } =
+    useSubmissions(submissionOptions)
+  const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid ?? null)
 
   useEffect(() => {
     if (initialSubmissionUuid) setSelectedUuid(initialSubmissionUuid)
@@ -161,15 +164,15 @@ export default function GradingReviewWorkspace({
     <AnnotationProvider>
       <ReviewLayout
         activityId={activityId}
-        assessmentUuid={assessmentUuid}
-        title={title}
         total={total}
-        stats={stats}
         selectedSubmissions={selectedSubmissions}
         onBulkRefresh={async () => {
           setSelectedUuids(new Set())
           await refresh()
         }}
+        {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
+        {...(title !== undefined ? { title } : {})}
+        {...(stats !== undefined ? { stats } : {})}
       >
         <SubmissionList
           submissions={submissions}
@@ -211,15 +214,15 @@ export default function GradingReviewWorkspace({
         <SubmissionInspector
           selectedUuid={selectedUuid}
           fallbackSubmission={selectedSubmission}
-          assessmentUuid={assessmentUuid}
-          activityUuid={activityUuid}
-          ReviewDetail={kindModule?.ReviewDetail}
+          {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
+          {...(activityUuid !== undefined ? { activityUuid } : {})}
+          {...(kindModule?.ReviewDetail ? { ReviewDetail: kindModule.ReviewDetail } : {})}
         />
         <GradeForm
           submissionUuid={selectedUuid}
-          assessmentUuid={assessmentUuid}
           onSaved={refresh}
           navigation={navigation}
+          {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
         />
       </ReviewLayout>
     </AnnotationProvider>

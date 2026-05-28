@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 
 interface EditorLinkDialogProps {
   /** Current href, or undefined if no link is active. */
-  currentHref?: string
+  currentHref: string | undefined
   /** Called with the new href, or empty string to remove the link. */
   onConfirm: (href: string, openInNewTab: boolean) => void
   onClose: () => void

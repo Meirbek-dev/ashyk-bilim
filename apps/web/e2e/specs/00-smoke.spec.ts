@@ -8,6 +8,7 @@
 
 import { test, expect } from '../fixtures'
 import { STORAGE_STATE } from '../auth-states'
+import { getEnvOr } from '../env'
 
 test.describe('Smoke – Public pages', () => {
   test('home page has the correct title', async ({ page }) => {
@@ -35,7 +36,7 @@ test.describe('Smoke – Public pages', () => {
   })
 
   test('API health endpoint responds with 200', async ({ page }) => {
-    const apiUrl = process.env.E2E_API_URL ?? 'http://localhost:1338/api/v1'
+    const apiUrl = getEnvOr('E2E_API_URL', 'http://localhost:1338/api/v1')
     const response = await page.request.get(`${apiUrl}/health`)
     expect(response.status()).toBe(200)
   })

@@ -84,7 +84,7 @@ export function EditorToolbar({
   }
 
   const currentLinkHref = editor?.isActive('link')
-    ? (editor.getAttributes('link').href as string | undefined)
+    ? (editor.getAttributes('link')['href'] as string | undefined)
     : undefined
 
   return (
@@ -100,7 +100,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.bold')}
               shortcut="Ctrl+B"
-              active={editor?.isActive('bold')}
+              active={editor?.isActive('bold') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleBold().run()}
             >
@@ -109,7 +109,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.italic')}
               shortcut="Ctrl+I"
-              active={editor?.isActive('italic')}
+              active={editor?.isActive('italic') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleItalic().run()}
             >
@@ -118,7 +118,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.strikethrough')}
               shortcut="Ctrl+Shift+S"
-              active={editor?.isActive('strike')}
+              active={editor?.isActive('strike') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleStrike().run()}
             >
@@ -127,7 +127,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.inlineCode')}
               shortcut="Ctrl+E"
-              active={editor?.isActive('code')}
+              active={editor?.isActive('code') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleCode().run()}
             >
@@ -142,7 +142,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.h1')}
               shortcut="Ctrl+Alt+1"
-              active={editor?.isActive('heading', { level: 1 })}
+              active={editor?.isActive('heading', { level: 1 }) ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
             >
@@ -151,7 +151,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.h2')}
               shortcut="Ctrl+Alt+2"
-              active={editor?.isActive('heading', { level: 2 })}
+              active={editor?.isActive('heading', { level: 2 }) ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
             >
@@ -160,7 +160,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.h3')}
               shortcut="Ctrl+Alt+3"
-              active={editor?.isActive('heading', { level: 3 })}
+              active={editor?.isActive('heading', { level: 3 }) ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
             >
@@ -174,7 +174,7 @@ export function EditorToolbar({
           <ToolbarGroup>
             <ToolbarButton
               title={t('toolbar.bulletList')}
-              active={editor?.isActive('bulletList')}
+              active={editor?.isActive('bulletList') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleBulletList().run()}
             >
@@ -182,7 +182,7 @@ export function EditorToolbar({
             </ToolbarButton>
             <ToolbarButton
               title={t('toolbar.orderedList')}
-              active={editor?.isActive('orderedList')}
+              active={editor?.isActive('orderedList') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleOrderedList().run()}
             >
@@ -191,7 +191,7 @@ export function EditorToolbar({
             {config.allowTaskList && (
               <ToolbarButton
                 title={t('toolbar.taskList')}
-                active={editor?.isActive('taskList')}
+                active={editor?.isActive('taskList') ?? null}
                 disabled={disabled}
                 onClick={() => {
                   if (!editor) return
@@ -210,7 +210,7 @@ export function EditorToolbar({
           <ToolbarGroup>
             <ToolbarButton
               title={t('toolbar.blockquote')}
-              active={editor?.isActive('blockquote')}
+              active={editor?.isActive('blockquote') ?? null}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleBlockquote().run()}
             >
@@ -219,7 +219,7 @@ export function EditorToolbar({
             {config.allowCodeBlock && (
               <ToolbarButton
                 title={t('toolbar.codeBlock')}
-                active={editor?.isActive('codeBlock')}
+                active={editor?.isActive('codeBlock') ?? null}
                 disabled={disabled}
                 onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
               >
@@ -235,7 +235,7 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.link')}
               shortcut="Ctrl+K"
-              active={editor?.isActive('link')}
+              active={editor?.isActive('link') ?? null}
               disabled={disabled}
               onClick={() => setLinkDialogOpen(true)}
             >
@@ -292,6 +292,7 @@ export function EditorToolbar({
           <ToolbarButton
             title={t('toolbar.undo')}
             shortcut="Ctrl+Z"
+            active={null}
             disabled={disabled || !editor?.can().undo()}
             onClick={() => editor?.chain().focus().undo().run()}
           >
@@ -300,6 +301,7 @@ export function EditorToolbar({
           <ToolbarButton
             title={t('toolbar.redo')}
             shortcut="Ctrl+Y"
+            active={null}
             disabled={disabled || !editor?.can().redo()}
             onClick={() => editor?.chain().focus().redo().run()}
           >
@@ -359,6 +361,7 @@ export function EditorToolbar({
           <ToolbarButton
             title={isFullscreen ? t('toolbar.exitFullscreen') : t('toolbar.fullscreen')}
             shortcut="F11"
+            active={null}
             disabled={false}
             onClick={onFullscreenToggle}
           >
@@ -406,7 +409,7 @@ function ToolbarButton({
 }: {
   title: string
   shortcut?: string
-  active?: boolean | null
+  active: boolean | null
   disabled?: boolean
   onClick?: () => void
   children: React.ReactNode

@@ -95,8 +95,8 @@ export function EditorPane({
             languages={languages}
             selectedId={languageId}
             onSelect={onLanguageChange}
-            allowedLanguages={allowedLanguages}
             disabled={readOnly}
+            {...(allowedLanguages ? { allowedLanguages } : {})}
           />
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button type="button" size="icon" variant="ghost" />}>
@@ -155,13 +155,15 @@ export function EditorPane({
         value={code}
         onChange={onCodeChange}
         languageId={languageId}
-        monacoLanguage={selectedLanguage?.monaco_language}
         readOnly={readOnly}
         height="100%"
         className="min-h-0 flex-1 rounded-none border-0"
         onMount={handleMount}
         options={monacoOptions}
-        readOnlyMessage={readOnly ? 'This submission is read-only.' : undefined}
+        {...(selectedLanguage?.monaco_language
+          ? { monacoLanguage: selectedLanguage.monaco_language }
+          : {})}
+        {...(readOnly ? { readOnlyMessage: 'This submission is read-only.' } : {})}
       />
     </div>
   )

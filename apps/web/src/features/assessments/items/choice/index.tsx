@@ -24,6 +24,14 @@ export interface ChoiceOption {
   isCorrect?: boolean
 }
 
+function buildChoiceOption(option: ChoiceOption): ChoiceOption {
+  return {
+    id: option.id,
+    text: option.text,
+    ...(option.isCorrect !== undefined ? { isCorrect: option.isCorrect } : {}),
+  }
+}
+
 export interface MatchingPair {
   id: string | number
   left: string
@@ -190,7 +198,6 @@ export function ChoiceItemAuthor({
       onChange({
         kind,
         prompt: value.prompt,
-        points: value.points,
         pairs:
           value.kind === 'MATCHING'
             ? value.pairs
@@ -199,6 +206,7 @@ export function ChoiceItemAuthor({
                 left: option.text,
                 right: '',
               })),
+        ...(value.points !== undefined ? { points: value.points } : {}),
       })
       return
     }
@@ -206,7 +214,6 @@ export function ChoiceItemAuthor({
     onChange({
       kind,
       prompt: value.prompt,
-      points: value.points,
       options:
         kind === 'TRUE_FALSE'
           ? [
@@ -228,6 +235,7 @@ export function ChoiceItemAuthor({
                 isCorrect: false,
               }))
             : value.options,
+      ...(value.points !== undefined ? { points: value.points } : {}),
     })
   }
 
@@ -238,9 +246,9 @@ export function ChoiceItemAuthor({
           <Label>{t('prompt')}</Label>
           <MarkdownEditor
             value={value.prompt}
-            disabled={disabled}
             placeholder={t('promptPlaceholder')}
             preset="questionPrompt"
+            {...(disabled !== undefined ? { disabled } : {})}
             onChange={md => onChange({ ...value, prompt: md })}
           />
         </div>
@@ -279,14 +287,16 @@ function OptionsAuthor({
   const isTrueFalse = value.kind === 'TRUE_FALSE'
 
   const toggleCorrect = (index: number) => {
-    const options = value.options.map((option, candidateIndex) => ({
-      ...option,
-      isCorrect: isMultiple
-        ? candidateIndex === index
-          ? !option.isCorrect
-          : option.isCorrect
-        : candidateIndex === index,
-    }))
+    const options = value.options.map((option, candidateIndex) =>
+      buildChoiceOption({
+        ...option,
+        isCorrect: isMultiple
+          ? candidateIndex === index
+            ? !option.isCorrect
+            : option.isCorrect
+          : candidateIndex === index,
+      }),
+    )
     onChange({ ...value, options })
   }
 

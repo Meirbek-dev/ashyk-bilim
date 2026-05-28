@@ -144,7 +144,7 @@ export function useAssessment(
           classifyValidationIssue({
             code: issue.code,
             message: issue.message,
-            itemUuid: issue.item_uuid ?? undefined,
+            ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
           }),
         ) ?? [],
     }

@@ -1,16 +1,10 @@
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
 import { getEditableCourses } from '@services/courses/courses'
+import type { PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
 import CoursesHome from '@/app/_shared/dash/courses/client'
-
-interface CourseDashboardSummary {
-  total: number
-  ready: number
-  private: number
-  attention: number
-}
 
 const COURSES_PER_PAGE = 24
 
@@ -62,19 +56,19 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function PlatformDashCoursesPage(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }) {
   return <PlatformDashCoursesPageInner searchParams={props.searchParams} />
 }
 
 async function PlatformDashCoursesPageInner(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<PageSearchParams>
 }) {
   const searchParams = await props.searchParams
-  const currentPage = parsePage(searchParams.page)
-  const query = parseQuery(searchParams.q)
-  const sortBy = parseSort(searchParams.sort)
-  const preset = parsePreset(searchParams.preset)
+  const currentPage = parsePage(searchParams['page'])
+  const query = parseQuery(searchParams['q'])
+  const sortBy = parseSort(searchParams['sort'])
+  const preset = parsePreset(searchParams['preset'])
 
   const { courses, total, summary } = await getEditableCourses(
     currentPage,

@@ -1,6 +1,4 @@
 'use client'
-
-import React from 'react'
 import type { KindReviewDetailProps } from './index'
 import {
   getCanonicalAnswersByItem,
@@ -11,8 +9,8 @@ export default function ExamReviewDetail({ submission, activityUuid }: KindRevie
   return (
     <SubmittedAnswers
       submission={submission}
-      activityUuid={activityUuid}
       answersByItem={getCanonicalAnswersByItem(submission)}
+      {...(activityUuid !== undefined ? { activityUuid } : {})}
     />
   )
 }

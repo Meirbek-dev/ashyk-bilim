@@ -31,11 +31,103 @@ export const ACTIVITY_CHAT_PROTOCOL_VERSION = 1
 
 let hasLoggedProtocolVersionMismatch = false
 
-export function parseActivitySseDataLine(line: string): Record<string, unknown> | null {
+interface ActivitySseEventBase {
+  version?: number
+}
+
+interface ActivityStatusSseEvent extends ActivitySseEventBase {
+  type: 'status'
+  aichat_uuid?: string
+  status?: string
+  message?: string
+}
+
+interface ActivityDeltaSseEvent extends ActivitySseEventBase {
+  type: 'delta' | 'chunk'
+  content?: string
+}
+
+interface ActivityFinalSseEvent extends ActivitySseEventBase {
+  type: 'final'
+  aichat_uuid?: string
+  content?: string
+}
+
+interface ActivityErrorSseEvent extends ActivitySseEventBase {
+  type: 'error'
+  error?: string
+  error_code?: string
+}
+
+type ActivitySseEvent =
+  | ActivityStatusSseEvent
+  | ActivityDeltaSseEvent
+  | ActivityFinalSseEvent
+  | ActivityErrorSseEvent
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const readOptionalString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined
+
+const readOptionalNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined
+
+const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
+  if (!isRecord(value)) return null
+
+  const type = readOptionalString(value['type'])
+  const version = readOptionalNumber(value['version'])
+
+  switch (type) {
+    case 'status':
+      return {
+        type,
+        ...(version !== undefined ? { version } : {}),
+        ...(readOptionalString(value['aichat_uuid'])
+          ? { aichat_uuid: readOptionalString(value['aichat_uuid']) }
+          : {}),
+        ...(readOptionalString(value['status']) ? { status: readOptionalString(value['status']) } : {}),
+        ...(readOptionalString(value['message'])
+          ? { message: readOptionalString(value['message']) }
+          : {}),
+      }
+    case 'delta':
+    case 'chunk':
+      return {
+        type,
+        ...(version !== undefined ? { version } : {}),
+        ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
+      }
+    case 'final':
+      return {
+        type,
+        ...(version !== undefined ? { version } : {}),
+        ...(readOptionalString(value['aichat_uuid'])
+          ? { aichat_uuid: readOptionalString(value['aichat_uuid']) }
+          : {}),
+        ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
+      }
+    case 'error':
+      return {
+        type,
+        ...(version !== undefined ? { version } : {}),
+        ...(readOptionalString(value['error']) ? { error: readOptionalString(value['error']) } : {}),
+        ...(readOptionalString(value['error_code'])
+          ? { error_code: readOptionalString(value['error_code']) }
+          : {}),
+      }
+    default:
+      return null
+  }
+}
+
+export function parseActivitySseDataLine(line: string): ActivitySseEvent | null {
   if (!line.startsWith('data: ')) return null
 
   try {
-    return JSON.parse(line.slice(6)) as Record<string, unknown>
+    return parseActivitySseEvent(JSON.parse(line.slice(6)))
   } catch {
     return null
   }
@@ -214,7 +306,7 @@ export function createActivityChatAdapter({
           if (!event) continue
 
           if (
-            typeof event.version === 'number' &&
+            event.version !== undefined &&
             event.version !== ACTIVITY_CHAT_PROTOCOL_VERSION &&
             !hasLoggedProtocolVersionMismatch
           ) {
@@ -226,7 +318,7 @@ export function createActivityChatAdapter({
 
           switch (event.type) {
             case 'status': {
-              if (event.aichat_uuid) writeUuid(event.aichat_uuid as string)
+              if (event.aichat_uuid) writeUuid(event.aichat_uuid)
               const message =
                 typeof event.status === 'string'
                   ? getStatusMessage(event.status)
@@ -238,7 +330,7 @@ export function createActivityChatAdapter({
                   type: EventType.CUSTOM,
                   name: 'ai_status',
                   value: {
-                    status: typeof event.status === 'string' ? event.status : null,
+                    status: event.status ?? null,
                     message,
                   },
                   timestamp: now(),
@@ -259,11 +351,11 @@ export function createActivityChatAdapter({
                 messageStarted = true
               }
               if (event.content) {
-                streamedText += event.content as string
+                streamedText += event.content
                 yield {
                   type: EventType.TEXT_MESSAGE_CONTENT,
                   messageId,
-                  delta: event.content as string,
+                  delta: event.content,
                   timestamp: now(),
                 }
               }
@@ -271,7 +363,7 @@ export function createActivityChatAdapter({
             }
 
             case 'final': {
-              if (event.aichat_uuid) writeUuid(event.aichat_uuid as string)
+              if (event.aichat_uuid) writeUuid(event.aichat_uuid)
               if (!messageStarted) {
                 yield {
                   type: EventType.TEXT_MESSAGE_START,
@@ -281,10 +373,7 @@ export function createActivityChatAdapter({
                 }
                 messageStarted = true
               }
-              const finalDelta = reconcileFinalMessageDelta(
-                streamedText,
-                (event.content as string) ?? '',
-              )
+              const finalDelta = reconcileFinalMessageDelta(streamedText, event.content ?? '')
               if (finalDelta) {
                 yield {
                   type: EventType.TEXT_MESSAGE_CONTENT,
@@ -319,8 +408,8 @@ export function createActivityChatAdapter({
               // RunErrorEvent is flat per AG-UI spec — message and code at top level.
               yield {
                 type: EventType.RUN_ERROR,
-                message: (event.error as string) ?? 'Streaming failed',
-                code: event.error_code as string | undefined,
+                message: event.error ?? 'Streaming failed',
+                ...(event.error_code ? { code: event.error_code } : {}),
                 timestamp: now(),
               }
               return

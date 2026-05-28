@@ -44,7 +44,7 @@ registerKind('TYPE_EXAM', async () => {
     return GradingReviewWorkspace({
       activityId,
       initialSubmissionUuid: submissionUuid ?? null,
-      title,
+      ...(title !== undefined ? { title } : {}),
     })
   }
 

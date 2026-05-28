@@ -15,12 +15,12 @@ describe('exam policy settings normalization', () => {
       due_date_iso: '2026-05-05T09:00:00Z',
     })
 
-    expect(normalized.max_attempts).toBe(3)
-    expect(normalized.attempt_limit).toBe(3)
-    expect(normalized.time_limit_seconds).toBe(2700)
-    expect(normalized.time_limit).toBe(45)
-    expect(normalized.due_at).toBe('2026-05-05T09:00:00Z')
-    expect(normalized.due_date_iso).toBe('2026-05-05T09:00:00Z')
+    expect(normalized['max_attempts']).toBe(3)
+    expect(normalized['attempt_limit']).toBe(3)
+    expect(normalized['time_limit_seconds']).toBe(2700)
+    expect(normalized['time_limit']).toBe(45)
+    expect(normalized['due_at']).toBe('2026-05-05T09:00:00Z')
+    expect(normalized['due_date_iso']).toBe('2026-05-05T09:00:00Z')
   })
 
   it('prefers canonical exam values when both shapes exist', () => {
@@ -33,8 +33,8 @@ describe('exam policy settings normalization', () => {
 
     expect(getExamAttemptLimit(normalized)).toBe(2)
     expect(getExamTimeLimitSeconds(normalized)).toBe(1800)
-    expect(normalized.attempt_limit).toBe(2)
-    expect(normalized.time_limit).toBe(30)
+    expect(normalized['attempt_limit']).toBe(2)
+    expect(normalized['time_limit']).toBe(30)
   })
 
   it('builds normalized anti-cheat payloads for the policy patch', () => {

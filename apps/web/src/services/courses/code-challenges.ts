@@ -79,10 +79,6 @@ interface CanonicalMetadata {
   latest_run?: CanonicalRunRecord | null
 }
 
-interface CanonicalAnswers {
-  language_id?: number
-}
-
 interface CanonicalSubmissionRead {
   submission_uuid: string
   created_at: string
@@ -163,6 +159,91 @@ interface CodeAssessmentRead {
   items?: AssessmentItem[]
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const isNumberArray = (value: unknown): value is number[] =>
+  Array.isArray(value) && value.every(entry => typeof entry === 'number')
+
+const isStringRecord = (value: unknown): value is Record<string, string> =>
+  isRecord(value) && Object.values(value).every(entry => typeof entry === 'string')
+
+const isDifficulty = (value: unknown): value is CodeChallengeSettings['difficulty'] =>
+  value === 'EASY' || value === 'MEDIUM' || value === 'HARD'
+
+const isGradingStrategy = (value: unknown): value is CodeChallengeSettings['grading_strategy'] =>
+  value === 'ALL_OR_NOTHING' ||
+  value === 'PARTIAL_CREDIT' ||
+  value === 'BEST_SUBMISSION' ||
+  value === 'LATEST_SUBMISSION'
+
+const isExecutionMode = (value: unknown): value is CodeChallengeSettings['execution_mode'] =>
+  value === 'FAST_FEEDBACK' || value === 'COMPLETE_FEEDBACK'
+
+const isTestCase = (value: unknown): value is TestCase => {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['input'] === 'string' &&
+    typeof value['expected_output'] === 'string' &&
+    typeof value['is_visible'] === 'boolean'
+  )
+}
+
+const isTestCaseArray = (value: unknown): value is TestCase[] =>
+  Array.isArray(value) && value.every(isTestCase)
+
+type CodeChallengeHint = NonNullable<CodeChallengeSettings['hints']>[number]
+
+const isHint = (value: unknown): value is CodeChallengeHint => {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value['content'] === 'string' &&
+    typeof value['xp_penalty'] === 'number' &&
+    (value['id'] === undefined || typeof value['id'] === 'string') &&
+    (value['order'] === undefined || typeof value['order'] === 'number')
+  )
+}
+
+const isHintArray = (value: unknown): value is CodeChallengeHint[] =>
+  Array.isArray(value) && value.every(isHint)
+
+const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']): CanonicalMetadata => {
+  if (!isRecord(value)) return {}
+
+  const latestRunValue = value['latest_run']
+  const latestRun = isRecord(latestRunValue)
+    ? {
+        ...(typeof latestRunValue['language_id'] === 'number'
+          ? { language_id: latestRunValue['language_id'] }
+          : {}),
+        ...(Array.isArray(latestRunValue['details'])
+          ? { details: latestRunValue['details'] as TestCaseResult[] }
+          : {}),
+      }
+    : null
+
+  return {
+    ...(typeof value['judge0_state'] === 'string' ? { judge0_state: value['judge0_state'] } : {}),
+    ...(latestRun ? { latest_run: latestRun } : {}),
+  }
+}
+
+const readCodeAnswers = (value: CanonicalSubmissionRead['answers_json']) => {
+  if (!isRecord(value)) return {}
+
+  const answersValue = value['answers']
+  if (!isRecord(answersValue)) return {}
+
+  const entries = Object.entries(answersValue).filter(([, answer]) =>
+    isRecord(answer) && answer['kind'] === 'CODE',
+  )
+
+  return Object.fromEntries(entries) as Record<string, CanonicalCodeAnswer>
+}
+
 function normalizeActivityUuid(activityUuid: string) {
   return activityUuid.startsWith('activity_') ? activityUuid : `activity_${activityUuid}`
 }
@@ -210,28 +291,32 @@ function codeRunIdempotencyKey(
 }
 
 function toReadableTestCase(test: TestCase): TestCase {
+  const resolvedPoints = test.points ?? test.weight
+
   return {
     id: test.id,
     input: test.input,
     expected_output: test.expected_output,
-    description: test.description,
     is_visible: test.is_visible,
-    weight: test.weight,
-    points: test.points ?? test.weight,
     match_mode: test.match_mode ?? 'EXACT',
+    ...(test.description !== undefined ? { description: test.description } : {}),
+    ...(test.weight !== undefined ? { weight: test.weight } : {}),
+    ...(resolvedPoints !== undefined ? { points: resolvedPoints } : {}),
   }
 }
 
 function toStoredTestCase(test: TestCase, isVisible: boolean): TestCase {
+  const points = test.points
+
   return {
     id: test.id,
     input: test.input,
     expected_output: test.expected_output,
-    description: test.description,
     is_visible: isVisible,
     weight: test.weight ?? test.points ?? 1,
-    points: test.points,
     match_mode: test.match_mode ?? 'EXACT',
+    ...(test.description !== undefined ? { description: test.description } : {}),
+    ...(points !== undefined ? { points } : {}),
   }
 }
 
@@ -242,11 +327,11 @@ function toCodeChallengeSettings(
   const settings = assessment.assessment_policy?.settings_json ?? {}
   const body = codeItem?.body
   const bodyTests = Array.isArray(body?.tests) ? body.tests : []
-  const settingsVisibleTests = Array.isArray(settings.visible_tests)
-    ? (settings.visible_tests as TestCase[])
+  const settingsVisibleTests = isTestCaseArray(settings['visible_tests'])
+    ? settings['visible_tests']
     : []
-  const settingsHiddenTests = Array.isArray(settings.hidden_tests)
-    ? (settings.hidden_tests as TestCase[])
+  const settingsHiddenTests = isTestCaseArray(settings['hidden_tests'])
+    ? settings['hidden_tests']
     : []
   const visibleTests = bodyTests.length
     ? bodyTests.filter(test => test.is_visible).map(toReadableTestCase)
@@ -257,15 +342,39 @@ function toCodeChallengeSettings(
   const timeLimit =
     typeof body?.time_limit_seconds === 'number'
       ? body.time_limit_seconds
-      : typeof settings.time_limit === 'number'
-        ? settings.time_limit
+      : typeof settings['time_limit'] === 'number'
+        ? settings['time_limit']
         : 5
   const memoryLimit =
     typeof body?.memory_limit_mb === 'number'
       ? body.memory_limit_mb
-      : typeof settings.memory_limit === 'number'
-        ? settings.memory_limit
+      : typeof settings['memory_limit'] === 'number'
+        ? settings['memory_limit']
         : 256
+  const maxSubmissions =
+    typeof settings['max_submissions'] === 'number' ? settings['max_submissions'] : undefined
+  const allowedLanguages = Array.isArray(body?.languages)
+    ? body.languages
+    : isNumberArray(settings['allowed_languages'])
+      ? settings['allowed_languages']
+      : []
+  const starterCode =
+    body?.starter_code ?? (isStringRecord(settings['starter_code']) ? settings['starter_code'] : {})
+  const referenceSolutions =
+    body?.reference_solutions ??
+    (isStringRecord(settings['reference_solutions']) ? settings['reference_solutions'] : {})
+  const solutionCode = isStringRecord(settings['solution_code'])
+    ? settings['solution_code']
+    : typeof settings['reference_solution'] === 'string'
+      ? { solution: settings['reference_solution'] }
+      : undefined
+  const hints = isHintArray(settings['hints']) ? settings['hints'] : []
+  const points =
+    typeof codeItem?.max_score === 'number'
+      ? codeItem.max_score
+      : typeof settings['points'] === 'number'
+        ? settings['points']
+        : 100
 
   return {
     uuid: assessment.assessment_uuid,
@@ -274,54 +383,35 @@ function toCodeChallengeSettings(
     input_spec: body?.input_spec ?? '',
     output_spec: body?.output_spec ?? '',
     constraints: Array.isArray(body?.constraints) ? body.constraints : [],
-    difficulty: (settings.difficulty as CodeChallengeSettings['difficulty'] | undefined) ?? 'EASY',
+    difficulty: isDifficulty(settings['difficulty']) ? settings['difficulty'] : 'EASY',
     time_limit: timeLimit,
     memory_limit: memoryLimit,
     time_limit_ms: timeLimit * 1000,
     memory_limit_kb: memoryLimit * 1024,
-    max_submissions:
-      typeof settings.max_submissions === 'number' ? settings.max_submissions : undefined,
     grading_strategy:
-      (settings.grading_strategy as CodeChallengeSettings['grading_strategy'] | undefined) ??
-      'PARTIAL_CREDIT',
+      isGradingStrategy(settings['grading_strategy'])
+        ? settings['grading_strategy']
+        : 'PARTIAL_CREDIT',
     execution_mode:
-      (settings.execution_mode as CodeChallengeSettings['execution_mode'] | undefined) ??
-      'COMPLETE_FEEDBACK',
+      isExecutionMode(settings['execution_mode'])
+        ? settings['execution_mode']
+        : 'COMPLETE_FEEDBACK',
     allow_custom_input:
-      typeof settings.allow_custom_input === 'boolean' ? settings.allow_custom_input : true,
-    points:
-      typeof codeItem?.max_score === 'number' ? codeItem.max_score : Number(settings.points ?? 100),
-    allowed_languages: Array.isArray(body?.languages)
-      ? body.languages
-      : Array.isArray(settings.allowed_languages)
-        ? (settings.allowed_languages as number[])
-        : [],
+      typeof settings['allow_custom_input'] === 'boolean' ? settings['allow_custom_input'] : true,
+    points,
+    allowed_languages: allowedLanguages,
     visible_tests: visibleTests,
     hidden_tests: hiddenTests,
     test_cases: [...visibleTests, ...hiddenTests],
-    starter_code:
-      body?.starter_code ?? (settings.starter_code as Record<string, string> | undefined) ?? {},
-    reference_solutions:
-      body?.reference_solutions ??
-      (settings.reference_solutions as Record<string, string> | undefined) ??
-      {},
-    solution_code:
-      (settings.solution_code as Record<string, string> | undefined) ??
-      (typeof settings.reference_solution === 'string'
-        ? { solution: settings.reference_solution }
-        : undefined),
-    hints: Array.isArray(settings.hints)
-      ? (settings.hints as {
-          id?: string
-          order?: number
-          content: string
-          xp_penalty: number
-        }[])
-      : [],
+    starter_code: starterCode,
+    reference_solutions: referenceSolutions,
+    hints,
     lifecycle_status: assessment.lifecycle,
     scheduled_at: assessment.scheduled_at ?? null,
     published_at: assessment.published_at ?? null,
     archived_at: assessment.archived_at ?? null,
+    ...(maxSubmissions !== undefined ? { max_submissions: maxSubmissions } : {}),
+    ...(solutionCode ? { solution_code: solutionCode } : {}),
   }
 }
 
@@ -424,18 +514,18 @@ function normalizeJudge0State(
 }
 
 function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
-  const metadata = (raw.metadata_json ?? {}) as CanonicalMetadata
-  const answerMap = (raw.answers_json?.answers ?? {}) as Record<string, CanonicalCodeAnswer>
+  const metadata = readCanonicalMetadata(raw.metadata_json)
+  const answerMap = readCodeAnswers(raw.answers_json)
   const firstCodeAnswer = Object.values(answerMap).find(answer => answer?.kind === 'CODE')
   const results = Array.isArray(metadata.latest_run?.details)
     ? metadata.latest_run.details
     : undefined
+
   return {
     uuid: raw.submission_uuid,
     submission_uuid: raw.submission_uuid,
     submission_status: raw.status,
     status: normalizeJudge0State(metadata.judge0_state, raw.status),
-    score: typeof raw.final_score === 'number' ? raw.final_score : (raw.auto_score ?? undefined),
     max_score: 100,
     language_id:
       typeof firstCodeAnswer?.language === 'number'
@@ -444,7 +534,12 @@ function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
           ? metadata.latest_run.language_id
           : 0,
     created_at: raw.created_at,
-    results,
+    ...(typeof raw.final_score === 'number'
+      ? { score: raw.final_score }
+      : raw.auto_score !== null && raw.auto_score !== undefined
+        ? { score: raw.auto_score }
+        : {}),
+    ...(results ? { results } : {}),
   }
 }
 
@@ -637,13 +732,15 @@ export async function runCustomTest(
   }
 
   return {
-    stdout: run.stdout ?? undefined,
-    stderr: run.stderr ?? undefined,
-    compile_output: run.compile_output ?? undefined,
     status: runStatusCode(run.status, run.passed, run.total),
     status_description: run.status,
-    time_ms: typeof run.time === 'number' ? Math.round(run.time * 1000) : undefined,
-    memory_kb: typeof run.memory === 'number' ? run.memory : undefined,
+    ...(run.stdout !== null && run.stdout !== undefined ? { stdout: run.stdout } : {}),
+    ...(run.stderr !== null && run.stderr !== undefined ? { stderr: run.stderr } : {}),
+    ...(run.compile_output !== null && run.compile_output !== undefined
+      ? { compile_output: run.compile_output }
+      : {}),
+    ...(typeof run.time === 'number' ? { time_ms: Math.round(run.time * 1000) } : {}),
+    ...(typeof run.memory === 'number' ? { memory_kb: run.memory } : {}),
   }
 }
 

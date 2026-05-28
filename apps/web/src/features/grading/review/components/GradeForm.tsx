@@ -191,9 +191,9 @@ export default function GradeForm({
               item_grades: itemGrades,
               overall_feedback: draft.feedback,
               status,
-              override_score: overrideScore ? true : undefined,
-              final_score: overrideScore ? finalScore : undefined,
-              override_reason: overrideScore ? overrideReason : undefined,
+              ...(overrideScore ? { override_score: true } : {}),
+              ...(overrideScore && finalScore !== undefined ? { final_score: finalScore } : {}),
+              ...(overrideScore && overrideReason ? { override_reason: overrideReason } : {}),
             },
             submission.version,
           )
