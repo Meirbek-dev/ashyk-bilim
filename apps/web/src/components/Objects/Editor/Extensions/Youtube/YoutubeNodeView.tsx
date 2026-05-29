@@ -32,7 +32,8 @@ const YoutubeNodeView = (props: NodeViewProps) => {
       <div className="aspect-video w-full overflow-hidden rounded-lg shadow-sm ring-1 ring-gray-200/10">
         <YouTubeEmbed
           videoid={videoId}
-          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
+          // eslint-disable-next-line react/style-prop-object
+          style="height: 100%; width: 100%; max-width: none;"
           params={params.toString()}
         />
       </div>

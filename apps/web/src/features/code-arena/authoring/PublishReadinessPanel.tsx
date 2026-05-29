@@ -101,7 +101,7 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
     },
     {
       label: t('readiness.visible.label'),
-      ok: visible.length > 0 && visible.some(test => test.input.trim() || test.expected_output.trim()),
+      ok: visible.some(test => test.input.trim() || test.expected_output.trim()),
       detail: t('readiness.visible.detail'),
     },
     {

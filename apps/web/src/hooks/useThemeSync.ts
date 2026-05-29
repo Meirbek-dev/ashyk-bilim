@@ -52,6 +52,7 @@ export function useThemeSync(themeName: string): void {
         .then(() => {
           syncedThemeRef.current = nextTheme
           pendingThemeRef.current = null
+          return undefined
         })
         .catch((error: unknown) => {
           const status = typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined

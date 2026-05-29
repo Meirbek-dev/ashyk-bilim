@@ -137,7 +137,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = event => {
+    reader.addEventListener('load', event => {
       try {
         const text = event.target?.result as string
         let imported: TestCase[] = []
@@ -195,7 +195,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('importFailed'))
       }
-    }
+    })
     reader.readAsText(file)
     e.target.value = '' // clear
   }

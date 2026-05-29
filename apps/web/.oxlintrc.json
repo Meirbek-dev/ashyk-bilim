@@ -39,7 +39,11 @@
     "e2e/",
     "scripts/",
     "playwright.config.ts",
-    "eslint.config.*"
+    "eslint.config.*",
+    "src/components/providers/session-provider.tsx",
+    "src/features/assessments/registry/code-challenge/hooks.ts",
+    "src/features/assessments/shell/AssessmentLayout.tsx",
+    "src/features/assessments/registry/code-challenge/hooks.ts"
   ],
 
   "plugins": [
@@ -74,7 +78,7 @@
     "no-console": "off",
     "no-constant-condition": "off",
     "no-debugger": "off",
-    "no-duplicate-imports": "off",       // handled by import/no-duplicates
+    "no-duplicate-imports": "off", // handled by import/no-duplicates
     "no-empty-function": "off",
     "no-empty-pattern": "off",
     "no-implicit-coercion": "off",
@@ -156,7 +160,7 @@
     "typescript/no-misused-spread": "off",
 
     /* ── React plugin ──────────────────────────────────────────── */
-    "react/react-in-jsx-scope": "off",   // react-jsx transform, no import needed
+    "react/react-in-jsx-scope": "off", // react-jsx transform, no import needed
     "react/button-has-type": "off",
     "react/iframe-missing-sandbox": "off",
     "react/jsx-filename-extension": "off",

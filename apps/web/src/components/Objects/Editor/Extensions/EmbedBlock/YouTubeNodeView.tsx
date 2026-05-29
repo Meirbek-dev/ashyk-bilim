@@ -41,7 +41,8 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   return (
     <NodeViewWrapper className="youtube-node-view relative my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>
       <div className="aspect-video w-full overflow-hidden rounded-md">
-        <YouTubeEmbed videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} params="rel=0" />
+        {/* eslint-disable-next-line react/style-prop-object */}
+        <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" params="rel=0" />
       </div>
 
       {isEditable ? (

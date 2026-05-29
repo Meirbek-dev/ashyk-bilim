@@ -1,7 +1,6 @@
 'use server'
 
-import { errorHandling } from '@/lib/api-client'
-import { apiFetch } from '@/lib/api-client'
+import { errorHandling, apiFetch } from '@/lib/api-client'
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
 import { tags, courseTag } from '@/lib/cacheTags'
 

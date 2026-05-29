@@ -75,6 +75,7 @@ export function useReducedData(): boolean {
         // preserve existing handler if any
         prevOnChange = connection.onchange
         // @ts-ignore
+        // eslint-disable-next-line unicorn/prefer-add-event-listener
         connection.onchange = handleNetworkChange
       }
     }
@@ -93,6 +94,7 @@ export function useReducedData(): boolean {
         } else {
           // restore previous handler if it existed
           // @ts-ignore
+          // eslint-disable-next-line unicorn/prefer-add-event-listener
           connection.onchange = prevOnChange
         }
       }

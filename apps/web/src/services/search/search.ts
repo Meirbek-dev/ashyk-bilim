@@ -1,5 +1,4 @@
-import { getResponseMetadata } from '@/lib/api-client'
-import { apiFetch } from '@/lib/api-client'
+import { getResponseMetadata, apiFetch } from '@/lib/api-client'
 
 export interface SearchContentParams {
   query: string

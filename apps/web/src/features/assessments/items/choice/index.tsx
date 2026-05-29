@@ -530,7 +530,10 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         .map(option => option.text)
         .join(', ')
     }
-    return item.options.find((option, index) => String(optionId(option, index)) === current)?.text ?? toChoiceAnswerLabel(answer)
+    return (
+      item.options.find((option, index) => String(optionId(option, index)) === current)?.text ??
+      toChoiceAnswerLabel(answer)
+    )
   })()
 
   return (

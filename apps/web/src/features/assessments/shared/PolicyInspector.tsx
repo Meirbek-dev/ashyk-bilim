@@ -26,11 +26,15 @@ interface InspectorSection {
   body: ReactNode
 }
 
+const DEFAULT_POLICY_SCORE: NonNullable<PolicyInspectorProps['score']> = { percent: null, source: 'none' }
+const EMPTY_ACCESS_ITEMS: NonNullable<PolicyInspectorProps['accessItems']> = []
+const EMPTY_SCHEDULE_ITEMS: NonNullable<PolicyInspectorProps['scheduleItems']> = []
+
 export default function PolicyInspector({
   policy,
-  score = { percent: null, source: 'none' } as NonNullable<PolicyInspectorProps['score']>,
-  accessItems = [] as NonNullable<PolicyInspectorProps['accessItems']>,
-  scheduleItems = [] as NonNullable<PolicyInspectorProps['scheduleItems']>,
+  score = DEFAULT_POLICY_SCORE,
+  accessItems = EMPTY_ACCESS_ITEMS,
+  scheduleItems = EMPTY_SCHEDULE_ITEMS,
   title,
 }: PolicyInspectorProps) {
   const t = useTranslations('Components.PolicyInspector')

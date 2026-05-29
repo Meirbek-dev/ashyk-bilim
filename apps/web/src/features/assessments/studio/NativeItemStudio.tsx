@@ -166,8 +166,15 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue => (((((({code: issue.code,
-	message: issue.message, ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {})}))))))) ?? []
+    readinessQuery.data?.issues.map(issue =>
+      Object.assign(
+        {
+          code: issue.code,
+          message: issue.message,
+        },
+        issue.item_uuid ? { itemUuid: issue.item_uuid } : {},
+      ),
+    ) ?? []
 
   const studioContextValue = useMemo(
     () => ({
@@ -185,13 +192,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues],
   )
 
-  return (
-    <AssessmentStudioContext.Provider
-      value={studioContextValue}
-    >
-      {children}
-    </AssessmentStudioContext.Provider>
-  )
+  return <AssessmentStudioContext.Provider value={studioContextValue}>{children}</AssessmentStudioContext.Provider>
 }
 
 function useAssessmentStudioContext() {
@@ -363,11 +364,13 @@ interface NativeItemAuthorProps {
   allowedKinds?: SupportedStudioItemKind[]
 }
 
+const DEFAULT_ALLOWED_KINDS: SupportedStudioItemKind[] = ['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM']
+
 export function NativeItemAuthor({
   mode,
   itemNoun,
   itemNounKey,
-  allowedKinds = ['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM'] as NonNullable<NativeItemAuthorProps['allowedKinds']>,
+  allowedKinds = DEFAULT_ALLOWED_KINDS,
 }: NativeItemAuthorProps) {
   const {
     assessment,

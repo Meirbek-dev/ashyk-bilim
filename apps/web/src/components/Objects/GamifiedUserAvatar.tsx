@@ -35,7 +35,7 @@ const levelIndicatorSizes = {
 const ENABLE_AVATAR_CUSTOMIZATION = false
 
 const getHighestUnlock = <T extends { level: number }>(level: number, unlocks: readonly T[]) =>
-  unlocks.filter(unlock => level >= unlock.level).at(-1) ?? null
+  unlocks.findLast(unlock => level >= unlock.level) ?? null
 
 const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
   const {

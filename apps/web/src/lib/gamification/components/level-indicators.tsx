@@ -334,7 +334,11 @@ interface MilestoneProgressProps {
   className?: string
 }
 
-export function MilestoneProgress({ currentLevel, milestones = DEFAULT_MILESTONES, className }: MilestoneProgressProps) {
+export function MilestoneProgress({
+  currentLevel,
+  milestones = DEFAULT_MILESTONES,
+  className,
+}: MilestoneProgressProps) {
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
       {milestones.map((milestone, index) => {

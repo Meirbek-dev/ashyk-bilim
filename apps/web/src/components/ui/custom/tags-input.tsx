@@ -207,9 +207,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
     )
 
     return (
-      <TagInputContext.Provider
-        value={tagInputContextValue}
-      >
+      <TagInputContext.Provider value={tagInputContextValue}>
         <div
           {...props}
           ref={ref}

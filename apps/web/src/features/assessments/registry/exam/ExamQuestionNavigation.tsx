@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 
-const EMPTY_SET: ReadonlySet<number> = new Set()
+const EMPTY_SET = new Set<number>()
 import { useTranslations } from 'next-intl'
 
 interface ExamQuestionNavigationProps {

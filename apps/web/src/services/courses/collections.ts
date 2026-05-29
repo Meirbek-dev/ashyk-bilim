@@ -1,7 +1,6 @@
 'use server'
 
-import { errorHandling } from '@/lib/api-client'
-import { apiFetch } from '@/lib/api-client'
+import { errorHandling, apiFetch } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
 import { getAPIUrl } from '../config/config'

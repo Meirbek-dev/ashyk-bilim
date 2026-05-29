@@ -45,12 +45,14 @@ function getArtplayerLocale(locale: string) {
   return map[locale] || undefined
 }
 
+const EMPTY_SUBTITLE_ENTRIES: SubtitleEntry[] = []
+
 export default function ArtPlayer({
   option,
   getInstance,
   subtitle,
   locale = 'en',
-  subtitleEntries = [] as SubtitleEntry[],
+  subtitleEntries = EMPTY_SUBTITLE_ENTRIES,
   startTime,
   endTime,
   onPlayerReady,

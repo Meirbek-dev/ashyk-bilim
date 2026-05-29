@@ -46,12 +46,14 @@ interface ExamSubmitDialogProps {
   onNavigateTo?: (index: number) => void
 }
 
+const EMPTY_UNANSWERED: UnansweredQuestion[] = []
+
 export default function ExamSubmitDialog({
   open,
   totalQuestions,
   answeredCount,
   flaggedCount = 0,
-  unansweredQuestions = [] as NonNullable<ExamSubmitDialogProps['unansweredQuestions']>,
+  unansweredQuestions = EMPTY_UNANSWERED,
   isSubmitting,
   labels,
   onCancel,

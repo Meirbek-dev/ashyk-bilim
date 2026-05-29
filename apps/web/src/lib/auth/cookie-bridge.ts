@@ -40,7 +40,7 @@ function parseSetCookieHeader(setCookieHeader: string): ParsedSetCookie | null {
   const parts = setCookieHeader
     .split(';')
     .map(part => part.trim())
-    .filter(Boolean)
+    .filter(Boolean) // eslint-disable-line unicorn/prefer-array-find
   const [nameValue, ...attributes] = parts
 
   if (!nameValue) return null

@@ -25,10 +25,12 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
   useEffect(() => {
     let cancelled = false
     setHighlighted(null)
-    highlightCode(code, lang).then(html => {
-      if (!cancelled) setHighlighted(html)
-      return html
-    }).catch(() => undefined)
+    highlightCode(code, lang)
+      .then(html => {
+        if (!cancelled) setHighlighted(html)
+        return html
+      })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }

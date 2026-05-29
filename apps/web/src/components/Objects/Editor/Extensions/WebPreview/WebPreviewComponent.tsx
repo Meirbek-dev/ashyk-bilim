@@ -260,7 +260,8 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
             ? (() => {
                 const videoId = getYouTubeVideoId(previewUrl)
                 if (videoId) {
-                  return <YouTubeEmbed videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} />
+                  // eslint-disable-next-line react/style-prop-object
+                  return <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" />
                 }
                 return (
                   <iframe

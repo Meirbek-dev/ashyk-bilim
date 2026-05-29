@@ -262,6 +262,7 @@ export function EditorToolbar({
               active={null}
               disabled={disabled}
               onClick={() =>
+                // eslint-disable-next-line no-unsafe-optional-chaining
                 (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
               }
             >

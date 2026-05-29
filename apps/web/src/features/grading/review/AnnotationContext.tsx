@@ -55,13 +55,7 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
     [annotationsByItem, addAnnotation, removeAnnotation, clearAnnotations, clearAll],
   )
 
-  return (
-    <AnnotationContext.Provider
-      value={annotationContextValue}
-    >
-      {children}
-    </AnnotationContext.Provider>
-  )
+  return <AnnotationContext.Provider value={annotationContextValue}>{children}</AnnotationContext.Provider>
 }
 
 export function useAnnotations() {
