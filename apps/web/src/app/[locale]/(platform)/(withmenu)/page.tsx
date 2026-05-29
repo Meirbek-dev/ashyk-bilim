@@ -1,4 +1,4 @@
-import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import { PageSuspense } from '@components/Utils/PageSuspense'

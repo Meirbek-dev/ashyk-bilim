@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
+import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 import type { MatchPair } from '../../domain/items'
 
 // ── Types ─────────────────────────────────────────────────────────────────────

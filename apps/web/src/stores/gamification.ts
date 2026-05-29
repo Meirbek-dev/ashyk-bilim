@@ -16,7 +16,7 @@ import {
   updateStreakAction,
 } from '@/app/actions/gamification'
 import { create } from 'zustand'
-import { devtools, persist, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, devtools, persist } from 'zustand/middleware'
 import { IS_DEVELOPMENT } from '@/services/config/env'
 
 // ── Types ─────────────────────────────────────────────────────────────────────

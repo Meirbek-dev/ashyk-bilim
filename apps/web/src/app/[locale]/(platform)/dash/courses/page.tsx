@@ -1,4 +1,4 @@
-import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { getEditableCourses } from '@services/courses/courses'
 import type { PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'

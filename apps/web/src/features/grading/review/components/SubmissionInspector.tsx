@@ -4,7 +4,7 @@ import type { ComponentType } from 'react'
 import { LoaderCircle, ShieldAlert } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { getSubmissionDisplayName, buildSubmissionReviewViewModel } from '@/features/grading/domain'
+import { buildSubmissionReviewViewModel, getSubmissionDisplayName } from '@/features/grading/domain'
 import type { Submission } from '@/features/grading/domain'
 import { getSubmissionPlagiarismState, getSubmissionViolations } from '@/features/grading/domain/types'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'

@@ -1,7 +1,7 @@
 'use client'
 
 import { getAbsoluteUrl } from '@services/config/config'
-import { Loader2, AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'

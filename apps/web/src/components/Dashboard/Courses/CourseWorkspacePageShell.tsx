@@ -36,7 +36,7 @@ import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface CourseWorkspacePageShellProps {

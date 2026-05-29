@@ -1,6 +1,6 @@
 'use client'
 
-import { Play, CheckCircle2, XCircle, Loader2, Code2 } from 'lucide-react'
+import { CheckCircle2, Code2, Loader2, Play, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'

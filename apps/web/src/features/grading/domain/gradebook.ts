@@ -1,4 +1,4 @@
-import { activityProgressNeedsTeacherAction, isActivityProgressOverdue, isActivityProgressComplete } from './status'
+import { activityProgressNeedsTeacherAction, isActivityProgressComplete, isActivityProgressOverdue } from './status'
 import type {
   ActivityProgressCell,
   ActivityProgressState,

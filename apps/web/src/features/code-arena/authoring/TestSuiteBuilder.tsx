@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Plus, Trash2, Upload, ArrowUp, ArrowDown, Info } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, Info, Plus, Trash2, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'

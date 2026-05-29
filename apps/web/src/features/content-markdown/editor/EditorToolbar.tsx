@@ -4,6 +4,8 @@ import type { Editor } from '@tiptap/react'
 import {
   Bold,
   Code,
+  Eye,
+  FileCode2,
   Heading1,
   Heading2,
   Heading3,
@@ -23,8 +25,6 @@ import {
   Strikethrough,
   TerminalSquare,
   TextCursorInput,
-  FileCode2,
-  Eye,
   Undo2,
 } from 'lucide-react'
 import { useState } from 'react'

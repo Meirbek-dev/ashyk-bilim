@@ -1,7 +1,7 @@
 'use server'
 
 import type { BulkPublishGradesResponse, Submission, TeacherGradeInput } from '@/types/grading'
-import { getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, getResponseMetadata } from '@/lib/api-client'
 import { revalidateTag } from 'next/cache'
 import { StaleGradeError } from './errors'
 

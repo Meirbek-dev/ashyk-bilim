@@ -1,7 +1,7 @@
 'use server'
 
-import { errorHandling, getResponseMetadata, apiFetch } from '@/lib/api-client'
-import { tags, courseTag } from '@/lib/cacheTags'
+import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { courseTag, tags } from '@/lib/cacheTags'
 
 interface CertificationInvalidationOptions {
   lastKnownUpdateDate?: string

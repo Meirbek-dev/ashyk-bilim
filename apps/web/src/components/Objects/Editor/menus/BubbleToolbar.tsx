@@ -3,7 +3,7 @@
 import type { Editor } from '@tiptap/react'
 import { useTiptap } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import { Bold, Code, Italic, Link2, Strikethrough, ChevronDown } from 'lucide-react'
+import { Bold, ChevronDown, Code, Italic, Link2, Strikethrough } from 'lucide-react'
 import { Toggle } from '@/components/ui/toggle'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'

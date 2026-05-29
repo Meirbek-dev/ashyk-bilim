@@ -6,7 +6,7 @@
  */
 
 import type { ComponentType } from 'react'
-import type { KindAuthorProps, KindAttemptProps, KindReviewProps, KindModule } from './index'
+import type { KindAttemptProps, KindAuthorProps, KindModule, KindReviewProps } from './index'
 
 export const customModuleFactory = async (): Promise<KindModule> => {
   const [

@@ -4,7 +4,7 @@ import { DayPicker, getDefaultClassNames } from '@daypicker/react'
 import type { DayButtonProps, Locale } from '@daypicker/react'
 import * as React from 'react'
 
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react'
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 

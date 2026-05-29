@@ -6,7 +6,7 @@ import { useEditorState, useTiptap } from '@tiptap/react'
 import { useEffect, useMemo, useRef } from 'react'
 import { closeSlashCommand } from '../core/slash-command'
 import type { SlashCommandState } from '../core/slash-command'
-import { createInsertItems, INSERT_CATEGORY_LABELS } from './insert-items'
+import { INSERT_CATEGORY_LABELS, createInsertItems } from './insert-items'
 
 type SlashItem = ReturnType<typeof createInsertItems>[number]
 

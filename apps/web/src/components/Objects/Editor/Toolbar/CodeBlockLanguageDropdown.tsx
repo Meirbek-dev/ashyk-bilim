@@ -1,7 +1,7 @@
 'use client'
 
 import type { Editor } from '@tiptap/react'
-import { Code, ChevronDown } from 'lucide-react'
+import { ChevronDown, Code } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -17,8 +17,8 @@ import {
 
 import {
   CODE_BLOCK_LANGUAGE_VALUES,
-  normalizeCodeBlockLanguage,
   PLAIN_TEXT_CODE_BLOCK_LANGUAGE,
+  normalizeCodeBlockLanguage,
   toCodeBlockLanguageAttribute,
 } from '../core/code-block-languages'
 import type { CodeBlockLanguageValue } from '../core/code-block-languages'

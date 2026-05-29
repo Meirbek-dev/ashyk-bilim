@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
 import type {
   AdminAnalyticsResponse,
+  AnalyticsFilterOption,
   AnalyticsQuery,
   TeacherOverviewResponse,
-  AnalyticsFilterOption,
 } from '@/types/analytics'
 import { getAnalyticsExportUrl } from '@services/analytics/teacher'
 import AnalyticsExportButton from './AnalyticsExportButton'
@@ -14,7 +14,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import TeacherFilterBar from './TeacherFilterBar'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { lazy, Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import { Link } from '@/i18n/navigation'
 
 const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'))

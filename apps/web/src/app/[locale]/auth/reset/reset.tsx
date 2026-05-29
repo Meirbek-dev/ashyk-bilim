@@ -1,7 +1,7 @@
 'use client'
 
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
-import { AuthErrorBanner, AuthSuccessBanner, AuthSubmitButton } from '@components/auth/AuthForm'
+import { AuthErrorBanner, AuthSubmitButton, AuthSuccessBanner } from '@components/auth/AuthForm'
 import PasswordInput from '@components/ui/custom/password-input'
 import { getAbsoluteUrl } from '@services/config/config'
 import { resetPassword } from '@services/auth/auth'

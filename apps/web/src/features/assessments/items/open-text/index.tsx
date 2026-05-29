@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Textarea } from '@/components/ui/textarea'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
+import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 
 export interface OpenTextValue {
   kind: 'OPEN_TEXT' | 'OTHER'

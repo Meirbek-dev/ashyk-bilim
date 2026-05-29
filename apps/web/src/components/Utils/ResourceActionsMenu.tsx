@@ -116,4 +116,3 @@ export function ResourceActionsMenu({ availableActions, actions, trigger, align 
     </DropdownMenu>
   )
 }
-

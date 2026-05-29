@@ -1,8 +1,8 @@
 'use server'
 
-import { errorHandling, apiFetch } from '@/lib/api-client'
+import { apiFetch, errorHandling } from '@/lib/api-client'
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
-import { tags, courseTag } from '@/lib/cacheTags'
+import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
  This file includes only POST, PATCH, DELETE requests

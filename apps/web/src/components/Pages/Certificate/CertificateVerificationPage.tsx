@@ -6,7 +6,7 @@ import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifi
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import NextImage from '@components/ui/NextImage'
 import { Label } from '@/components/ui/label'
 import Link from '@components/ui/AppLink'

@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Eye, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Eye, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 

@@ -1,5 +1,5 @@
 'use server'
-import { errorHandling, getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
 export async function getUser(user_id: number) {

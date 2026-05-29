@@ -10,7 +10,7 @@ import {
   updateCourseMetadata,
   updateCourseThumbnail,
 } from '@services/courses/courses'
-import type { CourseGeneralValues, CourseAccessValues } from '@/schemas/courseSchemas'
+import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSchemas'
 import type { CourseEditorBundle } from '@services/courses/editor'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { assertSuccess } from '@/lib/api/assertSuccess'

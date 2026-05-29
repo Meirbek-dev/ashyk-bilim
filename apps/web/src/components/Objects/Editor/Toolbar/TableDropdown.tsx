@@ -2,7 +2,7 @@
 
 import type { Editor } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import { Table, Plus, Columns, Minus, Trash2 } from 'lucide-react'
+import { Columns, Minus, Plus, Table, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 

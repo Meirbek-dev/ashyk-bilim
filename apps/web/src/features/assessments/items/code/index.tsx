@@ -6,7 +6,7 @@ import { CodeChallengeEditor } from '@/components/features/courses/code-challeng
 import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CodeSubmissionReview } from '@/features/code-arena/review'
-import type { ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
+import type { ItemAttemptProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
 import { UnsupportedItemAuthor } from '../unsupported'
 

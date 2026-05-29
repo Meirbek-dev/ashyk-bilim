@@ -685,7 +685,6 @@ export function CodeChallengeEditor({
   )
 }
 
-
 function normalizeCodeRunStatus(status: Submission['status'] | undefined) {
   return (status ?? '').toUpperCase()
 }

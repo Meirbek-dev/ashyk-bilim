@@ -1,4 +1,4 @@
-import { getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, getResponseMetadata } from '@/lib/api-client'
 
 export interface CourseEditorResource<T> {
   data: T | null

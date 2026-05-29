@@ -7,11 +7,11 @@
 
 import type {
   CreateRoleBody,
-  UserBasic,
   Permission,
   Role,
   RoleAuditListResponse,
   UpdateRoleBody,
+  UserBasic,
   UserRoleAssignment,
 } from '@/types/permissions'
 import { apiFetch } from '@/lib/api-client'

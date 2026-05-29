@@ -2,7 +2,7 @@
 
 import type { Editor } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import { Undo2, Redo2 } from 'lucide-react'
+import { Redo2, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface UndoRedoGroupProps {

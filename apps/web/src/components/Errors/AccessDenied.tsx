@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { ShieldAlert, LogOut, Home } from 'lucide-react'
+import { Home, LogOut, ShieldAlert } from 'lucide-react'
 import { logout } from '@services/auth/auth'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'

@@ -1,5 +1,5 @@
 import { ReactNodeViewRenderer } from '@tiptap/react'
-import type { ReactNodeViewRendererOptions, NodeViewProps } from '@tiptap/react'
+import type { NodeViewProps, ReactNodeViewRendererOptions } from '@tiptap/react'
 import type { FC } from 'react'
 
 export type TypedNodeViewProps<TAttrs, TExtensionOptions = Record<string, unknown>> = Omit<

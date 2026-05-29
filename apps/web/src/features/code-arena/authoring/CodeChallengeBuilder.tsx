@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, Code2, FileText, FlaskConical, Loader2, Save, Sparkles, ClipboardCheck } from 'lucide-react'
+import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, Save, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'

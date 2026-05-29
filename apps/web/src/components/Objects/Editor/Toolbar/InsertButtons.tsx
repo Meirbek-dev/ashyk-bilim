@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { createInsertItems, INSERT_CATEGORY_LABELS } from './insert-items'
+import { INSERT_CATEGORY_LABELS, createInsertItems } from './insert-items'
 
 interface InsertButtonsProps {
   editor: Editor

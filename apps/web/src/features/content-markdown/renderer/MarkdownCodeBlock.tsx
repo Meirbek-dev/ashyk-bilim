@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { highlightCode, getLanguageDisplayName } from '../lib/shiki'
+import { getLanguageDisplayName, highlightCode } from '../lib/shiki'
 
 interface MarkdownCodeBlockProps {
   code: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { CourseGeneralValues, CourseAccessValues } from '@/schemas/courseSchemas'
+import type { CourseAccessValues, CourseGeneralValues } from '@/schemas/courseSchemas'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import {
   addCourseContributorsMutationOptions,

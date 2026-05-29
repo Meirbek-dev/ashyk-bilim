@@ -5,7 +5,7 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
 import Link from '@components/ui/AppLink'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type React from 'react'
 
 const UserCertificates: React.FC = () => {

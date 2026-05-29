@@ -3,7 +3,7 @@
  */
 
 import type { ComponentType } from 'react'
-import type { KindAttemptProps, KindAuthorProps, KindReviewProps, KindModule } from './index'
+import type { KindAttemptProps, KindAuthorProps, KindModule, KindReviewProps } from './index'
 
 export const examModuleFactory = async (): Promise<KindModule> => {
   const [

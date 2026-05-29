@@ -5,7 +5,7 @@ import type { ThemeMode } from '@/lib/themes'
 import RootProviders from '../root-providers'
 import { HtmlLangSync } from '@/components/providers/HtmlLangSync'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
-import { setRequestLocale, getMessages } from 'next-intl/server'
+import { getMessages, setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 

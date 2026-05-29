@@ -5,9 +5,9 @@ import {
   createRole as apiCreateRole,
   deleteRole as apiDeleteRole,
   getRole as apiGetRole,
+  updateRole as apiUpdateRole,
   getRolePermissions,
   removePermissionFromRole,
-  updateRole as apiUpdateRole,
 } from '@/services/rbac'
 import { usePlatformPermissions } from '@/features/platform/hooks/usePlatform'
 import { useRoleAuditLog, useRoles } from '@/features/users/hooks/useUsers'

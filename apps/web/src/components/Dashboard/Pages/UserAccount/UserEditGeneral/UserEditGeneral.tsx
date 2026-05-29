@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'

@@ -1,6 +1,6 @@
 'use server'
 
-import { errorHandling, getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import { getServerAPIUrl } from '@services/config/config'
 import type { components } from '@/lib/api/generated'

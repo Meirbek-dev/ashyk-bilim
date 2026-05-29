@@ -1,4 +1,4 @@
-import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'

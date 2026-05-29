@@ -1,10 +1,10 @@
 'use server'
 
-import { errorHandling, getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
 import { getAPIUrl } from '@services/config/config'
-import { tags, courseTag } from '@/lib/cacheTags'
+import { courseTag, tags } from '@/lib/cacheTags'
 
 type ActivityRead = components['schemas']['ActivityRead']
 type ActivityReadWithPermissions = components['schemas']['ActivityReadWithPermissions']

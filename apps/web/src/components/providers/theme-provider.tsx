@@ -2,9 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import {
-  applyTheme,
   DEFAULT_THEME_MODE,
   DEFAULT_THEME_NAME,
+  applyTheme,
   getStoredTheme,
   getStoredThemeMode,
   getSystemThemeMode,

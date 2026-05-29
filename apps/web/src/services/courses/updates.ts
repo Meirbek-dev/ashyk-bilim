@@ -1,6 +1,6 @@
 'use server'
 
-import { getResponseMetadata, apiFetch } from '@/lib/api-client'
+import { apiFetch, getResponseMetadata } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
 export async function createCourseUpdate(body: any) {

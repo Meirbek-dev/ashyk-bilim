@@ -4,10 +4,10 @@ import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import {
-  getSubmissionDisplayName,
-  getReleaseState,
-  needsTeacherAction,
   SUBMISSION_STATUS_LABELS,
+  getReleaseState,
+  getSubmissionDisplayName,
+  needsTeacherAction,
 } from '@/features/grading/domain'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { SubmissionListProps, StatusFilter } from '../types'
+import type { StatusFilter, SubmissionListProps } from '../types'
 
 export default function SubmissionList({
   submissions,

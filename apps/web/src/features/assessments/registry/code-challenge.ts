@@ -3,7 +3,7 @@
  */
 
 import type { ComponentType } from 'react'
-import type { KindAttemptProps, KindReviewProps, KindModule } from './index'
+import type { KindAttemptProps, KindModule, KindReviewProps } from './index'
 
 export const codeChallengeModuleFactory = async (): Promise<KindModule> => {
   const [

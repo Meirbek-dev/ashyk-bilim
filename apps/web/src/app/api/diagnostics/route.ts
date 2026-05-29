@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getAppConfigResult, getPublicConfigResult, getServerConfigResult, IS_PRODUCTION } from '@/services/config/env'
+import { IS_PRODUCTION, getAppConfigResult, getPublicConfigResult, getServerConfigResult } from '@/services/config/env'
 
 interface DiagnosticsPayload {
   timestamp: string

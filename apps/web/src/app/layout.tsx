@@ -2,10 +2,10 @@ import { ThemeScript } from '@/components/providers/theme-script'
 import { defaultLocale } from '@/i18n/config'
 import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
 import {
-  getThemeFontStylesheetHref,
-  resolveThemeFontFamilies,
   THEME_FONT_FAMILIES_ATTRIBUTE,
   THEME_FONT_LINK_ATTRIBUTE,
+  getThemeFontStylesheetHref,
+  resolveThemeFontFamilies,
 } from '@/lib/theme-fonts'
 import type { CSSProperties } from 'react'
 import { Suspense } from 'react'

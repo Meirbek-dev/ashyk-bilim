@@ -1,7 +1,7 @@
 import { apiFetch } from '@/lib/api-client'
 import type {
-  Submission as GradingSubmission,
   SubmissionStatus as CanonicalSubmissionStatus,
+  Submission as GradingSubmission,
 } from '@/features/grading/domain'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, AlertTriangle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 

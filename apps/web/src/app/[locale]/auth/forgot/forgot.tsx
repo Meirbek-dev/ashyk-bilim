@@ -1,7 +1,7 @@
 'use client'
 
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
-import { AuthErrorBanner, AuthSuccessBanner, AuthSubmitButton } from '@components/auth/AuthForm'
+import { AuthErrorBanner, AuthSubmitButton, AuthSuccessBanner } from '@components/auth/AuthForm'
 import { ArrowLeft } from 'lucide-react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { sendResetLink } from '@services/auth/auth'

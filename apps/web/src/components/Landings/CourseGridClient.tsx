@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/pagination'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { useMemo } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const COURSES_PER_PAGE = 20
 

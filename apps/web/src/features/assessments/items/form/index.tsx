@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { generateUUID } from '@/lib/utils'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
+import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 
 export interface FormBlank {
   blankUUID: string

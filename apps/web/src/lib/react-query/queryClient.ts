@@ -1,6 +1,6 @@
 'use client'
 
-import { environmentManager, QueryClient, QueryCache, MutationCache } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, environmentManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Query } from '@tanstack/react-query'
 import { isAuthRoute } from '@/lib/auth/redirect'

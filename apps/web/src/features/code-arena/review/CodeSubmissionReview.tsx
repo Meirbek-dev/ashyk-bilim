@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, XCircle, Code2, Columns, FileSpreadsheet } from 'lucide-react'
+import { CheckCircle2, Code2, Columns, FileSpreadsheet, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 

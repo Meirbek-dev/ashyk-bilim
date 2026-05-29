@@ -3,7 +3,7 @@
 import type { SubmissionStatus } from '@/features/grading/domain/types'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { submissionsQueryOptions } from '@/features/grading/queries/grading.query'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface UseSubmissionsOptions {
   activityId: number | null

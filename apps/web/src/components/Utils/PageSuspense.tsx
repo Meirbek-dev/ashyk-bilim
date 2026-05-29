@@ -8,12 +8,7 @@ interface LoadingSkeletonProps {
   animated?: boolean
 }
 
-function LoadingSkeleton({
-  className = '',
-  variant = 'default',
-  lines = 3,
-  animated = true,
-}: LoadingSkeletonProps) {
+function LoadingSkeleton({ className = '', variant = 'default', lines = 3, animated = true }: LoadingSkeletonProps) {
   const baseClasses = animated ? 'animate-pulse' : ''
   const skeletonBg = 'bg-muted/40 dark:bg-muted/50'
 

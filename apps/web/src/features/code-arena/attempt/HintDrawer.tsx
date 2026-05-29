@@ -1,6 +1,6 @@
 'use client'
 
-import { Lightbulb, Lock, HelpCircle } from 'lucide-react'
+import { HelpCircle, Lightbulb, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 

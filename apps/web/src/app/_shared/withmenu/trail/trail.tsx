@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed'
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard'
