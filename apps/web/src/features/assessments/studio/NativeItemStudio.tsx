@@ -167,10 +167,8 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue => ((Object.assign({
-	code: issue.code,
-	message: issue.message
-}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {})))) ?? []
+    readinessQuery.data?.issues.map(issue => (({code: issue.code,
+	message: issue.message, ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {})}))) ?? []
 
   return (
     <AssessmentStudioContext.Provider

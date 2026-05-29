@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+
   "categories": {
     "correctness": "error",
     "nursery": "warn",
@@ -9,13 +10,16 @@
     "style": "warn",
     "suspicious": "error"
   },
+
   "env": {
     "builtin": true,
     "browser": true,
     "es2024": true,
     "node": true
   },
+
   "globals": {},
+
   "ignorePatterns": [
     ".git/",
     "**/*.d.ts",
@@ -32,7 +36,7 @@
     "packages/llmz/examples/",
     "lib/api/generated/schema.ts"
   ],
-  "overrides": [],
+
   "plugins": [
     "import",
     "jsdoc",
@@ -46,100 +50,54 @@
     "typescript",
     "unicorn"
   ],
+
   "rules": {
-    /* Core Rules (No prefix) */
+    /* ── Noisy / pedantic — keep off ──────────────────────────── */
     "arrow-body-style": "off",
+    "capitalized-comments": "off",
+    "complexity": "off",
     "curly": "off",
+    "default-case": "off",
     "func-style": "off",
-    /* Reduce noisy rules */
-    "oxc/no-async-await": "off",
-    "forbid-component-props": "off",
-    "no-optional-chaining": "off",
-    "no-rest-spread-properties": "off",
-    "no-await-in-loop": "off",
-    "no-constant-condition": "off",
-    "no-empty-pattern": "off",
-    "no-thenable": "off",
-    "no-unreachable": "off",
-    "prefer-template": "off",
-    "no-debugger": "off",
-    "no-implicit-coercion": "off",
     "id-length": "off",
+    "init-declarations": "off",
     "max-lines": "off",
+    "max-params": "off",
+    "max-statements": "off",
+    "new-cap": "off",
+    "no-await-in-loop": "off",
     "no-console": "off",
+    "no-constant-condition": "off",
+    "no-debugger": "off",
+    "no-duplicate-imports": "off",       // handled by import/no-duplicates
     "no-empty-function": "off",
+    "no-empty-pattern": "off",
+    "no-implicit-coercion": "off",
     "no-magic-numbers": "off",
+    "no-nested-ternary": "off",
     "no-null": "off",
+    "no-relative-parent-imports": "off",
+    "no-shadow": "off",
     "no-ternary": "off",
     "no-undefined": "off",
-    "no-unused-vars": "off",
+    "no-use-before-define": "off",
+    "no-var": "off",
+    "no-void": "off",
+    "prefer-template": "off",
     "sort-imports": "off",
     "sort-keys": "off",
-    "yoda": "off",
     "vars-on-top": "off",
-    "no-var": "off",
-    "capitalized-comments": "off",
-    "init-declarations": "off",
-    "max-params": "off",
-    "complexity": "off",
-    "max-statements": "off",
-    "no-use-before-define": "off",
-    "new-cap": "off",
-    "no-duplicate-imports": "off",
-    "no-shadow": "off",
-    "no-nested-ternary": "off",
-    "no-void": "off",
-    "no-relative-parent-imports": "off",
-    "default-case": "off",
-    /* Import Plugin Rules */
-    "import/no-default-export": "off",
-    "import/prefer-default-export": "off",
-    "import/no-named-export": "off",
-    "import/group-exports": "off",
-    "import/exports-last": "off",
-    "import/no-namespace": "off",
-    /* TypeScript Plugin Rules */
-    "typescript/explicit-function-return-type": "off",
-    "typescript/no-explicit-any": "off",
-    "typescript/no-unused-vars": "off",
-    "typescript/no-unsafe-type-assertion": "off",
-    "typescript/prefer-readonly-parameter-types": "off",
-    "typescript/no-misused-promises": "off",
-    "typescript/no-floating-promises": "off",
-    "typescript/no-unnecessary-condition": "off",
-    "typescript/strict-void-return": "off",
-    "typescript/explicit-module-boundary-types": "off",
-    "typescript/promise-function-async": "off",
-    /* React Plugin Rules */
-    "react/button-has-type": "off",
-    "react/iframe-missing-sandbox": "off",
-    "react/no-danger": "off",
-    "react/no-clone-element": "off",
-    "react/no-react-children": "off",
-    "react/jsx-handler-names": "off",
-    "react/jsx-filename-extension": "off",
-    "react/no-array-index-key": "off",
-    "react/react-in-jsx-scope": "off",
-    "react/jsx-max-depth": "off",
-    "react/jsx-props-no-spreading": "off",
-    "react/no-multi-comp": "off",
-    "react/only-export-components": "off",
-    /* React Perf Plugin Rules */
-    "react-perf/jsx-no-new-array-as-prop": "off",
-    "react-perf/jsx-no-jsx-as-prop": "off",
-    "react-perf/jsx-no-new-function-as-prop": "off",
-    "react-perf/jsx-no-new-object-as-prop": "off",
-    /* Promise Plugin Rules */
-    "promise/prefer-await-to-callbacks": "off",
-    "promise/prefer-await-to-then": "off",
-    /* Unicorn Plugin Rules */
-    "unicorn/no-null": "off",
-    "unicorn/prefer-string-raw": "off",
-    "unicorn/no-array-reduce": "off",
-    "unicorn/no-nested-ternary": "off",
-    "unicorn/filename-case": "off",
+    "yoda": "off",
+    "no-optional-chaining": "off",
+    "no-rest-spread-properties": "off",
 
-    /* High-Density Agentic & Token Optimization Enforcements */
+    /* ── Correctness aligned with tsconfig ─────────────────────── */
+    // tsconfig: allowUnreachableCode: false
+    "no-unreachable": "error",
+    // tsconfig: noUnusedLocals / noUnusedParameters — lint layer catches JS files
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+
+    /* ── Token efficiency & agentic cleanliness ────────────────── */
     "no-extra-boolean-cast": "error",
     "no-regex-spaces": "error",
     "no-useless-catch": "error",
@@ -147,12 +105,77 @@
     "no-useless-concat": "error",
     "no-useless-rename": "error",
     "object-shorthand": "error",
+
+    /* ── Oxc plugin ────────────────────────────────────────────── */
+    "oxc/no-async-await": "off",
+
+    /* ── Import plugin ─────────────────────────────────────────── */
+    "import/no-default-export": "off",
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+    "import/group-exports": "off",
+    "import/exports-last": "off",
+    "import/no-namespace": "off",
     "import/no-duplicates": "error",
     "import/no-self-import": "error",
+
+    /* ── TypeScript plugin ─────────────────────────────────────── */
+    // verbatimModuleSyntax: true requires import type for type-only imports
+    "typescript/consistent-type-imports": ["error", { "prefer": "type-imports", "fixStyle": "inline-type-imports" }],
+    "typescript/no-import-type-side-effects": "error",
+    // Unused vars handled by TS compiler; keep off to avoid double-reporting
+    "typescript/no-unused-vars": "off",
+    // Strictness
     "typescript/no-extra-non-null-assertion": "error",
     "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-non-null-asserted-optional-chain": "error",
+    // Keep permissive — TS strict mode covers these at compile time
+    "typescript/explicit-function-return-type": "off",
+    "typescript/explicit-module-boundary-types": "off",
+    "typescript/no-explicit-any": "off",
+    "typescript/no-floating-promises": "off",
+    "typescript/no-misused-promises": "off",
+    "typescript/no-unnecessary-condition": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "typescript/promise-function-async": "off",
+    "typescript/strict-void-return": "off",
+
+    /* ── React plugin ──────────────────────────────────────────── */
+    "react/react-in-jsx-scope": "off",   // react-jsx transform, no import needed
+    "react/button-has-type": "off",
+    "react/iframe-missing-sandbox": "off",
+    "react/jsx-filename-extension": "off",
+    "react/jsx-handler-names": "off",
+    "react/jsx-max-depth": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/no-array-index-key": "off",
+    "react/no-clone-element": "off",
+    "react/no-danger": "off",
+    "react/no-multi-comp": "off",
+    "react/no-react-children": "off",
+    "react/only-export-components": "off",
+    "react/forbid-component-props": "off",
+
+    /* ── React Perf plugin ─────────────────────────────────────── */
+    "react-perf/jsx-no-new-array-as-prop": "off",
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "react-perf/jsx-no-new-object-as-prop": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
+
+    /* ── Promise plugin ────────────────────────────────────────── */
+    "promise/prefer-await-to-callbacks": "off",
+    "promise/prefer-await-to-then": "off",
+
+    /* ── Unicorn plugin ────────────────────────────────────────── */
+    "unicorn/filename-case": "off",
+    "unicorn/no-array-reduce": "off",
+    "unicorn/no-nested-ternary": "off",
+    "unicorn/no-null": "off",
+    "unicorn/prefer-string-raw": "off",
     "unicorn/prefer-array-find": "error",
     "unicorn/prefer-includes": "error"
   },
+
   "settings": {}
 }
