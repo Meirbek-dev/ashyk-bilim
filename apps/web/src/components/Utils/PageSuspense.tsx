@@ -1,4 +1,3 @@
-import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 
@@ -9,7 +8,7 @@ interface LoadingSkeletonProps {
   animated?: boolean
 }
 
-export function LoadingSkeleton({
+function LoadingSkeleton({
   className = '',
   variant = 'default',
   lines = 3,
@@ -100,52 +99,4 @@ export function PageSuspense({ children, fallback, variant = 'minimal', classNam
   )
 
   return <Suspense fallback={fallback || defaultFallback}>{children}</Suspense>
-}
-
-// Specialized page transition loader
-interface PageTransitionLoaderProps {
-  className?: string
-  size?: 'sm' | 'md' | 'lg'
-  fullScreen?: boolean
-}
-
-export async function PageTransitionLoader({
-  className = '',
-  size = 'md',
-  fullScreen = false,
-}: PageTransitionLoaderProps) {
-  const sizeClasses = {
-    sm: 'h-1 w-16',
-    md: 'h-2 w-24',
-    lg: 'h-3 w-32',
-  }
-
-  const containerClasses = fullScreen
-    ? 'fixed inset-0 bg-card/80 dark:bg-card/80 backdrop-blur-sm z-50'
-    : 'min-h-[200px]'
-
-  const t = await getTranslations('Components.PageLoading')
-
-  return (
-    <div className={`flex items-center justify-center ${containerClasses} ${className}`}>
-      <div className="flex flex-col items-center space-y-4">
-        {/* Animated bars */}
-        <div className="flex space-x-1">
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              className={`${sizeClasses[size]} bg-primary/80 animate-pulse rounded-full`}
-              style={{
-                animationDelay: `${i * 0.2}s`,
-                animationDuration: '1s',
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Optional loading text */}
-        <div className="text-muted-foreground dark:text-muted-foreground text-sm font-medium">{t('loading')}</div>
-      </div>
-    </div>
-  )
 }

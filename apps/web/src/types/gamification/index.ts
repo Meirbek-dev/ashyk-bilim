@@ -20,6 +20,5 @@ export * from './preferences'
 export * from './customization'
 export * from './dashboard'
 
-
 // Streak type (used across modules)
 export type StreakType = 'login' | 'learning'

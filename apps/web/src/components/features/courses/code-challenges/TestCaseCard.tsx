@@ -49,14 +49,7 @@ interface TestCaseCardProps {
   input?: string
 }
 
-export function TestCaseCard({
-  result,
-  index,
-  isVisible = true,
-  testDescription,
-  expectedOutput,
-  input,
-}: TestCaseCardProps) {
+function TestCaseCard({ result, index, isVisible = true, testDescription, expectedOutput, input }: TestCaseCardProps) {
   const t = useTranslations('Activities.CodeChallenges')
   const [isOpen, setIsOpen] = useState(false)
 
@@ -314,5 +307,3 @@ export function TestResultsList({ results, visibleTestIds, testCases = EMPTY_TES
     </div>
   )
 }
-
-export default TestCaseCard

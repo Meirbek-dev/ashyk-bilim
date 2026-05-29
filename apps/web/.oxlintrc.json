@@ -63,7 +63,7 @@
     "typescript",
     "unicorn"
   ],
-  
+
   "rules": {
     "no-shadow": "warn",
     "typescript/no-explicit-any": "warn",

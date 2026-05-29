@@ -50,7 +50,6 @@ export interface XPAwardResponse {
   previous_level: number
 }
 
-
 const XPTransactionSchema = v.object({
   id: v.number(),
   user_id: v.number(),

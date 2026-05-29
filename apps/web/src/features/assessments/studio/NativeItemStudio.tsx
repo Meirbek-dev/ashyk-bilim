@@ -179,32 +179,20 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     }))
   }, [readinessQuery.data?.issues])
 
-  const studioContextValue = useMemo<AssessmentStudioContextValue | null>(
-    () => {
-      if (!assessment) return null
-      return {
-        activityUuid: normalizedActivityUuid,
-        assessment,
-        items,
-        selectedItemUuid,
-        setSelectedItemUuid,
-        refresh,
-        isEditable,
-        totalPoints,
-        validationIssues,
-      }
-    },
-    [
-      normalizedActivityUuid,
+  const studioContextValue = useMemo<AssessmentStudioContextValue | null>(() => {
+    if (!assessment) return null
+    return {
+      activityUuid: normalizedActivityUuid,
       assessment,
       items,
       selectedItemUuid,
+      setSelectedItemUuid,
       refresh,
       isEditable,
       totalPoints,
       validationIssues,
-    ],
-  )
+    }
+  }, [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues])
 
   if (error) return <ErrorUI message={t('errorLoading')} />
   if (isLoading || !assessment) return <PageLoading />

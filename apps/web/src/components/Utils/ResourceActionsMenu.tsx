@@ -117,5 +117,3 @@ export function ResourceActionsMenu({ availableActions, actions, trigger, align 
   )
 }
 
-
-export default ResourceActionsMenu

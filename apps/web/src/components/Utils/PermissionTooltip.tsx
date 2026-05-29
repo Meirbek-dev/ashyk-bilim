@@ -66,4 +66,3 @@ export function PermissionTooltip({
   )
 }
 
-export default PermissionTooltip

@@ -87,5 +87,3 @@ export const colors = {
     50: 'text-red-500',
   },
 } as const
-
-
