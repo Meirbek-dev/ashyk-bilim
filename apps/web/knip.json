@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "tags": ["-lintignore"],
-  "entry": ["src/app/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}", "src/i18n/navigation.ts", "src/messages/migrate.ts!"],
+  "entry": ["src/app/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}", "src/i18n/navigation.ts"],
   "project": ["src/**/*.{ts,tsx,mjs}"],
   "ignore": [
     "e2e/**/*",

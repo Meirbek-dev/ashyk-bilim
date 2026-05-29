@@ -11,7 +11,6 @@
     "generate:contracts": "bun run generate:api-types",
     "check:contracts": "node scripts/check_contracts.mjs",
     "i18n:consolidate": "bun run scripts/i18n-consolidate.ts",
-    "messages:migrate": "bun src/messages/migrate.ts",
     "test": "vitest run",
     "test:ui": "vitest --browser.enabled --browser.name=chromium",
     "test:browser": "vitest --browser.enabled",

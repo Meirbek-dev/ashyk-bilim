@@ -58,13 +58,23 @@ const COMMON_RULES = {
 
   /* Code quality */
   'no-console': 'off',
-  'no-var': 'error',
-  'prefer-const': 'warn',
-  eqeqeq: ['error', 'always', { null: 'always' }],
   'no-unused-expressions': ['warn', { allowShortCircuit: true, allowTernary: true }],
   'no-empty': ['warn', { allowEmptyCatch: false }],
-  'no-redeclare': 'warn',
   'no-unused-vars': 'off',
+
+  /* ── Rules disabled because they are covered by oxlint ── */
+  'no-var': 'off',
+  'prefer-const': 'off',
+  eqeqeq: 'off',
+  'no-redeclare': 'off',
+  'no-extra-boolean-cast': 'off',
+  'no-regex-spaces': 'off',
+  'no-useless-catch': 'off',
+  'no-useless-computed-key': 'off',
+  'no-useless-concat': 'off',
+  'no-useless-rename': 'off',
+  'object-shorthand': 'off',
+  'no-unreachable': 'off',
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,12 +188,12 @@ export default defineConfig(
         },
       ],
 
-      /* Disable core rules replaced by TS */
+      /* Disable core rules replaced by TS or oxlint */
 
       'no-undef': 'off',
       'no-redeclare': 'off',
 
-      '@typescript-eslint/no-redeclare': 'warn',
+      '@typescript-eslint/no-redeclare': 'off', // oxlint runs correctness on TS files too
 
       // Should enable at some point
       '@typescript-eslint/no-unsafe-assignment': 'off',
