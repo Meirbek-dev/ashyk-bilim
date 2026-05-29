@@ -140,6 +140,7 @@
     "typescript/prefer-readonly-parameter-types": "off",
     "typescript/promise-function-async": "off",
     "typescript/strict-void-return": "off",
+    "typescript/consistent-return": "off",
 
     /* ── React plugin ──────────────────────────────────────────── */
     "react/react-in-jsx-scope": "off",   // react-jsx transform, no import needed

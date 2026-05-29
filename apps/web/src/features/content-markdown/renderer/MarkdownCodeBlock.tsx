@@ -27,7 +27,8 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
     setHighlighted(null)
     highlightCode(code, lang).then(html => {
       if (!cancelled) setHighlighted(html)
-    })
+      return html
+    }).catch(() => undefined)
     return () => {
       cancelled = true
     }

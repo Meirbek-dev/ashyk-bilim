@@ -52,6 +52,9 @@ export function verdictLabel(verdict: CodeVerdict | null): string {
     case null: {
       return 'Ready'
     }
+    default: {
+      return 'Ready'
+    }
   }
 }
 

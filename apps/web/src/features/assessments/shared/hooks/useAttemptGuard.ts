@@ -114,7 +114,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       }, 1000)
     }
 
-    return () => {}
+    return undefined
   }, [securityCountdown])
 
   // Forgiving: cancel countdown when focus and fullscreen are restored

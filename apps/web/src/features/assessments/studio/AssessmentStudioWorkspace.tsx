@@ -60,6 +60,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     setKindModule(null)
     void loadKindModule(vm.kind).then(module => {
       if (!cancelled) setKindModule(module)
+      return module
     })
     return () => {
       cancelled = true

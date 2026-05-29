@@ -5,10 +5,9 @@ import { getAssessmentByActivityUuid } from '@services/assessments/assessments'
 import { getActivity } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
 import EditorWrapper from '@/components/Objects/Editor/EditorWrapper'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
 import { redirect } from '@/i18n/navigation'
-import { getLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 
 export default async function PlatformAssessmentStudioPage(props: {

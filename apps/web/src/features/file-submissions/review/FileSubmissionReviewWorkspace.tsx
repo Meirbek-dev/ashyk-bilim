@@ -236,7 +236,7 @@ export default function FileSubmissionReviewWorkspace({
               size="sm"
               variant="outline"
               nativeButton={false}
-              render={<a href={fileSubmissionExportUrl(config.file_submission_uuid)} />}
+              render={<a href={fileSubmissionExportUrl(config.file_submission_uuid)} aria-label={t('downloadCsv')} />}
             >
               <Download className="size-4" />
               CSV

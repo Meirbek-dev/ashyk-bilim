@@ -47,8 +47,8 @@ function codeChallengeSubmissionHookOptions(
   })
 }
 
-export function useCodeChallengeSettings<TSettings = unknown>(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid))
+export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
+  return useQuery(codeChallengeSettingsHookOptions(activityUuid))
 }
 
 export function useJudge0Languages() {

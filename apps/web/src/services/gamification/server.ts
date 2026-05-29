@@ -89,16 +89,14 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
   const entries = payload?.entries ?? []
   return {
     entries: entries.map((data, index) => {
-      return Object.assign({
-	user_id: numberOr(data.user_id),
+      return {user_id: numberOr(data.user_id),
 	total_xp: Math.max(0, numberOr(data.total_xp)),
 	level: Math.max(1, numberOr(data.level, 1)),
 	rank: Math.max(1, numberOr(data.rank, index + 1)),
 	username: typeof data.username === 'string' ? data.username : null,
 	first_name: 'first_name' in data ? data.first_name ?? null : null,
 	last_name: 'last_name' in data ? data.last_name ?? null : null,
-	avatar_url: 'avatar_url' in data ? data.avatar_url ?? null : null
-}, typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {})
+	avatar_url: 'avatar_url' in data ? data.avatar_url ?? null : null, ...(typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {})}
     }),
     total_participants: Math.max(0, numberOr(payload?.total_participants)),
     last_updated: fallbackDate,

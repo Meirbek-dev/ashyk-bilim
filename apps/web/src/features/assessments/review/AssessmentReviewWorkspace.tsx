@@ -62,6 +62,7 @@ export default function AssessmentReviewWorkspace({
     void loadKindModule(kind)
       .then(mod => {
         if (!cancelled) setKindModule(mod)
+        return mod
       })
       .catch((loadError: unknown) => {
         void reportClientError({

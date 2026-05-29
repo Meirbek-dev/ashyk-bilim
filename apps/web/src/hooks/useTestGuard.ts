@@ -259,7 +259,9 @@ export function useTestGuard({
 
     // Cleanup all handlers
     return () => {
-      handlers.forEach(cleanup => cleanup())
+      for (const cleanup of handlers) {
+        cleanup()
+      }
     }
   }, [
     enabled,

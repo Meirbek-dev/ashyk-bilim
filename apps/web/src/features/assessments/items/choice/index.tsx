@@ -488,12 +488,38 @@ function MatchingAuthor({
   )
 }
 
+function toChoiceSelectionKey(answer: unknown): string | null {
+  if (typeof answer === 'string' || typeof answer === 'number') {
+    return String(answer)
+  }
+
+  return null
+}
+
+function toChoiceAnswerLabel(answer: unknown): string {
+  if (answer === null || answer === undefined) {
+    return '-'
+  }
+
+  if (typeof answer === 'string' || typeof answer === 'number' || typeof answer === 'boolean') {
+    return String(answer)
+  }
+
+  try {
+    return JSON.stringify(answer)
+  } catch {
+    return '-'
+  }
+}
+
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (!item) {
     return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>
   }
+
+  const current = toChoiceSelectionKey(answer) ?? ''
 
   const answerLabel = (() => {
     if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2)
@@ -504,10 +530,7 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         .map(option => option.text)
         .join(', ')
     }
-    return (
-      item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ??
-      String(answer ?? '-')
-    )
+    return item.options.find((option, index) => String(optionId(option, index)) === current)?.text ?? toChoiceAnswerLabel(answer)
   })()
 
   return (
