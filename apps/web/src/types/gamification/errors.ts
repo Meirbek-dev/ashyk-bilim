@@ -72,7 +72,7 @@ export type GamificationError =
   | ServerError
   | UnknownError
 
-export const NetworkErrorSchema = v.object({
+const NetworkErrorSchema = v.object({
   type: v.literal(ERROR_TYPES.NETWORK_ERROR),
   message: v.string(),
   timestamp: v.string(),
@@ -80,14 +80,14 @@ export const NetworkErrorSchema = v.object({
   retryable: v.boolean(),
 })
 
-export const AuthErrorSchema = v.object({
+const AuthErrorSchema = v.object({
   type: v.literal(ERROR_TYPES.AUTH_ERROR),
   message: v.string(),
   timestamp: v.string(),
   requiresReauth: v.boolean(),
 })
 
-export const DailyLimitExceededErrorSchema = v.object({
+const DailyLimitExceededErrorSchema = v.object({
   type: v.literal(ERROR_TYPES.DAILY_LIMIT_EXCEEDED),
   message: v.string(),
   timestamp: v.string(),
@@ -96,7 +96,7 @@ export const DailyLimitExceededErrorSchema = v.object({
   resetTime: v.string(),
 })
 
-export const ValidationErrorSchema = v.object({
+const ValidationErrorSchema = v.object({
   type: v.literal(ERROR_TYPES.VALIDATION_ERROR),
   message: v.string(),
   timestamp: v.string(),
@@ -109,7 +109,7 @@ export const ValidationErrorSchema = v.object({
   ),
 })
 
-export const ServerErrorSchema = v.object({
+const ServerErrorSchema = v.object({
   type: v.literal(ERROR_TYPES.SERVER_ERROR),
   message: v.string(),
   timestamp: v.string(),

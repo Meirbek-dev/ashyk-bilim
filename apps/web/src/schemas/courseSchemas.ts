@@ -38,7 +38,7 @@ export type CourseGeneralValues = v.InferOutput<typeof courseGeneralSchema>
 // Course access section
 // ---------------------------------------------------------------------------
 
-export const courseAccessSchema = v.object({
+const courseAccessSchema = v.object({
   public: v.boolean(),
 })
 
@@ -48,7 +48,7 @@ export type CourseAccessValues = v.InferOutput<typeof courseAccessSchema>
 // Course contributors section
 // ---------------------------------------------------------------------------
 
-export const courseContributorsSchema = v.object({
+const courseContributorsSchema = v.object({
   open_to_contributors: v.boolean(),
 })
 

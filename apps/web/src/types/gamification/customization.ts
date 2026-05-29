@@ -1,5 +1,3 @@
-import * as v from 'valibot'
-
 /**
  * Avatar Customization Types
  * Frames, accessories, and unlockable cosmetics
@@ -55,50 +53,9 @@ export interface AvatarPreset {
   isDefault: boolean
 }
 
-export const AvatarFrameSchema = v.object({
-  id: v.string(),
-  name: v.string(),
-  nameKey: v.string(),
-  unlockLevel: v.pipe(v.number(), v.minValue(1)),
-  rarity: v.picklist(['common', 'rare', 'epic', 'legendary']),
-  color: v.string(),
-  glowColor: v.optional(v.string()),
-  isUnlocked: v.boolean(),
-  isEquipped: v.boolean(),
-})
 
-export const AvatarAccessorySchema = v.object({
-  id: v.string(),
-  name: v.string(),
-  nameKey: v.string(),
-  unlockLevel: v.pipe(v.number(), v.minValue(1)),
-  icon: v.string(),
-  position: v.picklist(['hat', 'glasses', 'badge', 'background']),
-  rarity: v.picklist(['common', 'rare', 'epic', 'legendary']),
-  isUnlocked: v.boolean(),
-  isEquipped: v.boolean(),
-})
 
-export const AvatarCustomizationSchema = v.object({
-  frame: v.nullable(AvatarFrameSchema),
-  accessories: v.array(AvatarAccessorySchema),
-  backgroundColor: v.optional(v.string()),
-})
 
-export const AvatarUnlockSchema = v.object({
-  type: v.picklist(['frame', 'accessory']),
-  item: v.union([AvatarFrameSchema, AvatarAccessorySchema]),
-  unlockedAt: v.string(),
-  level: v.number(),
-})
-
-export const AvatarPresetSchema = v.object({
-  id: v.string(),
-  name: v.string(),
-  description: v.string(),
-  customization: AvatarCustomizationSchema,
-  isDefault: v.boolean(),
-})
 
 // Frame definitions (synced with backend)
 export const AVATAR_FRAMES: Omit<AvatarFrame, 'isUnlocked' | 'isEquipped'>[] = [

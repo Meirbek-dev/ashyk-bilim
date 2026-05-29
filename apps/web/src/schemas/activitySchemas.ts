@@ -18,7 +18,7 @@ export const activitySubTypeEnum = v.picklist([
   'SUBTYPE_FILE_SUBMISSION_STANDARD',
 ] as const)
 
-export const activityCreateSchema = v.object({
+const activityCreateSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
   activity_type: activityTypeEnum,
   activity_sub_type: v.optional(activitySubTypeEnum),
@@ -29,6 +29,6 @@ export const activityCreateSchema = v.object({
 
 export type ActivityCreateValues = v.InferOutput<typeof activityCreateSchema>
 
-export const activityUpdateSchema = v.partial(activityCreateSchema)
+const activityUpdateSchema = v.partial(activityCreateSchema)
 
 export type ActivityUpdateValues = v.InferOutput<typeof activityUpdateSchema>
