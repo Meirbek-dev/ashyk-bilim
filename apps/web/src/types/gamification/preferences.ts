@@ -50,7 +50,7 @@ export interface PartialGamificationPreferences {
 }
 
 // Default preferences factory - optimized for less intrusive experience
-export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   levelUp: true, // Important milestone
   xpGain: false, // Too noisy by default
   streakReminder: false, // Can cause anxiety
@@ -59,7 +59,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   leaderboardPosition: false, // Opt-in only
 }
 
-export const DEFAULT_PRIVACY_PREFERENCES: PrivacyPreferences = {
+const DEFAULT_PRIVACY_PREFERENCES: PrivacyPreferences = {
   showOnLeaderboard: true,
   publicProfileStats: true,
   shareProgress: false,
@@ -67,7 +67,7 @@ export const DEFAULT_PRIVACY_PREFERENCES: PrivacyPreferences = {
   showUsername: true,
 }
 
-export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
+const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
   animatedEffects: true, // Will respect prefers-reduced-motion
   compactMode: true, // Less intrusive by default
   showLevelIndicator: true,
@@ -77,7 +77,7 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
   theme: 'auto',
 }
 
-export const DEFAULT_GAMIFICATION_PREFERENCES: GamificationPreferences = {
+const DEFAULT_GAMIFICATION_PREFERENCES: GamificationPreferences = {
   notifications: DEFAULT_NOTIFICATION_PREFERENCES,
   privacy: DEFAULT_PRIVACY_PREFERENCES,
   display: DEFAULT_DISPLAY_PREFERENCES,
@@ -123,28 +123,8 @@ export const PartialGamificationPreferencesSchema = v.object({
 })
 
 // Helper functions
-export function createDefaultPreferences(): GamificationPreferences {
+function createDefaultPreferences(): GamificationPreferences {
   return structuredClone(DEFAULT_GAMIFICATION_PREFERENCES)
-}
-
-export function mergePreferences(
-  current: GamificationPreferences,
-  updates: PartialGamificationPreferences,
-): GamificationPreferences {
-  return {
-    notifications: {
-      ...current.notifications,
-      ...updates.notifications,
-    },
-    privacy: {
-      ...current.privacy,
-      ...updates.privacy,
-    },
-    display: {
-      ...current.display,
-      ...updates.display,
-    },
-  }
 }
 
 export function validatePreferences(prefs: unknown): GamificationPreferences {
