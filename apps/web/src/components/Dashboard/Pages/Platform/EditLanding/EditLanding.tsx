@@ -25,6 +25,19 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
+import { createElement, useEffect, useMemo, useState, useTransition } from 'react'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { getLandingMediaDirectory } from '@services/media/media'
+import { usePlatformCourses } from '@/features/platform/hooks/usePlatform'
+import { Textarea } from '@components/ui/textarea'
+import NextImage from '@components/ui/NextImage'
+import { Switch } from '@components/ui/switch'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import type { ChangeEvent, FC } from 'react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 function SortableLandingSection({
   section,
@@ -124,20 +137,6 @@ function SortableLandingSection({
     </div>
   )
 }
-import { createElement, useEffect, useMemo, useState, useTransition } from 'react'
-import { usePlatform } from '@/components/Contexts/PlatformContext'
-import { getLandingMediaDirectory } from '@services/media/media'
-import { usePlatformCourses } from '@/features/platform/hooks/usePlatform'
-import { Textarea } from '@components/ui/textarea'
-import NextImage from '@components/ui/NextImage'
-
-import { Switch } from '@components/ui/switch'
-import { Button } from '@components/ui/button'
-import { Label } from '@components/ui/label'
-import { Input } from '@components/ui/input'
-import type { ChangeEvent, FC } from 'react'
-import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
 
 import type {
   LandingButton,

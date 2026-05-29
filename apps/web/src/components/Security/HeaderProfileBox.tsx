@@ -104,10 +104,10 @@ export const HeaderProfileBox = () => {
       ? userRoles
           .filter((role: SessionRole) => !role.role?.is_system)
           .map((role: SessionRole) =>
-            Object.assign(
-              { name: role.role.name || t('profile.customRole') },
-              role.role.description ? { description: role.role.description } : {},
-            ),
+            ({
+              name: role.role.name || t('profile.customRole'),
+              ...(role.role.description ? { description: role.role.description } : {}),
+            }),
           )
       : []
 

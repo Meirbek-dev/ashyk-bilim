@@ -1,6 +1,6 @@
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
 import { getActivityMediaDirectory } from '@services/media/media'
-import { YouTubeEmbed } from '@next/third-parties/google'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { getYouTubeVideoId } from '@/lib/utils'
 import type ArtplayerType from 'artplayer'
 import { useLocale } from 'next-intl'
@@ -131,9 +131,9 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
                 )
               })()}
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
-              <YouTubeEmbed
+              <YouTubeEmbedFill
                 videoid={videoId}
-                style="height: 100%; width: 100%; max-width: none; position: absolute; inset: 0;"
+                style={{ height: '100%', width: '100%', maxWidth: 'none', position: 'absolute', inset: 0 }}
                 params={new URLSearchParams({
                   autoplay: activity.details?.autoplay ? '1' : '0',
                   mute: activity.details?.muted ? '1' : '0',

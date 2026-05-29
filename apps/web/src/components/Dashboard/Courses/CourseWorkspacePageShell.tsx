@@ -170,7 +170,7 @@ function CourseWorkspaceChrome({
               size="sm"
               nativeButton={false}
               variant="outline"
-              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} />}
+              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} aria-label={t('previewButton')} />}
               className="gap-2"
             >
               <Eye className="size-4" />

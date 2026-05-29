@@ -10,7 +10,7 @@ import {
   SiNotion,
   SiYoutube,
 } from '@icons-pack/react-simple-icons'
-import { YouTubeEmbed } from '@next/third-parties/google'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import {
   AlignCenter,
   BoxIcon,
@@ -236,7 +236,7 @@ const EmbedContent = ({
 
     if (videoId) {
       return (
-        <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" params="autoplay=0&rel=0" />
+        <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} params="autoplay=0&rel=0" />
       )
     }
 

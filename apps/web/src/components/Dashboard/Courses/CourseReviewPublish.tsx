@@ -113,7 +113,7 @@ export default function CourseReviewPublish({
             <Button
               variant="outline"
               nativeButton={false}
-              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} target="_blank" rel="noopener noreferrer" />}
+              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} target="_blank" rel="noopener noreferrer" aria-label={t('previewPublicPage')} />}
             >
               <ExternalLink className="size-4" />
               {t('previewPublicPage')}

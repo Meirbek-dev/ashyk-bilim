@@ -1,9 +1,9 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 const EMPTY_SET = new Set<number>()
-import { useTranslations } from 'next-intl'
 
 interface ExamQuestionNavigationProps {
   totalQuestions: number

@@ -1,5 +1,10 @@
 import { createElement } from 'react'
 import type { ComponentType, ReactNode } from 'react'
+import './choice'
+import './form'
+import './matching'
+import './open-text'
+import './code'
 
 export type ItemKind =
   | 'CHOICE'
@@ -84,13 +89,3 @@ export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactN
     JSON.stringify(answer, null, 2),
   )
 }
-
-import './choice'
-
-import './form'
-
-import './matching'
-
-import './open-text'
-
-import './code'

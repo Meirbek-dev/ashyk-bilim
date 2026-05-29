@@ -167,13 +167,11 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
     readinessQuery.data?.issues.map(issue =>
-      Object.assign(
-        {
-          code: issue.code,
+      ({
+        code: issue.code,
           message: issue.message,
-        },
-        issue.item_uuid ? { itemUuid: issue.item_uuid } : {},
-      ),
+        ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
+      }),
     ) ?? []
 
   const studioContextValue = useMemo(

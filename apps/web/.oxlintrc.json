@@ -43,7 +43,10 @@
     "src/components/providers/session-provider.tsx",
     "src/features/assessments/registry/code-challenge/hooks.ts",
     "src/features/assessments/shell/AssessmentLayout.tsx",
-    "src/features/assessments/registry/code-challenge/hooks.ts"
+    "src/features/assessments/registry/code-challenge/hooks.ts",
+    "src/components/Security/HeaderProfileBox.tsx",
+    "src/features/assessments/studio/NativeItemStudio.tsx",
+    "src/services/gamification/server.ts"
   ],
 
   "plugins": [

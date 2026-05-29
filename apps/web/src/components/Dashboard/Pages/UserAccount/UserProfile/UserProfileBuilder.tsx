@@ -28,6 +28,20 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import NextImage from '@components/ui/NextImage'
+import { de, enUS, es, fr, ru } from 'date-fns/locale'
+import { useRouter } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import { Textarea } from '@components/ui/textarea'
+import { Checkbox } from '@components/ui/checkbox'
+import { Calendar } from '@components/ui/calendar'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import type { Locale } from 'date-fns'
+import { format } from 'date-fns'
+import type { FC } from 'react'
+import { toast } from 'sonner'
+import { Card } from '@/components/ui/card'
 
 function SortableProfileSection({
   section,
@@ -118,20 +132,6 @@ function SortableProfileSection({
     </div>
   )
 }
-import { de, enUS, es, fr, ru } from 'date-fns/locale'
-import { useRouter } from 'next/navigation'
-import { useLocale, useTranslations } from 'next-intl'
-import { Textarea } from '@components/ui/textarea'
-import { Checkbox } from '@components/ui/checkbox'
-import { Calendar } from '@components/ui/calendar'
-import { Button } from '@components/ui/button'
-import { Label } from '@components/ui/label'
-import { Input } from '@components/ui/input'
-import type { Locale } from 'date-fns'
-import { format } from 'date-fns'
-import type { FC } from 'react'
-import { toast } from 'sonner'
-import { Card } from '@/components/ui/card'
 
 // Define section type keys
 const SECTION_TYPE_KEYS = {

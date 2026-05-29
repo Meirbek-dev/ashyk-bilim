@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react'
-import { YouTubeEmbed } from '@next/third-parties/google'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { getYouTubeVideoId } from '@/lib/utils'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -260,7 +260,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
             ? (() => {
                 const videoId = getYouTubeVideoId(previewUrl)
                 if (videoId) {
-                  return <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" />
+                  return <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} />
                 }
                 return (
                   <iframe

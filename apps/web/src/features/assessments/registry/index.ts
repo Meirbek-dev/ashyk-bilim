@@ -16,6 +16,10 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { AssessmentKind, AttemptViewModel } from '../domain'
 import type { Submission } from '@/features/grading/domain/types'
+// Side-effect imports: register built-in kinds so they are ready at import time.
+import './exam'
+import './code-challenge'
+import './custom'
 
 export interface KindAuthorProps {
   activityUuid: string
@@ -121,9 +125,4 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-
-import './exam'
-
-import './code-challenge'
-
-import './custom'
+// (Imports are hoisted; this comment documents the registration intent.)

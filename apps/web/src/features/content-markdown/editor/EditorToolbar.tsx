@@ -261,9 +261,10 @@ export function EditorToolbar({
               title={t('toolbar.table')}
               active={null}
               disabled={disabled}
-              onClick={() =>
-                (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-              }
+              onClick={() => {
+                if (!editor) return
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+              }}
             >
               <Rows3 className="size-3.5" />
             </ToolbarButton>
