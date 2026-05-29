@@ -113,7 +113,6 @@ export default function CourseReviewPublish({
             <Button
               variant="outline"
               nativeButton={false}
-              // eslint-disable-next-line jsx-a11y/anchor-has-content
               render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} target="_blank" rel="noopener noreferrer" />}
             >
               <ExternalLink className="size-4" />

@@ -85,13 +85,12 @@ export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactN
   )
 }
 
-// eslint-disable-next-line import/no-unassigned-import
 import './choice'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './form'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './matching'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './open-text'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './code'

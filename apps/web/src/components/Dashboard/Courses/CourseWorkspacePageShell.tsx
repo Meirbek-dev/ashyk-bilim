@@ -170,7 +170,6 @@ function CourseWorkspaceChrome({
               size="sm"
               nativeButton={false}
               variant="outline"
-              // eslint-disable-next-line jsx-a11y/anchor-has-content
               render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} />}
               className="gap-2"
             >

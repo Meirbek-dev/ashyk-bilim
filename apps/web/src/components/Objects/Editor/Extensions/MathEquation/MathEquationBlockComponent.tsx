@@ -9,7 +9,7 @@ import Link from '@components/ui/AppLink'
 import type { ChangeEvent } from 'react'
 import { renderToString } from 'katex'
 import { motion } from 'motion/react'
-// eslint-disable-next-line import/no-unassigned-import
+
 import 'katex/dist/katex.min.css'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
 

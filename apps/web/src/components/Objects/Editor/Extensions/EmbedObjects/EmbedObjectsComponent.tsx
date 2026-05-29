@@ -236,7 +236,6 @@ const EmbedContent = ({
 
     if (videoId) {
       return (
-        // eslint-disable-next-line react/style-prop-object
         <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" params="autoplay=0&rel=0" />
       )
     }

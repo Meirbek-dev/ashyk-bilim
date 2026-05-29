@@ -121,9 +121,9 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-// eslint-disable-next-line import/no-unassigned-import
+
 import './exam'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './code-challenge'
-// eslint-disable-next-line import/no-unassigned-import
+
 import './custom'

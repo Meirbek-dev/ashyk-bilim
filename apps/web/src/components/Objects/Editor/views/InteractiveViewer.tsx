@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-// eslint-disable-next-line import/no-unassigned-import
+
 import '@components/Objects/Editor/styles/prosemirror.css'
 
 interface InteractiveViewerProps {

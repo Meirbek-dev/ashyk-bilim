@@ -188,7 +188,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
       totalPoints,
       validationIssues,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues],
   )
 

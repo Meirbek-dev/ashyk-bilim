@@ -133,7 +133,6 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
               <YouTubeEmbed
                 videoid={videoId}
-                // eslint-disable-next-line react/style-prop-object
                 style="height: 100%; width: 100%; max-width: none; position: absolute; inset: 0;"
                 params={new URLSearchParams({
                   autoplay: activity.details?.autoplay ? '1' : '0',
