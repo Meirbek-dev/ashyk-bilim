@@ -9,7 +9,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import { clampEmbedHeight } from '../../components/Objects/Editor/Extensions/EmbedBlock/EmbedBlockNodeView'
+import { clampEmbedHeight } from '../../components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
 // ---------------------------------------------------------------------------
 // Property 8: EmbedBlock NodeView height is always clamped to [200, 1200]

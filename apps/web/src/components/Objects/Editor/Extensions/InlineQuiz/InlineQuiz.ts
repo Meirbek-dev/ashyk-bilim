@@ -9,7 +9,7 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
 
 import InlineQuizComponent from './InlineQuizComponent'
-import { nodeView } from '@components/Objects/Editor/core'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {

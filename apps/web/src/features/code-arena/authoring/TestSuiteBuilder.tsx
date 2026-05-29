@@ -71,9 +71,12 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
     if (targetIdx < 0 || targetIdx >= tests.length) return
 
     const next = [...tests]
-    const temp = next[idx]!
-    next[idx] = next[targetIdx]!
-    next[targetIdx] = temp
+    const temp = next[idx]
+    const targetVal = next[targetIdx]
+    if (temp !== undefined && targetVal !== undefined) {
+      next[idx] = targetVal
+      next[targetIdx] = temp
+    }
 
     onChange({
       visible_tests: next.filter(t => t.is_visible),

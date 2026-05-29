@@ -918,3 +918,10 @@ export function getProvidersByCategory(category: EmbedCategoryId): EmbedProvider
       return a.type.localeCompare(b.type)
     })
 }
+
+/**
+ * Clamps a raw height value to the valid embed height range [200, 1200].
+ */
+export function clampEmbedHeight(raw: number): number {
+  return Math.min(1200, Math.max(200, raw))
+}

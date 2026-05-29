@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
-import { nodeView } from '@components/Objects/Editor/core'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 import EmbedBlockNodeView from './EmbedBlockNodeView'
 import type { EmbedType } from './embed-options'
 

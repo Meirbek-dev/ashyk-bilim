@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import type { CommandProps } from '@tiptap/core'
 
 import PDFBlockComponent from './PDFBlockComponent'
-import { nodeView } from '@components/Objects/Editor/core'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 export interface PdfBlockObject {
   block_uuid: string

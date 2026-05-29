@@ -122,8 +122,3 @@ export async function updatePassword(userId: number, data: unknown): Promise<Res
     HTTPmessage: response.statusText,
   }
 }
-
-export {
-  useUserByIdQuery as useUserById,
-  useUserByUsernameQuery as useUserByUsername,
-} from '@/features/users/hooks/useUsers'

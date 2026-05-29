@@ -15,7 +15,7 @@ import type { XPNotification } from '@/lib/gamification/components/notification-
 import { ParticleEffect } from '@/lib/gamification/components/level-indicators'
 import { AnimatedValue } from '@/lib/gamification/components/animated-value'
 import { useReducedData } from '@/hooks/use-reduced-data'
-import { getXPSourceTheme } from '@/lib/gamification'
+import { getXPSourceTheme } from '../theme'
 
 import { useTranslations } from 'next-intl'
 import { motion } from 'motion/react'

@@ -3,7 +3,7 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 import { Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 interface CalloutOptions {
   dismissible?: boolean

@@ -1,5 +1,6 @@
 'use client'
 
+import { IS_DEVELOPMENT } from '@/services/config/env'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createQueryPersister, getQueryClient, shouldPersistQuery } from './queryClient'
@@ -12,12 +13,11 @@ interface ReactQueryProviderProps {
 }
 
 const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000
-const ReactQueryDevtools =
-  process.env.NODE_ENV === 'development'
-    ? dynamic(() => import('@tanstack/react-query-devtools').then(mod => mod.ReactQueryDevtools), {
-        ssr: false,
-      })
-    : null
+const ReactQueryDevtools = IS_DEVELOPMENT
+  ? dynamic(() => import('@tanstack/react-query-devtools').then(mod => mod.ReactQueryDevtools), {
+      ssr: false,
+    })
+  : null
 
 export function ReactQueryProvider({ children }: ReactQueryProviderProps) {
   const [queryClient] = useState(() => getQueryClient())

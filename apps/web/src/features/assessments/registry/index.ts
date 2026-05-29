@@ -16,10 +16,9 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { AssessmentKind, AttemptViewModel } from '../domain'
 import type { Submission } from '@/features/grading/domain/types'
-// Side-effect imports: register built-in kinds so they are ready at import time.
-import './exam'
-import './code-challenge'
-import './custom'
+import { examModuleFactory } from './exam'
+import { codeChallengeModuleFactory } from './code-challenge'
+import { customModuleFactory } from './custom'
 
 export interface KindAuthorProps {
   activityUuid: string
@@ -87,7 +86,12 @@ export interface KindModule {
 
 function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
   const f = getRegistry as any
-  if (!f._map) f._map = new Map()
+  if (!f._map) {
+    f._map = new Map()
+    f._map.set('TYPE_EXAM', examModuleFactory)
+    f._map.set('TYPE_CODE_CHALLENGE', codeChallengeModuleFactory)
+    f._map.set('TYPE_CUSTOM', customModuleFactory)
+  }
   return f._map
 }
 

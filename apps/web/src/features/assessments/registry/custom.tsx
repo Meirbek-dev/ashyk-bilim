@@ -6,10 +6,9 @@
  */
 
 import type { ComponentType } from 'react'
-import { registerKind } from './index'
-import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index'
+import type { KindAuthorProps, KindAttemptProps, KindReviewProps, KindModule } from './index'
 
-registerKind('TYPE_CUSTOM', async () => {
+export const customModuleFactory = async (): Promise<KindModule> => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: ExamAttemptContent },
@@ -47,4 +46,4 @@ registerKind('TYPE_CUSTOM', async () => {
     Attempt: ExamAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
   }
-})
+}

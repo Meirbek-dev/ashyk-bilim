@@ -11,7 +11,7 @@ import { renderToString } from 'katex'
 import { motion } from 'motion/react'
 
 import 'katex/dist/katex.min.css'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 // Predefined LaTeX templates
 const mathTemplates = [
@@ -94,7 +94,7 @@ interface MathEquationNodeAttrs {
 const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAttrs>) => {
   const t = useTranslations('DashPage.Editor.MathEquationBlock')
   const [equation, setEquation] = useState(props.node.attrs.math_equation)
-  const [isEditing, _setIsEditing] = useState(true)
+  const isEditing = true
   const [showTemplates, setShowTemplates] = useState(false)
   const [showSymbols, setShowSymbols] = useState(false)
   const [showHelp, setShowHelp] = useState(false)

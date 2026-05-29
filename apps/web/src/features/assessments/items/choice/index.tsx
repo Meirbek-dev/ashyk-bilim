@@ -13,8 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import { registerItemKind } from '../registry'
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry'
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
 
 export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING'
 
@@ -552,12 +551,12 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
   )
 }
 
-for (const kind of ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const) {
-  registerItemKind({
-    kind,
-    label: kind.replaceAll('_', ' ').toLowerCase(),
-    Author: ChoiceItemAuthor,
-    Attempt: ChoiceItemAttempt,
-    ReviewDetail: ChoiceItemReviewDetail,
-  })
-}
+export const choiceModules: ItemKindModule[] = (
+  ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const
+).map(kind => ({
+  kind,
+  label: kind.replaceAll('_', ' ').toLowerCase(),
+  Author: ChoiceItemAuthor,
+  Attempt: ChoiceItemAttempt,
+  ReviewDetail: ChoiceItemReviewDetail,
+}))

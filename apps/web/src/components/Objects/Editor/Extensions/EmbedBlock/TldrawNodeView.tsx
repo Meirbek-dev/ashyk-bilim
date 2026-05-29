@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import * as Si from '@icons-pack/react-simple-icons'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import type { EmbedBlockAttrs } from './EmbedBlock'
-import { clampEmbedHeight } from './EmbedBlockNodeView'
+import { clampEmbedHeight } from './embed-options'
 import { buildTldrawSrc } from './embed-validators'
 
 // ── Constants ─────────────────────────────────────────────────────────────────

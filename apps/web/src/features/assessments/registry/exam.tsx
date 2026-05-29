@@ -3,10 +3,9 @@
  */
 
 import type { ComponentType } from 'react'
-import { registerKind } from './index'
-import type { KindAttemptProps, KindAuthorProps, KindReviewProps } from './index'
+import type { KindAttemptProps, KindAuthorProps, KindReviewProps, KindModule } from './index'
 
-registerKind('TYPE_EXAM', async () => {
+export const examModuleFactory = async (): Promise<KindModule> => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: GradingReviewWorkspace },
@@ -45,4 +44,4 @@ registerKind('TYPE_EXAM', async () => {
     Review: ReviewPassthrough,
     ReviewDetail: ExamReviewDetail,
   }
-})
+}

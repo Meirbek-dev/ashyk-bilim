@@ -355,12 +355,17 @@ export default function BuilderCanvasTab({
                   itemNoun: itemNoun.toLowerCase(),
                 })}
               </p>
-              {isEditable && allowedKinds.length > 0 ? (
-                <Button className="mt-4" onClick={() => createItem(allowedKinds[0]!)} disabled={isCreating}>
-                  <Plus className="size-4" />
-                  {t('addKind', { kind: kindLabels[allowedKinds[0]!] })}
-                </Button>
-              ) : null}
+              {isEditable && allowedKinds.length > 0 && allowedKinds[0]
+                ? (() => {
+                    const firstKind = allowedKinds[0]
+                    return (
+                      <Button className="mt-4" onClick={() => createItem(firstKind)} disabled={isCreating}>
+                        <Plus className="size-4" />
+                        {t('addKind', { kind: kindLabels[firstKind] })}
+                      </Button>
+                    )
+                  })()
+                : null}
             </div>
           </div>
         ) : (

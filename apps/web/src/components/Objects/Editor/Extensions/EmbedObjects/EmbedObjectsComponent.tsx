@@ -33,7 +33,7 @@ import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import DOMPurify from 'dompurify'
 import { getYouTubeVideoId } from '@/lib/utils'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -236,7 +236,11 @@ const EmbedContent = ({
 
     if (videoId) {
       return (
-        <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} params="autoplay=0&rel=0" />
+        <YouTubeEmbedFill
+          videoid={videoId}
+          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
+          params="autoplay=0&rel=0"
+        />
       )
     }
 

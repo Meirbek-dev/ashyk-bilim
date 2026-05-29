@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { IS_PRODUCTION } from '@/services/config/env'
 
 const MAX_BODY_BYTES = 8192 // 8 KB cap to prevent log-spam / memory exhaustion
 
@@ -29,7 +30,7 @@ function getBodyString(body: Record<string, unknown>, key: string): string | und
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
-    const firstForwarded = forwarded.split(',')[0]
+    const [firstForwarded] = forwarded.split(',')
     return firstForwarded ? firstForwarded.trim() : 'unknown'
   }
   return 'unknown'
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const isProd = process.env.NODE_ENV === 'production'
+    const isProd = IS_PRODUCTION
     const url = getBodyString(body, 'url') ?? request.url
     const errorMessage = getBodyString(body, 'error')
     const digest = getBodyString(body, 'digest')

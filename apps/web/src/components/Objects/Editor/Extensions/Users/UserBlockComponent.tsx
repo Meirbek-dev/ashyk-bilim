@@ -30,7 +30,7 @@ import { Badge } from '@components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 type UserData = components['schemas']['UserRead']
 interface UserDetail {

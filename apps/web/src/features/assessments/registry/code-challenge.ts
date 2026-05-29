@@ -3,10 +3,9 @@
  */
 
 import type { ComponentType } from 'react'
-import { registerKind } from './index'
-import type { KindAttemptProps, KindReviewProps } from './index'
+import type { KindAttemptProps, KindReviewProps, KindModule } from './index'
 
-registerKind('TYPE_CODE_CHALLENGE', async () => {
+export const codeChallengeModuleFactory = async (): Promise<KindModule> => {
   const [
     { default: GradingReviewWorkspace },
     { default: CodeChallengeAuthor },
@@ -32,4 +31,4 @@ registerKind('TYPE_CODE_CHALLENGE', async () => {
     Attempt: CodeChallengeAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
   }
-})
+}

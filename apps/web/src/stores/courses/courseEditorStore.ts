@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
+import { IS_DEVELOPMENT } from '@/services/config/env'
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content'
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -120,7 +121,7 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
     }),
     {
       name: 'CourseEditorStore',
-      enabled: process.env.NODE_ENV === 'development',
+      enabled: IS_DEVELOPMENT,
     },
   ),
 )

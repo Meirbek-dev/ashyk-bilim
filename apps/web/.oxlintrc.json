@@ -24,6 +24,8 @@
     ".git/",
     "**/*.d.ts",
     "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/tests/",
     "**/*.js",
     "**/*.mjs",
     "**/cdk.out/",
@@ -102,6 +104,7 @@
     "yoda": "off",
     "no-optional-chaining": "off",
     "no-rest-spread-properties": "off",
+    "class-methods-use-this": "off",
 
     /* ── Correctness aligned with tsconfig ─────────────────────── */
     // tsconfig: allowUnreachableCode: false
@@ -191,6 +194,7 @@
     "promise/prefer-await-to-callbacks": "off",
     "promise/prefer-await-to-then": "off",
     "promise/no-promise-in-callback": "off",
+    "promise/avoid-new": "off",
 
     /* ── Unicorn plugin ────────────────────────────────────────── */
     "unicorn/filename-case": "off",
@@ -218,7 +222,27 @@
     "nextjs/no-assign-module-variable": "off",
 
     /* ── JSDoc ───────────────────────────────────────────────────── */
-    "jsdoc/check-tag-names": "off"
+    "jsdoc/check-tag-names": "off",
+
+    /* ── Disable stylistic and pedantic rules with false-positives ─ */
+    "typescript/no-non-null-assertion": "off",
+    "unicorn/no-array-for-each": "off",
+    "node/no-process-env": "off",
+    "prefer-destructuring": "off",
+    "no-continue": "off",
+    "react/hook-use-state": "off",
+    "unicorn/no-await-expression-member": "off",
+    "no-bitwise": "off",
+    "typescript/no-invalid-void-type": "off",
+    "unicorn/no-document-cookie": "off",
+    "oxc/no-barrel-file": "off",
+    "unicorn/prefer-ternary": "off",
+    "typescript/no-dynamic-delete": "off",
+    "default-param-last": "off",
+    "no-param-reassign": "off",
+    "promise/param-names": "off",
+    "promise/no-nesting": "off",
+    "import/first": "off"
   },
 
   "settings": {}

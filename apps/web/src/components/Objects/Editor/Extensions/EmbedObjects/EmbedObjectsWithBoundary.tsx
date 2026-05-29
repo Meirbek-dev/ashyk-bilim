@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import EmbedObjectsComponent from './EmbedObjectsComponent'
 import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 /**
  * Thin wrapper that renders EmbedObjectsComponent inside an error boundary.

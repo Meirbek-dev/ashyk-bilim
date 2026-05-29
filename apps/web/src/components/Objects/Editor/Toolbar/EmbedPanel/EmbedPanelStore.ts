@@ -5,6 +5,8 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
+import { IS_DEVELOPMENT } from '@/services/config/env'
+
 export type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -105,6 +107,6 @@ export const useEmbedPanelStore = create<EmbedPanelState & EmbedPanelActions>()(
           'EmbedPanel/close',
         ),
     }),
-    { name: 'EmbedPanelStore', enabled: process.env.NODE_ENV === 'development' },
+    { name: 'EmbedPanelStore', enabled: IS_DEVELOPMENT },
   ),
 )

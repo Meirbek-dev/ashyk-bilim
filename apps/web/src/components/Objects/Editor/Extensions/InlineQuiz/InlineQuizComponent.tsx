@@ -9,7 +9,7 @@
 
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import type { InlineQuizAttrs } from './types'
 import InlineQuizAuthor from './InlineQuizAuthor'
 import InlineQuizAttempt from './InlineQuizAttempt'

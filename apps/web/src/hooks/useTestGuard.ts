@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { IS_PRODUCTION } from '@/services/config/env'
 
 type ViolationType = 'BLUR' | 'DEVTOOLS' | 'COPY' | 'RESIZE' | 'CONTEXTMENU' | 'KEYDOWN' | 'FULLSCREEN_EXIT'
 
@@ -69,7 +70,7 @@ export function useTestGuard({
 
       // Debug logging to help diagnose false positives
       try {
-        if (process.env.NODE_ENV !== 'production') {
+        if (!IS_PRODUCTION) {
           // Capture helpful context: active element and simple stack
           const active = document.activeElement
           console.debug('[useTestGuard] report', {

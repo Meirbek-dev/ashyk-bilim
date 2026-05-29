@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label'
 import { generateUUID } from '@/lib/utils'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import { registerItemKind } from '../registry'
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry'
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
 
 export interface FormBlank {
   blankUUID: string
@@ -310,10 +309,10 @@ export function FormItemReviewDetail({ answer }: ItemReviewDetailProps<FormItemV
   )
 }
 
-registerItemKind({
+export const formModule: ItemKindModule = {
   kind: 'FORM',
   label: 'Form',
   Author: FormItemAuthor,
   Attempt: FormItemAttempt,
   ReviewDetail: FormItemReviewDetail,
-})
+}

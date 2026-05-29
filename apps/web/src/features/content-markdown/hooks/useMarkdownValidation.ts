@@ -15,24 +15,23 @@ function hasUnbalancedMathDelimiters(markdown: string): boolean {
 
   for (let i = 0; i < withoutCode.length; i += 1) {
     const char = withoutCode[i]
-    if (char !== '$') continue
-    if (i > 0 && withoutCode[i - 1] === '\\') continue
-
-    const next = withoutCode[i + 1]
-    const prev = withoutCode[i - 1]
-    if (next === '$') {
-      blockOpen = !blockOpen
-      i += 1
-      continue
+    if (char === '$' && (i === 0 || withoutCode[i - 1] !== '\\')) {
+      const next = withoutCode[i + 1]
+      if (next === '$') {
+        blockOpen = !blockOpen
+        i += 1
+      } else {
+        const prev = withoutCode[i - 1]
+        const opening = !inlineOpen
+        if (opening) {
+          if (next && !/\s|\d/.test(next)) {
+            inlineOpen = !inlineOpen
+          }
+        } else if (prev && !/\s/.test(prev)) {
+          inlineOpen = !inlineOpen
+        }
+      }
     }
-
-    const opening = !inlineOpen
-    if (opening) {
-      if (!next || /\s|\d/.test(next)) continue
-    } else if (!prev || /\s/.test(prev)) {
-      continue
-    }
-    inlineOpen = !inlineOpen
   }
 
   return inlineOpen || blockOpen

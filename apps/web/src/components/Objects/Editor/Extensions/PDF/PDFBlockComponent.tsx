@@ -11,7 +11,7 @@ import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 const SUPPORTED_FILES = constructAcceptValue(['pdf'])
 const DEFAULT_SIZE = { width: 720, height: 540 }

@@ -4,24 +4,13 @@ import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import type { EmbedBlockAttrs } from './EmbedBlock'
 import YouTubeNodeView from './YouTubeNodeView'
 import ExcalidrawNodeView from './ExcalidrawNodeView'
 import TldrawNodeView from './TldrawNodeView'
 import GenericEmbedNodeView from './GenericEmbedNodeView'
 import { getEmbedProvider } from './embed-options'
-
-// ============================================================================
-// clampEmbedHeight utility
-// ============================================================================
-
-/**
- * Clamps a raw height value to the valid embed height range [200, 1200].
- */
-export function clampEmbedHeight(raw: number): number {
-  return Math.min(1200, Math.max(200, raw))
-}
 
 // ============================================================================
 // Error Boundary

@@ -6,9 +6,9 @@ import { CodeChallengeEditor } from '@/components/features/courses/code-challeng
 import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CodeSubmissionReview } from '@/features/code-arena/review'
-import { registerItemKind, UnsupportedItemAuthor } from '../registry'
-import type { ItemAttemptProps, ItemReviewDetailProps } from '../registry'
+import type { ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
 import type { ItemAnswer } from '@/features/assessments/domain/items'
+import { UnsupportedItemAuthor } from '../unsupported'
 
 export interface CodeItemSettings {
   uuid?: string
@@ -127,10 +127,10 @@ export function CodeItemReviewDetail({
   return <CodeSubmissionReview answer={answer} starterTemplate={starterTemplate} />
 }
 
-registerItemKind({
+export const codeModule: ItemKindModule = {
   kind: 'CODE',
   label: 'Code',
   Author: UnsupportedItemAuthor,
   Attempt: CodeItemAttempt,
   ReviewDetail: CodeItemReviewDetail,
-})
+}

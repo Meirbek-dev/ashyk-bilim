@@ -16,7 +16,7 @@ import { Label } from '@components/ui/label'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import type { WebPreviewAttrs } from './WebPreview'
 
 type WebPreviewProps = TypedNodeViewProps<WebPreviewAttrs> & {
@@ -260,7 +260,9 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
             ? (() => {
                 const videoId = getYouTubeVideoId(previewUrl)
                 if (videoId) {
-                  return <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} />
+                  return (
+                    <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} />
+                  )
                 }
                 return (
                   <iframe

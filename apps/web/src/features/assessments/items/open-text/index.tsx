@@ -5,8 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Textarea } from '@/components/ui/textarea'
 import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
-import { registerItemKind } from '../registry'
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry'
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps, ItemKindModule } from '../registry'
 
 export interface OpenTextValue {
   kind: 'OPEN_TEXT' | 'OTHER'
@@ -87,10 +86,10 @@ export function OpenTextReviewDetail({ answer }: ItemReviewDetailProps<OpenTextV
   )
 }
 
-registerItemKind({
+export const openTextModule: ItemKindModule = {
   kind: 'OPEN_TEXT',
   label: 'Open text',
   Author: OpenTextAuthor,
   Attempt: OpenTextAttempt,
   ReviewDetail: OpenTextReviewDetail,
-})
+}

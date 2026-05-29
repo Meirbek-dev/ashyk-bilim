@@ -64,7 +64,10 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
 
   const selectedLanguages = useMemo(
-    () => draft.allowed_languages.map(id => languages.find(language => language.id === id)).filter(Boolean),
+    () =>
+      draft.allowed_languages
+        .map(id => languages.find(language => language.id === id))
+        .filter((lang): lang is NonNullable<typeof lang> => lang !== undefined),
     [draft.allowed_languages, languages],
   )
 
@@ -237,20 +240,19 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                   </div>
                 ) : (
                   selectedLanguages.map(language => (
-                    <section key={language!.id} className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs">
+                    <section key={language.id} className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs">
                       <div className="flex items-center justify-between border-b pb-2">
-                        <div className="text-foreground text-sm font-bold">{language!.name}</div>
+                        <div className="text-foreground text-sm font-bold">{language.name}</div>
                         <Badge
                           variant={
-                            draft.starter_code?.[language!.id]?.trim() &&
-                            draft.reference_solutions?.[language!.id]?.trim()
+                            draft.starter_code?.[language.id]?.trim() &&
+                            draft.reference_solutions?.[language.id]?.trim()
                               ? 'success'
                               : 'warning'
                           }
                           className="text-[10px] font-bold"
                         >
-                          {draft.starter_code?.[language!.id]?.trim() &&
-                          draft.reference_solutions?.[language!.id]?.trim()
+                          {draft.starter_code?.[language.id]?.trim() && draft.reference_solutions?.[language.id]?.trim()
                             ? t('complete')
                             : t('incomplete')}
                         </Badge>
@@ -262,17 +264,17 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                             {t('starterTemplateCode')}
                           </span>
                           <CodeEditor
-                            value={draft.starter_code?.[language!.id] ?? ''}
+                            value={draft.starter_code?.[language.id] ?? ''}
                             onChange={value =>
                               updateDraft({
                                 starter_code: {
                                   ...draft.starter_code,
-                                  [language!.id]: value,
+                                  [language.id]: value,
                                 },
                               })
                             }
-                            languageId={language!.id}
-                            monacoLanguage={language!.monaco_language}
+                            languageId={language.id}
+                            monacoLanguage={language.monaco_language}
                             height={280}
                             options={{ minimap: { enabled: false } }}
                           />
@@ -282,17 +284,17 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                             {t('referenceSolution')}
                           </span>
                           <CodeEditor
-                            value={draft.reference_solutions?.[language!.id] ?? ''}
+                            value={draft.reference_solutions?.[language.id] ?? ''}
                             onChange={value =>
                               updateDraft({
                                 reference_solutions: {
                                   ...draft.reference_solutions,
-                                  [language!.id]: value,
+                                  [language.id]: value,
                                 },
                               })
                             }
-                            languageId={language!.id}
-                            monacoLanguage={language!.monaco_language}
+                            languageId={language.id}
+                            monacoLanguage={language.monaco_language}
                             height={280}
                             options={{ minimap: { enabled: false } }}
                           />

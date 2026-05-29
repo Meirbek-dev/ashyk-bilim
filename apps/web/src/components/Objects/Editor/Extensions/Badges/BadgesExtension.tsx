@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import dynamic from 'next/dynamic'
 import type { FC } from 'react'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
   ssr: false,

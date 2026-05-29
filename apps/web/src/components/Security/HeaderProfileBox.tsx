@@ -103,12 +103,10 @@ export const HeaderProfileBox = () => {
     userRoles.length > 0
       ? userRoles
           .filter((role: SessionRole) => !role.role?.is_system)
-          .map((role: SessionRole) =>
-            ({
-              name: role.role.name || t('profile.customRole'),
-              ...(role.role.description ? { description: role.role.description } : {}),
-            }),
-          )
+          .map((role: SessionRole) => ({
+            name: role.role.name || t('profile.customRole'),
+            ...(role.role.description ? { description: role.role.description } : {}),
+          }))
       : []
 
   const handleLogout = () => {

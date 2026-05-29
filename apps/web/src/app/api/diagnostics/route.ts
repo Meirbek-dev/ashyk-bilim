@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getAppConfigResult, getPublicConfigResult, getServerConfigResult } from '@/services/config/env'
+import { getAppConfigResult, getPublicConfigResult, getServerConfigResult, IS_PRODUCTION } from '@/services/config/env'
 
 interface DiagnosticsPayload {
   timestamp: string
@@ -127,7 +127,7 @@ function buildStackErrorCheck(error: unknown): StackErrorCheck {
 
 export async function GET() {
   // Diagnostics expose internal URLs, config, and connectivity — block in production.
-  if (process.env.NODE_ENV === 'production') {
+  if (IS_PRODUCTION) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

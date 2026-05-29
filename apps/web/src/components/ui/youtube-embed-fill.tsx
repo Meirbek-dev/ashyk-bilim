@@ -16,12 +16,16 @@ interface YouTubeEmbedFillProps extends Omit<YouTubeEmbedProps, 'style'> {
 function cssPropToString(style: CSSProperties): string {
   return Object.entries(style)
     .map(([key, value]) => {
-      const property = key.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`)
+      const property = key.replace(/([A-Z])/g, m => `-${m.toLowerCase()}`)
       return `${property}: ${value}`
     })
     .join('; ')
 }
 
 export function YouTubeEmbedFill({ style, ...props }: YouTubeEmbedFillProps) {
-  return <YouTubeEmbed {...props} style={style ? cssPropToString(style) : undefined} />
+  const embedProps: YouTubeEmbedProps = { ...props }
+  if (style) {
+    embedProps.style = cssPropToString(style)
+  }
+  return <YouTubeEmbed {...embedProps} />
 }

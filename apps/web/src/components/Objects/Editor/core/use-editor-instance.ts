@@ -32,7 +32,7 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
   )
 
   // Resolve content once on mount
-  const [resolvedContent] = useState(() => resolveEditorContent(content))
+  const [resolvedContent, _setResolvedContent] = useState(() => resolveEditorContent(content))
 
   return useEditor({
     extensions,

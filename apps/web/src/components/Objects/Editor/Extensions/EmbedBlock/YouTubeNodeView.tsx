@@ -5,7 +5,7 @@ import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import { Pencil, Trash2 } from 'lucide-react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import type { EmbedBlockAttrs } from './EmbedBlock'
 import { resolveYouTubeVideoId } from './embed-validators'
@@ -42,7 +42,11 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
     <NodeViewWrapper className="youtube-node-view relative my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>
       <div className="aspect-video w-full overflow-hidden rounded-md">
         {}
-        <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} params="rel=0" />
+        <YouTubeEmbedFill
+          videoid={videoId}
+          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
+          params="rel=0"
+        />
       </div>
 
       {isEditable ? (

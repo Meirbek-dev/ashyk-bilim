@@ -5,7 +5,7 @@ import { NodeViewWrapper } from '@tiptap/react'
 import ScenariosModal from './ScenariosModal'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 interface ScenarioOption {
   id: string

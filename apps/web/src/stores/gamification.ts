@@ -17,6 +17,7 @@ import {
 } from '@/app/actions/gamification'
 import { create } from 'zustand'
 import { devtools, persist, createJSONStorage } from 'zustand/middleware'
+import { IS_DEVELOPMENT } from '@/services/config/env'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -274,7 +275,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
     ),
     {
       name: 'GamificationStore',
-      enabled: process.env.NODE_ENV === 'development',
+      enabled: IS_DEVELOPMENT,
     },
   ),
 )

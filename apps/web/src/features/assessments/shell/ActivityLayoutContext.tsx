@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 /**
  * Layout mode for the student activity page.
@@ -44,16 +44,8 @@ const ActivityLayoutContext = createContext<ActivityLayoutContextValue>({
 })
 
 export function ActivityLayoutProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ActivityLayoutMode>('CONTENT')
-  const [bottomBarAction, setBottomBarActionState] = useState<BottomBarActionOverride | null>(null)
-
-  const setMode = useCallback((next: ActivityLayoutMode) => {
-    setModeState(next)
-  }, [])
-
-  const setBottomBarAction = useCallback((action: BottomBarActionOverride | null) => {
-    setBottomBarActionState(action)
-  }, [])
+  const [mode, setMode] = useState<ActivityLayoutMode>('CONTENT')
+  const [bottomBarAction, setBottomBarAction] = useState<BottomBarActionOverride | null>(null)
 
   // Keep the DOM attribute in sync so nav-menu and CSS can react
   useEffect(() => {

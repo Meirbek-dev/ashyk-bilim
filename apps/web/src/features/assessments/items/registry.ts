@@ -1,10 +1,9 @@
-import { createElement } from 'react'
-import type { ComponentType, ReactNode } from 'react'
-import './choice'
-import './form'
-import './matching'
-import './open-text'
-import './code'
+import type { ComponentType } from 'react'
+import { choiceModules } from './choice'
+import { codeModule } from './code'
+import { formModule } from './form'
+import { matchingModule } from './matching'
+import { openTextModule } from './open-text'
 
 export type ItemKind =
   | 'CHOICE'
@@ -44,7 +43,16 @@ export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttempt
 
 function getRegistry(): Map<ItemKind, ItemKindModule> {
   const f = getRegistry as any
-  if (!f.map) f.map = new Map<ItemKind, ItemKindModule>()
+  if (!f.map) {
+    f.map = new Map<ItemKind, ItemKindModule>()
+    for (const m of choiceModules) {
+      f.map.set(m.kind, m)
+    }
+    f.map.set(codeModule.kind, codeModule)
+    f.map.set(formModule.kind, formModule)
+    f.map.set(matchingModule.kind, matchingModule)
+    f.map.set(openTextModule.kind, openTextModule)
+  }
   return f.map
 }
 
@@ -64,28 +72,4 @@ export function listItemKindModules(): ItemKindModule[] {
   return [...getRegistry().values()]
 }
 
-export function UnsupportedItemAuthor({ value }: ItemAuthorProps): ReactNode {
-  return createElement(
-    'pre',
-    { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },
-    JSON.stringify(value, null, 2),
-  )
-}
-
-export function UnsupportedItemAttempt({ item }: ItemAttemptProps): ReactNode {
-  return createElement(
-    'div',
-    {
-      className: 'text-muted-foreground rounded-md border border-dashed p-4 text-sm',
-    },
-    `Unsupported item: ${JSON.stringify(item)}`,
-  )
-}
-
-export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactNode {
-  return createElement(
-    'pre',
-    { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },
-    JSON.stringify(answer, null, 2),
-  )
-}
+export * from './unsupported'

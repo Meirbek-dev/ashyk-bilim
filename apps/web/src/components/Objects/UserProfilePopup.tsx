@@ -16,7 +16,7 @@ import {
   Users,
 } from 'lucide-react'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { useUserById } from '@/lib/users/client'
+import { useUserByIdQuery as useUserById } from '@/features/users/hooks/useUsers'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useSession } from '@/hooks/useSession'

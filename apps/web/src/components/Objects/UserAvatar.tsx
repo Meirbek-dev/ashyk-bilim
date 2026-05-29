@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar'
 import { useSession } from '@/hooks/useSession'
-import { useUserByUsername } from '@/lib/users/client'
+import { useUserByUsernameQuery as useUserByUsername } from '@/features/users/hooks/useUsers'
 import { DEFAULT_AVATAR_PATH, getAvatarInitials, resolveAvatarUrl } from '@services/media/avatar'
 import { useTranslations } from 'next-intl'
 import { Bot, User } from 'lucide-react'
