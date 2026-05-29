@@ -81,7 +81,7 @@ interface CourseProviderProps {
   initialCourse?: CourseStructure | null
 }
 
-export const CourseContext = createContext<CourseContextValue | null>(null)
+const CourseContext = createContext<CourseContextValue | null>(null)
 
 export const CourseProvider = ({
   children,

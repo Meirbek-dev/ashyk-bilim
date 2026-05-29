@@ -42,7 +42,7 @@ export interface PolicyView {
   antiCheat: AntiCheatPolicy
 }
 
-export const DEFAULT_ANTI_CHEAT_POLICY: AntiCheatPolicy = {
+const DEFAULT_ANTI_CHEAT_POLICY: AntiCheatPolicy = {
   copyPasteProtection: false,
   tabSwitchDetection: false,
   devtoolsDetection: false,

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { EditorMode } from '@components/Objects/Editor/core'
 
 // Properly typed context
-export const EditorProviderContext = createContext<EditorProviderState | null>(null)
+const EditorProviderContext = createContext<EditorProviderState | null>(null)
 
 export interface EditorProviderState {
   isEditable: boolean

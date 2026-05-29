@@ -63,8 +63,10 @@
     "typescript",
     "unicorn"
   ],
-
+  
   "rules": {
+    "no-shadow": "warn",
+    "typescript/no-explicit-any": "warn",
     /* ── Noisy / pedantic — keep off ──────────────────────────── */
     "arrow-body-style": "off",
     "capitalized-comments": "off",
@@ -90,7 +92,6 @@
     "no-nested-ternary": "off",
     "no-null": "off",
     "no-relative-parent-imports": "off",
-    "no-shadow": "warn",
     "no-ternary": "off",
     "no-undefined": "off",
     "no-use-before-define": "off",
@@ -149,7 +150,6 @@
     // Keep permissive — TS strict mode covers these at compile time
     "typescript/explicit-function-return-type": "off",
     "typescript/explicit-module-boundary-types": "off",
-    "typescript/no-explicit-any": "warn",
     "typescript/no-floating-promises": "off",
     "typescript/no-misused-promises": "off",
     "typescript/no-unnecessary-condition": "off",

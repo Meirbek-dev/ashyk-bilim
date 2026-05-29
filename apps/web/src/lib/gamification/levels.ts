@@ -9,7 +9,7 @@ import { Crown, Star, Target, Trophy, Zap } from 'lucide-react'
 import type { LevelInfo } from '@/types/gamification/profile'
 
 // Level configuration with RPG-style progression (translation keys)
-export const LEVEL_CONFIG: Record<number, LevelInfo> = {
+const LEVEL_CONFIG: Record<number, LevelInfo> = {
   1: {
     level: 1,
     title: 'novice',

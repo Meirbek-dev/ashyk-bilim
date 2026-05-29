@@ -1,20 +1,6 @@
 'use client'
 
-import {
-  Archive,
-  Copy,
-  Crown,
-  Edit,
-  Eye,
-  EyeOff,
-  MoreVertical,
-  Settings,
-  Share2,
-  Shield,
-  Star,
-  Trash2,
-  UserPlus,
-} from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,98 +117,5 @@ export function ResourceActionsMenu({ availableActions, actions, trigger, align 
   )
 }
 
-/**
- * Common action configurations for different resource types.
- */
-export const CommonActions = {
-  edit: (onClick: () => void): ResourceAction => ({
-    id: 'edit',
-    labelKey: 'edit',
-    icon: Edit,
-    onClick,
-    requiresAction: 'update',
-  }),
-
-  delete: (onClick: () => void): ResourceAction => ({
-    id: 'delete',
-    labelKey: 'delete',
-    icon: Trash2,
-    onClick,
-    variant: 'destructive',
-    requiresAction: 'delete',
-    separator: true,
-  }),
-
-  publish: (onClick: () => void, isPublished: boolean): ResourceAction => ({
-    id: 'publish',
-    labelKey: isPublished ? 'unpublish' : 'publish',
-    icon: isPublished ? EyeOff : Eye,
-    onClick,
-    requiresAction: 'update',
-  }),
-
-  share: (onClick: () => void): ResourceAction => ({
-    id: 'share',
-    labelKey: 'share',
-    icon: Share2,
-    onClick,
-  }),
-
-  duplicate: (onClick: () => void): ResourceAction => ({
-    id: 'duplicate',
-    labelKey: 'duplicate',
-    icon: Copy,
-    onClick,
-    requiresAction: 'create',
-  }),
-
-  archive: (onClick: () => void): ResourceAction => ({
-    id: 'archive',
-    labelKey: 'archive',
-    icon: Archive,
-    onClick,
-    requiresAction: 'update',
-  }),
-
-  favorite: (onClick: () => void, isFavorite: boolean): ResourceAction => ({
-    id: 'favorite',
-    labelKey: isFavorite ? 'unfavorite' : 'favorite',
-    icon: Star,
-    onClick,
-  }),
-
-  settings: (onClick: () => void): ResourceAction => ({
-    id: 'settings',
-    labelKey: 'settings',
-    icon: Settings,
-    onClick,
-    requiresAction: 'manage',
-  }),
-
-  manageContributors: (onClick: () => void): ResourceAction => ({
-    id: 'contributors',
-    labelKey: 'manageContributors',
-    icon: UserPlus,
-    onClick,
-    requiresAction: 'manage',
-  }),
-
-  managePermissions: (onClick: () => void): ResourceAction => ({
-    id: 'permissions',
-    labelKey: 'permissions',
-    icon: Shield,
-    onClick,
-    requiresAction: 'manage',
-  }),
-
-  transferOwnership: (onClick: () => void): ResourceAction => ({
-    id: 'transfer',
-    labelKey: 'transferOwnership',
-    icon: Crown,
-    onClick,
-    requiresAction: 'manage',
-    separator: true,
-  }),
-}
 
 export default ResourceActionsMenu

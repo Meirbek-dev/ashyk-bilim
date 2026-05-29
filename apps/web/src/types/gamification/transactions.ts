@@ -7,7 +7,7 @@ import * as v from 'valibot'
  */
 
 // XP sources - extensible for future sources
-export const XP_SOURCES = {
+const XP_SOURCES = {
   ACTIVITY_COMPLETION: 'activity_completion',
   COURSE_COMPLETION: 'course_completion',
   LOGIN_BONUS: 'login_bonus',
@@ -50,14 +50,8 @@ export interface XPAwardResponse {
   previous_level: number
 }
 
-export const XPAwardRequestSchema = v.object({
-  source: v.pipe(v.string(), v.minLength(1)),
-  amount: v.optional(v.pipe(v.number(), v.minValue(1))),
-  source_id: v.optional(v.string()),
-  idempotency_key: v.optional(v.string()),
-})
 
-export const XPTransactionSchema = v.object({
+const XPTransactionSchema = v.object({
   id: v.number(),
   user_id: v.number(),
   amount: v.number(),

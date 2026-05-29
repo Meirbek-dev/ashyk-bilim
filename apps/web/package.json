@@ -21,7 +21,7 @@
     "lint": "bun run lint:empty-folders && node scripts/check-markdown-migration.mjs && eslint . --cache",
     "lint:empty-folders": "node scripts/check-empty-folders.mjs",
     "lint:fix": "eslint --fix . --cache",
-    "oxlint": "oxlint --type-aware --type-check --fix --fix-suggestions",
+    "oxlint": "oxlint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
     "format": "oxfmt --write",
     "start": "next start",
     "check-types": "next typegen && tsgo --noEmit",
@@ -29,7 +29,7 @@
     "knip": "knip"
   },
   "dependencies": {
-    "@ag-ui/core": "^0.0.53",
+    "@ag-ui/core": "^0.0.54",
     "@base-ui/react": "^1.5.0",
     "@daypicker/react": "^10.0.1",
     "@dnd-kit/core": "^6.3.1",

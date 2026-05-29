@@ -61,7 +61,7 @@ export type AssessmentViewModel =
  * @param activityUuid  Raw activity UUID (with or without "activity_" prefix).
  * @param options.surface  Which product surface the caller is rendering.
  */
-export function useAssessment(
+function useAssessment(
   activityUuid: string | null | undefined,
   options: UseAssessmentOptions,
 ): {
@@ -205,8 +205,4 @@ export function useAssessmentStudio(activityUuid: string | null | undefined) {
 
 export function useAssessmentAttempt(activityUuid: string | null | undefined) {
   return useAssessment(activityUuid, { surface: 'ATTEMPT' })
-}
-
-export function useAssessmentReview(activityUuid: string | null | undefined) {
-  return useAssessment(activityUuid, { surface: 'REVIEW' })
 }

@@ -5,7 +5,7 @@ import { createContext, use } from 'react'
 import type { ReactNode } from 'react'
 import { usePlatformConfig } from '@/features/platform/hooks/usePlatform'
 
-export const PlatformContext = createContext<Platform | null>(null)
+const PlatformContext = createContext<Platform | null>(null)
 
 export const PlatformContextProvider = ({
   children,
