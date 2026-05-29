@@ -207,7 +207,7 @@
     "no-underscore-dangle": "off",
 
     /* ── Next.js ─────────────────────────────────────────────────── */
-    "next/no-assign-module-variable": "off",
+    "nextjs/no-assign-module-variable": "off",
 
     /* ── JSDoc ───────────────────────────────────────────────────── */
     "jsdoc/check-tag-names": "off"

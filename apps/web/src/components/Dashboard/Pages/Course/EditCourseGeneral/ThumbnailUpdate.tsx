@@ -114,13 +114,13 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
           const image = new globalThis.Image()
 
-          image.onload = () => {
+          image.addEventListener('load', () => {
             resolve({ width: image.naturalWidth, height: image.naturalHeight })
-          }
+          })
 
-          image.onerror = () => {
+          image.addEventListener('error', () => {
             reject(new Error('Failed to read image dimensions'))
-          }
+          })
 
           image.src = blobUrl
         })

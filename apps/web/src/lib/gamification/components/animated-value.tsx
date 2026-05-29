@@ -9,6 +9,8 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { animations } from '../design-tokens'
 
+const DEFAULT_FORMAT = (v: number) => Math.round(v).toLocaleString()
+
 interface AnimatedValueProps {
   value: number
   duration?: number
@@ -19,7 +21,7 @@ interface AnimatedValueProps {
 export function AnimatedValue({
   value,
   duration = animations.duration.normal,
-  format = v => Math.round(v).toLocaleString(),
+  format = DEFAULT_FORMAT,
   className = '',
 }: AnimatedValueProps) {
   const [displayValue, setDisplayValue] = useState(value)

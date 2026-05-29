@@ -23,9 +23,9 @@ export async function compressImage(
 
   return new Promise(resolve => {
     const reader = new FileReader()
-    reader.onload = event => {
+    reader.addEventListener('load', event => {
       const img = new Image()
-      img.onload = () => {
+      img.addEventListener('load', () => {
         let { width } = img
         let { height } = img
 
@@ -65,11 +65,11 @@ export async function compressImage(
           'image/webp',
           quality,
         )
-      }
-      img.onerror = () => resolve(file) // fallback
+      })
+      img.addEventListener('error', () => resolve(file)) // fallback
       img.src = event.target?.result as string
-    }
-    reader.onerror = () => resolve(file) // fallback
+    })
+    reader.addEventListener('error', () => resolve(file)) // fallback
     reader.readAsDataURL(file)
   })
 }

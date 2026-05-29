@@ -28,9 +28,9 @@ interface InspectorSection {
 
 export default function PolicyInspector({
   policy,
-  score = { percent: null, source: 'none' },
-  accessItems = [],
-  scheduleItems = [],
+  score = { percent: null, source: 'none' } as NonNullable<PolicyInspectorProps['score']>,
+  accessItems = [] as NonNullable<PolicyInspectorProps['accessItems']>,
+  scheduleItems = [] as NonNullable<PolicyInspectorProps['scheduleItems']>,
   title,
 }: PolicyInspectorProps) {
   const t = useTranslations('Components.PolicyInspector')

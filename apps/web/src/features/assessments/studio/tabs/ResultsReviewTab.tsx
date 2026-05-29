@@ -52,6 +52,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
     apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`)
       .then(data => {
         if (!cancelled) setStats(data)
+        return data
       })
       .catch(() => {
         if (!cancelled) setStats(null)
@@ -66,6 +67,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
     apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`)
       .then(data => {
         if (!cancelled) setItemAnalytics(data)
+        return data
       })
       .catch(() => {
         if (!cancelled) setItemAnalytics([])

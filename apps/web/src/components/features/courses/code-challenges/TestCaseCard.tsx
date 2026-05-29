@@ -266,7 +266,7 @@ interface TestResultsListProps {
   }[]
 }
 
-export function TestResultsList({ results, visibleTestIds, testCases = [] }: TestResultsListProps) {
+export function TestResultsList({ results, visibleTestIds, testCases = [] as NonNullable<TestResultsListProps['testCases']> }: TestResultsListProps) {
   const t = useTranslations('Activities.CodeChallenges')
 
   const passed = results.filter(r => r.passed).length

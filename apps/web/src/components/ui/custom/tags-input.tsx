@@ -201,16 +201,14 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
       setInputValue(e.currentTarget.value)
     }
 
+    const tagInputContextValue = React.useMemo(
+      () => ({ value, onValueChange, inputValue, setInputValue, activeIndex, setActiveIndex }),
+      [value, onValueChange, inputValue, setInputValue, activeIndex, setActiveIndex],
+    )
+
     return (
       <TagInputContext.Provider
-        value={{
-          value,
-          onValueChange,
-          inputValue,
-          setInputValue,
-          activeIndex,
-          setActiveIndex,
-        }}
+        value={tagInputContextValue}
       >
         <div
           {...props}

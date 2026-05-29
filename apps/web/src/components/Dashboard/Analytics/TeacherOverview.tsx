@@ -43,12 +43,14 @@ interface TeacherOverviewProps {
   cohortOptions?: AnalyticsFilterOption[]
 }
 
+const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
+
 export default function TeacherOverview({
   query,
   data,
   adminData,
-  courseOptions = [],
-  cohortOptions = [],
+  courseOptions = EMPTY_FILTER_OPTIONS,
+  cohortOptions = EMPTY_FILTER_OPTIONS,
 }: TeacherOverviewProps) {
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()

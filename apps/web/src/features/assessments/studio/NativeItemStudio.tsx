@@ -16,7 +16,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useQuery, useQueryClient, queryOptions } from '@tanstack/react-query'
-import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -166,24 +166,28 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue => ((((Object.assign({
-	code: issue.code,
-	message: issue.message
-}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {})))))) ?? []
+    readinessQuery.data?.issues.map(issue => (((((({code: issue.code,
+	message: issue.message, ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {})}))))))) ?? []
+
+  const studioContextValue = useMemo(
+    () => ({
+      activityUuid: normalizedActivityUuid,
+      assessment,
+      items,
+      selectedItemUuid,
+      setSelectedItemUuid,
+      refresh,
+      isEditable,
+      totalPoints,
+      validationIssues,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues],
+  )
 
   return (
     <AssessmentStudioContext.Provider
-      value={{
-        activityUuid: normalizedActivityUuid,
-        assessment,
-        items,
-        selectedItemUuid,
-        setSelectedItemUuid,
-        refresh,
-        isEditable,
-        totalPoints,
-        validationIssues,
-      }}
+      value={studioContextValue}
     >
       {children}
     </AssessmentStudioContext.Provider>
@@ -363,7 +367,7 @@ export function NativeItemAuthor({
   mode,
   itemNoun,
   itemNounKey,
-  allowedKinds = ['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM'],
+  allowedKinds = ['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM'] as NonNullable<NativeItemAuthorProps['allowedKinds']>,
 }: NativeItemAuthorProps) {
   const {
     assessment,

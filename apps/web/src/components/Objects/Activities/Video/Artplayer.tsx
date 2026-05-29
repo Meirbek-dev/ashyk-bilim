@@ -50,7 +50,7 @@ export default function ArtPlayer({
   getInstance,
   subtitle,
   locale = 'en',
-  subtitleEntries = [],
+  subtitleEntries = [] as SubtitleEntry[],
   startTime,
   endTime,
   onPlayerReady,

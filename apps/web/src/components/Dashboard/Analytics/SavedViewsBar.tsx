@@ -38,6 +38,7 @@ export default function SavedViewsBar({ query }: SavedViewsBarProps) {
     getSavedAnalyticsViews(query)
       .then(response => {
         if (mounted) setViews(response.items)
+        return response
       })
       .catch(() => undefined)
     return () => {

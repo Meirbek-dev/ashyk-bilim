@@ -22,7 +22,8 @@ import type { AttemptConflictState } from './AssessmentActionBar'
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment'
-import { loadKindModule, type KindModule } from '@/features/assessments/registry'
+import { loadKindModule } from '@/features/assessments/registry';
+import type { KindModule } from '@/features/assessments/registry';
 import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard'
 
 import { AssessmentChrome } from './AssessmentChrome'
@@ -74,6 +75,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     let cancelled = false
     void loadKindModule(vm.kind).then(mod => {
       if (!cancelled) setKindModule(mod)
+      return mod
     })
     return () => {
       cancelled = true

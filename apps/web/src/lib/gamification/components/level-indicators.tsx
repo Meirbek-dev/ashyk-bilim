@@ -17,6 +17,9 @@ import { Sparkles, Star } from 'lucide-react'
 import { getLevelInfo } from '../levels'
 import { cn } from '@/lib/utils'
 
+const DEFAULT_PARTICLE_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899']
+const DEFAULT_MILESTONES = [5, 10, 25, 50]
+
 // ============================================================================
 // Compact Level Progress
 // ============================================================================
@@ -106,7 +109,7 @@ interface ParticleEffectProps {
 export function ParticleEffect({
   trigger,
   particleCount = 12,
-  colors = ['#3b82f6', '#8b5cf6', '#ec4899'],
+  colors = DEFAULT_PARTICLE_COLORS,
   duration = 1000,
   onComplete,
 }: ParticleEffectProps) {
@@ -331,7 +334,7 @@ interface MilestoneProgressProps {
   className?: string
 }
 
-export function MilestoneProgress({ currentLevel, milestones = [5, 10, 25, 50], className }: MilestoneProgressProps) {
+export function MilestoneProgress({ currentLevel, milestones = DEFAULT_MILESTONES, className }: MilestoneProgressProps) {
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
       {milestones.map((milestone, index) => {

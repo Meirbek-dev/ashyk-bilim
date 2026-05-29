@@ -51,7 +51,7 @@ export default function ExamSubmitDialog({
   totalQuestions,
   answeredCount,
   flaggedCount = 0,
-  unansweredQuestions = [],
+  unansweredQuestions = [] as NonNullable<ExamSubmitDialogProps['unansweredQuestions']>,
   isSubmitting,
   labels,
   onCancel,

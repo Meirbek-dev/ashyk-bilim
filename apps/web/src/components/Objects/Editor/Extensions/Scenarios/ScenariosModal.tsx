@@ -70,6 +70,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
       setCurrentScenarioId(initialCurrentScenarioId)
       setPreviewCurrentId(initialCurrentScenarioId)
       setShowImageInputs({})
+      return undefined
     })
   }, [initialTitle, initialScenarios, initialCurrentScenarioId])
 

@@ -92,12 +92,14 @@ const escapeCsv = (value: unknown) => {
   return `"${normalized.replace(/"/g, '""')}"`
 }
 
+const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
+
 export default function DataTable<TData>({
   columns,
   data,
   className,
   pageSize = 20,
-  pageSizeOptions = [20, 50, 100, 250],
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   storageKey,
   serverPaginated = false,
   pageCount: controlledPageCount,

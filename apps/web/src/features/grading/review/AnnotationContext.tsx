@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 export interface TextAnnotation {
@@ -50,15 +50,14 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
 
   const clearAll = useCallback(() => setAnnotationsByItem({}), [])
 
+  const annotationContextValue = useMemo(
+    () => ({ annotationsByItem, addAnnotation, removeAnnotation, clearAnnotations, clearAll }),
+    [annotationsByItem, addAnnotation, removeAnnotation, clearAnnotations, clearAll],
+  )
+
   return (
     <AnnotationContext.Provider
-      value={{
-        annotationsByItem,
-        addAnnotation,
-        removeAnnotation,
-        clearAnnotations,
-        clearAll,
-      }}
+      value={annotationContextValue}
     >
       {children}
     </AnnotationContext.Provider>

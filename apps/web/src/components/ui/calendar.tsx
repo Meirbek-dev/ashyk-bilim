@@ -8,6 +8,8 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+const DEFAULT_MIN_DATE = new Date(1900, 0, 1)
+
 function Calendar({
   className,
   classNames,
@@ -18,7 +20,7 @@ function Calendar({
   formatters,
   components,
   // allow callers to set a min/max date range; sane defaults for far past/future
-  minDate = new Date(1900, 0, 1),
+  minDate = DEFAULT_MIN_DATE,
   maxDate,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {

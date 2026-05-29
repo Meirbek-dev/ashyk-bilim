@@ -1,6 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+
+const EMPTY_SET: ReadonlySet<number> = new Set()
 import { useTranslations } from 'next-intl'
 
 interface ExamQuestionNavigationProps {
@@ -32,7 +34,7 @@ export default function ExamQuestionNavigation({
   totalQuestions,
   currentQuestionIndex,
   answeredQuestions,
-  flaggedQuestions = new Set(),
+  flaggedQuestions = EMPTY_SET,
   onQuestionSelect,
 }: ExamQuestionNavigationProps) {
   const t = useTranslations('Features.Assessments.Exam')
@@ -83,7 +85,7 @@ export function ExamQuestionNavigationMobile({
   totalQuestions,
   currentQuestionIndex,
   answeredQuestions,
-  flaggedQuestions = new Set(),
+  flaggedQuestions = EMPTY_SET,
   onQuestionSelect,
   onPrevious,
   onNext,
