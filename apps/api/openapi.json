@@ -29639,7 +29639,13 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Role Api V1 Roles  Role Id  Delete",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"
@@ -29847,7 +29853,13 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Add Permission To Role Api V1 Roles  Role Id  Permissions Post",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"
@@ -29902,7 +29914,13 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Remove Permission From Role Api V1 Roles  Role Id  Permissions  Permission Id  Delete",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"

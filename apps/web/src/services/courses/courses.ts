@@ -123,15 +123,17 @@ function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCour
   return (authors ?? []).map(author => {
     const { user, ...restAuthor } = author
 
-    return Object.assign(restAuthor, { user: {
-	id: user.id,
-	user_uuid: user.user_uuid ?? '',
-	avatar_image: user.avatar_image ?? '',
-	first_name: user.first_name ?? '',
-	last_name: user.last_name ?? '',
-	username: user.username,
-	...user.middle_name == null ? {} : { middle_name: user.middle_name }
-} })
+    return Object.assign(restAuthor, {
+      user: {
+        id: user.id,
+        user_uuid: user.user_uuid ?? '',
+        avatar_image: user.avatar_image ?? '',
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        username: user.username,
+        ...(user.middle_name === null || user.middle_name === undefined ? {} : { middle_name: user.middle_name }),
+      },
+    })
   })
 }
 
@@ -149,7 +151,7 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
     tags: normalizeTags(tags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
-    ...(thumbnail_type == null ? {} : { thumbnail_type }),
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
   }
 }
 
@@ -167,7 +169,7 @@ function normalizeCourseWithPermissions(course: CourseReadWithPermissions): Norm
     tags: normalizeTags(tags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
-    ...(thumbnail_type == null ? {} : { thumbnail_type }),
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
   }
 }
 
@@ -200,9 +202,9 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     tags: normalizeTags(tags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
-    ...(creation_date == null ? {} : { creation_date }),
-    ...(thumbnail_type == null ? {} : { thumbnail_type }),
-    ...(update_date == null ? {} : { update_date }),
+    ...(creation_date === null || creation_date === undefined ? {} : { creation_date }),
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
+    ...(update_date === null || update_date === undefined ? {} : { update_date }),
   }
 }
 

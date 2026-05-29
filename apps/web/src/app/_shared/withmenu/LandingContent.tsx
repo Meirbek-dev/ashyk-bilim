@@ -95,7 +95,7 @@ export async function LandingContent() {
       })
     }
 
-    const hasCustomLanding = platform?.landing?.['enabled']
+    const hasCustomLanding = platform?.landing?.enabled
 
     // Only fetch gamification data if user is authenticated
     const session = await getSession()

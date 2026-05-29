@@ -146,6 +146,8 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
     [showError, t],
   )
 
+  const courseUpdateDate = course.courseStructure.update_date
+
   const updateThumbnail = useCallback(
     async (file: File, type: 'image' | 'video') => {
       const formData = new FormData()
@@ -155,7 +157,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
       await saveWithoutRefresh(
         async () =>
           updateThumbnailMutation(formData, {
-            lastKnownUpdateDate: lastKnownUpdateDate ?? course.courseStructure['update_date'] ?? null,
+            lastKnownUpdateDate: lastKnownUpdateDate ?? courseUpdateDate ?? null,
           }),
         {
           onSuccess: () => setLocalThumbnail(null),
@@ -163,14 +165,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         },
       )
     },
-    [
-      course.courseStructure['update_date'],
-      lastKnownUpdateDate,
-      saveWithoutRefresh,
-      t,
-      updateThumbnailMutation,
-      course.courseStructure,
-    ],
+    [courseUpdateDate, lastKnownUpdateDate, saveWithoutRefresh, t, updateThumbnailMutation],
   )
 
   const handleFileChange = useCallback(
@@ -226,11 +221,8 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
           : '/empty_thumbnail.avif'
       }
-      return course.courseStructure['thumbnail_video']
-        ? getCourseThumbnailMediaDirectory(
-            course.courseStructure.course_uuid,
-            course.courseStructure['thumbnail_video'],
-          )
+      return course.courseStructure.thumbnail_video
+        ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_video)
         : undefined
     },
     [course],

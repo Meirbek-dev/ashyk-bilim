@@ -55,23 +55,22 @@ function createQuestion(): FormQuestion {
 }
 
 export function normalizeFormItem(raw: Record<string, unknown> | null | undefined): FormItemValue {
-  const rawQuestions = Array.isArray(raw?.['questions']) ? raw['questions'] : [createQuestion()]
+  const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [createQuestion()]
   return {
     kind: 'FORM',
     questions: rawQuestions.map((rawQuestion, questionIndex): FormQuestion => {
       const question = rawQuestion && typeof rawQuestion === 'object' ? (rawQuestion as Record<string, unknown>) : {}
-      const rawBlanks = Array.isArray(question['blanks']) ? question['blanks'] : [createBlank()]
+      const rawBlanks = Array.isArray(question.blanks) ? question.blanks : [createBlank()]
       return {
-        questionUUID:
-          typeof question['questionUUID'] === 'string' ? question['questionUUID'] : `question_${questionIndex}`,
-        questionText: typeof question['questionText'] === 'string' ? question['questionText'] : '',
+        questionUUID: typeof question.questionUUID === 'string' ? question.questionUUID : `question_${questionIndex}`,
+        questionText: typeof question.questionText === 'string' ? question.questionText : '',
         blanks: rawBlanks.map((rawBlank, blankIndex): FormBlank => {
           const blank = rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {}
           return {
-            blankUUID: typeof blank['blankUUID'] === 'string' ? blank['blankUUID'] : `blank_${blankIndex}`,
-            placeholder: typeof blank['placeholder'] === 'string' ? blank['placeholder'] : '',
-            correctAnswer: typeof blank['correctAnswer'] === 'string' ? blank['correctAnswer'] : '',
-            hint: typeof blank['hint'] === 'string' ? blank['hint'] : '',
+            blankUUID: typeof blank.blankUUID === 'string' ? blank.blankUUID : `blank_${blankIndex}`,
+            placeholder: typeof blank.placeholder === 'string' ? blank.placeholder : '',
+            correctAnswer: typeof blank.correctAnswer === 'string' ? blank.correctAnswer : '',
+            hint: typeof blank.hint === 'string' ? blank.hint : '',
           }
         }),
       }

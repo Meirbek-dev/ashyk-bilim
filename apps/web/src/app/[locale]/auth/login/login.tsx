@@ -52,8 +52,8 @@ const LoginClient = () => {
 
       if (!result.success) {
         const flat = v.flatten(result.issues)
-        const emailError = flat.nested?.['email']?.[0]
-        const passwordError = flat.nested?.['password']?.[0]
+        const emailError = flat.nested?.email?.[0]
+        const passwordError = flat.nested?.password?.[0]
         return {
           error: null,
           fieldErrors: {

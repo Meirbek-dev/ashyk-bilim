@@ -61,10 +61,10 @@ export default function PlatformDashCoursesPage(props: { searchParams: Promise<P
 
 async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageSearchParams> }) {
   const searchParams = await props.searchParams
-  const currentPage = parsePage(searchParams['page'])
-  const query = parseQuery(searchParams['q'])
-  const sortBy = parseSort(searchParams['sort'])
-  const preset = parsePreset(searchParams['preset'])
+  const currentPage = parsePage(searchParams.page)
+  const query = parseQuery(searchParams.q)
+  const sortBy = parseSort(searchParams.sort)
+  const preset = parsePreset(searchParams.preset)
 
   const { courses, total, summary } = await getEditableCourses(currentPage, COURSES_PER_PAGE, query, sortBy, preset)
 

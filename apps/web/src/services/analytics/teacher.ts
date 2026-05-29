@@ -89,23 +89,23 @@ async function analyticsRequest<T>(path: string, query?: AnalyticsQuery, init?: 
 }
 
 export function normalizeAnalyticsQuery(searchParams: Record<string, string | string[] | undefined>): AnalyticsQuery {
-  const teacherUserId = getFirstQueryValue(searchParams['teacher_user_id'])
-  const page = getFirstQueryValue(searchParams['page'])
-  const pageSize = getFirstQueryValue(searchParams['page_size'])
-  const courseIds = getFirstQueryValue(searchParams['course_ids'])
-  const cohortIds = getFirstQueryValue(searchParams['cohort_ids'])
+  const teacherUserId = getFirstQueryValue(searchParams.teacher_user_id)
+  const page = getFirstQueryValue(searchParams.page)
+  const pageSize = getFirstQueryValue(searchParams.page_size)
+  const courseIds = getFirstQueryValue(searchParams.course_ids)
+  const cohortIds = getFirstQueryValue(searchParams.cohort_ids)
   const teacherUserIdValue = getOptionalInteger(teacherUserId)
-  const timezone = getFirstQueryValue(searchParams['timezone'])
-  const sortBy = getFirstQueryValue(searchParams['sort_by'])
-  const bucketStart = getFirstQueryValue(searchParams['bucket_start'])
+  const timezone = getFirstQueryValue(searchParams.timezone)
+  const sortBy = getFirstQueryValue(searchParams.sort_by)
+  const bucketStart = getFirstQueryValue(searchParams.bucket_start)
 
   return {
-    window: (getFirstQueryValue(searchParams['window']) as AnalyticsQuery['window']) || '28d',
-    compare: (getFirstQueryValue(searchParams['compare']) as AnalyticsQuery['compare']) || 'previous_period',
-    bucket: (getFirstQueryValue(searchParams['bucket']) as AnalyticsQuery['bucket']) || 'day',
+    window: (getFirstQueryValue(searchParams.window) as AnalyticsQuery['window']) || '28d',
+    compare: (getFirstQueryValue(searchParams.compare) as AnalyticsQuery['compare']) || 'previous_period',
+    bucket: (getFirstQueryValue(searchParams.bucket) as AnalyticsQuery['bucket']) || 'day',
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
-    sort_order: (getFirstQueryValue(searchParams['sort_order']) as AnalyticsQuery['sort_order']) || 'desc',
+    sort_order: (getFirstQueryValue(searchParams.sort_order) as AnalyticsQuery['sort_order']) || 'desc',
     ...(courseIds === undefined ? {} : { course_ids: courseIds }),
     ...(cohortIds === undefined ? {} : { cohort_ids: cohortIds }),
     ...(teacherUserIdValue === undefined ? {} : { teacher_user_id: teacherUserIdValue }),

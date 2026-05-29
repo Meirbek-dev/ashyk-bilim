@@ -67,14 +67,14 @@ const registry: Record<string, ThemePreset> = Object.fromEntries(
 )
 
 function buildColors(tokens: ThemeTokenMap): ThemeColors {
-  const bg = tokens['background'] ?? 'oklch(1 0 0)'
-  const fg = tokens['foreground'] ?? 'oklch(0.145 0 0)'
+  const bg = tokens.background ?? 'oklch(1 0 0)'
+  const fg = tokens.foreground ?? 'oklch(0.145 0 0)'
   return {
     background: bg,
     foreground: fg,
-    primary: tokens['primary'] ?? fg,
-    secondary: tokens['secondary'] ?? bg,
-    accent: tokens['accent'] ?? tokens['secondary'] ?? bg,
+    primary: tokens.primary ?? fg,
+    secondary: tokens.secondary ?? bg,
+    accent: tokens.accent ?? tokens.secondary ?? bg,
   }
 }
 

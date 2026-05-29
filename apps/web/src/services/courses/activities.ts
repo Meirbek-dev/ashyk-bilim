@@ -76,21 +76,21 @@ export async function createExternalVideoActivity(
     muted: false,
   }
   const rawDetails =
-    data['details'] && typeof data['details'] === 'object' && data['details'] !== null
-      ? (data['details'] as Record<string, unknown>)
+    data.details && typeof data.details === 'object' && data.details !== null
+      ? (data.details as Record<string, unknown>)
       : null
   const videoDetails = rawDetails
     ? {
-        startTime: typeof rawDetails['startTime'] === 'number' ? rawDetails['startTime'] : defaultDetails.startTime,
-        endTime: typeof rawDetails['endTime'] === 'number' ? rawDetails['endTime'] : defaultDetails.endTime,
-        autoplay: typeof rawDetails['autoplay'] === 'boolean' ? rawDetails['autoplay'] : defaultDetails.autoplay,
-        muted: typeof rawDetails['muted'] === 'boolean' ? rawDetails['muted'] : defaultDetails.muted,
+        startTime: typeof rawDetails.startTime === 'number' ? rawDetails.startTime : defaultDetails.startTime,
+        endTime: typeof rawDetails.endTime === 'number' ? rawDetails.endTime : defaultDetails.endTime,
+        autoplay: typeof rawDetails.autoplay === 'boolean' ? rawDetails.autoplay : defaultDetails.autoplay,
+        muted: typeof rawDetails.muted === 'boolean' ? rawDetails.muted : defaultDetails.muted,
       }
     : defaultDetails
   const payload = {
     ...data,
     chapter_id,
-    ...(activity['id'] === undefined ? {} : { activity_id: activity['id'] }),
+    ...(activity.id === undefined ? {} : { activity_id: activity.id }),
     details: JSON.stringify(videoDetails),
   }
 

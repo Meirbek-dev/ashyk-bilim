@@ -1,22 +1,38 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "categories": {
-    "correctness": "warn",
-    "suspicious": "warn",
-    "perf": "warn",
-    "nursery": "off",
-    "restriction": "off",
-    "style": "off",
-    "pedantic": "off"
+    "correctness": "error",
+    "nursery": "warn",
+    "pedantic": "off",
+    "perf": "error",
+    "restriction": "warn",
+    "style": "warn",
+    "suspicious": "error"
   },
-
   "env": {
     "builtin": true,
     "browser": true,
     "es2024": true,
     "node": true
   },
-
+  "globals": {},
+  "ignorePatterns": [
+    ".git/",
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.js",
+    "**/cdk.out/",
+    "**/dist/",
+    "**/node_modules/",
+    "**/bp_modules/",
+    "**/.botpress/",
+    "**/gen/",
+    "**/.turbo/",
+    "**/.genenv/",
+    "packages/llmz/examples/",
+    "lib/api/generated/schema.ts"
+  ],
+  "overrides": [],
   "plugins": [
     "import",
     "jsdoc",
@@ -30,60 +46,113 @@
     "typescript",
     "unicorn"
   ],
-
-  "ignorePatterns": [
-    ".git/",
-    "**/*.d.ts",
-    "**/*.test.ts",
-    "**/*.js",
-    "**/cdk.out/",
-    "**/dist/",
-    "**/node_modules/",
-    "**/bp_modules/",
-    "**/.botpress/",
-    "**/gen/",
-    "**/. turbo/",
-    "**/.genenv/",
-    "packages/llmz/examples/",
-    "lib/api/generated/schema.ts"
-  ],
-
   "rules": {
-    /* ── Correctness / suspicious exceptions ─────────────────────────
-       These are in warn categories but are intentional patterns here.  */
-    "no-await-in-loop": "off", // intentional in CLI/batch code
-    "no-constant-condition": "off", // used for while-true loops
+    /* Core Rules (No prefix) */
+    "arrow-body-style": "off",
+    "curly": "off",
+    "func-style": "off",
+    /* Reduce noisy rules */
+    "oxc/no-async-await": "off",
+    "forbid-component-props": "off",
+    "no-optional-chaining": "off",
+    "no-rest-spread-properties": "off",
+    "no-await-in-loop": "off",
+    "no-constant-condition": "off",
     "no-empty-pattern": "off",
     "no-thenable": "off",
-    "no-unused-vars": "off", // delegated to tsconfig noUnusedLocals
+    "no-unreachable": "off",
+    "prefer-template": "off",
+    "no-debugger": "off",
+    "no-implicit-coercion": "off",
+    "id-length": "off",
+    "max-lines": "off",
+    "no-console": "off",
+    "no-empty-function": "off",
+    "no-magic-numbers": "off",
+    "no-null": "off",
+    "no-ternary": "off",
+    "no-undefined": "off",
+    "no-unused-vars": "off",
+    "sort-imports": "off",
+    "sort-keys": "off",
+    "yoda": "off",
+    "vars-on-top": "off",
+    "no-var": "off",
+    "capitalized-comments": "off",
+    "init-declarations": "off",
+    "max-params": "off",
+    "complexity": "off",
+    "max-statements": "off",
+    "no-use-before-define": "off",
+    "new-cap": "off",
+    "no-duplicate-imports": "off",
+    "no-shadow": "off",
+    "no-nested-ternary": "off",
+    "no-void": "off",
+    "no-relative-parent-imports": "off",
+    "default-case": "off",
+    /* Import Plugin Rules */
+    "import/no-default-export": "off",
+    "import/prefer-default-export": "off",
+    "import/no-named-export": "off",
+    "import/group-exports": "off",
+    "import/exports-last": "off",
+    "import/no-namespace": "off",
+    /* TypeScript Plugin Rules */
+    "typescript/explicit-function-return-type": "off",
+    "typescript/no-explicit-any": "off",
     "typescript/no-unused-vars": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "typescript/no-misused-promises": "off",
+    "typescript/no-floating-promises": "off",
+    "typescript/no-unnecessary-condition": "off",
+    "typescript/strict-void-return": "off",
+    "typescript/explicit-module-boundary-types": "off",
+    "typescript/promise-function-async": "off",
+    /* React Plugin Rules */
+    "react/button-has-type": "off",
+    "react/iframe-missing-sandbox": "off",
+    "react/no-danger": "off",
+    "react/no-clone-element": "off",
+    "react/no-react-children": "off",
+    "react/jsx-handler-names": "off",
+    "react/jsx-filename-extension": "off",
+    "react/no-array-index-key": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-max-depth": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/no-multi-comp": "off",
+    "react/only-export-components": "off",
+    /* React Perf Plugin Rules */
+    "react-perf/jsx-no-new-array-as-prop": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "react-perf/jsx-no-new-object-as-prop": "off",
+    /* Promise Plugin Rules */
+    "promise/prefer-await-to-callbacks": "off",
+    "promise/prefer-await-to-then": "off",
+    /* Unicorn Plugin Rules */
+    "unicorn/no-null": "off",
+    "unicorn/prefer-string-raw": "off",
+    "unicorn/no-array-reduce": "off",
+    "unicorn/no-nested-ternary": "off",
+    "unicorn/filename-case": "off",
 
-    /* ── Agentic: async safety ───────────────────────────────────────
-       Unhandled promises are the #1 silent failure in LLM-generated code */
-    "typescript/no-floating-promises": "warn",
-    "typescript/no-misused-promises": "warn",
-
-    /* ── Agentic: dead code / dead types ─────────────────────────────
-       Catches unreachable branches and zombie type annotations          */
-    "typescript/no-unnecessary-condition": "warn",
-    "typescript/no-unnecessary-type-constraint": "warn",
-    "typescript/no-extra-non-null-assertion": "warn",
-
-    /* ── Token efficiency: useless syntax ────────────────────────────
-       Code that compiles identically with fewer tokens                  */
-    "no-useless-catch": "warn",
-    "no-useless-computed-key": "warn",
-    "no-useless-concat": "warn",
-    "no-useless-rename": "warn",
-    "no-useless-return": "warn",
-    "no-extra-boolean-cast": "warn",
-
-    /* ── Token efficiency: prefer concise built-ins ──────────────────
-       Pulled from off categories, so need explicit enables              */
-    "object-shorthand": "warn",
-    "unicorn/prefer-array-find": "warn",
-    "unicorn/prefer-includes": "warn",
-    "import/no-duplicates": "warn",
-    "import/no-self-import": "warn"
-  }
+    /* High-Density Agentic & Token Optimization Enforcements */
+    "no-extra-boolean-cast": "error",
+    "no-regex-spaces": "error",
+    "no-useless-catch": "error",
+    "no-useless-computed-key": "error",
+    "no-useless-concat": "error",
+    "no-useless-rename": "error",
+    "object-shorthand": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-includes": "error"
+  },
+  "settings": {}
 }

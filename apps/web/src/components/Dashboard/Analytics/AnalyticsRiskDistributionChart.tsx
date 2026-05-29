@@ -55,9 +55,9 @@ export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: 
             className="h-[280px] w-full"
             config={{
               count: { label: t('riskDistribution.learners') },
-              'risk-high': { color: RISK_COLOR_FALLBACKS['high'] },
-              'risk-medium': { color: RISK_COLOR_FALLBACKS['medium'] },
-              'risk-low': { color: RISK_COLOR_FALLBACKS['low'] },
+              'risk-high': { color: RISK_COLOR_FALLBACKS.high },
+              'risk-medium': { color: RISK_COLOR_FALLBACKS.medium },
+              'risk-low': { color: RISK_COLOR_FALLBACKS.low },
             }}
           >
             <BarChart data={data}>

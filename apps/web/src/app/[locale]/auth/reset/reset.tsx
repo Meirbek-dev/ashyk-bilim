@@ -66,10 +66,10 @@ const ResetPasswordClient = () => {
 
       if (!result.success) {
         const flat = v.flatten(result.issues)
-        const emailError = flat.nested?.['email']?.[0]
-        const resetCodeError = flat.nested?.['reset_code']?.[0]
-        const newPasswordError = flat.nested?.['new_password']?.[0]
-        const confirmPasswordError = flat.nested?.['confirm_password']?.[0]
+        const emailError = flat.nested?.email?.[0]
+        const resetCodeError = flat.nested?.reset_code?.[0]
+        const newPasswordError = flat.nested?.new_password?.[0]
+        const confirmPasswordError = flat.nested?.confirm_password?.[0]
         return {
           error: null,
           message: null,

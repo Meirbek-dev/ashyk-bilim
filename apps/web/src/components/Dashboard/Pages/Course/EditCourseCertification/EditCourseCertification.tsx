@@ -175,8 +175,8 @@ const EditCourseCertification = () => {
 
   const getInitialValues = useCallback((): FormValues => {
     const getInstructorName = () => {
-      if (courseStructure?.['authors']?.length > 0) {
-        const [author] = courseStructure['authors']
+      if (courseStructure?.authors?.length > 0) {
+        const [author] = courseStructure.authors
         const firstName = author.user?.first_name || ''
         const lastName = author.user?.last_name || ''
         if (firstName || lastName) return `${firstName} ${lastName}`.trim()
@@ -293,18 +293,18 @@ const EditCourseCertification = () => {
 
               options: {
                 courseUuid: courseStructure.course_uuid,
-                lastKnownUpdateDate: courseStructure['update_date'],
+                lastKnownUpdateDate: courseStructure.update_date,
               },
             })
             return
           }
 
           await createCertification({
-            course_id: courseStructure['id'],
+            course_id: courseStructure.id,
             config,
             options: {
               courseUuid: courseStructure.course_uuid,
-              lastKnownUpdateDate: courseStructure['update_date'],
+              lastKnownUpdateDate: courseStructure.update_date,
             },
           })
           return
@@ -313,7 +313,7 @@ const EditCourseCertification = () => {
         if (existingCertification) {
           await deleteCertification(existingCertification.certification_uuid, {
             courseUuid: courseStructure.course_uuid,
-            lastKnownUpdateDate: courseStructure['update_date'],
+            lastKnownUpdateDate: courseStructure.update_date,
           })
         }
 

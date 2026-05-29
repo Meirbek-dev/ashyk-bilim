@@ -190,7 +190,7 @@ const EditCourseContributors = () => {
   } = useCoursesMutations(courseStructure?.course_uuid ?? '')
 
   const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(
-    () => courseStructure?.['open_to_contributors'],
+    () => courseStructure?.open_to_contributors,
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -225,10 +225,10 @@ const EditCourseContributors = () => {
 
   const isDirtyRef = useRef(false)
   isDirtyRef.current =
-    isOpenToContributors !== undefined && isOpenToContributors !== courseStructure?.['open_to_contributors']
+    isOpenToContributors !== undefined && isOpenToContributors !== courseStructure?.open_to_contributors
   const isDirty = isDirtyRef.current
 
-  const handleDiscard = () => setIsOpenToContributors(courseStructure?.['open_to_contributors'])
+  const handleDiscard = () => setIsOpenToContributors(courseStructure?.open_to_contributors)
 
   useSyncDirtySection('contributors', isDirty)
 
@@ -236,12 +236,14 @@ const EditCourseContributors = () => {
     section: 'contributors',
   })
 
+  const openToContributors = courseStructure?.open_to_contributors
+
   // Rehydrate from server when not dirty
   useEffect(() => {
     if (!isDirtyRef.current) {
-      setIsOpenToContributors(courseStructure?.['open_to_contributors'])
+      setIsOpenToContributors(openToContributors)
     }
-  }, [courseStructure?.['open_to_contributors'], courseStructure])
+  }, [openToContributors, courseStructure])
 
   const masterCheckboxChecked = (() => {
     const nonCreatorContributors = contributors.filter(c => c.authorship !== 'CREATOR')
@@ -266,7 +268,7 @@ const EditCourseContributors = () => {
     setIsAdding(true)
     try {
       const response = await addContributors(selectedUsers, selectedUserObjects, {
-        lastKnownUpdateDate: courseStructure['update_date'],
+        lastKnownUpdateDate: courseStructure.update_date,
       })
       const result = response.data as BulkAddResponse
 
@@ -292,7 +294,7 @@ const EditCourseContributors = () => {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
           await addContributors(selectedUsers, selectedUserObjects, {
-            lastKnownUpdateDate: courseStructure['update_date'],
+            lastKnownUpdateDate: courseStructure.update_date,
           })
         })
         return
@@ -317,7 +319,7 @@ const EditCourseContributors = () => {
       }
       const updatedData = buildContributorUpdatePayload(currentContributor, data)
       const res = await updateContributorMutation(contributorId, updatedData, {
-        lastKnownUpdateDate: courseStructure['update_date'],
+        lastKnownUpdateDate: courseStructure.update_date,
       })
 
       if (res.status === 200 && res.data?.status === 'success') {
@@ -332,7 +334,7 @@ const EditCourseContributors = () => {
           if (!retryContributor) return
 
           await updateContributorMutation(contributorId, buildContributorUpdatePayload(retryContributor, data), {
-            lastKnownUpdateDate: courseStructure['update_date'],
+            lastKnownUpdateDate: courseStructure.update_date,
           })
         })
         return
@@ -372,7 +374,7 @@ const EditCourseContributors = () => {
         .filter(c => selectedContributors.includes(c.user_id))
         .map(c => c.user_id)
       const response = await removeContributors(selectedUsernames, selectedUserIds, {
-        lastKnownUpdateDate: courseStructure['update_date'],
+        lastKnownUpdateDate: courseStructure.update_date,
       })
       const result = response.data as BulkAddResponse
 
@@ -407,7 +409,7 @@ const EditCourseContributors = () => {
             retryRows.map(contributor => contributor.user.username),
             retryRows.map(contributor => contributor.user_id),
             {
-              lastKnownUpdateDate: courseStructure['update_date'],
+              lastKnownUpdateDate: courseStructure.update_date,
             },
           )
         })
@@ -429,7 +431,7 @@ const EditCourseContributors = () => {
       updateAccess(
         { open_to_contributors: isOpenToContributors },
         {
-          lastKnownUpdateDate: courseStructure['update_date'],
+          lastKnownUpdateDate: courseStructure.update_date,
         },
       ),
     )

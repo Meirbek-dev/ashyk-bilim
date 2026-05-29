@@ -170,7 +170,7 @@ export default function SubmissionInspector({
 export function getCanonicalAnswersByItem(submission: Submission): Record<string, ItemAnswer> {
   const answers = submission.answers_json
   if (!answers || typeof answers !== 'object') return {}
-  const answerMap = 'answers' in answers ? answers['answers'] : null
+  const answerMap = 'answers' in answers ? answers.answers : null
   return answerMap && typeof answerMap === 'object' ? (answerMap as Record<string, ItemAnswer>) : {}
 }
 

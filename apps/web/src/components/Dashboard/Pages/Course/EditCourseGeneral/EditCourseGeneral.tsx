@@ -162,7 +162,7 @@ function EditCourseGeneral() {
     await saveWithoutRefresh(
       async () =>
         updateMetadata(values, {
-          lastKnownUpdateDate: course.courseStructure['update_date'],
+          lastKnownUpdateDate: course.courseStructure.update_date,
         }),
       {
         onSuccess: () => {

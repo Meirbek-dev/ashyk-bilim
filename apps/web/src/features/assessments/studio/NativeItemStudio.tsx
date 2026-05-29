@@ -167,15 +167,10 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue =>
-      Object.assign(
-        {
-          code: issue.code,
-          message: issue.message,
-        },
-        issue.item_uuid ? { itemUuid: issue.item_uuid } : {},
-      ),
-    ) ?? []
+    readinessQuery.data?.issues.map(issue => ((Object.assign({
+	code: issue.code,
+	message: issue.message
+}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {})))) ?? []
 
   return (
     <AssessmentStudioContext.Provider
@@ -1067,7 +1062,7 @@ function buildAssessmentPatch(_mode: StudioMode, assessment: AssessmentStudioDet
   }
 
   const settings = normalizeRecord(assessment.assessment_policy?.settings_json)
-  payload['policy'] = {
+  payload.policy = {
     due_at: dueAt,
     max_attempts: state.maxAttempts ? Number(state.maxAttempts) : null,
     time_limit_seconds: state.timeLimitMinutes ? Number(state.timeLimitMinutes) * 60 : null,
@@ -1114,29 +1109,29 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
     maxAttempts:
       typeof assessment.assessment_policy?.max_attempts === 'number'
         ? String(assessment.assessment_policy.max_attempts)
-        : typeof settings['max_attempts'] === 'number'
-          ? String(settings['max_attempts'])
-          : typeof settings['attempt_limit'] === 'number'
-            ? String(settings['attempt_limit'])
+        : typeof settings.max_attempts === 'number'
+          ? String(settings.max_attempts)
+          : typeof settings.attempt_limit === 'number'
+            ? String(settings.attempt_limit)
             : '1',
     timeLimitMinutes:
       typeof assessment.assessment_policy?.time_limit_seconds === 'number'
         ? String(Math.max(1, Math.ceil(assessment.assessment_policy.time_limit_seconds / 60)))
-        : typeof settings['time_limit_seconds'] === 'number'
-          ? String(Math.max(1, Math.ceil(settings['time_limit_seconds'] / 60)))
-          : typeof settings['time_limit'] === 'number'
-            ? String(settings['time_limit'])
+        : typeof settings.time_limit_seconds === 'number'
+          ? String(Math.max(1, Math.ceil(settings.time_limit_seconds / 60)))
+          : typeof settings.time_limit === 'number'
+            ? String(settings.time_limit)
             : '',
-    copyPasteProtection: antiCheat['copy_paste_protection'] === true || settings['copy_paste_protection'] === true,
-    tabSwitchDetection: antiCheat['tab_switch_detection'] === true || settings['tab_switch_detection'] === true,
-    devtoolsDetection: antiCheat['devtools_detection'] === true || settings['devtools_detection'] === true,
-    rightClickDisable: antiCheat['right_click_disable'] === true || settings['right_click_disable'] === true,
-    fullscreenEnforcement: antiCheat['fullscreen_enforcement'] === true || settings['fullscreen_enforcement'] === true,
+    copyPasteProtection: antiCheat.copy_paste_protection === true || settings.copy_paste_protection === true,
+    tabSwitchDetection: antiCheat.tab_switch_detection === true || settings.tab_switch_detection === true,
+    devtoolsDetection: antiCheat.devtools_detection === true || settings.devtools_detection === true,
+    rightClickDisable: antiCheat.right_click_disable === true || settings.right_click_disable === true,
+    fullscreenEnforcement: antiCheat.fullscreen_enforcement === true || settings.fullscreen_enforcement === true,
     violationThreshold:
-      typeof antiCheat['violation_threshold'] === 'number'
-        ? String(antiCheat['violation_threshold'])
-        : typeof settings['violation_threshold'] === 'number'
-          ? String(settings['violation_threshold'])
+      typeof antiCheat.violation_threshold === 'number'
+        ? String(antiCheat.violation_threshold)
+        : typeof settings.violation_threshold === 'number'
+          ? String(settings.violation_threshold)
           : '3',
     allowResultReview: settings.allow_result_review !== false,
     showCorrectAnswers:

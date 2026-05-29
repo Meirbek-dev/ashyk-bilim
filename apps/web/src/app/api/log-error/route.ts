@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       error: errorMessage?.slice(0, 1000),
       digest,
       // Component stacks can contain source paths and PII — strip in production.
-      componentStack: isProd ? undefined : body['componentStack'],
+      componentStack: isProd ? undefined : body.componentStack,
       page,
     })
 

@@ -22,11 +22,11 @@ export interface OpenTextAnswer {
 }
 
 export function normalizeOpenText(raw: Record<string, unknown> | null | undefined): OpenTextValue {
-  const body = raw?.['body'] && typeof raw['body'] === 'object' ? (raw['body'] as Record<string, unknown>) : {}
+  const body = raw?.body && typeof raw.body === 'object' ? (raw.body as Record<string, unknown>) : {}
   return {
     kind: 'OPEN_TEXT',
     body: {
-      prompt: typeof body['prompt'] === 'string' ? body['prompt'] : '',
+      prompt: typeof body.prompt === 'string' ? body.prompt : '',
     },
   }
 }

@@ -70,14 +70,14 @@ const readOptionalNumber = (value: unknown): number | undefined => (typeof value
 const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
   if (!isRecord(value)) return null
 
-  const type = readOptionalString(value['type'])
-  const version = readOptionalNumber(value['version'])
+  const type = readOptionalString(value.type)
+  const version = readOptionalNumber(value.version)
 
   switch (type) {
     case 'status': {
-      const aichatUuid = readOptionalString(value['aichat_uuid'])
-      const status = readOptionalString(value['status'])
-      const message = readOptionalString(value['message'])
+      const aichatUuid = readOptionalString(value.aichat_uuid)
+      const status = readOptionalString(value.status)
+      const message = readOptionalString(value.message)
 
       return {
         type,
@@ -89,7 +89,7 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
     }
     case 'delta':
     case 'chunk': {
-      const content = readOptionalString(value['content'])
+      const content = readOptionalString(value.content)
 
       return {
         type,
@@ -98,8 +98,8 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
       }
     }
     case 'final': {
-      const aichatUuid = readOptionalString(value['aichat_uuid'])
-      const content = readOptionalString(value['content'])
+      const aichatUuid = readOptionalString(value.aichat_uuid)
+      const content = readOptionalString(value.content)
 
       return {
         type,
@@ -109,8 +109,8 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
       }
     }
     case 'error': {
-      const error = readOptionalString(value['error'])
-      const errorCode = readOptionalString(value['error_code'])
+      const error = readOptionalString(value.error)
+      const errorCode = readOptionalString(value.error_code)
 
       return {
         type,

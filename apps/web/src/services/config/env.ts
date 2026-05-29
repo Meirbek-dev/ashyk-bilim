@@ -111,15 +111,15 @@ const mapIssues = (scope: 'public' | 'server', issues: unknown): ConfigIssue[] =
 }
 
 const readPublicEnvInput = () => ({
-  NEXT_PUBLIC_SITE_URL: process.env['NEXT_PUBLIC_SITE_URL'],
-  NEXT_PUBLIC_API_URL: process.env['NEXT_PUBLIC_API_URL'],
-  NEXT_PUBLIC_MEDIA_URL: getOptionalEnvValue(process.env['NEXT_PUBLIC_MEDIA_URL']),
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  NEXT_PUBLIC_MEDIA_URL: getOptionalEnvValue(process.env.NEXT_PUBLIC_MEDIA_URL),
 })
 
 const readServerEnvInput = () => ({
-  INTERNAL_API_URL: getOptionalEnvValue(process.env['INTERNAL_API_URL']),
-  APP_URL: getOptionalEnvValue(process.env['APP_URL']) ?? process.env['NEXT_PUBLIC_SITE_URL'],
-  COOKIE_DOMAIN: getOptionalEnvValue(process.env['COOKIE_DOMAIN']),
+  INTERNAL_API_URL: getOptionalEnvValue(process.env.INTERNAL_API_URL),
+  APP_URL: getOptionalEnvValue(process.env.APP_URL) ?? process.env.NEXT_PUBLIC_SITE_URL,
+  COOKIE_DOMAIN: getOptionalEnvValue(process.env.COOKIE_DOMAIN),
 })
 
 const buildPublicConfig = (env: PublicEnv): PublicConfig => {
@@ -137,7 +137,7 @@ const buildPublicConfig = (env: PublicEnv): PublicConfig => {
 }
 
 const buildServerConfig = (env: ServerEnv): ServerConfig => {
-  const resolvedAppUrl = env.APP_URL ?? process.env['NEXT_PUBLIC_SITE_URL']
+  const resolvedAppUrl = env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL
   if (!resolvedAppUrl) {
     throw new Error('APP_URL or NEXT_PUBLIC_SITE_URL must be configured')
   }

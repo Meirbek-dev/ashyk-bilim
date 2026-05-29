@@ -457,8 +457,8 @@ const SearchPage = () => {
                             {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                           </h3>
                           <p className="text-muted-foreground text-xs">@{user.username}</p>
-                          {user.details?.['title']?.['text'] ? (
-                            <p className="text-muted-foreground mt-1 text-xs">{user.details['title']['text']}</p>
+                          {user.details?.title?.text ? (
+                            <p className="text-muted-foreground mt-1 text-xs">{user.details.title.text}</p>
                           ) : null}
                         </div>
                       </Link>

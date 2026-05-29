@@ -52,7 +52,7 @@ vi.mock('@/features/grading/review/GradingReviewWorkspace', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, values?: Record<string, string | number>) =>
-    values?.['count'] === undefined ? key : `${key}:${values['count']}`,
+    values?.count === undefined ? key : `${key}:${values.count}`,
 }))
 
 vi.mock('next/navigation', () => ({

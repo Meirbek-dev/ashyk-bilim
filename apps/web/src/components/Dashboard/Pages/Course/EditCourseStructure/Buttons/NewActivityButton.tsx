@@ -100,7 +100,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     if (kind === 'codechallenge') {
       const toast_loading = toast.loading(tNotify('creatingActivity'))
       try {
-        const courseId = course.courseStructure['id']
+        const courseId = course.courseStructure.id
         const response = await apiFetch('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

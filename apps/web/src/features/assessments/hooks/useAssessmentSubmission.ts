@@ -33,7 +33,7 @@ interface ConflictState {
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error'
 
 function answersFromSubmission(submission: AssessmentSubmissionRead | null | undefined): Record<string, ItemAnswer> {
-  const answers = submission?.answers_json?.['answers']
+  const answers = submission?.answers_json?.answers
   return answers && typeof answers === 'object' ? (answers as Record<string, ItemAnswer>) : {}
 }
 

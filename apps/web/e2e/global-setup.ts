@@ -86,7 +86,7 @@ async function registerUser(opts: {
     // Handle "already exists" responses — both FastAPI-Users and platform-custom formats
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
     const alreadyExists =
-      body['detail'] === 'REGISTER_USER_ALREADY_EXISTS' ||
+      body.detail === 'REGISTER_USER_ALREADY_EXISTS' ||
       (body as { error_code?: string })?.error_code === 'email_taken' ||
       (body as { error_code?: string })?.error_code === 'username_taken'
     if (alreadyExists) {

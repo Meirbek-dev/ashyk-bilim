@@ -816,7 +816,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_type:
           body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
         points: item.max_score,
-        ...(body.explanation == null ? {} : { explanation: body.explanation }),
+        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
         answer_options: body.options.map(option => ({
           text: option.text,
           is_correct: option.is_correct,
@@ -833,7 +833,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_text: body.prompt,
         question_type: 'MATCHING',
         points: item.max_score,
-        ...(body.explanation == null ? {} : { explanation: body.explanation }),
+        ...(body.explanation === null || body.explanation === undefined ? {} : { explanation: body.explanation }),
         answer_options: body.pairs.map((pair, index) => ({
           text: '',
           left: pair.left,

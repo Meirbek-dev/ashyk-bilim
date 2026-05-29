@@ -68,7 +68,7 @@ export function ActivityContentRenderer({
     case 'TYPE_DYNAMIC': {
       return (
         <div className="w-full">
-          <InteractiveViewer content={getValidTiptapContent(activity['content'])} activity={activity} />
+          <InteractiveViewer content={getValidTiptapContent(activity.content)} activity={activity} />
         </div>
       )
     }

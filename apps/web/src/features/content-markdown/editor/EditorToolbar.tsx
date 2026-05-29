@@ -84,7 +84,7 @@ export function EditorToolbar({
   }
 
   const currentLinkHref = editor?.isActive('link')
-    ? (editor.getAttributes('link')['href'] as string | undefined)
+    ? (editor.getAttributes('link').href as string | undefined)
     : undefined
 
   return (

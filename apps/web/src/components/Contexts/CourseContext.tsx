@@ -117,7 +117,7 @@ export const CourseProvider = ({
 
   useEffect(() => {
     if (courseStructureData) {
-      openEditor(courseuuid, courseStructureData['update_date'])
+      openEditor(courseuuid, courseStructureData.update_date)
     }
   }, [courseStructureData, courseuuid, openEditor])
 

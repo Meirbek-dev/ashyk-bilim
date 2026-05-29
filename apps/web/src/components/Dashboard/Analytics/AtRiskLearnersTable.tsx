@@ -138,11 +138,11 @@ export default function AtRiskLearnersTable({
             {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
             <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
               {[
-                [t('atRisk.riskComponents.inactivity'), c['inactivity']],
-                [t('atRisk.riskComponents.progress'), c['progress']],
-                [t('atRisk.riskComponents.failures'), c['failures']],
-                [t('atRisk.riskComponents.missing'), c['missing']],
-                [t('atRisk.riskComponents.grading'), c['grading']],
+                [t('atRisk.riskComponents.inactivity'), c.inactivity],
+                [t('atRisk.riskComponents.progress'), c.progress],
+                [t('atRisk.riskComponents.failures'), c.failures],
+                [t('atRisk.riskComponents.missing'), c.missing],
+                [t('atRisk.riskComponents.grading'), c.grading],
               ]
                 .filter(([, v]) => (v as number) > 0)
                 .map(([label, v]) => `${label} ${Math.round(v as number)}`)

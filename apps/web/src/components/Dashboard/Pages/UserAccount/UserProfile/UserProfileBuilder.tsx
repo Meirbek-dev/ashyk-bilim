@@ -356,9 +356,7 @@ const UserProfileBuilder = () => {
       if (userData.profile) {
         try {
           const profileSections =
-            typeof userData.profile === 'string'
-              ? JSON.parse(userData.profile)['sections']
-              : userData.profile['sections']
+            typeof userData.profile === 'string' ? JSON.parse(userData.profile).sections : userData.profile.sections
 
           setProfileData({
             sections: profileSections || [],
@@ -1042,7 +1040,7 @@ const SkillsEditor: FC<{
                     const newSkills = [...section.skills]
                     newSkills[index] = {
                       ...skill,
-                      level: value as NonNullable<ProfileSkill['level']>,
+                      level: value!,
                     }
                     onChange({ ...section, skills: newSkills })
                   }}
