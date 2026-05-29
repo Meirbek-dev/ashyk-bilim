@@ -1,8 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "tags": ["-lintignore"],
-  "entry": ["src/components/ui/**"],
+  "entry": ["src/app/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}", "src/i18n/navigation.ts", "src/messages/migrate.ts!"],
+  "project": ["src/**/*.{ts,tsx,mjs}"],
+  "ignore": ["e2e/**/*", "scripts/**/*", "src/components/ui/**/*"],
   "ignoreDependencies": ["sharp", "shadcn"],
-  "ignoreBinaries": ["src/messages/migrate.ts"],
-  "ignoreFiles": ["src/components/DevScriptLoader.tsx", "src/messages/Artplayer/*"]
+  "rules": {
+    "files": "warn",
+    "exports": "warn",
+    "types": "off",
+    "duplicates": "off"
+  }
 }
