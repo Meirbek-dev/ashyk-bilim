@@ -140,25 +140,42 @@ export const CourseProvider = ({
     [courseStructureData, courseuuid, editorBundleData, initialCourse],
   )
 
-  if (error) return <ErrorUI message={t('loadError')} />
-  if (isLoading || !isMounted) return <PageLoading />
-
-  if (courseStructureData) {
-    const value: CourseContextValue = {
-      courseStructure: courseStructureData,
-      isLoading: false,
+  const contextValue = useMemo<CourseContextValue | null>(
+    () =>
+      courseStructureData
+        ? {
+            courseStructure: courseStructureData,
+            isLoading: false,
+            withUnpublishedActivities,
+            dirtySections,
+            editorData: editorBundleData || createEmptyCourseEditorBundle(),
+            courseMetaUrl,
+            isEditorDataLoading,
+            readiness,
+            refreshCourseMeta,
+            refreshEditorData,
+            refreshCourseEditor,
+          }
+        : null,
+    [
+      courseStructureData,
       withUnpublishedActivities,
       dirtySections,
-      editorData: editorBundleData || createEmptyCourseEditorBundle(),
+      editorBundleData,
       courseMetaUrl,
       isEditorDataLoading,
       readiness,
       refreshCourseMeta,
       refreshEditorData,
       refreshCourseEditor,
-    }
+    ],
+  )
 
-    return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
+  if (error) return <ErrorUI message={t('loadError')} />
+  if (isLoading || !isMounted) return <PageLoading />
+
+  if (contextValue) {
+    return <CourseContext.Provider value={contextValue}>{children}</CourseContext.Provider>
   }
 
   return null

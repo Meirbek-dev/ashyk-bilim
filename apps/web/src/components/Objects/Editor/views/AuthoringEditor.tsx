@@ -18,6 +18,7 @@ import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
+// eslint-disable-next-line import/no-unassigned-import
 import '@components/Objects/Editor/styles/prosemirror.css'
 
 // ── EditorCore ────────────────────────────────────────────────────────────────

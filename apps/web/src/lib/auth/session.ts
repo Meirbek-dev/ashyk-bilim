@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-unassigned-import
 import 'server-only'
 import { cache } from 'react'
 import { cookies, headers } from 'next/headers'

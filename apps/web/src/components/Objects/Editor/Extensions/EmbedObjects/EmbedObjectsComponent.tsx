@@ -236,7 +236,7 @@ const EmbedContent = ({
 
     if (videoId) {
       return (
-        <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" params="autoplay=0&rel=0" />
+        <YouTubeEmbed videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} params="autoplay=0&rel=0" />
       )
     }
 

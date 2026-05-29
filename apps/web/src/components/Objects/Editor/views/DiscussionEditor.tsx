@@ -32,6 +32,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { useEditorInstance } from '@components/Objects/Editor/core'
+// eslint-disable-next-line import/no-unassigned-import
 import '@components/Objects/Editor/styles/prosemirror.css'
 
 interface DiscussionEditorProps {

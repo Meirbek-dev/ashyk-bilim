@@ -29,9 +29,7 @@ import { useTranslations } from 'next-intl'
 import { useTransition, useCallback, useState, useRef, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 
-import type { AssessmentItem } from '@/features/assessments/domain/items'
-import type { AssessmentItemMetadata } from '@/features/assessments/domain/items'
-import type { UnifiedItemKind } from '@/features/assessments/domain/items'
+import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
 import {
   classifyValidationIssue,
   dedupeIssues,

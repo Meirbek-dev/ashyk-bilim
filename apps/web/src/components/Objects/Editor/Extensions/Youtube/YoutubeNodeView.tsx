@@ -32,7 +32,7 @@ const YoutubeNodeView = (props: NodeViewProps) => {
       <div className="aspect-video w-full overflow-hidden rounded-lg shadow-sm ring-1 ring-gray-200/10">
         <YouTubeEmbed
           videoid={videoId}
-          style="height: 100%; width: 100%; max-width: none;"
+          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
           params={params.toString()}
         />
       </div>

@@ -4,6 +4,7 @@ import { useLocale } from 'next-intl'
 import { useEffect } from 'react'
 import * as v from 'valibot'
 // Import available translations from @valibot/i18n
+// eslint-disable-next-line import/no-unassigned-import
 import '@valibot/i18n/ru'
 
 export function ValibotProvider({ children }: { children: React.ReactNode }) {

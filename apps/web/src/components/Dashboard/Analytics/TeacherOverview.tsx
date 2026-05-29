@@ -2,9 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
-import type { AdminAnalyticsResponse, AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics'
+import type { AdminAnalyticsResponse, AnalyticsQuery, TeacherOverviewResponse, AnalyticsFilterOption } from '@/types/analytics'
 import { getAnalyticsExportUrl } from '@services/analytics/teacher'
-import type { AnalyticsFilterOption } from '@/types/analytics'
 import AnalyticsExportButton from './AnalyticsExportButton'
 import { useLocale, useTranslations } from 'next-intl'
 import TeacherFilterBar from './TeacherFilterBar'

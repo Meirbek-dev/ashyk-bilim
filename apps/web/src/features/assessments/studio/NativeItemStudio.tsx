@@ -23,8 +23,7 @@ import { toast } from 'sonner'
 import { apiFetch, apiFetcher } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import type { KindAuthorProps } from '@/features/assessments/registry'
-import type { AssessmentItem, AssessmentItemMetadata } from '@/features/assessments/domain/items'
-import type { UnifiedItemKind } from '@/features/assessments/domain/items'
+import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle'
 import {
   classifyValidationIssue,
@@ -167,10 +166,10 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue => (((Object.assign({
+    readinessQuery.data?.issues.map(issue => ((((Object.assign({
 	code: issue.code,
 	message: issue.message
-}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {}))))) ?? []
+}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {})))))) ?? []
 
   return (
     <AssessmentStudioContext.Provider

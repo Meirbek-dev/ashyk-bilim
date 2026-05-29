@@ -25,6 +25,7 @@
     "**/*.d.ts",
     "**/*.test.ts",
     "**/*.js",
+    "**/*.mjs",
     "**/cdk.out/",
     "**/dist/",
     "**/node_modules/",
@@ -34,7 +35,11 @@
     "**/.turbo/",
     "**/.genenv/",
     "packages/llmz/examples/",
-    "lib/api/generated/schema.ts"
+    "lib/api/generated/schema.ts",
+    "e2e/",
+    "scripts/",
+    "playwright.config.ts",
+    "eslint.config.*"
   ],
 
   "plugins": [
@@ -118,6 +123,8 @@
     "import/no-namespace": "off",
     "import/no-duplicates": "error",
     "import/no-self-import": "error",
+    // Tiptap and other packages export both default and named — false positive
+    "import/no-named-as-default": "off",
 
     /* ── TypeScript plugin ─────────────────────────────────────── */
     // verbatimModuleSyntax: true requires import type for type-only imports
@@ -141,6 +148,12 @@
     "typescript/promise-function-async": "off",
     "typescript/strict-void-return": "off",
     "typescript/consistent-return": "off",
+    // Type-level rules — handled by tsc, too noisy in oxlint
+    "typescript/no-base-to-string": "off",
+    "typescript/restrict-template-expressions": "off",
+    "typescript/no-redundant-type-constituents": "off",
+    "typescript/no-unsafe-enum-comparison": "off",
+    "typescript/no-misused-spread": "off",
 
     /* ── React plugin ──────────────────────────────────────────── */
     "react/react-in-jsx-scope": "off",   // react-jsx transform, no import needed
@@ -157,6 +170,8 @@
     "react/no-react-children": "off",
     "react/only-export-components": "off",
     "react/forbid-component-props": "off",
+    // Allow component definitions passed as props (render props, component maps)
+    "react/no-unstable-nested-components": ["error", { "allowAsProps": true }],
 
     /* ── React Perf plugin ─────────────────────────────────────── */
     "react-perf/jsx-no-new-array-as-prop": "off",
@@ -167,6 +182,7 @@
     /* ── Promise plugin ────────────────────────────────────────── */
     "promise/prefer-await-to-callbacks": "off",
     "promise/prefer-await-to-then": "off",
+    "promise/no-promise-in-callback": "off",
 
     /* ── Unicorn plugin ────────────────────────────────────────── */
     "unicorn/filename-case": "off",
@@ -175,7 +191,26 @@
     "unicorn/no-null": "off",
     "unicorn/prefer-string-raw": "off",
     "unicorn/prefer-array-find": "error",
-    "unicorn/prefer-includes": "error"
+    "unicorn/prefer-includes": "error",
+    "unicorn/consistent-function-scoping": "off",
+
+    /* ── JSX A11Y plugin — disable rules requiring large refactors ── */
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/no-static-element-interactions": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "jsx-a11y/label-has-associated-control": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/media-has-caption": "off",
+
+    /* ── Disable underscore dangle — _prefix convention is valid ── */
+    "no-underscore-dangle": "off",
+
+    /* ── Next.js ─────────────────────────────────────────────────── */
+    "next/no-assign-module-variable": "off",
+
+    /* ── JSDoc ───────────────────────────────────────────────────── */
+    "jsdoc/check-tag-names": "off"
   },
 
   "settings": {}

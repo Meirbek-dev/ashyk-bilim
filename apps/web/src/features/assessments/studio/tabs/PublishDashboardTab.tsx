@@ -18,8 +18,7 @@ import {
 import { useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 
-import type { AssessmentItem } from '@/features/assessments/domain/items'
-import type { UnifiedItemKind } from '@/features/assessments/domain/items'
+import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'

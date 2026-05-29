@@ -5,8 +5,7 @@ import { APP_NAME } from '@/lib/constants'
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
-import { courseDiscussionsQueryOptions } from '@/features/courses/queries/course.query'
-import { trailCurrentQueryOptions } from '@/features/courses/queries/course.query'
+import { courseDiscussionsQueryOptions, trailCurrentQueryOptions } from '@/features/courses/queries/course.query'
 
 import CourseClient from './course'
 

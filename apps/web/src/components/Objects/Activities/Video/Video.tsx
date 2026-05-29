@@ -133,7 +133,7 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
               <YouTubeEmbed
                 videoid={videoId}
-                style="height: 100%; width: 100%; max-width: none; position: absolute; inset: 0;"
+                style={{ height: '100%', width: '100%', maxWidth: 'none', position: 'absolute', inset: 0 }}
                 params={new URLSearchParams({
                   autoplay: activity.details?.autoplay ? '1' : '0',
                   mute: activity.details?.muted ? '1' : '0',

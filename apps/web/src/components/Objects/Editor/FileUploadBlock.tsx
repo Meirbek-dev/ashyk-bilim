@@ -2,8 +2,7 @@
 
 import type { ButtonHTMLAttributes, FC, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2 } from 'lucide-react'
-import { Upload } from 'lucide-react'
+import { Loader2, Upload } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 

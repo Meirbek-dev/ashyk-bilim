@@ -10,6 +10,7 @@ import {
 import type { CSSProperties } from 'react'
 import { Suspense } from 'react'
 
+// eslint-disable-next-line import/no-unassigned-import
 import '@styles/globals.css'
 
 function getThemeStyle(theme: ReturnType<typeof getTheme>): CSSProperties {
