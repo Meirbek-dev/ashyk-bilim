@@ -73,10 +73,8 @@ export function useReducedData(): boolean {
         connection.addEventListener('change', handleNetworkChange)
       } else {
         // preserve existing handler if any
-        prevOnChange = connection.onchange
-        // @ts-ignore
-        // eslint-disable-next-line unicorn/prefer-add-event-listener
-        connection.onchange = handleNetworkChange
+        prevOnChange = Reflect.get(connection, 'onchange')
+        Reflect.set(connection, 'onchange', handleNetworkChange)
       }
     }
 
@@ -93,9 +91,7 @@ export function useReducedData(): boolean {
           connection.removeEventListener('change', handleNetworkChange)
         } else {
           // restore previous handler if it existed
-          // @ts-ignore
-          // eslint-disable-next-line unicorn/prefer-add-event-listener
-          connection.onchange = prevOnChange
+          Reflect.set(connection, 'onchange', prevOnChange)
         }
       }
     }

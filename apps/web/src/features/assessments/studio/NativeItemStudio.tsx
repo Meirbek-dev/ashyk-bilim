@@ -159,34 +159,55 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
 
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
 
-  if (error) return <ErrorUI message={t('errorLoading')} />
-  if (isLoading || !assessment) return <PageLoading />
+  const items = useMemo(() => {
+    if (!assessment) return []
+    return Array.isArray(assessment.items) ? assessment.items : []
+  }, [assessment])
 
-  const items = Array.isArray(assessment.items) ? assessment.items : []
-  const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
-  const isEditable = isAssessmentEditable(assessment.lifecycle)
-  const validationIssues =
-    readinessQuery.data?.issues.map(issue => ({
+  const totalPoints = useMemo(() => {
+    return items.reduce((sum, item) => sum + (item.max_score || 0), 0)
+  }, [items])
+
+  const isEditable = assessment ? isAssessmentEditable(assessment.lifecycle) : false
+
+  const validationIssues = useMemo(() => {
+    if (!readinessQuery.data?.issues) return []
+    return readinessQuery.data.issues.map(issue => ({
       code: issue.code,
       message: issue.message,
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
-    })) ?? []
+    }))
+  }, [readinessQuery.data?.issues])
 
-  const studioContextValue = useMemo(
-    () => ({
-      activityUuid: normalizedActivityUuid,
+  const studioContextValue = useMemo<AssessmentStudioContextValue | null>(
+    () => {
+      if (!assessment) return null
+      return {
+        activityUuid: normalizedActivityUuid,
+        assessment,
+        items,
+        selectedItemUuid,
+        setSelectedItemUuid,
+        refresh,
+        isEditable,
+        totalPoints,
+        validationIssues,
+      }
+    },
+    [
+      normalizedActivityUuid,
       assessment,
       items,
       selectedItemUuid,
-      setSelectedItemUuid,
       refresh,
       isEditable,
       totalPoints,
       validationIssues,
-    }),
-
-    [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues],
+    ],
   )
+
+  if (error) return <ErrorUI message={t('errorLoading')} />
+  if (isLoading || !assessment) return <PageLoading />
 
   return <AssessmentStudioContext.Provider value={studioContextValue}>{children}</AssessmentStudioContext.Provider>
 }

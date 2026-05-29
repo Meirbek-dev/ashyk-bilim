@@ -37,10 +37,13 @@ function parseSameSite(value: string): CookieMutationOptions['sameSite'] | undef
 }
 
 function parseSetCookieHeader(setCookieHeader: string): ParsedSetCookie | null {
-  const parts = setCookieHeader
-    .split(';')
-    .map(part => part.trim())
-    .filter(Boolean) // eslint-disable-line unicorn/prefer-array-find
+  const parts: string[] = []
+  for (const part of setCookieHeader.split(';')) {
+    const trimmed = part.trim()
+    if (trimmed) {
+      parts.push(trimmed)
+    }
+  }
   const [nameValue, ...attributes] = parts
 
   if (!nameValue) return null

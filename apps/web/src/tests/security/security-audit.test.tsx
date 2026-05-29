@@ -141,7 +141,6 @@ describe('Security Audit - Frontend', () => {
         }
         public close() {}
         public addEventListener(type: string, listener: any) {
-          // eslint-disable-next-line unicorn/prefer-add-event-listener
           if (type === 'message') this.onmessage = listener
         }
         public removeEventListener() {}

@@ -74,11 +74,11 @@ function ChartContainer({
     return () => observer.disconnect()
   }, [isMounted])
 
+  const chartContextValue = React.useMemo(() => ({ config }), [config])
+
   if (!isMounted) {
     return <div className={cn('bg-muted/5 animate-pulse rounded-lg', className)} {...props} />
   }
-
-  const chartContextValue = React.useMemo(() => ({ config }), [config])
 
   return (
     <ChartContext.Provider value={chartContextValue}>

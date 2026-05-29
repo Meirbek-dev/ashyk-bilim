@@ -36,7 +36,6 @@
     "**/gen/",
     "**/.turbo/",
     "**/.genenv/",
-    "packages/llmz/examples/",
     "lib/api/generated/schema.ts",
     "e2e/",
     "scripts/",
