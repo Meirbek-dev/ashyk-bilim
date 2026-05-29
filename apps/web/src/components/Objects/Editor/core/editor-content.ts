@@ -15,7 +15,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function isTiptapJsonDoc(content: unknown): content is TiptapJsonDoc {
+function isTiptapJsonDoc(content: unknown): content is TiptapJsonDoc {
   return isRecord(content) && content.type === 'doc' && Array.isArray(content.content)
 }
 
@@ -130,7 +130,7 @@ function looksLikeKotlin(text: string): boolean {
   return score >= 2
 }
 
-export function removeLegacyBlockQuizNodes(content: TiptapJsonDoc): TiptapJsonDoc {
+function removeLegacyBlockQuizNodes(content: TiptapJsonDoc): TiptapJsonDoc {
   return {
     ...content,
     content: content.content.map(removeLegacyNodes),

@@ -15,9 +15,9 @@ const DEFAULT_SLASH_COMMAND_STATE: SlashCommandState = {
   from: 0,
 }
 
-export const slashCommandKey = new PluginKey<{ type: string }>('slashCommand')
+const slashCommandKey = new PluginKey<{ type: string }>('slashCommand')
 
-export function getSlashCommandState(editor: Editor | null | undefined): SlashCommandState {
+function getSlashCommandState(editor: Editor | null | undefined): SlashCommandState {
   return (
     (editor?.storage as unknown as Record<string, SlashCommandState | undefined>)?.slashCommand ?? {
       ...DEFAULT_SLASH_COMMAND_STATE,
@@ -25,7 +25,7 @@ export function getSlashCommandState(editor: Editor | null | undefined): SlashCo
   )
 }
 
-export function setSlashCommandState(
+function setSlashCommandState(
   editor: Editor | null | undefined,
   value: SlashCommandState,
   type: 'open' | 'close' | 'update' = 'update',
@@ -46,7 +46,7 @@ export function closeSlashCommand(editor: Editor | null | undefined): void {
   setSlashCommandState(editor, { ...DEFAULT_SLASH_COMMAND_STATE }, 'close')
 }
 
-export function syncSlashCommandQuery(editor: Editor | null | undefined): void {
+function syncSlashCommandQuery(editor: Editor | null | undefined): void {
   if (!editor) {
     return
   }
