@@ -13,11 +13,15 @@ from src.infra.settings import AppSettings
 logger = logging.getLogger("src.infra.db.engine")
 
 
-def _before_cursor_execute(conn: object, cursor: object, statement: str, parameters: object, context: object, executemany: bool) -> None:
+def _before_cursor_execute(
+    conn: object, cursor: object, statement: str, parameters: object, context: object, executemany: bool
+) -> None:
     context._query_start_time = time.perf_counter()
 
 
-def _after_cursor_execute(conn: object, cursor: object, statement: str, parameters: object, context: object, executemany: bool) -> None:
+def _after_cursor_execute(
+    conn: object, cursor: object, statement: str, parameters: object, context: object, executemany: bool
+) -> None:
     start_time = getattr(context, "_query_start_time", None)
     if start_time is not None:
         duration = time.perf_counter() - start_time

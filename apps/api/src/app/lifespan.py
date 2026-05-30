@@ -1,9 +1,10 @@
 import asyncio
 import contextlib
 import logging
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncContextManager
 
 from fastapi import FastAPI
 
@@ -28,9 +29,9 @@ def ensure_runtime_directories() -> None:
     Path("logs").mkdir(parents=True, exist_ok=True)
 
 
-def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[None]]:
+def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextManager[None]]:
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         configure_logging(settings)
         ensure_runtime_directories()
 

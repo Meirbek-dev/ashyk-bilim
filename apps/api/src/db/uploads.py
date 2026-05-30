@@ -21,7 +21,7 @@ class UploadStatus(StrEnum):
 class Upload(SQLModelStrictBaseModel, table=True):
     """One user-owned upload before it is referenced by a submission answer."""
 
-    __tablename__ = "upload"
+    __tablename__ = "upload"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index("ix_upload_upload_uuid", "upload_uuid", unique=True),
         Index("ix_upload_user_status", "user_id", "status"),

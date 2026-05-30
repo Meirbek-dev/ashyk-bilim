@@ -47,7 +47,9 @@ class RoleRepository:
         return list(self.db.exec(select(Role).order_by(col(Role.priority).desc())).all())
 
     def list_all_permissions(self) -> list[Permission]:
-        return list(self.db.exec(select(Permission).order_by(col(Permission.resource_type), col(Permission.action))).all())
+        return list(
+            self.db.exec(select(Permission).order_by(col(Permission.resource_type), col(Permission.action))).all()
+        )
 
     def get_role_permissions(self, role_id: int) -> list[Permission]:
         return list(
@@ -84,19 +86,13 @@ class RoleRepository:
             or 0
         )
         user_count = (
-            self.db.exec(
-                select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)
-            ).one()
-            or 0
+            self.db.exec(select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)).one() or 0
         )
         return perm_count, user_count
 
     def get_user_count(self, role_id: int) -> int:
         return (
-            self.db.exec(
-                select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)
-            ).one()
-            or 0
+            self.db.exec(select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)).one() or 0
         )
 
     # ── Mutations ─────────────────────────────────────────────────────────

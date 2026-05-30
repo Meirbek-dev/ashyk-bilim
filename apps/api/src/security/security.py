@@ -26,7 +26,7 @@ def security_hash_password(password: str) -> str:
 
 
 def security_verify_password(plain_password: str, hashed_password: str | None) -> bool:
-    if hashed_password is None:
+    if not hashed_password:
         return False
     valid, _ = password_helper.verify_and_update(plain_password, hashed_password)
     return valid

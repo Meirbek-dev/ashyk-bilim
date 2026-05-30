@@ -110,11 +110,20 @@ def structure_activity_content_by_type(activity: ActivityRead | dict) -> list[st
     Returns a list of text sections preserving document order and structure.
     Each section is a non-empty string representing a block of content.
     """
-    if "content" not in activity or not activity["content"]:
+    if isinstance(activity, dict):
+        content_dict = activity
+    else:
+        content_dict = activity.content or {}
+
+    if not content_dict or not isinstance(content_dict, dict):
+        return []
+
+    nodes = content_dict.get("content")
+    if not isinstance(nodes, list):
         return []
 
     sections: list[str] = []
-    for node in activity["content"]:
+    for node in nodes:
         if not isinstance(node, dict):
             continue
         text = _extract_block_text(node)

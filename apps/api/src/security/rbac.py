@@ -302,7 +302,11 @@ class PermissionChecker:
         """Return role dicts for user."""
         from src.db.permissions import Role, UserRole
 
-        query = select(Role, UserRole).join(UserRole, col(UserRole.role_id) == col(Role.id)).where(col(UserRole.user_id) == user_id)
+        query = (
+            select(Role, UserRole)
+            .join(UserRole, col(UserRole.role_id) == col(Role.id))
+            .where(col(UserRole.user_id) == user_id)
+        )
         results = self.db.exec(query).all()
         return [
             {

@@ -1,4 +1,5 @@
 from pydantic import ConfigDict
+from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import JSON, Column
 from sqlmodel import Field
 
@@ -10,7 +11,7 @@ from src.db.users import UserRead
 class PlatformBase(SQLModelStrictBaseModel):
     """Base model for the platform with common fields."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = SQLModelConfig(arbitrary_types_allowed=True)
 
     name: str
     description: str | None = None

@@ -212,7 +212,11 @@ def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | 
             break
 
     if not config:
-        allowed_exts = [ext for t in allowed_types for ext in FILE_TYPES.get(t, {}).get("extensions", [])]
+        allowed_exts: list[str] = []
+        for t in allowed_types:
+            cfg = FILE_TYPES.get(t)
+            if cfg and isinstance(cfg.get("extensions"), list):
+                allowed_exts.extend(cfg["extensions"])
         raise HTTPException(status_code=415, detail=f"Тип файла не разрешен. Разрешены: {allowed_exts}")
 
     # Check file size
@@ -227,7 +231,7 @@ def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | 
     if not config["validator"](content):
         raise HTTPException(status_code=415, detail="Файл выглядит поврежденным или недействительным")
 
-    return file.content_type, content
+    return file.content_type or "application/octet-stream", content
 
 
 def get_safe_filename(original_filename: str, prefix: str = "") -> str:

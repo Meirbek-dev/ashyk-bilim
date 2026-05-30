@@ -6,6 +6,7 @@ Replaces the old stub in services/integrations/plagiarism.py.
 from __future__ import annotations
 
 import logging
+from typing import override
 
 from src.services.events.types import (
     FileSubmissionSubmittedEvent,
@@ -26,6 +27,7 @@ class PlagiarismProvider:
 class NoopPlagiarismProvider(PlagiarismProvider):
     """Default no-op provider — logs and returns clean."""
 
+    @override
     async def check(self, submission_uuid: str, file_keys: list[str]) -> dict:
         return {"score": 0.0, "flagged": False}
 

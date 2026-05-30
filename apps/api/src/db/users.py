@@ -103,7 +103,7 @@ class User(UserBase, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     # fastapi-users required fields
-    hashed_password: str | None = Field(default=None)
+    hashed_password: str = Field(default="")
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
     is_verified: bool = Field(default=False)

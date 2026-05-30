@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Awaitable, Callable
+from typing import override
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware

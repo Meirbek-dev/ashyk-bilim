@@ -224,14 +224,16 @@ def _eligible_usergroup_ids_for_course(
     course_uuid: str,
     db_session: Session,
 ) -> set[int]:
-    linked_group_ids = set(
-        db_session.exec(
+    linked_group_ids = {
+        gid
+        for gid in db_session.exec(
             select(UserGroupResource.usergroup_id).where(UserGroupResource.resource_uuid == course_uuid)
         ).all()
-    )
+        if gid is not None
+    }
     if linked_group_ids:
         return linked_group_ids
-    return set(db_session.exec(select(UserGroup.id)).all())
+    return {gid for gid in db_session.exec(select(UserGroup.id)).all() if gid is not None}
 
 
 def _user_read(user: User) -> AssessmentAccessUserRead:

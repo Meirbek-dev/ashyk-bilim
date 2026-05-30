@@ -10,6 +10,12 @@ All implementations have been moved to focused modules:
 from src.services.assessments._shared import (
     ASSESSABLE_ACTIVITY_TYPES,
     build_readiness,
+    _require_author_impl as _require_author,
+    _require_publish_impl as _require_publish,
+    _require_grade_impl as _require_grade,
+    _require_read_impl as _require_read,
+    _require_submit_access_impl as _require_submit_access,
+    _has_submit_access_impl as _has_submit_access,
 )
 from src.services.assessments.access_service import (
     get_assessment_access,
@@ -95,4 +101,10 @@ __all__ = [
     "update_assessment_access",
     "update_assessment_item",
     "update_student_policy_override",
+    "_require_author",
+    "_require_publish",
+    "_require_grade",
+    "_require_read",
+    "_require_submit_access",
+    "_has_submit_access",
 ]

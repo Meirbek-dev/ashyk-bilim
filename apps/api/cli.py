@@ -191,7 +191,7 @@ async def _migrate_users_to_platform_task() -> None:
             print(f"\n📊 Found {len(all_users)} total users in database")
 
             users_with_roles = db_session.exec(select(UserRole.user_id).distinct()).all()
-            user_ids_with_roles = {user_id for (user_id,) in users_with_roles}
+            user_ids_with_roles = set(users_with_roles)
             print(f"📊 {len(user_ids_with_roles)} users already have platform memberships")
 
             users_without_platform = [u for u in all_users if u.id not in user_ids_with_roles]

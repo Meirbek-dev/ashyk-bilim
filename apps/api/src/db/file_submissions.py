@@ -49,7 +49,7 @@ class FileSubmissionScanStatus(StrEnum):
 
 
 class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_activity"
+    __tablename__ = "file_submission_activity"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("activity_id", name="uq_file_submission_activity_id"),
         UniqueConstraint("file_submission_uuid", name="uq_file_submission_activity_uuid"),
@@ -121,7 +121,7 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
 
 
 class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_attempt"
+    __tablename__ = "file_submission_attempt"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("attempt_uuid", name="uq_file_submission_attempt_uuid"),
         Index("ix_file_submission_attempt_activity_user", "activity_id", "user_id"),
@@ -184,7 +184,7 @@ class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
 
 
 class FileSubmissionAttemptFile(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_attempt_file"
+    __tablename__ = "file_submission_attempt_file"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("attempt_file_uuid", name="uq_file_submission_file_uuid"),
         UniqueConstraint("attempt_id", "upload_id", name="uq_file_submission_upload"),

@@ -39,7 +39,7 @@ from src.db.strict_base_model import SQLModelStrictBaseModel
 class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
     """Per-student exception to an AssessmentPolicy."""
 
-    __tablename__ = "student_policy_override"
+    __tablename__ = "student_policy_override"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint(
             "policy_id",

@@ -84,4 +84,3 @@ def invalidate_cache() -> None:
     """
     global _cached_timezone
     _cached_timezone = None
-

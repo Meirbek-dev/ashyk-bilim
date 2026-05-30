@@ -23,8 +23,6 @@ class BlockBase(SQLModelStrictBaseModel):
     @field_validator("block_type", mode="before")
     @classmethod
     def validate_block_type(cls, v: object) -> BlockTypeEnum:
-        if isinstance(v, BlockTypeEnum):
-            return v
         if isinstance(v, str):
             return BlockTypeEnum(v)
         raise TypeError(f"Expected str or BlockTypeEnum, got {type(v).__name__}")

@@ -342,7 +342,7 @@ async def api_get_platform_courses(
     limit: int,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
-) -> list[CourseReadWithPermissions]:
+) -> list[CourseReadWithPermissions] | Response:
     courses = await get_courses(request, current_user, db_session, page, limit)
 
     total_count = await count_courses(current_user, db_session)

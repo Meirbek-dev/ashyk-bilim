@@ -166,6 +166,7 @@ class CourseCreate(CourseBase):
     # Optional starter template: "blank" (default) or "starter" (seeds 2 default chapters)
     template: str | None = None
 
+    @override
     @field_validator("thumbnail_type", mode="before")
     @classmethod
     def validate_thumbnail_type(cls, v: object):
@@ -183,8 +184,8 @@ class CourseUpdate(CourseBase):
     thumbnail_type: ThumbnailType | None = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = Field(default="")
     thumbnail_video: str | None = Field(default="")
-    public: bool | None = None
-    open_to_contributors: bool | None = None
+    public: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    open_to_contributors: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @override
     @field_validator("thumbnail_type", mode="before")

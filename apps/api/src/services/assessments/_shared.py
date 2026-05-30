@@ -511,11 +511,13 @@ def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentIt
 
 
 def _get_items_raw(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
-    return db_session.exec(
-        select(AssessmentItem)
-        .where(AssessmentItem.assessment_id == assessment.id)
-        .order_by(AssessmentItem.order, AssessmentItem.id)
-    ).all()
+    return list(
+        db_session.exec(
+            select(AssessmentItem)
+            .where(AssessmentItem.assessment_id == assessment.id)
+            .order_by(AssessmentItem.order, AssessmentItem.id)
+        ).all()
+    )
 
 
 def _get_item_or_404(
@@ -601,28 +603,28 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     return chapter
 
 
-def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_author_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:author", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
 
-def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_publish_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:publish", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
 
-def _require_grade(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_grade_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:grade", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "assessment:grade", resource_owner_id=course.creator_id)
 
 
-def _require_read(
+def _require_read_impl(
     user: PublicUser | AnonymousUser,
     activity: Activity,
     course: Course,
@@ -646,7 +648,7 @@ def _require_read(
     )
 
 
-def _require_submit_access(
+def _require_submit_access_impl(
     user: PublicUser,
     activity: Activity,
     course: Course,
@@ -680,7 +682,7 @@ def _require_submit_access(
     )
 
 
-def _has_submit_access(
+def _has_submit_access_impl(
     user: PublicUser | AnonymousUser | None,
     activity: Activity,
     course: Course,
@@ -701,6 +703,57 @@ def _has_submit_access(
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
+
+
+def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_author(user, course, db_session)
+
+
+def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_publish(user, course, db_session)
+
+
+def _require_grade(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_grade(user, course, db_session)
+
+
+def _require_read(
+    user: PublicUser | AnonymousUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> None:
+    from src.services.assessments import core
+
+    return core._require_read(user, activity, course, db_session)
+
+
+def _require_submit_access(
+    user: PublicUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> None:
+    from src.services.assessments import core
+
+    return core._require_submit_access(user, activity, course, db_session)
+
+
+def _has_submit_access(
+    user: PublicUser | AnonymousUser | None,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> bool:
+    from src.services.assessments import core
+
+    return core._has_submit_access(user, activity, course, db_session)
 
 
 def _is_teacher_preview_user(

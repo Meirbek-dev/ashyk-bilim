@@ -172,7 +172,9 @@ def _activity_uuid_candidates(activity_uuid: str) -> tuple[str, ...]:
 
 def _get_course_chapters(course_id: int, db_session: Session) -> list[Chapter]:
     return list(
-        db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order), col(Chapter.id))).all()
+        db_session.exec(
+            select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order), col(Chapter.id))
+        ).all()
     )
 
 

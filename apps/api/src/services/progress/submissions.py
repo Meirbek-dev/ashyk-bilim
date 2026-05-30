@@ -605,7 +605,7 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
     try:
         parsed = int(value)
     except TypeError, ValueError:
-        return 0.0
+        return None
     return parsed if parsed > 0 else None
 
 

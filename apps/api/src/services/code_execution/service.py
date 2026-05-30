@@ -9,7 +9,7 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, override
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 import httpx
@@ -282,6 +282,7 @@ class _ConfiguredJudge0Client(judge0.Client):
             raise RuntimeError("Judge0 client initialization failed") from exc
 
     @property
+    @override
     def retry_strategy(self) -> _BoundedIntervalRetry:
         return _BoundedIntervalRetry(
             poll_interval_seconds=self._poll_interval_seconds,
@@ -289,7 +290,7 @@ class _ConfiguredJudge0Client(judge0.Client):
         )
 
     @retry_strategy.setter
-    def retry_strategy(self, _value: object) -> None:
+    def retry_strategy(self, _value: _BoundedIntervalRetry) -> None:
         return
 
 

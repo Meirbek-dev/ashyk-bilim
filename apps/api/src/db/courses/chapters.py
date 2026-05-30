@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from pydantic import ConfigDict, field_validator
+from pydantic import field_validator
+from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import DateTime, String, func
 from sqlmodel import Column, Field, ForeignKey, Integer
 
@@ -59,7 +60,7 @@ class ChapterRead(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = SQLModelConfig(arbitrary_types_allowed=True)
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
@@ -84,7 +85,7 @@ class ChapterReadWithPermissions(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = SQLModelConfig(arbitrary_types_allowed=True)
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod

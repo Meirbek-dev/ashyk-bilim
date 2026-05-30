@@ -437,7 +437,7 @@ async def _create_and_validate_user(db_session: Session, user_object: UserCreate
 
     # Create user with completed fields
     user = User.model_validate(user_object)
-    user.hashed_password = security_hash_password(user_object.password) if user_object.password else None
+    user.hashed_password = security_hash_password(user_object.password) if user_object.password else ""
     user.auth_provider = "local"
 
     # Add user to database
@@ -446,9 +446,6 @@ async def _create_and_validate_user(db_session: Session, user_object: UserCreate
     db_session.refresh(user)
 
     return user
-
-
-
 
 
 def _assign_default_role(db_session: Session, user_id: int | None) -> None:

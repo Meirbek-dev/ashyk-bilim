@@ -7,7 +7,7 @@ from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
 class AuthSession(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "auth_sessions"
+    __tablename__ = "auth_sessions"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("session_id", name="uq_auth_sessions_session_id"),
         UniqueConstraint("refresh_token_hash", name="uq_auth_sessions_refresh_token_hash"),

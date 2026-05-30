@@ -244,7 +244,7 @@ async def get_submission_stats(
     ).one()
 
     # Query 3 (small): scores for graded/published (for avg + pass rate)
-    graded_scores: list[float] = db_session.exec(
+    graded_scores_raw = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity_id,
             Submission.status.in_([
@@ -254,6 +254,7 @@ async def get_submission_stats(
             Submission.final_score.is_not(None),
         )
     ).all()
+    graded_scores = [float(s) for s in graded_scores_raw if s is not None]
 
     avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
     passing = [s for s in graded_scores if s >= 50.0]
@@ -984,7 +985,7 @@ def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, Use
     if not user_ids:
         return {}
     rows = db_session.exec(select(User).where(User.id.in_(user_ids))).all()
-    return {u.id: u for u in rows}
+    return {u.id: u for u in rows if u.id is not None}
 
 
 def _make_submission_user(u: User) -> SubmissionUser:

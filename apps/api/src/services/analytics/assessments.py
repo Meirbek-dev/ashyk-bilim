@@ -4,7 +4,6 @@ import operator
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import cast
 
 from sqlalchemy import select
 from sqlmodel import Session

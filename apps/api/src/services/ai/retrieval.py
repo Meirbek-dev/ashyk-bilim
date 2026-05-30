@@ -97,7 +97,9 @@ def _sync_upsert_collection(
     with Session(engine) as session:
         try:
             # Delete stale rows first so a full replacement is always clean.
-            session.execute(delete(_document_chunks).where(_document_chunks.c.collection_name == collection_name))
+            session.connection().execute(
+                delete(_document_chunks).where(_document_chunks.c.collection_name == collection_name)
+            )
 
             rows = [
                 {
@@ -121,7 +123,7 @@ def _sync_upsert_collection(
                     "inserted_at": text("now()"),
                 },
             )
-            session.execute(stmt)
+            session.connection().execute(stmt)
             session.commit()
         except sqlalchemy.exc.ProgrammingError as exc:
             session.rollback()
@@ -160,7 +162,7 @@ def _sync_query_collection(
     )
     with Session(engine) as session:
         try:
-            rows = session.execute(stmt).fetchall()
+            rows = session.connection().execute(stmt).fetchall()
         except sqlalchemy.exc.ProgrammingError as exc:
             session.rollback()
             if _is_missing_document_chunks_table_error(exc):
@@ -191,7 +193,9 @@ def delete_expired_chunks(retention_seconds: int) -> int:
     cutoff = datetime.now(UTC) - timedelta(seconds=retention_seconds)
     with Session(engine) as session:
         try:
-            result = session.execute(delete(_document_chunks).where(_document_chunks.c.inserted_at < cutoff))
+            result = session.connection().execute(
+                delete(_document_chunks).where(_document_chunks.c.inserted_at < cutoff)
+            )
             session.commit()
         except sqlalchemy.exc.ProgrammingError as exc:
             # Table doesn't exist yet — migration not yet applied.
@@ -209,7 +213,7 @@ def _sync_collection_content_hash(collection_name: str) -> str | None:
     stmt = select(_document_chunks.c.metadata).where(_document_chunks.c.collection_name == collection_name).limit(1)
     with Session(engine) as session:
         try:
-            row = session.execute(stmt).first()
+            row = session.connection().execute(stmt).first()
             if row and row.metadata:
                 val = row.metadata.get("content_hash")
                 return str(val) if val is not None else None

@@ -253,7 +253,7 @@ class AssessmentItemMetadata(PydanticStrictBaseModel):
 class Assessment(SQLModelStrictBaseModel, table=True):
     """Canonical assessment row for one gradeable activity."""
 
-    __tablename__ = "assessment"
+    __tablename__ = "assessment"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index("ix_assessment_uuid", "assessment_uuid", unique=True),
         Index("ix_assessment_activity_id", "activity_id", unique=True),
@@ -370,7 +370,7 @@ class Assessment(SQLModelStrictBaseModel, table=True):
 class AssessmentItem(SQLModelStrictBaseModel, table=True):
     """Single authoring item inside an assessment."""
 
-    __tablename__ = "assessment_item"
+    __tablename__ = "assessment_item"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index("ix_assessment_item_uuid", "item_uuid", unique=True),
         Index("ix_assessment_item_assessment_order", "assessment_id", "order"),
@@ -736,7 +736,7 @@ class TeacherSubmissionRead(SubmissionRead):
 
 
 class ReviewQueueRead(SubmissionListResponse):
-    items: list[TeacherSubmissionRead]
+    items: list[TeacherSubmissionRead]  # pyright: ignore[reportIncompatibleVariableOverride]
     contract_version: int = 1
 
 

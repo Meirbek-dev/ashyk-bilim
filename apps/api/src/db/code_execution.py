@@ -31,7 +31,7 @@ class CodeRunStatus(StrEnum):
 class CodeRun(SQLModelStrictBaseModel, table=True):
     """One student/teacher code execution request."""
 
-    __tablename__ = "code_run"
+    __tablename__ = "code_run"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index("ix_code_run_uuid", "run_uuid", unique=True),
         Index("ix_code_run_assessment_item", "assessment_uuid", "item_uuid"),
@@ -77,7 +77,7 @@ class CodeRun(SQLModelStrictBaseModel, table=True):
 class CodeRunCase(SQLModelStrictBaseModel, table=True):
     """One Judge0 submission result inside a code run."""
 
-    __tablename__ = "code_run_case"
+    __tablename__ = "code_run_case"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index("ix_code_run_case_run", "run_uuid"),
         Index("ix_code_run_case_test", "run_uuid", "test_id"),

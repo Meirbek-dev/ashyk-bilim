@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import sessionmaker
@@ -11,7 +11,7 @@ SessionFactory = Callable[[], contextlib.AbstractContextManager[Session]]
 
 
 @contextlib.contextmanager
-def session_scope(session_factory: sessionmaker[Session]) -> Iterator[Session]:
+def session_scope(session_factory: sessionmaker[Session]) -> Generator[Session, None, None]:
     """Context manager for DB access outside of a FastAPI request (CLI, background tasks).
 
     Callers must supply the session factory explicitly — there is no hidden global.
@@ -26,7 +26,7 @@ def session_scope(session_factory: sessionmaker[Session]) -> Iterator[Session]:
         session.close()
 
 
-def get_db_session(request: Request) -> Iterator[Session]:
+def get_db_session(request: Request) -> Generator[Session, None, None]:
     """FastAPI dependency that yields a request-scoped DB session.
 
     Reads the session factory from ``app.state``, which is set during lifespan

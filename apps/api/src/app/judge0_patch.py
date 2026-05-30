@@ -24,7 +24,12 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
         try:
             with session_factory() as session:
                 # Check if languages table exists and contains the core rows.
-                res = session.execute(text("SELECT COUNT(*) FROM languages WHERE id IN (22, 60, 62);")).scalar()
+                res = (
+                    session
+                    .connection()
+                    .execute(text("SELECT COUNT(*) FROM languages WHERE id IN (22, 60, 62);"))
+                    .scalar()
+                )
 
                 if res and res >= 3:
                     logger.info(
@@ -33,7 +38,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Go (1.13.5) with id 60
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = 'CGO_ENABLED=0 GOMAXPROCS=1 GOGC=30 GOCACHE=/tmp/.cache/go-build /usr/local/go-1.13.5/bin/go build -p 1 %s main.go' "
@@ -42,7 +47,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Go (1.9) with id 22
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = 'CGO_ENABLED=0 GOMAXPROCS=1 GOGC=30 GOCACHE=/tmp/.cache/go-build /usr/local/go-1.9/bin/go build -p 1 %s main.go' "
@@ -51,7 +56,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Java (OpenJDK 13.0.1) with id 62
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = '/usr/local/openjdk13/bin/javac -J-Xmx96m -J-Xms16m -J-XX:MaxMetaspaceSize=96m -J-XX:CompressedClassSpaceSize=16m -J-XX:ReservedCodeCacheSize=16m -J-XX:+UseSerialGC -J-XX:TieredStopAtLevel=1 %s Main.java', "
@@ -61,7 +66,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Java (OpenJDK 9 with Eclipse OpenJ9) with id 26
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = '/usr/local/openjdk9-openj9/bin/javac -J-Xmx64m %s Main.java', "
@@ -71,7 +76,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Java (OpenJDK 8) with id 27
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = '/usr/lib/jvm/java-8-openjdk-amd64/bin/javac -J-Xmx96m -J-Xms16m -J-XX:MaxMetaspaceSize=96m -J-XX:CompressedClassSpaceSize=16m -J-XX:ReservedCodeCacheSize=16m -J-XX:+UseSerialGC -J-XX:TieredStopAtLevel=1 %s Main.java', "
@@ -81,7 +86,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Java (OpenJDK 7) with id 28
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = '/usr/lib/jvm/java-7-openjdk-amd64/bin/javac -J-Xmx96m -J-Xms16m -J-XX:MaxPermSize=96m -J-XX:ReservedCodeCacheSize=16m -J-XX:+UseSerialGC -J-XX:TieredStopAtLevel=1 %s Main.java', "
@@ -91,7 +96,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
                     )
 
                     # Update Kotlin (1.3.70) with id 78
-                    session.execute(
+                    session.connection().execute(
                         text(
                             "UPDATE languages "
                             "SET compile_cmd = '/usr/bin/env JAVA_OPTS=\"-Xmx512m -Xms64m -XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=64m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC\" /usr/local/kotlin-1.3.70/bin/kotlinc %s Main.kt -include-runtime -d main.jar', "

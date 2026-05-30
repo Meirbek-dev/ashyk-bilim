@@ -372,7 +372,7 @@ def get_leaderboard_read(db: Session, limit: int = 10, offset: int = 0):
     if ids:
         try:
             users = db.exec(select(DBUser).where(DBUser.id.in_(ids))).all()
-            user_map = {u.id: u for u in users}
+            user_map = {u.id: u for u in users if u.id is not None}
         except SQLAlchemyError as exc:
             logger.warning("Failed to load leaderboard user metadata", exc_info=exc)
             user_map = {}

@@ -65,4 +65,3 @@ def get_policy(db: Session) -> tuple[dict[str, int], int]:
 
     _cache = (rewards, daily_limit, now)
     return rewards, daily_limit
-

@@ -7,5 +7,4 @@ def import_orm_models() -> None:
     if _models_imported:
         return
 
-
     _models_imported = True

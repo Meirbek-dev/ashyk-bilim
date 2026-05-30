@@ -7,7 +7,7 @@ is accepted.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -131,7 +131,6 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
         return normalized
 
     _raise_invalid("В отправке должны быть ответы", code="empty_answers")
-    return None
 
 
 def _raise_invalid(
@@ -139,7 +138,7 @@ def _raise_invalid(
     *,
     code: str = "invalid_answer_payload",
     extra: dict[str, Any] | None = None,
-) -> None:
+) -> NoReturn:
     detail: dict[str, Any] = {"code": code, "message": message}
     if extra:
         detail.update(extra)

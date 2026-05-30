@@ -2,7 +2,8 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Self
 
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import field_validator, model_validator
+from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -81,7 +82,7 @@ class ActivityBase(SQLModelStrictBaseModel):
 
 
 class Activity(ActivityBase, table=True):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = SQLModelConfig(from_attributes=True)
 
     id: int | None = Field(default=None, primary_key=True)
     # Override name with a length-constrained column at the DB level.
@@ -137,7 +138,7 @@ class ActivityCreate(ActivityBase):
     chapter_id: int
     activity_type: ActivityTypeEnum = ActivityTypeEnum.TYPE_CUSTOM
     activity_sub_type: ActivitySubTypeEnum = ActivitySubTypeEnum.SUBTYPE_CUSTOM
-    details: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
+    details: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))  # pyright: ignore[reportIncompatibleVariableOverride]
     settings: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     @model_validator(mode="after")
@@ -154,13 +155,13 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(ActivityBase):
-    name: str | None = None
-    activity_type: ActivityTypeEnum | None = None
-    activity_sub_type: ActivitySubTypeEnum | None = None
-    content: dict[str, object] | None = None
-    details: dict[str, object] | None = None
-    settings: dict[str, object] | None = None
-    published: bool | None = None
+    name: str | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_type: ActivityTypeEnum | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_sub_type: ActivitySubTypeEnum | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    content: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    details: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    settings: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    published: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @model_validator(mode="after")
     def subtype_matches_type(self) -> Self:
@@ -177,7 +178,7 @@ class ActivityUpdate(ActivityBase):
 
 
 class ActivityRead(ActivityBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = SQLModelConfig(from_attributes=True)
 
     id: int
     creator_id: int | None = None

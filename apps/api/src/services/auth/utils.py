@@ -49,7 +49,7 @@ async def find_or_create_google_user(
             auth_provider="google",
             google_sub=google_sub or None,
             user_uuid=f"user_{ULID()}",
-            hashed_password=None,
+            hashed_password="",
         )
         db_session.add(user)
         db_session.commit()

@@ -43,6 +43,7 @@ def configure(url: str) -> None:
         return
 
     from typing import Any, cast
+
     redis_mod = cast(Any, _redis)
     aioredis_mod = cast(Any, _aioredis)
 

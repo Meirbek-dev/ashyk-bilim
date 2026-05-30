@@ -6,7 +6,7 @@ from sqlmodel import Column, Field, SQLModel
 
 
 class AuthAuditLog(SQLModel, table=True):
-    __tablename__ = "auth_audit_log"
+    __tablename__ = "auth_audit_log"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

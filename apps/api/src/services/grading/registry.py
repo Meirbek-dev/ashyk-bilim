@@ -1,7 +1,7 @@
 """Pluggable grader registry for assessment-type dispatch."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, override
 
 from pydantic import BaseModel
 
@@ -52,6 +52,7 @@ class GraderRegistry:
 
 @GraderRegistry.register(AssessmentType.QUIZ)
 class QuizGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             raw_score, breakdown = grade_canonical_choice_items(
@@ -77,6 +78,7 @@ class QuizGrader(BaseGrader):
 
 @GraderRegistry.register(AssessmentType.EXAM)
 class ExamGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             raw_score, breakdown = grade_canonical_choice_items(
@@ -98,6 +100,7 @@ class ExamGrader(BaseGrader):
 
 @GraderRegistry.register(AssessmentType.CODE_CHALLENGE)
 class CodeChallengeGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             auto_score, breakdown = grade_canonical_code_item(
@@ -118,6 +121,7 @@ class CodeChallengeGrader(BaseGrader):
 
 
 class ManualReviewGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             empty_breakdown = GradingBreakdown(

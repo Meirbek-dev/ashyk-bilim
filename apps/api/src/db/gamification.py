@@ -81,7 +81,7 @@ def get_xp_for_level(level: int) -> int:
 class GamificationProfile(SQLModel, table=True):
     """Single gamification profile model with consistent naming"""
 
-    __tablename__ = "gamification_profiles"
+    __tablename__ = "gamification_profiles"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -146,7 +146,7 @@ class GamificationProfile(SQLModel, table=True):
 class XPTransaction(SQLModel, table=True):
     """XP transaction audit trail"""
 
-    __tablename__ = "xp_transactions"
+    __tablename__ = "xp_transactions"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -186,7 +186,7 @@ class PlatformGamificationConfig(SQLModel, table=True):
     Safe optional overrides with sane defaults applied in service if fields are null.
     """
 
-    __tablename__ = "org_gamification_config"
+    __tablename__ = "org_gamification_config"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     # Optional overrides
