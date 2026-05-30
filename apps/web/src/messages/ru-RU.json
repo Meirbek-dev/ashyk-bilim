@@ -128,6 +128,8 @@
       "writerPlaceholder": "Написать о..."
     },
     "CodeChallenges": {
+      "untitledChallenge": "Новая задача",
+      "noProblemStatement": "Описание задачи не предоставлено.",
       "actualOutput": "Ваш вывод",
       "addTestCase": "Добавить тестовый случай",
       "allOrNothing": "Всё или ничего",
@@ -209,7 +211,11 @@
         "titlePlaceholder": "напр., Сумма двух чисел",
         "unlimitedSubmissions": "Неограниченно",
         "visible": "Видимый",
-        "starterCodePlaceholder": "Начальный код для {language}"
+        "starterCodePlaceholder": "Начальный код для {language}",
+        "promptPlaceholder": "Напишите описание задачи здесь...",
+        "inputSpecPlaceholder": "Опишите формат входных данных, диапазоны и т.д...",
+        "outputSpecPlaceholder": "Опишите формат ожидаемых выходных данных, точность и т.д...",
+        "constraintsPlaceholder": "напр., 1 <= N <= 10^5\nОдно ограничение на строку"
       },
       "generalSettings": "Общие настройки",
       "generalSettingsDescription": "Настройте базовые параметры задачи",

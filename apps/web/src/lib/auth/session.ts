@@ -1,6 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
+import { connection } from 'next/server'
 import { redirect as nextRedirect, unstable_rethrow } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { redirect as localeRedirect } from '@/i18n/navigation'
@@ -26,6 +27,7 @@ async function getPageReturnTo(): Promise<string | null> {
  */
 export const getSession = cache(async (): Promise<Session | null> => {
   try {
+    await connection()
     const [cookieStore, pageReturnTo] = await Promise.all([cookies(), getPageReturnTo()])
     const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value
     const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE_NAME)?.value

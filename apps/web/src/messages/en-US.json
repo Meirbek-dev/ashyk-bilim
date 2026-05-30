@@ -128,6 +128,8 @@
       "writerPlaceholder": "Write about..."
     },
     "CodeChallenges": {
+      "untitledChallenge": "Untitled Challenge",
+      "noProblemStatement": "No problem description provided.",
       "actualOutput": "Your Output",
       "addTestCase": "Add Test Case",
       "allOrNothing": "All or Nothing",
@@ -8215,7 +8217,11 @@
             "title": "Challenge Title",
             "titlePlaceholder": "e.g., Two Sum",
             "unlimitedSubmissions": "Unlimited",
-            "visible": "Visible"
+            "visible": "Visible",
+            "promptPlaceholder": "Write your problem description here...",
+            "inputSpecPlaceholder": "Describe the input format, bounds, etc...",
+            "outputSpecPlaceholder": "Describe the output format, precision, etc...",
+            "constraintsPlaceholder": "e.g., 1 <= N <= 10^5\nOne constraint per line"
           },
           "generalSettings": "General Settings",
           "generalSettingsDescription": "Configure basic challenge parameters",

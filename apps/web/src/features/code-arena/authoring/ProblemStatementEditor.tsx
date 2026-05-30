@@ -194,7 +194,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
 
             {constraintsList.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-foreground text-sm font-bold">{t('constraints')}</h3>
+                <h3 className="text-foreground text-sm font-bold">{t('constraintsTitle')}</h3>
                 <ul className="space-y-1.5">
                   {constraintsList.map((constraint, idx) => (
                     <li key={`preview-const-${idx}`} className="flex items-start gap-2 text-xs">

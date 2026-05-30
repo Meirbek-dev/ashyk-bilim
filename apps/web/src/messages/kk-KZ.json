@@ -128,6 +128,8 @@
       "writerPlaceholder": "Мынау туралы жазу..."
     },
     "CodeChallenges": {
+      "untitledChallenge": "Атаусыз тапсырма",
+      "noProblemStatement": "Тапсырма сипаттамасы берілмеген.",
       "actualOutput": "Сіздің шығаруыңыз",
       "addTestCase": "Сынақ жағдайын қосыңыз",
       "allOrNothing": "Барлығы немесе ештеңе",
@@ -208,7 +210,11 @@
         "title": "Оқу әрекеті атауы",
         "titlePlaceholder": "мыс., Екі санның қосындысы",
         "unlimitedSubmissions": "Шексіз",
-        "visible": "Көрінетін"
+        "visible": "Көрінетін",
+        "promptPlaceholder": "Тапсырма сипаттамасын осында жазыңыз...",
+        "inputSpecPlaceholder": "Енгізу форматын, ауқымдарын және т.б. сипаттаңыз...",
+        "outputSpecPlaceholder": "Күтілетін шығыс форматын, дәлдігін және т.б. сипаттаңыз...",
+        "constraintsPlaceholder": "мыс., 1 <= N <= 10^5\nӘр жолға бір шектеу"
       },
       "generalSettings": "Жалпы параметрлер",
       "generalSettingsDescription": "Негізгі оқу әрекеті параметрлерін конфигурациялаңыз",

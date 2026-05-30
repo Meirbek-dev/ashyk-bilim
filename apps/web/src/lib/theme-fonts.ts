@@ -137,7 +137,7 @@ export function getGoogleThemeFontFamily(family: string): GoogleThemeFontFamily 
   return googleFontFamilyByKey.get(normalizeFontFamilyKey(family)) ?? null
 }
 
-export const CYRILLIC_FALLBACK_MAP: Record<GoogleThemeFontFamily, GoogleThemeFontFamily> = {
+export const CYRILLIC_FALLBACK_MAP: Partial<Record<GoogleThemeFontFamily, GoogleThemeFontFamily>> = {
   'Albert Sans': 'Inter',
   Antic: 'Inter',
   'Architects Daughter': 'Inter',
