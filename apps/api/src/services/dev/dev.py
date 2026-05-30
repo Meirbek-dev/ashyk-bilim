@@ -4,12 +4,12 @@ from config.config import get_settings
 from src.security.rbac import FeatureDisabled
 
 
-def isDevModeEnabled():
+def is_dev_mode_enabled():
     config = get_settings()
     return config.general_config.development_mode
 
 
-def isDevModeEnabledOrRaise() -> bool:
+def is_dev_mode_enabled_or_raise() -> bool:
     config = get_settings()
     if config.general_config.development_mode:
         return True

@@ -1,4 +1,3 @@
-from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime
@@ -7,6 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, select
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))

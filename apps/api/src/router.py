@@ -34,7 +34,7 @@ from src.routers.grading.sse import router as grading_sse_router
 from src.routers.grading.teacher import router as grading_teacher_router
 from src.routers.uploads import chunked_upload
 from src.routers.utils import router as utils_router
-from src.services.dev.dev import isDevModeEnabledOrRaise
+from src.services.dev.dev import is_dev_mode_enabled_or_raise
 
 v1_router = APIRouter(prefix="/api/v1", route_class=StrictAPIRoute)
 
@@ -111,7 +111,7 @@ v1_router.include_router(
     dev.router,
     prefix="/dev",
     tags=["dev"],
-    dependencies=[Depends(isDevModeEnabledOrRaise)],
+    dependencies=[Depends(is_dev_mode_enabled_or_raise)],
 )
 
 __all__ = ["v1_router"]

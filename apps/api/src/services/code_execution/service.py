@@ -15,7 +15,7 @@ from urllib.parse import SplitResult, urlsplit, urlunsplit
 import httpx
 import judge0
 from fastapi import HTTPException, status
-from judge0.clients import __version__ as JUDGE0_SDK_VERSION
+from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
 from sqlmodel import Session, select
 from ulid import ULID
 

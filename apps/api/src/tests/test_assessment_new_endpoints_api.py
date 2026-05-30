@@ -9,7 +9,6 @@ Tests for new assessment endpoints added in the world-class LMS plan:
   - DELETE /assessments/{uuid}/overrides/{user_id}
 """
 
-from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime
@@ -18,6 +17,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))

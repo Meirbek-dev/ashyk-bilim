@@ -11,9 +11,9 @@ from config.config import get_settings, secret_value
 from src.services.ai.chunking import count_tokens_for_model
 from src.services.ai.exceptions import RetrievalError
 from src.services.cache.redis_client import get_async_redis_client
+from src.services.utils.circuit_breaker import CircuitBreaker
 
 logger = logging.getLogger(__name__)
-from src.services.utils.circuit_breaker import CircuitBreaker
 
 openai_breaker = CircuitBreaker("openai", failure_threshold=5, recovery_timeout=30.0)
 

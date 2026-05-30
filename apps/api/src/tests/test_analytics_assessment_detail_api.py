@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false
 
-from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
@@ -10,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlmodel import SQLModel
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))

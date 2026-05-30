@@ -7,7 +7,6 @@ Create Date: 2026-04-27 00:00:00.000000
 
 from __future__ import annotations
 
-from sqlalchemy.engine.base import Connection
 import json
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, time
@@ -15,6 +14,7 @@ from typing import Any
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.engine.base import Connection
 from ulid import ULID
 
 revision: str = "x4y5z6a7b8c9"

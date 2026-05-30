@@ -24,5 +24,3 @@ export interface StreakUpdate {
   streak_broken: boolean
   bonus_xp_awarded: number
 }
-
-

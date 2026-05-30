@@ -3,7 +3,7 @@ import pathlib
 import sys
 
 # Ensure src/ is on the Python path for all tests
-sys.path.insert(0, pathlib.Path(os.path.join(pathlib.Path(__file__).parent, "../..")).resolve())
+sys.path.insert(0, str((pathlib.Path(__file__).parent / "../..").resolve()))
 
 # Provide an explicit settings baseline so tests do not rely on a local backend .env file.
 os.environ["PLATFORM_DOMAIN"] = "example.test"

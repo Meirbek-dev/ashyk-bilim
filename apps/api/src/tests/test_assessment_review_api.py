@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 
-from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
@@ -9,6 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, select
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -590,7 +590,7 @@ def test_assessment_submission_detail_is_scoped_and_hydrates_breakdown(
         f"/assessments/{seeded_review_data['other_assessment_uuid']}/submissions/{seeded_review_data['alice_submission_uuid']}"
     )
     assert mismatch_response.status_code == 404
-    assert mismatch_response.json() == {"detail": "Submission not found"}
+    assert mismatch_response.json() == {"detail": "Отправка не найдена"}
 
 
 def test_assessment_submission_grade_save_honors_if_match(
@@ -615,7 +615,7 @@ def test_assessment_submission_grade_save_honors_if_match(
     )
 
     assert response.status_code == 412
-    assert "modified concurrently" in response.json()["detail"]
+    assert any(w in response.json()["detail"] for w in ["modified concurrently", "изменена одновременно"])
 
 
 def test_assessment_submission_publish_transition_updates_state_and_ledger(

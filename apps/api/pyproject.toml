@@ -7,7 +7,7 @@ requires-python = ">=3.14.5,<3.15.0"
 dependencies = [
   # Framework
   "fastapi>=0.136.3",
-  "granian[reload,uvloop]>=2.7.4",
+  "granian[reload,uvloop]>=2.7.5",
 
   # Database
   "sqlalchemy>=2.0.49",
@@ -15,7 +15,7 @@ dependencies = [
   "alembic>=1.18.4",
   "psycopg[binary]>=3.3.4",
   "pgvector>=0.4.2",
-  "redis<8",
+  "redis<=8.0.0",
 
   # Validation / Config
   "pydantic[email]>=2.13.4",
@@ -40,15 +40,15 @@ dependencies = [
   "python-multipart>=0.0.29",
 
   # Infra / Observability
-  "logfire[fastapi,sqlalchemy]>=4.33.0",
+  "logfire[fastapi,sqlalchemy]>=4.34.0",
 
   # Utilities
   "cachebox>=5.2.3",
   "httpx>=0.28.1",
   "python-ulid>=3.1.0",
   "resend>=2.30.1",
-  "selectolax>=0.4.9",
-  "typer>=0.25.1",
+  "selectolax>=0.4.10",
+  "typer>=0.26.3",
 
   # Sandbox / Execution
   "judge0>=0.0.8",
@@ -81,7 +81,7 @@ target-version = "py314"
 preview = true
 line-length = 120
 
-exclude = [".git", ".ruff_cache", ".venv", "__pycache__", "node_modules", "dist", "build", "alembic"]
+exclude = [".git", ".ruff_cache", ".venv", "__pycache__", "node_modules", "dist", "build", "alembic", "migrations", ".turbo", ".logfire", ".agents", ".mypy_cache", ".pyrefly_cache", "content"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -102,17 +102,26 @@ ignore = [
   # --- Annotations (flake8-annotations) ---
   "ANN001", # missing-type-function-argument: Missing type annotation for function argument
   "ANN201", # missing-return-type-undocumented-public-function: Missing return type for public function
+  "ANN401", # any-type: Disallow Any (handled by mypy and basedpyright)
+  "ANN202", # missing-return-type-private-function: Handled by mypy and basedpyright
+  "ANN206", # missing-return-type-class-method: Handled by mypy and basedpyright
+  "ANN002", # missing-type-args: Missing type annotation for *args
+  "ANN003", # missing-type-kwargs: Missing type annotation for **kwargs
 
   # --- Security (flake8-bandit) ---
   "S101", # assert: Use of `assert` (can be optimized out in production)
   "S105", # hardcoded-password-string: Possible hardcoded password string assignment
   "S106", # hardcoded-password-func-arg: Possible hardcoded password in function call
   "S110", # try-except-pass: Exception caught and silenced with `pass`
+  "S104", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
 
   # --- Exceptions (tryceratops / flake8-errmsg) ---
   "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
   "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
   "EM101", # raw-string-in-exception: Exception must not use a string literal directly
+  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
+  "TRY300", # try-consider-else: Move code to else block (noisy)
+  "TRY301", # raise-within-try: Disallow raising within try block (noisy)
 
   # --- Docstrings (pydocstyle) ---
   "D", # docstring-rules: Disables all docstring-related rules
@@ -120,6 +129,8 @@ ignore = [
   "DOC201", # missing-docstring-in-function: Missing docstring in function
   "DOC202", # missing-docstring-in-method: Missing docstring in method
   "DOC501", # missing-docstring-in-class: Missing docstring in class
+  "DOC502", # docstring-extraneous-exception: Docstring rule
+  "DOC402", # docstring-missing-yields: Docstring rule
 
   # --- Miscellaneous ---
   "DTZ005", # call-datetime-now-without-tzinfo: `datetime.now()` used without a timezone
@@ -127,10 +138,44 @@ ignore = [
   "ARG002", # unused-method-argument: Method argument is defined but never used
   "TD002", # missing-todo-author: TODO comment is missing an author name
   "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
+  "FIX002", # line-contains-todo: Disallow TODOs
 
   "PLC2701",
   "RUF001",
+  "RUF002", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
+  "RUF003", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
   "E501", # line-too-long: Line is too long
+
+  # --- Project Specific Ignores ---
+  "CPY001", # missing-copyright-notice: Checks for copyright notice at the top of every file
+  "INP001", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
+  "ARG001", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
+  "RUF029", # unused-async: Functions defined as async but without await (noisy for route consistency)
+  "FBT",    # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
+  "PLC1901", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
+  "PLW0603", # global-statement: Discourage use of global statements (required for lazy singletons)
+  "PLR0911", # too-many-return-statements: Pylint complexity check
+  "PLR0912", # too-many-branches: Pylint complexity check
+  "PLR0914", # too-many-locals: Pylint complexity check
+  "PLR0915", # too-many-statements: Pylint complexity check
+  "PLR0916", # too-many-boolean-expressions: Pylint complexity check
+  "PLR0917", # too-many-positional-arguments: Pylint complexity check
+  "C901",    # complex-structure: McCabe complexity check
+  "PLR1702", # too-many-nested-blocks: Pylint complexity check
+  "PLR6301", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
+  "N818",   # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
+  "SLF001", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
+  "G004",   # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
+  "RUF067", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
+  "B904",   # raise-without-from-inside-except: Checks for raise within except block without 'from'
+  "N806",   # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
+  "ERA001", # commented-out-code: Allow code-like text in comments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = [
+  "F811", # Allow redefinition of unused imports in tests (e.g. TestClient)
+  "RUF069", # Allow float equality comparisons in tests
 ]
 
 [tool.ruff.lint.isort]

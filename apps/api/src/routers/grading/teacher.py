@@ -287,10 +287,10 @@ async def api_save_grade(
     """
     expected_version: int | None = None
     if if_match is not None:
-        try:
+        import contextlib
+
+        with contextlib.suppress(ValueError):
             expected_version = int(if_match.strip('"'))
-        except ValueError:
-            pass  # malformed header — ignore and proceed without version check
 
     return await save_grade(
         submission_uuid=submission_uuid,

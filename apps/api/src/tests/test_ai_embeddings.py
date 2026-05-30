@@ -10,7 +10,7 @@ async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch):
     calls: list[list[str]] = []
 
     class FakeEmbeddings:
-        async def create(self, *, model, input, dimensions):
+        async def create(self, *, model, input, dimensions):  # noqa: A002
             calls.append(list(input))
             return SimpleNamespace(
                 data=[SimpleNamespace(embedding=[float(len(text)), float(dimensions)]) for text in input]

@@ -107,7 +107,7 @@ def _grade_canonical_choice(
         deduction = (negative_marking_percent / 100.0) * points if negative_marking_percent > 0 else 0.0
         score = max(-points, -deduction)
         correct = False
-        feedback = "Incorrect" if deduction == 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
+        feedback = "Incorrect" if deduction <= 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
 
     return GradedItem(
         item_id=item.item_uuid,

@@ -1,11 +1,9 @@
-from sqlalchemy.sql.elements import ColumnElement
 import logging
 from datetime import UTC, datetime, timezone
 
-logger = logging.getLogger(__name__)
-
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlalchemy import func
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, and_, or_, select, text
 from ulid import ULID
 
@@ -39,6 +37,8 @@ from src.services.courses._auth import (
     require_course_read_access,
 )
 from src.services.courses.thumbnails import upload_thumbnail
+
+logger = logging.getLogger(__name__)
 
 
 def _accessible_courses_filter(
@@ -691,8 +691,8 @@ async def get_courses(
     try:
         from src.services.cache.redis_client import get_json, set_json
     except Exception:
-        get_json = None  # type: ignore
-        set_json = None  # type: ignore
+        get_json = None  # type: ignore[assignment]
+        set_json = None  # type: ignore[assignment]
 
     # Only cache results for anonymous users (public content)
     cache_key = f"courses:platform:page:{page}:limit:{limit}"
@@ -762,15 +762,15 @@ async def get_courses(
     if not isinstance(current_user, AnonymousUser) and current_user.id and courses_map:
         next(iter(courses_map.values()))[0]
         checker = PermissionChecker(db_session)
-        granted = checker._get_or_load(current_user.id)
-        has_broad_update = PermissionChecker._has_perm(
-            granted, "course", "update", "all"
-        ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-        has_broad_delete = PermissionChecker._has_perm(
-            granted, "course", "delete", "all"
-        ) or PermissionChecker._has_perm(granted, "course", "delete", "platform")
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
-        has_own_delete = PermissionChecker._has_perm(granted, "course", "delete", "own")
+        granted = checker.get_effective_permissions(current_user.id)
+        has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
+            granted, "course", "update", "platform"
+        )
+        has_broad_delete = PermissionChecker.has_perm(granted, "course", "delete", "all") or PermissionChecker.has_perm(
+            granted, "course", "delete", "platform"
+        )
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
+        has_own_delete = PermissionChecker.has_perm(granted, "course", "delete", "own")
 
     for course, authors in courses_map.values():
         can_update = can_delete = is_owner = False
@@ -1455,9 +1455,9 @@ async def get_editable_courses(
         return []
 
     checker = PermissionChecker(db_session)
-    granted = checker._get_or_load(current_user.id)
+    granted = checker.get_effective_permissions(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(granted, "course", "update", "all") or PermissionChecker._has_perm(
+    has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
         granted, "course", "update", "platform"
     )
     dialect_name = db_session.bind.dialect.name
@@ -1472,7 +1472,7 @@ async def get_editable_courses(
         if extra_filter is not None:
             id_query = id_query.where(extra_filter)
     else:
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         if not has_own_update:
             return []
 
@@ -1552,10 +1552,10 @@ async def get_editable_courses(
 
     course_reads = []
 
-    has_broad_delete = PermissionChecker._has_perm(granted, "course", "delete", "all") or PermissionChecker._has_perm(
+    has_broad_delete = PermissionChecker.has_perm(granted, "course", "delete", "all") or PermissionChecker.has_perm(
         granted, "course", "delete", "platform"
     )
-    has_own_delete = PermissionChecker._has_perm(granted, "course", "delete", "own")
+    has_own_delete = PermissionChecker.has_perm(granted, "course", "delete", "own")
 
     for course, authors in courses_map.values():
         is_author = any(
@@ -1598,9 +1598,9 @@ async def count_editable_courses(
         return 0
 
     checker = PermissionChecker(db_session)
-    granted = checker._get_or_load(current_user.id)
+    granted = checker.get_effective_permissions(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(granted, "course", "update", "all") or PermissionChecker._has_perm(
+    has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
         granted, "course", "update", "platform"
     )
     search_filter = _course_search_filter(search_query, db_session.bind.dialect.name)
@@ -1608,7 +1608,7 @@ async def count_editable_courses(
     if has_broad_update:
         query = select(func.count(Course.id.distinct()))
     else:
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         if not has_own_update:
             return 0
 

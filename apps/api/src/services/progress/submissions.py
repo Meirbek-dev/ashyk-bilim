@@ -269,7 +269,7 @@ def recalculate_course_progress(
         if row.score is None:
             continue
         w = weight_by_activity.get(row.activity_id, 1.0)
-        if w == 0.0:
+        if w <= 0.0:
             continue  # zero-weight activities are excluded from the average
         weighted_numerator += row.score * w
         weighted_denominator += w

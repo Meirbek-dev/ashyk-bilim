@@ -35,7 +35,7 @@ def test_google_state_rejects_invalid_signature() -> None:
     state, _state_jti = _encode_state("/auth/finish")
     tampered_state = f"{state}broken"
 
-    with pytest.raises(HTTPException, match="Invalid OAuth state"):
+    with pytest.raises(HTTPException, match="Некорректное состояние OAuth"):
         _decode_state(tampered_state)
 
 
@@ -51,5 +51,5 @@ def test_google_state_rejects_expired_token() -> None:
         lifetime_seconds=-PKCE_TTL,
     )
 
-    with pytest.raises(HTTPException, match="OAuth state expired"):
+    with pytest.raises(HTTPException, match="Состояние OAuth истекло"):
         _decode_state(expired_state)

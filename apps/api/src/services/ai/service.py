@@ -366,7 +366,7 @@ async def _get_documents(
         structured,
         course,
         activity,
-        isActivityEmpty=not structured,
+        is_activity_empty=not structured,
     )
     documents = structured or [ai_text]
     cache_manager.db_cache.set(context_text_key, documents)

@@ -8,6 +8,8 @@ import pytest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
+from pydantic import ValidationError
+
 from src.db.uploads import UploadRead, UploadStatus
 
 # Set development mode to enable Pydantic strict mode for this test specifically
@@ -63,7 +65,7 @@ def test_upload_read_other_fields_remain_strict() -> None:
         "finalized_at": None,
     }
 
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(ValidationError) as excinfo:
         UploadRead.model_validate(data)
 
     # It should be a Pydantic ValidationError

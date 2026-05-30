@@ -128,12 +128,12 @@ def serialize_activity_text_to_ai_comprehensible_text(
     sections: list[str],
     course: CourseRead,
     activity: ActivityRead,
-    isActivityEmpty: bool = False,
+    is_activity_empty: bool = False,
 ) -> str:
     """Serialize activity content into a structured document for AI consumption."""
     header = f"Course: {course.name}\nLecture: {activity.name}"
 
-    if isActivityEmpty or not sections:
+    if is_activity_empty or not sections:
         return f"{header}\n\nThis lecture has no content yet."
 
     content_text = "\n\n".join(sections)

@@ -53,10 +53,6 @@ export interface AvatarPreset {
   isDefault: boolean
 }
 
-
-
-
-
 // Frame definitions (synced with backend)
 export const AVATAR_FRAMES: Omit<AvatarFrame, 'isUnlocked' | 'isEquipped'>[] = [
   {

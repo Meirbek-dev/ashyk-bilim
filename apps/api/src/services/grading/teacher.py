@@ -663,23 +663,22 @@ async def _save_teacher_grade(
     item_map = {item.item_id: item for item in existing.items}
 
     for fb in grade_input.item_feedback:
-        if not isinstance(fb, ItemFeedback):
-            fb = ItemFeedback(**fb) if isinstance(fb, dict) else fb
-        if fb.item_id in item_map:
+        item_fb = ItemFeedback(**fb) if isinstance(fb, dict) else fb
+        if item_fb.item_id in item_map:
             update: dict = {}
-            if fb.score is not None:
-                update["score"] = fb.score
+            if item_fb.score is not None:
+                update["score"] = item_fb.score
                 update["needs_manual_review"] = False
-            if fb.feedback:
-                update["feedback"] = fb.feedback
+            if item_fb.feedback:
+                update["feedback"] = item_fb.feedback
             if update:
-                item_map[fb.item_id] = item_map[fb.item_id].model_copy(update=update)
+                item_map[item_fb.item_id] = item_map[item_fb.item_id].model_copy(update=update)
         else:
-            item_map[fb.item_id] = GradedItem(
-                item_id=fb.item_id,
-                score=fb.score or 0.0,
+            item_map[item_fb.item_id] = GradedItem(
+                item_id=item_fb.item_id,
+                score=item_fb.score or 0.0,
                 max_score=0.0,
-                feedback=fb.feedback,
+                feedback=item_fb.feedback,
             )
 
     still_needs_review = any(item.needs_manual_review and not item.feedback for item in item_map.values())

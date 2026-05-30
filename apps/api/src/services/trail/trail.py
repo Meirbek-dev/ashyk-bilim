@@ -12,6 +12,10 @@ from src.db.trail_runs import TrailRun, TrailRunRead
 from src.db.trail_steps import TrailStep, TrailStepRead
 from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
+from src.services.courses._utils import (
+    _get_activity_by_uuid_or_404,
+    _get_course_for_activity_or_404,
+)
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
 )
@@ -137,12 +141,6 @@ async def check_trail_presence(
         )
 
     return trail
-
-
-from src.services.courses._utils import (
-    _get_activity_by_uuid_or_404,
-    _get_course_for_activity_or_404,
-)
 
 
 async def add_activity_to_trail(

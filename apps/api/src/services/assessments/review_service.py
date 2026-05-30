@@ -519,10 +519,7 @@ async def get_item_analytics(
     for submission in graded_submissions:
         # grading_json is stored as plain dict in the ORM model; deserialize it
         raw = submission.grading_json  # type: ignore[attr-defined]
-        if isinstance(raw, dict):
-            grading = GradingBreakdown.model_validate(raw)
-        else:
-            grading = raw  # already deserialized (shouldn't happen but be safe)
+        grading = GradingBreakdown.model_validate(raw) if isinstance(raw, dict) else raw
         if submission.final_score is not None:
             submission_total_scores.append(submission.final_score)
         for graded_item in grading.items:

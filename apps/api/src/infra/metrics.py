@@ -88,8 +88,10 @@ class _LabeledHistogram:
     @contextmanager
     def time(self) -> Generator[None]:
         start = time.perf_counter()
-        yield
-        self.observe(time.perf_counter() - start)
+        try:
+            yield
+        finally:
+            self.observe(time.perf_counter() - start)
 
 
 class MetricsRegistry:

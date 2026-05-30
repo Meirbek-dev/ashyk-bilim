@@ -1,6 +1,6 @@
-from typing import Self
 from datetime import UTC, datetime, timezone
 from enum import Enum, StrEnum
+from typing import Self
 
 from pydantic import ConfigDict, field_validator, model_validator
 from sqlalchemy import (

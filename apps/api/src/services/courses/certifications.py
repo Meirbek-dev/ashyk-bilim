@@ -343,10 +343,12 @@ async def create_certificate_user(
             # Use hash of idempotency key for deterministic but unique prefix
             import hashlib
 
-            prefix_hash = hashlib.md5(idempotency_key.encode()).hexdigest()[:2].upper()
+            prefix_hash = hashlib.sha256(idempotency_key.encode()).hexdigest()[:2].upper()
         else:
             # Generate random 2-letter prefix
-            prefix_hash = "".join(random.choices(string.ascii_uppercase, k=2))
+            import secrets
+
+            prefix_hash = "".join(secrets.choice(string.ascii_uppercase) for _ in range(2))
 
         # Use timestamp for better uniqueness
         timestamp_suffix = f"{int(now.timestamp())}"[-6:]  # Last 6 digits of timestamp

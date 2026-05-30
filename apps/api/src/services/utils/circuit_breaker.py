@@ -69,7 +69,7 @@ class CircuitBreaker:
                     "Circuit breaker %s entered OPEN state after %d failures. Last exception: %s",
                     self.name,
                     self.failures,
-                    str(exc),
+                    exc,
                 )
         raise exc
 

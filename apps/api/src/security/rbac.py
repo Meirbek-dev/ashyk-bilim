@@ -234,7 +234,7 @@ class PermissionChecker:
                 continue
             resource, action = parts
             results[p] = any(
-                self._has_perm(granted, resource, action, scope) for scope in ("all", "platform", "assigned", "own")
+                self.has_perm(granted, resource, action, scope) for scope in ("all", "platform", "assigned", "own")
             )
         return results
 
@@ -465,7 +465,7 @@ class PermissionChecker:
         return set(self.db.exec(query).all())
 
     @staticmethod
-    def _has_perm(granted: set[str], resource: str, action: str, scope: str) -> bool:
+    def has_perm(granted: set[str], resource: str, action: str, scope: str) -> bool:
         """Check if granted set contains a permission matching resource:action:scope.
 
         Handles wildcard patterns: resource:*:scope, *:action:scope, *:*:*, etc.
@@ -506,20 +506,20 @@ class PermissionChecker:
 
         resource, action = parts
 
-        if PermissionChecker._has_perm(granted, resource, action, "all"):
+        if PermissionChecker.has_perm(granted, resource, action, "all"):
             return True
 
-        if PermissionChecker._has_perm(granted, resource, action, "platform"):
+        if PermissionChecker.has_perm(granted, resource, action, "platform"):
             return True
 
-        if is_assigned and PermissionChecker._has_perm(granted, resource, action, "assigned"):
+        if is_assigned and PermissionChecker.has_perm(granted, resource, action, "assigned"):
             return True
 
         if user_id != 0:
             owns = (
                 is_owner if is_owner is not None else (resource_owner_id is not None and resource_owner_id == user_id)
             )
-            if owns and PermissionChecker._has_perm(granted, resource, action, "own"):
+            if owns and PermissionChecker.has_perm(granted, resource, action, "own"):
                 return True
 
         return False

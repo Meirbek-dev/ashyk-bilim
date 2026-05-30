@@ -1,6 +1,7 @@
 import asyncio
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
 from fastapi import HTTPException, Request, UploadFile, status
@@ -20,6 +21,16 @@ from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.videos import upload_subtitle, upload_video
+
+
+def _move_temp_video_files(temp_path: Path, final_path: Path) -> None:
+    import shutil
+
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    if temp_path.exists():
+        shutil.move(str(temp_path), str(final_path))
+        if temp_path.parent.exists():
+            shutil.rmtree(temp_path.parent, ignore_errors=True)
 
 
 def _get_language_label(language_code: str) -> str:
@@ -121,18 +132,11 @@ async def create_video_activity(
     if video_file:
         await upload_video(video_file, activity.activity_uuid, course.course_uuid)
     elif video_uploaded_path:
-        import shutil
-        from pathlib import Path
-
         temp_path = Path(f"content/platform/{video_uploaded_path}")
         final_path = Path(
             f"content/platform/courses/{course.course_uuid}/activities/{activity.activity_uuid}/video/video.{video_format}"
         )
-        final_path.parent.mkdir(parents=True, exist_ok=True)
-        if temp_path.exists():
-            shutil.move(str(temp_path), str(final_path))
-            if temp_path.parent.exists():
-                shutil.rmtree(temp_path.parent, ignore_errors=True)
+        await asyncio.to_thread(_move_temp_video_files, temp_path, final_path)
 
     if subtitle_files:
         subtitle_info = []

@@ -5,9 +5,6 @@ teacher submission lists.
 """
 
 import asyncio
-
-_SUBMIT_SEMAPHORE = asyncio.Semaphore(15)
-
 from datetime import datetime
 from typing import Annotated
 
@@ -98,6 +95,8 @@ from src.services.assessments.inline_quiz import (
 )
 from src.services.grading.teacher import export_grades_csv
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
+
+_SUBMIT_SEMAPHORE = asyncio.Semaphore(15)
 
 router = APIRouter()
 
