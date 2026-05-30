@@ -334,7 +334,7 @@ async def api_get_course_meta(
     return result
 
 
-@router.get("/page/{page}/limit/{limit}")
+@router.get("/page/{page}/limit/{limit}", response_model=list[CourseReadWithPermissions])
 async def api_get_platform_courses(
     request: Request,
     response: Response,
