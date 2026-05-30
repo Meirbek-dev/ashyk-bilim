@@ -1,6 +1,7 @@
 from sqlalchemy import BigInteger, Column, ForeignKey
 from sqlmodel import Field
 
+from src.db.courses.courses import CourseRead
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
@@ -35,7 +36,7 @@ class CollectionUpdate(SQLModelStrictBaseModel):
 class CollectionRead(CollectionBase):
     id: int
     creator_id: int | None = None
-    courses: list[int]
+    courses: list[CourseRead]
     collection_uuid: str
     creation_date: str
     update_date: str

@@ -126,7 +126,7 @@ async def search_platform_content(
         for collection in collections:
             collection_read = CollectionRead.model_validate({
                 **collection.model_dump(),
-                "courses": courses_by_collection.get(collection.id, []),
+                "courses": [CourseRead.model_validate(c) for c in courses_by_collection.get(collection.id, [])],
             })
             collection_reads.append(collection_read)
 

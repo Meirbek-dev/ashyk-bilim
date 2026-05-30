@@ -12,7 +12,7 @@ from src.db.collections import (
     CollectionUpdate,
 )
 from src.db.collections_courses import CollectionCourse
-from src.db.courses.courses import Course
+from src.db.courses.courses import Course, CourseRead
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
@@ -81,7 +81,7 @@ async def get_collection(
 
     return CollectionReadWithPermissions(
         **collection.model_dump(),
-        courses=courses,
+        courses=[CourseRead.model_validate(c) for c in courses],
         can_update=can_update,
         can_delete=can_delete,
         is_owner=is_owner,
@@ -148,7 +148,10 @@ async def create_collection(
     statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     courses = list(db_session.exec(statement).all())
 
-    collection = CollectionRead(**collection.model_dump(), courses=courses)
+    collection = CollectionRead(
+        **collection.model_dump(),
+        courses=[CourseRead.model_validate(c) for c in courses],
+    )
 
     return CollectionRead.model_validate(collection)
 
@@ -213,7 +216,10 @@ async def update_collection(
     statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     courses = list(db_session.exec(statement).all())
 
-    return CollectionRead(**collection.model_dump(), courses=courses)
+    return CollectionRead(
+        **collection.model_dump(),
+        courses=[CourseRead.model_validate(c) for c in courses],
+    )
 
 
 async def delete_collection(
@@ -321,7 +327,7 @@ async def get_collections(
 
         enriched = CollectionReadWithPermissions(
             **collection.model_dump(),
-            courses=list(courses),
+            courses=[CourseRead.model_validate(c) for c in courses],
             can_update=can_update,
             can_delete=can_delete,
             is_owner=is_owner,
