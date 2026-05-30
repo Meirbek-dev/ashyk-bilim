@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from src.auth.users import get_public_user
-from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
+from src.db.usergroups import UserGroupCreate, UserGroupRead, UserGroupUpdate
 from src.db.users import PublicUser, UserRead
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep

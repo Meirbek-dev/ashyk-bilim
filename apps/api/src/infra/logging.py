@@ -1,7 +1,7 @@
 import logging.config
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from src.infra.settings import AppSettings
 
@@ -22,6 +22,7 @@ class ColorFormatter(logging.Formatter):
         super().__init__(*args, **kwargs)
         self.colorize = colorize and "NO_COLOR" not in os.environ
 
+    @override
     def format(self, record: logging.LogRecord) -> str:
         if not self.colorize:
             return super().format(record)

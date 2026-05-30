@@ -16,7 +16,6 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
-from ulid import ULID
 
 from src.db.assessments import Assessment, CodeItemAnswer, CodeRunResult
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
@@ -32,7 +31,6 @@ from src.db.grading.submissions import (
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.code_execution import get_code_execution_service
-from src.services.grading.pipeline.context import EffectivePolicy
 from src.services.grading.pipeline.emit import emit_submission_events
 from src.services.grading.pipeline.enforce import (
     check_violations,

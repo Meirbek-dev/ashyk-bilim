@@ -31,10 +31,12 @@ class XPAwardSubscriber:
         prevent grade publication.
         """
         try:
-            from src.infra.db.session import get_sync_session
+            from sqlmodel import Session
+
+            from src.infra.db.engine import get_bg_engine
             from src.services.gamification.service import award_xp
 
-            with get_sync_session() as db:
+            with Session(get_bg_engine()) as db:
                 # Determine assessment type from submission
                 from sqlmodel import select
 

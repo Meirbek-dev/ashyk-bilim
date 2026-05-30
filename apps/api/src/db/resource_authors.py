@@ -1,4 +1,4 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 from pydantic import field_validator
 from sqlalchemy import Column, ForeignKey, Integer
@@ -31,14 +31,14 @@ class ResourceAuthor(SQLModelStrictBaseModel, table=True):
 
     @field_validator("authorship", mode="before")
     @classmethod
-    def validate_authorship(cls, v):
+    def validate_authorship(cls, v: object):
         if isinstance(v, str):
             return ResourceAuthorshipEnum(v)
         return v
 
     @field_validator("authorship_status", mode="before")
     @classmethod
-    def validate_authorship_status(cls, v):
+    def validate_authorship_status(cls, v: object):
         if isinstance(v, str):
             return ResourceAuthorshipStatusEnum(v)
         return v

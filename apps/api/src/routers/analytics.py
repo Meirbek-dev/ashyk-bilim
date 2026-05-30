@@ -58,7 +58,7 @@ from src.services.analytics.scope import (
 router = APIRouter()
 
 
-def _csv_response(stream, filename: str) -> StreamingResponse:
+def _csv_response(stream: object, filename: str) -> StreamingResponse:
     return StreamingResponse(
         stream,
         media_type="text/csv",

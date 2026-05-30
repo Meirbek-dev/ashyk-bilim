@@ -7,7 +7,6 @@ from sqlalchemy import asc, desc, func, or_
 from sqlmodel import Session, select
 
 from src.db.assessments import (
-    Assessment,
     AssessmentItem,
     AssessmentPolicyPreset,
     ReviewQueueRead,

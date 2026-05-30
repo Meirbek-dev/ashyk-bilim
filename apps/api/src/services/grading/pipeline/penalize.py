@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from src.db.grading.overrides import StudentPolicyOverride
 from src.services.grading.pipeline.context import EffectivePolicy, PenaltyResult

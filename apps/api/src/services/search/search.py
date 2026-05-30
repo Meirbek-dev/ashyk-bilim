@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from fastapi import Request
 from sqlalchemy import func, true as sa_true
-from sqlmodel import Session, and_, or_, select
+from sqlmodel import Session, or_, select
 
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse

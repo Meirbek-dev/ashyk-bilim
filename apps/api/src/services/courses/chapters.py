@@ -24,7 +24,6 @@ from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses._utils import (
     _get_activity_by_uuid_or_404,
-    _next_activity_order,
 )
 
 

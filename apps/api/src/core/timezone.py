@@ -5,12 +5,12 @@ Provides a centralized way to get timezone-aware datetime objects
 based on the configured backend settings
 """
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from config.config import get_settings
 
-_CACHED_TIMEZONE: ZoneInfo | None = None
+_cached_timezone: ZoneInfo | None = None
 
 
 def get_timezone() -> ZoneInfo:
@@ -20,21 +20,21 @@ def get_timezone() -> ZoneInfo:
     Returns:
         ZoneInfo: Configured timezone (defaults to UTC if invalid)
     """
-    global _CACHED_TIMEZONE
+    global _cached_timezone
 
-    if _CACHED_TIMEZONE is not None:
-        return _CACHED_TIMEZONE
+    if _cached_timezone is not None:
+        return _cached_timezone
 
     settings = get_settings()
     tz_name = settings.general_config.timezone
 
     try:
-        _CACHED_TIMEZONE = ZoneInfo(tz_name)
+        _cached_timezone = ZoneInfo(tz_name)
     except Exception:
         # Fallback to UTC if timezone is invalid
-        _CACHED_TIMEZONE = ZoneInfo("UTC")
+        _cached_timezone = ZoneInfo("UTC")
 
-    return _CACHED_TIMEZONE
+    return _cached_timezone
 
 
 def now() -> datetime:
@@ -82,5 +82,6 @@ def invalidate_cache() -> None:
     Invalidate the cached timezone.
     Useful for testing or when config changes.
     """
-    global _CACHED_TIMEZONE
-    _CACHED_TIMEZONE = None
+    global _cached_timezone
+    _cached_timezone = None
+

@@ -668,7 +668,7 @@ async def api_get_audit_trail(
     from sqlmodel import select
 
     from src.db.audit import AuditEvent, AuditEventRead
-    from src.services.assessments.core import (
+    from src.services.assessments._shared import (
         _get_activity_and_course,
         _get_assessment_by_uuid_or_404,
         _require_grade,

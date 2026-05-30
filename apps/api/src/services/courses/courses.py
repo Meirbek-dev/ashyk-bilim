@@ -1,10 +1,10 @@
 import logging
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.sql.elements import ColumnElement
-from sqlmodel import Session, and_, or_, select, text
+from sqlmodel import Session, and_, or_, select
 from ulid import ULID
 
 from src.db.courses.activities import Activity
@@ -33,7 +33,6 @@ from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import (
     is_course_owner,
-    require_course_permission,
     require_course_read_access,
 )
 from src.services.courses.thumbnails import upload_thumbnail
@@ -42,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def _accessible_courses_filter(
-    query,
+    query: object,
     current_user: PublicUser | AnonymousUser,
 ):
     """Apply the standard course-access filter to *query*.
@@ -125,13 +124,13 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
     )
 
 
-def _apply_course_sort(query, sort_by: str | None):
+def _apply_course_sort(query: object, sort_by: str | None):
     if sort_by == "name":
         return query.order_by(func.lower(Course.name).asc(), Course.id.asc())
     return query.order_by(Course.update_date.desc(), Course.id.desc())
 
 
-def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
+def _apply_lms_sort(query: object, current_user: PublicUser | AnonymousUser):
     from sqlalchemy import case, func, select
 
     from src.db.trail_runs import TrailRun
@@ -317,7 +316,6 @@ def _build_editable_course_insights(
 
 def _attention_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course needs attention (missing thumbnail, description, or activities)."""
-    from sqlalchemy import and_, case, exists, literal_column
 
     has_activities = (
         select(Activity.id)
@@ -336,7 +334,6 @@ def _attention_sql_condition() -> ColumnElement[bool]:
 
 def _ready_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course is fully ready to publish."""
-    from datetime import timedelta
 
     has_chapters = select(Chapter.id).where(Chapter.course_id == Course.id).exists()
     has_activities = (
@@ -1436,7 +1433,7 @@ async def get_editable_courses(
     search_query: str | None = None,
     sort_by: str | None = "updated",
     apply_pagination: bool = True,
-    extra_filter=None,
+    extra_filter: ColumnElement[bool] | None = None,
 ) -> list[CourseReadWithPermissions]:
     """
     Return courses for the platform that the current user has permission to edit
@@ -1663,45 +1660,48 @@ async def get_course_user_rights(
             detail="Course not found",
         )
 
-    # Initialize rights object
-    rights = {
+    # Initialize rights sub-dicts with explicit types for mutation safety
+    _perms: dict[str, bool] = {
+        "read": False,
+        "create": False,
+        "update": False,
+        "delete": False,
+        "create_content": False,
+        "update_content": False,
+        "delete_content": False,
+        "manage_contributors": False,
+        "manage_access": False,
+        "assessment_grade": False,
+        "mark_activities_done": False,
+        "create_certifications": False,
+    }
+    _ownership: dict[str, bool | str | None] = {
+        "is_owner": False,
+        "is_creator": False,
+        "is_maintainer": False,
+        "is_contributor": False,
+        "authorship_status": None,
+    }
+    _roles: dict[str, bool] = {
+        "is_admin": False,
+        "is_maintainer_role": False,
+        "is_instructor": False,
+        "is_user": False,
+    }
+    rights: dict[str, object] = {
         "course_uuid": course.course_uuid,
         "user_id": current_user.id,
         "is_anonymous": current_user.id == 0,
-        "permissions": {
-            "read": False,
-            "create": False,
-            "update": False,
-            "delete": False,
-            "create_content": False,
-            "update_content": False,
-            "delete_content": False,
-            "manage_contributors": False,
-            "manage_access": False,
-            "assessment_grade": False,
-            "mark_activities_done": False,
-            "create_certifications": False,
-        },
-        "ownership": {
-            "is_owner": False,
-            "is_creator": False,
-            "is_maintainer": False,
-            "is_contributor": False,
-            "authorship_status": None,
-        },
-        "roles": {
-            "is_admin": False,
-            "is_maintainer_role": False,
-            "is_instructor": False,
-            "is_user": False,
-        },
+        "permissions": _perms,
+        "ownership": _ownership,
+        "roles": _roles,
     }
 
     # Handle anonymous users
     if current_user.id == 0:
         # Anonymous users can only read public courses
         if course.public:
-            rights["permissions"]["read"] = True
+            _perms["read"] = True
         return rights
 
     # Check course ownership
@@ -1712,18 +1712,18 @@ async def get_course_user_rights(
     resource_author = db_session.exec(statement).first()
 
     if resource_author:
-        rights["ownership"]["authorship_status"] = resource_author.authorship_status
+        _ownership["authorship_status"] = resource_author.authorship_status
 
         if resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE:
             if resource_author.authorship == ResourceAuthorshipEnum.CREATOR:
-                rights["ownership"]["is_creator"] = True
-                rights["ownership"]["is_owner"] = True
+                _ownership["is_creator"] = True
+                _ownership["is_owner"] = True
             elif resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER:
-                rights["ownership"]["is_maintainer"] = True
-                rights["ownership"]["is_owner"] = True
+                _ownership["is_maintainer"] = True
+                _ownership["is_owner"] = True
             elif resource_author.authorship == ResourceAuthorshipEnum.CONTRIBUTOR:
-                rights["ownership"]["is_contributor"] = True
-                rights["ownership"]["is_owner"] = True
+                _ownership["is_contributor"] = True
+                _ownership["is_owner"] = True
 
     # Check user roles
     if checker is None:
@@ -1733,8 +1733,8 @@ async def get_course_user_rights(
     user_is_admin_or_maintainer = checker.check(current_user.id, "course:manage")
 
     if user_is_admin_or_maintainer:
-        rights["roles"]["is_admin"] = True
-        rights["roles"]["is_maintainer_role"] = True
+        _roles["is_admin"] = True
+        _roles["is_maintainer_role"] = True
 
     # Check instructor role (course-level update permission)
     is_owner_for_course = is_course_owner(db_session, current_user.id, course.course_uuid)
@@ -1746,19 +1746,19 @@ async def get_course_user_rights(
     )
 
     if user_has_instructor_role:
-        rights["roles"]["is_instructor"] = True
+        _roles["is_instructor"] = True
 
     # Check user role (basic permissions)
     user_has_basic_role = current_user.id != 0
 
     if user_has_basic_role:
-        rights["roles"]["is_user"] = True
+        _roles["is_user"] = True
 
     # Determine permissions based on ownership and roles
-    is_course_owner_flag = rights["ownership"]["is_owner"]
-    is_admin = rights["roles"]["is_admin"]
-    is_maintainer_role = rights["roles"]["is_maintainer_role"]
-    is_instructor = rights["roles"]["is_instructor"]
+    is_course_owner_flag = _ownership["is_owner"]
+    is_admin = _roles["is_admin"]
+    is_maintainer_role = _roles["is_maintainer_role"]
+    is_instructor = _roles["is_instructor"]
 
     # Additional access checks: membership in UserGroups for this resource or authorship.
     has_user_permissions = False
@@ -1796,50 +1796,50 @@ async def get_course_user_rights(
 
     # READ permissions
     if course.public or is_course_owner_flag or is_admin or is_maintainer_role or is_instructor or has_user_permissions:
-        rights["permissions"]["read"] = True
+        _perms["read"] = True
     is_instructor_or_admin_or_maintainer_role: bool = is_instructor or is_admin or is_maintainer_role
     # CREATE permissions (course creation)
     if is_instructor or is_admin or is_maintainer_role:
-        rights["permissions"]["create"] = True
+        _perms["create"] = True
 
     # UPDATE permissions (course-level updates)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["update"] = True
+        _perms["update"] = True
 
     # DELETE permissions (course deletion)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["delete"] = True
+        _perms["delete"] = True
 
     # CONTENT CREATION permissions (activities, assessments, chapters, etc.)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["create_content"] = True
+        _perms["create_content"] = True
 
     # CONTENT UPDATE permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["update_content"] = True
+        _perms["update_content"] = True
 
     # CONTENT DELETE permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["delete_content"] = True
+        _perms["delete_content"] = True
 
     # CONTRIBUTOR MANAGEMENT permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["manage_contributors"] = True
+        _perms["manage_contributors"] = True
 
     # ACCESS MANAGEMENT permissions (public, open_to_contributors)
-    if rights["ownership"]["is_creator"] or rights["ownership"]["is_maintainer"] or is_admin or is_maintainer_role:
-        rights["permissions"]["manage_access"] = True
+    if _ownership["is_creator"] or _ownership["is_maintainer"] or is_admin or is_maintainer_role:
+        _perms["manage_access"] = True
 
     # GRADING permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["assessment_grade"] = True
+        _perms["assessment_grade"] = True
 
     # ACTIVITY MARKING permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["mark_activities_done"] = True
+        _perms["mark_activities_done"] = True
 
     # CERTIFICATION permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["create_certifications"] = True
+        _perms["create_certifications"] = True
 
     return rights

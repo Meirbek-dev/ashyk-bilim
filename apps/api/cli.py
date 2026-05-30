@@ -13,7 +13,7 @@ from src.core.platform import (
     PLATFORM_DESCRIPTION,
     PLATFORM_LABEL,
 )
-from src.db.platform import Platform, PlatformCreate
+from src.db.platform import PlatformCreate
 from src.db.users import User, UserCreate
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import session_scope

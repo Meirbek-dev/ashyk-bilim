@@ -15,6 +15,7 @@ from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
+    AnalyticsContext,
     build_activity_events,
     build_series,
     cohort_user_ids,
@@ -187,7 +188,7 @@ def build_course_rows(
     scope: TeacherAnalyticsScope,
     filters: AnalyticsFilters,
     db_session: Session,
-    context=None,
+    context: AnalyticsContext | None = None,
 ) -> tuple[str, list[TeacherCourseRow]]:
     if context is None:
         context = load_analytics_context(db_session, scope.course_ids)
@@ -486,7 +487,7 @@ def get_teacher_course_detail(
         event.user_id for event in events if event.ts >= context.generated_at - timedelta(days=7)
     })
     certificates_issued = sum(
-        1 for certificate, certification in context.certificates if certification.course_id == course_id
+        1 for _certificate, certification in context.certificates if certification.course_id == course_id
     )
     ungraded_submissions = sum(
         1

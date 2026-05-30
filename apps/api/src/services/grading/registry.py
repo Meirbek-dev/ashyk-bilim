@@ -1,7 +1,7 @@
 """Pluggable grader registry for assessment-type dispatch."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from pydantic import BaseModel
 

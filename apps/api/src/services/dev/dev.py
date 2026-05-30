@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 
 from config.config import get_settings
 from src.security.rbac import FeatureDisabled

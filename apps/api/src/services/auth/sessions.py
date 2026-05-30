@@ -25,6 +25,7 @@ from sqlmodel import Session, select
 
 from src.db.auth_sessions import AuthSession
 from src.db.users import User
+import redis.asyncio
 from src.security.auth_lifetimes import (
     REFRESH_TOKEN_EXPIRE,
     REFRESH_TOKEN_HARD_CAP_EXPIRE,
@@ -111,7 +112,7 @@ def _redis_key_type_name(key_type: bytes | str) -> str:
     return key_type
 
 
-async def _ensure_user_sessions_index(r, user_id: int) -> str:
+async def _ensure_user_sessions_index(r: redis.asyncio.Redis, user_id: int) -> str:
     """Normalize the per-user session index to a sorted set.
 
     Older deployments may have written a non-zset value under the same key.

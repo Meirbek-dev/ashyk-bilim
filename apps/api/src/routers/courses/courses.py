@@ -42,14 +42,12 @@ from src.services.courses.contributors import (
 )
 from src.services.courses.courses import (
     count_courses,
-    count_editable_courses,
     create_course,
     delete_course,
     get_course,
     get_course_meta,
     get_course_user_rights,
     get_courses,
-    get_editable_courses,
     list_editable_courses,
     search_courses,
     update_course_access,
@@ -73,15 +71,13 @@ def _get_timestamp(v: datetime | str | None) -> float:
         return 0.0
     if isinstance(v, datetime):
         return v.timestamp()
-    if isinstance(v, str):
-        try:
-            value = v.strip()
-            if value.endswith("Z"):
-                value = f"{value[:-1]}+00:00"
-            return datetime.fromisoformat(value).timestamp()
-        except ValueError:
-            return 0.0
-    return 0.0
+    try:
+        value = v.strip()
+        if value.endswith("Z"):
+            value = f"{value[:-1]}+00:00"
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return 0.0
 
 
 router = APIRouter()

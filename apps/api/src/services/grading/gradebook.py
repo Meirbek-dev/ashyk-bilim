@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity, ActivityTypeEnum
@@ -33,7 +32,6 @@ from src.services.file_submissions import (
     file_submission_attempts_for_gradebook,
     file_submission_configs_for_activities,
 )
-from src.services.progress.submissions import backfill_activity_progress
 
 
 async def get_course_gradebook(

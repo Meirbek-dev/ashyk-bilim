@@ -19,7 +19,6 @@ from src.db.grading.submissions import Submission
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_session_factory, get_bg_engine
 from src.security.rbac import PermissionChecker
-from src.services.grading.events import publish_grading_event
 from src.services.progress.submissions import recalculate_activity_progress
 
 

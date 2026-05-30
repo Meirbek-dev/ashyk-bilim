@@ -53,7 +53,7 @@ from src.services.analytics.schemas import (
     TimeSeriesPoint,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope
-from src.services.analytics.workload import GRADING_SLA_HOURS, build_teacher_workload
+from src.services.analytics.workload import GRADING_SLA_HOURS, TeacherWorkloadSummary, build_teacher_workload
 
 
 def _metric(
@@ -195,7 +195,7 @@ def _teacher_rollup_id(scope: TeacherAnalyticsScope, filters: AnalyticsFilters) 
     return scope.teacher_user_id
 
 
-def _build_grading_slo_alerts(workload) -> list[AlertItem]:
+def _build_grading_slo_alerts(workload: TeacherWorkloadSummary) -> list[AlertItem]:
     alerts: list[AlertItem] = []
     breached_rows = [row for row in workload.backlog_by_manual_assessment if row.sla_breaches > 0]
 

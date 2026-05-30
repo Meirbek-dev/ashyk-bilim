@@ -43,7 +43,6 @@ from src.db.grading.progress import (
     LATE_POLICY_ADAPTER,
     ActivityProgress,
     ActivityProgressState,
-    AssessmentCompletionRule,
     LatePolicyNone,
 )
 from src.db.uploads import Upload, UploadStatus

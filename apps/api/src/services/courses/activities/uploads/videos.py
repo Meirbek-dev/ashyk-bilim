@@ -7,7 +7,7 @@ from src.services.utils.upload_content import upload_content
 logger = logging.getLogger(__name__)
 
 
-async def upload_video(video_file, activity_uuid, course_uuid):
+async def upload_video(video_file: UploadFile, activity_uuid: str, course_uuid: str):
     contents = await video_file.read()
     video_format = video_file.filename.split(".")[-1]
 

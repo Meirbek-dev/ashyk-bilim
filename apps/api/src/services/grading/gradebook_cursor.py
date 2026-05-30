@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from pydantic import Field

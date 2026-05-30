@@ -20,10 +20,8 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.db.assessments import (
-    ITEM_BODY_ADAPTER,
     Assessment,
     AssessmentCreate,
-    AssessmentGradingType,
     AssessmentItem,
     AssessmentItemCreate,
     AssessmentItemReorder,
@@ -31,23 +29,15 @@ from src.db.assessments import (
     AssessmentLifecycle,
     AssessmentLifecycleTransition,
     AssessmentPolicyPatch,
-    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentUpdate,
     ItemKind,
-    ReadinessIssue,
 )
-from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
-from src.db.courses.chapters import Chapter
-from src.db.courses.courses import Course
+from src.db.courses.activities import Activity
 from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
     AssessmentPolicy,
-    GradeReleaseMode,
-    LatePolicyNone,
 )
 from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.users import AnonymousUser, PublicUser

@@ -1,5 +1,4 @@
-import contextlib
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlmodel import Session, select

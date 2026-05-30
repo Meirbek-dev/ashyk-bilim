@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
-from src.auth.users import get_optional_public_user, get_public_user
+from src.auth.users import get_optional_public_user
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.search.search import SearchResult, search_platform_content

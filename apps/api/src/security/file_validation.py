@@ -5,7 +5,6 @@ Validates file types and content to prevent unrestricted uploads (CWE-434).
 """
 
 import re
-from typing import Optional
 
 from fastapi import HTTPException, UploadFile
 

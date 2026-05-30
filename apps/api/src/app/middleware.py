@@ -14,6 +14,7 @@ _STATIC_CACHE_HEADER = "public, max-age=31536000, immutable"
 
 
 class CachedStaticFiles(StaticFiles):
+    @override
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_with_cache(message: dict) -> None:
             if message["type"] == "http.response.start":

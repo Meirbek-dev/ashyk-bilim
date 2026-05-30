@@ -21,7 +21,7 @@ _OPEN_TEXT_MAX_CHARS: int = 50_000
 
 
 def validate_and_parse(
-    answers_payload: dict,
+    answers_payload: object,
     *,
     items: list[CanonicalAssessmentItem],
 ) -> ParsedAnswers:

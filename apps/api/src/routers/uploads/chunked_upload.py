@@ -33,10 +33,8 @@ from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.utils.chunked_upload import (
     cleanup_session,
-    cleanup_stale_sessions,
     complete_upload,
     create_upload_session,
-    get_session_status,
     get_upload_session,
     process_chunk,
 )

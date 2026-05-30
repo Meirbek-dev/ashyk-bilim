@@ -95,7 +95,7 @@ def require_course_action(
     current_user: PublicUser | AnonymousUser,
     course: Course,
     checker: PermissionChecker,
-    **kwargs,
+    **kwargs: object,
 ) -> None:
     """Require a course-related permission with course authorship as ownership."""
     if isinstance(current_user, AnonymousUser):
@@ -116,7 +116,7 @@ def check_course_action(
     current_user: PublicUser | AnonymousUser,
     course: Course,
     checker: PermissionChecker,
-    **kwargs,
+    **kwargs: object,
 ) -> bool:
     """Check a course-related permission with course authorship as ownership."""
     is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)

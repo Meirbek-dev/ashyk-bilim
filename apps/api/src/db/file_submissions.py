@@ -1,10 +1,10 @@
 """First-class file submission activity models."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 from sqlalchemy import (
     JSON,
     Boolean,

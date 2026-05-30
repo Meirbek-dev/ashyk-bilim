@@ -63,7 +63,7 @@ class ChapterRead(ChapterBase):
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object):
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):
@@ -88,7 +88,7 @@ class ChapterReadWithPermissions(ChapterBase):
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object):
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):

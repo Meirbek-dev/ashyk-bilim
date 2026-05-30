@@ -15,11 +15,11 @@ class PlatformBase(SQLModelStrictBaseModel):
     name: str
     description: str | None = None
     about: str | None = None
-    socials: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    links: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    socials: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    links: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    previews: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
     label: str | None = None
     email: str
 
@@ -30,18 +30,18 @@ class Platform(PlatformBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     creation_date: str = ""
     update_date: str = ""
-    landing: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    landing: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class PlatformUpdate(SQLModelStrictBaseModel):
     """Model for updating the platform."""
 
     about: str | None = None
-    socials: dict | None = None
-    links: dict | None = None
+    socials: dict[str, object] | None = None
+    links: dict[str, object] | None = None
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict | None = None
+    previews: dict[str, object] | None = None
     email: str | None = None
     update_date: str | None = None
 
@@ -53,7 +53,7 @@ class PlatformCreate(PlatformBase):
 class PlatformRead(PlatformBase):
     """Model for reading the platform with all related data."""
 
-    landing: dict | None = None
+    landing: dict[str, object] | None = None
     creation_date: str
     update_date: str
 

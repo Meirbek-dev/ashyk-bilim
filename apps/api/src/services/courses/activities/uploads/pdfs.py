@@ -1,11 +1,13 @@
 import logging
 
+from fastapi import UploadFile
+
 from src.services.utils.upload_content import upload_content
 
 logger = logging.getLogger(__name__)
 
 
-async def upload_pdf(pdf_file, activity_uuid, course_uuid):
+async def upload_pdf(pdf_file: UploadFile, activity_uuid: str, course_uuid: str):
     contents = await pdf_file.read()
     pdf_format = pdf_file.filename.split(".")[-1]
 

@@ -13,7 +13,6 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
-from ulid import ULID
 
 from src.db.assessments import (
     AssessmentPolicyPreset,
@@ -31,7 +30,6 @@ from src.db.grading.progress import (
 )
 from src.db.grading.submissions import AssessmentType
 from src.db.users import PublicUser
-from src.security.rbac import PermissionChecker
 from src.services.assessments._helpers import (
     _get_activity_and_course,
     _get_assessment_by_uuid_or_404,

@@ -6,7 +6,7 @@ in a single transaction — if any step fails, everything rolls back.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlmodel import Session
 from ulid import ULID

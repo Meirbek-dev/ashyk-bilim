@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import delete, distinct, func, select
+from sqlalchemy import delete, func, select
 from sqlmodel import Session
 
 from src.db.analytics import (
@@ -21,12 +21,18 @@ from src.db.grading.progress import ActivityProgressState
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
+    ActivityEvent,
+    AnalyticsContext,
+    ProgressSnapshot,
     build_activity_events,
     load_analytics_context,
     progress_snapshots,
     safe_pct,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope
+
+if TYPE_CHECKING:
+    from src.services.analytics.schemas import AtRiskLearnerRow, TeacherCourseRow
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +132,11 @@ def _merge_teacher_metrics(
     target_date: date,
     teacher_user_id: int,
     teacher_course_ids: set[int],
-    teacher_events: list,
-    teacher_snapshots: list,
-    teacher_risk_rows: list,
-    course_rows: list,
-    context,
+    teacher_events: list[ActivityEvent],
+    teacher_snapshots: list[ProgressSnapshot],
+    teacher_risk_rows: list[AtRiskLearnerRow],
+    course_rows: list[TeacherCourseRow],
+    context: AnalyticsContext,
     current_start: datetime,
     previous_start: datetime,
     previous_end: datetime,
@@ -300,7 +306,7 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                     ungraded_submissions=row.ungraded_submissions,
                     certificates_issued=sum(
                         1
-                        for certificate, certification in context.certificates
+                        for _certificate, certification in context.certificates
                         if certification.course_id == row.course_id
                     ),
                     content_health_score=row.content_health_score,

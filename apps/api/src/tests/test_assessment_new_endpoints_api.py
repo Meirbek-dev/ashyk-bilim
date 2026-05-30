@@ -33,7 +33,6 @@ from src.db.assessments import (
     AssessmentGradingType,
     AssessmentItem,
     AssessmentLifecycle,
-    ItemKind,
 )
 from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
@@ -50,7 +49,6 @@ from src.db.grading.progress import (
 from src.db.grading.submissions import (
     AssessmentType,
     Submission,
-    SubmissionStatus,
 )
 from src.db.resource_authors import ResourceAuthor
 from src.db.usergroup_resources import UserGroupResource

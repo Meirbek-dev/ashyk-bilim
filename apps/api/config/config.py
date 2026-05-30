@@ -97,9 +97,9 @@ class GeneralConfig(PlatformSectionSettings):
 
     @field_validator("timezone", mode="before")
     @classmethod
-    def normalize_timezone(cls, value: str) -> str:
+    def normalize_timezone(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         return stripped or "UTC"
@@ -286,9 +286,9 @@ class HostingConfig(PlatformSectionSettings):
 
     @field_validator("domain", "allowed_regexp", mode="before")
     @classmethod
-    def normalize_required_strings(cls, value: str) -> str:
+    def normalize_required_strings(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         if not stripped:
@@ -298,12 +298,12 @@ class HostingConfig(PlatformSectionSettings):
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
-    def parse_allowed_origins(cls, value: str | list[str]) -> list[str]:
+    def parse_allowed_origins(cls, value: object) -> list[str]:
         if isinstance(value, list):
             return [origin.strip() for origin in value if isinstance(origin, str) and origin.strip()]
 
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str or list, got {type(value).__name__}")
 
         stripped = value.strip()
         if not stripped:
@@ -354,9 +354,9 @@ class DatabaseConfig(PlatformSectionSettings):
 
     @field_validator("sql_connection_string", mode="before")
     @classmethod
-    def validate_sql_connection_string(cls, value: str) -> str:
+    def validate_sql_connection_string(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         if not stripped:
@@ -394,9 +394,9 @@ class RedisConfig(PlatformSectionSettings):
 
     @field_validator("redis_connection_string", mode="before")
     @classmethod
-    def validate_redis_connection_string(cls, value: str) -> str:
+    def validate_redis_connection_string(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         if not stripped:
@@ -476,9 +476,9 @@ class Judge0Config(PlatformSectionSettings):
 
     @field_validator("base_url", mode="before")
     @classmethod
-    def normalize_base_url(cls, value: str) -> str:
+    def normalize_base_url(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         if not stripped:
@@ -493,12 +493,12 @@ class Judge0Config(PlatformSectionSettings):
 
     @field_validator("allowed_language_ids", mode="before")
     @classmethod
-    def parse_allowed_language_ids(cls, value: str | list[int]) -> list[int]:
+    def parse_allowed_language_ids(cls, value: object) -> list[int]:
         if isinstance(value, list):
             return [int(item) for item in value]
 
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str or list, got {type(value).__name__}")
 
         stripped = value.strip()
         if not stripped:
@@ -543,9 +543,9 @@ class LinkPreviewConfig(PlatformSectionSettings):
 
     @field_validator("user_agent", mode="before")
     @classmethod
-    def normalize_user_agent(cls, value: str) -> str:
+    def normalize_user_agent(cls, value: object) -> str:
         if not isinstance(value, str):
-            return value
+            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
 
         stripped = value.strip()
         return stripped or "AshyqBilim-LinkPreview/1.0"
@@ -593,10 +593,10 @@ class AppSettings(PlatformConfig):
 def get_settings() -> AppSettings:
     return AppSettings(
         general_config=GeneralConfig(),
-        hosting_config=HostingConfig(),
-        database_config=DatabaseConfig(),
-        redis_config=RedisConfig(),
-        security_config=SecurityConfig(),
+        hosting_config=HostingConfig(),  # pyright: ignore[reportCallIssue]
+        database_config=DatabaseConfig(),  # pyright: ignore[reportCallIssue]
+        redis_config=RedisConfig(),  # pyright: ignore[reportCallIssue]
+        security_config=SecurityConfig(),  # pyright: ignore[reportCallIssue]
         ai_config=AIConfig(),
         mailing_config=MailingConfig(),
         bootstrap=BootstrapConfig(),

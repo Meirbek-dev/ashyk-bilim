@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, String, Text
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel

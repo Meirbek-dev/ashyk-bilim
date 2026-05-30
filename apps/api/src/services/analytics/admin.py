@@ -8,7 +8,6 @@ from src.services.analytics.courses import build_course_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     build_activity_events,
-    cohort_names_for_user,
     display_name,
     load_analytics_context,
     progress_snapshots,

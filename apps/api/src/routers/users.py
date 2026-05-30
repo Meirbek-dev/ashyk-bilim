@@ -16,7 +16,6 @@ from src.db.users import (
 from src.infra.db.session import get_db_session
 from src.security.rbac import (
     PermissionCheckerDep,
-    PermissionDenied,
     ResourceAccessDenied,
 )
 from src.services.courses.courses import get_user_courses

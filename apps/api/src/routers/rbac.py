@@ -11,7 +11,7 @@ RBAC API Endpoints
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
 

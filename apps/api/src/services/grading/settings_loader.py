@@ -7,6 +7,7 @@ AssessmentSettings object.
 """
 
 from dataclasses import dataclass, field
+from typing import assert_never
 
 from sqlmodel import Session, select
 
@@ -100,7 +101,7 @@ def load_activity_settings(
             )
         return AssessmentSettings(items=assessment_items)
 
-    return AssessmentSettings(items=assessment_items)
+    assert_never(assessment_type)
 
 
 # ── Canonical item loader ─────────────────────────────────────────────────────

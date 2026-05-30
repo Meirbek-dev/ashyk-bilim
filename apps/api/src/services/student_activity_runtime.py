@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
@@ -25,12 +25,13 @@ from src.db.student_activity_runtime import (
     StudentActivityPermissions,
     StudentActivityProgressRuntime,
     StudentActivityRuntime,
+    StudentActivityState,
     StudentPrimaryAction,
     StudentVisiblePolicy,
 )
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
-from src.services.courses.courses import _get_course_by_uuid
+from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 from src.services.progress.submissions import (
     mark_manual_activity_complete,
     recalculate_course_progress,
@@ -75,7 +76,7 @@ async def get_student_activity_runtime(
     previous_item = flat_items[current_index - 1] if current_index > 0 else None
     next_item = flat_items[current_index + 1] if 0 <= current_index < len(flat_items) - 1 else None
 
-    progress = _build_progress(progress_by_activity.get(activity.id), db_session)
+    progress = _build_progress(progress_by_activity.get(activity.id) if activity.id is not None else None, db_session)
     policy = _get_visible_policy(activity, db_session)
     content = _build_content(activity, db_session) if can_view else None
     permissions = StudentActivityPermissions(
@@ -157,7 +158,7 @@ async def run_student_activity_action(
 def _get_activity_for_course(course_id: int, activity_uuid: str, db_session: Session) -> Activity | None:
     candidates = _activity_uuid_candidates(activity_uuid)
     return db_session.exec(
-        select(Activity).where(Activity.course_id == course_id, Activity.activity_uuid.in_(candidates))
+        select(Activity).where(Activity.course_id == course_id, col(Activity.activity_uuid).in_(candidates))
     ).first()
 
 
@@ -171,7 +172,7 @@ def _activity_uuid_candidates(activity_uuid: str) -> tuple[str, ...]:
 
 def _get_course_chapters(course_id: int, db_session: Session) -> list[Chapter]:
     return list(
-        db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order, Chapter.id)).all()
+        db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order), col(Chapter.id))).all()
     )
 
 
@@ -180,7 +181,7 @@ def _get_course_activities(course_id: int, db_session: Session) -> dict[int, lis
         db_session.exec(
             select(Activity)
             .where(Activity.course_id == course_id)
-            .order_by(Activity.chapter_id, Activity.order, Activity.id)
+            .order_by(col(Activity.chapter_id), col(Activity.order), col(Activity.id))
         ).all()
     )
     by_chapter: dict[int, list[Activity]] = {}
@@ -270,7 +271,7 @@ def _build_progress(
     )
 
 
-def _normalize_state(progress: ActivityProgress) -> str:
+def _normalize_state(progress: ActivityProgress) -> StudentActivityState:
     state = _progress_state_value(progress.state)
     if progress.completed_at is not None and state in {
         "NOT_STARTED",
@@ -278,7 +279,7 @@ def _normalize_state(progress: ActivityProgress) -> str:
         "COMPLETED",
     }:
         return "complete"
-    return {
+    mapping: dict[str, StudentActivityState] = {
         "NOT_STARTED": "not_started",
         "IN_PROGRESS": "in_progress",
         "SUBMITTED": "submitted",
@@ -288,7 +289,8 @@ def _normalize_state(progress: ActivityProgress) -> str:
         "PASSED": "passed",
         "FAILED": "failed",
         "COMPLETED": "complete",
-    }.get(state, "not_started")
+    }
+    return mapping.get(state, "not_started")
 
 
 def _progress_state_value(state: object) -> str:

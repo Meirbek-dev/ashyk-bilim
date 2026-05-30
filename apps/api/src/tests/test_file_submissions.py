@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import SQLModel, select
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))

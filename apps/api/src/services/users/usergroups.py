@@ -1,9 +1,8 @@
 import logging
 from datetime import datetime
-from typing import Literal
 
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.usergroup_resources import UserGroupResource
@@ -96,15 +95,15 @@ async def get_users_linked_to_usergroup(
         resource_owner_id=usergroup.creator_id,
     )
 
-    statement = select(UserGroupUser).where(UserGroupUser.usergroup_id == usergroup_id)
-    usergroup_users = db_session.exec(statement).all()
+    ugu_stmt = select(UserGroupUser).where(UserGroupUser.usergroup_id == usergroup_id)
+    usergroup_users = db_session.exec(ugu_stmt).all()
 
     user_ids = [usergroup_user.user_id for usergroup_user in usergroup_users]
 
     if not user_ids:
         return []
 
-    users = db_session.exec(select(User).where(User.id.in_(user_ids))).all()
+    users = db_session.exec(select(User).where(col(User.id).in_(user_ids))).all()
 
     return [UserRead.model_validate(user) for user in users]
 
@@ -146,7 +145,7 @@ async def get_usergroups_by_resource(
     if not usergroup_ids:
         return []
 
-    usergroups = db_session.exec(select(UserGroup).where(UserGroup.id.in_(usergroup_ids))).all()
+    usergroups = db_session.exec(select(UserGroup).where(col(UserGroup.id).in_(usergroup_ids))).all()
 
     return [UserGroupRead.model_validate(usergroup) for usergroup in usergroups]
 
@@ -177,8 +176,10 @@ async def update_usergroup_by_id(
         resource_owner_id=usergroup.creator_id,
     )
 
-    usergroup.name = usergroup_update.name
-    usergroup.description = usergroup_update.description
+    if usergroup_update.name is not None:
+        usergroup.name = usergroup_update.name
+    if usergroup_update.description is not None:
+        usergroup.description = usergroup_update.description
     usergroup.update_date = str(datetime.now())
 
     db_session.add(usergroup)
@@ -259,13 +260,13 @@ async def add_users_to_usergroup(
         return "Пользователи успешно добавлены в группу пользователей"
 
     # Batch fetch all users and existing memberships in 2 queries
-    users_map = {u.id: u for u in db_session.exec(select(User).where(User.id.in_(parsed_ids))).all()}
+    users_map = {u.id: u for u in db_session.exec(select(User).where(col(User.id).in_(parsed_ids))).all()}
     existing_user_ids = {
         ugu.user_id
         for ugu in db_session.exec(
             select(UserGroupUser).where(
                 UserGroupUser.usergroup_id == usergroup_id,
-                UserGroupUser.user_id.in_(parsed_ids),
+                col(UserGroupUser.user_id).in_(parsed_ids),
             )
         ).all()
     }
@@ -336,7 +337,7 @@ async def remove_users_from_usergroup(
     # Batch fetch all memberships in one query
     usergroup_users = db_session.exec(
         select(UserGroupUser).where(
-            UserGroupUser.user_id.in_(parsed_ids),
+            col(UserGroupUser.user_id).in_(parsed_ids),
             UserGroupUser.usergroup_id == usergroup_id,
         )
     ).all()
@@ -388,7 +389,7 @@ async def add_resources_to_usergroup(
         for ugr in db_session.exec(
             select(UserGroupResource).where(
                 UserGroupResource.usergroup_id == usergroup_id,
-                UserGroupResource.resource_uuid.in_(resources_uuids_array),
+                col(UserGroupResource.resource_uuid).in_(resources_uuids_array),
             )
         ).all()
     }
@@ -448,7 +449,7 @@ async def remove_resources_from_usergroup(
 
     # Batch fetch all matching resource links in one query
     usergroup_resources = db_session.exec(
-        select(UserGroupResource).where(UserGroupResource.resource_uuid.in_(resources_uuids_array))
+        select(UserGroupResource).where(col(UserGroupResource.resource_uuid).in_(resources_uuids_array))
     ).all()
 
     found_uuids = {ugr.resource_uuid for ugr in usergroup_resources}

@@ -207,8 +207,6 @@ async def update_preferences(
     user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db: Annotated[Session, Depends(get_db_session)] = None,
 ):
-    if not isinstance(data, dict):
-        raise HTTPException(status_code=400, detail="Некорректное тело настроек")
     try:
         profile = service.update_preferences(db, user.id, data)
         return _profile_to_read(profile)

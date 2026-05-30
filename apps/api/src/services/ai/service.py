@@ -9,11 +9,11 @@ from typing import cast
 
 from fastapi import HTTPException, Request
 from pydantic_ai.messages import ModelMessage
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from config.config import get_settings
-from src.db.courses.activities import Activity, ActivityRead
-from src.db.courses.courses import Course, CourseRead
+from src.db.courses.activities import ActivityRead
+from src.db.courses.courses import CourseRead
 from src.services.ai.agent import get_agent, get_model, get_model_settings
 from src.services.ai.cache_manager import get_ai_cache_manager
 from src.services.ai.exceptions import (

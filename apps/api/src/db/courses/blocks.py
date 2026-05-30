@@ -1,6 +1,6 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
 
-from pydantic import ConfigDict, field_validator
+from pydantic import field_validator
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field
 
@@ -18,14 +18,16 @@ class BlockBase(SQLModelStrictBaseModel):
     """Base model for Block with common fields."""
 
     block_type: BlockTypeEnum = BlockTypeEnum.BLOCK_CUSTOM
-    content: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    content: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     @field_validator("block_type", mode="before")
     @classmethod
-    def validate_block_type(cls, v):
+    def validate_block_type(cls, v: object) -> BlockTypeEnum:
+        if isinstance(v, BlockTypeEnum):
+            return v
         if isinstance(v, str):
             return BlockTypeEnum(v)
-        return v
+        raise TypeError(f"Expected str or BlockTypeEnum, got {type(v).__name__}")
 
 
 class Block(BlockBase, table=True):

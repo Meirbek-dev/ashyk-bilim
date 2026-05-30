@@ -3,8 +3,8 @@ Gamification Models
 """
 
 from datetime import datetime
-from enum import Enum, StrEnum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 from pydantic import field_validator
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
@@ -83,10 +83,8 @@ class GamificationProfile(SQLModel, table=True):
 
     __tablename__ = "gamification_profiles"
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-
-    # Core progression
     total_xp: int = Field(default=0, ge=0)
     level: int = Field(default=1, ge=1, le=MAX_LEVEL)
     daily_xp_earned: int = Field(default=0, ge=0)
@@ -150,7 +148,7 @@ class XPTransaction(SQLModel, table=True):
 
     __tablename__ = "xp_transactions"
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
 
     # Transaction data
@@ -190,7 +188,7 @@ class PlatformGamificationConfig(SQLModel, table=True):
 
     __tablename__ = "org_gamification_config"
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     # Optional overrides
     daily_xp_limit: int | None = Field(default=None, ge=0)
     rewards: dict | None = Field(default=None, sa_column=Column(JSON))

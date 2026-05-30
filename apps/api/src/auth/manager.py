@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Annotated, Any
+from typing import Annotated, Any, override
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin
@@ -26,10 +26,12 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     def __init__(self, user_db: Any) -> None:
         super().__init__(user_db, password_helper=password_helper)
 
+    @override
     async def validate_password(self, password: str, user: Any) -> None:
         if len(password) < MIN_PASSWORD_LENGTH:
             raise InvalidPasswordException(reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
 
+    @override
     async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:
         from src.db.users import UserRead
         from src.services.users.emails import enqueue_password_reset_email
@@ -44,11 +46,13 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         except Exception:
             _logger.exception("Failed to schedule password reset email for user %s", user.id)
 
+    @override
     async def on_after_reset_password(self, user: User, request: Request | None = None) -> None:
         from src.services.auth.sessions import revoke_all_user_sessions
 
         await revoke_all_user_sessions(user.id)
 
+    @override
     async def on_after_register(self, user: User, request: Request | None = None) -> None:
         from src.services.users.users import ensure_user_has_default_role
 

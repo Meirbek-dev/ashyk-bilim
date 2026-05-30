@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Request, UploadFile, status
+from fastapi import HTTPException, Request, UploadFile
 from ulid import ULID
 
 from src.services.blocks.schemas.files import BlockFile

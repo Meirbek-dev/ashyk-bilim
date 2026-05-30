@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from src.db.assessments import ItemAnswer
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.grading.submissions import AssessmentType
 from src.services.grading.settings_loader import CanonicalAssessmentItem

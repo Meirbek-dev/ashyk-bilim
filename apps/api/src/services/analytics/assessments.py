@@ -1768,7 +1768,7 @@ def get_teacher_assessment_detail(
         }
         learner_rows = []
         for user_id, attempts in code_attempts_by_user.items():
-            submission_attempts = cast("list[Submission]", list(attempts))
+            submission_attempts = list(attempts)
             ordered_attempts = sorted(submission_attempts, key=lambda item: item.created_at)
             best_score = max(
                 (score for item in submission_attempts if (score := manual_assessment_score(item)) is not None),

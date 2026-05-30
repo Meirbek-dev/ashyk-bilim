@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from sqlmodel import Session
 
 from src.app.observability import configure_observability
 from src.infra import redis as redis_infra

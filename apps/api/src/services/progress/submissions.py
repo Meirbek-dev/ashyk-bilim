@@ -12,7 +12,6 @@ from ulid import ULID
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.courses import Course
 from src.db.grading.progress import (
     ActivityProgress,

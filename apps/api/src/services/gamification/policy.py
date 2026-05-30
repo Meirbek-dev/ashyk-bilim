@@ -21,20 +21,20 @@ from src.db.gamification import (
 )
 
 # In-process TTL cache: (rewards, daily_limit, cached_at)
-_CACHE: tuple[dict[str, int], int, datetime] | None = None
+_cache: tuple[dict[str, int], int, datetime] | None = None
 _TTL = timedelta(minutes=5)
 
 
 def invalidate_policy() -> None:
-    global _CACHE
-    _CACHE = None
+    global _cache
+    _cache = None
 
 
 def get_policy(db: Session) -> tuple[dict[str, int], int]:
-    global _CACHE
+    global _cache
     now = tz_now()
-    if _CACHE is not None and now - _CACHE[2] < _TTL:
-        return _CACHE[0], _CACHE[1]
+    if _cache is not None and now - _cache[2] < _TTL:
+        return _cache[0], _cache[1]
 
     cfg = db.exec(select(PlatformGamificationConfig)).first()
 
@@ -63,5 +63,6 @@ def get_policy(db: Session) -> tuple[dict[str, int], int]:
             if dl is not None and dl > 0:
                 daily_limit = dl
 
-    _CACHE = (rewards, daily_limit, now)
+    _cache = (rewards, daily_limit, now)
     return rewards, daily_limit
+

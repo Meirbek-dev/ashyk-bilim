@@ -8,7 +8,6 @@ that the frontend can use to determine what actions are available to the user.
 from pydantic import Field as PydanticField
 
 from src.db.courses.courses import CourseRead, FullCourseRead
-from src.db.strict_base_model import PydanticStrictBaseModel
 
 
 class CourseReadWithPermissions(CourseRead):

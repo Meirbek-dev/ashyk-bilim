@@ -1,4 +1,3 @@
-import os
 import pathlib
 import sys
 from datetime import UTC, datetime

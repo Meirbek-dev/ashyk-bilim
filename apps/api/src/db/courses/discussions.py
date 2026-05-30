@@ -1,4 +1,4 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 from pydantic import field_validator
 from sqlalchemy import Column, ForeignKey, Integer
@@ -39,14 +39,14 @@ class CourseDiscussion(SQLModelStrictBaseModel, table=True):
 
     @field_validator("type", mode="before")
     @classmethod
-    def validate_type(cls, v):
+    def validate_type(cls, v: object):
         if isinstance(v, str):
             return DiscussionType(v)
         return v
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: object):
         if isinstance(v, str):
             return DiscussionStatusEnum(v)
         return v
@@ -59,7 +59,7 @@ class CourseDiscussionCreate(SQLModelStrictBaseModel):
 
     @field_validator("type", mode="before")
     @classmethod
-    def validate_type(cls, v):
+    def validate_type(cls, v: object):
         if isinstance(v, str):
             try:
                 return DiscussionType(v)
@@ -69,7 +69,7 @@ class CourseDiscussionCreate(SQLModelStrictBaseModel):
 
     @field_validator("content")
     @classmethod
-    def validate_content(cls, v):
+    def validate_content(cls, v: object):
         if not v:
             msg = "Content cannot be empty"
             raise ValueError(msg)
@@ -106,14 +106,14 @@ class CourseDiscussionRead(SQLModelStrictBaseModel):
 
     @field_validator("type", mode="before")
     @classmethod
-    def validate_type(cls, v):
+    def validate_type(cls, v: object):
         if isinstance(v, str):
             return DiscussionType(v)
         return v
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: object):
         if isinstance(v, str):
             return DiscussionStatusEnum(v)
         return v
@@ -136,7 +136,7 @@ class CourseDiscussionUpdate(SQLModelStrictBaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: object):
         if v is not None and isinstance(v, str):
             return DiscussionStatusEnum(v)
         return v

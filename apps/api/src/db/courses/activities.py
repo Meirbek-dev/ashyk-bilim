@@ -1,5 +1,5 @@
-from datetime import UTC, datetime, timezone
-from enum import Enum, StrEnum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Self
 
 from pydantic import ConfigDict, field_validator, model_validator
@@ -67,14 +67,14 @@ class ActivityBase(SQLModelStrictBaseModel):
 
     @field_validator("activity_type", mode="before")
     @classmethod
-    def validate_activity_type(cls, v):
+    def validate_activity_type(cls, v: object):
         if isinstance(v, str):
             return ActivityTypeEnum(v)
         return v
 
     @field_validator("activity_sub_type", mode="before")
     @classmethod
-    def validate_activity_sub_type(cls, v):
+    def validate_activity_sub_type(cls, v: object):
         if isinstance(v, str):
             return ActivitySubTypeEnum(v)
         return v
@@ -190,7 +190,7 @@ class ActivityRead(ActivityBase):
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object):
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):

@@ -5,10 +5,11 @@ All private helpers used across multiple assessment service modules live here.
 
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import assert_never
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-from sqlalchemy import asc, desc, func, inspect as sqlalchemy_inspect, or_
+from sqlalchemy import desc, func, inspect as sqlalchemy_inspect
 from sqlmodel import Session, select
 from ulid import ULID
 
@@ -23,41 +24,23 @@ from src.db.assessments import (
     ITEM_BODY_ADAPTER,
     Assessment,
     AssessmentAttemptProjection,
-    AssessmentCreate,
     AssessmentDraftPatch,
-    AssessmentDraftRead,
     AssessmentEffectivePolicy,
-    AssessmentGradingType,
     AssessmentItem,
-    AssessmentItemCreate,
     AssessmentItemMetadata,
-    AssessmentItemReorder,
-    AssessmentItemUpdate,
     AssessmentLifecycle,
-    AssessmentLifecycleTransition,
     AssessmentPolicyPatch,
-    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentReviewProjection,
     AssessmentScoreProjection,
-    AssessmentUpdate,
-    CodeRunRequest,
-    CodeRunResponse,
-    GradingDraftSave,
-    ItemGradeEntry,
     ItemKind,
     ReadinessIssue,
-    ReviewQueueRead,
-    RubricCriterion,
-    StudentPolicyOverrideCreate,
     StudentPolicyOverrideRead,
-    StudentPolicyOverrideUpdate,
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
-from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import (
     Activity,
     ActivityAssessmentPolicyRead,
@@ -75,35 +58,21 @@ from src.db.grading.progress import (
     GradeReleaseMode,
     LatePolicyNone,
 )
-from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
     GradedItem,
     GradingBreakdown,
     Submission,
     SubmissionRead,
-    SubmissionStats,
     SubmissionStatus,
-    TeacherGradeInput,
 )
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
-from src.services.code_execution import get_code_execution_service
-from src.services.courses._utils import (
-    _get_activity_by_uuid_or_404,
-    _next_activity_order,
-)
 from src.services.courses.access import user_has_course_access
-from src.services.grading.pipeline.orchestrator import (
-    submit_assessment as submit_assessment_pipeline,
-)
-from src.services.grading.settings_loader import load_activity_settings
 from src.services.grading.submission import start_submission_v2
-from src.services.grading.teacher import _save_teacher_grade, bulk_publish_grades
-from src.services.progress import submissions as progress_submissions
 
 ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_EXAM,
@@ -999,8 +968,7 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
         return validate_settings({"kind": "CODE_CHALLENGE"}).model_dump(mode="json")
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
-    msg = f"Неподдерживаемый тип оценивания: {kind}"
-    raise ValueError(msg)
+    assert_never(kind)
 
 
 def sync_activity_lifecycle(
