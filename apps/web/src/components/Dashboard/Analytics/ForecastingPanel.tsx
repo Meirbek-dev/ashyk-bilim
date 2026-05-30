@@ -26,9 +26,9 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
         </div>
         <CardDescription>{t('forecastingPanel.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="divide-y divide-border/50 space-y-0">
         {forecasts.slice(0, 8).map(item => (
-          <div key={item.id} className="bg-muted rounded-lg border p-4">
+          <div key={item.id} className="py-4 first:pt-0 last:pb-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge
                 variant={
@@ -39,12 +39,12 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
               </Badge>
               <Badge variant="outline">{confidenceText(item.confidence_level)}</Badge>
             </div>
-            <div className="text-foreground font-medium">{item.title}</div>
-            <div className="text-muted-foreground mt-1 text-sm leading-6">{item.prediction}</div>
+            <div className="text-foreground font-medium text-sm">{item.title}</div>
+            <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{item.prediction}</div>
           </div>
         ))}
         {!forecasts.length ? (
-          <div className="text-muted-foreground text-sm">{t('forecastingPanel.noForecastRisks')}</div>
+          <div className="text-muted-foreground py-4 text-center text-sm">{t('forecastingPanel.noForecastRisks')}</div>
         ) : null}
       </CardContent>
     </Card>

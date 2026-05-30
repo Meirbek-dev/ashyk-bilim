@@ -30,15 +30,15 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
         <CardDescription>{t('dataQualityPanel.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="bg-muted rounded-lg border p-4">
+        <div className="grid gap-4 py-6 border-y border-border/40 sm:grid-cols-3 my-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 first:pl-0 last:pr-0">
             <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('dataQualityPanel.mode')}</div>
-            <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-              <DatabaseZap className="h-4 w-4" />
+            <div className="mt-2 flex items-center gap-2 text-base font-semibold">
+              <DatabaseZap className="h-4 w-4 text-primary" />
               {quality.mode}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
             <div className="text-muted-foreground text-xs tracking-wider uppercase">
               {t('dataQualityPanel.lastRollup')}
             </div>
@@ -48,7 +48,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
                 : t('dataQualityPanel.liveQuery')}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
             <div className="text-muted-foreground text-xs tracking-wider uppercase">
               {t('dataQualityPanel.confidence')}
             </div>
@@ -68,7 +68,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 pb-4">
           <Badge variant="outline">
             {t('dataQualityPanel.freshness')} {freshness}
           </Badge>
@@ -83,23 +83,25 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
           </Badge>
         </div>
 
-        <div className="space-y-2">
+        <div className="divide-y divide-border/50 space-y-0 border-t border-border/40 pt-2">
           {quality.issues.length ? (
             quality.issues.map(issue => (
-              <div key={issue.id} className="bg-muted rounded-lg border p-3">
-                <Badge
-                  variant={
-                    issue.severity === 'critical' ? 'destructive' : issue.severity === 'warning' ? 'warning' : 'outline'
-                  }
-                >
-                  {t(`dataQualityPanel.issueSeverity.${issue.severity}`)}
-                </Badge>
-                <div className="mt-2 text-sm font-medium">{issue.title}</div>
-                <div className="text-muted-foreground text-sm">{issue.detail}</div>
+              <div key={issue.id} className="py-4 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge
+                    variant={
+                      issue.severity === 'critical' ? 'destructive' : issue.severity === 'warning' ? 'warning' : 'outline'
+                    }
+                  >
+                    {t(`dataQualityPanel.issueSeverity.${issue.severity}`)}
+                  </Badge>
+                  <span className="text-foreground font-semibold text-sm">{issue.title}</span>
+                </div>
+                <div className="text-muted-foreground text-xs leading-normal">{issue.detail}</div>
               </div>
             ))
           ) : (
-            <div className="text-muted-foreground text-sm">{t('dataQualityPanel.noIssues')}</div>
+            <div className="text-muted-foreground py-4 text-center text-sm">{t('dataQualityPanel.noIssues')}</div>
           )}
         </div>
       </CardContent>

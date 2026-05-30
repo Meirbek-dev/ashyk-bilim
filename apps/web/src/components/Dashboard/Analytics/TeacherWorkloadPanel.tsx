@@ -28,31 +28,31 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
         <CardDescription>{t('teacherWorkloadPanel.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="bg-muted rounded-lg border p-4">
+        <div className="grid gap-4 py-6 border-y border-border/40 sm:grid-cols-3 my-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 first:pl-0 last:pr-0">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <Inbox className="h-3.5 w-3.5" />
+              <Inbox className="h-3.5 w-3.5 text-primary" />
               {t('teacherWorkloadPanel.backlog')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.backlog_total)}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <Clock4 className="h-3.5 w-3.5" />
+              <Clock4 className="h-3.5 w-3.5 text-amber-500" />
               {t('teacherWorkloadPanel.slaBreaches')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.sla_breaches)}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <TimerReset className="h-3.5 w-3.5" />
+              <TimerReset className="h-3.5 w-3.5 text-blue-500" />
               {t('teacherWorkloadPanel.forecast7d')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.forecast_backlog_7d)}
             </div>
           </div>
