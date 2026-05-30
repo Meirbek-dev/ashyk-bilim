@@ -7,7 +7,7 @@ uploads survive process restarts and can be cleaned up by a startup sweep.
 import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import anyio
 from fastapi import HTTPException, UploadFile
@@ -151,7 +151,7 @@ async def process_chunk(
     upload_id: str,
     chunk_index: int,
     chunk_file: UploadFile,
-) -> dict:
+) -> dict[str, Any]:
     """Process a single chunk."""
     session = get_upload_session(upload_id)
 
@@ -216,7 +216,7 @@ def cleanup_stale_sessions(*, max_age: timedelta = _DEFAULT_SESSION_TTL) -> int:
     return removed
 
 
-def get_session_status(upload_id: str) -> dict:
+def get_session_status(upload_id: str) -> dict[str, Any]:
     """Get the status of an upload session."""
     session = get_upload_session(upload_id)
 

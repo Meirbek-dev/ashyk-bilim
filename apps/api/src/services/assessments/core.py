@@ -71,9 +71,9 @@ from src.services.assessments._shared import (
     _score_projection_from_submission,
     _snapshot_submission,
     _submission_user,
-    _sync_activity_lifecycle,
     _time_limit_seconds_from_settings,
     build_readiness,
+    sync_activity_lifecycle,
 )
 from src.services.assessments.access_service import (
     get_assessment_access,

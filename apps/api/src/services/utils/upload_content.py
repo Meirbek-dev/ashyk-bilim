@@ -1,4 +1,3 @@
-import os
 import pathlib
 from typing import Literal
 
@@ -45,7 +44,8 @@ async def upload_file(
     _, content = validate_upload(file, allowed_types, max_size)
 
     # Generate safe filename
-    filename = get_safe_filename(file.filename, f"{ULID()}_{filename_prefix}")
+    original_filename = file.filename or "uploaded_file"
+    filename = get_safe_filename(original_filename, f"{ULID()}_{filename_prefix}")
 
     # Save the file
     await upload_content(

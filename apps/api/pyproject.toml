@@ -257,4 +257,3 @@ reportUnreachable = true
 # Better large-codebase maintainability
 reportDuplicateImport = true
 reportIncompatibleMethodOverride = true
-reportShadowedImports = true

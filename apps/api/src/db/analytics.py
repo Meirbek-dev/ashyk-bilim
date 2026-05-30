@@ -1,11 +1,12 @@
 from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import JSON, Column, DateTime, Numeric, func
 from sqlmodel import Field, SQLModel
 
 
 class AnalyticsEvent(SQLModel, table=True):
-    __tablename__ = "analytics_event"
+    __tablename__ = "analytics_event"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     event_type: str
@@ -19,7 +20,7 @@ class AnalyticsEvent(SQLModel, table=True):
     cohort_id: int | None = None
     event_ts: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
     event_date: date
-    payload: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False),
@@ -27,7 +28,7 @@ class AnalyticsEvent(SQLModel, table=True):
 
 
 class DailyTeacherMetrics(SQLModel, table=True):
-    __tablename__ = "daily_teacher_metrics"
+    __tablename__ = "daily_teacher_metrics"  # pyright: ignore[reportAssignmentType]
 
     metric_date: date = Field(primary_key=True)
     teacher_user_id: int = Field(primary_key=True)
@@ -49,7 +50,7 @@ class DailyTeacherMetrics(SQLModel, table=True):
 
 
 class DailyCourseMetrics(SQLModel, table=True):
-    __tablename__ = "daily_course_metrics"
+    __tablename__ = "daily_course_metrics"  # pyright: ignore[reportAssignmentType]
 
     metric_date: date = Field(primary_key=True)
     course_id: int = Field(primary_key=True)
@@ -72,7 +73,7 @@ class DailyCourseMetrics(SQLModel, table=True):
 
 
 class DailyCourseEngagement(SQLModel, table=True):
-    __tablename__ = "daily_course_engagement"
+    __tablename__ = "daily_course_engagement"  # pyright: ignore[reportAssignmentType]
 
     metric_date: date = Field(primary_key=True)
     course_id: int = Field(primary_key=True)
@@ -89,7 +90,7 @@ class DailyCourseEngagement(SQLModel, table=True):
 
 
 class DailyAssessmentMetrics(SQLModel, table=True):
-    __tablename__ = "daily_assessment_metrics"
+    __tablename__ = "daily_assessment_metrics"  # pyright: ignore[reportAssignmentType]
 
     metric_date: date = Field(primary_key=True)
     assessment_type: str = Field(primary_key=True)
@@ -114,7 +115,7 @@ class DailyAssessmentMetrics(SQLModel, table=True):
 
 
 class DailyUserCourseProgress(SQLModel, table=True):
-    __tablename__ = "daily_user_course_progress"
+    __tablename__ = "daily_user_course_progress"  # pyright: ignore[reportAssignmentType]
 
     metric_date: date = Field(primary_key=True)
     user_id: int = Field(primary_key=True)
@@ -133,7 +134,7 @@ class DailyUserCourseProgress(SQLModel, table=True):
 
 
 class LearnerRiskSnapshot(SQLModel, table=True):
-    __tablename__ = "learner_risk_snapshot"
+    __tablename__ = "learner_risk_snapshot"  # pyright: ignore[reportAssignmentType]
 
     snapshot_date: date = Field(primary_key=True)
     user_id: int = Field(primary_key=True)
@@ -155,7 +156,7 @@ class LearnerRiskSnapshot(SQLModel, table=True):
 
 
 class TeacherIntervention(SQLModel, table=True):
-    __tablename__ = "teacher_intervention"
+    __tablename__ = "teacher_intervention"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     teacher_user_id: int = Field(index=True)
@@ -167,7 +168,7 @@ class TeacherIntervention(SQLModel, table=True):
     notes: str | None = None
     risk_score_before: float | None = Field(default=None, sa_column=Column(Numeric(6, 2)))
     risk_score_after: float | None = Field(default=None, sa_column=Column(Numeric(6, 2)))
-    payload: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False),
@@ -180,13 +181,13 @@ class TeacherIntervention(SQLModel, table=True):
 
 
 class AnalyticsSavedView(SQLModel, table=True):
-    __tablename__ = "analytics_saved_view"
+    __tablename__ = "analytics_saved_view"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     teacher_user_id: int = Field(index=True)
     name: str
     view_type: str = Field(default="overview", index=True)
-    query: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    query: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False),

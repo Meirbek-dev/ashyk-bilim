@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
+from sqlmodel._compat import SQLModelConfig
 
 
 def coerce_date_to_end_of_day(value: Any) -> Any:
@@ -53,7 +54,7 @@ _PYDANTIC_CONFIG: ConfigDict = ConfigDict(
     defer_build=False,
 )
 
-_SQLMODEL_CONFIG: ConfigDict = ConfigDict(
+_SQLMODEL_CONFIG: SQLModelConfig = SQLModelConfig(
     str_strip_whitespace=True,
     # slots=True is intentionally omitted: SQLModel table models rely on
     # SQLAlchemy instrumented descriptors which are incompatible with __slots__.

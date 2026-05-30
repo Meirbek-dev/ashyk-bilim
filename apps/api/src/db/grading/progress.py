@@ -2,9 +2,9 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import ConfigDict, Field as PydanticField, TypeAdapter, field_validator
+from pydantic import Field as PydanticField, TypeAdapter, field_validator
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -115,7 +115,7 @@ class ActivityProgressState(StrEnum):
 class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     """Operational policy for a gradeable course activity."""
 
-    __tablename__ = "assessment_policy"
+    __tablename__ = "assessment_policy"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("activity_id", name="uq_assessment_policy_activity_id"),
         UniqueConstraint("policy_uuid", name="uq_assessment_policy_uuid"),
@@ -161,15 +161,15 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
         default=True,
         sa_column=Column(Boolean, nullable=False, server_default="true"),
     )
-    late_policy_json: dict = Field(
+    late_policy_json: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
-    anti_cheat_json: dict = Field(
+    anti_cheat_json: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
-    settings_json: dict = Field(
+    settings_json: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -234,7 +234,7 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
 class ActivityProgress(SQLModelStrictBaseModel, table=True):
     """Canonical current state for one learner on one course activity."""
 
-    __tablename__ = "activity_progress"
+    __tablename__ = "activity_progress"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("activity_id", "user_id", name="uq_activity_progress_user"),
         Index("ix_activity_progress_course_user", "course_id", "user_id"),
@@ -360,7 +360,7 @@ class ActivityProgress(SQLModelStrictBaseModel, table=True):
 class CourseProgress(SQLModelStrictBaseModel, table=True):
     """Aggregate current state for one learner in one course."""
 
-    __tablename__ = "course_progress"
+    __tablename__ = "course_progress"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("course_id", "user_id", name="uq_course_progress_user"),
         Index("ix_course_progress_course_user", "course_id", "user_id"),

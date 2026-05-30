@@ -28,8 +28,8 @@ from src.services.assessments._shared import (
     _require_publish,
     _require_read,
     _require_submit_access,
-    _sync_activity_lifecycle,
     build_readiness,
+    sync_activity_lifecycle,
 )
 
 __all__ = [
@@ -54,6 +54,6 @@ __all__ = [
     "_require_publish",
     "_require_read",
     "_require_submit_access",
-    "_sync_activity_lifecycle",
     "build_readiness",
+    "sync_activity_lifecycle",
 ]

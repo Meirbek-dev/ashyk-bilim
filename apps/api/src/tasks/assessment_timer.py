@@ -15,15 +15,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import Any
 
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
-
-if TYPE_CHECKING:
-    from sqlmodel import Session
-
-    from src.db.grading.submissions import Submission
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +31,18 @@ async def assessment_timer_loop(settings: AppSettings) -> None:
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
-            await _auto_submit_expired_drafts()
+            await auto_submit_expired_drafts()
         except Exception:
             logger.exception("Assessment timer tick failed; will retry next cycle")
 
 
-async def _auto_submit_expired_drafts() -> int:
+async def auto_submit_expired_drafts() -> int:
     """Find and auto-submit any DRAFT submissions that have exceeded their time limit.
 
     Returns the number of submissions auto-submitted in this tick.
     """
-    from sqlmodel import Session, select
+    from sqlmodel import Session, col, select
 
-    from src.db.assessments import Assessment, AssessmentLifecycle
     from src.db.grading.progress import AssessmentPolicy
     from src.db.grading.submissions import Submission, SubmissionStatus
     from src.db.users import PublicUser, User
@@ -73,15 +67,15 @@ async def _auto_submit_expired_drafts() -> int:
             select(Submission, AssessmentPolicy, User)
             .join(
                 AssessmentPolicy,
-                Submission.assessment_policy_id == AssessmentPolicy.id,
+                col(Submission.assessment_policy_id) == col(AssessmentPolicy.id),
             )
             .join(
                 User,
-                Submission.user_id == User.id,
+                col(Submission.user_id) == col(User.id),
             )
-            .where(Submission.status == SubmissionStatus.DRAFT)
-            .where(Submission.started_at.is_not(None))  # type: ignore[union-attr]
-            .where(AssessmentPolicy.time_limit_seconds.is_not(None))  # type: ignore[union-attr]
+            .where(col(Submission.status) == SubmissionStatus.DRAFT)
+            .where(col(Submission.started_at).is_not(None))
+            .where(col(AssessmentPolicy.time_limit_seconds).is_not(None))
         ).all()
 
         for submission, policy, user in candidates:
@@ -98,8 +92,10 @@ async def _auto_submit_expired_drafts() -> int:
 
             # Auto-submit the draft through the canonical grading pipeline
             try:
+                assert user.id is not None
                 public_user = PublicUser(
                     id=user.id,
+                    user_uuid=user.user_uuid,
                     username=user.username,
                     email=user.email,
                     first_name=user.first_name,
@@ -113,7 +109,7 @@ async def _auto_submit_expired_drafts() -> int:
                 )
 
                 # Pre-populate metadata before submission
-                metadata: dict = submission.metadata_json or {}
+                metadata: dict[str, Any] = submission.metadata_json or {}
                 metadata["auto_submit_reason"] = "TIME_EXPIRED"
                 metadata["auto_submitted_at"] = now.isoformat()
                 submission.metadata_json = metadata

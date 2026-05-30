@@ -15,6 +15,7 @@ Immutability is enforced via SQLAlchemy event listeners:
 """
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -29,7 +30,6 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SASession
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -47,7 +47,7 @@ _MUTABLE_FIELDS: frozenset[str] = frozenset({"published_at"})
 class GradingEntry(SQLModelStrictBaseModel, table=True):
     """Immutable ledger row recording one grading event for a submission."""
 
-    __tablename__ = "grading_entry"
+    __tablename__ = "grading_entry"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint("entry_uuid", name="uq_grading_entry_uuid"),
         Index("ix_grading_entry_submission_id", "submission_id"),
@@ -84,11 +84,11 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     )
     final_score: float = Field(sa_column=Column("final_score", Float, nullable=False))
 
-    raw_breakdown: dict = Field(
+    raw_breakdown: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column("raw_breakdown", JSON, nullable=False, server_default="{}"),
     )
-    effective_breakdown: dict = Field(
+    effective_breakdown: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column("effective_breakdown", JSON, nullable=False, server_default="{}"),
     )
@@ -128,8 +128,8 @@ class GradingEntryRead(SQLModelStrictBaseModel):
     raw_score: float
     penalty_pct: float
     final_score: float
-    raw_breakdown: dict
-    effective_breakdown: dict
+    raw_breakdown: dict[str, Any]
+    effective_breakdown: dict[str, Any]
     overall_feedback: str
     grading_version: int
     created_at: datetime
@@ -140,7 +140,7 @@ class GradingEntryRead(SQLModelStrictBaseModel):
 
 
 @event.listens_for(GradingEntry, "before_update")
-def _prevent_grading_entry_update(mapper: object, connection: object, target: GradingEntry) -> None:
+def _prevent_grading_entry_update(mapper: object, connection: object, target: GradingEntry) -> None:  # pyright: ignore[reportUnusedFunction]
     """Block any column change except ``published_at``.
 
     SQLAlchemy's ``get_history()`` returns (added, unchanged, deleted) tuples.
@@ -149,6 +149,8 @@ def _prevent_grading_entry_update(mapper: object, connection: object, target: Gr
     from sqlalchemy import inspect as sa_inspect
 
     state = sa_inspect(target)
+    if state is None:
+        return
     changed_fields = {attr.key for attr in state.attrs if attr.history.added and attr.key not in _MUTABLE_FIELDS}
     if changed_fields:
         raise IntegrityError(
@@ -162,7 +164,7 @@ def _prevent_grading_entry_update(mapper: object, connection: object, target: Gr
 
 
 @event.listens_for(GradingEntry, "before_delete")
-def _prevent_grading_entry_delete(mapper: object, connection: object, target: GradingEntry) -> None:
+def _prevent_grading_entry_delete(mapper: object, connection: object, target: GradingEntry) -> None:  # pyright: ignore[reportUnusedFunction]
     """Block all DELETE operations on GradingEntry rows."""
     raise IntegrityError(
         statement=None,

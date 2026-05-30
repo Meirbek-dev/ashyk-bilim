@@ -12,8 +12,9 @@ def send_email(to: EmailStr, subject: str, body: str) -> None:
 def future_send_email(to: EmailStr, subject: str, body: str) -> Emails.SendResponse:
     settings = get_settings()
 
-    params = {
-        "from": "Ashyk Bilim <" + settings.mailing_config.system_email_address + ">",
+    system_email = settings.mailing_config.system_email_address or "noreply@ashyk-bilim.kz"
+    params: Emails.SendParams = {
+        "from": f"Ashyk Bilim <{system_email}>",
         "to": [to],
         "subject": subject,
         "html": body,

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi_users import schemas
 from pydantic import ConfigDict, EmailStr
@@ -18,8 +19,8 @@ class UserBase(SQLModelStrictBaseModel):
     email: EmailStr
     avatar_image: str | None = ""
     bio: str | None = ""
-    details: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    profile: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    details: dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    profile: dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
     theme: str | None = "default"
     locale: str | None = "ru-RU"
 
@@ -39,8 +40,8 @@ class UserUpdate(schemas.CreateUpdateDictModel, SQLModelStrictBaseModel):
     email: str | None = None
     avatar_image: str | None = None
     bio: str | None = None
-    details: dict | None = None
-    profile: dict | None = None
+    details: dict[str, Any] | None = None
+    profile: dict[str, Any] | None = None
     theme: str | None = None
     locale: str | None = None
 

@@ -17,6 +17,7 @@ from collections import defaultdict
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -24,25 +25,25 @@ class Counter:
     """Simple counter metric."""
 
     name: str
-    _values: dict[tuple, float] = field(default_factory=lambda: defaultdict(float))
+    _values: dict[tuple[tuple[str, str], ...], float] = field(default_factory=lambda: defaultdict(float))
 
     def labels(self, **kwargs: str) -> _LabeledCounter:
         return _LabeledCounter(self, tuple(sorted(kwargs.items())))
 
-    def inc(self, labels: tuple = (), amount: float = 1.0) -> None:
+    def inc(self, labels: tuple[tuple[str, str], ...] = (), amount: float = 1.0) -> None:
         self._values[labels] += amount
 
-    def get(self, labels: tuple = ()) -> float:
+    def get(self, labels: tuple[tuple[str, str], ...] = ()) -> float:
         return self._values[labels]
 
-    def collect(self) -> list[dict]:
+    def collect(self) -> list[dict[str, Any]]:
         return [{"labels": dict(k), "value": v} for k, v in self._values.items()]
 
 
 @dataclass
 class _LabeledCounter:
     _counter: Counter
-    _labels: tuple
+    _labels: tuple[tuple[str, str], ...]
 
     def inc(self, amount: float = 1.0) -> None:
         self._counter.inc(self._labels, amount)
@@ -53,15 +54,15 @@ class Histogram:
     """Simple histogram metric (stores observations for percentile calculation)."""
 
     name: str
-    _observations: dict[tuple, list[float]] = field(default_factory=lambda: defaultdict(list))
+    _observations: dict[tuple[tuple[str, str], ...], list[float]] = field(default_factory=lambda: defaultdict(list))
 
     def labels(self, **kwargs: str) -> _LabeledHistogram:
         return _LabeledHistogram(self, tuple(sorted(kwargs.items())))
 
-    def observe(self, value: float, labels: tuple = ()) -> None:
+    def observe(self, value: float, labels: tuple[tuple[str, str], ...] = ()) -> None:
         self._observations[labels].append(value)
 
-    def collect(self) -> list[dict]:
+    def collect(self) -> list[dict[str, Any]]:
         results = []
         for labels, observations in self._observations.items():
             if not observations:
@@ -80,7 +81,7 @@ class Histogram:
 @dataclass
 class _LabeledHistogram:
     _histogram: Histogram
-    _labels: tuple
+    _labels: tuple[tuple[str, str], ...]
 
     def observe(self, value: float) -> None:
         self._histogram.observe(value, self._labels)
@@ -106,7 +107,7 @@ class MetricsRegistry:
         self.lifecycle_transition_total = Counter("assessment_lifecycle_transition_total")
         self.event_bus_dispatch_total = Counter("event_bus_dispatch_total")
 
-    def collect_all(self) -> dict:
+    def collect_all(self) -> dict[str, Any]:
         """Collect all metrics for the /internal/metrics endpoint."""
         return {
             "grading_submission_total": self.submission_total.collect(),

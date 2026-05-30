@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from src.db.assessments import Assessment, AssessmentLifecycle
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
-from src.services.assessments.core import _sync_activity_lifecycle
+from src.services.assessments.core import sync_activity_lifecycle
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +30,18 @@ async def assessment_scheduler_loop(settings: AppSettings) -> None:
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
-            await asyncio.to_thread(_publish_due_assessments)
+            await asyncio.to_thread(publish_due_assessments)
         except Exception:
             logger.exception("Assessment scheduler tick failed; will retry next cycle")
 
 
-def _publish_due_assessments() -> int:
+def publish_due_assessments() -> int:
     """Synchronous DB work executed in a thread-pool to avoid blocking the loop.
 
     Returns the number of assessments published in this tick.
     """
-    from sqlmodel import Session, select
+    from sqlmodel import Session, col, select
+    from typing import Any, cast
 
     try:
         engine = get_bg_engine()
@@ -53,15 +54,15 @@ def _publish_due_assessments() -> int:
     with Session(engine) as db:
         due_assessments = db.exec(
             select(Assessment).where(
-                Assessment.lifecycle == AssessmentLifecycle.SCHEDULED,
-                Assessment.scheduled_at <= now,
+                col(Assessment.lifecycle) == AssessmentLifecycle.SCHEDULED,
+                col(Assessment.scheduled_at) <= now,
             )
         ).all()
 
         for assessment in due_assessments:
             try:
                 activity = None
-                if assessment.activity_id is not None:
+                if cast(Any, assessment.activity_id) is not None:
                     from src.db.courses.activities import Activity
 
                     activity = db.get(Activity, assessment.activity_id)
@@ -72,7 +73,7 @@ def _publish_due_assessments() -> int:
                 db.add(assessment)
 
                 if activity is not None:
-                    _sync_activity_lifecycle(assessment, activity)
+                    sync_activity_lifecycle(assessment, activity)
                     db.add(activity)
 
                 db.commit()

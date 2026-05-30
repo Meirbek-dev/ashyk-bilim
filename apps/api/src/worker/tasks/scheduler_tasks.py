@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 )
 async def assessment_scheduler_tick() -> int:
     """Auto-publish scheduled assessments whose scheduled time has passed."""
-    from src.tasks.assessment_scheduler import _publish_due_assessments
+    from src.tasks.assessment_scheduler import publish_due_assessments
 
     try:
-        published: int = await asyncio.to_thread(_publish_due_assessments)
+        published: int = await asyncio.to_thread(publish_due_assessments)
         if published:
             logger.info("assessment_scheduler_tick published=%d", published)
         return published
@@ -38,10 +38,10 @@ async def assessment_scheduler_tick() -> int:
 )
 async def assessment_timer_tick() -> int:
     """Auto-submit timed-out draft submissions."""
-    from src.tasks.assessment_timer import _auto_submit_expired_drafts
+    from src.tasks.assessment_timer import auto_submit_expired_drafts
 
     try:
-        submitted: int = await _auto_submit_expired_drafts()
+        submitted: int = await auto_submit_expired_drafts()
         if submitted:
             logger.info("assessment_timer_tick submitted=%d", submitted)
         return submitted
@@ -58,10 +58,10 @@ async def assessment_timer_tick() -> int:
 )
 async def plagiarism_checker_tick() -> int:
     """Run one plagiarism sweep tick across unchecked text submissions."""
-    from src.tasks.plagiarism_checker import _run_check_tick
+    from src.tasks.plagiarism_checker import run_check_tick
 
     try:
-        flagged: int = await asyncio.to_thread(_run_check_tick)
+        flagged: int = await asyncio.to_thread(run_check_tick)
         if flagged:
             logger.info("plagiarism_checker_tick flagged=%d pairs", flagged)
         return flagged

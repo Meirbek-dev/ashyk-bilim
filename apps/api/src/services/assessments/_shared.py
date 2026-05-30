@@ -1003,7 +1003,7 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
     raise ValueError(msg)
 
 
-def _sync_activity_lifecycle(
+def sync_activity_lifecycle(
     assessment: Assessment,
     activity: Activity,
 ) -> None:

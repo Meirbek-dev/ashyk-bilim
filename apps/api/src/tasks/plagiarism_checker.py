@@ -26,8 +26,9 @@ import re
 from collections import Counter
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.grading.submissions import Submission, SubmissionStatus
 
@@ -65,7 +66,7 @@ def _cosine(a: Counter[str], b: Counter[str]) -> float:
     return dot / (mag_a * mag_b)
 
 
-def _extract_text_from_answers(answers_json: dict) -> str:
+def _extract_text_from_answers(answers_json: dict[str, Any]) -> str:
     """Concatenate all string answer values from the answers payload."""
     parts: list[str] = []
     for value in answers_json.values():
@@ -89,7 +90,7 @@ async def plagiarism_checker_loop() -> None:
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
-            checked = await asyncio.to_thread(_run_check_tick)
+            checked = await asyncio.to_thread(run_check_tick)
             if checked:
                 logger.info("Plagiarism checker: flagged %d submission pairs", checked)
         except Exception:
@@ -99,7 +100,7 @@ async def plagiarism_checker_loop() -> None:
 # ── Sync worker (runs in thread pool) ────────────────────────────────────────
 
 
-def _run_check_tick() -> int:
+def run_check_tick() -> int:
     """Find unchecked submissions per activity and run pairwise similarity.
 
     Returns the number of (submission, peer) pairs that were flagged.
@@ -122,13 +123,13 @@ def _run_check_tick() -> int:
         )
         unchecked: Sequence[Submission] = session.exec(
             select(Submission)
-            .where(Submission.status.in_(graded_statuses))  # type: ignore[attr-defined]
+            .where(col(Submission.status).in_(graded_statuses))
             .where(
                 # Submissions where plagiarism key is absent from metadata.
                 # Use a JSON path expression: metadata_json->>'plagiarism' IS NULL.
                 Submission.metadata_json["plagiarism"].as_string() is None
             )
-            .where(Submission.assessment_type.in_(list(_TEXT_TYPES)))  # type: ignore[attr-defined]
+            .where(col(Submission.assessment_type).in_(list(_TEXT_TYPES)))
             .limit(_BATCH_SIZE)
         ).all()
 
@@ -144,8 +145,8 @@ def _run_check_tick() -> int:
             # Load all graded submissions for this activity as the comparison pool.
             pool: Sequence[Submission] = session.exec(
                 select(Submission)
-                .where(Submission.activity_id == activity_id)
-                .where(Submission.status.in_(graded_statuses))  # type: ignore[attr-defined]
+                .where(col(Submission.activity_id) == activity_id)
+                .where(col(Submission.status).in_(graded_statuses))
                 .limit(_BATCH_SIZE)
             ).all()
 
@@ -189,7 +190,7 @@ def _run_check_tick() -> int:
                     if flagged:
                         flagged_pairs += 1
 
-                    details: dict = {}
+                    details: dict[str, Any] = {}
                     if most_similar_uuid is not None:
                         details["most_similar_submission_uuid"] = most_similar_uuid
                         details["most_similar_score"] = round(max_score, 4)
@@ -230,13 +231,13 @@ def _write_plagiarism_result(
     *,
     score: float,
     flagged: bool,
-    details: dict,
+    details: dict[str, Any],
     now: datetime,
     status: str,
     error: str | None = None,
 ) -> None:
     """Write the plagiarism result back into the submission's metadata_json."""
-    current_meta: dict = submission.metadata_json or {}
+    current_meta: dict[str, Any] = submission.metadata_json or {}
     current_meta["plagiarism"] = {
         "score": round(score, 4),
         "checked_at": now.isoformat(),

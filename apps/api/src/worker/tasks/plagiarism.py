@@ -14,10 +14,10 @@ async def run_plagiarism_batch_tick() -> int:
     """Run one plagiarism-check tick across all unchecked text submissions."""
     import asyncio
 
-    from src.tasks.plagiarism_checker import _run_check_tick
+    from src.tasks.plagiarism_checker import run_check_tick
 
     try:
-        flagged: int = await asyncio.to_thread(_run_check_tick)
+        flagged: int = await asyncio.to_thread(run_check_tick)
         if flagged:
             logger.info("plagiarism_batch_tick flagged=%d pairs", flagged)
         return flagged

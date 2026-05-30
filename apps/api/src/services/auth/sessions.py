@@ -233,7 +233,7 @@ async def _get_active_session_ids(user_id: int) -> list[str]:
 # ── Background audit helpers (own DB session, non-blocking) ──────────────────
 
 
-def _audit_create_sync(session_data_dict: dict) -> None:
+def audit_create_sync(session_data_dict: dict) -> None:
     """Write a session-created audit record using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -265,7 +265,7 @@ def _audit_create_sync(session_data_dict: dict) -> None:
         raise
 
 
-def _audit_revoke_sync(session_id: str) -> None:
+def audit_revoke_sync(session_id: str) -> None:
     """Mark a session as revoked using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -282,7 +282,7 @@ def _audit_revoke_sync(session_id: str) -> None:
         raise
 
 
-def _audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict) -> None:
+def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict) -> None:
     """Mark old session as rotated and create new session record, in one DB session."""
     try:
         from src.infra.db.engine import get_bg_engine

@@ -1,4 +1,4 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import Field as PydanticField, field_validator
@@ -66,7 +66,7 @@ class TrailStepRead(PydanticStrictBaseModel):
 
     @field_validator("grade", mode="before")
     @classmethod
-    def _validate_grade(cls, v) -> int:
+    def _validate_grade(cls, v: Any) -> int:
         # Normalize empty strings and non-int strings to 0, preserve ints
         if v is None:
             return 0
@@ -80,5 +80,5 @@ class TrailStepRead(PydanticStrictBaseModel):
                 return 0
         try:
             return int(v)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return 0

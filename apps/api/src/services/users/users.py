@@ -2,16 +2,15 @@ import contextlib
 import logging
 from datetime import datetime
 from types import SimpleNamespace
+from typing import cast
 
 from fastapi import HTTPException, Request, UploadFile, status
-from pydantic import ValidationError
 from sqlmodel import Session, select
 
 from src.db.permission_enums import RoleSlug
-from src.db.permissions import Role, RoleRead, UserRole
+from src.db.permissions import Role, RoleRead
 from src.db.users import (
     AnonymousUser,
-    InternalUser,
     PublicUser,
     User,
     UserCreate,
@@ -26,7 +25,6 @@ from src.security.security import security_hash_password, security_verify_passwo
 from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
 from src.services.users.emails import enqueue_account_creation_email
-from src.services.users.usergroups import add_users_to_usergroup
 
 _logger = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ async def create_user(
     current_user: PublicUser | AnonymousUser,
     user_object: UserCreate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # RBAC check
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -70,7 +68,7 @@ async def create_user_without_platform(
     current_user: PublicUser | AnonymousUser,
     user_object: UserCreate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Public self-registration: anonymous users may always create their own
     # account.  Authenticated callers (e.g. admins creating users on behalf of
     # others) still need the `user:create` permission so that privilege
@@ -104,7 +102,7 @@ def update_user(
     current_user: PublicUser | AnonymousUser,
     user_object: UserUpdate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead | User:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
@@ -169,7 +167,7 @@ def update_user_preferences(
     *,
     theme: str | None = None,
     locale: str | None = None,
-):
+) -> UserRead:
     if user_id != current_user.id:
         raise ResourceAccessDenied(reason="Вы можете изменять только свои настройки")
 
@@ -208,7 +206,7 @@ async def update_user_avatar(
     current_user: PublicUser | AnonymousUser,
     avatar_file: UploadFile | None = None,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", current_user.id, use_cache=False)
 
@@ -252,7 +250,7 @@ def update_user_password(
     user_id: int,
     form: UserUpdatePassword,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
@@ -285,7 +283,7 @@ def read_user_by_id(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_id: int,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "id", user_id)
     return UserRead.model_validate(user)
 
@@ -295,7 +293,7 @@ def read_user_by_uuid(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_uuid: str,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "user_uuid", user_uuid)
     return UserRead.model_validate(user)
 
@@ -305,7 +303,7 @@ def read_user_by_username(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     username: str,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "username", username)
     return UserRead.model_validate(user)
 
@@ -324,6 +322,7 @@ def get_user_session(
 
     checker = PermissionChecker(db_session)
 
+    assert user.id is not None
     roles = [
         UserSessionRole(role=RoleRead.model_validate(role_dict))
         for role_dict in checker.get_user_roles(user_id=user.id)
@@ -449,31 +448,11 @@ async def _create_and_validate_user(db_session: Session, user_object: UserCreate
     return user
 
 
-def _safe_role_read(role: Role) -> RoleRead:
-    """Convert Role to RoleRead."""
-    try:
-        return RoleRead.model_validate(role)
-    except ValidationError as exc:  # pragma: no cover - defensive path
-        _logger.warning(
-            "Ошибка валидации роли для role_id=%s. Используется запасной вариант. Ошибка: %s",
-            getattr(role, "id", None),
-            exc,
-        )
-        return RoleRead.model_construct(
-            name=role.name,
-            slug=role.slug,
-            description=role.description,
-            is_system=role.is_system,
-            priority=role.priority,
-            created_at=role.created_at,
-            updated_at=role.updated_at,
-            id=role.id,
-        )
+
 
 
 def _assign_default_role(db_session: Session, user_id: int | None) -> None:
     """Assign default 'user' role to a newly registered user."""
-    from src.db.permissions import Role
     from src.security.rbac import PermissionChecker
 
     # Get user role ID
@@ -482,6 +461,7 @@ def _assign_default_role(db_session: Session, user_id: int | None) -> None:
         raise HTTPException(500, detail="Роль пользователя не найдена")
 
     checker = PermissionChecker(db_session)
+    assert user_role.id is not None
     checker.assign_role(
         user_id=user_id or 0,
         role_id=user_role.id,
@@ -513,9 +493,7 @@ def _get_user_by_field(db_session: Session, field: str, value: str | int, use_ca
                 return User.model_validate(cached)
             except Exception:
                 # Cached payload may be partial (e.g., only id/username); return a simple object
-                if isinstance(cached, dict):
-                    return SimpleNamespace(**cached)
-                return None
+                return cast(User, SimpleNamespace(**cached))
         except Exception:
             return None
 

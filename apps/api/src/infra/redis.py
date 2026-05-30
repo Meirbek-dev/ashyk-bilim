@@ -11,21 +11,24 @@ so every caller must handle the None case gracefully.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import redis
+    import redis.asyncio
 
 _logger = logging.getLogger(__name__)
 
 try:
     import redis as _redis
     import redis.asyncio as _aioredis
-
-    _REDIS_AVAILABLE = True
 except Exception:  # pragma: no cover
     _redis = None  # type: ignore[assignment]
     _aioredis = None  # type: ignore[assignment]
-    _REDIS_AVAILABLE = False
 
-_sync_client = None
-_async_client = None
+_redis_available = _redis is not None and _aioredis is not None  # type: ignore[redundant-expr]
+_sync_client: redis.Redis | None = None
+_async_client: redis.asyncio.Redis | None = None
 
 
 def configure(url: str) -> None:
@@ -35,11 +38,15 @@ def configure(url: str) -> None:
     installed so the app degrades gracefully in minimal environments.
     """
     global _sync_client, _async_client
-    if not _REDIS_AVAILABLE:
+    if not _redis_available:
         _logger.warning("redis package not installed — Redis features disabled")
         return
 
-    _sync_client = _redis.Redis.from_url(
+    from typing import Any, cast
+    redis_mod = cast(Any, _redis)
+    aioredis_mod = cast(Any, _aioredis)
+
+    _sync_client = redis_mod.Redis.from_url(
         url,
         decode_responses=False,
         socket_connect_timeout=2,
@@ -47,7 +54,7 @@ def configure(url: str) -> None:
         socket_keepalive=True,
         health_check_interval=10,
     )
-    _async_client = _aioredis.Redis.from_url(
+    _async_client = aioredis_mod.Redis.from_url(
         url,
         decode_responses=False,
         socket_connect_timeout=2,
@@ -58,12 +65,12 @@ def configure(url: str) -> None:
     _logger.debug("Redis clients configured")
 
 
-def get_sync() -> None:
+def get_sync() -> redis.Redis | None:
     """Return the synchronous Redis client, or None if not configured."""
     return _sync_client
 
 
-def get_async() -> None:
+def get_async() -> redis.asyncio.Redis | None:
     """Return the asynchronous Redis client, or None if not configured."""
     return _async_client
 

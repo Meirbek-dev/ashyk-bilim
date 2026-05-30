@@ -6,7 +6,7 @@ import ipaddress
 import json
 import logging
 import socket
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
@@ -65,8 +65,8 @@ async def close_link_preview_client() -> None:
 
 
 def _normalize_user_url(url: str) -> str:
-    if not isinstance(url, str):
-        raise UnsafeLinkPreviewURL("URL must be a string")
+    if not isinstance(url, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+        raise UnsafeLinkPreviewURL("URL must be a string")  # pyright: ignore[reportUnreachable]
 
     stripped = url.strip()
     if not stripped:
@@ -233,10 +233,10 @@ def _parse_preview(url: str, html: str) -> dict[str, str | None]:
 
     def get_meta(property_name: str, attr: str = "property") -> str | None:
         node = tree.css_first(f'meta[{attr}="{property_name}"]')
-        return node.attributes.get("content") if node else None
+        return node.attributes.get("content") if cast(Any, node) else None
 
     title_node = tree.css_first("title")
-    title = title_node.text(strip=True) if title_node else None
+    title = title_node.text(strip=True) if cast(Any, title_node) else None
     description = get_meta("og:description") or get_meta("description", "name")
 
     og_image = get_meta("og:image")
@@ -251,8 +251,8 @@ def _parse_preview(url: str, html: str) -> dict[str, str | None]:
         "apple-touch-icon-precomposed",
     }
     for node in tree.css("link[rel]"):
-        rel = node.attributes.get("rel", "")
-        href = node.attributes.get("href", "")
+        rel = node.attributes.get("rel") or ""
+        href = node.attributes.get("href") or ""
         rel_values = {part.strip().lower() for part in rel.split()}
         if href and rel_values.intersection(icon_rels):
             favicon = href
@@ -314,7 +314,7 @@ async def _get_cached_preview(url: str, settings: LinkPreviewConfig) -> dict[str
 
     async with _memory_cache_lock:
         cache = _get_memory_cache(settings)
-        cached = cache.get(cache_key)
+        cached = cast(Any, cache.get(cache_key))
         if cached is None:
             return None
         return cached

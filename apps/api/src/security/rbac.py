@@ -13,10 +13,10 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Request, status
-from sqlmodel import Session, select
+from fastapi import Depends, HTTPException, status
+from sqlmodel import Session, col, select
 
 from src.infra.db.session import get_db_session
 from src.services.cache.redis_client import get_redis_client
@@ -37,8 +37,10 @@ def _redis_load_permissions(user_id: int) -> set[str] | None:
         return None
     try:
         raw = redis.get(_redis_perms_key(user_id))
-        if raw is not None:
-            return set(json.loads(raw))
+        if isinstance(raw, (str, bytes, bytearray)):
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return set(parsed)
     except Exception:
         _logger.debug("Redis permission cache miss for user %s", user_id)
     return None
@@ -296,11 +298,11 @@ class PermissionChecker:
 
         return hierarchy_expanded
 
-    def get_user_roles(self, user_id: int) -> list[dict]:
+    def get_user_roles(self, user_id: int) -> list[dict[str, Any]]:
         """Return role dicts for user."""
         from src.db.permissions import Role, UserRole
 
-        query = select(Role, UserRole).join(UserRole, UserRole.role_id == Role.id).where(UserRole.user_id == user_id)
+        query = select(Role, UserRole).join(UserRole, col(UserRole.role_id) == col(Role.id)).where(col(UserRole.user_id) == user_id)
         results = self.db.exec(query).all()
         return [
             {
@@ -313,7 +315,7 @@ class PermissionChecker:
                 "created_at": role.created_at,
                 "updated_at": role.updated_at,
             }
-            for role, user_role in results
+            for role, _ in results
         ]
 
     # ------------------------------------------------------------------
@@ -353,8 +355,9 @@ class PermissionChecker:
                     reason="Cannot assign a role with higher priority than your own",
                 )
 
+        assert role.id is not None
         existing = self.db.exec(
-            select(UserRole).where(UserRole.user_id == user_id).where(UserRole.role_id == role.id)
+            select(UserRole).where(col(UserRole.user_id) == user_id).where(col(UserRole.role_id) == role.id)
         ).first()
         if existing:
             return  # idempotent
@@ -389,8 +392,9 @@ class PermissionChecker:
         if not role:
             raise HTTPException(404, detail=f"Role not found: ID {role_id}")
 
+        assert role.id is not None
         user_role = self.db.exec(
-            select(UserRole).where(UserRole.user_id == user_id).where(UserRole.role_id == role.id)
+            select(UserRole).where(col(UserRole.user_id) == user_id).where(col(UserRole.role_id) == role.id)
         ).first()
         if not user_role:
             raise HTTPException(404, detail=f"Role not assigned: ID {role_id}")
@@ -434,12 +438,12 @@ class PermissionChecker:
         from src.db.permission_enums import SYSTEM_ROLES, RoleSlug
         from src.db.permissions import Permission, Role, RolePermission
 
-        guest_role = self.db.exec(select(Role).where(Role.slug == RoleSlug.GUEST.value)).first()
+        guest_role = self.db.exec(select(Role).where(col(Role.slug) == RoleSlug.GUEST.value)).first()
         if guest_role is not None:
             perms = self.db.exec(
                 select(Permission.name)
-                .join(RolePermission, RolePermission.permission_id == Permission.id)
-                .where(RolePermission.role_id == guest_role.id)
+                .join(RolePermission, col(RolePermission.permission_id) == col(Permission.id))
+                .where(col(RolePermission.role_id) == guest_role.id)
                 .distinct()
             ).all()
             return set(perms)
@@ -455,10 +459,10 @@ class PermissionChecker:
 
         query = (
             select(Permission.name)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .join(Role, Role.id == RolePermission.role_id)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == user_id)
+            .join(RolePermission, col(RolePermission.permission_id) == col(Permission.id))
+            .join(Role, col(Role.id) == col(RolePermission.role_id))
+            .join(UserRole, col(UserRole.role_id) == col(Role.id))
+            .where(col(UserRole.user_id) == user_id)
             .distinct()
         )
 

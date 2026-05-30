@@ -1,14 +1,15 @@
+from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
-def _serialize_validation_errors(exc: RequestValidationError) -> list[dict]:
+def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, Any]]:
     try:
-        return exc.errors(include_url=False)
+        return exc.errors(include_url=False)  # pyright: ignore[reportCallIssue]
     except TypeError:
         errors = exc.errors()
-        sanitized_errors: list[dict] = []
+        sanitized_errors: list[dict[str, Any]] = []
         for error in errors:
             if isinstance(error, dict) and "url" in error:
                 sanitized_errors.append({k: v for k, v in error.items() if k != "url"})
@@ -19,7 +20,7 @@ def _serialize_validation_errors(exc: RequestValidationError) -> list[dict]:
 
 def register_exception_handlers(app: FastAPI) -> None:
     # Maps fastapi-users string error codes to structured client-facing errors.
-    FASTAPI_USERS_ERROR_MAP: dict[str, dict] = {
+    FASTAPI_USERS_ERROR_MAP: dict[str, dict[str, Any]] = {
         "REGISTER_USER_ALREADY_EXISTS": {
             "error_code": "email_taken",
             "message": "Электронная почта уже существует",
@@ -28,8 +29,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     }
 
     @app.exception_handler(HTTPException)
-    def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-        detail = exc.detail
+    def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        detail: Any = exc.detail
         headers = exc.headers
         if isinstance(detail, str) and detail in FASTAPI_USERS_ERROR_MAP:
             return JSONResponse(
@@ -57,7 +58,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    def request_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    def request_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
         return JSONResponse(
             status_code=422,
             content={

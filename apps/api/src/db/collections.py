@@ -26,7 +26,7 @@ class CollectionCreate(CollectionBase):
 
 
 class CollectionUpdate(SQLModelStrictBaseModel):
-    courses: list | None = None
+    courses: list[int] | None = None
     name: str | None = None
     public: bool | None = None
     description: str | None = ""
@@ -35,7 +35,7 @@ class CollectionUpdate(SQLModelStrictBaseModel):
 class CollectionRead(CollectionBase):
     id: int
     creator_id: int | None = None
-    courses: list
+    courses: list[int]
     collection_uuid: str
     creation_date: str
     update_date: str

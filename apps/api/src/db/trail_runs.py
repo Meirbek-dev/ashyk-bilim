@@ -1,4 +1,5 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
+from typing import Any
 
 from pydantic import ConfigDict, field_validator
 from sqlalchemy import JSON, Column, ForeignKey, Integer
@@ -21,7 +22,7 @@ class StatusEnum(StrEnum):
 
 class TrailRun(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    data: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int = Field(sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE")))
@@ -32,7 +33,7 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: Any) -> Any:
         if isinstance(v, str):
             return StatusEnum(v)
         return v
@@ -41,7 +42,7 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
 
 
 class TrailRunCreate(SQLModelStrictBaseModel):
-    data: dict = Field(default_factory=dict)
+    data: dict[str, Any] = Field(default_factory=dict)
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int
@@ -50,7 +51,7 @@ class TrailRunCreate(SQLModelStrictBaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: Any) -> Any:
         if isinstance(v, str):
             return StatusEnum(v)
         return v
@@ -59,14 +60,14 @@ class TrailRunCreate(SQLModelStrictBaseModel):
 # trick because Lists are not supported in SQLModel (runs: list[TrailStep] )
 class TrailRunRead(PydanticStrictBaseModel):
     id: int | None = Field(default=None, primary_key=True)
-    data: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int = Field(default=None, foreign_key="trail.id")
     course_id: int = Field(default=None, foreign_key="course.id")
     user_id: int = Field(default=None, foreign_key="user.id")
     # course object
-    course: dict | None = None
+    course: dict[str, Any] | None = None
     # timestamps
     creation_date: str | None = None
     update_date: str | None = None
@@ -78,7 +79,7 @@ class TrailRunRead(PydanticStrictBaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v):
+    def validate_status(cls, v: Any) -> Any:
         if isinstance(v, str):
             return StatusEnum(v)
         return v

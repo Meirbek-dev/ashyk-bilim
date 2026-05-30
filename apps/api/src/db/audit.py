@@ -6,8 +6,9 @@ deadline extensions for compliance and debugging.
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Any
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, String
 from sqlmodel import Field
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
@@ -27,7 +28,7 @@ class AuditEventType(StrEnum):
 class AuditEvent(SQLModelStrictBaseModel, table=True):
     """Immutable audit log entry for non-grade actions."""
 
-    __tablename__ = "audit_event"
+    __tablename__ = "audit_event"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         Index(
             "idx_audit_event_target",
@@ -52,7 +53,7 @@ class AuditEvent(SQLModelStrictBaseModel, table=True):
     event_type: str = Field(sa_column=Column("event_type", String, nullable=False))
     target_kind: str = Field(sa_column=Column("target_kind", String, nullable=False))
     target_uuid: str = Field(sa_column=Column("target_uuid", String, nullable=False))
-    payload_json: dict = Field(
+    payload_json: dict[str, Any] = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -71,5 +72,5 @@ class AuditEventRead(PydanticStrictBaseModel):
     event_type: str
     target_kind: str
     target_uuid: str
-    payload_json: dict
+    payload_json: dict[str, Any]
     created_at: datetime

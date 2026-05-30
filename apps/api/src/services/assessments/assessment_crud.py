@@ -73,8 +73,8 @@ from src.services.assessments._helpers import (
     _require_author,
     _require_publish,
     _require_read,
-    _sync_activity_lifecycle,
     build_readiness,
+    sync_activity_lifecycle,
 )
 from src.services.courses._utils import _next_activity_order
 
@@ -329,7 +329,7 @@ async def transition_assessment_lifecycle(
     assessment.lifecycle = target
     assessment.updated_at = now
     activity.update_date = now
-    _sync_activity_lifecycle(assessment, activity)
+    sync_activity_lifecycle(assessment, activity)
 
     db_session.add(assessment)
     db_session.add(activity)
