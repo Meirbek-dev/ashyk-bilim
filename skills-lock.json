@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "building-pydantic-ai-agents": {
+      "source": "pydantic/skills",
+      "sourceType": "github",
+      "skillPath": "skills/building-pydantic-ai-agents/SKILL.md",
+      "computedHash": "d9c99874e2807d565c95d47c04ed131be3df1a688d63148d378b1ede6988a064"
+    },
     "caveman": {
       "source": "juliusbrussee/caveman",
       "sourceType": "github",
