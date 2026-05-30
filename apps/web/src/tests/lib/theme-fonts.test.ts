@@ -28,9 +28,27 @@ describe('theme font handling', () => {
     ).toEqual(['Inter', 'JetBrains Mono'])
   })
 
+  it('resolves Cyrillic fallback fonts alongside primary fonts', () => {
+    expect(
+      resolveThemeFontFamilies({
+        'font-sans': 'Geist, sans-serif',
+        'font-mono': 'Geist Mono, monospace',
+      }),
+    ).toEqual(['Geist', 'Geist Mono', 'Inter', 'JetBrains Mono'])
+  })
+
   it('builds one deterministic Google Fonts stylesheet for active theme fonts', () => {
     expect(buildGoogleFontCssUrl(['JetBrains Mono', 'Inter'])).toBe(
       'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=JetBrains+Mono:wght@400..700&display=swap',
+    )
+  })
+
+  it('builds a Google Fonts URL containing fallbacks for Geist', () => {
+    const href = getThemeFontStylesheetHref({
+      'font-sans': 'Geist, sans-serif',
+    })
+    expect(href).toBe(
+      'https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Inter:opsz,wght@14..32,400..700&display=swap',
     )
   })
 
@@ -44,3 +62,4 @@ describe('theme font handling', () => {
     ).toBeNull()
   })
 })
+

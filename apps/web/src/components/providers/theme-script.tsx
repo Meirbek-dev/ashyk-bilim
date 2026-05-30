@@ -1,6 +1,7 @@
 import { THEME_CACHE_STORAGE_KEY, THEME_MODE_STORAGE_KEY, getTheme } from '@/lib/themes'
 import type { Theme } from '@/lib/themes'
 import {
+  CYRILLIC_FALLBACK_MAP,
   GOOGLE_FONTS_ASSET_ORIGIN,
   GOOGLE_FONTS_STYLESHEET_ORIGIN,
   GOOGLE_FONT_QUERY_BY_FAMILY,
@@ -39,6 +40,7 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
       var googleFontsAssetOrigin = ${safeJson(GOOGLE_FONTS_ASSET_ORIGIN)};
       var themeFontLinkAttribute = ${safeJson(THEME_FONT_LINK_ATTRIBUTE)};
       var themeFontFamiliesAttribute = ${safeJson(THEME_FONT_FAMILIES_ATTRIBUTE)};
+      var cyrillicFallbackMap = ${safeJson(CYRILLIC_FALLBACK_MAP)};
 
       function getStoredMode() {
         try {
@@ -226,7 +228,13 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
         var families = [];
         fontTokens.forEach(function(token) {
           var family = getGoogleFontFamily(tokens[token]);
-          if (family) families.push(family);
+          if (family) {
+            families.push(family);
+            var fallback = cyrillicFallbackMap[family];
+            if (fallback) {
+              families.push(fallback);
+            }
+          }
         });
         loadGoogleFonts(families);
       } catch (error) {

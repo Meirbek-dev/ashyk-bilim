@@ -137,6 +137,25 @@ export function getGoogleThemeFontFamily(family: string): GoogleThemeFontFamily 
   return googleFontFamilyByKey.get(normalizeFontFamilyKey(family)) ?? null
 }
 
+export const CYRILLIC_FALLBACK_MAP: Record<GoogleThemeFontFamily, GoogleThemeFontFamily> = {
+  'Albert Sans': 'Inter',
+  Antic: 'Inter',
+  'Architects Daughter': 'Inter',
+  'DM Mono': 'JetBrains Mono',
+  'DM Sans': 'Inter',
+  'DM Serif Display': 'Lora',
+  'DM Serif Text': 'Lora',
+  Geist: 'Inter',
+  'Geist Mono': 'JetBrains Mono',
+  'Libre Baskerville': 'Lora',
+  Outfit: 'Inter',
+  Oxanium: 'Inter',
+  'Plus Jakarta Sans': 'Inter',
+  Poppins: 'Inter',
+  Quicksand: 'Inter',
+  'Space Mono': 'JetBrains Mono',
+} as const
+
 export function resolveThemeFontFamilies(tokens: Record<string, string>): GoogleThemeFontFamily[] {
   const families = new Set<GoogleThemeFontFamily>()
 
@@ -144,11 +163,18 @@ export function resolveThemeFontFamilies(tokens: Record<string, string>): Google
     const family = extractFontFamily(tokens[token])
     const googleFamily = family ? getGoogleThemeFontFamily(family) : null
 
-    if (googleFamily) families.add(googleFamily)
+    if (googleFamily) {
+      families.add(googleFamily)
+      const fallback = CYRILLIC_FALLBACK_MAP[googleFamily]
+      if (fallback) {
+        families.add(fallback)
+      }
+    }
   }
 
   return [...families].toSorted()
 }
+
 
 function encodeGoogleFontQuery(query: string): string {
   return query.trim().replaceAll(' ', '+')
