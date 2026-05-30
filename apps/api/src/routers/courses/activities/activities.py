@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from sqlmodel import Session
@@ -38,7 +38,7 @@ async def api_create_activity(
     request: Request,
     activity_object: ActivityCreate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ActivityRead:
     assert db_session is not None
     return await create_activity(request, activity_object, current_user, db_session)
@@ -49,7 +49,7 @@ async def api_get_activity(
     request: Request,
     activity_uuid: str,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ActivityReadWithPermissions:
     assert db_session is not None
     return await get_activity(request, activity_uuid, current_user=current_user, db_session=db_session)
@@ -61,7 +61,7 @@ async def api_update_activity(
     activity_object: ActivityUpdate,
     activity_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ActivityRead:
     assert db_session is not None
     return await update_activity(request, activity_object, activity_uuid, current_user, db_session)
@@ -72,8 +72,9 @@ async def api_delete_activity(
     request: Request,
     activity_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-) -> dict:
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+) -> dict[str, Any]:
+    assert db_session is not None
     return await delete_activity(request, activity_uuid, current_user, db_session)
 
 
@@ -86,12 +87,13 @@ async def api_create_video_activity(
     name: Annotated[str, Form()],
     chapter_id: Annotated[int, Form()],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     details: Annotated[str, Form()] = "{}",
     video_file: UploadFile | None = None,
     video_uploaded_path: Annotated[str | None, Form()] = None,
     subtitle_files: list[UploadFile] | None = None,
 ) -> ActivityRead:
+    assert db_session is not None
     if subtitle_files is None:
         subtitle_files = []
     return await create_video_activity(
@@ -112,8 +114,9 @@ async def api_create_external_video_activity(
     request: Request,
     external_video: ExternalVideo,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ActivityRead:
+    assert db_session is not None
     return await create_external_video_activity(request, current_user, external_video, db_session)
 
 
@@ -123,10 +126,11 @@ async def api_create_documentpdf_activity(
     name: Annotated[str, Form()],
     chapter_id: Annotated[int, Form()],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     pdf_file: UploadFile | None = None,
     pdf_uploaded_path: Annotated[str | None, Form()] = None,
 ) -> ActivityRead:
+    assert db_session is not None
     return await create_documentpdf_activity(
         request,
         name,

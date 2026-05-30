@@ -4,7 +4,7 @@ Courses Router
 
 import logging
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile
 from sqlmodel import Session
@@ -135,10 +135,11 @@ async def api_get_student_activity_runtime(
     request: Request,
     course_uuid: str,
     activity_uuid: str,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> StudentActivityRuntime:
     assert db_session is not None
+    assert current_user is not None
     return await get_student_activity_runtime(
         request,
         course_uuid=course_uuid,
@@ -157,10 +158,11 @@ async def api_run_student_activity_action(
     course_uuid: str,
     activity_uuid: str,
     action: StudentActivityActionRequest,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> StudentActivityRuntime:
     assert db_session is not None
+    assert current_user is not None
     return await run_student_activity_action(
         request,
         course_uuid=course_uuid,
@@ -188,9 +190,9 @@ async def api_create_course(
     thumbnail_type: Annotated[ThumbnailType, Form()] = ThumbnailType.IMAGE,
     thumbnail: UploadFile | None = None,
     template: Annotated[str | None, Form()] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    checker: PermissionCheckerDep = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    checker: PermissionCheckerDep | None = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CourseRead:
     """
     Create new Course
@@ -199,6 +201,8 @@ async def api_create_course(
 
     Pass ``template=starter`` to automatically seed two default chapters.
     """
+    assert db_session is not None
+    assert current_user is not None
     course = CourseCreate(
         name=name,
         description=description,
@@ -225,12 +229,14 @@ async def api_create_course_thumbnail(
     thumbnail_type: Annotated[ThumbnailType, Form()] = ThumbnailType.IMAGE,
     last_known_update_date: Annotated[datetime | None, Form()] = None,
     thumbnail: UploadFile | None = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CourseRead:
     """
     Update Course Thumbnail (Image or Video)
     """
+    assert db_session is not None
+    assert current_user is not None
     return await update_course_thumbnail(
         request,
         course_uuid,
@@ -247,13 +253,16 @@ async def api_get_course(
     request: Request,
     response: Response,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-    checker: PermissionCheckerDep = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+    checker: PermissionCheckerDep | None = None,
 ) -> CourseRead | Response:
     """
     Get single Course by course_uuid
     """
+    assert db_session is not None
+    assert current_user is not None
+    assert checker is not None
     course = await get_course(
         request,
         course_uuid,
@@ -279,9 +288,9 @@ async def api_get_course_meta(
     response: Response,
     course_uuid: str,
     with_unpublished_activities: bool = False,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    checker: PermissionCheckerDep = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    checker: PermissionCheckerDep | None = None,
 ) -> FullCourseRead | Response:
     """
     Get single Course Metadata (chapters, activities) by course_uuid.
@@ -290,6 +299,9 @@ async def api_get_course_meta(
     Clients should send this back as ``If-Match`` on reorder requests to detect
     concurrent edits.
     """
+    assert db_session is not None
+    assert current_user is not None
+    assert checker is not None
     result = await get_course_meta(
         request,
         course_uuid,
@@ -340,9 +352,11 @@ async def api_get_platform_courses(
     response: Response,
     page: int,
     limit: int,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> list[CourseReadWithPermissions] | Response:
+    assert db_session is not None
+    assert current_user is not None
     courses = await get_courses(request, current_user, db_session, page, limit)
 
     total_count = await count_courses(current_user, db_session)
@@ -387,9 +401,11 @@ async def api_get_platform_editable_courses(
     query: str | None = None,
     sort_by: str | None = "updated",
     preset: str | None = "all",
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> list[CourseReadWithPermissions]:
+    assert db_session is not None
+    assert current_user is not None
     courses, total_count, summary = await list_editable_courses(
         request,
         current_user,
@@ -418,9 +434,11 @@ async def api_search_platform_courses(
     query: str,
     page: int = 1,
     limit: int = 20,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> list[CourseRead]:
+    assert db_session is not None
+    assert current_user is not None
     return await search_courses(request, current_user, query, db_session, page, limit)
 
 
@@ -429,9 +447,11 @@ async def api_update_course_metadata(
     request: Request,
     course_uuid: str,
     metadata_object: CourseMetadataUpdate,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> CourseRead:
+    assert db_session is not None
+    assert current_user is not None
     return await update_course_metadata(request, course_uuid, metadata_object, current_user, db_session)
 
 
@@ -440,9 +460,11 @@ async def api_update_course_access(
     request: Request,
     course_uuid: str,
     access_object: CourseAccessUpdate,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> CourseRead:
+    assert db_session is not None
+    assert current_user is not None
     return await update_course_access(request, course_uuid, access_object, current_user, db_session)
 
 
@@ -450,14 +472,16 @@ async def api_update_course_access(
 async def api_delete_course(
     request: Request,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Delete Course by ID
 
     **Required Permission**: `course:delete:own` or `course:delete:platform`
     """
+    assert db_session is not None
+    assert current_user is not None
     return await delete_course(request, course_uuid, current_user, db_session)
 
 
@@ -465,12 +489,14 @@ async def api_delete_course(
 async def api_apply_course_contributor(
     request: Request,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Apply to be a contributor for a course
     """
+    assert db_session is not None
+    assert current_user is not None
     return await apply_course_contributor(request, course_uuid, current_user, db_session)
 
 
@@ -478,12 +504,14 @@ async def api_apply_course_contributor(
 async def api_get_course_updates(
     request: Request,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> list[CourseUpdateRead]:
     """
     Get Course Updates by course_uuid
     """
+    assert db_session is not None
+    assert current_user is not None
     return await get_updates_by_course_uuid(request, course_uuid, current_user, db_session)
 
 
@@ -492,12 +520,14 @@ async def api_create_course_update(
     request: Request,
     course_uuid: str,
     update_object: CourseUpdateCreate,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> CourseUpdateRead:
     """
     Create new Course Update
     """
+    assert db_session is not None
+    assert current_user is not None
     return await create_update(request, course_uuid, update_object, current_user, db_session)
 
 
@@ -507,12 +537,14 @@ async def api_update_course_update(
     course_uuid: str,
     courseupdate_uuid: str,
     update_object: CourseUpdateUpdate,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> CourseUpdateRead:
     """
     Update Course Update by courseupdate_uuid
     """
+    assert db_session is not None
+    assert current_user is not None
     return await update_update(request, courseupdate_uuid, update_object, current_user, db_session)
 
 
@@ -521,12 +553,14 @@ async def api_delete_course_update(
     request: Request,
     course_uuid: str,
     courseupdate_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Delete Course Update by courseupdate_uuid
     """
+    assert db_session is not None
+    assert current_user is not None
     return await delete_update(request, courseupdate_uuid, current_user, db_session)
 
 
@@ -534,12 +568,14 @@ async def api_delete_course_update(
 async def api_get_course_contributors(
     request: Request,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+) -> Any:
     """
     Get all contributors for a specific course
     """
+    assert db_session is not None
+    assert current_user is not None
     return await get_course_contributors(request, course_uuid, current_user, db_session)
 
 
@@ -550,14 +586,16 @@ async def api_update_course_contributor(
     contributor_user_id: int,
     authorship: ResourceAuthorshipEnum,
     authorship_status: ResourceAuthorshipStatusEnum,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Update a course contributor's role and status
 
     **Required Permission**: `course:manage:own` or `course:manage:platform`
     """
+    assert db_session is not None
+    assert current_user is not None
     return await update_course_contributor(
         request,
         course_uuid,
@@ -574,14 +612,16 @@ async def api_add_bulk_course_contributors(
     request: Request,
     course_uuid: str,
     usernames: list[str],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Add multiple contributors to a course by their usernames
 
     **Required Permission**: `course:manage:own` or `course:manage:platform`
     """
+    assert db_session is not None
+    assert current_user is not None
     return await add_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
 
 
@@ -590,12 +630,14 @@ async def api_remove_bulk_course_contributors(
     request: Request,
     course_uuid: str,
     usernames: list[str],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> Any:
     """
     Remove multiple contributors from a course by their usernames
     """
+    assert db_session is not None
+    assert current_user is not None
     return await remove_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
 
 
@@ -603,9 +645,9 @@ async def api_remove_bulk_course_contributors(
 async def api_get_course_user_rights(
     request: Request,
     course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
-) -> dict:
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+) -> dict[str, Any]:
     """
     Get detailed user rights for a specific course.
 
@@ -683,4 +725,6 @@ async def api_get_course_user_rights(
     - Anonymous users can only read public courses
     - All permissions are calculated based on current user context
     """
+    assert db_session is not None
+    assert current_user is not None
     return await get_course_user_rights(request, course_uuid, current_user, db_session)

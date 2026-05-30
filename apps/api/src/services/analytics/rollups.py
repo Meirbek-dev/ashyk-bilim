@@ -5,8 +5,8 @@ from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import delete, func, select
-from sqlmodel import Session
+from sqlalchemy import delete, func
+from sqlmodel import Session, col, select
 
 from src.db.analytics import (
     DailyAssessmentMetrics,
@@ -94,7 +94,7 @@ def list_latest_course_rollups(
         return []
     statement = select(DailyCourseMetrics).where(
         DailyCourseMetrics.metric_date == metric_date,
-        DailyCourseMetrics.course_id.in_(course_ids),
+        col(DailyCourseMetrics.course_id).in_(course_ids),
     )
     if teacher_user_id not in {None, 0}:
         statement = statement.where(DailyCourseMetrics.teacher_user_id == teacher_user_id)
@@ -113,7 +113,7 @@ def list_latest_assessment_rollups(
         db_session.exec(
             select(DailyAssessmentMetrics).where(
                 DailyAssessmentMetrics.metric_date == metric_date,
-                DailyAssessmentMetrics.course_id.in_(course_ids),
+                col(DailyAssessmentMetrics.course_id).in_(course_ids),
             )
         ).all()
     )
@@ -199,7 +199,7 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
         },
     )
 
-    course_ids = list(db_session.exec(select(Course.id)).all())
+    course_ids = [cid for cid in db_session.exec(select(Course.id)).all() if cid is not None]
     if course_ids:
         scope = TeacherAnalyticsScope(
             teacher_user_id=0,
@@ -221,32 +221,32 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
 
         db_session.exec(
             delete(DailyTeacherMetrics).where(
-                DailyTeacherMetrics.metric_date == target_date,
+                col(DailyTeacherMetrics.metric_date) == target_date,
             )
         )
         db_session.exec(
             delete(DailyCourseMetrics).where(
-                DailyCourseMetrics.metric_date == target_date,
+                col(DailyCourseMetrics.metric_date) == target_date,
             )
         )
         db_session.exec(
             delete(DailyCourseEngagement).where(
-                DailyCourseEngagement.metric_date == target_date,
+                col(DailyCourseEngagement.metric_date) == target_date,
             )
         )
         db_session.exec(
             delete(DailyAssessmentMetrics).where(
-                DailyAssessmentMetrics.metric_date == target_date,
+                col(DailyAssessmentMetrics.metric_date) == target_date,
             )
         )
         db_session.exec(
             delete(DailyUserCourseProgress).where(
-                DailyUserCourseProgress.metric_date == target_date,
+                col(DailyUserCourseProgress.metric_date) == target_date,
             )
         )
         db_session.exec(
             delete(LearnerRiskSnapshot).where(
-                LearnerRiskSnapshot.snapshot_date == target_date,
+                col(LearnerRiskSnapshot.snapshot_date) == target_date,
             )
         )
 
@@ -287,31 +287,31 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                 )
             )
 
-        for row in course_rows:
-            course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == row.course_id]
+        for course_row in course_rows:
+            course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == course_row.course_id]
             db_session.merge(
                 DailyCourseMetrics(
                     metric_date=target_date,
-                    course_id=row.course_id,
-                    teacher_user_id=context.courses_by_id[row.course_id].creator_id,
+                    course_id=course_row.course_id,
+                    teacher_user_id=context.courses_by_id[course_row.course_id].creator_id,
                     enrolled_learners=len(course_snapshots),
-                    active_learners_7d=row.active_learners_7d,
-                    active_learners_28d=len({event.user_id for event in events if event.course_id == row.course_id}),
-                    completion_rate=row.completion_rate,
+                    active_learners_7d=course_row.active_learners_7d,
+                    active_learners_28d=len({event.user_id for event in events if event.course_id == course_row.course_id}),
+                    completion_rate=course_row.completion_rate,
                     avg_progress_pct=round(
                         sum(snapshot.progress_pct for snapshot in course_snapshots) / max(1, len(course_snapshots)),
                         2,
                     ),
-                    at_risk_learners=row.at_risk_learners,
-                    ungraded_submissions=row.ungraded_submissions,
+                    at_risk_learners=course_row.at_risk_learners,
+                    ungraded_submissions=course_row.ungraded_submissions,
                     certificates_issued=sum(
                         1
                         for _certificate, certification in context.certificates
-                        if certification.course_id == row.course_id
+                        if certification.course_id == course_row.course_id
                     ),
-                    content_health_score=row.content_health_score,
-                    engagement_delta_pct=row.engagement_delta_pct,
-                    last_content_update_at=context.courses_by_id[row.course_id].update_date,
+                    content_health_score=course_row.content_health_score,
+                    engagement_delta_pct=course_row.engagement_delta_pct,
+                    last_content_update_at=context.courses_by_id[course_row.course_id].update_date,
                     generated_at=context.generated_at,
                 )
             )
@@ -320,23 +320,23 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
         uuid_to_course_id = {c.course_uuid: c.id for c in context.courses_by_id.values() if c.course_uuid}
         co_author_rows = db_session.exec(
             select(ResourceAuthor).where(
-                ResourceAuthor.resource_uuid.in_(list(uuid_to_course_id.keys())),
-                ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+                col(ResourceAuthor.resource_uuid).in_(list(uuid_to_course_id.keys())),
+                col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
             )
         ).all()
         course_author_ids: dict[int, set[int]] = {}
         for c in context.courses_by_id.values():
-            if c.creator_id is not None:
+            if c.id is not None and c.creator_id is not None:
                 course_author_ids.setdefault(c.id, set()).add(c.creator_id)
         for ra in co_author_rows:
             cid = uuid_to_course_id.get(ra.resource_uuid)
             if cid is not None:
                 course_author_ids.setdefault(cid, set()).add(ra.user_id)
 
-        teacher_course_rows: dict[int, list] = {}
-        for row in course_rows:
-            for author_id in course_author_ids.get(row.course_id, set()):
-                teacher_course_rows.setdefault(author_id, []).append(row)
+        teacher_course_rows: dict[int, list[TeacherCourseRow]] = {}
+        for course_row in course_rows:
+            for author_id in course_author_ids.get(course_row.course_id, set()):
+                teacher_course_rows.setdefault(author_id, []).append(course_row)
 
         for teacher_id, rows in teacher_course_rows.items():
             teacher_course_ids = {row.course_id for row in rows}
@@ -394,6 +394,7 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                     (item for item in context.chapter_activities if item.course_id == course_id),
                     key=lambda item: (item.chapter_id, item.order),
                 )
+                if item.id is not None
             ]
             for progress in context.activity_progress:
                 if progress.course_id != course_id:
@@ -408,7 +409,7 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                 started = activity_users.get(activity_id, set())
                 completed = completed_users.get(activity_id, set())
                 dropoff_pct = None
-                if previous_completed_count not in {None, 0}:
+                if previous_completed_count is not None and previous_completed_count != 0:
                     dropoff_pct = round(
                         ((previous_completed_count - len(completed)) / previous_completed_count) * 100,
                         2,
@@ -435,26 +436,26 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                     )
                 )
 
-        for row in assessment_rows:
-            detail = get_teacher_assessment_detail(db_session, scope, row.assessment_type, row.assessment_id, filters)
+        for assessment_row in assessment_rows:
+            detail = get_teacher_assessment_detail(db_session, scope, assessment_row.assessment_type, assessment_row.assessment_id, filters)
             db_session.merge(
                 DailyAssessmentMetrics(
                     metric_date=target_date,
-                    course_id=row.course_id,
-                    activity_id=row.activity_id,
-                    assessment_type=row.assessment_type,
-                    assessment_id=row.assessment_id,
+                    course_id=assessment_row.course_id,
+                    activity_id=assessment_row.activity_id,
+                    assessment_type=assessment_row.assessment_type,
+                    assessment_id=assessment_row.assessment_id,
                     eligible_learners=detail.summary.eligible_learners,
                     submitted_learners=detail.summary.submitted_learners,
                     submission_rate=detail.summary.submission_rate,
-                    completion_rate=row.completion_rate,
+                    completion_rate=assessment_row.completion_rate,
                     pass_rate=detail.summary.pass_rate,
                     median_score=detail.summary.median_score,
-                    avg_score=row.median_score,
+                    avg_score=assessment_row.median_score,
                     avg_attempts=detail.summary.avg_attempts,
                     grading_latency_hours_p50=detail.summary.grading_latency_hours_p50,
                     grading_latency_hours_p90=detail.summary.grading_latency_hours_p90,
-                    difficulty_score=row.difficulty_score,
+                    difficulty_score=assessment_row.difficulty_score,
                     generated_at=context.generated_at,
                 )
             )

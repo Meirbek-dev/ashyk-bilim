@@ -7,10 +7,11 @@ import io
 import logging
 from collections.abc import Generator
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import Activity
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 async def publish_grading_event(
     event_type: str,
     submission_uuid: str,
-    payload: dict | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> None:
     """Надёжно поставить публикацию события оценки в очередь."""
     from src.worker.tasks.sse import publish_grading_event_task
@@ -107,10 +108,10 @@ _XP_SOURCE_ON_PUBLISH: dict[AssessmentType, XPSource] = {
 }
 
 _SORT_MAP = {
-    "submitted_at": Submission.submitted_at,
-    "final_score": Submission.final_score,
-    "created_at": Submission.created_at,
-    "attempt_number": Submission.attempt_number,
+    "submitted_at": col(Submission.submitted_at),
+    "final_score": col(Submission.final_score),
+    "created_at": col(Submission.created_at),
+    "attempt_number": col(Submission.attempt_number),
 }
 
 
@@ -148,7 +149,7 @@ async def get_submissions_for_activity(
     )
 
     # Base query — join User for search support
-    query = select(Submission).join(User, User.id == Submission.user_id).where(Submission.activity_id == activity_id)
+    query = select(Submission).join(User, col(User.id) == Submission.user_id).where(Submission.activity_id == activity_id)
 
     if status_filter:
         # "NEEDS_GRADING" — виртуальный фильтр, соответствующий PENDING
@@ -170,17 +171,17 @@ async def get_submissions_for_activity(
         term = f"%{search}%"
         query = query.where(
             or_(
-                User.first_name.ilike(term),
-                User.last_name.ilike(term),
-                User.username.ilike(term),
-                User.email.ilike(term),
+                col(User.first_name).ilike(term),
+                col(User.last_name).ilike(term),
+                col(User.username).ilike(term),
+                col(User.email).ilike(term),
             )
         )
 
     count_query = select(func.count()).select_from(query.subquery())
     total: int = db_session.exec(count_query).one()
 
-    sort_col = _SORT_MAP.get(sort_by, Submission.submitted_at)
+    sort_col = _SORT_MAP.get(sort_by, col(Submission.submitted_at))
     order_fn = desc if sort_dir == "desc" else asc
     query = query.order_by(order_fn(sort_col))
 
@@ -228,7 +229,7 @@ async def get_submission_stats(
         .group_by(Submission.status)
     ).all()
 
-    status_counts: dict[str, int] = {row.status: row.cnt for row in status_rows}
+    status_counts: dict[SubmissionStatus, int] = {SubmissionStatus(row[0]): row[1] for row in status_rows}
     total = sum(status_counts.values())
     pending_count = status_counts.get(SubmissionStatus.PENDING, 0)
     graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(SubmissionStatus.PUBLISHED, 0)
@@ -247,11 +248,11 @@ async def get_submission_stats(
     graded_scores_raw = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity_id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),
-            Submission.final_score.is_not(None),
+            col(Submission.final_score).is_not(None),
         )
     ).all()
     graded_scores = [float(s) for s in graded_scores_raw if s is not None]
@@ -342,7 +343,7 @@ def export_grades_csv(
         select(Submission).where(
             Submission.activity_id == activity_id,
             Submission.status != SubmissionStatus.DRAFT,
-            Submission.grading_json.is_not(None),
+            col(Submission.grading_json).is_not(None),
         )
     ).first()
     if sample_submission and isinstance(sample_submission.grading_json, dict):
@@ -370,29 +371,30 @@ def export_grades_csv(
     buf.seek(0)
 
     # Build dynamic WHERE conditions for optional filters.
-    base_conditions = [
+    base_conditions: list[Any] = [
         Submission.activity_id == activity_id,
         Submission.status != SubmissionStatus.DRAFT,
     ]
     if assessment_type_filter is not None:
         base_conditions.append(Submission.assessment_type == assessment_type_filter)
     if submitted_after is not None:
-        base_conditions.append(Submission.submitted_at >= submitted_after)
+        base_conditions.append(col(Submission.submitted_at) >= submitted_after)
     if submitted_before is not None:
-        base_conditions.append(Submission.submitted_at <= submitted_before)
+        base_conditions.append(col(Submission.submitted_at) <= submitted_before)
 
     query = (
         select(Submission, User)
-        .join(User, User.id == Submission.user_id)
+        .join(User, col(User.id) == Submission.user_id)
         .where(*base_conditions)
-        .order_by(asc(Submission.submitted_at))
+        .order_by(asc(col(Submission.submitted_at)))
     )
 
     for s, u in db_session.exec(query).yield_per(200):
-        if u:
-            parts = [p for p in [u.first_name, u.middle_name, u.last_name] if p]
-            name = " ".join(parts) if parts else u.username
-            email = str(u.email)
+        user_val: User | None = u
+        if user_val is not None:
+            parts = [p for p in [user_val.first_name, user_val.middle_name, user_val.last_name] if p]
+            name = " ".join(parts) if parts else user_val.username
+            email = str(user_val.email)
         else:
             name = f"Пользователь #{s.user_id}"
             email = ""
@@ -491,8 +493,8 @@ async def batch_grade_submissions(
     requested_uuids = [grade.submission_uuid for grade in batch_request.grades]
     rows = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
-        .where(Submission.submission_uuid.in_(requested_uuids))
+        .join(Activity, col(Activity.id) == Submission.activity_id)
+        .where(col(Submission.submission_uuid).in_(requested_uuids))
     ).all()
 
     submissions_by_uuid = {submission.submission_uuid: (submission, activity) for submission, activity in rows}
@@ -663,10 +665,9 @@ async def _save_teacher_grade(
     existing = GradingBreakdown.model_validate(submission.grading_json or {})
     item_map = {item.item_id: item for item in existing.items}
 
-    for fb in grade_input.item_feedback:
-        item_fb = ItemFeedback(**fb) if isinstance(fb, dict) else fb
+    for item_fb in grade_input.item_feedback:
         if item_fb.item_id in item_map:
-            update: dict = {}
+            update: dict[str, Any] = {}
             if item_fb.score is not None:
                 update["score"] = item_fb.score
                 update["needs_manual_review"] = False
@@ -698,9 +699,9 @@ async def _save_teacher_grade(
 
     raw_breakdown = (
         submission.raw_grading_json
-        if isinstance(submission.raw_grading_json, dict)
+        if getattr(submission, "raw_grading_json", None) is not None
         else submission.grading_json
-        if isinstance(submission.grading_json, dict)
+        if getattr(submission, "grading_json", None) is not None
         else {}
     )
     effective_breakdown = updated_grading.model_dump()
@@ -814,11 +815,11 @@ async def bulk_publish_grades(
     submissions = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity_id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),
-            Submission.id.is_not(None),
+            col(Submission.id).is_not(None),
         )
     ).all()
 
@@ -834,8 +835,8 @@ async def bulk_publish_grades(
     already_published_ids: set[int] = set(
         db_session.exec(
             select(GradingEntry.submission_id).where(
-                GradingEntry.submission_id.in_(submission_ids),
-                GradingEntry.published_at.is_not(None),
+                col(GradingEntry.submission_id).in_(submission_ids),
+                col(GradingEntry.published_at).is_not(None),
             )
         ).all()
     )
@@ -852,33 +853,33 @@ async def bulk_publish_grades(
         # Subquery: max id per submission (proxy for most-recent entry)
         subq = (
             select(sql_func.max(GradingEntry.id).label("max_id"))
-            .where(GradingEntry.submission_id.in_(unpublished_ids))
-            .group_by(GradingEntry.submission_id)
+            .where(col(GradingEntry.submission_id).in_(unpublished_ids))
+            .group_by(col(GradingEntry.submission_id))
             .subquery()
         )
-        latest_rows = db_session.exec(select(GradingEntry).where(GradingEntry.id.in_(select(subq.c.max_id)))).all()
+        latest_rows = db_session.exec(select(GradingEntry).where(col(GradingEntry.id).in_(select(subq.c.max_id)))).all()
         for row in latest_rows:
             if row.submission_id is not None:
                 latest_entries_by_submission[row.submission_id] = row
 
     published_count = 0
     for submission in submissions:
-        if submission.id in already_published_ids:
+        if submission.id is None or submission.id in already_published_ids:
             continue
 
         latest_entry = latest_entries_by_submission.get(submission.id)
         raw_breakdown = (
             latest_entry.raw_breakdown
-            if latest_entry is not None and isinstance(latest_entry.raw_breakdown, dict)
+            if latest_entry is not None and getattr(latest_entry, "raw_breakdown", None) is not None
             else submission.raw_grading_json
-            if isinstance(submission.raw_grading_json, dict)
+            if getattr(submission, "raw_grading_json", None) is not None
             else {}
         )
         effective_breakdown = (
             latest_entry.effective_breakdown
-            if latest_entry is not None and isinstance(latest_entry.effective_breakdown, dict)
+            if latest_entry is not None and getattr(latest_entry, "effective_breakdown", None) is not None
             else submission.grading_json
-            if isinstance(submission.grading_json, dict)
+            if getattr(submission, "grading_json", None) is not None
             else {}
         )
 
@@ -904,10 +905,8 @@ async def bulk_publish_grades(
             effective_breakdown=effective_breakdown,
             overall_feedback=(
                 latest_entry.overall_feedback
-                if latest_entry is not None
+                if latest_entry is not None and latest_entry.overall_feedback is not None
                 else effective_breakdown.get("feedback", "")
-                if isinstance(effective_breakdown, dict)
-                else ""
             ),
             grading_version=submission.grading_version,
             created_at=now,
@@ -956,8 +955,8 @@ def _get_submission_with_activity(
 ) -> tuple[Submission, Activity]:
     row = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
-        .where(Submission.submission_uuid == submission_uuid)
+        .join(Activity, col(Activity.id) == Submission.activity_id)
+        .where(col(Submission.submission_uuid) == submission_uuid)
     ).first()
     if not row:
         raise HTTPException(
@@ -984,7 +983,7 @@ def _stringify_http_exception_detail(detail: object) -> str:
 def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, User]:
     if not user_ids:
         return {}
-    rows = db_session.exec(select(User).where(User.id.in_(user_ids))).all()
+    rows = db_session.exec(select(User).where(col(User.id).in_(user_ids))).all()
     return {u.id: u for u in rows if u.id is not None}
 
 

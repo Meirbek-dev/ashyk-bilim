@@ -213,6 +213,7 @@ strict-exception-handling = true # Complements your Ruff BLE/TRY rules
 python_version = "3.14"
 strict = true
 plugins = ["pydantic.mypy"]
+exclude = "migrations/"
 
 # Robustness settings
 warn_unreachable = true
@@ -229,9 +230,12 @@ check_untyped_defs = true
 strict_equality = true
 
 [[tool.mypy.overrides]]
+module = "src.tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 # Libraries that traditionally have poor or no typing
 module = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
-
 ignore_missing_imports = true
 
 [tool.basedpyright]
