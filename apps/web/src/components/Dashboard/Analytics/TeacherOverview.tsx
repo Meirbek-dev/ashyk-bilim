@@ -222,87 +222,105 @@ export default function TeacherOverview({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
-      {/* Clean, Premium Page Header */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between border-b border-border/40 pb-6 mb-2">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-xs font-semibold uppercase tracking-wider">
-              {t('overview.label')}
-            </Badge>
-            <span className="text-muted-foreground text-xs">•</span>
-            <span className="text-muted-foreground text-xs font-medium">
-              {t('overview.labelScopedCourses')}: {data.scope.course_ids.length}
-            </span>
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
+      {/* Sleek, Premium Sticky Page Header (matching courses layout) */}
+      <header className="border-border bg-background sticky top-0 z-20 border-b shadow-sm">
+        {/* Title row */}
+        <div className="flex h-16 items-center gap-4 px-4 lg:px-8">
+          <div className="min-w-0 flex-1 flex flex-col justify-center">
+            {/* Scoped badge */}
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-[10px] h-4.5 px-1.5 py-0 font-semibold uppercase tracking-wider scale-95 origin-left">
+                {t('overview.label')}
+              </Badge>
+              <span className="text-muted-foreground/60 text-xs font-medium">
+                • {t('overview.labelScopedCourses')}: {data.scope.course_ids.length}
+              </span>
+            </div>
+            <h1 className="text-foreground min-w-0 truncate text-lg font-bold leading-tight mt-0.5">
+              Teacher Analytics &amp; Operations
+            </h1>
           </div>
-          <h1 className="text-foreground mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">
-            Teacher Analytics &amp; Operations
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-relaxed md:text-base font-normal">
-            {t('overview.heading')}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />
-          <AnalyticsExportButton
-            href={getAnalyticsExportUrl('grading-backlog', query)}
-            label={t('overview.exportGradingBacklog')}
-          />
-        </div>
-      </div>
 
-      {/* Global Filters Section (Above Tabs) */}
-      <div className="w-full">
-        <TeacherFilterBar
-          query={query}
-          courseCount={data.scope.course_ids.length}
-          courseOptions={(courseOptions.length ? courseOptions : data.course_options) ?? []}
-          cohortOptions={(cohortOptions.length ? cohortOptions : data.cohort_options) ?? []}
-        />
-        <Suspense fallback={<SectionFallback height="h-[36px]" />}>
-          <SavedViewsBar query={query} />
-        </Suspense>
-      </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />
+            <AnalyticsExportButton
+              href={getAnalyticsExportUrl('grading-backlog', query)}
+              label={t('overview.exportGradingBacklog')}
+            />
+          </div>
+        </div>
 
-      {/* Modern Dashboard Switcher */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="border-b border-border/45 w-full flex items-center justify-start gap-6 bg-transparent rounded-none p-0 h-auto mb-6">
-          <TabsTrigger value="overview" className="relative h-10 px-1 pb-3 text-sm font-medium text-muted-foreground data-active:text-foreground data-active:border-b-2 data-active:border-primary rounded-none shadow-none bg-transparent hover:text-foreground flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
+        {/* Tab nav row */}
+        <TabsList className="border-border/50 flex h-12 items-end justify-start gap-0 overflow-x-auto border-t bg-transparent rounded-none p-0 px-4 lg:px-8">
+          <TabsTrigger
+            value="overview"
+            className="relative flex h-full shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-all duration-200 rounded-none bg-transparent hover:text-foreground data-active:border-primary data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-primary shadow-none after:hidden"
+          >
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
             <span>{t('tabs.overview')}</span>
             {data.alerts.length > 0 && (
-              <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold px-1.5 py-0.5">
+              <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-bold px-1.5 py-0.5">
                 {data.alerts.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="watchlist" className="relative h-10 px-1 pb-3 text-sm font-medium text-muted-foreground data-active:text-foreground data-active:border-b-2 data-active:border-primary rounded-none shadow-none bg-transparent hover:text-foreground flex items-center gap-2">
-            <Users className="h-4 w-4" />
+          <TabsTrigger
+            value="watchlist"
+            className="relative flex h-full shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-all duration-200 rounded-none bg-transparent hover:text-foreground data-active:border-primary data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-primary shadow-none after:hidden"
+          >
+            <Users className="h-4 w-4 shrink-0" />
             <span>{t('tabs.watchlist')}</span>
             {data.summary.at_risk_learners.value > 0 && (
-              <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5">
+              <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5">
                 {data.summary.at_risk_learners.value}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="performance" className="relative h-10 px-1 pb-3 text-sm font-medium text-muted-foreground data-active:text-foreground data-active:border-b-2 data-active:border-primary rounded-none shadow-none bg-transparent hover:text-foreground flex items-center gap-2">
-            <Award className="h-4 w-4" />
+          <TabsTrigger
+            value="performance"
+            className="relative flex h-full shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-all duration-200 rounded-none bg-transparent hover:text-foreground data-active:border-primary data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-primary shadow-none after:hidden"
+          >
+            <Award className="h-4 w-4 shrink-0" />
             <span>{t('tabs.performance')}</span>
           </TabsTrigger>
-          <TabsTrigger value="operations" className="relative h-10 px-1 pb-3 text-sm font-medium text-muted-foreground data-active:text-foreground data-active:border-b-2 data-active:border-primary rounded-none shadow-none bg-transparent hover:text-foreground flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+          <TabsTrigger
+            value="operations"
+            className="relative flex h-full shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-all duration-200 rounded-none bg-transparent hover:text-foreground data-active:border-primary data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-primary shadow-none after:hidden"
+          >
+            <Clock className="h-4 w-4 shrink-0" />
             <span>{t('tabs.operations')}</span>
           </TabsTrigger>
           {adminData && (
-            <TabsTrigger value="admin" className="relative h-10 px-1 pb-3 text-sm font-medium text-muted-foreground data-active:text-foreground data-active:border-b-2 data-active:border-primary rounded-none shadow-none bg-transparent hover:text-foreground flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <TabsTrigger
+              value="admin"
+              className="relative flex h-full shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-all duration-200 rounded-none bg-transparent hover:text-foreground data-active:border-primary data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent dark:data-active:border-primary shadow-none after:hidden"
+            >
+              <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
               <span>{t('tabs.admin')}</span>
             </TabsTrigger>
           )}
         </TabsList>
+      </header>
+
+      {/* Main Content Area - Full width with padding */}
+      <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 space-y-6">
+        {/* Global Filters Section (Above Tabs) */}
+        <div className="w-full">
+          <TeacherFilterBar
+            query={query}
+            courseCount={data.scope.course_ids.length}
+            courseOptions={(courseOptions.length ? courseOptions : data.course_options) ?? []}
+            cohortOptions={(cohortOptions.length ? cohortOptions : data.cohort_options) ?? []}
+          />
+          <Suspense fallback={<SectionFallback height="h-[36px]" />}>
+            <SavedViewsBar query={query} />
+          </Suspense>
+        </div>
 
         {/* Tab Panel contents */}
-        <div className="mt-4 space-y-6">
+        <div className="space-y-6">
+
           {/* Tab 1: Overview */}
           <TabsContent value="overview" className="space-y-6 outline-none">
             <Suspense fallback={<SectionFallback height="h-[220px]" />}>
@@ -589,7 +607,7 @@ export default function TeacherOverview({
             </TabsContent>
           )}
         </div>
-      </Tabs>
-    </div>
+      </main>
+    </Tabs>
   )
 }

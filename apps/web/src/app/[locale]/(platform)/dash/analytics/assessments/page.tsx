@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+import { ChevronRight, LayoutDashboard } from 'lucide-react'
 
 export default function PlatformAnalyticsAssessmentsPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -36,71 +37,89 @@ async function PlatformAnalyticsAssessmentsPageInner(props: {
     if (query.bucket_start) params.set('bucket_start', query.bucket_start)
 
     return (
-      <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
-        <Card className="bg-card text-card-foreground border-slate-200 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <CardContent className="space-y-4">
-            <TeacherFilterBar
-              path="/dash/analytics/assessments"
-              query={query}
-              courseCount={courseOptions.length}
-              courseOptions={courseOptions}
-              cohortOptions={cohortOptions}
-            />
-            <div
-              className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300"
-              aria-live="polite"
-              aria-atomic="true"
+      <div className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
+        {/* Sticky Header block matching courses layout */}
+        <header className="border-border bg-background sticky top-0 z-20 border-b shadow-sm">
+          {/* Breadcrumb / Title row */}
+          <div className="flex h-16 items-center gap-4 px-4 lg:px-8">
+            <Link
+              href="/dash/analytics"
+              className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground flex shrink-0 items-center gap-2 text-sm transition-colors"
             >
-              <span>
-                {t('table.showingRows', {
-                  from: (assessments.page - 1) * assessments.page_size + 1,
-                  to: Math.min(assessments.page * assessments.page_size, assessments.total),
-                  total: assessments.total,
-                })}
-              </span>
-            </div>
+              <LayoutDashboard className="size-4 shrink-0" />
+              <span className="hidden sm:inline">{t('overview.label')}</span>
+            </Link>
+
+            <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
+
+            <h1 className="text-foreground dark:text-foreground min-w-0 flex-1 truncate text-base font-semibold">
+              {t('pages.assessmentsTitle') || 'Assessment Performance'}
+            </h1>
+          </div>
+        </header>
+
+        <main className="min-w-0 flex-1 px-4 py-8 lg:px-8 space-y-6">
+          <Card className="bg-card text-card-foreground border-border shadow-xs rounded-xl">
+            <CardContent className="pt-6">
+              <TeacherFilterBar
+                path="/dash/analytics/assessments"
+                query={query}
+                courseCount={courseOptions.length}
+                courseOptions={courseOptions}
+                cohortOptions={cohortOptions}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+            <span>
+              {t('table.showingRows', {
+                from: (assessments.page - 1) * assessments.page_size + 1,
+                to: Math.min(assessments.page * assessments.page_size, assessments.total),
+                total: assessments.total,
+              })}
+            </span>
+          </div>
+
+          <div className="bg-card border-border shadow-xs rounded-xl overflow-hidden">
             <AssessmentOutliersTable rows={assessments.items} storageKey="assessments-page" serverPaginated />
-            {totalPages > 1 ? (
-              <nav aria-label={t('table.pagination')} className="flex items-center justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={assessments.page <= 1}
-                  aria-label={t('table.prev')}
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/dash/analytics/assessments?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, assessments.page - 1)), page_size: String(assessments.page_size) }).toString()}`}
-                    />
-                  }
-                >
-                  {t('table.prev')}
-                </Button>
-                <span className="text-sm text-slate-600 dark:text-slate-300">
-                  {t('table.page', {
-                    current: assessments.page,
-                    total: totalPages,
-                  })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={assessments.page >= totalPages}
-                  aria-label={t('table.next')}
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/dash/analytics/assessments?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, assessments.page + 1)), page_size: String(assessments.page_size) }).toString()}`}
-                    />
-                  }
-                >
-                  {t('table.next')}
-                </Button>
-              </nav>
-            ) : null}
-          </CardContent>
-        </Card>
-      </main>
+          </div>
+
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={assessments.page <= 1}
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/dash/analytics/assessments?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, assessments.page - 1)), page_size: String(assessments.page_size) }).toString()}`}
+                  />
+                }
+              >
+                {t('table.prev')}
+              </Button>
+              <span className="text-sm text-muted-foreground font-medium">
+                {t('table.page', { current: assessments.page, total: totalPages })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={assessments.page >= totalPages}
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/dash/analytics/assessments?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, assessments.page + 1)), page_size: String(assessments.page_size) }).toString()}`}
+                  />
+                }
+              >
+                {t('table.next')}
+              </Button>
+            </div>
+          ) : null}
+        </main>
+      </div>
     )
   } catch (error) {
     return (
