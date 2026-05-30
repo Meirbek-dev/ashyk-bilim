@@ -62,10 +62,7 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
 
     # Hydrate each run with steps and course data
     for rr in run_reads:
-        if rr.id is not None:
-            steps = steps_by_run.get(rr.id, [])
-        else:
-            steps = []
+        steps = steps_by_run.get(rr.id, []) if rr.id is not None else []
         rr.steps = [TrailStepRead(**s.model_dump()) for s in steps]
 
         course_obj = courses_by_id.get(rr.course_id)

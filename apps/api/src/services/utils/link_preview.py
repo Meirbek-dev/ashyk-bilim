@@ -233,10 +233,10 @@ def _parse_preview(url: str, html: str) -> dict[str, str | None]:
 
     def get_meta(property_name: str, attr: str = "property") -> str | None:
         node = tree.css_first(f'meta[{attr}="{property_name}"]')
-        return node.attributes.get("content") if cast(Any, node) else None
+        return node.attributes.get("content") if cast("Any", node) else None
 
     title_node = tree.css_first("title")
-    title = title_node.text(strip=True) if cast(Any, title_node) else None
+    title = title_node.text(strip=True) if cast("Any", title_node) else None
     description = get_meta("og:description") or get_meta("description", "name")
 
     og_image = get_meta("og:image")
@@ -314,7 +314,7 @@ async def _get_cached_preview(url: str, settings: LinkPreviewConfig) -> dict[str
 
     async with _memory_cache_lock:
         cache = _get_memory_cache(settings)
-        cached = cast(Any, cache.get(cache_key))
+        cached = cast("Any", cache.get(cache_key))
         if cached is None:
             return None
         return cached

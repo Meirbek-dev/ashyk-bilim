@@ -20,12 +20,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
+import redis.asyncio
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from src.db.auth_sessions import AuthSession
 from src.db.users import User
-import redis.asyncio
 from src.security.auth_lifetimes import (
     REFRESH_TOKEN_EXPIRE,
     REFRESH_TOKEN_HARD_CAP_EXPIRE,

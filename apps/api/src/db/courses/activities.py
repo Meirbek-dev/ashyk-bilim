@@ -3,7 +3,6 @@ from enum import StrEnum
 from typing import Self
 
 from pydantic import field_validator, model_validator
-from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -15,6 +14,7 @@ from sqlalchemy import (
     func,
 )
 from sqlmodel import Field
+from sqlmodel._compat import SQLModelConfig
 
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.strict_base_model import SQLModelStrictBaseModel

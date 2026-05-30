@@ -40,8 +40,9 @@ def publish_due_assessments() -> int:
 
     Returns the number of assessments published in this tick.
     """
-    from sqlmodel import Session, col, select
     from typing import Any, cast
+
+    from sqlmodel import Session, col, select
 
     try:
         engine = get_bg_engine()
@@ -62,7 +63,7 @@ def publish_due_assessments() -> int:
         for assessment in due_assessments:
             try:
                 activity = None
-                if cast(Any, assessment.activity_id) is not None:
+                if cast("Any", assessment.activity_id) is not None:
                     from src.db.courses.activities import Activity
 
                     activity = db.get(Activity, assessment.activity_id)

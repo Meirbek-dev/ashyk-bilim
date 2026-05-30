@@ -76,14 +76,14 @@ def load_chat_session(
         key = _redis_key(session_id)
         try:
             total_messages = client.llen(key)
-            raw_messages = cast(list[bytes], client.lrange(key, -window_size, -1))
+            raw_messages = cast("list[bytes]", client.lrange(key, -window_size, -1))
             messages = [ChatMessage.model_validate_json(_decode_redis_value(item)) for item in raw_messages]
 
             older_message_count = max(total_messages - len(messages), 0)
             if older_message_count > 0:
                 older_end = older_message_count - 1
                 older_start = max(0, older_end - _SUMMARY_SOURCE_MESSAGE_COUNT + 1)
-                raw_summary_messages = cast(list[bytes], client.lrange(key, older_start, older_end))
+                raw_summary_messages = cast("list[bytes]", client.lrange(key, older_start, older_end))
                 summary_messages = [
                     ChatMessage.model_validate_json(_decode_redis_value(item)) for item in raw_summary_messages
                 ]

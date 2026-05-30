@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 
 from pydantic import field_validator
-from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import DateTime, String, func
 from sqlmodel import Column, Field, ForeignKey, Integer
+from sqlmodel._compat import SQLModelConfig
 
 from src.db.courses.activities import ActivityRead, ActivityReadWithPermissions
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel

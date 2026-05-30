@@ -25,7 +25,8 @@ class BlockBase(SQLModelStrictBaseModel):
     def validate_block_type(cls, v: object) -> BlockTypeEnum:
         if isinstance(v, str):
             return BlockTypeEnum(v)
-        raise TypeError(f"Expected str or BlockTypeEnum, got {type(v).__name__}")
+        msg = f"Expected str or BlockTypeEnum, got {type(v).__name__}"
+        raise TypeError(msg)
 
 
 class Block(BlockBase, table=True):

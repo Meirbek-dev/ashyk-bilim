@@ -22,7 +22,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         self.session_factory = session_factory
 
     @override
-    async def get(self, id: int) -> User | None:  # noqa: A002
+    async def get(self, id: int) -> User | None:
         def _get() -> User | None:
             with self.session_factory() as session:
                 return session.exec(select(User).where(User.id == id)).first()

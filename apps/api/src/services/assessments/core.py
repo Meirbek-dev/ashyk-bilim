@@ -9,13 +9,14 @@ All implementations have been moved to focused modules:
 
 from src.services.assessments._shared import (
     ASSESSABLE_ACTIVITY_TYPES,
-    build_readiness,
+    _has_submit_access_impl as _has_submit_access,
     _require_author_impl as _require_author,
-    _require_publish_impl as _require_publish,
     _require_grade_impl as _require_grade,
+    _require_publish_impl as _require_publish,
     _require_read_impl as _require_read,
     _require_submit_access_impl as _require_submit_access,
-    _has_submit_access_impl as _has_submit_access,
+    build_readiness,
+    sync_activity_lifecycle,
 )
 from src.services.assessments.access_service import (
     get_assessment_access,
@@ -36,7 +37,6 @@ from src.services.assessments.assessment_crud import (
     update_assessment,
     update_assessment_item,
 )
-from src.services.assessments._shared import sync_activity_lifecycle
 from src.services.assessments.attempt_service import (
     get_attempt_state,
     get_code_item_run,
@@ -64,6 +64,12 @@ from src.services.assessments.review_service import (
 
 __all__ = [
     "ASSESSABLE_ACTIVITY_TYPES",
+    "_has_submit_access",
+    "_require_author",
+    "_require_grade",
+    "_require_publish",
+    "_require_read",
+    "_require_submit_access",
     "build_readiness",
     "check_publish_readiness",
     "create_assessment",
@@ -71,6 +77,7 @@ __all__ = [
     "create_student_policy_override",
     "delete_assessment_item",
     "delete_student_policy_override",
+    "duplicate_assessment",
     "get_assessment",
     "get_assessment_access",
     "get_assessment_by_activity_uuid",
@@ -94,17 +101,10 @@ __all__ = [
     "save_grading_draft",
     "start_assessment",
     "submit_assessment",
-    "duplicate_assessment",
     "sync_activity_lifecycle",
     "transition_assessment_lifecycle",
     "update_assessment",
     "update_assessment_access",
     "update_assessment_item",
     "update_student_policy_override",
-    "_require_author",
-    "_require_publish",
-    "_require_grade",
-    "_require_read",
-    "_require_submit_access",
-    "_has_submit_access",
 ]

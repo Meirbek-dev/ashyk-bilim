@@ -144,7 +144,7 @@ def api_update_user(
     if not is_own_profile:
         checker.require(current_user.id, "user:update")
 
-    return cast(UserRead, update_user(request, db_session, user_id, current_user, user_object))
+    return cast("UserRead", update_user(request, db_session, user_id, current_user, user_object))
 
 
 @router.put("/update_avatar/{user_id}", tags=["users"])

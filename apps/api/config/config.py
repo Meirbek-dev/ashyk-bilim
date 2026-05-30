@@ -99,7 +99,8 @@ class GeneralConfig(PlatformSectionSettings):
     @classmethod
     def normalize_timezone(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         return stripped or "UTC"
@@ -288,7 +289,8 @@ class HostingConfig(PlatformSectionSettings):
     @classmethod
     def normalize_required_strings(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -303,7 +305,8 @@ class HostingConfig(PlatformSectionSettings):
             return [origin.strip() for origin in value if isinstance(origin, str) and origin.strip()]
 
         if not isinstance(value, str):
-            raise TypeError(f"Expected str or list, got {type(value).__name__}")
+            msg = f"Expected str or list, got {type(value).__name__}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -356,7 +359,8 @@ class DatabaseConfig(PlatformSectionSettings):
     @classmethod
     def validate_sql_connection_string(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -396,7 +400,8 @@ class RedisConfig(PlatformSectionSettings):
     @classmethod
     def validate_redis_connection_string(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -478,7 +483,8 @@ class Judge0Config(PlatformSectionSettings):
     @classmethod
     def normalize_base_url(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -498,7 +504,8 @@ class Judge0Config(PlatformSectionSettings):
             return [int(item) for item in value]
 
         if not isinstance(value, str):
-            raise TypeError(f"Expected str or list, got {type(value).__name__}")
+            msg = f"Expected str or list, got {type(value).__name__}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         if not stripped:
@@ -545,7 +552,8 @@ class LinkPreviewConfig(PlatformSectionSettings):
     @classmethod
     def normalize_user_agent(cls, value: object) -> str:
         if not isinstance(value, str):
-            raise TypeError(f"Expected str, got {type(value).__name__}: {value!r}")
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
 
         stripped = value.strip()
         return stripped or "AshyqBilim-LinkPreview/1.0"

@@ -110,10 +110,7 @@ def structure_activity_content_by_type(activity: ActivityRead | dict) -> list[st
     Returns a list of text sections preserving document order and structure.
     Each section is a non-empty string representing a block of content.
     """
-    if isinstance(activity, dict):
-        content_dict = activity
-    else:
-        content_dict = activity.content or {}
+    content_dict = activity if isinstance(activity, dict) else activity.content or {}
 
     if not content_dict or not isinstance(content_dict, dict):
         return []

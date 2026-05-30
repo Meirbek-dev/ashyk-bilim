@@ -1,7 +1,7 @@
 from pydantic import ConfigDict
-from sqlmodel._compat import SQLModelConfig
 from sqlalchemy import JSON, Column
 from sqlmodel import Field
+from sqlmodel._compat import SQLModelConfig
 
 from src.db.permissions import RoleRead
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel

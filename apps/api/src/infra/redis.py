@@ -44,8 +44,8 @@ def configure(url: str) -> None:
 
     from typing import Any, cast
 
-    redis_mod = cast(Any, _redis)
-    aioredis_mod = cast(Any, _aioredis)
+    redis_mod = cast("Any", _redis)
+    aioredis_mod = cast("Any", _aioredis)
 
     _sync_client = redis_mod.Redis.from_url(
         url,

@@ -490,7 +490,7 @@ def _get_user_by_field(db_session: Session, field: str, value: str | int, use_ca
                 return User.model_validate(cached)
             except Exception:
                 # Cached payload may be partial (e.g., only id/username); return a simple object
-                return cast(User, SimpleNamespace(**cached))
+                return cast("User", SimpleNamespace(**cached))
         except Exception:
             return None
 

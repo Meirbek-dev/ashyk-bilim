@@ -31,7 +31,7 @@ def ensure_runtime_directories() -> None:
 
 def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextManager[None]]:
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         configure_logging(settings)
         ensure_runtime_directories()
 
