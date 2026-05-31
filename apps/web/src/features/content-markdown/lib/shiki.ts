@@ -2,6 +2,18 @@
 
 import { createHighlighter } from 'shiki/bundle/web'
 
+import langPython from 'shiki/langs/python.mjs'
+import langJava from 'shiki/langs/java.mjs'
+import langKotlin from 'shiki/langs/kotlin.mjs'
+import langC from 'shiki/langs/c.mjs'
+import langCpp from 'shiki/langs/cpp.mjs'
+import langGo from 'shiki/langs/go.mjs'
+import langRust from 'shiki/langs/rust.mjs'
+import langBash from 'shiki/langs/bash.mjs'
+import langSql from 'shiki/langs/sql.mjs'
+import langYaml from 'shiki/langs/yaml.mjs'
+import langDiff from 'shiki/langs/diff.mjs'
+
 /**
  * Singleton Shiki highlighter shared by:
  * - MarkdownCodeBlock (renderer)
@@ -11,6 +23,7 @@ import { createHighlighter } from 'shiki/bundle/web'
  * Uses shiki/bundle/web for optimal browser bundle size.
  */
 let highlighterPromise: ReturnType<typeof createHighlighter> | null = null
+let resolvedHighlighter: Awaited<ReturnType<typeof createHighlighter>> | null = null
 
 export const getHighlighter = () => {
   if (!highlighterPromise) {
@@ -21,25 +34,29 @@ export const getHighlighter = () => {
         'css',
         'javascript',
         'typescript',
-        'python',
-        'java',
-        'kotlin',
-        'c',
-        'cpp',
-        'go',
-        'rust',
         'markdown',
         'json',
-        'bash',
-        'sql',
-        'yaml',
-        'diff',
-        'text',
+        langPython,
+        langJava,
+        langKotlin,
+        langC,
+        langCpp,
+        langGo,
+        langRust,
+        langBash,
+        langSql,
+        langYaml,
+        langDiff,
       ],
+    }).then(highlighter => {
+      resolvedHighlighter = highlighter
+      return highlighter
     })
   }
   return highlighterPromise
 }
+
+export const getResolvedHighlighter = () => resolvedHighlighter
 
 /**
  * Highlights code to themed HTML using Shiki dual-theme CSS variables.

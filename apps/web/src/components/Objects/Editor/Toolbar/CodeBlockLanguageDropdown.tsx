@@ -37,6 +37,15 @@ const LANGUAGE_LABELS: Record<CodeBlockLanguageValue, string> = {
   kotlin: 'Kotlin',
   python: 'Python',
   typescript: 'TypeScript',
+  c: 'C',
+  cpp: 'C++',
+  go: 'Go',
+  rust: 'Rust',
+  markdown: 'Markdown',
+  json: 'JSON',
+  bash: 'Bash',
+  sql: 'SQL',
+  yaml: 'YAML',
 }
 
 export function CodeBlockLanguageDropdown({ editor, language }: CodeBlockLanguageDropdownProps) {

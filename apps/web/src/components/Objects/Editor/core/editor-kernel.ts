@@ -8,7 +8,7 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { StarterKit } from '@tiptap/starter-kit'
 import CharacterCount from '@tiptap/extension-character-count'
 import Focus from '@tiptap/extension-focus'
-import CodeBlockShiki from 'tiptap-extension-code-block-shiki'
+import { CodeBlockShiki } from './code-block-shiki'
 import { Markdown } from 'tiptap-markdown'
 import Placeholder from '@tiptap/extension-placeholder'
 
@@ -85,10 +85,8 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
     InlineQuiz.configure({ editable, activity }),
     Youtube.configure({ controls: true, modestBranding: true }),
     CodeBlockShiki.configure({
-      defaultTheme: 'github-dark',
-      themes: {
-        light: 'github-light',
-        dark: 'github-dark',
+      HTMLAttributes: {
+        class: 'rounded-md border border-border bg-muted/50 font-mono text-sm',
       },
     }),
     EmbedObjects.configure({ editable, activity }),
@@ -139,10 +137,8 @@ function createDiscussionLikeExtensions({ editable }: { editable: boolean }): Ed
       codeBlock: false,
     }),
     CodeBlockShiki.configure({
-      defaultTheme: 'github-dark',
-      themes: {
-        light: 'github-light',
-        dark: 'github-dark',
+      HTMLAttributes: {
+        class: 'rounded-md border border-border bg-muted/50 font-mono text-sm',
       },
     }),
     HeadingWithIds.configure({

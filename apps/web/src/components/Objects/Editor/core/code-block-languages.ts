@@ -8,6 +8,15 @@ export const CODE_BLOCK_LANGUAGE_VALUES = [
   'python',
   'java',
   'kotlin',
+  'c',
+  'cpp',
+  'go',
+  'rust',
+  'markdown',
+  'json',
+  'bash',
+  'sql',
+  'yaml',
 ] as const
 
 export type SupportedCodeBlockLanguage = (typeof CODE_BLOCK_LANGUAGE_VALUES)[number]
@@ -31,6 +40,22 @@ const CODE_BLOCK_LANGUAGE_ALIASES: Record<string, SupportedCodeBlockLanguage> = 
   tsx: 'typescript',
   typescript: 'typescript',
   xml: 'html',
+  c: 'c',
+  cpp: 'cpp',
+  'c++': 'cpp',
+  go: 'go',
+  golang: 'go',
+  rust: 'rust',
+  rs: 'rust',
+  markdown: 'markdown',
+  md: 'markdown',
+  json: 'json',
+  bash: 'bash',
+  sh: 'bash',
+  shell: 'bash',
+  sql: 'sql',
+  yaml: 'yaml',
+  yml: 'yaml',
 }
 
 export function normalizeCodeBlockLanguage(language: string | null | undefined): CodeBlockLanguageValue {

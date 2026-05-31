@@ -6,6 +6,11 @@ if (typeof process === 'undefined') {
   ;(globalThis as any).process = { env: {} }
 }
 
+// Mock elementFromPoint for JSDOM which is missing it
+if (typeof document !== 'undefined') {
+  document.elementFromPoint = () => null
+}
+
 // Mock window.matchMedia which is often missing in test environments
 Object.defineProperty(globalThis, 'matchMedia', {
   writable: true,
