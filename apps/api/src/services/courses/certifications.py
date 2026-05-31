@@ -499,7 +499,9 @@ async def get_user_certificates_for_course(
         return []
 
     found_cert_ids = [cu.certification_id for cu in cert_users]
-    certifications_list = db_session.exec(select(Certifications).where(col(Certifications.id).in_(found_cert_ids))).all()
+    certifications_list = db_session.exec(
+        select(Certifications).where(col(Certifications.id).in_(found_cert_ids))
+    ).all()
     certs_by_id = {c.id: c for c in certifications_list}
 
     result = [

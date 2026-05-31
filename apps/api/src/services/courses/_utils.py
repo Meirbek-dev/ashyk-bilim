@@ -1,7 +1,7 @@
 """Shared helpers for course/chapter/activity services."""
 
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.activities import Activity
 from src.db.courses.chapters import Chapter
@@ -24,7 +24,7 @@ def _activity_uuid_candidates(activity_uuid: str) -> tuple[str, ...]:
 def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Activity:
     """Robustly fetch an activity by any variant of its UUID."""
     candidates = _activity_uuid_candidates(activity_uuid)
-    activity = db_session.exec(select(Activity).where(Activity.activity_uuid.in_(candidates))).first()
+    activity = db_session.exec(select(Activity).where(col(Activity.activity_uuid).in_(candidates))).first()
 
     if not activity:
         raise HTTPException(status_code=404, detail="Активность не найдена")
@@ -51,6 +51,6 @@ def _get_course_for_activity_or_404(activity: Activity, db_session: Session) -> 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:
     """Return the next available order index for an activity in *chapter_id*."""
     result = db_session.exec(
-        select(Activity).where(Activity.chapter_id == chapter_id).order_by(Activity.order.desc())
+        select(Activity).where(Activity.chapter_id == chapter_id).order_by(col(Activity.order).desc())
     ).first()
     return (result.order if result else 0) + 1

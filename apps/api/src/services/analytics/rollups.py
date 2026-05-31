@@ -288,7 +288,9 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
             )
 
         for course_row in course_rows:
-            course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == course_row.course_id]
+            course_snapshots = [
+                snapshot for snapshot in snapshots.values() if snapshot.course_id == course_row.course_id
+            ]
             db_session.merge(
                 DailyCourseMetrics(
                     metric_date=target_date,
@@ -296,7 +298,9 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                     teacher_user_id=context.courses_by_id[course_row.course_id].creator_id,
                     enrolled_learners=len(course_snapshots),
                     active_learners_7d=course_row.active_learners_7d,
-                    active_learners_28d=len({event.user_id for event in events if event.course_id == course_row.course_id}),
+                    active_learners_28d=len({
+                        event.user_id for event in events if event.course_id == course_row.course_id
+                    }),
                     completion_rate=course_row.completion_rate,
                     avg_progress_pct=round(
                         sum(snapshot.progress_pct for snapshot in course_snapshots) / max(1, len(course_snapshots)),
@@ -437,7 +441,9 @@ def refresh_teacher_analytics_rollups(db_session: Session, *, snapshot_date: dat
                 )
 
         for assessment_row in assessment_rows:
-            detail = get_teacher_assessment_detail(db_session, scope, assessment_row.assessment_type, assessment_row.assessment_id, filters)
+            detail = get_teacher_assessment_detail(
+                db_session, scope, assessment_row.assessment_type, assessment_row.assessment_id, filters
+            )
             db_session.merge(
                 DailyAssessmentMetrics(
                     metric_date=target_date,

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, and_, select
+from sqlmodel import Session, and_, col, select
 
 from src.db.courses.courses import Course
 from src.db.resource_authors import (
@@ -260,7 +260,7 @@ async def add_bulk_course_contributors(
     current_time = str(datetime.now())
 
     # Pre-fetch all users and existing authorships in 2 batch queries
-    user_map = {u.username: u for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()}
+    user_map = {u.username: u for u in db_session.exec(select(User).where(col(User.username).in_(usernames))).all()}
     existing_user_ids = [u.id for u in user_map.values() if u.id is not None]
     existing_authorship_map = {
         ea.user_id: ea
@@ -268,7 +268,7 @@ async def add_bulk_course_contributors(
             select(ResourceAuthor).where(
                 and_(
                     ResourceAuthor.resource_uuid == course_uuid,
-                    ResourceAuthor.user_id.in_(existing_user_ids),
+                    col(ResourceAuthor.user_id).in_(existing_user_ids),
                 )
             )
         ).all()
@@ -357,7 +357,7 @@ async def remove_bulk_course_contributors(
     results = {"successful": [], "failed": []}
 
     # Pre-fetch all users and existing authorships in 2 batch queries
-    user_map = {u.username: u for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()}
+    user_map = {u.username: u for u in db_session.exec(select(User).where(col(User.username).in_(usernames))).all()}
     existing_user_ids = [u.id for u in user_map.values() if u.id is not None]
     existing_authorship_map = {
         ea.user_id: ea
@@ -365,7 +365,7 @@ async def remove_bulk_course_contributors(
             select(ResourceAuthor).where(
                 and_(
                     ResourceAuthor.resource_uuid == course_uuid,
-                    ResourceAuthor.user_id.in_(existing_user_ids),
+                    col(ResourceAuthor.user_id).in_(existing_user_ids),
                 )
             )
         ).all()

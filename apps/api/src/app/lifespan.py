@@ -2,9 +2,8 @@ import asyncio
 import contextlib
 import logging
 from collections.abc import AsyncGenerator, Callable
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager as AsyncContextManager, asynccontextmanager
 from pathlib import Path
-from typing import AsyncContextManager
 
 from fastapi import FastAPI
 

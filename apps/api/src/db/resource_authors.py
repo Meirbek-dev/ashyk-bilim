@@ -31,14 +31,14 @@ class ResourceAuthor(SQLModelStrictBaseModel, table=True):
 
     @field_validator("authorship", mode="before")
     @classmethod
-    def validate_authorship(cls, v: object):
+    def validate_authorship(cls, v: object) -> object:
         if isinstance(v, str):
             return ResourceAuthorshipEnum(v)
         return v
 
     @field_validator("authorship_status", mode="before")
     @classmethod
-    def validate_authorship_status(cls, v: object):
+    def validate_authorship_status(cls, v: object) -> object:
         if isinstance(v, str):
             return ResourceAuthorshipStatusEnum(v)
         return v

@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import (
@@ -44,7 +44,7 @@ def _get_course_for_chapter(chapter: Chapter, db_session: Session) -> Course:
 
 def _next_chapter_order(course_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order.desc())
+        select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order).desc())
     ).first()
     return (result.order if result else 0) + 1
 
@@ -281,7 +281,7 @@ async def get_course_chapters(
     chapter_ids = [c.id for c in chapter_reads]
 
     # Apply the published filter in SQL, not in Python.
-    activity_query = select(Activity).where(Activity.chapter_id.in_(chapter_ids)).order_by(Activity.order)
+    activity_query = select(Activity).where(col(Activity.chapter_id).in_(chapter_ids)).order_by(Activity.order)
     if not with_unpublished_activities:
         activity_query = activity_query.where(Activity.published)
 

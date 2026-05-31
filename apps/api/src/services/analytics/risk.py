@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import UTC, date
 
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
 from src.services.analytics.filters import AnalyticsFilters
@@ -101,11 +101,11 @@ def _previous_snapshots(
         db_session.exec(
             select(LearnerRiskSnapshot)
             .where(
-                LearnerRiskSnapshot.snapshot_date < before_date,
-                LearnerRiskSnapshot.course_id.in_(course_ids),
-                LearnerRiskSnapshot.user_id.in_(user_ids),
+                col(LearnerRiskSnapshot.snapshot_date) < before_date,
+                col(LearnerRiskSnapshot.course_id).in_(course_ids),
+                col(LearnerRiskSnapshot.user_id).in_(user_ids),
             )
-            .order_by(LearnerRiskSnapshot.snapshot_date.desc())
+            .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
         ).all()
     )
     latest: dict[tuple[int, int], LearnerRiskSnapshot] = {}
@@ -125,10 +125,10 @@ def _interventions_by_pair(
         db_session.exec(
             select(TeacherIntervention)
             .where(
-                TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-                TeacherIntervention.course_id.in_(scope.course_ids),
+                col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+                col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
-            .order_by(TeacherIntervention.created_at.desc())
+            .order_by(col(TeacherIntervention.created_at).desc())
         ).all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)

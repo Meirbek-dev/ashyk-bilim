@@ -149,7 +149,9 @@ async def get_submissions_for_activity(
     )
 
     # Base query — join User for search support
-    query = select(Submission).join(User, col(User.id) == Submission.user_id).where(Submission.activity_id == activity_id)
+    query = (
+        select(Submission).join(User, col(User.id) == Submission.user_id).where(Submission.activity_id == activity_id)
+    )
 
     if status_filter:
         # "NEEDS_GRADING" — виртуальный фильтр, соответствующий PENDING

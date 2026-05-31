@@ -64,6 +64,7 @@ from src.services.analytics.schemas import (
     TeacherAssessmentListResponse,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope
+
 EPOCH_START = datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -149,25 +150,13 @@ def _build_rollup_assessment_rows(
             continue
         if row.assessment_type == "manual_assessment":
             assessment_obj = assessments.get(row.assessment_id)
-            title = (
-                assessment_obj.title
-                if assessment_obj is not None
-                else f"Задание {row.assessment_id}"
-            )
+            title = assessment_obj.title if assessment_obj is not None else f"Задание {row.assessment_id}"
         elif row.assessment_type == "exam":
             assessment_obj = assessments.get(row.assessment_id)
-            title = (
-                assessment_obj.title
-                if assessment_obj is not None
-                else f"Экзамен {row.assessment_id}"
-            )
+            title = assessment_obj.title if assessment_obj is not None else f"Экзамен {row.assessment_id}"
         else:
             activity_obj = activities.get(row.assessment_id)
-            title = (
-                activity_obj.name
-                if activity_obj is not None
-                else f"Оценивание {row.assessment_id}"
-            )
+            title = activity_obj.name if activity_obj is not None else f"Оценивание {row.assessment_id}"
 
         outlier_reason_codes: list[str] = []
         if row.submission_rate is not None and float(row.submission_rate) < 60:
@@ -465,24 +454,14 @@ def _load_audit_history(
     submission_ids: list[int],
     allowed_user_ids: set[int] | None,
 ) -> list[AssessmentAuditEventRow]:
-    entries = (
-        db_session
-        .exec(
-            select(GradingEntry)
-            .where(col(GradingEntry.submission_id).in_(submission_ids or [-1]))
-            .order_by(col(GradingEntry.created_at).desc())
-        )
-        .all()
-    )
-    actions = (
-        db_session
-        .exec(
-            select(BulkAction)
-            .where(col(BulkAction.activity_id) == activity_id)
-            .order_by(col(BulkAction.created_at).desc())
-        )
-        .all()
-    )
+    entries = db_session.exec(
+        select(GradingEntry)
+        .where(col(GradingEntry.submission_id).in_(submission_ids or [-1]))
+        .order_by(col(GradingEntry.created_at).desc())
+    ).all()
+    actions = db_session.exec(
+        select(BulkAction).where(col(BulkAction.activity_id) == activity_id).order_by(col(BulkAction.created_at).desc())
+    ).all()
 
     visible_actions: list[BulkAction] = []
     for action in actions:
@@ -491,11 +470,8 @@ def _load_audit_history(
             visible_actions.append(action)
 
     actor_ids = {
-        actor_id
-        for actor_id in [
-            *(entry.graded_by for entry in entries),
-            *(action.performed_by for action in visible_actions),
-        ]
+        *(entry.graded_by for entry in entries),
+        *(action.performed_by for action in visible_actions),
     }
     actor_names = _resolve_actor_names(db_session, actor_ids)
 
@@ -840,7 +816,8 @@ def _build_manual_assessment_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_manual_assessment: dict[int, list[tuple[Submission, AssessmentAnalyticsRow]]] = defaultdict(list)
@@ -933,7 +910,8 @@ def _build_exam_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
     attempts_by_exam: dict[int, list[tuple[Submission, AssessmentAnalyticsRow]]] = defaultdict(list)
@@ -1007,7 +985,8 @@ def _build_quiz_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(list)
@@ -1090,7 +1069,8 @@ def _build_code_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(list)
@@ -1211,7 +1191,8 @@ def get_teacher_assessment_list(
         generated_at, rows = rollup_rows
         paged_rows = rows[filters.offset : filters.offset + filters.page_size]
         course_map = {
-            course.id: course for course in db_session.exec(select(Course).where(col(Course.id).in_(scope.course_ids))).all()
+            course.id: course
+            for course in db_session.exec(select(Course).where(col(Course.id).in_(scope.course_ids))).all()
         }
         usergroups = list(db_session.exec(select(UserGroup)).all())
         return TeacherAssessmentListResponse(
@@ -1443,9 +1424,11 @@ def get_teacher_assessment_detail(
             )
             last_attempt = max(
                 attempts,
-                key=lambda item: item.submitted_at
-                if item.submitted_at is not None
-                else (item.started_at if item.started_at is not None else EPOCH_START),
+                key=lambda item: (
+                    item.submitted_at
+                    if item.submitted_at is not None
+                    else (item.started_at if item.started_at is not None else EPOCH_START)
+                ),
             )
             last_score = manual_assessment_score(last_attempt)
             learner_rows.append(
@@ -1831,9 +1814,7 @@ def get_teacher_assessment_detail(
                     population_count=len(records),
                     impacted_count=count,
                     impact_rate=safe_pct(count, len(records)),
-                    signal="critical"
-                    if (pct := safe_pct(count, len(records))) is not None and pct >= 50
-                    else "watch",
+                    signal="critical" if (pct := safe_pct(count, len(records))) is not None and pct >= 50 else "watch",
                     note=f"This test failed in {count} submissions.",
                 )
             )

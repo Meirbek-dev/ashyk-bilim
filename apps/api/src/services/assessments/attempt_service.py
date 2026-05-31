@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import (
     ITEM_BODY_ADAPTER,
@@ -675,7 +675,7 @@ async def validate_code_challenge_service(
 
     item = db_session.exec(
         select(AssessmentItem)
-        .join(Assessment, Assessment.id == AssessmentItem.assessment_id)
+        .join(Assessment, col(Assessment.id) == AssessmentItem.assessment_id)
         .where(
             Assessment.assessment_uuid == assessment_uuid,
             AssessmentItem.kind == ItemKind.CODE,

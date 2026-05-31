@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import HTTPException, Request, UploadFile, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import (
@@ -84,7 +84,7 @@ def validate_uploaded_pdf_path(pdf_uploaded_path: str) -> tuple[str, Path]:
 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Activity).where(Activity.chapter_id == chapter_id).order_by(Activity.order.desc())
+        select(Activity).where(Activity.chapter_id == chapter_id).order_by(col(Activity.order).desc())
     ).first()
     return (result.order if result else 0) + 1
 

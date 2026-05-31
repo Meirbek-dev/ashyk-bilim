@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import and_, or_, select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
@@ -81,10 +81,10 @@ def resolve_teacher_scope(
             .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
-                    Course.creator_id == target_user_id,
+                    col(Course.creator_id) == target_user_id,
                     and_(
-                        ResourceAuthor.user_id == target_user_id,
-                        ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+                        col(ResourceAuthor.user_id) == target_user_id,
+                        col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
                     ),
                 )
             )
@@ -97,10 +97,10 @@ def resolve_teacher_scope(
             .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
-                    Course.creator_id == current_user.id,
+                    col(Course.creator_id) == current_user.id,
                     and_(
-                        ResourceAuthor.user_id == current_user.id,
-                        ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+                        col(ResourceAuthor.user_id) == current_user.id,
+                        col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
                     ),
                 )
             )
@@ -146,8 +146,8 @@ def resolve_course_id_for_assessment(
     if assessment_type in {"manual_assessment", "exam"}:
         row = db_session.exec(
             select(Assessment, Activity)
-            .join(Activity, Activity.id == Assessment.activity_id)
-            .where(Assessment.id == assessment_id)
+            .join(Activity, col(Activity.id) == Assessment.activity_id)
+            .where(col(Assessment.id) == assessment_id)
         ).first()
         if row is None:
             return None
@@ -157,7 +157,7 @@ def resolve_course_id_for_assessment(
             activity = row[1]
         return activity.course_id
     if assessment_type in {"quiz", "code_challenge"}:
-        activity = db_session.exec(select(Activity).where(Activity.id == assessment_id)).first()
+        activity = db_session.exec(select(Activity).where(col(Activity.id) == assessment_id)).first()
         if activity is None or activity.course_id is None:
             return None
         if assessment_type == "code_challenge" and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE:

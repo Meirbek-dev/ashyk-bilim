@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.auth.users import get_public_user
@@ -34,7 +34,7 @@ def _submission_with_activity(
 ) -> tuple[Submission, Activity]:
     row = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
+        .join(Activity, col(Activity.id) == Submission.activity_id)
         .where(Submission.submission_uuid == submission_uuid)
     ).first()
     if row is None:
@@ -133,12 +133,12 @@ async def api_list_item_feedback(
 
     query = (
         select(ItemFeedbackEntry)
-        .join(GradingEntry, GradingEntry.id == ItemFeedbackEntry.grading_entry_id)
+        .join(GradingEntry, col(GradingEntry.id) == ItemFeedbackEntry.grading_entry_id)
         .where(ItemFeedbackEntry.submission_id == submission.id)
         .order_by(ItemFeedbackEntry.created_at, ItemFeedbackEntry.id)
     )
     if submission.user_id == current_user.id:
-        query = query.where(GradingEntry.published_at.is_not(None))
+        query = query.where(col(GradingEntry.published_at).is_not(None))
     return [ItemFeedbackRead.model_validate(row) for row in db_session.exec(query).all()]
 
 

@@ -20,15 +20,18 @@ Usage in routers::
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any
+from typing import Any, ParamSpec, TypeVar
 
 from fastapi import Request
 
 from src.services.rate_limit import RateLimitRule, check_rate_limit
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 def rate_limit(
@@ -37,7 +40,7 @@ def rate_limit(
     key_func: Callable[[Request], str],
     *,
     namespace: str = "default",
-) -> Callable:
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Decorator that applies rate limiting to a FastAPI endpoint.
 
     Delegates to the Redis-backed ``check_rate_limit`` function, which
@@ -58,9 +61,9 @@ def rate_limit(
         window_seconds=window_seconds,
     )
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Locate the Request object in args/kwargs
             request: Request | None = kwargs.get("request")
             if request is None:

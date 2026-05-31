@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.permission_enums import ADMIN_ROLE_SLUGS
 from src.db.permissions import Role, RoleRead, UserRole
@@ -23,9 +23,9 @@ def get_platform_users(
 ) -> PaginatedPlatformUsers:
     checker.require(current_user.id, "platform:read")
 
-    base_statement = select(User).join(UserRole, UserRole.user_id == User.id).distinct(User.id)
+    base_statement = select(User).join(UserRole, col(UserRole.user_id) == User.id).distinct(User.id)
 
-    all_user_ids = db_session.exec(select(User.id).join(UserRole, UserRole.user_id == User.id).distinct()).all()
+    all_user_ids = db_session.exec(select(User.id).join(UserRole, col(UserRole.user_id) == User.id).distinct()).all()
     total = len(all_user_ids)
 
     offset = (page - 1) * per_page
@@ -38,7 +38,9 @@ def get_platform_users(
     roles_by_user: dict[int, list] = defaultdict(list)
     if user_ids:
         all_role_rows = db_session.exec(
-            select(Role, UserRole).join(UserRole, UserRole.role_id == Role.id).where(UserRole.user_id.in_(user_ids))
+            select(Role, UserRole)
+            .join(UserRole, col(UserRole.role_id) == Role.id)
+            .where(col(UserRole.user_id).in_(user_ids))
         ).all()
         for role, user_role in all_role_rows:
             roles_by_user[user_role.user_id].append(role)
@@ -93,7 +95,7 @@ def remove_platform_user(
             detail="User not found",
         )
 
-    admin_role = db_session.exec(select(Role).where(Role.slug.in_(list(ADMIN_ROLE_SLUGS)))).first()
+    admin_role = db_session.exec(select(Role).where(col(Role.slug).in_(list(ADMIN_ROLE_SLUGS)))).first()
     admin_role_id = admin_role.id if admin_role else 1
 
     statement = select(UserRole).where(UserRole.role_id == admin_role_id).distinct()
@@ -129,7 +131,7 @@ def update_platform_user_role(
 
     checker.require(current_user.id, "platform:update")
 
-    admin_role = db_session.exec(select(Role).where(Role.slug.in_(list(ADMIN_ROLE_SLUGS)))).first()
+    admin_role = db_session.exec(select(Role).where(col(Role.slug).in_(list(ADMIN_ROLE_SLUGS)))).first()
     admin_role_id = admin_role.id if admin_role else 1
 
     admin_user_ids = {

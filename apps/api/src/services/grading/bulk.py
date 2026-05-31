@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy import desc
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.activities import Activity
 from src.db.grading.bulk_actions import (
@@ -109,7 +109,7 @@ def create_deadline_extension_action(
             detail="Assessment policy not found",
         )
 
-    users = db_session.exec(select(User).where(User.user_uuid.in_(user_uuids))).all()
+    users = db_session.exec(select(User).where(col(User.user_uuid).in_(user_uuids))).all()
     users_by_uuid = {user.user_uuid: user for user in users}
     missing = [uuid for uuid in user_uuids if uuid not in users_by_uuid]
     if missing:
@@ -264,7 +264,7 @@ async def execute_deadline_extension(
                 select(Submission).where(
                     Submission.activity_id == action.activity_id,
                     Submission.user_id == user_id,
-                    Submission.submitted_at.is_not(None),
+                    col(Submission.submitted_at).is_not(None),
                 )
             ).all()
             for submission in submissions:

@@ -7,9 +7,9 @@ AssessmentSettings object.
 """
 
 from dataclasses import dataclass, field
-from typing import assert_never
+from typing import Any, assert_never
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import ITEM_BODY_ADAPTER, Assessment, AssessmentItem, ItemBody
 from src.db.grading.submissions import AssessmentType
@@ -31,7 +31,7 @@ class CanonicalAssessmentItem:
 class AssessmentSettings:
     """Typed grading config for a single activity."""
 
-    questions: list[dict] = field(default_factory=list)
+    questions: list[dict[str, Any]] = field(default_factory=list)
     items: list[CanonicalAssessmentItem] = field(default_factory=list)
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
@@ -118,7 +118,7 @@ def _load_canonical_items(
     items = db_session.exec(
         select(AssessmentItem)
         .where(AssessmentItem.assessment_id == assessment.id)
-        .order_by(AssessmentItem.order, AssessmentItem.id)
+        .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
     ).all()
     return [_to_canonical_item(item) for item in items]
 

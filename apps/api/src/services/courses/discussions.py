@@ -124,7 +124,7 @@ async def get_discussions_by_course_uuid(
             CourseDiscussion.course_id == course.id,
             CourseDiscussion.type == DiscussionType.POST,
             CourseDiscussion.status == DiscussionStatusEnum.ACTIVE,
-            CourseDiscussion.parent_discussion_id.is_(None),
+            col(CourseDiscussion.parent_discussion_id).is_(None),
         )
         .order_by(col(CourseDiscussion.creation_date).desc())
         .offset(offset)
@@ -144,7 +144,7 @@ async def get_discussions_by_course_uuid(
         all_replies_query = (
             select(CourseDiscussion)
             .where(
-                CourseDiscussion.parent_discussion_id.in_(discussion_ids),
+                col(CourseDiscussion.parent_discussion_id).in_(discussion_ids),
                 CourseDiscussion.status == DiscussionStatusEnum.ACTIVE,
             )
             .order_by(col(CourseDiscussion.creation_date).asc())
@@ -202,7 +202,7 @@ async def get_discussion_with_details(
     # Join discussion with user data
     discussion_query = (
         select(CourseDiscussion, User)
-        .join(User, CourseDiscussion.user_id == User.id)
+        .join(User, col(CourseDiscussion.user_id) == User.id)
         .where(CourseDiscussion.id == discussion_id)
     )
 

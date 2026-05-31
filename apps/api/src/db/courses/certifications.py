@@ -28,7 +28,7 @@ class CertificationCreate(SQLModelStrictBaseModel):
 
     @field_validator("last_known_update_date", mode="before")
     @classmethod
-    def validate_last_known_update_date(cls, value: object):
+    def validate_last_known_update_date(cls, value: object) -> object:
         if value is None or isinstance(value, datetime):
             return value
         if isinstance(value, str):
@@ -45,7 +45,7 @@ class CertificationUpdate(SQLModelStrictBaseModel):
 
     @field_validator("last_known_update_date", mode="before")
     @classmethod
-    def validate_last_known_update_date(cls, value: object):
+    def validate_last_known_update_date(cls, value: object) -> object:
         if value is None or isinstance(value, datetime):
             return value
         if isinstance(value, str):

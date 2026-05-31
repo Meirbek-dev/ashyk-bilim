@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.assessments import (
@@ -88,7 +88,7 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     active_submission = db_session.exec(
         select(Submission)
         .where(
-            Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
+            col(Submission.assessment_policy_id).in_(  # type: ignore[union-attr]
                 select(AssessmentPolicy.id).where(AssessmentPolicy.activity_id == assessment.activity_id)
             )
         )

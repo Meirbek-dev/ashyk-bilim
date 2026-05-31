@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
@@ -51,7 +51,7 @@ async def get_course_gradebook(
     progress_rows = db_session.exec(
         select(ActivityProgress).where(
             ActivityProgress.course_id == course.id,
-            ActivityProgress.user_id.in_(student_ids),
+            col(ActivityProgress.user_id).in_(student_ids),
         )
     ).all()
     progress_by_pair = {(r.user_id, r.activity_id): r for r in progress_rows}
@@ -174,29 +174,29 @@ def _course_students(
     from sqlmodel import exists, or_
 
     user_group_exists = exists().where(
-        UserGroupUser.user_id == User.id,
-        UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
-        UserGroupResource.resource_uuid == course.course_uuid,
+        col(UserGroupUser.user_id) == User.id,
+        col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
+        col(UserGroupResource.resource_uuid) == course.course_uuid,
     )
     trail_run_exists = exists().where(
-        TrailRun.user_id == User.id,
-        TrailRun.course_id == course.id,
+        col(TrailRun.user_id) == User.id,
+        col(TrailRun.course_id) == course.id,
     )
 
     conditions = [user_group_exists, trail_run_exists]
 
     if activity_ids:
         submission_exists = exists().where(
-            Submission.user_id == User.id,
-            Submission.activity_id.in_(activity_ids),
+            col(Submission.user_id) == User.id,
+            col(Submission.activity_id).in_(activity_ids),
         )
         file_attempt_exists = exists().where(
-            FileSubmissionAttempt.user_id == User.id,
-            FileSubmissionAttempt.activity_id.in_(activity_ids),
+            col(FileSubmissionAttempt.user_id) == User.id,
+            col(FileSubmissionAttempt.activity_id).in_(activity_ids),
         )
         progress_exists = exists().where(
-            ActivityProgress.user_id == User.id,
-            ActivityProgress.activity_id.in_(activity_ids),
+            col(ActivityProgress.user_id) == User.id,
+            col(ActivityProgress.activity_id).in_(activity_ids),
         )
         conditions.extend([submission_exists, file_attempt_exists, progress_exists])
 
@@ -222,14 +222,16 @@ def _submissions_by_id(
     ids = {submission_id for submission_id in submission_ids if submission_id}
     if not ids:
         return {}
-    submissions = db_session.exec(select(Submission).where(Submission.id.in_(ids))).all()
+    submissions = db_session.exec(select(Submission).where(col(Submission.id).in_(ids))).all()
     return {submission.id: submission for submission in submissions if submission.id}
 
 
 def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[int, AssessmentPolicy]:
     if not activity_ids:
         return {}
-    policies = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id.in_(activity_ids))).all()
+    policies = db_session.exec(
+        select(AssessmentPolicy).where(col(AssessmentPolicy.activity_id).in_(activity_ids))
+    ).all()
     return {policy.activity_id: policy for policy in policies}
 
 

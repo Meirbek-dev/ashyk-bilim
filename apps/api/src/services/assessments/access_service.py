@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessment_access import (
     AssessmentAccessMode,
@@ -129,7 +129,7 @@ async def list_assessment_access_eligible_usergroups(
     eligible_ids = _eligible_usergroup_ids_for_course(course.course_uuid, db_session)
     if not eligible_ids:
         return []
-    groups = db_session.exec(select(UserGroup).where(UserGroup.id.in_(eligible_ids))).all()  # type: ignore[union-attr]
+    groups = db_session.exec(select(UserGroup).where(col(UserGroup.id).in_(eligible_ids))).all()  # type: ignore[union-attr]
     return [_usergroup_read(group, db_session) for group in groups]
 
 
@@ -192,14 +192,14 @@ def _build_access_read(
 
     user_rows = db_session.exec(
         select(User)
-        .join(AssessmentAccessUser, AssessmentAccessUser.user_id == User.id)
+        .join(AssessmentAccessUser, col(AssessmentAccessUser.user_id) == User.id)
         .where(AssessmentAccessUser.policy_id == policy.id)
     ).all()
     group_rows = db_session.exec(
         select(UserGroup)
         .join(
             AssessmentAccessUserGroup,
-            AssessmentAccessUserGroup.usergroup_id == UserGroup.id,
+            col(AssessmentAccessUserGroup.usergroup_id) == UserGroup.id,
         )
         .where(AssessmentAccessUserGroup.policy_id == policy.id)
     ).all()
@@ -208,7 +208,7 @@ def _build_access_read(
     if group_rows:
         group_ids = [group.id for group in group_rows if group.id is not None]
         member_rows = db_session.exec(
-            select(UserGroupUser.user_id).where(UserGroupUser.usergroup_id.in_(group_ids))  # type: ignore[union-attr]
+            select(UserGroupUser.user_id).where(col(UserGroupUser.usergroup_id).in_(group_ids))  # type: ignore[union-attr]
         ).all()
         effective_user_ids.update(member_rows)
 

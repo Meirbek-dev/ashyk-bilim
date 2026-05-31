@@ -58,7 +58,7 @@ _SUBMIT_PERMISSION: dict[AssessmentType, str] = {
 async def submit_assessment(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict,
+    answers_payload: dict[str, Any],
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
@@ -133,7 +133,7 @@ async def submit_assessment(
 async def _submit_assessment_inner(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict,
+    answers_payload: dict[str, Any],
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
@@ -179,11 +179,12 @@ async def _submit_assessment_inner(
     # and cap the violations list at 500 entries.
     MAX_VIOLATIONS_STORED = 500
     if violation_exceeded:
-        current_meta: dict = draft.metadata_json or {}
+        current_meta: dict[str, Any] = draft.metadata_json or {}
         current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
-        existing_violations: list = current_meta.get("violations", [])
+        raw_violations = current_meta.get("violations", [])
+        existing_violations = raw_violations if isinstance(raw_violations, list) else []
         if len(existing_violations) > MAX_VIOLATIONS_STORED:
             current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True
@@ -372,10 +373,10 @@ async def _run_final_code_answers(
     db_session: Session,
     settings: AssessmentSettings,
     answers_by_item_uuid: dict[str, Any],
-    answers_payload: dict,
+    answers_payload: dict[str, Any],
     current_user: PublicUser,
     draft: Submission,
-) -> tuple[dict[str, Any], dict]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Run final Judge0 grading for canonical CODE answers server-side."""
     code_items = [item for item in settings.items if item.body.kind == "CODE"]
     if not code_items:

@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from fastapi import Request
 from sqlalchemy import func, true as sa_true
-from sqlmodel import Session, or_, select
+from sqlmodel import Session, col, or_, select
 
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse
@@ -52,13 +52,13 @@ async def search_platform_content(
             .where(vector.op("@@")(query))
             .order_by(
                 func.ts_rank_cd(vector, query).desc(),
-                Collection.id.desc(),
+                col(Collection.id).desc(),
             )
         )
     else:
         pattern = f"%{normalized_query}%"
         collections_query = select(Collection).where(
-            or_(Collection.name.ilike(pattern), Collection.description.ilike(pattern))
+            or_(col(Collection.name).ilike(pattern), col(Collection.description).ilike(pattern))
         )
 
     # Search users
@@ -76,24 +76,24 @@ async def search_platform_content(
         query = func.websearch_to_tsquery("english", normalized_query)
         users_query = (
             select(User)
-            .where(User.id.in_(select(UserRole.user_id)))
+            .where(col(User.id).in_(select(UserRole.user_id)))
             .where(vector.op("@@")(query))
             .order_by(
                 func.ts_rank_cd(vector, query).desc(),
-                User.id.desc(),
+                col(User.id).desc(),
             )
         )
     else:
         pattern = f"%{normalized_query}%"
         users_query = (
             select(User)
-            .where(User.id.in_(select(UserRole.user_id)))
+            .where(col(User.id).in_(select(UserRole.user_id)))
             .where(
                 or_(
-                    User.username.ilike(pattern),
-                    User.first_name.ilike(pattern),
-                    User.last_name.ilike(pattern),
-                    User.bio.ilike(pattern),
+                    col(User.username).ilike(pattern),
+                    col(User.first_name).ilike(pattern),
+                    col(User.last_name).ilike(pattern),
+                    col(User.bio).ilike(pattern),
                 )
             )
         )
@@ -115,8 +115,8 @@ async def search_platform_content(
         collection_ids = [c.id for c in collections]
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids))
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids))
             .distinct()
         )
         courses_by_collection: dict[int, list] = {}

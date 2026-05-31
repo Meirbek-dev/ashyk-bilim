@@ -8,7 +8,7 @@ from src.services.grading.settings_loader import CanonicalAssessmentItem
 
 
 def grade_code_challenge(
-    run_results: list[dict],
+    run_results: list[dict[str, Any]],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
     """

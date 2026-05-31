@@ -1,11 +1,11 @@
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, MutableMapping
 from typing import override
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
@@ -17,7 +17,7 @@ _STATIC_CACHE_HEADER = "public, max-age=31536000, immutable"
 class CachedStaticFiles(StaticFiles):
     @override
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        async def send_with_cache(message: dict) -> None:
+        async def send_with_cache(message: MutableMapping[str, object]) -> None:
             if message["type"] == "http.response.start":
                 headers = dict(message.get("headers", []))
                 headers[b"cache-control"] = _STATIC_CACHE_HEADER.encode()
@@ -42,8 +42,8 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
     @app.middleware("http")
     async def add_correlation_id(
         request: Request,
-        call_next: Callable[[Request], Awaitable],
-    ):
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
@@ -52,8 +52,8 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
     @app.middleware("http")
     async def enforce_sec_fetch_site(
         request: Request,
-        call_next: Callable[[Request], Awaitable],
-    ):
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         sec_fetch_site = request.headers.get("sec-fetch-site")
         if (
             sec_fetch_site == "cross-site"

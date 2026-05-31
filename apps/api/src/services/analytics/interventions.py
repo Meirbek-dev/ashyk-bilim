@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
 from src.services.analytics.queries import to_iso
@@ -39,10 +39,10 @@ def _latest_risk_score(db_session: Session, *, user_id: int, course_id: int) -> 
     snapshot = db_session.exec(
         select(LearnerRiskSnapshot)
         .where(
-            LearnerRiskSnapshot.user_id == user_id,
-            LearnerRiskSnapshot.course_id == course_id,
+            col(LearnerRiskSnapshot.user_id) == user_id,
+            col(LearnerRiskSnapshot.course_id) == course_id,
         )
-        .order_by(LearnerRiskSnapshot.snapshot_date.desc())
+        .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
         .limit(1)
     ).first()
     return float(snapshot.risk_score) if snapshot is not None else None
@@ -89,14 +89,14 @@ def list_teacher_interventions(
     if course_id is not None:
         ensure_course_in_scope(scope, course_id)
     statement = select(TeacherIntervention).where(
-        TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-        TeacherIntervention.course_id.in_(scope.course_ids),
+        col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+        col(TeacherIntervention.course_id).in_(scope.course_ids),
     )
     if user_id is not None:
-        statement = statement.where(TeacherIntervention.user_id == user_id)
+        statement = statement.where(col(TeacherIntervention.user_id) == user_id)
     if course_id is not None:
-        statement = statement.where(TeacherIntervention.course_id == course_id)
-    rows = list(db_session.exec(statement.order_by(TeacherIntervention.created_at.desc()).limit(limit)).all())
+        statement = statement.where(col(TeacherIntervention.course_id) == course_id)
+    rows = list(db_session.exec(statement.order_by(col(TeacherIntervention.created_at).desc()).limit(limit)).all())
     return TeacherInterventionListResponse(
         generated_at=to_iso(datetime.now(tz=UTC)) or "",
         total=len(rows),
@@ -113,10 +113,10 @@ def intervention_rows_by_learner(
         db_session.exec(
             select(TeacherIntervention)
             .where(
-                TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-                TeacherIntervention.course_id.in_(scope.course_ids),
+                col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+                col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
-            .order_by(TeacherIntervention.created_at.desc())
+            .order_by(col(TeacherIntervention.created_at).desc())
         ).all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)

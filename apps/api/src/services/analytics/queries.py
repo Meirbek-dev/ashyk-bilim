@@ -407,7 +407,9 @@ def load_analytics_context(
     trail_steps = [_unwrap_model(step, TrailStep) for step in db_session.exec(trail_step_stmt).all()]
     activity_progress = [
         _unwrap_model(row, ActivityProgress)
-        for row in db_session.exec(select(ActivityProgress).where(col(ActivityProgress.course_id).in_(course_ids))).all()
+        for row in db_session.exec(
+            select(ActivityProgress).where(col(ActivityProgress.course_id).in_(course_ids))
+        ).all()
     ]
     course_progress = [
         _unwrap_model(row, CourseProgress)
@@ -533,7 +535,9 @@ def load_analytics_context(
         # in the entire database, which becomes expensive on large platforms.
         membership_rows = [
             _unwrap_model(row, UserGroupUser)
-            for row in db_session.exec(select(UserGroupUser).where(col(UserGroupUser.user_id).in_(sorted(user_ids)))).all()
+            for row in db_session.exec(
+                select(UserGroupUser).where(col(UserGroupUser.user_id).in_(sorted(user_ids)))
+            ).all()
         ]
         for membership in membership_rows:
             cohort_ids_by_user[membership.user_id].add(membership.usergroup_id)
@@ -785,5 +789,5 @@ def assessment_pass_threshold(settings: dict[str, Any] | None) -> float:
     raw = (settings or {}).get("passing_score", 60)
     try:
         return float(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 60.0

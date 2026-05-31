@@ -64,7 +64,7 @@ def _accessible_courses_filter(
     has_usergroup = (
         select(1)
         .select_from(UserGroupResource)
-        .join(UserGroupUser, UserGroupUser.usergroup_id == UserGroupResource.usergroup_id)
+        .join(UserGroupUser, col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id)
         .where(
             UserGroupResource.resource_uuid == Course.course_uuid,
             UserGroupUser.user_id == current_user.id,
@@ -117,11 +117,11 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
 
     pattern = f"%{normalized}%"
     return or_(
-        Course.name.ilike(pattern),
-        Course.description.ilike(pattern),
-        Course.about.ilike(pattern),
-        Course.learnings.ilike(pattern),
-        Course.tags.ilike(pattern),
+        col(Course.name).ilike(pattern),
+        col(Course.description).ilike(pattern),
+        col(Course.about).ilike(pattern),
+        col(Course.learnings).ilike(pattern),
+        col(Course.tags).ilike(pattern),
     )
 
 
@@ -1512,7 +1512,7 @@ async def get_editable_courses(
         )
         id_query = id_query.order_by(
             func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
-            Course.id.desc(),
+            col(Course.id).desc(),
         )
     else:
         id_query = _apply_course_sort(id_query, sort_by)
@@ -1614,7 +1614,7 @@ async def count_editable_courses(
     search_filter = _course_search_filter(search_query, bind.dialect.name)
 
     if has_broad_update:
-        query = select(func.count(Course.id.distinct()))
+        query = select(func.count(col(Course.id).distinct()))
     else:
         has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         if not has_own_update:
@@ -1631,7 +1631,7 @@ async def count_editable_courses(
             .exists()
         )
 
-        query = select(func.count(Course.id.distinct())).where(
+        query = select(func.count(col(Course.id).distinct())).where(
             or_(
                 Course.creator_id == current_user.id,
                 is_active_author,

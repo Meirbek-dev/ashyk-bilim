@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import DailyTeacherMetrics
 from src.services.analytics.filters import AnalyticsFilters
@@ -22,8 +22,8 @@ def build_data_quality(
     teacher_rollup = (
         db_session.exec(
             select(DailyTeacherMetrics)
-            .where(DailyTeacherMetrics.teacher_user_id == scope.teacher_user_id)
-            .order_by(DailyTeacherMetrics.metric_date.desc())
+            .where(col(DailyTeacherMetrics.teacher_user_id) == scope.teacher_user_id)
+            .order_by(col(DailyTeacherMetrics.metric_date).desc())
             .limit(1)
         ).first()
         if supports_teacher_rollup_reads(filters)

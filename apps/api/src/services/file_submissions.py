@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import (
@@ -352,7 +352,7 @@ async def list_my_file_submission_attempts(
             FileSubmissionAttempt.file_submission_id == file_submission.id,
             FileSubmissionAttempt.user_id == current_user.id,
         )
-        .order_by(FileSubmissionAttempt.attempt_number.desc())
+        .order_by(col(FileSubmissionAttempt.attempt_number).desc())
     ).all()
     return [_build_attempt_read(attempt, db_session) for attempt in attempts]
 
@@ -371,7 +371,7 @@ async def list_file_submission_submissions(
     _require_grade(current_user, course, db_session)
     stmt = (
         select(FileSubmissionAttempt)
-        .join(User, User.id == FileSubmissionAttempt.user_id)
+        .join(User, col(User.id) == FileSubmissionAttempt.user_id)
         .where(FileSubmissionAttempt.file_submission_id == file_submission.id)
     )
     if status_filter:
@@ -380,16 +380,16 @@ async def list_file_submission_submissions(
         pattern = f"%{search.strip()}%"
         stmt = stmt.where(
             or_(
-                User.username.ilike(pattern),
-                User.email.ilike(pattern),
-                User.first_name.ilike(pattern),
-                User.last_name.ilike(pattern),
+                col(User.username).ilike(pattern),
+                col(User.email).ilike(pattern),
+                col(User.first_name).ilike(pattern),
+                col(User.last_name).ilike(pattern),
             )
         )
     total = db_session.exec(select(func.count()).select_from(stmt.subquery())).one()
     attempts = db_session.exec(
         stmt
-        .order_by(FileSubmissionAttempt.submitted_at.desc().nullslast())
+        .order_by(col(FileSubmissionAttempt.submitted_at).desc().nullslast())
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
@@ -474,7 +474,7 @@ async def export_file_submission_csv(
     attempts = db_session.exec(
         select(FileSubmissionAttempt)
         .where(FileSubmissionAttempt.file_submission_id == file_submission.id)
-        .order_by(FileSubmissionAttempt.submitted_at.desc().nullslast())
+        .order_by(col(FileSubmissionAttempt.submitted_at).desc().nullslast())
     ).all()
     buffer = io.StringIO()
     writer = csv.writer(buffer)
@@ -512,7 +512,7 @@ async def build_file_submission_zip(
     _require_grade(current_user, course, db_session)
     stmt = select(FileSubmissionAttempt).where(FileSubmissionAttempt.file_submission_id == file_submission.id)
     if attempt_uuids:
-        stmt = stmt.where(FileSubmissionAttempt.attempt_uuid.in_(attempt_uuids))
+        stmt = stmt.where(col(FileSubmissionAttempt.attempt_uuid).in_(attempt_uuids))
     attempts = db_session.exec(stmt).all()
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
@@ -584,11 +584,11 @@ def file_submission_attempts_for_gradebook(
 ) -> dict[tuple[int, int], FileSubmissionAttempt]:
     if not activity_ids:
         return {}
-    query = select(FileSubmissionAttempt).where(FileSubmissionAttempt.activity_id.in_(activity_ids))
+    query = select(FileSubmissionAttempt).where(col(FileSubmissionAttempt.activity_id).in_(activity_ids))
     if student_ids is not None:
         if not student_ids:
             return {}
-        query = query.where(FileSubmissionAttempt.user_id.in_(student_ids))
+        query = query.where(col(FileSubmissionAttempt.user_id).in_(student_ids))
     attempts = db_session.exec(query.order_by(FileSubmissionAttempt.updated_at, FileSubmissionAttempt.id)).all()
     result: dict[tuple[int, int], FileSubmissionAttempt] = {}
     for attempt in attempts:
@@ -603,7 +603,7 @@ def file_submission_configs_for_activities(
     if not activity_ids:
         return {}
     configs = db_session.exec(
-        select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id.in_(activity_ids))
+        select(FileSubmissionActivity).where(col(FileSubmissionActivity.activity_id).in_(activity_ids))
     ).all()
     return {config.activity_id: config for config in configs}
 
@@ -820,7 +820,7 @@ def _build_file_submission_read(
                 FileSubmissionAttempt.file_submission_id == file_submission.id,
                 FileSubmissionAttempt.user_id == current_user.id,
             )
-            .order_by(FileSubmissionAttempt.attempt_number.desc())
+            .order_by(col(FileSubmissionAttempt.attempt_number).desc())
         ).all()
         attempts = [_build_attempt_read(attempt, db_session) for attempt in raw_attempts]
         current_attempt = attempts[0] if attempts else None
@@ -948,12 +948,12 @@ def _get_current_draft(
         .where(
             FileSubmissionAttempt.file_submission_id == file_submission.id,
             FileSubmissionAttempt.user_id == user_id,
-            FileSubmissionAttempt.status.in_([
+            col(FileSubmissionAttempt.status).in_([
                 FileSubmissionAttemptStatus.DRAFT,
                 FileSubmissionAttemptStatus.RETURNED,
             ]),
         )
-        .order_by(FileSubmissionAttempt.attempt_number.desc())
+        .order_by(col(FileSubmissionAttempt.attempt_number).desc())
     ).first()
 
 

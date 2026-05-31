@@ -13,7 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.db.permissions import Role, UserRole
@@ -193,9 +193,9 @@ def list_user_roles(
 
     rows = db_session.exec(
         select(UserRole, UserModel, Role)
-        .join(UserModel, UserModel.id == UserRole.user_id)
-        .join(Role, Role.id == UserRole.role_id)
-        .order_by(UserRole.assigned_at.desc())
+        .join(UserModel, col(UserModel.id) == UserRole.user_id)
+        .join(Role, col(Role.id) == UserRole.role_id)
+        .order_by(col(UserRole.assigned_at).desc())
     ).all()
 
     return [

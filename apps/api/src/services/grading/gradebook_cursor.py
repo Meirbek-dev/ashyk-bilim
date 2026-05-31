@@ -12,7 +12,7 @@ import json
 
 from fastapi import HTTPException, status
 from pydantic import Field
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.courses import Course
 from src.db.grading.gradebook import ActivityProgressCell
@@ -82,7 +82,7 @@ async def get_gradebook_cursor(
     submission_ids = {row.latest_submission_id for row in page_rows if row.latest_submission_id}
     submissions_by_id: dict[int, Submission] = {}
     if submission_ids:
-        subs = db_session.exec(select(Submission).where(Submission.id.in_(submission_ids))).all()
+        subs = db_session.exec(select(Submission).where(col(Submission.id).in_(submission_ids))).all()
         submissions_by_id = {s.id: s for s in subs if s.id}
 
     cells: list[ActivityProgressCell] = []

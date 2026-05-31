@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import (
     AssessmentItem,
@@ -104,7 +104,11 @@ async def get_assessment_submissions(
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
 
-    query = select(Submission).join(User, User.id == Submission.user_id).where(Submission.activity_id == activity.id)
+    query = (
+        select(Submission)
+        .join(User, col(User.id) == Submission.user_id)
+        .where(col(Submission.activity_id) == activity.id)
+    )
     if status_filter:
         if status_filter == "NEEDS_GRADING":
             query = query.where(Submission.status == SubmissionStatus.PENDING)
@@ -124,10 +128,10 @@ async def get_assessment_submissions(
         term = f"%{search}%"
         query = query.where(
             or_(
-                User.first_name.ilike(term),
-                User.last_name.ilike(term),
-                User.username.ilike(term),
-                User.email.ilike(term),
+                col(User.first_name).ilike(term),
+                col(User.last_name).ilike(term),
+                col(User.username).ilike(term),
+                col(User.email).ilike(term),
             )
         )
 
@@ -192,11 +196,11 @@ async def get_assessment_submission_stats(
     graded_scores = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity.id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),
-            Submission.final_score.is_not(None),
+            col(Submission.final_score).is_not(None),
         )
     ).all()
 
@@ -488,7 +492,7 @@ async def get_item_analytics(
     graded_submissions = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity.id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),

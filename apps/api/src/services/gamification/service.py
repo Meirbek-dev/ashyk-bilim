@@ -20,7 +20,7 @@ from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlmodel import Session, and_, select
+from sqlmodel import Session, and_, col, select
 from sqlmodel.sql._expression_select_cls import SelectOfScalar
 
 from src.core.timezone import now as tz_now
@@ -243,7 +243,7 @@ def award_xp(
                 existing_tx = db.exec(
                     select(XPTransaction)
                     .where(XPTransaction.user_id == user_id)
-                    .order_by(XPTransaction.created_at.desc())
+                    .order_by(col(XPTransaction.created_at).desc())
                 ).first()
             if existing_tx is None:
                 msg = "Transaction not found after idempotent insert"
@@ -300,7 +300,7 @@ def update_streak(db: Session, user_id: int, streak_type: str) -> GamificationPr
 
 
 def get_leaderboard(db: Session, limit: int = 10, offset: int = 0) -> list[GamificationProfile]:
-    stmt = select(GamificationProfile).order_by(GamificationProfile.total_xp.desc()).offset(offset).limit(limit)
+    stmt = select(GamificationProfile).order_by(col(GamificationProfile.total_xp).desc()).offset(offset).limit(limit)
     return list(db.exec(stmt).all())
 
 
@@ -308,7 +308,7 @@ def get_recent_transactions(db: Session, user_id: int, limit: int = 10) -> list[
     stmt = (
         select(XPTransaction)
         .where(XPTransaction.user_id == user_id)
-        .order_by(XPTransaction.created_at.desc())
+        .order_by(col(XPTransaction.created_at).desc())
         .limit(limit)
     )
     return list(db.exec(stmt).all())
@@ -371,7 +371,7 @@ def get_leaderboard_read(db: Session, limit: int = 10, offset: int = 0):
     user_map: dict[int, DBUser] = {}
     if ids:
         try:
-            users = db.exec(select(DBUser).where(DBUser.id.in_(ids))).all()
+            users = db.exec(select(DBUser).where(col(DBUser.id).in_(ids))).all()
             user_map = {u.id: u for u in users if u.id is not None}
         except SQLAlchemyError as exc:
             logger.warning("Failed to load leaderboard user metadata", exc_info=exc)

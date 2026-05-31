@@ -9,6 +9,7 @@ from fastapi_users.authentication import (
 )
 
 from config.config import get_settings
+from src.db.users import User
 from src.security.auth_cookies import ACCESS_COOKIE_KEY
 from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 from src.security.keys import get_jwt_secret
@@ -31,7 +32,7 @@ def get_cookie_transport() -> CookieTransport:
     )
 
 
-def get_jwt_strategy() -> JWTStrategy:
+def get_jwt_strategy() -> JWTStrategy[User, int]:
     return JWTStrategy(
         secret=get_jwt_secret(),
         lifetime_seconds=int(ACCESS_TOKEN_EXPIRE.total_seconds()),

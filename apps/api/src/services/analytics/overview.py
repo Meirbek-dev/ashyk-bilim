@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from sqlalchemy import func, select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import (
     DailyCourseMetrics,
@@ -87,7 +87,7 @@ def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], be
     """Return the at-risk learner count from the most recent LearnerRiskSnapshot before *before_date*."""
     latest_date_filters = [LearnerRiskSnapshot.snapshot_date < before_date]
     if course_ids:
-        latest_date_filters.append(LearnerRiskSnapshot.course_id.in_(course_ids))
+        latest_date_filters.append(col(LearnerRiskSnapshot.course_id).in_(course_ids))
     latest_date_result = db_session.exec(
         select(func.max(LearnerRiskSnapshot.snapshot_date)).where(
             *latest_date_filters,
@@ -98,10 +98,10 @@ def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], be
         return None
     filter_clause = [
         LearnerRiskSnapshot.snapshot_date == latest_date,
-        LearnerRiskSnapshot.risk_level.in_(["medium", "high"]),
+        col(LearnerRiskSnapshot.risk_level).in_(["medium", "high"]),
     ]
     if course_ids:
-        filter_clause.append(LearnerRiskSnapshot.course_id.in_(course_ids))
+        filter_clause.append(col(LearnerRiskSnapshot.course_id).in_(course_ids))
     result = db_session.exec(select(func.count()).select_from(LearnerRiskSnapshot).where(*filter_clause)).one_or_none()
     return float(result if result is not None else 0)
 
@@ -111,10 +111,10 @@ def _query_previous_negative_engagement(db_session: Session, teacher_user_id: in
     stmt = (
         select(DailyTeacherMetrics)
         .where(
-            DailyTeacherMetrics.teacher_user_id == teacher_user_id,
-            DailyTeacherMetrics.metric_date < before_date,
+            col(DailyTeacherMetrics.teacher_user_id) == teacher_user_id,
+            col(DailyTeacherMetrics.metric_date) < before_date,
         )
-        .order_by(DailyTeacherMetrics.metric_date.desc())
+        .order_by(col(DailyTeacherMetrics.metric_date).desc())
         .limit(1)
     )
     row = db_session.exec(stmt).first()
@@ -127,10 +127,10 @@ def _query_previous_teacher_metrics(
     stmt = (
         select(DailyTeacherMetrics)
         .where(
-            DailyTeacherMetrics.teacher_user_id == teacher_user_id,
-            DailyTeacherMetrics.metric_date < before_date,
+            col(DailyTeacherMetrics.teacher_user_id) == teacher_user_id,
+            col(DailyTeacherMetrics.metric_date) < before_date,
         )
-        .order_by(DailyTeacherMetrics.metric_date.desc())
+        .order_by(col(DailyTeacherMetrics.metric_date).desc())
         .limit(1)
     )
     return db_session.exec(stmt).first()
@@ -146,8 +146,8 @@ def _query_previous_course_metric_sum(
         return None
     latest_date_result = db_session.exec(
         select(func.max(DailyCourseMetrics.metric_date)).where(
-            DailyCourseMetrics.metric_date < before_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
+            col(DailyCourseMetrics.metric_date) < before_date,
+            col(DailyCourseMetrics.course_id).in_(course_ids),
         )
     ).one_or_none()
     latest_date = latest_date_result if isinstance(latest_date_result, date) else None
@@ -156,8 +156,8 @@ def _query_previous_course_metric_sum(
     column = getattr(DailyCourseMetrics, metric_name)
     value = db_session.exec(
         select(func.coalesce(func.sum(column), 0)).where(
-            DailyCourseMetrics.metric_date == latest_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
+            col(DailyCourseMetrics.metric_date) == latest_date,
+            col(DailyCourseMetrics.course_id).in_(course_ids),
         )
     ).one_or_none()
     return float(value) if value is not None else 0.0
@@ -170,8 +170,8 @@ def _query_previous_negative_engagement_for_courses(
         return None
     latest_date_result = db_session.exec(
         select(func.max(DailyCourseMetrics.metric_date)).where(
-            DailyCourseMetrics.metric_date < before_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
+            col(DailyCourseMetrics.metric_date) < before_date,
+            col(DailyCourseMetrics.course_id).in_(course_ids),
         )
     ).one_or_none()
     latest_date = latest_date_result if isinstance(latest_date_result, date) else None
@@ -181,9 +181,9 @@ def _query_previous_negative_engagement_for_courses(
         select(func.count())
         .select_from(DailyCourseMetrics)
         .where(
-            DailyCourseMetrics.metric_date == latest_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
-            DailyCourseMetrics.engagement_delta_pct < 0,
+            col(DailyCourseMetrics.metric_date) == latest_date,
+            col(DailyCourseMetrics.course_id).in_(course_ids),
+            col(DailyCourseMetrics.engagement_delta_pct) < 0,
         )
     ).one_or_none()
     return float(result if result is not None else 0)

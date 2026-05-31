@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select as sa_select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.auth.users import get_public_user
 from src.core.http import get_content_disposition_header
@@ -144,7 +144,7 @@ async def teacher_course_detail_by_uuid_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     course = db_session.exec(
-        sa_select(Course).where(Course.course_uuid == course_uuid, Course.id.in_(scope.course_ids))
+        sa_select(Course).where(col(Course.course_uuid) == course_uuid, col(Course.id).in_(scope.course_ids))
     ).first()
     if course is None:
         raise HTTPException(status_code=404, detail="Курс не найден в этой области")

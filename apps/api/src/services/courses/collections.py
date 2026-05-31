@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.collections import (
@@ -118,7 +118,7 @@ async def create_collection(
     # SECURITY: Link courses to collection - ensure user has access to all courses being added
     if collection and collection_object.courses:
         # Batch-fetch all requested courses in a single query instead of one per course
-        found_courses = db_session.exec(select(Course).where(Course.id.in_(collection_object.courses))).all()
+        found_courses = db_session.exec(select(Course).where(col(Course.id).in_(collection_object.courses))).all()
 
         if found_courses:
             # Permission check — verify access to each course individually
@@ -286,15 +286,15 @@ async def get_collections(
     if is_public_user:
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids), Course.public)
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids), Course.public)
             .distinct()
         )
     else:
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids))
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids))
             .distinct()
         )
 

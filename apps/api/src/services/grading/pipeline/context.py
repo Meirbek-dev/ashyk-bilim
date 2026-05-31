@@ -34,7 +34,7 @@ class ParsedAnswers:
     """Output of the validate stage."""
 
     answers_by_item_uuid: dict[str, Any]
-    raw_payload: dict = field(default_factory=dict)
+    raw_payload: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

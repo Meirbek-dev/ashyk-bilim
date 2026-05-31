@@ -5,8 +5,8 @@ from datetime import datetime
 
 import pytest
 from fastapi import FastAPI
-from starlette.testclient import TestClient
 from sqlmodel import SQLModel, select
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -17,8 +17,8 @@ from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course, ThumbnailType
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
-from src.infra.settings import get_settings
 from src.infra.db.session import get_db_session
+from src.infra.settings import get_settings
 from src.routers.courses.collections import router
 from src.security.rbac import PermissionChecker
 
@@ -148,11 +148,11 @@ def test_collections_list_returns_full_course_objects(api_client, db_session_fac
     response = api_client.get("/collections/page/1/limit/20")
     assert response.status_code == 200
     data = response.json()
-    
+
     assert len(data) == 1
     assert data[0]["name"] == "My Test Collection"
     assert data[0]["collection_uuid"] == "collection_test_123"
-    
+
     # Verify that courses contains full CourseRead object details and not integers
     courses_field = data[0]["courses"]
     assert len(courses_field) == 1

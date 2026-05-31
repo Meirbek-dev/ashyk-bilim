@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 
 from sqlalchemy import func, select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import DailyCourseMetrics
 from src.db.courses.courses import Course
@@ -60,8 +60,8 @@ def _previous_completion_by_course(db_session: Session, course_ids: list[int], b
         return {}
     latest_date = db_session.exec(
         select(func.max(DailyCourseMetrics.metric_date)).where(
-            DailyCourseMetrics.metric_date < before_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
+            col(DailyCourseMetrics.metric_date) < before_date,
+            col(DailyCourseMetrics.course_id).in_(course_ids),
         )
     ).scalar_one_or_none()
     if latest_date is None:
@@ -69,7 +69,7 @@ def _previous_completion_by_course(db_session: Session, course_ids: list[int], b
     rows = db_session.exec(
         select(DailyCourseMetrics).where(
             DailyCourseMetrics.metric_date == latest_date,
-            DailyCourseMetrics.course_id.in_(course_ids),
+            col(DailyCourseMetrics.course_id).in_(course_ids),
         )
     ).all()
     return {row.course_id: float(row.completion_rate) for row in rows if row.completion_rate is not None}
@@ -100,7 +100,7 @@ def _build_rollup_course_rows(
     courses = {
         course.id: course
         for course in db_session.exec(
-            select(Course).where(Course.id.in_([rollup.course_id for rollup in rollups]))
+            select(Course).where(col(Course.id).in_([rollup.course_id for rollup in rollups]))
         ).all()
     }
 
@@ -394,7 +394,8 @@ def get_teacher_course_list(
         generated_at, rows = rollup_rows
         paged_rows = rows[filters.offset : filters.offset + filters.page_size]
         course_map = {
-            course.id: course for course in db_session.exec(select(Course).where(Course.id.in_(scope.course_ids))).all()
+            course.id: course
+            for course in db_session.exec(select(Course).where(col(Course.id).in_(scope.course_ids))).all()
         }
         usergroups = list(db_session.exec(select(UserGroup)).all())
         return TeacherCourseListResponse(

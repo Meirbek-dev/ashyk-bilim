@@ -10,7 +10,7 @@ from typing import assert_never
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import desc, func, inspect as sqlalchemy_inspect
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.assessment_access import (
@@ -812,7 +812,7 @@ def _assessment_access_allows_user(
         select(AssessmentAccessUserGroup.id)
         .join(
             UserGroupUser,
-            UserGroupUser.usergroup_id == AssessmentAccessUserGroup.usergroup_id,
+            col(UserGroupUser.usergroup_id) == AssessmentAccessUserGroup.usergroup_id,
         )
         .where(
             AssessmentAccessUserGroup.policy_id == access_policy.id,
@@ -1470,7 +1470,7 @@ def _has_published_grade(submission: Submission | None, db_session: Session) -> 
     published_entry = db_session.exec(
         select(GradingEntry.id).where(
             GradingEntry.submission_id == submission.id,
-            GradingEntry.published_at.is_not(None),
+            col(GradingEntry.published_at).is_not(None),
         )
     ).first()
     return published_entry is not None
@@ -1649,7 +1649,7 @@ def _dt_iso(value: datetime | None) -> str | None:
 def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, User]:
     if not user_ids:
         return {}
-    rows = db_session.exec(select(User).where(User.id.in_(list(user_ids)))).all()
+    rows = db_session.exec(select(User).where(col(User.id).in_(list(user_ids)))).all()
     return {user.id: user for user in rows if user.id is not None}
 
 

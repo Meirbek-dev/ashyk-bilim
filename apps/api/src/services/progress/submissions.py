@@ -7,7 +7,7 @@ or run as a repair/backfill job to rebuild `activity_progress` and
 
 from datetime import UTC, datetime
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.assessments import Assessment
@@ -258,7 +258,9 @@ def recalculate_course_progress(
     weight_by_activity: dict[int, float] = {}
     if scored_activity_ids:
         assessment_rows = db_session.exec(
-            select(Assessment.activity_id, Assessment.weight).where(Assessment.activity_id.in_(scored_activity_ids))
+            select(Assessment.activity_id, Assessment.weight).where(
+                col(Assessment.activity_id).in_(scored_activity_ids)
+            )
         ).all()
         weight_by_activity = {row.activity_id: float(row.weight) for row in assessment_rows}
 
@@ -691,7 +693,7 @@ def _known_user_ids_by_course(
 
     activity_course = {activity.id: activity.course_id for activity in activities}
     for row in db_session.exec(
-        select(Submission.activity_id, Submission.user_id).where(Submission.activity_id.in_(activity_ids))
+        select(Submission.activity_id, Submission.user_id).where(col(Submission.activity_id).in_(activity_ids))
     ).all():
         course_id = activity_course.get(row.activity_id)
         if course_id in result:
@@ -701,7 +703,7 @@ def _known_user_ids_by_course(
 
     for row in db_session.exec(
         select(FileSubmissionAttempt.activity_id, FileSubmissionAttempt.user_id).where(
-            FileSubmissionAttempt.activity_id.in_(activity_ids)
+            col(FileSubmissionAttempt.activity_id).in_(activity_ids)
         )
     ).all():
         course_id = activity_course.get(row.activity_id)
@@ -710,12 +712,12 @@ def _known_user_ids_by_course(
 
     course_uuid_to_id = {
         course.course_uuid: course.id
-        for course in db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()
+        for course in db_session.exec(select(Course).where(col(Course.id).in_(course_ids))).all()
     }
     for row in db_session.exec(
         select(UserGroupResource.resource_uuid, UserGroupUser.user_id).join(
             UserGroupUser,
-            UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+            col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
         )
     ).all():
         course_id = course_uuid_to_id.get(row.resource_uuid)

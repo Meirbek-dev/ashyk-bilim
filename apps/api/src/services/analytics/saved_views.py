@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.analytics import AnalyticsSavedView
 from src.services.analytics.queries import to_iso
@@ -31,7 +31,7 @@ def list_saved_analytics_views(db_session: Session, scope: TeacherAnalyticsScope
         db_session.exec(
             select(AnalyticsSavedView)
             .where(AnalyticsSavedView.teacher_user_id == scope.teacher_user_id)
-            .order_by(AnalyticsSavedView.updated_at.desc())
+            .order_by(col(AnalyticsSavedView.updated_at).desc())
         ).all()
     )
     return SavedAnalyticsViewListResponse(

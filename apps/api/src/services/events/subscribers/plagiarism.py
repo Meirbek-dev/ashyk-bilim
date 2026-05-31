@@ -6,7 +6,7 @@ Replaces the old stub in services/integrations/plagiarism.py.
 from __future__ import annotations
 
 import logging
-from typing import override
+from typing import Any, Protocol, override
 
 from src.services.events.types import (
     FileSubmissionSubmittedEvent,
@@ -16,10 +16,10 @@ from src.services.events.types import (
 logger = logging.getLogger(__name__)
 
 
-class PlagiarismProvider:
+class PlagiarismProvider(Protocol):
     """Protocol for pluggable plagiarism detection providers."""
 
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict:
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict[str, Any]:
         """Run plagiarism check. Returns a result dict with at minimum {score, flagged}."""
         raise NotImplementedError
 
@@ -28,7 +28,7 @@ class NoopPlagiarismProvider(PlagiarismProvider):
     """Default no-op provider — logs and returns clean."""
 
     @override
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict:
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict[str, Any]:
         return {"score": 0.0, "flagged": False}
 
 
@@ -60,7 +60,9 @@ class PlagiarismSubscriber:
 
         provider = get_plagiarism_provider()
         try:
-            submission_uuid = getattr(event, "submission_uuid", None) or event.attempt_uuid
+            submission_uuid = (
+                event.submission_uuid if isinstance(event, SubmissionSubmittedEvent) else event.attempt_uuid
+            )
             result = await provider.check(submission_uuid, event.file_keys)
             logger.info(
                 "plagiarism_check submission=%s score=%s flagged=%s",
