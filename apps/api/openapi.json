@@ -5955,7 +5955,9 @@
             "type": "string"
           },
           "courses": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/CourseRead"
+            },
             "title": "Courses",
             "type": "array"
           },
@@ -6031,7 +6033,9 @@
             "type": "string"
           },
           "courses": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/CourseRead"
+            },
             "title": "Courses",
             "type": "array"
           },
@@ -6103,7 +6107,9 @@
           "courses": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "type": "integer"
+                },
                 "type": "array"
               },
               {
@@ -25320,7 +25326,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Apply Course Contributor Api V1 Courses  Course Uuid  Apply Contributor Post"
+                }
               }
             },
             "description": "Successful Response"
@@ -25380,7 +25388,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Add Bulk Course Contributors Api V1 Courses  Course Uuid  Bulk Add Contributors Post"
+                }
               }
             },
             "description": "Successful Response"
@@ -25440,7 +25450,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Remove Bulk Course Contributors Api V1 Courses  Course Uuid  Bulk Remove Contributors Delete"
+                }
               }
             },
             "description": "Successful Response"
@@ -25486,7 +25498,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Get Course Contributors Api V1 Courses  Course Uuid  Contributors Get"
+                }
               }
             },
             "description": "Successful Response"
@@ -25557,7 +25571,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Update Course Contributor Api V1 Courses  Course Uuid  Contributors  Contributor User Id  Put"
+                }
               }
             },
             "description": "Successful Response"
@@ -26401,7 +26417,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Delete Course Update Api V1 Courses  Course Uuid  Update  Courseupdate Uuid  Delete"
+                }
               }
             },
             "description": "Successful Response"

@@ -191,7 +191,6 @@ async def api_create_course(
     thumbnail: UploadFile | None = None,
     template: Annotated[str | None, Form()] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-    checker: PermissionCheckerDep | None = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CourseRead:
     """
@@ -255,7 +254,7 @@ async def api_get_course(
     course_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
-    checker: PermissionCheckerDep | None = None,
+    checker: PermissionCheckerDep = None,
 ) -> CourseRead | Response:
     """
     Get single Course by course_uuid
@@ -290,7 +289,7 @@ async def api_get_course_meta(
     with_unpublished_activities: bool = False,
     current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-    checker: PermissionCheckerDep | None = None,
+    checker: PermissionCheckerDep = None,
 ) -> FullCourseRead | Response:
     """
     Get single Course Metadata (chapters, activities) by course_uuid.
