@@ -33,35 +33,40 @@ export default async function PlatformDashHomePage() {
     {
       visible: hasCoursesAccess,
       href: '/dash/courses',
-      icon: <BookCopy size={22} />,
+      icon: <BookCopy size={22} className="text-violet-500" />,
+      iconBg: 'bg-violet-500/10 text-violet-500 border-violet-500/20 group-hover:bg-violet-500 group-hover:text-white',
       title: t('Courses.title'),
       description: t('Courses.description'),
     },
     {
       visible: hasAnalyticsAccess,
       href: '/dash/analytics',
-      icon: <BarChart2 size={22} />,
+      icon: <BarChart2 size={22} className="text-emerald-500" />,
+      iconBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
       title: t('Analytics.title'),
       description: t('Analytics.description'),
     },
     {
       visible: hasPlatformAccess,
       href: '/dash/platform/settings/landing',
-      icon: <School size={22} />,
+      icon: <School size={22} className="text-amber-500" />,
+      iconBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white',
       title: t('Platform.title'),
       description: t('Platform.description'),
     },
     {
       visible: hasUsersAccess,
       href: '/dash/users/settings/users',
-      icon: <Users size={22} />,
+      icon: <Users size={22} className="text-sky-500" />,
+      iconBg: 'bg-sky-500/10 text-sky-500 border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white',
       title: t('Users.title'),
       description: t('Users.description'),
     },
     {
       visible: hasAdminAccess,
       href: '/dash/admin',
-      icon: <ShieldCheck size={22} />,
+      icon: <ShieldCheck size={22} className="text-rose-500" />,
+      iconBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white',
       title: t('Admin.title'),
       description: t('Admin.description'),
       badge: t('Admin.badge'),
@@ -69,37 +74,44 @@ export default async function PlatformDashHomePage() {
   ].filter(card => card.visible)
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
-      {/* Logo */}
-      <div className="mb-12">
-        <Image
-          alt={t('appLogo')}
-          width={210}
-          height={77}
-          src={appLogoFull}
-          className="theme-logo-dark w-40 sm:w-[210px]"
-          style={{ height: 'auto' }}
-          loading="eager"
-        />
-        <Image
-          alt={t('appLogo')}
-          width={210}
-          height={77}
-          src={appLogoLightFull}
-          className="theme-logo-light w-40 sm:w-[210px]"
-          style={{ height: 'auto' }}
-          loading="eager"
-        />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-radial from-background via-background to-muted/20 px-4 py-16">
+      {/* Decorative Premium Glow Background elements */}
+      <div className="absolute top-1/4 left-1/4 -z-10 h-72 w-72 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 -z-10 h-96 w-96 rounded-full bg-violet-500/5 blur-[140px] pointer-events-none" />
+
+      {/* Logo Wrapper */}
+      <div className="mb-14 text-center">
+        <div className="relative inline-block transition-transform hover:scale-102 duration-300">
+          <Image
+            alt={t('appLogo')}
+            width={210}
+            height={77}
+            src={appLogoFull}
+            className="theme-logo-dark w-44 sm:w-[210px]"
+            style={{ height: 'auto' }}
+            loading="eager"
+          />
+          <Image
+            alt={t('appLogo')}
+            width={210}
+            height={77}
+            src={appLogoLightFull}
+            className="theme-logo-light w-44 sm:w-[210px]"
+            style={{ height: 'auto' }}
+            loading="eager"
+          />
+        </div>
       </div>
 
       {/* Nav Cards Grid */}
       {cards.length > 0 ? (
-        <div className="grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map(card => (
             <DashboardCard
               key={card.title}
               href={card.href}
               icon={card.icon}
+              iconBg={card.iconBg}
               title={card.title}
               description={card.description}
               {...(card.badge ? { badge: card.badge } : {})}
@@ -107,36 +119,31 @@ export default async function PlatformDashHomePage() {
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">{t('noAccess')}</p>
+        <p className="text-muted-foreground text-sm font-medium">{t('noAccess')}</p>
       )}
 
-      {/* Footer */}
-      <div className="mt-6 flex flex-col gap-6 sm:mt-10 sm:gap-10">
-        <div className="bg-muted/40 dark:bg-muted/80 mx-auto h-1 w-[100px] rounded-full" />
-        <div className="flex items-center justify-center">
+      {/* Bottom section with university and settings links */}
+      <div className="mt-12 flex flex-col gap-6 sm:mt-16 sm:gap-8 items-center w-full max-w-md">
+        <div className="h-[1px] w-24 bg-border/60" />
+        
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
           <ServerLink
             href="https://tou.edu.kz/ru/"
             target="_blank"
-            className="bg-primary mt-4 flex cursor-pointer items-center gap-2 rounded-lg px-7 py-3 shadow-lg transition-all ease-linear hover:scale-105 sm:mt-[40px]"
+            className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-border bg-card/85 hover:bg-accent/50 px-6 py-2.5 shadow-sm hover:shadow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-sm font-semibold"
           >
-            <Image width={26} src={touEmblemLight} alt={t('touUniversity')} />
-            <div className="text-primary-foreground text-sm font-bold">{t('touUniversity')}</div>
+            <Image width={22} height={22} src={touEmblemLight} alt={t('touUniversity')} className="object-contain" />
+            <span className="text-foreground">{t('touUniversity')}</span>
+          </ServerLink>
+
+          <ServerLink
+            href="/dash/user-account/settings/general"
+            className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl border border-border bg-card/85 hover:bg-accent/50 px-6 py-2.5 shadow-sm hover:shadow transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-sm font-semibold"
+          >
+            <Settings className="text-muted-foreground shrink-0" size={16} />
+            <span className="text-foreground">{t('AccountSettings.title')}</span>
           </ServerLink>
         </div>
-        <div className="bg-muted/40 dark:bg-muted/80 mx-auto mt-4 h-1 w-28 rounded-full sm:mt-[40px]" />
-
-        <ServerLink
-          href="/dash/user-account/settings/general"
-          className="bg-background mx-auto flex max-w-md cursor-pointer items-center rounded-lg p-4 shadow-lg transition-all ease-linear hover:scale-105"
-        >
-          <div className="mx-auto flex flex-col items-center gap-2 text-center sm:flex-row sm:gap-3 sm:text-left">
-            <Settings className="text-muted-foreground" size={20} />
-            <div>
-              <div className="text-muted-foreground font-bold">{t('AccountSettings.title')}</div>
-              <p className="text-muted-foreground text-sm">{t('AccountSettings.description')}</p>
-            </div>
-          </div>
-        </ServerLink>
       </div>
     </div>
   )
@@ -145,40 +152,42 @@ export default async function PlatformDashHomePage() {
 const DashboardCard = ({
   href,
   icon,
+  iconBg,
   title,
   description,
   badge,
 }: {
   href: string
   icon: ReactNode
+  iconBg: string
   title: string
   description: string
   badge?: string
 }) => {
   return (
-    <ServerLink href={href} className="group block">
-      <Card className="hover:bg-accent hover:text-accent-foreground h-full transition-colors duration-150">
-        <CardHeader className="pb-2">
+    <ServerLink href={href} className="group block h-full">
+      <Card className="relative bg-card/85 hover:bg-accent/40 border-border/80 hover:border-border/100 backdrop-blur-xs h-full transition-all duration-300 hover:shadow-md hover:-translate-y-1 select-none overflow-hidden flex flex-col justify-between">
+        <CardHeader className="pb-3 pt-5">
           <div className="flex items-start justify-between">
-            <div className="bg-muted text-muted-foreground group-hover:bg-background rounded-md p-2 transition-colors duration-150">
+            <div className={`rounded-lg p-2 border transition-all duration-300 ${iconBg}`}>
               {icon}
             </div>
             <div className="flex items-center gap-2">
               {badge && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15 border-transparent text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
                   {badge}
                 </Badge>
               )}
               <ChevronRight
                 size={16}
-                className="text-muted-foreground translate-x-0 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100"
+                className="text-muted-foreground/60 group-hover:text-foreground translate-x-[-4px] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
               />
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <CardTitle className="mb-1 text-base">{title}</CardTitle>
-          <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
+        <CardContent className="pb-6">
+          <CardTitle className="mb-2 text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors duration-300">{title}</CardTitle>
+          <CardDescription className="text-xs leading-relaxed text-muted-foreground/90 font-medium">{description}</CardDescription>
         </CardContent>
       </Card>
     </ServerLink>

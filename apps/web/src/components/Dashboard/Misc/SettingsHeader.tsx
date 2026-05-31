@@ -1,8 +1,6 @@
-'use client'
-
 import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs'
 import type { DashBreadcrumbType } from '@/components/ui/app-breadcrumbs'
-import React from 'react'
+import type React from 'react'
 
 interface Props {
   breadcrumbType: string

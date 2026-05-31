@@ -1,19 +1,20 @@
-import type { AnalyticsQuery, AssessmentType } from '@/types/analytics'
-import type { components } from '@/lib/api/generated'
+import type {
+  AnalyticsQuery,
+  AssessmentType,
+  TeacherOverviewResponse,
+  AdminAnalyticsResponse,
+  TeacherCourseListResponse,
+  TeacherCourseDetailResponse,
+  TeacherAssessmentListResponse,
+  TeacherAssessmentDetailResponse,
+  AtRiskLearnersResponse,
+  DrillThroughResponse,
+  SavedAnalyticsViewCreate,
+  SavedAnalyticsViewListResponse,
+  SavedAnalyticsViewRow,
+} from '@/types/analytics'
 import { apiFetch } from '@/lib/api-client'
 import { getAPIUrl } from '@services/config/config'
-
-type TeacherOverviewResponse = components['schemas']['TeacherOverviewResponse']
-type AdminAnalyticsResponse = components['schemas']['AdminAnalyticsResponse']
-type TeacherCourseListResponse = components['schemas']['TeacherCourseListResponse']
-type TeacherCourseDetailResponse = components['schemas']['TeacherCourseDetailResponse']
-type TeacherAssessmentListResponse = components['schemas']['TeacherAssessmentListResponse']
-type TeacherAssessmentDetailResponse = components['schemas']['TeacherAssessmentDetailResponse']
-type AtRiskLearnersResponse = components['schemas']['AtRiskLearnersResponse']
-type DrillThroughResponse = components['schemas']['DrillThroughResponse']
-type SavedAnalyticsViewCreate = components['schemas']['SavedAnalyticsViewCreate']
-type SavedAnalyticsViewListResponse = components['schemas']['SavedAnalyticsViewListResponse']
-type SavedAnalyticsViewRow = components['schemas']['SavedAnalyticsViewRow']
 
 export interface TeacherInterventionCreate {
   user_id: number

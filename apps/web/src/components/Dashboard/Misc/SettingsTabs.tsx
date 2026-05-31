@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
+import { usePathname } from 'next/navigation'
 import React from 'react'
 
 export interface TabItem {
@@ -13,7 +14,11 @@ export interface TabItem {
 }
 
 interface Props {
-  value: string
+  /**
+   * The active tab id. When omitted and `getHref` is provided, the active tab
+   * is derived automatically from the current pathname (last path segment).
+   */
+  value?: string
   tabs: TabItem[]
   getHref?: (tab: TabItem) => string
   translationNamespace: string
@@ -22,7 +27,7 @@ interface Props {
 }
 
 export default function SettingsTabs({
-  value,
+  value: valueProp,
   tabs,
   getHref,
   translationNamespace,
@@ -30,6 +35,10 @@ export default function SettingsTabs({
   renderTab,
 }: Props) {
   const t = useTranslations(translationNamespace)
+  const pathname = usePathname()
+
+  // When callers don't pass an explicit value, derive it from the last path segment.
+  const value = valueProp ?? pathname.split('/').filter(Boolean).pop() ?? ''
 
   const defaultRender = (tab: TabItem, isActive: boolean) => {
     const Icon = tab.icon
