@@ -1,0 +1,730 @@
+src\services\events\subscribers\analytics.py:29: error: Item "None" of "Any | None" has no attribute "isoformat"  [union-attr]
+src\services\analytics\insights.py:44: error: Incompatible types in assignment (expression has type "AssessmentOutlierRow", variable has type "AtRiskLearnerRow")  [assignment]
+src\db\courses\activities.py:158: error: Incompatible types in assignment (expression has type "str | None", base class "ActivityBase" defined the type as "str")  [assignment]
+src\db\courses\activities.py:159: error: Incompatible types in assignment (expression has type "ActivityTypeEnum | None", base class "ActivityBase" defined the type as "ActivityTypeEnum")  [assignment]
+src\db\courses\activities.py:160: error: Incompatible types in assignment (expression has type "ActivitySubTypeEnum | None", base class "ActivityBase" defined the type as "ActivitySubTypeEnum")  [assignment]
+src\db\courses\activities.py:161: error: Incompatible types in assignment (expression has type "dict[str, object] | None", base class "ActivityBase" defined the type as "dict[str, object]")  [assignment]
+src\db\courses\activities.py:163: error: Incompatible types in assignment (expression has type "dict[str, object] | None", base class "ActivityBase" defined the type as "dict[str, object]")  [assignment]
+src\db\courses\activities.py:164: error: Incompatible types in assignment (expression has type "bool | None", base class "ActivityBase" defined the type as "bool")  [assignment]
+src\db\gamification.py:110: error: Missing type arguments for generic type "dict"  [type-arg]
+src\db\gamification.py:194: error: Missing type arguments for generic type "dict"  [type-arg]
+src\db\assessments.py:739: error: Incompatible types in assignment (expression has type "list[TeacherSubmissionRead]", base class "SubmissionListResponse" defined the type as "list[SubmissionRead]")  [assignment]
+src\db\assessments.py:739: note: "list" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+src\db\assessments.py:739: note: Consider using "Sequence" instead, which is covariant
+src\security\file_validation.py:195: error: "file" has type "UploadFile" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\security\file_validation.py:210: error: Unsupported right operand type for in ("object")  [operator]
+src\security\file_validation.py:224: error: Unsupported operand types for > ("int" and "object")  [operator]
+src\security\file_validation.py:227: error: Unsupported operand types for / ("object" and "int")  [operator]
+src\security\file_validation.py:231: error: "object" not callable  [operator]
+src\routers\internal.py:16: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\internal.py:22: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\internal.py:28: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\internal.py:46: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\dev.py:9: error: Function is missing a return type annotation  [no-untyped-def]
+src\app\routing.py:9: error: Unused "type: ignore" comment  [unused-ignore]
+src\app\routing.py:10: error: Unused "type: ignore" comment  [unused-ignore]
+src\app\middleware.py:22: error: No overload variant of "dict" matches argument type "object"  [call-overload]
+src\app\middleware.py:22: note: Possible overload variants:
+src\app\middleware.py:22: note:     def [_KT, _VT] dict() -> dict[_KT, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(**kwargs: _VT) -> dict[str, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(SupportsKeysAndGetItem[_KT, _VT], /) -> dict[_KT, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(SupportsKeysAndGetItem[str, _VT], /, **kwargs: _VT) -> dict[str, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(Iterable[tuple[_KT, _VT]], /) -> dict[_KT, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(Iterable[tuple[str, _VT]], /, **kwargs: _VT) -> dict[str, _VT]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(Iterable[list[str]], /) -> dict[str, str]
+src\app\middleware.py:22: note:     def [_KT, _VT] dict(Iterable[list[bytes]], /) -> dict[bytes, bytes]
+src\app\errors.py:10: error: Unexpected keyword argument "include_url" for "errors" of "ValidationException"  [call-arg]
+src\app\errors.py:10: note: "errors" defined in "fastapi.exceptions"
+src\app\errors.py:10: error: Incompatible return value type (got "Sequence[Any]", expected "list[dict[str, Any]]")  [return-value]
+src\services\code_execution\service.py:254: error: Class cannot subclass "Client" (has type "Any")  [misc]
+src\services\code_execution\service.py:480: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\rate_limit.py:120: error: Function is missing a return type annotation  [no-untyped-def]
+src\infra\rate_limit.py:68: error: Incompatible types in assignment (expression has type "object", variable has type "Request[State] | None")  [assignment]
+src\routers\utils.py:15: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\utils.py:15: error: Incompatible default for parameter "url" (default has type "EllipsisType", parameter has type "str")  [assignment]
+src\services\courses\thumbnails.py:6: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\uploads\videos.py:10: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\uploads\videos.py:12: error: Item "None" of "str | None" has no attribute "split"  [union-attr]
+src\services\courses\activities\uploads\videos.py:34: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\activities\uploads\videos.py:37: error: Item "None" of "str | None" has no attribute "split"  [union-attr]
+src\services\courses\activities\uploads\pdfs.py:10: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\uploads\pdfs.py:12: error: Item "None" of "str | None" has no attribute "split"  [union-attr]
+src\services\blocks\utils\upload_files.py:8: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\utils\upload_files.py:13: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\dev\dev.py:5: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\grading\quiz_grader.py:78: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:78: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:78: error: Item "CodeItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:78: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:101: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:101: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:101: error: Item "CodeItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:101: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "options"  [union-attr]
+src\services\grading\quiz_grader.py:139: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "pairs"  [union-attr]
+src\services\grading\quiz_grader.py:139: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "pairs"  [union-attr]
+src\services\grading\quiz_grader.py:139: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "pairs"  [union-attr]
+src\services\grading\quiz_grader.py:139: error: Item "CodeItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "pairs"  [union-attr]
+src\services\ai\session_store.py:78: error: Incompatible types in assignment (expression has type "Awaitable[int] | int", variable has type "int")  [assignment]
+src\worker\broker.py:36: error: Need type annotation for "result_backend"  [var-annotated]
+src\services\grading\registry.py:36: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\grading\pipeline\validate.py:134: error: Statement is unreachable  [unreachable]
+src\services\grading\pipeline\enforce.py:47: error: Incompatible types in assignment (expression has type "LatePolicyNone | LatePolicyPenalty | LatePolicyCutoff", variable has type "LatePolicyNone")  [assignment]
+src\services\ai\embeddings.py:83: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\ai\embeddings.py:177: error: Statement is unreachable  [unreachable]
+src\infra\health.py:27: error: No overload variant of "exec" of "Session" matches argument type "TextClause"  [call-overload]
+src\infra\health.py:27: note: Possible overload variants:
+src\infra\health.py:27: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\infra\health.py:27: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\infra\health.py:27: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\gamification\service.py:126: error: If condition is always false  [redundant-expr]
+src\services\gamification\service.py:126: error: Subclass of "int" and "tuple[Any, ...]" cannot exist: have distinct disjoint bases  [unreachable]
+src\services\gamification\service.py:126: error: Subclass of "int" and "list[Any]" cannot exist: have distinct disjoint bases  [unreachable]
+src\services\gamification\service.py:166: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\gamification\service.py:317: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\gamification\service.py:322: error: "profile" has type "GamificationProfile" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\services\gamification\service.py:362: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\gamification\service.py:409: error: "profile" has type "GamificationProfile" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\services\gamification\service.py:415: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\gamification\service.py:443: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\auth\sessions.py:130: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\auth\sessions.py:237: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\auth\sessions.py:286: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\auth\sessions.py:579: error: Missing type arguments for generic type "dict"  [type-arg]
+src\db\courses\courses.py:187: error: Incompatible types in assignment (expression has type "bool | None", base class "CourseBase" defined the type as "bool")  [assignment]
+src\db\courses\courses.py:188: error: Incompatible types in assignment (expression has type "bool | None", base class "CourseBase" defined the type as "bool")  [assignment]
+src\auth\db.py:82: error: Incompatible default for parameter "session_factory" (default has type "None", parameter has type "Callable[[], AbstractContextManager[Session, bool | None]]")  [assignment]
+src\auth\db.py:82: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\auth\db.py:82: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\services\ai\retrieval.py:8: error: Skipping analyzing "pgvector.sqlalchemy": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src\services\ai\retrieval.py:8: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+src\services\ai\retrieval.py:76: error: Statement is unreachable  [unreachable]
+src\services\platform_users.py:38: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\setup\setup.py:25: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\setup\setup.py:39: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\progress\submissions.py:608: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\progress\submissions.py:608: note: Possible overload variants:
+src\services\progress\submissions.py:608: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\progress\submissions.py:608: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\progress\submissions.py:717: error: Incompatible types in assignment (expression has type "tuple[str, int]", variable has type "tuple[int, int]")  [assignment]
+src\services\courses\activities\utils.py:5: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\courses\activities\utils.py:23: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\activities\utils.py:107: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\analytics\scope.py:80: error: No overload variant of "select" matches argument type "int | None"  [call-overload]
+src\services\analytics\scope.py:80: note: Possible overload variants:
+src\services\analytics\scope.py:80: note:     def [_T0: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], /) -> Select[tuple[_T0]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], /) -> Select[tuple[_T0, _T1]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], /) -> Select[tuple[_T0, _T1, _T2]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], /) -> Select[tuple[_T0, _T1, _T2, _T3]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8]]
+src\services\analytics\scope.py:80: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any, _T9: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], TypedColumnsClauseRole[_T9] | SQLCoreOperations[_T9] | type[_T9], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9]]
+src\services\analytics\scope.py:80: note:     def select(*entities: TypedColumnsClauseRole[Any] | ColumnsClauseRole | SQLCoreOperations[Any] | Literal['*', 1] | type[Any] | Inspectable[_HasClauseElement[Any]] | _HasClauseElement[Any], **Any) -> Select[Any]
+src\services\analytics\scope.py:93: error: No overload variant of "select" matches argument type "int | None"  [call-overload]
+src\services\analytics\scope.py:93: note: Possible overload variants:
+src\services\analytics\scope.py:93: note:     def [_T0: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], /) -> Select[tuple[_T0]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], /) -> Select[tuple[_T0, _T1]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], /) -> Select[tuple[_T0, _T1, _T2]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], /) -> Select[tuple[_T0, _T1, _T2, _T3]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8]]
+src\services\analytics\scope.py:93: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any, _T9: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], TypedColumnsClauseRole[_T9] | SQLCoreOperations[_T9] | type[_T9], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9]]
+src\services\analytics\scope.py:93: note:     def select(*entities: TypedColumnsClauseRole[Any] | ColumnsClauseRole | SQLCoreOperations[Any] | Literal['*', 1] | type[Any] | Inspectable[_HasClauseElement[Any]] | _HasClauseElement[Any], **Any) -> Select[Any]
+src\services\analytics\scope.py:96: error: No overload variant of "select" matches argument type "int | None"  [call-overload]
+src\services\analytics\scope.py:96: note: Possible overload variants:
+src\services\analytics\scope.py:96: note:     def [_T0: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], /) -> Select[tuple[_T0]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], /) -> Select[tuple[_T0, _T1]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], /) -> Select[tuple[_T0, _T1, _T2]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], /) -> Select[tuple[_T0, _T1, _T2, _T3]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8]]
+src\services\analytics\scope.py:96: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any, _T9: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], TypedColumnsClauseRole[_T9] | SQLCoreOperations[_T9] | type[_T9], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9]]
+src\services\analytics\scope.py:96: note:     def select(*entities: TypedColumnsClauseRole[Any] | ColumnsClauseRole | SQLCoreOperations[Any] | Literal['*', 1] | type[Any] | Inspectable[_HasClauseElement[Any]] | _HasClauseElement[Any], **Any) -> Select[Any]
+src\services\analytics\scope.py:147: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Assessment, Activity]]"  [call-overload]
+src\services\analytics\scope.py:147: note: Possible overload variants:
+src\services\analytics\scope.py:147: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\scope.py:147: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\scope.py:147: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\scope.py:160: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Activity]]"  [call-overload]
+src\services\analytics\scope.py:160: note: Possible overload variants:
+src\services\analytics\scope.py:160: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\scope.py:160: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\scope.py:160: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\auth\manager.py:75: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\platform_admin.py:83: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\platform_admin.py:102: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\platform_admin.py:121: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\platform_admin.py:133: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\platform_admin.py:154: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\grading\bulk.py:30: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\grading\bulk.py:317: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\grading\pipeline\persist.py:31: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\grading\pipeline\persist.py:77: error: If condition is always true  [redundant-expr]
+src\services\blocks\block_types\videoBlock\videoBlock.py:16: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\block_types\videoBlock\videoBlock.py:52: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\block_types\pdfBlock\pdfBlock.py:16: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\block_types\pdfBlock\pdfBlock.py:52: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\block_types\imageBlock\imageBlock.py:16: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\blocks\block_types\imageBlock\imageBlock.py:52: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\updates.py:88: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\updates.py:130: error: Incompatible types in assignment (expression has type "SelectOfScalar[CourseUpdate]", variable has type "SelectOfScalar[Course]")  [assignment]
+src\services\courses\discussions.py:155: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\courses\discussions.py:295: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\discussions.py:381: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\discussions.py:431: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\discussions.py:504: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\contributors.py:30: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\contributors.py:97: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\contributors.py:176: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\contributors.py:201: error: Incompatible types in assignment (expression has type "Select[tuple[ResourceAuthor, User]]", variable has type "SelectOfScalar[Course]")  [assignment]
+src\services\courses\contributors.py:220: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\contributors.py:258: error: Need type annotation for "results"  [var-annotated]
+src\services\courses\contributors.py:318: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\contributors.py:357: error: Need type annotation for "results"  [var-annotated]
+src\services\courses\activities\video.py:77: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\video.py:99: error: If condition is always true  [redundant-expr]
+src\services\courses\activities\video.py:143: error: Missing type arguments for generic type "tuple"  [type-arg]
+src\services\courses\activities\video.py:145: error: Unsupported operand types for < ("int" and "None")  [operator]
+src\services\courses\activities\video.py:145: note: Left operand is of type "int | None"
+src\services\courses\activities\video.py:199: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\pdf.py:92: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\analytics\workload.py:92: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:92: note: Possible overload variants:
+src\services\analytics\workload.py:92: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:92: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:94: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:94: note: Possible overload variants:
+src\services\analytics\workload.py:94: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:94: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:97: error: Unsupported operand types for < ("datetime" and "object")  [operator]
+src\services\analytics\workload.py:110: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:110: note: Possible overload variants:
+src\services\analytics\workload.py:110: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:110: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:112: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:112: note: Possible overload variants:
+src\services\analytics\workload.py:112: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:112: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:115: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:115: note: Possible overload variants:
+src\services\analytics\workload.py:115: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:115: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:118: error: No overload variant of "int" matches argument type "object"  [call-overload]
+src\services\analytics\workload.py:118: note: Possible overload variants:
+src\services\analytics\workload.py:118: note:     def int(str | Buffer | SupportsInt | SupportsIndex = ..., /) -> int
+src\services\analytics\workload.py:118: note:     def int(str | bytes | bytearray, /, base: SupportsIndex) -> int
+src\services\analytics\workload.py:163: error: Incompatible return value type (got "object", expected "SupportsDunderLT[Any] | SupportsDunderGT[Any]")  [return-value]
+src\services\analytics\risk.py:101: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[LearnerRiskSnapshot]]"  [call-overload]
+src\services\analytics\risk.py:101: note: Possible overload variants:
+src\services\analytics\risk.py:101: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\risk.py:101: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\risk.py:101: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\risk.py:125: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[TeacherIntervention]]"  [call-overload]
+src\services\analytics\risk.py:125: note: Possible overload variants:
+src\services\analytics\risk.py:125: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\risk.py:125: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\risk.py:125: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\interventions.py:39: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[LearnerRiskSnapshot]]"  [call-overload]
+src\services\analytics\interventions.py:39: note: Possible overload variants:
+src\services\analytics\interventions.py:39: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\interventions.py:39: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\interventions.py:39: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\interventions.py:99: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[TeacherIntervention]]"  [call-overload]
+src\services\analytics\interventions.py:99: note: Possible overload variants:
+src\services\analytics\interventions.py:99: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\interventions.py:99: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\interventions.py:99: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\interventions.py:113: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[TeacherIntervention]]"  [call-overload]
+src\services\analytics\interventions.py:113: note: Possible overload variants:
+src\services\analytics\interventions.py:113: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\interventions.py:113: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\interventions.py:113: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\anomalies.py:58: error: Need type annotation for "current_submissions"  [var-annotated]
+src\services\analytics\anomalies.py:59: error: Need type annotation for "previous_submissions"  [var-annotated]
+src\services\analytics\anomalies.py:87: error: If condition is always true  [redundant-expr]
+src\services\analytics\anomalies.py:92: error: Invalid index type "int | None" for "dict[int, list[float]]"; expected type "int"  [index]
+src\services\analytics\anomalies.py:99: error: Incompatible types in assignment (expression has type "Activity | None", variable has type "Activity")  [assignment]
+src\services\analytics\anomalies.py:105: error: "activity" has type "Activity" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\services\analytics\anomalies.py:109: error: If condition is always true  [redundant-expr]
+src\services\analytics\anomalies.py:110: error: Item "None" of "Course | None" has no attribute "name"  [union-attr]
+src\services\analytics\anomalies.py:111: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\collections.py:58: error: Incompatible types in assignment (expression has type "SelectOfScalar[Course]", variable has type "SelectOfScalar[Collection]")  [assignment]
+src\services\courses\collections.py:80: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\collections.py:119: error: "collection" has type "Collection" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\services\courses\collections.py:151: error: Incompatible types in assignment (expression has type "CollectionRead", variable has type "Collection")  [assignment]
+src\services\courses\collections.py:194: error: Incompatible types in assignment (expression has type "SelectOfScalar[CollectionCourse]", variable has type "SelectOfScalar[Collection]")  [assignment]
+src\services\courses\collections.py:203: error: Incompatible types in assignment (expression has type "CollectionCourse", variable has type "Collection")  [assignment]
+src\services\courses\collections.py:216: error: Incompatible types in assignment (expression has type "SelectOfScalar[Course]", variable has type "SelectOfScalar[Collection]")  [assignment]
+src\services\courses\collections.py:225: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\collections.py:301: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\courses\collections.py:326: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\courses.py:44: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:95: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:170: error: No overload variant of "select" matches argument type "str"  [call-overload]
+src\services\courses\courses.py:170: note: Possible overload variants:
+src\services\courses\courses.py:170: note:     def [_T0: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], /) -> Select[tuple[_T0]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], /) -> Select[tuple[_T0, _T1]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], /) -> Select[tuple[_T0, _T1, _T2]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], /) -> Select[tuple[_T0, _T1, _T2, _T3]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8]]
+src\services\courses\courses.py:170: note:     def [_T0: Any, _T1: Any, _T2: Any, _T3: Any, _T4: Any, _T5: Any, _T6: Any, _T7: Any, _T8: Any, _T9: Any] select(TypedColumnsClauseRole[_T0] | SQLCoreOperations[_T0] | type[_T0], TypedColumnsClauseRole[_T1] | SQLCoreOperations[_T1] | type[_T1], TypedColumnsClauseRole[_T2] | SQLCoreOperations[_T2] | type[_T2], TypedColumnsClauseRole[_T3] | SQLCoreOperations[_T3] | type[_T3], TypedColumnsClauseRole[_T4] | SQLCoreOperations[_T4] | type[_T4], TypedColumnsClauseRole[_T5] | SQLCoreOperations[_T5] | type[_T5], TypedColumnsClauseRole[_T6] | SQLCoreOperations[_T6] | type[_T6], TypedColumnsClauseRole[_T7] | SQLCoreOperations[_T7] | type[_T7], TypedColumnsClauseRole[_T8] | SQLCoreOperations[_T8] | type[_T8], TypedColumnsClauseRole[_T9] | SQLCoreOperations[_T9] | type[_T9], /) -> Select[tuple[_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9]]
+src\services\courses\courses.py:170: note:     def select(*entities: TypedColumnsClauseRole[Any] | ColumnsClauseRole | SQLCoreOperations[Any] | Literal['*', 1] | type[Any] | Inspectable[_HasClauseElement[Any]] | _HasClauseElement[Any], **Any) -> Select[Any]
+src\services\courses\courses.py:615: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\courses.py:615: error: If condition in comprehension is always true  [redundant-expr]
+src\services\courses\courses.py:736: error: Missing type arguments for generic type "tuple"  [type-arg]
+src\services\courses\courses.py:742: error: Invalid index type "int | None" for "OrderedDict[int, tuple[Any, ...]]"; expected type "int"  [index]
+src\services\courses\courses.py:743: error: Invalid index type "int | None" for "OrderedDict[int, tuple[Any, ...]]"; expected type "int"  [index]
+src\services\courses\courses.py:744: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\courses.py:745: error: Invalid index type "int | None" for "OrderedDict[int, tuple[Any, ...]]"; expected type "int"  [index]
+src\services\courses\courses.py:805: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\courses.py:910: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\courses\courses.py:973: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1069: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1153: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1237: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1275: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1321: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\courses.py:1397: error: Missing type arguments for generic type "list"  [type-arg]
+src\services\courses\courses.py:1542: error: Missing type arguments for generic type "tuple"  [type-arg]
+src\services\courses\courses.py:1546: error: Invalid index type "int | None" for "OrderedDict[int, tuple[Any, ...]]"; expected type "int"  [index]
+src\services\courses\courses.py:1547: error: Left operand of "and" is always true  [redundant-expr]
+src\services\courses\courses.py:1548: error: Invalid index type "int | None" for "OrderedDict[int, tuple[Any, ...]]"; expected type "int"  [index]
+src\services\courses\courses.py:1653: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\chapters.py:142: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\chapters.py:200: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\chapters.py:213: error: Item "None" of "Chapter | None" has no attribute "chapter_uuid"  [union-attr]
+src\services\courses\chapters.py:227: error: Incompatible types in assignment (expression has type "int | None", variable has type "int")  [assignment]
+src\services\courses\chapters.py:322: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\chapters.py:409: error: Incompatible types in assignment (expression has type "int | None", variable has type "int")  [assignment]
+src\auth\users.py:29: error: Incompatible default for parameter "user" (default has type "None", parameter has type "User")  [assignment]
+src\auth\users.py:29: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\auth\users.py:29: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\auth\users.py:44: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\auth\users.py:44: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\auth\users.py:44: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\services\grading\submission.py:70: error: Unused "type: ignore" comment  [unused-ignore]
+src\worker\tasks\bulk_grading.py:50: error: Value of type "Coroutine[Any, Any, None]" must be used  [unused-coroutine]
+src\worker\tasks\bulk_grading.py:50: note: Are you missing an await?
+src\services\grading\pipeline\orchestrator.py:234: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\grading\pipeline\orchestrator.py:249: error: Call to untyped function "_persist_and_update" in typed context  [no-untyped-call]
+src\services\grading\pipeline\orchestrator.py:397: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:397: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:397: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:397: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:403: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:403: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:403: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:403: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "languages"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:416: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "tests"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:416: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "tests"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:416: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "tests"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:416: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "tests"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:418: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "time_limit_seconds"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:418: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "time_limit_seconds"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:418: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "time_limit_seconds"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:418: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "time_limit_seconds"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:419: error: Item "ChoiceItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "memory_limit_mb"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:419: error: Item "OpenTextItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "memory_limit_mb"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:419: error: Item "FormItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "memory_limit_mb"  [union-attr]
+src\services\grading\pipeline\orchestrator.py:419: error: Item "MatchingItemBody" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody" has no attribute "memory_limit_mb"  [union-attr]
+src\services\analytics\bottlenecks.py:18: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\analytics\courses.py:61: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[date]]"  [call-overload]
+src\services\analytics\courses.py:61: note: Possible overload variants:
+src\services\analytics\courses.py:61: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\courses.py:61: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\courses.py:61: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\courses.py:69: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[DailyCourseMetrics]]"  [call-overload]
+src\services\analytics\courses.py:69: note: Possible overload variants:
+src\services\analytics\courses.py:69: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\courses.py:69: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\courses.py:69: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\courses.py:102: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Course]]"  [call-overload]
+src\services\analytics\courses.py:102: note: Possible overload variants:
+src\services\analytics\courses.py:102: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\courses.py:102: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\courses.py:102: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\courses.py:398: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Course]]"  [call-overload]
+src\services\analytics\courses.py:398: note: Possible overload variants:
+src\services\analytics\courses.py:398: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\courses.py:398: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\courses.py:398: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\courses.py:400: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[UserGroup]]"  [call-overload]
+src\services\analytics\courses.py:400: note: Possible overload variants:
+src\services\analytics\courses.py:400: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\courses.py:400: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\courses.py:400: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\courses.py:576: error: Need type annotation for "pct"  [var-annotated]
+src\services\search\search.py:41: error: Item "None" of "Engine | Connection | None" has no attribute "dialect"  [union-attr]
+src\services\search\search.py:122: error: Missing type arguments for generic type "list"  [type-arg]
+src\routers\users.py:238: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:41: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:52: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:74: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:93: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:110: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:138: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:208: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\roles.py:223: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\rbac.py:83: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\rbac.py:188: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\rbac.py:188: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\rbac.py:188: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\rbac.py:189: error: Incompatible default for parameter "checker" (default has type "None", parameter has type "PermissionChecker")  [assignment]
+src\routers\rbac.py:189: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\rbac.py:189: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\rbac.py:230: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\rbac.py:267: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:85: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:111: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:131: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:153: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:175: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:214: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\platform.py:231: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\gamification.py:124: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\gamification.py:177: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\gamification.py:205: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\gamification.py:206: error: Incompatible default for parameter "data" (default has type "EllipsisType", parameter has type "dict[str, Any]")  [assignment]
+src\routers\gamification.py:207: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\gamification.py:207: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\gamification.py:207: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\gamification.py:208: error: Incompatible default for parameter "db" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\gamification.py:208: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\gamification.py:208: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\gamification.py:219: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\gamification.py:222: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\gamification.py:222: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\gamification.py:222: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\gamification.py:223: error: Incompatible default for parameter "db" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\gamification.py:223: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\gamification.py:223: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\file_submissions.py:179: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\file_submissions.py:179: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\file_submissions.py:179: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\file_submissions.py:180: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\file_submissions.py:180: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\file_submissions.py:180: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\auth.py:100: error: Item "Coroutine[None, None, Strategy[User, int]]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:100: note: Maybe you forgot to use "await"?
+src\routers\auth.py:100: error: Item "Generator[Strategy[User, int], None, None]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:100: error: Item "AsyncIterator[Strategy[User, int]]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:226: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\auth.py:233: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\auth.py:278: error: Item "Coroutine[None, None, Strategy[User, int]]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:278: note: Maybe you forgot to use "await"?
+src\routers\auth.py:278: error: Item "Generator[Strategy[User, int], None, None]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:278: error: Item "AsyncIterator[Strategy[User, int]]" of "Strategy[User, int] | Coroutine[None, None, Strategy[User, int]] | Generator[Strategy[User, int], None, None] | AsyncIterator[Strategy[User, int]]" has no attribute "write_token"  [union-attr]
+src\routers\auth.py:286: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\auth.py:308: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:114: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:276: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\uploads\chunked_upload.py:276: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\uploads\chunked_upload.py:276: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\uploads\chunked_upload.py:308: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:315: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\uploads\chunked_upload.py:315: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\uploads\chunked_upload.py:315: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\uploads\chunked_upload.py:348: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:352: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\uploads\chunked_upload.py:352: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\uploads\chunked_upload.py:352: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\uploads\chunked_upload.py:379: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:381: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\uploads\chunked_upload.py:381: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\uploads\chunked_upload.py:381: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\uploads\chunked_upload.py:424: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\uploads\chunked_upload.py:426: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\uploads\chunked_upload.py:426: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\uploads\chunked_upload.py:426: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\grading\sse.py:129: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\grading\sse.py:192: error: Call to untyped function "aclose" in typed context  [no-untyped-call]
+src\routers\grading\sse.py:208: error: Call to untyped function "event_generator" in typed context  [no-untyped-call]
+src\routers\grading\feedback.py:100: error: If condition is always true  [redundant-expr]
+src\routers\grading\feedback.py:101: error: If condition is always true  [redundant-expr]
+src\routers\grading\feedback.py:111: error: If condition is always true  [redundant-expr]
+src\routers\courses\discussions.py:79: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\discussions.py:107: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\discussions.py:121: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\discussions.py:135: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\collections.py:32: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\collections.py:32: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\collections.py:32: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\collections.py:45: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\collections.py:45: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\collections.py:45: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\collections.py:59: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\collections.py:59: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\collections.py:59: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\collections.py:79: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\collections.py:79: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\collections.py:79: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\collections.py:88: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\collections.py:92: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\collections.py:92: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\collections.py:92: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:35: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:35: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:35: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:45: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:45: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:45: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:56: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:56: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:56: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:69: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:69: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:69: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:70: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\courses\chapters.py:88: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:88: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:88: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:89: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\courses\chapters.py:100: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:100: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:100: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:110: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\chapters.py:110: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\chapters.py:110: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\chapters.py:111: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\courses\activities\blocks.py:35: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:35: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:35: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:36: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\courses\activities\blocks.py:36: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:36: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:48: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:48: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:48: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:49: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser | AnonymousUser")  [assignment]
+src\routers\courses\activities\blocks.py:49: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:49: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:67: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:67: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:67: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:68: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\courses\activities\blocks.py:68: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:68: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:80: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:80: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:80: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:81: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser | AnonymousUser")  [assignment]
+src\routers\courses\activities\blocks.py:81: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:81: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:99: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:99: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:99: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:100: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\courses\activities\blocks.py:100: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:100: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:112: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\courses\activities\blocks.py:112: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:112: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\activities\blocks.py:113: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser | AnonymousUser")  [assignment]
+src\routers\courses\activities\blocks.py:113: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\activities\blocks.py:113: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\services\assessments\_shared.py:240: error: No overload variant of "list" matches argument type "object"  [call-overload]
+src\services\assessments\_shared.py:240: note: Possible overload variants:
+src\services\assessments\_shared.py:240: note:     def [_T] list() -> list[_T]
+src\services\assessments\_shared.py:240: note:     def [_T] list(Iterable[_T], /) -> list[_T]
+src\services\assessments\_shared.py:373: error: Name "started_at" already defined on line 330  [no-redef]
+src\services\assessments\_shared.py:438: error: No overload variant of "list" matches argument type "object"  [call-overload]
+src\services\assessments\_shared.py:438: note: Possible overload variants:
+src\services\assessments\_shared.py:438: note:     def [_T] list() -> list[_T]
+src\services\assessments\_shared.py:438: note:     def [_T] list(Iterable[_T], /) -> list[_T]
+src\services\assessments\_shared.py:770: error: Left operand of "or" is always false  [redundant-expr]
+src\services\assessments\_shared.py:879: error: Incompatible types in assignment (expression has type "object", variable has type "dict[str, Any]")  [assignment]
+src\services\assessments\_shared.py:1039: error: If condition is always true  [redundant-expr]
+src\services\assessments\_shared.py:1489: error: Incompatible types in assignment (expression has type "str", variable has type "Literal['HIDDEN', 'AWAITING_RELEASE', 'VISIBLE', 'RETURNED_FOR_REVISION']")  [assignment]
+src\services\assessments\_shared.py:1505: error: Incompatible types in assignment (expression has type "str", variable has type "Literal['HIDDEN', 'AWAITING_RELEASE', 'VISIBLE', 'RETURNED_FOR_REVISION']")  [assignment]
+src\services\assessments\_shared.py:1526: error: Statement is unreachable  [unreachable]
+src\services\assessments\_shared.py:1656: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\assessments\_shared.py:1730: error: If condition is always true  [redundant-expr]
+src\services\assessments\review_service.py:63: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\assessments\review_service.py:208: error: Unsupported operand types for <= ("float" and "None")  [operator]
+src\services\assessments\review_service.py:208: note: Left operand is of type "float | None"
+src\services\assessments\review_service.py:214: error: Unsupported operand types for // ("None" and "int")  [operator]
+src\services\assessments\review_service.py:214: note: Left operand is of type "float | None"
+src\services\assessments\review_service.py:524: error: Unused "type: ignore" comment  [unused-ignore]
+src\services\assessments\review_service.py:525: error: If condition is always true  [redundant-expr]
+src\services\assessments\review_service.py:553: error: Unused "type: ignore" comment  [unused-ignore]
+src\services\assessments\review_service.py:554: error: If condition is always true  [redundant-expr]
+src\services\assessments\attempt_service.py:202: error: If condition is always true  [redundant-expr]
+src\services\assessments\attempt_service.py:207: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\assessments\attempt_service.py:304: error: Incompatible types in assignment (expression has type "StudentSubmissionRead", variable has type "Submission")  [assignment]
+src\services\assessments\attempt_service.py:396: error: No overload variant of "list" matches argument type "object"  [call-overload]
+src\services\assessments\attempt_service.py:396: note: Possible overload variants:
+src\services\assessments\attempt_service.py:396: note:     def [_T] list() -> list[_T]
+src\services\assessments\attempt_service.py:396: note:     def [_T] list(Iterable[_T], /) -> list[_T]
+src\services\assessments\assessment_crud.py:91: error: Unused "type: ignore" comment  [unused-ignore]
+src\services\assessments\assessment_crud.py:427: error: Item "None" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody | None" has no attribute "model_dump"  [union-attr]
+src\services\assessments\assessment_crud.py:428: error: Item "None" of "ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody | None" has no attribute "kind"  [union-attr]
+src\services\assessments\assessment_crud.py:430: error: Item "None" of "AssessmentItemMetadata | None" has no attribute "model_dump"  [union-attr]
+src\services\assessments\access_service.py:132: error: Unused "type: ignore" comment  [unused-ignore]
+src\services\assessments\access_service.py:211: error: Unused "type: ignore" comment  [unused-ignore]
+src\services\assessments\access_service.py:232: error: If condition in comprehension is always true  [redundant-expr]
+src\routers\ai\ai.py:177: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\ai\ai.py:204: error: Call to untyped function "event_generator" in typed context  [no-untyped-call]
+src\routers\ai\ai.py:250: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\ai\ai.py:277: error: Call to untyped function "event_generator" in typed context  [no-untyped-call]
+cli.py:174: error: "platform" has type "Platform" which does not implement __bool__ or __len__ so it could always be true in boolean context  [truthy-bool]
+src\services\analytics\quality.py:23: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[DailyTeacherMetrics]]"  [call-overload]
+src\services\analytics\quality.py:23: note: Possible overload variants:
+src\services\analytics\quality.py:23: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\quality.py:23: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\quality.py:23: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\admin.py:82: error: Incompatible types in assignment (expression has type "Course | None", variable has type "Course")  [assignment]
+src\services\analytics\admin.py:95: error: If condition is always true  [redundant-expr]
+src\services\analytics\admin.py:129: error: Incompatible types in assignment (expression has type "AdminAnalyticsCourseRow", variable has type "TeacherCourseRow")  [assignment]
+src\services\analytics\admin.py:130: error: Incompatible types in assignment (expression has type "Course | None", variable has type "Course")  [assignment]
+src\services\analytics\admin.py:131: error: If condition is always true  [redundant-expr]
+src\routers\search.py:20: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\search.py:20: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\search.py:20: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\search.py:21: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\search.py:21: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\search.py:21: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\certifications.py:83: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\courses\certifications.py:108: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\courses\certifications.py:120: error: Missing type arguments for generic type "dict"  [type-arg]
+src\routers\courses\certifications.py:132: error: Missing type arguments for generic type "dict"  [type-arg]
+src\services\courses\activities\activities.py:48: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\activities.py:82: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\activities.py:137: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\courses\activities\activities.py:283: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\assessments\unified.py:183: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\assessments\unified.py:195: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\assessments\unified.py:302: error: Incompatible default for parameter "current_user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\assessments\unified.py:302: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\assessments\unified.py:302: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\assessments\unified.py:303: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\assessments\unified.py:303: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\assessments\unified.py:303: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\assessments\unified.py:541: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\assessments\unified.py:659: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\assessments\unified.py:695: error: Function is missing a return type annotation  [no-untyped-def]
+src\services\analytics\overview.py:72: error: Unsupported operand types for / ("float" and "None")  [operator]
+src\services\analytics\overview.py:72: note: Right operand is of type "float | None"
+src\services\analytics\overview.py:72: error: Unsupported operand types for - ("float" and "None")  [operator]
+src\services\analytics\overview.py:91: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[date]]"  [call-overload]
+src\services\analytics\overview.py:91: note: Possible overload variants:
+src\services\analytics\overview.py:91: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:91: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:91: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:105: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[int]]"  [call-overload]
+src\services\analytics\overview.py:105: note: Possible overload variants:
+src\services\analytics\overview.py:105: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:105: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:105: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:120: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[DailyTeacherMetrics]]"  [call-overload]
+src\services\analytics\overview.py:120: note: Possible overload variants:
+src\services\analytics\overview.py:120: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:120: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:120: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:136: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[DailyTeacherMetrics]]"  [call-overload]
+src\services\analytics\overview.py:136: note: Possible overload variants:
+src\services\analytics\overview.py:136: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:136: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:136: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:147: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[date]]"  [call-overload]
+src\services\analytics\overview.py:147: note: Possible overload variants:
+src\services\analytics\overview.py:147: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:147: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:147: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:157: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Any]]"  [call-overload]
+src\services\analytics\overview.py:157: note: Possible overload variants:
+src\services\analytics\overview.py:157: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:157: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:157: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:171: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[date]]"  [call-overload]
+src\services\analytics\overview.py:171: note: Possible overload variants:
+src\services\analytics\overview.py:171: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:171: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:171: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\services\analytics\overview.py:180: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[int]]"  [call-overload]
+src\services\analytics\overview.py:180: note: Possible overload variants:
+src\services\analytics\overview.py:180: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\services\analytics\overview.py:180: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\services\analytics\overview.py:180: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\routers\trail.py:27: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\trail.py:27: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:27: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:28: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:28: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:28: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:39: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser | AnonymousUser")  [assignment]
+src\routers\trail.py:39: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:39: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:40: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:40: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:40: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:54: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\trail.py:54: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:54: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:55: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:55: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:55: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:67: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\trail.py:67: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:67: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:68: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:68: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:68: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:80: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\trail.py:80: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:80: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:81: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:81: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:81: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:93: error: Incompatible default for parameter "user" (default has type "None", parameter has type "PublicUser")  [assignment]
+src\routers\trail.py:93: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:93: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\trail.py:94: error: Incompatible default for parameter "db_session" (default has type "None", parameter has type "Session")  [assignment]
+src\routers\trail.py:94: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\trail.py:94: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\courses.py:257: error: Incompatible default for parameter "checker" (default has type "None", parameter has type "PermissionChecker")  [assignment]
+src\routers\courses\courses.py:257: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\courses.py:257: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\courses\courses.py:292: error: Incompatible default for parameter "checker" (default has type "None", parameter has type "PermissionChecker")  [assignment]
+src\routers\courses\courses.py:292: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+src\routers\courses\courses.py:292: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+src\routers\analytics.py:69: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:80: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:91: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:104: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:114: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:126: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:139: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:146: error: No overload variant of "exec" of "Session" matches argument type "Select[tuple[Course]]"  [call-overload]
+src\routers\analytics.py:146: note: Possible overload variants:
+src\routers\analytics.py:146: note:     def [_TSelectParam: Any] exec(self, statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> TupleResult[_TSelectParam]
+src\routers\analytics.py:146: note:     def [_TSelectParam: Any] exec(self, statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> ScalarResult[_TSelectParam]
+src\routers\analytics.py:146: note:     def exec(self, statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = ..., execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = ..., _parent_execute_state: Any | None = ..., _add_event: Any | None = ...) -> CursorResult[Any]
+src\routers\analytics.py:158: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:172: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:185: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:212: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:225: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:245: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:263: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:276: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:287: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:304: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:340: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:353: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:366: error: Function is missing a return type annotation  [no-untyped-def]
+src\routers\analytics.py:379: error: Function is missing a return type annotation  [no-untyped-def]
+src\router.py:51: error: Value of type variable "schemas.U" of "get_register_router" of "FastAPIUsers" cannot be "UserRead"  [type-var]
+src\router.py:51: error: Value of type variable "schemas.UC" of "get_register_router" of "FastAPIUsers" cannot be "UserCreate"  [type-var]
+Found 423 errors in 96 files (checked 293 source files)

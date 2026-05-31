@@ -1,0 +1,13 @@
+x:\projects\ashyq-bilim\apps\api\src\infra\rate_limit.py
+  x:\projects\ashyq-bilim\apps\api\src\infra\rate_limit.py:25:20 - error: Import "Any" is not accessed (reportUnusedImport)
+  x:\projects\ashyq-bilim\apps\api\src\infra\rate_limit.py:68:39 - error: Type "object | None" is not assignable to declared type "Request[State] | None"
+    Type "object | None" is not assignable to type "Request[State] | None"
+      Type "object" is not assignable to type "Request[State] | None"
+        "object" is not assignable to "Request[State]"
+        "object" is not assignable to "None" (reportAssignmentType)
+x:\projects\ashyq-bilim\apps\api\src\services\grading\pipeline\validate.py
+  x:\projects\ashyq-bilim\apps\api\src\services\grading\pipeline\validate.py:134:5 - error: Code is unreachable (reportUnreachable)
+x:\projects\ashyq-bilim\apps\api\src\services\grading\teacher.py
+  x:\projects\ashyq-bilim\apps\api\src\services\grading\teacher.py:31:5 - error: Import "ItemFeedback" is not accessed (reportUnusedImport)
+  x:\projects\ashyq-bilim\apps\api\src\services\grading\teacher.py:401:13 - error: Code is unreachable (reportUnreachable)
+5 errors, 0 warnings, 0 notes

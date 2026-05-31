@@ -3014,7 +3014,21 @@
         "rolesTitle": "Roles & Permissions",
         "rolesDescription": "Manage roles and their permissions",
         "userRolesTitle": "User Roles",
-        "userRolesDescription": "Assign roles to organization members"
+        "userRolesDescription": "Assign roles to organization members",
+        "rolesInSystem": "Roles in system: {count}",
+        "rolesDetails": "Configure access groups and permissions for staff members.",
+        "assignments": "Assignments: {count}",
+        "userRolesDetails": "Manage access for specific platform users.",
+        "totalRoles": "Total Roles",
+        "rolesAssigned": "Assigned Roles",
+        "totalAuditLogs": "Total Audit Logs",
+        "goToSetting": "Go to settings",
+        "recentChangesLog": "Recent Activity Log",
+        "recentChangesDesc": "Feed of recent role management and access control events on the platform",
+        "forRole": "for role",
+        "initiator": "Initiator ID: {actor}",
+        "system": "System",
+        "noRecentAudit": "No recent audit entries"
       },
       "Alerts": {
         "actionRequired": "Action Required",
@@ -7072,6 +7086,11 @@
     "tabs": {
       "overview": "Overview",
       "watchlist": "Student Watchlist",
+      "courses": "Courses",
+      "workload": "Workload",
+      "grading": "Grading",
+      "forecasting": "Forecasting",
+      "dataQuality": "Data Quality",
       "performance": "Performance Insights",
       "operations": "Diagnostics & Operations",
       "admin": "Admin Console"
@@ -7109,7 +7128,8 @@
         "resolved": "Resolved",
         "recovered": "Recovered"
       },
-      "viewAllAtRisk": "View full at-risk list →"
+      "viewAllAtRisk": "View full at-risk list →",
+      "contentFriction": "Content Friction"
     },
     "filters": {
       "label": "Teacher Analytics",

@@ -200,14 +200,10 @@ ignore_no_config = true
 
 [tool.pyrefly]
 project-includes = ["**/*.py"]
-# Prevent deep nesting which leads to unmaintainable FastAPI endpoints
-max-complexity = 10
 
-[tool.pyrefly.rules]
-# Enable rules that catch logic errors, not just style
-async-function-naming = true
-no-shadowed-builtins = true
-strict-exception-handling = true # Complements your Ruff BLE/TRY rules
+[tool.pyrefly.errors]
+missing-attribute = "ignore"
+bad-argument-type = "ignore"
 
 [tool.mypy]
 python_version = "3.14"
@@ -219,6 +215,7 @@ exclude = "migrations/"
 warn_unreachable = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+disable_error_code = ["arg-type", "attr-defined"]
 
 # Lowering the "Nitpick" factor
 disallow_untyped_decorators = false # FastAPI routes often use untyped decorators

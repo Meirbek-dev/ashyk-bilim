@@ -3043,7 +3043,21 @@
         "rolesTitle": "Роли и разрешения",
         "rolesDescription": "Управляйте ролями и их разрешениями",
         "userRolesTitle": "Роли пользователей",
-        "userRolesDescription": "Назначайте роли участникам организации"
+        "userRolesDescription": "Назначайте роли участникам организации",
+        "rolesInSystem": "Ролей в системе: {count}",
+        "rolesDetails": "Настройка групп прав доступа и разрешений для сотрудников.",
+        "assignments": "Назначений: {count}",
+        "userRolesDetails": "Управление доступом конкретных пользователей платформы.",
+        "totalRoles": "Всего ролей",
+        "rolesAssigned": "Назначено ролей",
+        "totalAuditLogs": "Всего аудит-логов",
+        "goToSetting": "Перейти к настройке",
+        "recentChangesLog": "Журнал последних изменений",
+        "recentChangesDesc": "Лента недавних событий управления ролями и доступом на платформе",
+        "forRole": "для роли",
+        "initiator": "Инициатор ID: {actor}",
+        "system": "Система",
+        "noRecentAudit": "Нет недавних записей аудита"
       },
       "Alerts": {
         "actionRequired": "Требуется действие",
@@ -7106,6 +7120,11 @@
     "tabs": {
       "overview": "Обзор",
       "watchlist": "Группа риска",
+      "courses": "Курсы",
+      "workload": "Нагрузка",
+      "grading": "Проверка",
+      "forecasting": "Прогноз",
+      "dataQuality": "Качество данных",
       "performance": "Успеваемость и контент",
       "operations": "Диагностика и операции",
       "admin": "Админ-панель"
@@ -7143,7 +7162,8 @@
         "resolved": "Решено",
         "recovered": "Восстановлено"
       },
-      "viewAllAtRisk": "Полный список учащихся в зоне риска →"
+      "viewAllAtRisk": "Полный список учащихся в зоне риска →",
+      "contentFriction": "Трудности с контентом"
     },
     "filters": {
       "label": "Аналитика",
