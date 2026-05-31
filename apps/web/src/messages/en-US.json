@@ -2863,6 +2863,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "unknownAuthor": "Unknown",
       "author": "Author",
       "authors": "Authors",
       "leaveCourse": "Leave Course",
@@ -2872,6 +2873,7 @@
       "startCourse": "Start Course"
     },
     "CourseAuthors": {
+      "unknownAuthor": "Unknown",
       "and": " & ",
       "andMoreAuthors": "& {count, plural, one {# more} other {# more}}",
       "authorsAndUpdates": "Authors & Updates ",
@@ -5699,6 +5701,7 @@
           "orgNotAvailable": "Organization data not available. Please refresh the page."
         },
         "leaderboard": {
+          "anonymous": "Anonymous",
           "aria": {
             "rankings": "User rankings leaderboard"
           },
@@ -7357,6 +7360,13 @@
       "rowCount": "{count} assessment outliers"
     },
     "atRisk": {
+      "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
+      "noInterventions": "No interventions logged",
+      "interventions": {
+        "message": "Message",
+        "meeting": "Meeting",
+        "recovered": "Recovered"
+      },
       "defaultTitle": "At-risk learners",
       "defaultDescription": "Operational learner list ranked by urgency.",
       "colLearner": "Learner",
@@ -7402,6 +7412,8 @@
       "learners": "Learners"
     },
     "pages": {
+      "assessmentsTitle": "Assessment Performance",
+      "shellTitle": "Teacher Analytics & Operations",
       "overviewDisabledTitle": "Analytics unavailable",
       "overviewDisabledDesc": "This organization has analytics disabled or the current session cannot access analytics data.",
       "overviewLoadError": "The analytics service could not be loaded.",
