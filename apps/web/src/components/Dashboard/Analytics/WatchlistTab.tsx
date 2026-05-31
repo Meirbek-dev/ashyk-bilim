@@ -12,7 +12,7 @@ const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistrib
 const AtRiskLearnersTable = lazy(() => import('./AtRiskLearnersTable'))
 
 const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="shadow-sm border-border bg-card">
+  <Card className="border-border bg-card shadow-sm">
     <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
   </Card>
 )
@@ -57,7 +57,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
   return (
     <div className="space-y-6">
       {interventionSummary && (
-        <Card className="shadow-sm border-border bg-card/65 backdrop-blur-xs">
+        <Card className="border-border bg-card/65 shadow-sm backdrop-blur-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-amber-500" />
@@ -67,13 +67,31 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              [t('overview.interventionSummary.logged'), interventionSummary.total, 'border-slate-200 dark:border-slate-800'],
-              [t('overview.interventionSummary.open'), interventionSummary.open, 'border-amber-200 dark:border-amber-900 bg-amber-500/5'],
-              [t('overview.interventionSummary.resolved'), interventionSummary.resolved, 'border-emerald-200 dark:border-emerald-900 bg-emerald-500/5'],
-              [t('overview.interventionSummary.recovered'), interventionSummary.recovered_learners, 'border-blue-200 dark:border-blue-900 bg-blue-500/5'],
+              [
+                t('overview.interventionSummary.logged'),
+                interventionSummary.total,
+                'border-slate-200 dark:border-slate-800',
+              ],
+              [
+                t('overview.interventionSummary.open'),
+                interventionSummary.open,
+                'border-amber-200 dark:border-amber-900 bg-amber-500/5',
+              ],
+              [
+                t('overview.interventionSummary.resolved'),
+                interventionSummary.resolved,
+                'border-emerald-200 dark:border-emerald-900 bg-emerald-500/5',
+              ],
+              [
+                t('overview.interventionSummary.recovered'),
+                interventionSummary.recovered_learners,
+                'border-blue-200 dark:border-blue-900 bg-blue-500/5',
+              ],
             ].map(([label, value, borderClass]) => (
-              <div key={String(label)} className={`rounded-xl border p-4 flex flex-col justify-between ${borderClass}`}>
-                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{String(label)}</div>
+              <div key={String(label)} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
+                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  {String(label)}
+                </div>
                 <div className="text-foreground mt-3 text-3xl font-extrabold">{Number(value)}</div>
               </div>
             ))}
@@ -112,7 +130,10 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
           </Suspense>
           {data.at_risk_total > 0 && (
             <p className="text-muted-foreground pl-1 text-sm">
-              <Link href={buildScopedHref('/dash/analytics/learners/at-risk')} className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+              <Link
+                href={buildScopedHref('/dash/analytics/learners/at-risk')}
+                className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+              >
                 {t('overview.viewAllAtRisk')}
               </Link>
             </p>

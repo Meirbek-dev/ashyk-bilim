@@ -30,9 +30,7 @@ export default function PlatformSettingsLayout({ children }: { children: ReactNo
 
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto py-6 lg:py-8">
-          <div className="overflow-hidden rounded-3xl border shadow-sm">
-            {children}
-          </div>
+          <div className="overflow-hidden rounded-3xl border shadow-sm">{children}</div>
         </div>
       </main>
     </div>

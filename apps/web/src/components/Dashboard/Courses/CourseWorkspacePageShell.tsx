@@ -133,7 +133,7 @@ function CourseWorkspaceChrome({
         lastBreadcrumb={course.courseStructure.name || t('untitledCourse')}
         title={course.courseStructure.name || t('untitledCourse')}
         badge={
-          <div className="flex flex-wrap items-center gap-1.5 ml-1">
+          <div className="ml-1 flex flex-wrap items-center gap-1.5">
             <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
             <CourseStatusBadge status={readiness.readyToPublish ? 'ready' : 'needs-review'} />
             {dirtyGuard.hasDrafts ? <CourseStatusBadge status="unsaved" /> : null}
@@ -147,7 +147,7 @@ function CourseWorkspaceChrome({
                 nativeButton={false}
                 variant="ghost"
                 render={<AppLink href={buildCourseWorkspacePath(courseuuid, 'review')} />}
-                className="gap-2 h-9 px-3 text-xs font-semibold"
+                className="h-9 gap-2 px-3 text-xs font-semibold"
               >
                 <ShieldCheck className="size-4" />
                 <span>{t('tabs.publish')}</span>
@@ -158,7 +158,7 @@ function CourseWorkspaceChrome({
               nativeButton={false}
               variant="outline"
               render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} aria-label={t('previewButton')} />}
-              className="gap-2 h-9 px-3 text-xs font-semibold"
+              className="h-9 gap-2 px-3 text-xs font-semibold"
             >
               <Eye className="size-4" />
               <span>{t('previewButton')}</span>
@@ -185,7 +185,7 @@ function CourseWorkspaceChrome({
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
                 <span className="whitespace-nowrap">{stage.label}</span>
                 {mounted && stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
-                  <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold ml-1">
+                  <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
                     {readiness.issues.length}
                   </span>
                 ) : null}

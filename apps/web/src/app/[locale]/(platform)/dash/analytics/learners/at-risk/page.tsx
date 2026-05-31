@@ -57,8 +57,8 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 py-8 lg:px-8 space-y-6">
-          <Card className="bg-card text-card-foreground border-border shadow-xs rounded-xl">
+        <main className="min-w-0 flex-1 space-y-6 px-4 py-8 lg:px-8">
+          <Card className="bg-card text-card-foreground border-border rounded-xl shadow-xs">
             <CardContent className="pt-6">
               <TeacherFilterBar
                 path="/dash/analytics/learners/at-risk"
@@ -69,7 +69,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
               />
             </CardContent>
           </Card>
-          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+          <div className="text-muted-foreground flex items-center justify-between px-1 text-sm">
             <span>
               {t('table.showingRows', {
                 from: (risk.page - 1) * risk.page_size + 1,
@@ -78,7 +78,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
               })}
             </span>
           </div>
-          <div className="bg-card border-border shadow-xs rounded-xl overflow-hidden">
+          <div className="bg-card border-border overflow-hidden rounded-xl shadow-xs">
             <AtRiskLearnersTable
               rows={risk.items}
               query={query}
@@ -103,7 +103,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
               >
                 {t('table.prev')}
               </Button>
-              <span className="text-sm text-muted-foreground font-medium">
+              <span className="text-muted-foreground text-sm font-medium">
                 {t('table.page', { current: risk.page, total: totalPages })}
               </span>
               <Button

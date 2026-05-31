@@ -542,16 +542,16 @@ const CoursesHome = ({
         }
       />
 
-      <main className="container mx-auto px-4 py-8 lg:px-8 space-y-6 flex-1">
+      <main className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
         {/* Summary Cards */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map(card => (
             <div key={card.label} className="bg-card border-border/80 rounded-2xl border p-5 shadow-2xs">
-              <div className="text-muted-foreground text-[10px] font-bold tracking-[0.1em] uppercase leading-none">
+              <div className="text-muted-foreground text-[10px] leading-none font-bold tracking-[0.1em] uppercase">
                 {card.label}
               </div>
               <div className="text-foreground mt-2.5 text-3xl font-bold tracking-tight">{card.value}</div>
-              <div className="text-muted-foreground mt-1.5 text-xs font-medium leading-relaxed">{card.detail}</div>
+              <div className="text-muted-foreground mt-1.5 text-xs leading-relaxed font-medium">{card.detail}</div>
             </div>
           ))}
         </div>
@@ -565,7 +565,7 @@ const CoursesHome = ({
                 type="button"
                 variant={preset === item.key ? 'default' : 'outline'}
                 size="sm"
-                className="rounded-full px-4 h-8 text-xs font-medium transition-all"
+                className="h-8 rounded-full px-4 text-xs font-medium transition-all"
                 onClick={() =>
                   updateRoute({
                     preset: item.key === 'all' ? null : item.key,
@@ -592,10 +592,12 @@ const CoursesHome = ({
                   value={searchInput}
                   onChange={event => setSearchInput(event.target.value)}
                   placeholder={t('search.placeholder')}
-                  className="pl-9 h-9 text-sm"
+                  className="h-9 pl-9 text-sm"
                 />
               </div>
-              <Button type="submit" size="sm" className="h-9 px-4">{t('search.submit')}</Button>
+              <Button type="submit" size="sm" className="h-9 px-4">
+                {t('search.submit')}
+              </Button>
               {hasQuery ? (
                 <Button
                   type="button"
@@ -613,12 +615,14 @@ const CoursesHome = ({
               ) : null}
             </form>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <label className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">{t('sort.label')}</label>
+            <div className="flex shrink-0 items-center gap-3">
+              <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                {t('sort.label')}
+              </label>
               <NativeSelect
                 value={sortBy}
                 onChange={event => updateRoute({ sort: event.target.value, page: '1' })}
-                className="w-[180px] h-9"
+                className="h-9 w-[180px]"
                 aria-label={t('sort.label')}
               >
                 <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
@@ -627,7 +631,7 @@ const CoursesHome = ({
             </div>
           </div>
 
-          <div className="text-muted-foreground text-xs font-semibold tracking-wide px-1">
+          <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
             {t('resultsSummary', {
               visible: optimisticCourses.length,
               total: totalCourses,
@@ -639,7 +643,7 @@ const CoursesHome = ({
         {optimisticCourses.length === 0 ? (
           <div className="bg-card rounded-2xl border border-dashed py-16 shadow-2xs">
             <div className="flex items-center justify-center">
-              <div className="text-center space-y-4 max-w-sm px-4">
+              <div className="max-w-sm space-y-4 px-4 text-center">
                 <h2 className="text-foreground text-xl font-bold">{t('empty.title')}</h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
@@ -694,7 +698,7 @@ const CoursesHome = ({
         )}
 
         {hasPagination ? (
-          <div className="flex items-center justify-between border-t border-border/60 pt-6 pb-8">
+          <div className="border-border/60 flex items-center justify-between border-t pt-6 pb-8">
             <div className="text-muted-foreground text-xs font-semibold">
               {t('pagination.page', { current: currentPage, total: totalPages })}
             </div>
@@ -702,7 +706,7 @@ const CoursesHome = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs px-3"
+                className="h-8 px-3 text-xs"
                 disabled={currentPage <= 1}
                 onClick={() => updateRoute({ page: String(Math.max(1, currentPage - 1)) })}
               >
@@ -711,7 +715,7 @@ const CoursesHome = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs px-3"
+                className="h-8 px-3 text-xs"
                 disabled={currentPage >= totalPages}
                 onClick={() =>
                   updateRoute({

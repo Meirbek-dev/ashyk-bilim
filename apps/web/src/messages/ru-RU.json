@@ -3057,7 +3057,10 @@
         "forRole": "для роли",
         "initiator": "Инициатор ID: {actor}",
         "system": "Система",
-        "noRecentAudit": "Нет недавних записей аудита"
+        "noRecentAudit": "Нет недавних записей аудита",
+        "panelsTitle": "Панели управления",
+        "platformStatus": "Статус платформы",
+        "recentEvents": "Последние системные события"
       },
       "Alerts": {
         "actionRequired": "Требуется действие",
@@ -3512,7 +3515,13 @@
       },
       "noAccess": "У вас пока нет доступа к функциям панели управления.",
       "appLogo": "Логотип Ashyk Bilim",
-      "touUniversity": "Торайгыров Университет"
+      "touUniversity": "Торайгыров Университет",
+      "welcomeUser": "Рады вас видеть, {name}",
+      "defaultUser": "Пользователь",
+      "accountConnected": "Ваш аккаунт подключен. Выполнен вход в систему управления Ashyq Bilim.",
+      "sessionActive": "Сессия активна",
+      "availableSections": "Доступные разделы",
+      "quickLinks": "Быстрые ссылки"
     },
     "CourseOverview": {
       "courseLabel": "Курс",
@@ -6621,6 +6630,8 @@
     "course": "Курс",
     "courseEndTitle": "Поздравляем - Курс {course}",
     "courses": "Курсы",
+    "dashboard": "Главная панель",
+    "dashboardWelcome": "Добро пожаловать в панель управления платформой. Быстрый переход к основным разделам.",
     "creating": "Создание...",
     "currency": "Валюта",
     "delete": "Удалить",

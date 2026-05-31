@@ -195,11 +195,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
                 {studentAnswer ?? t('noAnswer')}
               </span>
               {!isCorrect && (
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                  // eslint-disable-next-line i18next/no-literal-string
-                >
+                <Badge variant="outline" className="text-xs">
                   ✓ {pair.right}
                 </Badge>
               )}

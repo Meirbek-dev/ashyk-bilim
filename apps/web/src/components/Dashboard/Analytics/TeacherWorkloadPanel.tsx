@@ -28,17 +28,17 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
         <CardDescription>{t('teacherWorkloadPanel.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 py-6 border-y border-border/40 sm:grid-cols-3 my-4">
-          <div className="flex flex-col gap-1.5 sm:px-4 first:pl-0 last:pr-0">
+        <div className="border-border/40 my-4 grid gap-4 border-y py-6 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5 first:pl-0 last:pr-0 sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <Inbox className="h-3.5 w-3.5 text-primary" />
+              <Inbox className="text-primary h-3.5 w-3.5" />
               {t('teacherWorkloadPanel.backlog')}
             </div>
             <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.backlog_total)}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
+          <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
               <Clock4 className="h-3.5 w-3.5 text-amber-500" />
               {t('teacherWorkloadPanel.slaBreaches')}
@@ -47,7 +47,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               {numberFormatter.format(workload.sla_breaches)}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 sm:px-4 sm:border-l border-border/40">
+          <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
               <TimerReset className="h-3.5 w-3.5 text-blue-500" />
               {t('teacherWorkloadPanel.forecast7d')}

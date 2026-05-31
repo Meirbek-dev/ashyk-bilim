@@ -16,7 +16,7 @@ const TeacherKpiCharts = lazy(() => import('./TeacherKpiCharts'))
 const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'))
 
 const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="shadow-sm border-border bg-card">
+  <Card className="border-border bg-card shadow-sm">
     <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
   </Card>
 )
@@ -155,10 +155,10 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
       {/* Alerts and Provenance */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Modern Alerts Card */}
-        <Card className="shadow-sm border-border bg-card/65 backdrop-blur-xs flex flex-col justify-between">
+        <Card className="border-border bg-card/65 flex flex-col justify-between shadow-sm backdrop-blur-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="text-destructive h-5 w-5" />
               <CardTitle>{t('overview.alertsTitle')}</CardTitle>
             </div>
             <CardDescription>{t('overview.alertsDescription')}</CardDescription>
@@ -183,7 +183,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                         {getAnalyticsSeverityLabel(t, alert.severity)}
                       </Badge>
                       <div className="min-w-0 flex-1">
-                        <div className="text-foreground font-semibold text-sm">{alert.title}</div>
+                        <div className="text-foreground text-sm font-semibold">{alert.title}</div>
                         <div className="text-muted-foreground mt-1 text-xs leading-relaxed">{alert.body}</div>
                       </div>
                     </div>
@@ -194,7 +194,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                       <Link
                         key={alert.id}
                         href={alertHref}
-                        className="bg-muted/40 hover:bg-muted/70 rounded-xl border border-border/50 p-4 transition-all hover:translate-x-0.5"
+                        className="bg-muted/40 hover:bg-muted/70 border-border/50 rounded-xl border p-4 transition-all hover:translate-x-0.5"
                       >
                         {alertCardContent}
                       </Link>
@@ -202,7 +202,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                   }
 
                   return (
-                    <div key={alert.id} className="bg-muted/40 rounded-xl border border-border/50 p-4">
+                    <div key={alert.id} className="bg-muted/40 border-border/50 rounded-xl border p-4">
                       {alertCardContent}
                     </div>
                   )
@@ -215,24 +215,24 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
         </Card>
 
         {/* Data Provenance & Scope Card */}
-        <Card className="shadow-sm border-border bg-card/65 backdrop-blur-xs flex flex-col">
+        <Card className="border-border bg-card/65 flex flex-col shadow-sm backdrop-blur-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
+              <Activity className="text-primary h-5 w-5" />
               <CardTitle>{t('overview.freshnessTitle')}</CardTitle>
             </div>
             <CardDescription>{t('overview.freshnessDescription')}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 flex-1">
-            <div className="bg-muted/40 hover:bg-muted/65 transition-colors rounded-xl border border-border/50 p-4 flex flex-col justify-between">
+          <CardContent className="grid flex-1 gap-3 sm:grid-cols-2">
+            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelGenerated')}
               </div>
-              <div className="text-foreground mt-2 text-sm font-semibold truncate">
+              <div className="text-foreground mt-2 truncate text-sm font-semibold">
                 {new Date(data.generated_at).toLocaleString(locale)}
               </div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 transition-colors rounded-xl border border-border/50 p-4 flex flex-col justify-between">
+            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelFreshness')}
               </div>
@@ -240,13 +240,13 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                 {formatFreshness(data.freshness_seconds)}
               </div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 transition-colors rounded-xl border border-border/50 p-4 flex flex-col justify-between">
+            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelScopedCourses')}
               </div>
               <div className="text-foreground mt-2 text-lg font-bold">{data.scope.course_ids.length}</div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 transition-colors rounded-xl border border-border/50 p-4 flex flex-col justify-between">
+            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelCohorts')}
               </div>

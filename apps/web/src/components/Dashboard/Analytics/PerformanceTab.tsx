@@ -12,7 +12,7 @@ const AssessmentOutliersTable = lazy(() => import('./AssessmentOutliersTable'))
 const ContentBottlenecksTable = lazy(() => import('./ContentBottlenecksTable'))
 
 const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="shadow-sm border-border bg-card">
+  <Card className="border-border bg-card shadow-sm">
     <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
   </Card>
 )
@@ -58,7 +58,10 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
           <CourseHealthTable rows={data.course_preview} storageKey="overview-courses" />
         </Suspense>
         <p className="text-muted-foreground pl-1 text-sm">
-          <Link href={buildScopedHref('/dash/analytics/courses')} className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+          <Link
+            href={buildScopedHref('/dash/analytics/courses')}
+            className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+          >
             {t('overview.viewAllCourses')}
           </Link>
         </p>
@@ -79,15 +82,20 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
             <AssessmentOutliersTable rows={data.assessment_preview} storageKey="overview-assessments" />
           </Suspense>
           <p className="text-muted-foreground pl-1 text-sm">
-            <Link href={buildScopedHref('/dash/analytics/assessments')} className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+            <Link
+              href={buildScopedHref('/dash/analytics/assessments')}
+              className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+            >
               {t('overview.viewAllAssessments')}
             </Link>
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="pl-1 h-5 flex items-center">
-            <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Content Friction</span>
+          <div className="flex h-5 items-center pl-1">
+            <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              {t('overview.contentFriction')}
+            </span>
           </div>
           <Suspense fallback={<SectionFallback height="h-[320px]" />}>
             <ContentBottlenecksTable rows={data.content_bottlenecks} />

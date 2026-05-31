@@ -29,7 +29,7 @@ function getDecorations(doc: any, highlighter: any) {
       Decoration.node(block.pos, block.pos + block.node.nodeSize, {
         style: `--shiki-light-bg: ${lightBg}; --shiki-dark-bg: ${darkBg}; --shiki-light: ${lightFg}; --shiki-dark: ${darkFg};`,
         class: 'shiki',
-      })
+      }),
     )
 
     for (const line of tokens.tokens) {
@@ -45,7 +45,7 @@ function getDecorations(doc: any, highlighter: any) {
           decorations.push(
             Decoration.inline(from, to, {
               style: styleStr,
-            })
+            }),
           )
         }
 
@@ -61,7 +61,7 @@ function getDecorations(doc: any, highlighter: any) {
 export const CodeBlockShiki = CodeBlock.extend({
   addProseMirrorPlugins() {
     return [
-      ...this.parent?.() || [],
+      ...(this.parent?.() || []),
       new Plugin({
         key: new PluginKey('shiki'),
         view(editorView) {

@@ -94,37 +94,37 @@ const UserEditPassword = () => {
   }
 
   return (
-    <div className="bg-background flex flex-col gap-6 px-4 md:px-8 pb-8">
-      <div className="mx-auto w-full max-w-2xl bg-card border border-border/80 rounded-2xl p-6 md:p-8 shadow-2xs">
+    <div className="bg-background flex flex-col gap-6 px-4 pb-8 md:px-8">
+      <div className="bg-card border-border/80 mx-auto w-full max-w-2xl rounded-2xl border p-6 shadow-2xs md:p-8">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Field>
-              <FieldLabel htmlFor="old_password">{tPassword('currentPasswordLabel')}</FieldLabel>
-              <FieldContent>
-                <PasswordInput id="old_password" {...form.register('old_password')} />
-              </FieldContent>
-              <FieldError errors={[form.formState.errors.old_password]} />
-            </Field>
+          <Field>
+            <FieldLabel htmlFor="old_password">{tPassword('currentPasswordLabel')}</FieldLabel>
+            <FieldContent>
+              <PasswordInput id="old_password" {...form.register('old_password')} />
+            </FieldContent>
+            <FieldError errors={[form.formState.errors.old_password]} />
+          </Field>
 
-            <Field>
-              <FieldLabel htmlFor="new_password">{tPassword('newPasswordLabel')}</FieldLabel>
-              <FieldContent>
-                <PasswordInput id="new_password" {...form.register('new_password')} />
-              </FieldContent>
-              <FieldDescription>{tPassword('logoutWarning')}</FieldDescription>
-              <FieldError errors={[form.formState.errors.new_password]} />
-            </Field>
+          <Field>
+            <FieldLabel htmlFor="new_password">{tPassword('newPasswordLabel')}</FieldLabel>
+            <FieldContent>
+              <PasswordInput id="new_password" {...form.register('new_password')} />
+            </FieldContent>
+            <FieldDescription>{tPassword('logoutWarning')}</FieldDescription>
+            <FieldError errors={[form.formState.errors.new_password]} />
+          </Field>
 
-            <div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
-              <AlertTriangle size={16} />
-              <span className="text-sm">{tPassword('logoutWarning')}</span>
-            </div>
+          <div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
+            <AlertTriangle size={16} />
+            <span className="text-sm">{tPassword('logoutWarning')}</span>
+          </div>
 
-            <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? tPassword('updatingButton') : tPassword('updateButton')}
-              </Button>
-            </div>
-          </form>
+          <div className="flex justify-end pt-2">
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? tPassword('updatingButton') : tPassword('updateButton')}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   )

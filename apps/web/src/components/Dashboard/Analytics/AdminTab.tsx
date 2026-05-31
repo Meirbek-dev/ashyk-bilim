@@ -7,7 +7,7 @@ import type { AdminAnalyticsResponse } from '@/types/analytics'
 const AdminAnalyticsPanel = lazy(() => import('./AdminAnalyticsPanel'))
 
 const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-  <Card className="shadow-sm border-border bg-card">
+  <Card className="border-border bg-card shadow-sm">
     <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
   </Card>
 )

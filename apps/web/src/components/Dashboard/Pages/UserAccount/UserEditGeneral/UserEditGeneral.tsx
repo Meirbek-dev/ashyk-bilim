@@ -390,7 +390,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
   })
 
   return (
-    <div className="flex flex-col gap-6 px-4 md:px-8 pb-8">
+    <div className="flex flex-col gap-6 px-4 pb-8 md:px-8">
       <div className="mb-5 flex flex-col gap-8 lg:flex-row">
         {/* Profile Information Section */}
         <div className="min-w-0 flex-1 space-y-6">
@@ -687,7 +687,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-row-reverse border-t border-border/80 pt-5">
+      <div className="border-border/80 mt-6 flex flex-row-reverse border-t pt-5">
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting} className="px-8">
           {form.formState.isSubmitting ? (
             <>

@@ -3028,7 +3028,10 @@
         "forRole": "for role",
         "initiator": "Initiator ID: {actor}",
         "system": "System",
-        "noRecentAudit": "No recent audit entries"
+        "noRecentAudit": "No recent audit entries",
+        "panelsTitle": "Control Panels",
+        "platformStatus": "Platform Status",
+        "recentEvents": "Recent System Events"
       },
       "Alerts": {
         "actionRequired": "Action Required",
@@ -3483,7 +3486,13 @@
       },
       "noAccess": "You don’t have access to dashboard features yet.",
       "appLogo": "Ashyk Bilim Logo",
-      "touUniversity": "Toraighyrov University"
+      "touUniversity": "Toraighyrov University",
+      "welcomeUser": "Welcome, {name}",
+      "defaultUser": "User",
+      "accountConnected": "Your account is connected. Logged into Ashyq Bilim management system.",
+      "sessionActive": "Session active",
+      "availableSections": "Available Sections",
+      "quickLinks": "Quick Links"
     },
     "CourseOverview": {
       "courseLabel": "Course",
@@ -6592,6 +6601,8 @@
     "course": "Course",
     "courseEndTitle": "Congratulations - {course} Course",
     "courses": "Courses",
+    "dashboard": "Dashboard",
+    "dashboardWelcome": "Welcome to the platform management dashboard. Quick access to main sections.",
     "creating": "Creating...",
     "currency": "Currency",
     "delete": "Delete",

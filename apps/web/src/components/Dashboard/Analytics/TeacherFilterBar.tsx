@@ -124,23 +124,27 @@ export default function TeacherFilterBar({
   return (
     <section
       aria-label={t('filters.sectionAriaLabel')}
-      className="w-full flex flex-col gap-4 border-b border-border/60 pb-6 mb-6"
+      className="border-border/60 mb-6 flex w-full flex-col gap-4 border-b pb-6"
     >
       <div className="w-full space-y-4">
         {/* Active badges bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-muted/30 p-3 rounded-xl border border-border/40">
+        <div className="bg-muted/30 border-border/40 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-muted-foreground flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
-            <Filter className="h-3.5 w-3.5 text-primary" />
+            <Filter className="text-primary h-3.5 w-3.5" />
             {t('filters.label')}
           </div>
           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-semibold">
-            <Badge variant="outline" className="bg-background">{t('filters.scopedCourses', { count: courseCount })}</Badge>
+            <Badge variant="outline" className="bg-background">
+              {t('filters.scopedCourses', { count: courseCount })}
+            </Badge>
             <Badge variant="outline" className="bg-background">
               {t('filters.buckets', {
                 bucket: getAnalyticsBucketLabel(t, query.bucket || 'day'),
               })}
             </Badge>
-            <Badge variant="outline" className="bg-background">{getAnalyticsCompareLabel(t, query.compare || 'previous_period')}</Badge>
+            <Badge variant="outline" className="bg-background">
+              {getAnalyticsCompareLabel(t, query.compare || 'previous_period')}
+            </Badge>
             <Badge variant="outline" className="bg-background">
               <Globe2 className="mr-1 h-3 w-3" />
               {query.timezone || 'UTC'}
@@ -154,10 +158,12 @@ export default function TeacherFilterBar({
             event.preventDefault()
             applyFilters()
           }}
-          className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 bg-card p-5 rounded-2xl border shadow-2xs"
+          className="bg-card grid grid-cols-1 gap-4 rounded-2xl border p-5 shadow-2xs sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.windowSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.windowSelect')}
+            </label>
             <NativeSelect
               value={formState.window}
               onChange={event =>
@@ -166,7 +172,7 @@ export default function TeacherFilterBar({
                   window: event.target.value as NonNullable<AnalyticsQuery['window']>,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               {windows.map(windowValue => (
                 <NativeSelectOption key={windowValue} value={windowValue}>
@@ -177,7 +183,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.compareSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.compareSelect')}
+            </label>
             <NativeSelect
               value={formState.compare}
               onChange={event =>
@@ -186,7 +194,7 @@ export default function TeacherFilterBar({
                   compare: event.target.value as NonNullable<AnalyticsQuery['compare']>,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               {compareOptions.map(compareValue => (
                 <NativeSelectOption key={compareValue} value={compareValue}>
@@ -199,7 +207,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.bucketSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.bucketSelect')}
+            </label>
             <NativeSelect
               value={formState.bucket}
               onChange={event =>
@@ -208,7 +218,7 @@ export default function TeacherFilterBar({
                   bucket: event.target.value as NonNullable<AnalyticsQuery['bucket']>,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               {bucketOptions.map(bucketValue => (
                 <NativeSelectOption key={bucketValue} value={bucketValue}>
@@ -221,7 +231,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.courseSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.courseSelect')}
+            </label>
             <NativeSelect
               value={formState.course_ids}
               onChange={event =>
@@ -230,7 +242,7 @@ export default function TeacherFilterBar({
                   course_ids: event.target.value,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               <NativeSelectOption value="">{t('filters.allCourses')}</NativeSelectOption>
               {courseOptions.map(option => (
@@ -242,7 +254,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.cohortSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.cohortSelect')}
+            </label>
             <NativeSelect
               value={formState.cohort_ids}
               onChange={event =>
@@ -251,7 +265,7 @@ export default function TeacherFilterBar({
                   cohort_ids: event.target.value,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               <NativeSelectOption value="">{t('filters.allCohorts')}</NativeSelectOption>
               {cohortOptions.map(option => (
@@ -263,7 +277,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.timezoneSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.timezoneSelect')}
+            </label>
             <NativeSelect
               value={formState.timezone}
               onChange={event =>
@@ -272,7 +288,7 @@ export default function TeacherFilterBar({
                   timezone: event.target.value,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               {COMMON_TIMEZONES.map(tz => (
                 <NativeSelectOption key={tz} value={tz}>
@@ -283,11 +299,13 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.sortBySelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.sortBySelect')}
+            </label>
             <NativeSelect
               value={formState.sort_by}
               onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               {sortOptions.map(option => (
                 <NativeSelectOption key={option.value || 'default'} value={option.value}>
@@ -298,7 +316,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">{t('filters.sortOrderSelect')}</label>
+            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              {t('filters.sortOrderSelect')}
+            </label>
             <NativeSelect
               value={formState.sort_order}
               onChange={event =>
@@ -307,15 +327,21 @@ export default function TeacherFilterBar({
                   sort_order: event.target.value as NonNullable<AnalyticsQuery['sort_order']>,
                 }))
               }
-              className="w-full h-9 text-sm"
+              className="h-9 w-full text-sm"
             >
               <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
               <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
             </NativeSelect>
           </div>
 
-          <div className="flex gap-2 sm:col-span-2 md:col-span-3 lg:col-span-4 justify-end pt-2">
-            <Button type="button" variant="outline" size="sm" className="h-9 px-4" onClick={() => startTransition(() => router.push(resetHref, { scroll: false }))}>
+          <div className="flex justify-end gap-2 pt-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 px-4"
+              onClick={() => startTransition(() => router.push(resetHref, { scroll: false }))}
+            >
               {t('filters.reset')}
             </Button>
             <Button type="submit" variant="default" size="sm" className="h-9 px-5" disabled={isPending}>

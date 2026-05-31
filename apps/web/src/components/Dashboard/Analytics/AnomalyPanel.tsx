@@ -22,7 +22,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
         </div>
         <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
-      <CardContent className="divide-y divide-border/50 space-y-0">
+      <CardContent className="divide-border/50 space-y-0 divide-y">
         {anomalies.slice(0, 8).map(item => (
           <div key={item.id} className="py-4 first:pt-0 last:pb-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -37,11 +37,13 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
                 {item.type.replaceAll('_', ' ')}
               </span>
             </div>
-            <div className="text-foreground font-medium text-sm">{item.title}</div>
+            <div className="text-foreground text-sm font-medium">{item.title}</div>
             <div className="text-muted-foreground mt-1.5 text-xs leading-normal">{item.detail}</div>
           </div>
         ))}
-        {!anomalies.length ? <div className="text-muted-foreground py-4 text-center text-sm">{t('noAnomalies')}</div> : null}
+        {!anomalies.length ? (
+          <div className="text-muted-foreground py-4 text-center text-sm">{t('noAnomalies')}</div>
+        ) : null}
       </CardContent>
     </Card>
   )

@@ -29,7 +29,8 @@ export default async function PlatformAdminPage() {
       description: t('userRolesDescription'),
       href: '/dash/admin/users',
       icon: Users,
-      iconBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
+      iconBg:
+        'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
     },
   ]
 
@@ -42,32 +43,33 @@ export default async function PlatformAdminPage() {
 
   const recentLogs = [
     { event: 'Изменение роли пользователя', user: 'admin@ashyq-bilim.kz', time: '10 мин. назад', status: 'success' },
-    { event: 'Создание новой политики доступа', user: 'manager@ashyq-bilim.kz', time: '1 час назад', status: 'success' },
+    {
+      event: 'Создание новой политики доступа',
+      user: 'manager@ashyq-bilim.kz',
+      time: '1 час назад',
+      status: 'success',
+    },
     { event: 'Синхронизация базы пользователей', user: 'system', time: '3 часа назад', status: 'success' },
   ]
 
   return (
     <div className="bg-background flex min-h-screen w-full flex-col">
       {/* Standard Header */}
-      <DashHeader
-        breadcrumbType="admin"
-        title={t('title')}
-        description={t('description')}
-      />
+      <DashHeader breadcrumbType="admin" title={t('title')} description={t('description')} />
 
-      <main className="container mx-auto px-4 py-8 lg:px-8 space-y-8 flex-1">
+      <main className="container mx-auto flex-1 space-y-8 px-4 py-8 lg:px-8">
         {/* Core Administrative Sections */}
         <div className="space-y-4">
-          <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-            Панели управления
-          </h2>
+          <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('panelsTitle')}</h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {adminSections.map(section => (
               <Link key={section.href} href={section.href} className="group block">
-                <Card className="relative bg-card hover:bg-accent/30 border-border/80 hover:border-border/100 h-full transition-all duration-300 hover:shadow-sm select-none overflow-hidden flex flex-col justify-between rounded-2xl">
-                  <CardHeader className="pb-3 pt-5 px-5">
+                <Card className="bg-card hover:bg-accent/30 border-border/80 hover:border-border/100 relative flex h-full flex-col justify-between overflow-hidden rounded-2xl transition-all duration-300 select-none hover:shadow-sm">
+                  <CardHeader className="px-5 pt-5 pb-3">
                     <div className="flex items-start justify-between">
-                      <div className={`rounded-xl p-2.5 border transition-all duration-300 flex items-center justify-center ${section.iconBg}`}>
+                      <div
+                        className={`flex items-center justify-center rounded-xl border p-2.5 transition-all duration-300 ${section.iconBg}`}
+                      >
                         <section.icon className="h-5 w-5" />
                       </div>
                       <ChevronRight
@@ -76,11 +78,11 @@ export default async function PlatformAdminPage() {
                       />
                     </div>
                   </CardHeader>
-                  <CardContent className="pb-5 px-5 flex-1 flex flex-col justify-end">
-                    <CardTitle className="mb-1.5 text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors duration-300">
+                  <CardContent className="flex flex-1 flex-col justify-end px-5 pb-5">
+                    <CardTitle className="text-foreground group-hover:text-primary mb-1.5 text-base font-bold tracking-tight transition-colors duration-300">
                       {section.title}
                     </CardTitle>
-                    <CardDescription className="text-xs leading-relaxed text-muted-foreground/80 font-medium">
+                    <CardDescription className="text-muted-foreground/80 text-xs leading-relaxed font-medium">
                       {section.description}
                     </CardDescription>
                   </CardContent>
@@ -90,42 +92,47 @@ export default async function PlatformAdminPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 pt-4">
+        <div className="grid gap-6 pt-4 md:grid-cols-3">
           {/* Status Metrics */}
-          <div className="md:col-span-1 space-y-4">
-            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-              Статус платформы
+          <div className="space-y-4 md:col-span-1">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              {t('platformStatus')}
             </h2>
-            <div className="space-y-3 bg-muted/40 border p-4 rounded-2xl">
+            <div className="bg-muted/40 space-y-3 rounded-2xl border p-4">
               {stats.map(item => (
-                <div key={item.label} className="flex items-center justify-between p-3 bg-card border rounded-xl shadow-2xs">
+                <div
+                  key={item.label}
+                  className="bg-card flex items-center justify-between rounded-xl border p-3 shadow-2xs"
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${item.color}`}>
+                    <div className={`rounded-lg p-2 ${item.color}`}>
                       <item.icon className="h-4 w-4" />
                     </div>
                     <span className="text-foreground text-sm font-semibold">{item.label}</span>
                   </div>
-                  <span className="text-muted-foreground text-xs font-medium bg-muted px-2.5 py-1 rounded-md">{item.value}</span>
+                  <span className="text-muted-foreground bg-muted rounded-md px-2.5 py-1 text-xs font-medium">
+                    {item.value}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Recent Operations */}
-          <div className="md:col-span-2 space-y-4">
-            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-              Последние системные события
+          <div className="space-y-4 md:col-span-2">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              {t('recentEvents')}
             </h2>
-            <div className="bg-card border rounded-2xl overflow-hidden shadow-2xs divide-y divide-border/60">
+            <div className="bg-card divide-border/60 divide-y overflow-hidden rounded-2xl border shadow-2xs">
               {recentLogs.map((log, index) => (
-                <div key={index} className="flex items-center justify-between p-4 hover:bg-accent/15 transition-all">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 text-emerald-500 shrink-0">
+                <div key={index} className="hover:bg-accent/15 flex items-center justify-between p-4 transition-all">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="mt-0.5 shrink-0 text-emerald-500">
                       <CheckCircle className="h-4.5 w-4.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-foreground text-sm font-semibold truncate">{log.event}</p>
-                      <p className="text-muted-foreground text-xs font-medium mt-0.5">{log.user}</p>
+                      <p className="text-foreground truncate text-sm font-semibold">{log.event}</p>
+                      <p className="text-muted-foreground mt-0.5 text-xs font-medium">{log.user}</p>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">

@@ -7,10 +7,7 @@ interface PageProps {
 }
 
 export default async function PlatformAnalyticsPage(props: PageProps) {
-  const [resolvedParams, resolvedSearchParams] = await Promise.all([
-    props.params,
-    props.searchParams,
-  ])
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([props.params, props.searchParams])
   const query = normalizeAnalyticsQuery(resolvedSearchParams)
 
   const params = new URLSearchParams()

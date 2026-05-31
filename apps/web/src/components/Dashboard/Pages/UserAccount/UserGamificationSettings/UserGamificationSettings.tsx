@@ -102,7 +102,7 @@ export default function UserGamificationSettings() {
   }, [])
 
   return (
-    <div className="px-4 md:px-8 space-y-6 pb-8">
+    <div className="space-y-6 px-4 pb-8 md:px-8">
       {/* Profile Overview */}
       <GamificationProfileSection variant="full" />
 

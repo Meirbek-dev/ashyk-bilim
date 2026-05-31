@@ -3056,7 +3056,10 @@
         "forRole": "рөлі үшін",
         "initiator": "Бастамашы ID: {actor}",
         "system": "Жүйе",
-        "noRecentAudit": "Соңғы аудит жазбалары жоқ"
+        "noRecentAudit": "Соңғы аудит жазбалары жоқ",
+        "panelsTitle": "Басқару панельдері",
+        "platformStatus": "Платформа статусы",
+        "recentEvents": "Соңғы жүйелік оқиғалар"
       },
       "Alerts": {
         "actionRequired": "Іс-әрекет қажет",
@@ -3511,7 +3514,13 @@
       },
       "noAccess": "Сізде әлі бақылау тақтасының функцияларына рұқсат жоқ.",
       "appLogo": "Ashyk Bilim логотипі",
-      "touUniversity": "Торайғыров Университеті"
+      "touUniversity": "Торайғыров Университеті",
+      "welcomeUser": "Қош келдіңіз, {name}",
+      "defaultUser": "Пайдаланушы",
+      "accountConnected": "Аккаунтыңыз қосылды. Ashyq Bilim басқару жүйесіне кіру орындалды.",
+      "sessionActive": "Сессия белсенді",
+      "availableSections": "Қолжетімді бөлімдер",
+      "quickLinks": "Жылдам сілтемелер"
     },
     "CourseOverview": {
       "courseLabel": "Курс",
@@ -6620,6 +6629,8 @@
     "course": "Курс",
     "courseEndTitle": "Құттықтаймыз - {course} Курсы",
     "courses": "Курстар",
+    "dashboard": "Басқару панелі",
+    "dashboardWelcome": "Платформаны басқару панеліне қош келдіңіз. Негізгі бөлімдерге жылдам өту.",
     "creating": "Құрылуда...",
     "currency": "Валюта",
     "delete": "Жою",
