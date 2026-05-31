@@ -62,4 +62,3 @@ describe('theme font handling', () => {
     ).toBeNull()
   })
 })
-

@@ -175,7 +175,6 @@ export function resolveThemeFontFamilies(tokens: Record<string, string>): Google
   return [...families].toSorted()
 }
 
-
 function encodeGoogleFontQuery(query: string): string {
   return query.trim().replaceAll(' ', '+')
 }

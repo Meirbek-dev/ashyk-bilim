@@ -15,10 +15,10 @@
 export * from './errors'
 export * from './profile'
 export * from './transactions'
-export * from './leaderboard'
+export type * from './leaderboard'
 export * from './preferences'
 export * from './customization'
-export * from './dashboard'
+export type * from './dashboard'
 
 // Streak type (used across modules)
 export type StreakType = 'login' | 'learning'
