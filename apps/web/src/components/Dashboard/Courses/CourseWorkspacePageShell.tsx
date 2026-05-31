@@ -13,9 +13,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   AlertTriangle,
-  BookCopy,
   CheckCircle2,
-  ChevronRight,
   Eye,
   FileCog,
   FileStack,
@@ -32,6 +30,7 @@ import type { CourseWorkspaceStage } from '@/lib/course-management'
 import { getAbsoluteUrl } from '@services/config/config'
 import { CourseStatusBadge } from './courseWorkflowUi'
 import { useDirtyGuard } from '@/hooks/useDirtyGuard'
+import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
 import { useTranslations } from 'next-intl'
@@ -129,30 +128,18 @@ function CourseWorkspaceChrome({
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="border-border bg-background sticky top-0 z-20 border-b shadow-sm">
-        {/* Title row */}
-        <div className="flex h-16 items-center gap-4 px-4 lg:px-8">
-          {/* Breadcrumb */}
-          <AppLink
-            href="/dash/courses"
-            className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground flex shrink-0 items-center gap-2 text-sm transition-colors"
-          >
-            <BookCopy className="size-4 shrink-0" />
-            <span className="hidden sm:inline">{t('breadcrumb')}</span>
-          </AppLink>
-
-          <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
-
-          <h1 className="text-foreground dark:text-foreground min-w-0 flex-1 truncate text-base font-semibold">
-            {course.courseStructure.name || t('untitledCourse')}
-          </h1>
-
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+      <DashHeader
+        breadcrumbType="courses"
+        lastBreadcrumb={course.courseStructure.name || t('untitledCourse')}
+        title={course.courseStructure.name || t('untitledCourse')}
+        badge={
+          <div className="flex flex-wrap items-center gap-1.5 ml-1">
             <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
             <CourseStatusBadge status={readiness.readyToPublish ? 'ready' : 'needs-review'} />
             {dirtyGuard.hasDrafts ? <CourseStatusBadge status="unsaved" /> : null}
           </div>
-
+        }
+        actions={
           <div className="flex shrink-0 items-center gap-2">
             {activeStage !== 'review' ? (
               <Button
@@ -160,10 +147,10 @@ function CourseWorkspaceChrome({
                 nativeButton={false}
                 variant="ghost"
                 render={<AppLink href={buildCourseWorkspacePath(courseuuid, 'review')} />}
-                className="gap-2"
+                className="gap-2 h-9 px-3 text-xs font-semibold"
               >
                 <ShieldCheck className="size-4" />
-                <span className="hidden sm:inline">{t('tabs.publish')}</span>
+                <span>{t('tabs.publish')}</span>
               </Button>
             ) : null}
             <Button
@@ -171,16 +158,15 @@ function CourseWorkspaceChrome({
               nativeButton={false}
               variant="outline"
               render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} aria-label={t('previewButton')} />}
-              className="gap-2"
+              className="gap-2 h-9 px-3 text-xs font-semibold"
             >
               <Eye className="size-4" />
-              <span className="hidden sm:inline">{t('previewButton')}</span>
+              <span>{t('previewButton')}</span>
             </Button>
           </div>
-        </div>
-
-        {/* Tab nav row */}
-        <div className="border-border/50 flex h-12 items-end gap-0 overflow-x-auto border-t px-4 lg:px-8">
+        }
+      >
+        <div className="flex h-12 items-end gap-0 overflow-x-auto">
           {visibleStages.map(stage => {
             const Icon = stage.icon
             const isActive = stage.key === activeStage
@@ -197,9 +183,9 @@ function CourseWorkspaceChrome({
                 )}
               >
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
-                <span className="hidden whitespace-nowrap sm:inline">{stage.label}</span>
+                <span className="whitespace-nowrap">{stage.label}</span>
                 {mounted && stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
-                  <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
+                  <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold ml-1">
                     {readiness.issues.length}
                   </span>
                 ) : null}
@@ -207,7 +193,7 @@ function CourseWorkspaceChrome({
             )
           })}
         </div>
-      </header>
+      </DashHeader>
 
       <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">
         <ConflictAlert />

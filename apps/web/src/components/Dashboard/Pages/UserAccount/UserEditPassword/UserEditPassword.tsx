@@ -94,15 +94,9 @@ const UserEditPassword = () => {
   }
 
   return (
-    <div className="soft-shadow border-border bg-card text-card-foreground mx-0 rounded-xl border shadow-sm sm:mx-10">
-      <div className="flex flex-col">
-        <div className="bg-muted mx-3 my-3 flex flex-col gap-1 rounded-md px-5 py-3">
-          <h1 className="text-foreground text-xl font-bold">{tPassword('title')}</h1>
-          <h2 className="text-muted-foreground text-base">{tPassword('description')}</h2>
-        </div>
-
-        <div className="px-8 py-6">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto w-full max-w-2xl space-y-6">
+    <div className="bg-background flex flex-col gap-6 px-4 md:px-8 pb-8">
+      <div className="mx-auto w-full max-w-2xl bg-card border border-border/80 rounded-2xl p-6 md:p-8 shadow-2xs">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Field>
               <FieldLabel htmlFor="old_password">{tPassword('currentPasswordLabel')}</FieldLabel>
               <FieldContent>
@@ -131,7 +125,6 @@ const UserEditPassword = () => {
               </Button>
             </div>
           </form>
-        </div>
       </div>
     </div>
   )

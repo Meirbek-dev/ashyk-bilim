@@ -47,7 +47,7 @@
     "src/features/assessments/registry/code-challenge/hooks.ts",
     "src/components/Security/HeaderProfileBox.tsx",
     "src/features/assessments/studio/NativeItemStudio.tsx",
-    "src/services/gamification/server.ts",
+    "src/services/gamification/server.ts"
   ],
 
   "plugins": [

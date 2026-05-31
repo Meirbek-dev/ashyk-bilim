@@ -8,7 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Book, School, User, Users } from 'lucide-react'
+import { BarChart3, Book, School, ShieldCheck, User, Users } from 'lucide-react'
 import AppLink from '@/components/ui/AppLink'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useTranslations } from 'next-intl'
@@ -16,11 +16,11 @@ import { useTranslations } from 'next-intl'
 // ── DashBreadcrumbs ──────────────────────────────────────────────────────────
 // Replaces the old BreadCrumbs component used throughout the dashboard.
 
-export type DashBreadcrumbType = 'courses' | 'user' | 'users' | 'platform' | 'platformusers'
+export type DashBreadcrumbType = 'courses' | 'user' | 'users' | 'platform' | 'platformusers' | 'analytics' | 'admin'
 
 interface DashBreadcrumbsProps {
   type: DashBreadcrumbType
-  last_breadcrumb?: string
+  last_breadcrumb?: string | undefined
 }
 
 const DASH_BREADCRUMB_CONFIGS: Record<
@@ -51,6 +51,16 @@ const DASH_BREADCRUMB_CONFIGS: Record<
     href: '/dash/platform/settings/landing',
     icon: School,
     titleKey: 'Card.Platform.title',
+  },
+  analytics: {
+    href: '/dash/analytics',
+    icon: BarChart3,
+    titleKey: 'Card.Analytics.title',
+  },
+  admin: {
+    href: '/dash/admin',
+    icon: ShieldCheck,
+    titleKey: 'Card.Admin.title',
   },
 }
 

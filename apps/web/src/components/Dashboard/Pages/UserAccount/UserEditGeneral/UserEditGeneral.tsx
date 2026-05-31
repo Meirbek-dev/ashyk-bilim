@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card'
+import { Card, CardContent } from '@components/ui/card'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
@@ -390,13 +390,8 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
   })
 
   return (
-    <div className="flex flex-col gap-6">
-      <CardHeader className="px-5 pb-0">
-        <CardTitle className="text-2xl">{t('title')}</CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
-      </CardHeader>
-
-      <div className="mx-5 mb-5 flex flex-col gap-8 lg:flex-row">
+    <div className="flex flex-col gap-6 px-4 md:px-8 pb-8">
+      <div className="mb-5 flex flex-col gap-8 lg:flex-row">
         {/* Profile Information Section */}
         <div className="min-w-0 flex-1 space-y-6">
           <div className="space-y-4">
@@ -692,7 +687,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
         </div>
       </div>
 
-      <div className="mx-5 mb-5 flex flex-row-reverse border-t pt-5">
+      <div className="mt-6 flex flex-row-reverse border-t border-border/80 pt-5">
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting} className="px-8">
           {form.formState.isSubmitting ? (
             <>

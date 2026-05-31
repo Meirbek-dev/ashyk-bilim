@@ -35,7 +35,8 @@ const COMMON_RULES = {
     {
       markupOnly: true,
       ignore: ['/', '%', '(', ')', '@', '#', ':', '+', ',', '…', '✓', '•', '🛠️', '🏆'],
-      onlyAttribute: [''], // This prevents it from checking every single prop
+      // Add common text-bearing attributes here:
+      onlyAttribute: ['title', 'label', 'placeholder', 'description', 'alt'],
     },
   ],
   'react/self-closing-comp': 'warn',

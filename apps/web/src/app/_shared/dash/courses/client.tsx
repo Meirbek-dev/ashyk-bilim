@@ -20,7 +20,7 @@ import {
 } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertTriangle, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
-import { CourseStatusBadge, courseWorkflowSummaryCardClass } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
@@ -30,7 +30,7 @@ import { useSession } from '@/hooks/useSession'
 import { useCallback, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react'
 import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs'
+import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { extractMarkdownSummary } from '@/features/content-markdown'
@@ -511,197 +511,220 @@ const CoursesHome = ({
   ]
 
   return (
-    <div className="bg-background min-h-screen w-full px-4 py-6 lg:px-8">
-      <div className="mb-6">
-        <DashBreadcrumbs type="courses" />
-
-        <div className="bg-card mt-4 rounded-xl border p-6 shadow-sm">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl">
-              <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">{t('header.title')}</h1>
-              <p className="text-muted-foreground mt-3 text-sm leading-6">{t('header.description')}</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}>
-                {viewMode === 'table' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
-                {viewMode === 'table' ? t('viewMode.cards') : t('viewMode.table')}
+    <div className="bg-background flex min-h-screen w-full flex-col">
+      <DashHeader
+        breadcrumbType="courses"
+        title={t('header.title')}
+        description={t('header.description')}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}
+              className="h-9 px-3 text-xs font-semibold"
+            >
+              {viewMode === 'table' ? <LayoutGrid className="mr-2 size-4" /> : <List className="mr-2 size-4" />}
+              {viewMode === 'table' ? t('viewMode.cards') : t('viewMode.table')}
+            </Button>
+            {canCreateCourse ? (
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<AppLink href={buildCourseCreationPath()} />}
+                className="h-9 px-3 text-xs font-semibold"
+              >
+                <Sparkles className="mr-2 size-4" />
+                {t('guidedSetup')}
               </Button>
-              {canCreateCourse ? (
-                <Button nativeButton={false} render={<AppLink href={buildCourseCreationPath()} />}>
-                  <Sparkles className="size-4" />
-                  {t('guidedSetup')}
+            ) : null}
+          </div>
+        }
+      />
+
+      <main className="container mx-auto px-4 py-8 lg:px-8 space-y-6 flex-1">
+        {/* Summary Cards */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map(card => (
+            <div key={card.label} className="bg-card border-border/80 rounded-2xl border p-5 shadow-2xs">
+              <div className="text-muted-foreground text-[10px] font-bold tracking-[0.1em] uppercase leading-none">
+                {card.label}
+              </div>
+              <div className="text-foreground mt-2.5 text-3xl font-bold tracking-tight">{card.value}</div>
+              <div className="text-muted-foreground mt-1.5 text-xs font-medium leading-relaxed">{card.detail}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filter Presets Panel */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {presets.map(item => (
+              <Button
+                key={item.key}
+                type="button"
+                variant={preset === item.key ? 'default' : 'outline'}
+                size="sm"
+                className="rounded-full px-4 h-8 text-xs font-medium transition-all"
+                onClick={() =>
+                  updateRoute({
+                    preset: item.key === 'all' ? null : item.key,
+                    page: '1',
+                  })
+                }
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="bg-muted/40 border-border/60 flex flex-col gap-4 rounded-2xl border p-4 shadow-2xs lg:flex-row lg:items-center lg:justify-between">
+            <form
+              className="flex w-full max-w-2xl items-center gap-2"
+              onSubmit={event => {
+                event.preventDefault()
+                updateRoute({ q: searchInput.trim() || null, page: '1' })
+              }}
+            >
+              <div className="relative flex-1">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  value={searchInput}
+                  onChange={event => setSearchInput(event.target.value)}
+                  placeholder={t('search.placeholder')}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+              <Button type="submit" size="sm" className="h-9 px-4">{t('search.submit')}</Button>
+              {hasQuery ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3"
+                  onClick={() => {
+                    setSearchInput('')
+                    updateRoute({ q: null, page: '1' })
+                  }}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  {t('search.clear')}
                 </Button>
               ) : null}
+            </form>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <label className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">{t('sort.label')}</label>
+              <NativeSelect
+                value={sortBy}
+                onChange={event => updateRoute({ sort: event.target.value, page: '1' })}
+                className="w-[180px] h-9"
+                aria-label={t('sort.label')}
+              >
+                <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
+                <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
+              </NativeSelect>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {summaryCards.map(card => (
-              <div key={card.label} className={courseWorkflowSummaryCardClass}>
-                <div className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
-                  {card.label}
-                </div>
-                <div className="text-foreground mt-2 text-3xl font-semibold">{card.value}</div>
-                <div className="text-muted-foreground mt-1 text-sm">{card.detail}</div>
+          <div className="text-muted-foreground text-xs font-semibold tracking-wide px-1">
+            {t('resultsSummary', {
+              visible: optimisticCourses.length,
+              total: totalCourses,
+            })}
+          </div>
+        </div>
+
+        {/* Content list */}
+        {optimisticCourses.length === 0 ? (
+          <div className="bg-card rounded-2xl border border-dashed py-16 shadow-2xs">
+            <div className="flex items-center justify-center">
+              <div className="text-center space-y-4 max-w-sm px-4">
+                <h2 className="text-foreground text-xl font-bold">{t('empty.title')}</h2>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
+                </p>
+                {canCreateCourse ? (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      size="sm"
+                      nativeButton={false}
+                      render={<AppLink href={buildCourseCreationPath()} />}
+                      className="px-4"
+                    >
+                      <Sparkles className="mr-2 size-4" />
+                      {t('empty.createAction')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+            {optimisticCourses.map(course => (
+              <div key={course.course_uuid} className="w-full">
+                <CourseThumbnail
+                  customLink={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
+                  actionLink={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                  course={course}
+                  trailData={trailData}
+                  trailLoading={isTrailLoading}
+                />
               </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className="bg-card rounded-2xl border p-4 shadow-2xs">
+            <DataTable
+              columns={columns}
+              data={optimisticCourses}
+              enableColumnVisibility={false}
+              enableCsvExport
+              csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
+              storageKey="course-management"
+              serverPaginated
+              toolbarContent={bulkToolbar}
+              labels={{
+                searchPlaceholder: t('table.filterPlaceholder'),
+                emptyMessage: t('table.emptyMessage'),
+              }}
+            />
+          </div>
+        )}
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {presets.map(item => (
-            <Button
-              key={item.key}
-              type="button"
-              variant={preset === item.key ? 'default' : 'outline'}
-              size="sm"
-              onClick={() =>
-                updateRoute({
-                  preset: item.key === 'all' ? null : item.key,
-                  page: '1',
-                })
-              }
-            >
-              {item.label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="bg-card mt-4 flex flex-col gap-4 rounded-xl border p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <form
-            className="flex w-full max-w-2xl items-center gap-2"
-            onSubmit={event => {
-              event.preventDefault()
-              updateRoute({ q: searchInput.trim() || null, page: '1' })
-            }}
-          >
-            <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                value={searchInput}
-                onChange={event => setSearchInput(event.target.value)}
-                placeholder={t('search.placeholder')}
-                className="pl-9"
-              />
+        {hasPagination ? (
+          <div className="flex items-center justify-between border-t border-border/60 pt-6 pb-8">
+            <div className="text-muted-foreground text-xs font-semibold">
+              {t('pagination.page', { current: currentPage, total: totalPages })}
             </div>
-            <Button type="submit">{t('search.submit')}</Button>
-            {hasQuery ? (
+            <div className="flex items-center gap-2">
               <Button
-                type="button"
                 variant="outline"
-                onClick={() => {
-                  setSearchInput('')
-                  updateRoute({ q: null, page: '1' })
-                }}
+                size="sm"
+                className="h-8 text-xs px-3"
+                disabled={currentPage <= 1}
+                onClick={() => updateRoute({ page: String(Math.max(1, currentPage - 1)) })}
               >
-                <X className="mr-2 h-4 w-4" />
-                {t('search.clear')}
+                {t('pagination.previous')}
               </Button>
-            ) : null}
-          </form>
-
-          <div className="flex items-center gap-3">
-            <label className="text-muted-foreground text-sm font-medium">{t('sort.label')}</label>
-            <NativeSelect
-              value={sortBy}
-              onChange={event => updateRoute({ sort: event.target.value, page: '1' })}
-              className="w-[180px]"
-              aria-label={t('sort.label')}
-            >
-              <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
-              <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
-            </NativeSelect>
-          </div>
-        </div>
-
-        <div className="text-muted-foreground mt-3 text-sm">
-          {t('resultsSummary', {
-            visible: optimisticCourses.length,
-            total: totalCourses,
-          })}
-        </div>
-      </div>
-
-      {optimisticCourses.length === 0 ? (
-        <div className="bg-card rounded-xl border border-dashed py-12 shadow-sm">
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <h2 className="text-muted-foreground mb-2 text-2xl font-bold">{t('empty.title')}</h2>
-              <p className="text-muted-foreground text-lg">
-                {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
-              </p>
-              {canCreateCourse ? (
-                <div className="mt-6 flex justify-center">
-                  <Button nativeButton={false} render={<AppLink href={buildCourseCreationPath()} />}>
-                    <Sparkles className="size-4" />
-                    {t('empty.createAction')}
-                  </Button>
-                </div>
-              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs px-3"
+                disabled={currentPage >= totalPages}
+                onClick={() =>
+                  updateRoute({
+                    page: String(Math.min(totalPages, currentPage + 1)),
+                  })
+                }
+              >
+                {t('pagination.next')}
+              </Button>
             </div>
           </div>
-        </div>
-      ) : viewMode === 'cards' ? (
-        <div className="grid w-full grid-cols-1 gap-6 pb-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-          {optimisticCourses.map(course => (
-            <div key={course.course_uuid} className="w-full">
-              <CourseThumbnail
-                customLink={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
-                actionLink={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
-                course={course}
-                trailData={trailData}
-                trailLoading={isTrailLoading}
-              />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-card rounded-xl border p-4 shadow-sm">
-          <DataTable
-            columns={columns}
-            data={optimisticCourses}
-            enableColumnVisibility={false}
-            enableCsvExport
-            csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
-            storageKey="course-management"
-            serverPaginated
-            toolbarContent={bulkToolbar}
-            labels={{
-              searchPlaceholder: t('table.filterPlaceholder'),
-              emptyMessage: t('table.emptyMessage'),
-            }}
-          />
-        </div>
-      )}
-
-      {hasPagination ? (
-        <div className="flex items-center justify-between border-t py-6">
-          <div className="text-muted-foreground text-sm">
-            {t('pagination.page', { current: currentPage, total: totalPages })}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              disabled={currentPage <= 1}
-              onClick={() => updateRoute({ page: String(Math.max(1, currentPage - 1)) })}
-            >
-              {t('pagination.previous')}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={currentPage >= totalPages}
-              onClick={() =>
-                updateRoute({
-                  page: String(Math.min(totalPages, currentPage + 1)),
-                })
-              }
-            >
-              {t('pagination.next')}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+        ) : null}
+      </main>
 
       <AlertDialog
         open={pendingBulkAction !== null}
