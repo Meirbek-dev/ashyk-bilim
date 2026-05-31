@@ -176,8 +176,8 @@ export default function AtRiskLearnersTable({
             <span>{riskRow.recommended_action}</span>
             <div className="text-[11px]">
               {riskRow.intervention_count
-                ? `${riskRow.intervention_count} interventions logged`
-                : 'No interventions logged'}
+                ? t('atRisk.interventionsCount', { count: riskRow.intervention_count })
+                : t('atRisk.noInterventions')}
             </div>
             {hasGradingBlock && gradingHref && (
               <Link href={gradingHref} className="block text-xs text-emerald-700 hover:underline">
@@ -189,9 +189,9 @@ export default function AtRiskLearnersTable({
             )}
             <div className="flex flex-wrap gap-1 pt-1">
               {[
-                ['message_sent', 'Message'],
-                ['meeting_scheduled', 'Meeting'],
-                ['learner_recovered', 'Recovered'],
+                ['message_sent', t('atRisk.interventions.message')],
+                ['meeting_scheduled', t('atRisk.interventions.meeting')],
+                ['learner_recovered', t('atRisk.interventions.recovered')],
               ].map(([type, label]) => {
                 const key = `${riskRow.course_id}:${riskRow.user_id}:${type}`
                 return (

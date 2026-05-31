@@ -286,6 +286,7 @@
         "unknown": "Белгісіз",
         "wrongAnswer": "Қате жауап"
       },
+      "unknownTime": "Белгісіз уақыт",
       "stderr": "Қате шығаруы",
       "submission": {
         "accepted": "Қабылданды",
@@ -2551,6 +2552,7 @@
       "update": "Жаңарту"
     },
     "imageDialog": {
+      "preview": "Алдын ала қарау",
       "title": "Кескін кірістіру",
       "srcLabel": "Кескін URL",
       "srcPlaceholder": "Платформаға жүктелген кескін сілтемесін пайдаланыңыз",
@@ -2876,6 +2878,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "unknownAuthor": "Белгісіз",
       "author": "Автор",
       "authors": "Авторлар",
       "leaveCourse": "Курстан шығу",
@@ -2885,6 +2888,7 @@
       "startCourse": "Курсты бастау"
     },
     "CourseAuthors": {
+      "unknownAuthor": "Белгісіз",
       "and": " және ",
       "andMoreAuthors": "& {count, plural, one {# автор} other {# автор}}",
       "authorsAndUpdates": "Авторлар мен жаңартулар",
@@ -7867,7 +7871,14 @@
           "noCanonicalProjection": "Бұл элемент үшін деректер жоқ.",
           "noAnswerPayload": "Жауаптар тіркелмеген.",
           "itemLabel": "{index}-элемент",
-          "rubricGuidance": "Рубрика нұсқаулығы"
+          "rubricGuidance": "Рубрика нұсқаулығы",
+          "plagiarism": {
+            "failed": "Плагиат: Тексеру қатесі",
+            "checking": "Плагиат: Тексерілуде",
+            "pending": "Плагиат: Күтуде",
+            "match": "Плагиат: {score}% сәйкестік",
+            "clear": "Плагиат: Таза"
+          }
         },
         "Annotation": {
           "addNote": "Жазба қосу",
@@ -9726,6 +9737,10 @@
     "attempts": "Әрекеттер",
     "lateWork": "Кешіктіріп тапсыру",
     "allowedFiles": "Рұқсат етілген файлдар",
+    "unlimitedAttempts": "Шектеусіз",
+    "allowLateAllowed": "Рұқсат етілген",
+    "allowLateBlocked": "Блокталған",
+    "anyFileType": "Кез келген файл түрі",
     "review": "Шолу",
     "openSubmissions": "Жіберілген жұмыстарды ашу",
     "unavailableError": "Файл тапсыру қолжетімсіз",

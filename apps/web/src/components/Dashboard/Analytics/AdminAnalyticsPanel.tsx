@@ -15,6 +15,8 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
   const numberFormatter = new Intl.NumberFormat(locale)
   const t = useTranslations('Components.DashboardAnalytics')
 
+  const formatPercent = (val: number) => `${numberFormatter.format(val)}%`
+
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -61,7 +63,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
                 <TableRow key={row.course_id}>
                   <TableCell className="max-w-[260px] truncate">{row.course_name}</TableCell>
                   <TableCell>{numberFormatter.format(row.health_score)}</TableCell>
-                  <TableCell>{`${numberFormatter.format(row.completion_rate)}%`}</TableCell>
+                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -84,7 +86,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
                   <TableCell>
                     {row.retention_rate === null || row.retention_rate === undefined
                       ? t('adminAnalyticsPanel.noData')
-                      : `${numberFormatter.format(row.retention_rate)}%`}
+                      : formatPercent(row.retention_rate)}
                   </TableCell>
                   <TableCell>{row.learners}</TableCell>
                 </TableRow>
@@ -111,7 +113,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
                       ? t('adminAnalyticsPanel.noData')
                       : numberFormatter.format(row.content_roi_score)}
                   </TableCell>
-                  <TableCell>{`${numberFormatter.format(row.completion_rate)}%`}</TableCell>
+                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

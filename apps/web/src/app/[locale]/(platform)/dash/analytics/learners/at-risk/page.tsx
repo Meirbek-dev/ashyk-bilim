@@ -52,7 +52,7 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
             <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
 
             <h1 className="text-foreground dark:text-foreground min-w-0 flex-1 truncate text-base font-semibold">
-              {t('pages.atRiskPageTitle') || 'At-Risk Learners'}
+              {t('pages.atRiskPageTitle')}
             </h1>
           </div>
         </header>

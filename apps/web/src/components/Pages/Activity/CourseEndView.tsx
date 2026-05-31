@@ -291,10 +291,12 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       completed: completedActivities,
       total: totalActivities,
       percentage: progressPercentage,
+      percentageString: `${progressPercentage}%`,
     }
   })()
 
   if (isCourseCompleted) {
+    const congratsText = `${t('congratulations')} 🎉`
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
@@ -318,7 +320,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-gray-900">{`${t('congratulations')} 🎉`}</h1>
+          <h1 className="text-4xl font-bold text-gray-900">{congratsText}</h1>
 
           <p className="text-xl text-gray-600">
             {t('courseCompleted')}
@@ -371,18 +373,18 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
-                    certificationName={userCertificate.certification.config.certification_name}
-                    certificationDescription={userCertificate.certification.config.certification_description}
-                    certificationType={userCertificate.certification.config.certification_type}
-                    certificatePattern={userCertificate.certification.config.certificate_pattern}
-                    certificateInstructor={userCertificate.certification.config.certificate_instructor}
-                    certificateId={userCertificate.certificate_user.user_certification_uuid}
-                    awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    qrCodeLink={qrCodeLink}
+                     certificationName={userCertificate.certification.config.certification_name}
+                     certificationDescription={userCertificate.certification.config.certification_description}
+                     certificationType={userCertificate.certification.config.certification_type}
+                     certificatePattern={userCertificate.certification.config.certificate_pattern}
+                     certificateInstructor={userCertificate.certification.config.certificate_instructor}
+                     certificateId={userCertificate.certificate_user.user_certification_uuid}
+                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
+                       year: 'numeric',
+                       month: 'long',
+                       day: 'numeric',
+                     })}
+                     qrCodeLink={qrCodeLink}
                   />
                 </div>
               </div>
@@ -426,6 +428,9 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       </div>
     )
   }
+
+  const keepGoingText = `${t('keepGoing')} 💪`
+
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
@@ -449,7 +454,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-900">{`${t('keepGoing')} 💪`}</h1>
+        <h1 className="text-4xl font-bold text-gray-900">{keepGoingText}</h1>
 
         <p className="text-xl text-gray-600">
           {t('youAreMakingProgress')}
@@ -466,8 +471,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">{t('progress')}</span>
-                <span className="font-semibold text-gray-900">{`${progressInfo.percentage}%`}</span>
-              </div>
+                <span className="font-semibold text-gray-900">{progressInfo.percentageString}</span>
+              </div></div>
 
               <div className="h-3 w-full rounded-full bg-gray-200">
                 <div

@@ -249,21 +249,22 @@ export default function UserRolesClient() {
                     <SelectContent>
                       {users
                         .filter(user => user.id !== undefined)
-                        .map(user => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={user.avatar_image} />
-                                <AvatarFallback>
-                                  {(user.first_name?.[0] || user.username?.[0] || 'U').toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>
-                                {user.first_name || user.username} {`(${user.email})`}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        .map(user => {
+                          const label = `${user.first_name || user.username} (${user.email})`
+                          return (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={user.avatar_image} />
+                                  <AvatarFallback>
+                                    {(user.first_name?.[0] || user.username?.[0] || 'U').toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span>{label}</span>
+                              </div>
+                            </SelectItem>
+                          )
+                        })}
                     </SelectContent>
                   </Select>
                 </div>

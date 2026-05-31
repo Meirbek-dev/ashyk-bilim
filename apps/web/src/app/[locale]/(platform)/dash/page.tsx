@@ -78,11 +78,8 @@ export default async function PlatformDashHomePage() {
     <div className="bg-background flex min-h-screen w-full flex-col">
       {/* Standard Header */}
       <DashHeader
-        title={tGeneral('dashboard') || 'Главная панель'}
-        description={
-          tGeneral('dashboardWelcome') ||
-          'Добро пожаловать в панель управления платформой. Быстрый переход к основным разделам.'
-        }
+        title={tGeneral('dashboard')}
+        description={tGeneral('dashboardWelcome')}
       />
 
       <main className="container mx-auto space-y-8 px-4 py-8 lg:px-8">
@@ -104,7 +101,7 @@ export default async function PlatformDashHomePage() {
               variant="outline"
               className="bg-background border-border/80 text-muted-foreground px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase"
             >
-              {session.roles?.map(r => r.role.name).join(', ') || 'User'}
+              {session.roles?.map(r => r.role.name).join(', ') || t('defaultUser')}
             </Badge>
           </div>
         </div>

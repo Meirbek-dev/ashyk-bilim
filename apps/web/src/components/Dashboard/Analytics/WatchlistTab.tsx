@@ -54,6 +54,31 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
     return serialized ? `${pathname}?${serialized}` : pathname
   }
 
+  const summaryCards = interventionSummary
+    ? [
+        {
+          label: t('overview.interventionSummary.logged'),
+          value: interventionSummary.total,
+          borderClass: 'border-slate-200 dark:border-slate-800',
+        },
+        {
+          label: t('overview.interventionSummary.open'),
+          value: interventionSummary.open,
+          borderClass: 'border-amber-200 dark:border-amber-900 bg-amber-500/5',
+        },
+        {
+          label: t('overview.interventionSummary.resolved'),
+          value: interventionSummary.resolved,
+          borderClass: 'border-emerald-200 dark:border-emerald-900 bg-emerald-500/5',
+        },
+        {
+          label: t('overview.interventionSummary.recovered'),
+          value: interventionSummary.recovered_learners,
+          borderClass: 'border-blue-200 dark:border-blue-900 bg-blue-500/5',
+        },
+      ]
+    : []
+
   return (
     <div className="space-y-6">
       {interventionSummary && (
@@ -66,33 +91,12 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
             <CardDescription>{t('overview.interventionDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              [
-                t('overview.interventionSummary.logged'),
-                interventionSummary.total,
-                'border-slate-200 dark:border-slate-800',
-              ],
-              [
-                t('overview.interventionSummary.open'),
-                interventionSummary.open,
-                'border-amber-200 dark:border-amber-900 bg-amber-500/5',
-              ],
-              [
-                t('overview.interventionSummary.resolved'),
-                interventionSummary.resolved,
-                'border-emerald-200 dark:border-emerald-900 bg-emerald-500/5',
-              ],
-              [
-                t('overview.interventionSummary.recovered'),
-                interventionSummary.recovered_learners,
-                'border-blue-200 dark:border-blue-900 bg-blue-500/5',
-              ],
-            ].map(([label, value, borderClass]) => (
-              <div key={String(label)} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
+            {summaryCards.map(({ label, value, borderClass }) => (
+              <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  {String(label)}
+                  {label}
                 </div>
-                <div className="text-foreground mt-3 text-3xl font-extrabold">{Number(value)}</div>
+                <div className="text-foreground mt-3 text-3xl font-extrabold">{value}</div>
               </div>
             ))}
           </CardContent>

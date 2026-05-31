@@ -291,6 +291,7 @@
       "assertionDescriptionPlaceholder": "Explain why this case matters...",
       "stdinPlaceholder": "Console inputs feed here",
       "expectedAssertionPlaceholder": "Expected output assertion here",
+      "unknownTime": "Unknown time",
       "stderr": "Error Output",
       "submission": {
         "accepted": "Accepted",
@@ -2538,6 +2539,7 @@
       "update": "Update"
     },
     "imageDialog": {
+      "preview": "Preview",
       "title": "Insert image",
       "srcLabel": "Image URL",
       "srcPlaceholder": "Use a platform-uploaded image URL",
@@ -7681,7 +7683,14 @@
           "noCanonicalProjection": "No canonical projection available for this item type.",
           "noAnswerPayload": "No answer payload recorded.",
           "itemLabel": "Item {index}",
-          "rubricGuidance": "Rubric guidance"
+          "rubricGuidance": "Rubric guidance",
+          "plagiarism": {
+            "failed": "Plagiarism: Failed",
+            "checking": "Plagiarism: Checking",
+            "pending": "Plagiarism: Pending",
+            "match": "Plagiarism: {score}% Match",
+            "clear": "Plagiarism: Clear"
+          }
         },
         "bulkActions": {
           "selectedCount": "{count} selected",
@@ -9532,6 +9541,10 @@
     "attempts": "Attempts",
     "lateWork": "Late work",
     "allowedFiles": "Allowed files",
+    "unlimitedAttempts": "Unlimited",
+    "allowLateAllowed": "Allowed",
+    "allowLateBlocked": "Blocked",
+    "anyFileType": "Any file type",
     "review": "Review",
     "openSubmissions": "Open submissions",
     "unavailableError": "File submission is unavailable",

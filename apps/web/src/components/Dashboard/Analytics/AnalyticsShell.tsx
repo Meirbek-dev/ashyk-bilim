@@ -90,7 +90,7 @@ export default function AnalyticsShell({
     <div className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
       <DashHeader
         breadcrumbType="analytics"
-        title="Teacher Analytics & Operations"
+        title={t('pages.shellTitle')}
         badge={
           <div className="ml-2.5 flex items-center gap-2 text-xs">
             <Badge

@@ -287,6 +287,7 @@
         "unknown": "Неизвестно",
         "wrongAnswer": "Неверный ответ"
       },
+      "unknownTime": "Неизвестное время",
       "stderr": "Вывод ошибок",
       "submission": {
         "accepted": "Принято",
@@ -2552,6 +2553,7 @@
       "update": "Обновить"
     },
     "imageDialog": {
+      "preview": "Предпросмотр",
       "title": "Вставить изображение",
       "srcLabel": "URL изображения",
       "srcPlaceholder": "Используйте ссылку на изображение, загруженное на платформу",
@@ -2877,6 +2879,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "unknownAuthor": "Неизвестно",
       "author": "Автор",
       "authors": "Авторы",
       "leaveCourse": "Покинуть курс",
@@ -2886,6 +2889,7 @@
       "startCourse": "Начать курс"
     },
     "CourseAuthors": {
+      "unknownAuthor": "Неизвестно",
       "and": " и ",
       "andMoreAuthors": "& {count, plural, one {# автор} few {# автора} many {# авторов} other {# авторов}}",
       "authorsAndUpdates": "Авторы и обновления",
@@ -7723,7 +7727,14 @@
           "noCanonicalProjection": "Каноническая проекция недоступна для этого типа элементов.",
           "noAnswerPayload": "Данные об ответе не зафиксированы.",
           "itemLabel": "Элемент {index}",
-          "rubricGuidance": "Критерии оценивания"
+          "rubricGuidance": "Критерии оценивания",
+          "plagiarism": {
+            "failed": "Плагиат: Ошибка проверки",
+            "checking": "Плагиат: Проверяется",
+            "pending": "Плагиат: В ожидании",
+            "match": "Плагиат: {score}% совпадений",
+            "clear": "Плагиат: Чисто"
+          }
         },
         "bulkActions": {
           "selectedCount": "{count} выбрано",
@@ -9570,6 +9581,10 @@
     "attempts": "Попытки",
     "lateWork": "Сдача с опозданием",
     "allowedFiles": "Разрешенные файлы",
+    "unlimitedAttempts": "Без ограничений",
+    "allowLateAllowed": "Разрешено",
+    "allowLateBlocked": "Заблокировано",
+    "anyFileType": "Любой тип файла",
     "review": "Проверка",
     "openSubmissions": "Открыть отправленные работы",
     "unavailableError": "Отправка файлов недоступна",

@@ -203,7 +203,7 @@ function LeaderboardEntryRow({
         <p className={cn('truncate font-semibold', isCurrentUser && 'text-primary')}>
           {entry.first_name && entry.last_name
             ? [entry.first_name, entry.middle_name, entry.last_name].filter(Boolean).join(' ')
-            : entry.username || 'Anonymous'}
+            : entry.username || t('leaderboard.anonymous')}
           {isCurrentUser && <span className="text-muted-foreground ml-2 text-xs">({t('leaderboard.you')})</span>}
         </p>
         {entry.username && (entry.first_name || entry.last_name) && (
