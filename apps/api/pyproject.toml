@@ -37,7 +37,7 @@ dependencies = [
 
   # API
   "fastapi-pagination>=0.15.14",
-  "python-multipart>=0.0.29",
+  "python-multipart>=0.0.30",
 
   # Infra / Observability
   "logfire[fastapi,sqlalchemy]>=4.34.0",

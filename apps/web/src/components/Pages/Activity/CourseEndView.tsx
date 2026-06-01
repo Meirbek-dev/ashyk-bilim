@@ -472,7 +472,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">{t('progress')}</span>
                 <span className="font-semibold text-gray-900">{progressInfo.percentageString}</span>
-              </div></div>
+              </div>
 
               <div className="h-3 w-full rounded-full bg-gray-200">
                 <div
