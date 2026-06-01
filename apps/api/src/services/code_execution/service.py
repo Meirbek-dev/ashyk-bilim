@@ -251,7 +251,7 @@ class Judge0SdkClientFactory:
             self._fingerprint = None
 
 
-class _ConfiguredJudge0Client(judge0.Client):
+class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
     def __init__(
         self,
         endpoint: str,

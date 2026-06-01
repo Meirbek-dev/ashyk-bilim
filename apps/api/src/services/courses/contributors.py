@@ -197,12 +197,12 @@ async def get_course_contributors(
         require_course_permission("course:read", current_user, course, checker)
 
     # Get all contributors for this course with user information
-    statement = (
+    contributors_statement = (
         select(ResourceAuthor, User)
         .join(User)  # SQLModel will automatically join on foreign key
         .where(ResourceAuthor.resource_uuid == course_uuid)
     )
-    results = db_session.exec(statement).all()
+    results = db_session.exec(contributors_statement).all()
 
     return [
         {

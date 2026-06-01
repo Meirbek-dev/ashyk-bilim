@@ -126,9 +126,9 @@ async def get_updates_by_course_uuid(
     if not course or course.id is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
-    statement = (
+    update_statement = (
         select(CourseUpdate).where(CourseUpdate.course_id == course.id).order_by(col(CourseUpdate.creation_date).desc())
     )  # https://sqlmodel.tiangolo.com/tutorial/where/#type-annotations-and-errors
-    updates = db_session.exec(statement).all()
+    updates = db_session.exec(update_statement).all()
 
     return [CourseUpdateRead(**update.model_dump()) for update in updates]

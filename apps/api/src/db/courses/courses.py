@@ -184,8 +184,8 @@ class CourseUpdate(CourseBase):
     thumbnail_type: ThumbnailType | None = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = Field(default="")
     thumbnail_video: str | None = Field(default="")
-    public: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    open_to_contributors: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    public: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    open_to_contributors: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @override
     @field_validator("thumbnail_type", mode="before")

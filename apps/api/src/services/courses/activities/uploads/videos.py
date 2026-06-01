@@ -7,9 +7,9 @@ from src.services.utils.upload_content import upload_content
 logger = logging.getLogger(__name__)
 
 
-async def upload_video(video_file: UploadFile, activity_uuid: str, course_uuid: str):
+async def upload_video(video_file: UploadFile, activity_uuid: str, course_uuid: str) -> dict[str, str] | None:
     contents = await video_file.read()
-    video_format = video_file.filename.split(".")[-1]
+    video_format = (video_file.filename or "video.bin").split(".")[-1]
 
     try:
         await upload_content(
@@ -23,6 +23,7 @@ async def upload_video(video_file: UploadFile, activity_uuid: str, course_uuid: 
     except Exception:
         logger.exception("Failed to upload video for activity %s", activity_uuid)
         return {"message": "There was an error uploading the file"}
+    return None
 
 
 async def upload_subtitle(
@@ -31,10 +32,10 @@ async def upload_subtitle(
     course_uuid: str,
     language: str,
     subtitle_id: str | None = None,
-) -> dict:
+) -> dict[str, object]:
     """Upload subtitle file to storage in the same directory as video"""
     contents = await subtitle_file.read()
-    subtitle_format = subtitle_file.filename.split(".")[-1]
+    subtitle_format = (subtitle_file.filename or "subtitle.vtt").split(".")[-1]
 
     try:
         await upload_content(

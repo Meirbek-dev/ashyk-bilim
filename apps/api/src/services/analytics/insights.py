@@ -41,23 +41,27 @@ def build_insight_feed(
             )
         )
 
-    for row in assessment_rows:
-        if row.pass_rate is None or row.pass_rate >= 65:
+    for assessment_row in assessment_rows:
+        if assessment_row.pass_rate is None or assessment_row.pass_rate >= 65:
             continue
-        reason = "диагностикой качества" if row.discrimination_index is not None else "низким уровнем прохождения"
+        reason = (
+            "диагностикой качества"
+            if assessment_row.discrimination_index is not None
+            else "низким уровнем прохождения"
+        )
         items.append(
             InsightFeedItem(
-                id=f"assessment-{row.assessment_type}-{row.assessment_id}",
+                id=f"assessment-{assessment_row.assessment_type}-{assessment_row.assessment_id}",
                 category="assessment",
-                severity="critical" if row.pass_rate < 45 else "warning",
-                priority=80 + int(65 - row.pass_rate),
-                title=f"Уровень прохождения {row.title} составляет {row.pass_rate}%.",
+                severity="critical" if assessment_row.pass_rate < 45 else "warning",
+                priority=80 + int(65 - assessment_row.pass_rate),
+                title=f"Уровень прохождения {assessment_row.title} составляет {assessment_row.pass_rate}%.",
                 body=f"Аномалия вызвана {reason}; откройте диагностику оценивания перед повторным использованием.",
-                course_id=row.course_id,
-                activity_id=row.activity_id,
-                assessment_type=row.assessment_type,
-                assessment_id=row.assessment_id,
-                href=f"/dash/analytics/assessments/{row.assessment_type}/{row.assessment_id}",
+                course_id=assessment_row.course_id,
+                activity_id=assessment_row.activity_id,
+                assessment_type=assessment_row.assessment_type,
+                assessment_id=assessment_row.assessment_id,
+                href=f"/dash/analytics/assessments/{assessment_row.assessment_type}/{assessment_row.assessment_id}",
             )
         )
 

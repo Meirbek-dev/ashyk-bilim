@@ -163,11 +163,14 @@ def resolve_course_id_for_assessment(
         ).first()
         if row is None:
             return None
+        activity_obj: Activity | None
         if hasattr(row, "_mapping"):
-            activity = next(value for value in row._mapping.values() if isinstance(value, Activity))
+            activity_obj = next((value for value in row._mapping.values() if isinstance(value, Activity)), None)
         else:
-            activity = row[1]
-        return activity.course_id
+            activity_obj = row[1]
+        if activity_obj is None:
+            return None
+        return activity_obj.course_id
     if assessment_type in {"quiz", "code_challenge"}:
         activity = sa_execute(db_session, select(Activity).where(col(Activity.id) == assessment_id)).scalars().first()
         if activity is None or activity.course_id is None:

@@ -33,7 +33,7 @@ def _build_broker() -> Any:
     from src.infra.settings import get_settings
 
     broker_url = get_settings().redis_config.taskiq_broker_url
-    result_backend = RedisAsyncResultBackend(broker_url)
+    result_backend: Any = RedisAsyncResultBackend(broker_url)
 
     return _with_common_middlewares(
         ListQueueBroker(broker_url).with_result_backend(result_backend),

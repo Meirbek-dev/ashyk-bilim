@@ -6,6 +6,7 @@ or run as a repair/backfill job to rebuild `activity_progress` and
 """
 
 from datetime import UTC, datetime
+from collections.abc import SupportsInt
 
 from sqlmodel import Session, col, select
 from ulid import ULID
@@ -604,6 +605,8 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
     value = settings.get(key)
     if value is None:
         return None
+    if not isinstance(value, (str, bytes, bytearray, SupportsInt)):
+        return None
     try:
         parsed = int(value)
     except TypeError, ValueError:
@@ -713,16 +716,17 @@ def _known_user_ids_by_course(
     course_uuid_to_id = {
         course.course_uuid: course.id
         for course in db_session.exec(select(Course).where(col(Course.id).in_(course_ids))).all()
+        if course.id is not None
     }
-    for row in db_session.exec(
+    for group_row in db_session.exec(
         select(UserGroupResource.resource_uuid, UserGroupUser.user_id).join(
             UserGroupUser,
             col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
         )
     ).all():
-        course_id = course_uuid_to_id.get(row.resource_uuid)
+        course_id = course_uuid_to_id.get(group_row.resource_uuid)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(group_row.user_id)
 
     return result
 

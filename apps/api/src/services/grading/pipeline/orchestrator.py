@@ -415,10 +415,10 @@ async def _run_final_code_answers(
             purpose=CodeRunPurpose.FINAL,
             language_id=answer.language,
             source_code=answer.source,
-            test_cases=item.body.tests,
+            test_cases=body.tests,
             idempotency_key=f"final:{draft.submission_uuid}:{item.item_uuid}:{answer.language}:{hashlib.sha256(answer.source.encode('utf-8')).hexdigest()}",
-            time_limit_seconds=item.body.time_limit_seconds,
-            memory_limit_mb=item.body.memory_limit_mb,
+            time_limit_seconds=body.time_limit_seconds,
+            memory_limit_mb=body.memory_limit_mb,
         )
         if result.status == CodeRunStatus.DEGRADED:
             raise HTTPException(

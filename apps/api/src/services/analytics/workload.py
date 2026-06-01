@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import SupportsFloat, SupportsInt
 from datetime import datetime
 
 from src.services.analytics.filters import AnalyticsFilters
@@ -24,6 +25,18 @@ from src.services.analytics.schemas import (
 )
 
 GRADING_SLA_HOURS = 72
+
+
+def _as_int(value: object) -> int:
+    if isinstance(value, (str, bytes, bytearray, SupportsInt)):
+        return int(value)
+    return 0
+
+
+def _as_float(value: object) -> float:
+    if isinstance(value, (str, bytes, bytearray, SupportsFloat, SupportsInt)):
+        return float(value)
+    return 0.0
 
 
 def build_teacher_workload(context: AnalyticsContext, filters: AnalyticsFilters) -> TeacherWorkloadSummary:
@@ -91,16 +104,16 @@ def build_teacher_workload(context: AnalyticsContext, filters: AnalyticsFilters)
                 "sla_breaches": 0,
             },
         )
-        item["awaiting_review"] = int(item["awaiting_review"]) + 1
+        item["awaiting_review"] = _as_int(item["awaiting_review"]) + 1
         if is_breach:
-            item["sla_breaches"] = int(item["sla_breaches"]) + 1
+            item["sla_breaches"] = _as_int(item["sla_breaches"]) + 1
         if submitted_at is not None:
             oldest = item.get("oldest_submitted_at")
             if not isinstance(oldest, datetime) or submitted_at < oldest:
                 item["oldest_submitted_at"] = submitted_at
         if age_hours is not None:
             current_age = item.get("max_age_hours")
-            if current_age is None or age_hours > float(current_age):
+            if current_age is None or age_hours > _as_float(current_age):
                 item["max_age_hours"] = age_hours
 
     daily_inflow = submitted_in_window / max(1, filters.window_days)
@@ -109,15 +122,15 @@ def build_teacher_workload(context: AnalyticsContext, filters: AnalyticsFilters)
 
     backlog_rows = [
         GradingBacklogItem(
-            course_id=int(item["course_id"]),
+            course_id=_as_int(item["course_id"]),
             course_name=str(item["course_name"]),
-            assessment_id=int(item["assessment_id"]),
+            assessment_id=_as_int(item["assessment_id"]),
             assessment_type="manual_assessment",
             title=str(item["title"]),
-            awaiting_review=int(item["awaiting_review"]),
+            awaiting_review=_as_int(item["awaiting_review"]),
             oldest_submitted_at=to_iso(item.get("oldest_submitted_at")),
-            age_hours=round(float(item["max_age_hours"]), 2) if item.get("max_age_hours") is not None else None,
-            sla_breaches=int(item["sla_breaches"]),
+            age_hours=round(_as_float(item["max_age_hours"]), 2) if item.get("max_age_hours") is not None else None,
+            sla_breaches=_as_int(item["sla_breaches"]),
         )
         for item in backlog_by_manual_assessment.values()
     ]
@@ -162,5 +175,5 @@ def backlog_items_for_drillthrough(context: AnalyticsContext, filters: Analytics
             "age_hours": age_hours,
             "sla_breached": age_hours is not None and age_hours > GRADING_SLA_HOURS,
         })
-    rows.sort(key=lambda row: row.get("age_hours") or 0, reverse=True)
+    rows.sort(key=lambda row: _as_float(row.get("age_hours")), reverse=True)
     return rows

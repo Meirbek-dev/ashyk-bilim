@@ -736,7 +736,7 @@ class TeacherSubmissionRead(SubmissionRead):
 
 
 class ReviewQueueRead(SubmissionListResponse):
-    items: list[TeacherSubmissionRead]  # pyright: ignore[reportIncompatibleVariableOverride]
+    items: list[TeacherSubmissionRead]  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
     contract_version: int = 1
 
 

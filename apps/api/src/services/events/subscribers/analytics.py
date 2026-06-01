@@ -7,6 +7,7 @@ Every event is logged with consistent field names for observability tooling
 from __future__ import annotations
 
 import logging
+from datetime import date, datetime
 from typing import Any
 
 logger = logging.getLogger("grading.analytics")
@@ -25,7 +26,7 @@ class AnalyticsSubscriber:
             for field_name in event.__dataclass_fields__:
                 value = getattr(event, field_name, None)
                 # Serialize datetime to ISO string
-                if hasattr(value, "isoformat"):
+                if isinstance(value, (date, datetime)):
                     value = value.isoformat()
                 fields[field_name] = value
 

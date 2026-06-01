@@ -14,6 +14,7 @@ from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
     LATE_POLICY_ADAPTER,
     AssessmentPolicy,
+    LatePolicy,
     LatePolicyNone,
 )
 from src.services.grading.pipeline.context import EffectivePolicy
@@ -35,7 +36,7 @@ def resolve_effective_policy(
     due_at: datetime | None = None
     allow_late = True
     passing_score = 60.0
-    late_policy = LatePolicyNone()
+    late_policy: LatePolicy = LatePolicyNone()
 
     # Policy overrides settings
     if policy is not None:

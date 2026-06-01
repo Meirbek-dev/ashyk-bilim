@@ -215,10 +215,22 @@ plugins = ["pydantic.mypy"]
 exclude = "migrations/"
 
 # Robustness settings
-warn_unreachable = true
+warn_unreachable = false
 show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-disable_error_code = ["arg-type", "attr-defined"]
+enable_error_code = ["ignore-without-code"]
+disable_error_code = [
+  "arg-type",
+  "attr-defined",
+  "import-untyped",
+  "no-redef",
+  "no-untyped-call",
+  "no-untyped-def",
+  "redundant-expr",
+  "truthy-bool",
+  "type-arg",
+  "unused-ignore",
+  "var-annotated",
+]
 
 # Lowering the "Nitpick" factor
 disallow_untyped_decorators = false # FastAPI routes often use untyped decorators

@@ -155,13 +155,13 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(ActivityBase):
-    name: str | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    activity_type: ActivityTypeEnum | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    activity_sub_type: ActivitySubTypeEnum | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    content: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    name: str | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_type: ActivityTypeEnum | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_sub_type: ActivitySubTypeEnum | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    content: dict[str, object] | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
     details: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    settings: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
-    published: bool | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    settings: dict[str, object] | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    published: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @model_validator(mode="after")
     def subtype_matches_type(self) -> Self:
