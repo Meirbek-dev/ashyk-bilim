@@ -55,10 +55,10 @@ class StreakType(StrEnum):
 
 
 def calculate_level(total_xp: int) -> int:
-    """Calculate level from total XP using a quadratic curve.
+    """Уровень рассчитывается на основе общего количества XP с использованием квадратичной кривой.
 
-    Curve formula: XP = 50 * (level - 1)^2 + 50 * (level - 1)
-    Solving for level gives: level = floor((-1 + sqrt(1 + 0.08 * XP)) / 2) + 1
+    Формула кривой: XP = 50 * (level - 1)^2 + 50 * (level - 1)
+    SolРешение уравнения для определения уровня дает: level = floor((-1 + sqrt(1 + 0.08 * XP)) / 2) + 1
     """
     import math
 

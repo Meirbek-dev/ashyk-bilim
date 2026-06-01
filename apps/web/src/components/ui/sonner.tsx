@@ -1,14 +1,23 @@
 'use client'
 
 import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Toaster as Sonner } from 'sonner'
 import type { ToasterProps } from 'sonner'
 import { useTheme } from '@/components/providers/theme-provider'
 
 const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
   const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-  return (
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  return createPortal(
     <Sonner
       position={position}
       theme={resolvedTheme}
@@ -35,7 +44,8 @@ const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
         },
       }}
       {...props}
-    />
+    />,
+    document.body,
   )
 }
 
