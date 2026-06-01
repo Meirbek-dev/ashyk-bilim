@@ -5,7 +5,7 @@ import { createNewCourse, getCourseMetadata, searchEditableCourses } from '@serv
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { CourseChoiceCard, courseWorkflowSummaryCardClass } from './courseWorkflowUi'
-import { CheckCircle2, ChevronDown, Loader2, Search, Sparkles } from 'lucide-react'
+import { BookOpen, CheckCircle2, ChevronDown, ListTree, Loader2, Lock, Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CourseWizardValues } from '@/schemas/courseSchemas'
 import { valibotResolver } from '@hookform/resolvers/valibot'
@@ -307,7 +307,7 @@ export default function CourseCreationWizard() {
                       checked={(isPublic ? 'public' : 'private') === option.value}
                       title={option.title}
                       description={option.description}
-                      icon={option.value === 'public' ? CheckCircle2 : Sparkles}
+                      icon={option.value === 'public' ? CheckCircle2 : Lock}
                       onSelect={value => form.setValue('public', value === 'public')}
                     />
                   ))}
@@ -362,9 +362,9 @@ export default function CourseCreationWizard() {
                         description={option.description}
                         icon={
                           option.value === 'outline'
-                            ? ChevronDown
+                            ? ListTree
                             : option.value === 'starter'
-                              ? Sparkles
+                              ? BookOpen
                               : CheckCircle2
                         }
                         onSelect={value => form.setValue('template', value as CourseWizardValues['template'])}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Crown, Flame, Star, Target, Trophy, Zap } from 'lucide-react'
+import { Activity, CalendarCheck, Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
 import { getLevelInfo } from '@/lib/gamification/levels'
@@ -135,7 +135,7 @@ export function GamificationProfileSection({
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <Flame className="h-4 w-4 text-orange-500" />
+                <CalendarCheck className="h-4 w-4 text-sky-600" />
                 <span>
                   {t('streaks.login.title')}
                   {': '}
@@ -256,7 +256,7 @@ function getNextMilestone(currentLevel: number) {
       level: 10,
       title: 'Scholar',
       color: 'text-slate-500',
-      icon: Zap,
+      icon: GraduationCap,
       minXP: 3000,
     },
     {

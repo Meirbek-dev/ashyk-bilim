@@ -15,12 +15,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Eye,
+  Award,
   FileCog,
   FileStack,
   Globe,
   LayoutDashboard,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
 import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management'
@@ -91,7 +91,7 @@ function CourseWorkspaceChrome({
     {
       key: 'certificate',
       label: t('tabs.certificate'),
-      icon: Sparkles,
+      icon: Award,
       capability: 'canManageCertificate',
     },
     {

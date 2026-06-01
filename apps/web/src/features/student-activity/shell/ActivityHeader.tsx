@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Focus, ListTree, PanelLeftClose, Sparkles, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Focus, HelpCircle, ListTree, PanelLeftClose, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import Link from '@components/ui/AppLink'
@@ -123,7 +123,7 @@ export default function ActivityHeader({
               aria-label={t('aiAssistant')}
               title={t('aiAssistant')}
             >
-              <Sparkles className="size-4" />
+              <HelpCircle className="size-4" />
             </Button>
             <Button
               type="button"

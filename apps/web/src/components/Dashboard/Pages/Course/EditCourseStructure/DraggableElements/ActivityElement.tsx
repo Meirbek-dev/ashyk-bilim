@@ -23,7 +23,7 @@ import {
   Loader2,
   Lock,
   Pencil,
-  Sparkles,
+  LayoutTemplate,
   Trash2,
   Video,
   X as XIcon,
@@ -92,7 +92,7 @@ const ACTIVITY_CONFIG = {
       'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300',
   },
   TYPE_DYNAMIC: {
-    Icon: Sparkles,
+    Icon: LayoutTemplate,
     translationKey: 'dynamic',
     colorClass:
       'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300',

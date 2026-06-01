@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnalyticsDataQuality } from '@/types/analytics'
-import { DatabaseZap, ShieldCheck } from 'lucide-react'
+import { Database, ShieldCheck } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
 interface DataQualityPanelProps {
@@ -34,7 +34,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
           <div className="flex flex-col gap-1.5 first:pl-0 last:pr-0 sm:px-4">
             <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('dataQualityPanel.mode')}</div>
             <div className="mt-2 flex items-center gap-2 text-base font-semibold">
-              <DatabaseZap className="text-primary h-4 w-4" />
+              <Database className="text-primary h-4 w-4" />
               {quality.mode}
             </div>
           </div>

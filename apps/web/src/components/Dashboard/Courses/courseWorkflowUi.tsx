@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, CheckCircle2, CircleDot, Globe, Lock, Sparkles } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CircleDot, Globe, Lock } from 'lucide-react'
 import { RadioGroupItem } from '@/components/ui/radio-group'
 import type { LucideIcon } from 'lucide-react'
 import { Label } from '@/components/ui/label'
@@ -64,7 +64,7 @@ export function CourseStatusBadge({
     attention: {
       label: t('attention'),
       tone: 'warning' as const,
-      icon: Sparkles,
+      icon: AlertTriangle,
     },
     unsaved: {
       label: t('unsavedChanges'),

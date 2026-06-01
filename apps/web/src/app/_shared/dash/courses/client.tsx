@@ -19,7 +19,7 @@ import {
   getCourseReadinessSummary,
 } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { AlertTriangle, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
+import { AlertTriangle, Globe, LayoutGrid, List, Lock, MoreHorizontal, Plus, Search, ShieldCheck, Trash2, Workflow, X } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
@@ -534,7 +534,6 @@ const CoursesHome = ({
                 render={<AppLink href={buildCourseCreationPath()} />}
                 className="h-9 px-3 text-xs font-semibold"
               >
-                <Sparkles className="mr-2 size-4" />
                 {t('guidedSetup')}
               </Button>
             ) : null}
@@ -656,7 +655,7 @@ const CoursesHome = ({
                       render={<AppLink href={buildCourseCreationPath()} />}
                       className="px-4"
                     >
-                      <Sparkles className="mr-2 size-4" />
+                      <Plus className="mr-2 size-4" />
                       {t('empty.createAction')}
                     </Button>
                   </div>
@@ -841,7 +840,7 @@ function CourseRowActions({
         <DropdownMenuItem
           onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'review'))}
         >
-          <Sparkles className="size-4" />
+          <ShieldCheck className="size-4" />
           {t('rowActions.reviewPublish')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
@@ -850,7 +849,7 @@ function CourseRowActions({
         </DropdownMenuItem>
         {canManageCourse ? (
           <DropdownMenuItem onClick={handleToggleVisibility}>
-            <Sparkles className="size-4" />
+            {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
             {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
           </DropdownMenuItem>
         ) : null}

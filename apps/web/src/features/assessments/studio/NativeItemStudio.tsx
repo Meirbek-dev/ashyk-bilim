@@ -9,7 +9,7 @@ import {
   ListTodo,
   LoaderCircle,
   PanelLeft,
-  Rocket,
+  Send,
   Settings2,
   TextCursorInput,
   Trash2,
@@ -617,7 +617,7 @@ export function NativeItemAuthor({
     {
       id: 'PUBLISH',
       label: tTabs('publish'),
-      icon: Rocket,
+      icon: Send,
       issueCount: allIssues.length,
     },
   ]

@@ -5,7 +5,7 @@
  * Note: Imports LevelInfo from types for consistency
  */
 
-import { Crown, Star, Target, Trophy, Zap } from 'lucide-react'
+import { Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
 import type { LevelInfo } from '@/types/gamification/profile'
 
 // Level configuration with RPG-style progression (translation keys)
@@ -30,7 +30,7 @@ const LEVEL_CONFIG: Record<number, LevelInfo> = {
     level: 10,
     title: 'scholar',
     color: 'text-purple-500',
-    icon: Zap,
+    icon: GraduationCap,
     minXP: 3000,
     unlocks: ['customAvatarHat'],
   },

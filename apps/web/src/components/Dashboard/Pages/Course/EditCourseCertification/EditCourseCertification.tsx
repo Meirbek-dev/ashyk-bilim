@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { AlertTriangle, Award, FileText, Sparkles } from 'lucide-react'
+import { AlertTriangle, Award, FileText, Palette } from 'lucide-react'
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -474,7 +474,7 @@ const EditCourseCertification = () => {
                     {/* Design Section */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="text-muted-foreground h-5 w-5" />
+                        <Palette className="text-muted-foreground h-5 w-5" />
                         <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
                       </div>
                       <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>

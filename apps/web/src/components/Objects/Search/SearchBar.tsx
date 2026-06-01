@@ -4,9 +4,9 @@ import {
   ArrowUpRight,
   Book,
   GraduationCap,
+  Compass,
   ScanSearch,
   Search,
-  Sparkles,
   TextSearch,
   Users,
 } from 'lucide-react'
@@ -140,7 +140,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
     <div className="px-4 py-8">
       <div className="flex flex-col items-center text-center">
         <div className="bg-muted mb-4 rounded-full p-3">
-          <Sparkles className="text-muted-foreground h-6 w-6" />
+          <Compass className="text-muted-foreground h-6 w-6" />
         </div>
         <h3 className="text-foreground mb-1 text-sm font-medium">{t('discoverTitle')}</h3>
         <p className="text-muted-foreground max-w-[240px] text-xs">{t('discoverSubtitle')}</p>

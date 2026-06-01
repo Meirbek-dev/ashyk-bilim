@@ -11,9 +11,9 @@ import {
   GitCompareArrows,
   ListTodo,
   Send,
-  Sparkles,
   Target,
   TextCursorInput,
+  Trophy,
 } from 'lucide-react'
 import { useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
@@ -213,7 +213,7 @@ export default function PublishDashboardTab({
 
           <div className="grid grid-cols-2 gap-3">
             <MetricCard icon={BookOpen} label={tPublish('totalQuestions')} value={String(items.length)} />
-            <MetricCard icon={Sparkles} label={tPublish('totalPoints')} value={String(totalPoints)} />
+            <MetricCard icon={Trophy} label={tPublish('totalPoints')} value={String(totalPoints)} />
             {timeLimitMinutes ? (
               <MetricCard
                 icon={Clock}

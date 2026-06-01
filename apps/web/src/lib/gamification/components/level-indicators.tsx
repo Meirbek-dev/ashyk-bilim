@@ -13,7 +13,7 @@ import type { UserGamificationProfile } from '@/types/gamification'
 import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { motion, useAnimationControls } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Star } from 'lucide-react'
+import { Award, Star } from 'lucide-react'
 import { getLevelInfo } from '../levels'
 import { cn } from '@/lib/utils'
 
@@ -318,7 +318,7 @@ export function XPGainAnimation({ amount, trigger, position, onComplete }: XPGai
       }}
     >
       <div className="border-primary/20 bg-primary/10 text-primary flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-sm">
-        <Sparkles className="h-3 w-3" />+{amount} XP
+        <Award className="h-3 w-3" />+{amount} XP
       </div>
     </motion.div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Clock, List, Play, Rocket, Send } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, FlaskConical, List, Play, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -125,7 +125,7 @@ export function CodeArenaHeader({
           disabled={disabled || isRunning}
           className="h-8 gap-1.5 text-xs"
         >
-          <Rocket className="size-3.5" />
+          <FlaskConical className="size-3.5" />
           {t('testCodeShort')}
         </Button>
         <Button

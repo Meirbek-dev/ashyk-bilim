@@ -6,7 +6,7 @@ import type { AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Link } from '@/i18n/navigation'
-import { Zap } from 'lucide-react'
+import { ClipboardCheck } from 'lucide-react'
 
 const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'))
 const AtRiskLearnersTable = lazy(() => import('./AtRiskLearnersTable'))
@@ -85,7 +85,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
         <Card className="border-border bg-card/65 shadow-sm backdrop-blur-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-amber-500" />
+              <ClipboardCheck className="h-5 w-5 text-emerald-600" />
               <CardTitle>{t('overview.interventionTitle')}</CardTitle>
             </div>
             <CardDescription>{t('overview.interventionDescription')}</CardDescription>

@@ -14,7 +14,7 @@ import { useReducedData } from '@/hooks/use-reduced-data'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Award } from 'lucide-react'
 import { motion } from 'motion/react'
 
 interface LevelUpCelebrationProps {
@@ -106,7 +106,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
             className="shrink-0"
           >
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3">
-              <Sparkles className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
+              <Award className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
             </div>
           </motion.div>
 
@@ -158,7 +158,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         className="bg-background relative mx-4 max-w-lg rounded-3xl border border-amber-300 p-12 text-center shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* Sparkles animation */}
+        {/* Award particle animation */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
           {fullscreenParticles.map((particle, i) => (
             <motion.div
@@ -193,7 +193,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           className="relative"
         >
           <div className="mb-4 inline-flex rounded-full border border-amber-300 bg-amber-50 p-4">
-            <Sparkles className="h-20 w-20 text-amber-600" />
+            <Award className="h-20 w-20 text-amber-600" />
           </div>
         </motion.div>
 

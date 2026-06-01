@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, Save, Sparkles } from 'lucide-react'
+import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, PlayCircle, Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
@@ -177,7 +177,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
               value="verify"
               className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
-              <Sparkles className="size-4" />
+              <PlayCircle className="size-4" />
               {t('stepVerify')}
             </TabsTrigger>
             <TabsTrigger

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, Sparkles, Video } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, LayoutTemplate, Video } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -40,8 +40,8 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     id: 'dynamic',
     labelKey: 'dynamicPage',
     descriptionKey: 'dynamicPageDesc',
-    icon: Sparkles,
-    iconClass: 'text-violet-500',
+    icon: LayoutTemplate,
+    iconClass: 'text-emerald-500',
   },
   {
     id: 'video',

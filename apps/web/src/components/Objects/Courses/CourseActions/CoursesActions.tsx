@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CheckCircle2, Clock, Loader2, PlayCircle, Sparkles, Trophy, UserPen } from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle2, Clock, Loader2, PlayCircle, Trophy, UserPen } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useSession } from '@/hooks/useSession'
@@ -274,7 +274,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
               <p className="mt-0.5 text-sm text-neutral-500">{t('startLearningJourney', { totalActivities })}</p>
             )}
           </div>
-          <Sparkles className="text-primary size-5" />
+          <ArrowRight className="text-primary size-5 transition-transform group-hover:translate-x-0.5" />
         </Button>
       )
     }

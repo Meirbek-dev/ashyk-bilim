@@ -2,7 +2,7 @@
 
 import { useSession } from '@/hooks/useSession'
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
-import { Calendar, Flame, TrendingUp, Trophy, Zap } from 'lucide-react'
+import { Activity, Calendar, CalendarCheck, TrendingUp, Trophy } from 'lucide-react'
 import { GlowingLevelBadge, getLevelInfo } from '@/lib/gamification'
 import type { UserGamificationProfile } from '@/types/gamification'
 import { Badge } from '@/components/ui/badge'
@@ -82,8 +82,8 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 
             {/* Streak indicators */}
             <div className="flex gap-2">
-              <StreakBadge type="fire" value={streakStatus.login} label={t('streaks.loginStreak')} />
-              <StreakBadge type="zap" value={streakStatus.learning} label={t('streaks.learningStreak')} />
+              <StreakBadge type="login" value={streakStatus.login} label={t('streaks.loginStreak')} />
+              <StreakBadge type="learning" value={streakStatus.learning} label={t('streaks.learningStreak')} />
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
+                  <Activity className="h-3.5 w-3.5 text-sky-500" />
                   {t('progress.dailyXP')}
                 </span>
                 <span className="text-muted-foreground text-xs tabular-nums">
@@ -214,13 +214,13 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 /**
  * Streak Badge
  */
-function StreakBadge({ type, value, label }: { type: 'fire' | 'zap'; value: number; label: string }) {
-  const Icon = type === 'fire' ? Flame : Zap
-  const activeIconColor = type === 'fire' ? 'text-orange-500' : 'text-amber-500'
+function StreakBadge({ type, value, label }: { type: 'login' | 'learning'; value: number; label: string }) {
+  const Icon = type === 'login' ? CalendarCheck : Activity
+  const activeIconColor = type === 'login' ? 'text-sky-600' : 'text-emerald-600'
   const activeBadgeClass =
-    type === 'fire'
-      ? 'border-orange-300/40 bg-orange-50 dark:bg-orange-950/30'
-      : 'border-amber-300/40 bg-amber-50 dark:bg-amber-950/30'
+    type === 'login'
+      ? 'border-sky-300/40 bg-sky-50 dark:bg-sky-950/30'
+      : 'border-emerald-300/40 bg-emerald-50 dark:bg-emerald-950/30'
 
   return (
     <Badge variant="secondary" className={cn('gap-1.5 px-2.5 py-1', value > 0 && activeBadgeClass)} title={label}>

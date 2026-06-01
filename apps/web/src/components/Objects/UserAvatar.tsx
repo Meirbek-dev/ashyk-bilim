@@ -5,7 +5,7 @@ import { useSession } from '@/hooks/useSession'
 import { useUserByUsernameQuery as useUserByUsername } from '@/features/users/hooks/useUsers'
 import { DEFAULT_AVATAR_PATH, getAvatarInitials, resolveAvatarUrl } from '@services/media/avatar'
 import { useTranslations } from 'next-intl'
-import { Bot, User } from 'lucide-react'
+import { MessageSquareText, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { memo, useMemo } from 'react'
 import type { AvatarUser, PredefinedAvatar } from '@services/media/avatar'
@@ -48,7 +48,7 @@ const variantStyles = {
 }
 
 const predefinedIcon = {
-  ai: Bot,
+  ai: MessageSquareText,
   empty: User,
 } satisfies Record<PredefinedAvatar, typeof User>
 

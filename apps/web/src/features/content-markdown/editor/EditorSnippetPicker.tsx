@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, Wand2 } from 'lucide-react'
+import { ChevronDown, Library } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { MarkdownSnippet } from '../presets/presets'
@@ -80,7 +80,7 @@ export function EditorSnippetPicker({
           disabled && 'cursor-not-allowed opacity-40',
         )}
       >
-        <Wand2 className="size-3" />
+        <Library className="size-3" />
         {label}
         <ChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
       </button>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Bot, Sparkles, X } from 'lucide-react'
+import { HelpCircle, MessageSquareText, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -51,7 +51,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         {/* Header */}
         <div className="border-border flex h-12 shrink-0 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="text-primary size-4" />
+            <HelpCircle className="text-primary size-4" />
             <span className="text-sm font-semibold">{t('title')}</span>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('title')}>
@@ -91,7 +91,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         {/* Chat input placeholder */}
         <div className="border-border border-t p-4">
           <div className="border-border bg-muted/30 flex items-center gap-2 rounded-lg border p-3">
-            <Bot className="text-muted-foreground size-4 shrink-0" />
+            <MessageSquareText className="text-muted-foreground size-4 shrink-0" />
             <span className="text-muted-foreground text-sm">{t('askPlaceholder')}</span>
           </div>
         </div>
