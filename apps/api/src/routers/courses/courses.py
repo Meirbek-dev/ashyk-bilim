@@ -252,16 +252,13 @@ async def api_get_course(
     request: Request,
     response: Response,
     course_uuid: str,
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
-    checker: PermissionCheckerDep | None = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
+    checker: PermissionCheckerDep,
 ) -> CourseRead | Response:
     """
     Get single Course by course_uuid
     """
-    assert db_session is not None
-    assert current_user is not None
-    assert checker is not None
     course = await get_course(
         request,
         course_uuid,
@@ -286,10 +283,10 @@ async def api_get_course_meta(
     request: Request,
     response: Response,
     course_uuid: str,
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+    checker: PermissionCheckerDep,
     with_unpublished_activities: bool = False,
-    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-    checker: PermissionCheckerDep | None = None,
 ) -> FullCourseRead | Response:
     """
     Get single Course Metadata (chapters, activities) by course_uuid.
@@ -298,9 +295,6 @@ async def api_get_course_meta(
     Clients should send this back as ``If-Match`` on reorder requests to detect
     concurrent edits.
     """
-    assert db_session is not None
-    assert current_user is not None
-    assert checker is not None
     result = await get_course_meta(
         request,
         course_uuid,

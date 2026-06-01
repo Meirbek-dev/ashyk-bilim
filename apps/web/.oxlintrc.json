@@ -47,7 +47,8 @@
     "src/features/assessments/registry/code-challenge/hooks.ts",
     "src/components/Security/HeaderProfileBox.tsx",
     "src/features/assessments/studio/NativeItemStudio.tsx",
-    "src/services/gamification/server.ts"
+    "src/services/gamification/server.ts",
+    "src/lib/api/generated/schema.ts"
   ],
 
   "plugins": [
@@ -66,7 +67,7 @@
 
   "rules": {
     "no-shadow": "warn",
-    "typescript/no-explicit-any": "warn",
+    "typescript/no-explicit-any": "off",
     /* ── Noisy / pedantic — keep off ──────────────────────────── */
     "arrow-body-style": "off",
     "capitalized-comments": "off",

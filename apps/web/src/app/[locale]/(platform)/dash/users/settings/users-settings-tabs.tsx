@@ -18,12 +18,15 @@ export default function UsersSettingsTabs() {
     () =>
       ALL_TABS.filter(tab => {
         switch (tab.id) {
-          case 'users':
+          case 'users': {
             return can(Resources.USER, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
-          case 'usergroups':
+          }
+          case 'usergroups': {
             return can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)
-          default:
+          }
+          default: {
             return true
+          }
         }
       }),
     [can],

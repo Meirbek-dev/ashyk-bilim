@@ -27658,7 +27658,8 @@
                 "type": "object"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -32102,7 +32103,7 @@
             "description": "URL to preview",
             "in": "query",
             "name": "url",
-            "required": false,
+            "required": true,
             "schema": {
               "description": "URL to preview",
               "title": "Url",
