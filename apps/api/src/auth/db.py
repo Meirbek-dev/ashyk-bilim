@@ -79,7 +79,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
 
 
 def get_user_db(
-    session_factory: Annotated[SessionFactory, Depends(get_session_factory)] = None,
+    session_factory: Annotated[SessionFactory | None, Depends(get_session_factory)] = None,
 ) -> SQLModelUserDatabase:
     assert session_factory is not None
     return SQLModelUserDatabase(session_factory)

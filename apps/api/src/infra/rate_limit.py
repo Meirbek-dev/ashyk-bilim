@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, cast
 
 from fastapi import Request
 
@@ -65,7 +65,7 @@ def rate_limit(
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Locate the Request object in args/kwargs
-            request: Request | None = kwargs.get("request")
+            request = cast(Request | None, kwargs.get("request"))
             if request is None:
                 for arg in args:
                     if isinstance(arg, Request):

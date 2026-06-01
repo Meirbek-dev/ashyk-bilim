@@ -29,7 +29,7 @@ async def api_create_collection(
     request: Request,
     collection_object: CollectionCreate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CollectionRead:
     """
     Create new Collection
@@ -42,7 +42,7 @@ async def api_get_collection(
     request: Request,
     collection_uuid: str,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CollectionReadWithPermissions:
     """
     Get single collection by ID with permission metadata
@@ -56,7 +56,7 @@ async def api_get_platform_collections(
     page: int,
     limit: int,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> list[CollectionReadWithPermissions]:
     """
     Get collections by page and limit with permission metadata
@@ -76,7 +76,7 @@ async def api_update_collection(
     collection_object: CollectionUpdate,
     collection_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> CollectionRead:
     """
     Update collection by ID
@@ -89,7 +89,7 @@ async def api_delete_collection(
     request: Request,
     collection_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ):
     """
     Delete collection by ID

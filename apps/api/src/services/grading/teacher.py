@@ -28,7 +28,6 @@ from src.db.grading.submissions import (
     AssessmentType,
     GradedItem,
     GradingBreakdown,
-    ItemFeedback,
     Submission,
     SubmissionListResponse,
     SubmissionRead,
@@ -392,14 +391,9 @@ def export_grades_csv(
     )
 
     for s, u in db_session.exec(query).yield_per(200):
-        user_val: User | None = u
-        if user_val is not None:
-            parts = [p for p in [user_val.first_name, user_val.middle_name, user_val.last_name] if p]
-            name = " ".join(parts) if parts else user_val.username
-            email = str(user_val.email)
-        else:
-            name = f"Пользователь #{s.user_id}"
-            email = ""
+        parts = [p for p in [u.first_name, u.middle_name, u.last_name] if p]
+        name = " ".join(parts) if parts else u.username
+        email = str(u.email)
 
         submitted = s.submitted_at.isoformat() if s.submitted_at else ""
 

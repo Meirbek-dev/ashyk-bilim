@@ -6,17 +6,13 @@ from fastapi.responses import JSONResponse
 
 
 def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, Any]]:
-    try:
-        return exc.errors(include_url=False)  # pyright: ignore[reportCallIssue]
-    except TypeError:
-        errors = exc.errors()
-        sanitized_errors: list[dict[str, Any]] = []
-        for error in errors:
-            if isinstance(error, dict) and "url" in error:
-                sanitized_errors.append({k: v for k, v in error.items() if k != "url"})
-            else:
-                sanitized_errors.append(error)
-        return sanitized_errors
+    sanitized_errors: list[dict[str, Any]] = []
+    for error in exc.errors():
+        if isinstance(error, dict):
+            sanitized_errors.append({k: v for k, v in error.items() if k != "url"})
+        else:
+            sanitized_errors.append({"msg": str(error)})
+    return sanitized_errors
 
 
 def register_exception_handlers(app: FastAPI) -> None:

@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import and_, or_, select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
@@ -76,8 +77,8 @@ def resolve_teacher_scope(
     target_user_id = teacher_user_id if has_platform_scope else current_user.id
 
     if has_platform_scope and filters.teacher_user_id:
-        course_ids = db_session.exec(
-            select(Course.id)
+        course_ids = sa_execute(db_session, 
+            select(col(Course.id))
             .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
@@ -88,12 +89,12 @@ def resolve_teacher_scope(
                     ),
                 )
             )
-        ).all()
+        ).scalars().all()
     elif has_platform_scope:
-        course_ids = db_session.exec(select(Course.id)).all()
+        course_ids = sa_execute(db_session, select(col(Course.id))).scalars().all()
     else:
-        course_ids = db_session.exec(
-            select(Course.id)
+        course_ids = sa_execute(db_session, 
+            select(col(Course.id))
             .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
@@ -104,7 +105,7 @@ def resolve_teacher_scope(
                     ),
                 )
             )
-        ).all()
+        ).scalars().all()
 
     normalized_course_ids = sorted({
         normalized_course_id
@@ -144,7 +145,7 @@ def resolve_course_id_for_assessment(
     assessment_id: int,
 ) -> int | None:
     if assessment_type in {"manual_assessment", "exam"}:
-        row = db_session.exec(
+        row = sa_execute(db_session, 
             select(Assessment, Activity)
             .join(Activity, col(Activity.id) == Assessment.activity_id)
             .where(col(Assessment.id) == assessment_id)
@@ -157,7 +158,7 @@ def resolve_course_id_for_assessment(
             activity = row[1]
         return activity.course_id
     if assessment_type in {"quiz", "code_challenge"}:
-        activity = db_session.exec(select(Activity).where(col(Activity.id) == assessment_id)).first()
+        activity = sa_execute(db_session, select(Activity).where(col(Activity.id) == assessment_id)).scalars().first()
         if activity is None or activity.course_id is None:
             return None
         if assessment_type == "code_challenge" and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE:

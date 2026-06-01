@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.db.analytics import (
     DailyCourseMetrics,
     DailyTeacherMetrics,
@@ -88,11 +89,11 @@ def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], be
     latest_date_filters = [LearnerRiskSnapshot.snapshot_date < before_date]
     if course_ids:
         latest_date_filters.append(col(LearnerRiskSnapshot.course_id).in_(course_ids))
-    latest_date_result = db_session.exec(
+    latest_date_result = sa_execute(db_session, 
         select(func.max(LearnerRiskSnapshot.snapshot_date)).where(
             *latest_date_filters,
         )
-    ).one_or_none()
+    ).scalar_one_or_none()
     latest_date = latest_date_result if isinstance(latest_date_result, date) else None
     if latest_date is None:
         return None
@@ -102,7 +103,9 @@ def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], be
     ]
     if course_ids:
         filter_clause.append(col(LearnerRiskSnapshot.course_id).in_(course_ids))
-    result = db_session.exec(select(func.count()).select_from(LearnerRiskSnapshot).where(*filter_clause)).one_or_none()
+    result = sa_execute(db_session, 
+        select(func.count()).select_from(LearnerRiskSnapshot).where(*filter_clause)
+    ).scalar_one_or_none()
     return float(result if result is not None else 0)
 
 
@@ -117,7 +120,7 @@ def _query_previous_negative_engagement(db_session: Session, teacher_user_id: in
         .order_by(col(DailyTeacherMetrics.metric_date).desc())
         .limit(1)
     )
-    row = db_session.exec(stmt).first()
+    row = sa_execute(db_session, stmt).scalars().first()
     return float(row.courses_with_negative_engagement) if row is not None else None
 
 
@@ -133,7 +136,7 @@ def _query_previous_teacher_metrics(
         .order_by(col(DailyTeacherMetrics.metric_date).desc())
         .limit(1)
     )
-    return db_session.exec(stmt).first()
+    return sa_execute(db_session, stmt).scalars().first()
 
 
 def _query_previous_course_metric_sum(
@@ -144,22 +147,22 @@ def _query_previous_course_metric_sum(
 ) -> float | None:
     if not course_ids:
         return None
-    latest_date_result = db_session.exec(
+    latest_date_result = sa_execute(db_session, 
         select(func.max(DailyCourseMetrics.metric_date)).where(
             col(DailyCourseMetrics.metric_date) < before_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
         )
-    ).one_or_none()
+    ).scalar_one_or_none()
     latest_date = latest_date_result if isinstance(latest_date_result, date) else None
     if latest_date is None:
         return None
     column = getattr(DailyCourseMetrics, metric_name)
-    value = db_session.exec(
+    value = sa_execute(db_session, 
         select(func.coalesce(func.sum(column), 0)).where(
             col(DailyCourseMetrics.metric_date) == latest_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
         )
-    ).one_or_none()
+    ).scalar_one_or_none()
     return float(value) if value is not None else 0.0
 
 
@@ -168,16 +171,16 @@ def _query_previous_negative_engagement_for_courses(
 ) -> float | None:
     if not course_ids:
         return None
-    latest_date_result = db_session.exec(
+    latest_date_result = sa_execute(db_session, 
         select(func.max(DailyCourseMetrics.metric_date)).where(
             col(DailyCourseMetrics.metric_date) < before_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
         )
-    ).one_or_none()
+    ).scalar_one_or_none()
     latest_date = latest_date_result if isinstance(latest_date_result, date) else None
     if latest_date is None:
         return None
-    result = db_session.exec(
+    result = sa_execute(db_session, 
         select(func.count())
         .select_from(DailyCourseMetrics)
         .where(
@@ -185,7 +188,7 @@ def _query_previous_negative_engagement_for_courses(
             col(DailyCourseMetrics.course_id).in_(course_ids),
             col(DailyCourseMetrics.engagement_delta_pct) < 0,
         )
-    ).one_or_none()
+    ).scalar_one_or_none()
     return float(result if result is not None else 0)
 
 

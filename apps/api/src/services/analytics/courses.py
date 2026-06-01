@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.db.analytics import DailyCourseMetrics
 from src.db.courses.courses import Course
 from src.db.grading.progress import ActivityProgress, ActivityProgressState
@@ -58,7 +59,7 @@ def _activity_progress_completed(progress: ActivityProgress) -> bool:
 def _previous_completion_by_course(db_session: Session, course_ids: list[int], before_date: date) -> dict[int, float]:
     if not course_ids:
         return {}
-    latest_date = db_session.exec(
+    latest_date = sa_execute(db_session, 
         select(func.max(DailyCourseMetrics.metric_date)).where(
             col(DailyCourseMetrics.metric_date) < before_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
@@ -66,12 +67,12 @@ def _previous_completion_by_course(db_session: Session, course_ids: list[int], b
     ).scalar_one_or_none()
     if latest_date is None:
         return {}
-    rows = db_session.exec(
+    rows = sa_execute(db_session, 
         select(DailyCourseMetrics).where(
             DailyCourseMetrics.metric_date == latest_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
         )
-    ).all()
+    ).scalars().all()
     return {row.course_id: float(row.completion_rate) for row in rows if row.completion_rate is not None}
 
 
@@ -99,9 +100,9 @@ def _build_rollup_course_rows(
 
     courses = {
         course.id: course
-        for course in db_session.exec(
+        for course in sa_execute(db_session, 
             select(Course).where(col(Course.id).in_([rollup.course_id for rollup in rollups]))
-        ).all()
+        ).scalars().all()
     }
 
     rows: list[TeacherCourseRow] = []
@@ -395,9 +396,9 @@ def get_teacher_course_list(
         paged_rows = rows[filters.offset : filters.offset + filters.page_size]
         course_map = {
             course.id: course
-            for course in db_session.exec(select(Course).where(col(Course.id).in_(scope.course_ids))).all()
+            for course in sa_execute(db_session, select(Course).where(col(Course.id).in_(scope.course_ids))).scalars().all()
         }
-        usergroups = list(db_session.exec(select(UserGroup)).all())
+        usergroups = list(sa_execute(db_session, select(UserGroup)).scalars().all())
         return TeacherCourseListResponse(
             generated_at=generated_at,
             total=len(rows),

@@ -185,10 +185,12 @@ def get_my_permissions(
 @router.get("/user-roles", response_model=list[UserRoleAssignmentResponse])
 def list_user_roles(
     db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    checker: PermissionCheckerDep = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    checker: PermissionCheckerDep | None = None,
 ) -> list[UserRoleAssignmentResponse]:
     """List user↔role assignments."""
+    assert current_user is not None
+    assert checker is not None
     checker.require(current_user.id, "role:read")
 
     rows = db_session.exec(

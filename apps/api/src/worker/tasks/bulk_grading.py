@@ -42,12 +42,10 @@ async def execute_deadline_extension_task(action_uuid: str) -> None:
     Args:
         action_uuid: ``BulkAction.action_uuid`` to execute.
     """
-    import asyncio
-
     from src.services.grading.bulk import run_deadline_extension_action
 
     try:
-        await asyncio.to_thread(run_deadline_extension_action, action_uuid)
+        await run_deadline_extension_action(action_uuid)
         logger.info("deadline_extension_task completed action=%s", action_uuid)
     except Exception:
         logger.exception("deadline_extension_task failed action=%s", action_uuid)

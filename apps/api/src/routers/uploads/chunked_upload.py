@@ -273,7 +273,7 @@ async def delete_assessment_upload(
 @router.delete("/chunked/{upload_id}", status_code=204)
 async def cancel_chunked_upload(
     upload_id: str,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> None:
     """Cancel a resumable chunked upload and remove all staged chunk files."""
     _owned_chunked_session(upload_id, current_user.id)
@@ -312,7 +312,7 @@ async def initiate_chunked_upload(
     total_chunks: Annotated[int, Form()],
     file_size: Annotated[int, Form()],
     uuid: Annotated[str | None, Form()] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
     """
     Initiate a chunked upload session.
@@ -349,7 +349,7 @@ async def upload_chunk(
     upload_id: Annotated[str, Form()],
     chunk_index: Annotated[int, Form()],
     chunk: Annotated[UploadFile, File()],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
     """
     Upload a single chunk.
@@ -378,7 +378,7 @@ async def upload_chunk(
 @router.post("/complete", response_model=ChunkedUploadCompleteResponse)
 async def complete_chunked_upload(
     upload_id: Annotated[str, Form()],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
     """
     Complete the chunked upload by assembling all chunks.
@@ -423,7 +423,7 @@ async def complete_chunked_upload(
 @router.get("/status/{upload_id}", response_model=ChunkedUploadStatusResponse)
 async def get_upload_status(
     upload_id: str,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
     """
     Get the status of an upload session.

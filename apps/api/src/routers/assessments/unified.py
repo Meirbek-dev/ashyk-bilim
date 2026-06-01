@@ -299,8 +299,8 @@ async def api_save_draft(
 async def api_submit_assessment(
     assessment_uuid: str,
     payload: AssessmentDraftPatch | None = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
     violation_count: Annotated[int, Query(ge=0)] = 0,
     auto_submit: Annotated[bool, Query()] = False,

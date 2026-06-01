@@ -176,8 +176,8 @@ async def api_save_file_submission_draft(
 async def api_submit_file_submission(
     file_submission_uuid: str,
     payload: FileSubmissionDraftPatch | None = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> FileSubmissionAttemptRead:
     return await submit_file_submission(

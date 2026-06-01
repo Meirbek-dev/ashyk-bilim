@@ -17,8 +17,8 @@ async def api_search_platform_content(
     query: str,
     page: int = 1,
     limit: int = 10,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_optional_public_user)] = None,
 ) -> SearchResult:
     return await search_platform_content(
         request=request,

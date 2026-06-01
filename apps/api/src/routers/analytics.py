@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select as sa_select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.auth.users import get_public_user
 from src.core.http import get_content_disposition_header
 from src.db.courses.courses import Course
@@ -143,9 +144,9 @@ async def teacher_course_detail_by_uuid_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    course = db_session.exec(
+    course = sa_execute(db_session, 
         sa_select(Course).where(col(Course.course_uuid) == course_uuid, col(Course.id).in_(scope.course_ids))
-    ).first()
+    ).scalars().first()
     if course is None:
         raise HTTPException(status_code=404, detail="Курс не найден в этой области")
     try:

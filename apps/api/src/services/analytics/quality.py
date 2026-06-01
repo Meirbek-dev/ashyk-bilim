@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.db.analytics import DailyTeacherMetrics
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import AnalyticsContext, progress_snapshots, to_iso
@@ -20,12 +21,12 @@ def build_data_quality(
     freshness_seconds: int,
 ) -> AnalyticsDataQuality:
     teacher_rollup = (
-        db_session.exec(
+        sa_execute(db_session, 
             select(DailyTeacherMetrics)
             .where(col(DailyTeacherMetrics.teacher_user_id) == scope.teacher_user_id)
             .order_by(col(DailyTeacherMetrics.metric_date).desc())
             .limit(1)
-        ).first()
+        ).scalars().first()
         if supports_teacher_rollup_reads(filters)
         else None
     )

@@ -72,6 +72,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         await asyncio.to_thread(_assign_default_role)
 
 
-async def get_user_manager(user_db: Annotated[Any, Depends(get_user_db)] = None):
+async def get_user_manager(user_db: Annotated[Any | None, Depends(get_user_db)] = None):
     assert user_db is not None
     yield UserManager(user_db)

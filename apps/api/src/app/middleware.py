@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Awaitable, Callable, MutableMapping
-from typing import override
+from typing import cast, override
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +19,8 @@ class CachedStaticFiles(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_with_cache(message: MutableMapping[str, object]) -> None:
             if message["type"] == "http.response.start":
-                headers = dict(message.get("headers", []))
+                raw_headers = cast(list[tuple[bytes, bytes]], message.get("headers", []))
+                headers = dict(raw_headers)
                 headers[b"cache-control"] = _STATIC_CACHE_HEADER.encode()
                 message = {**message, "headers": list(headers.items())}
             await send(message)

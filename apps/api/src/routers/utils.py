@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/link-preview")
-async def link_preview(url: Annotated[str, Query(description="URL to preview")] = ...):
+async def link_preview(url: Annotated[str, Query(description="URL to preview")]):
     try:
         return await fetch_link_preview(url)
     except UnsafeLinkPreviewURL as e:

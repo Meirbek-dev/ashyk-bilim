@@ -32,8 +32,8 @@ async def api_create_image_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> BlockRead:
     """
     Create new image file
@@ -45,8 +45,8 @@ async def api_create_image_file_block(
 async def api_get_image_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get image file
@@ -64,8 +64,8 @@ async def api_create_video_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> BlockRead:
     """
     Create new video file
@@ -77,8 +77,8 @@ async def api_create_video_file_block(
 async def api_get_video_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get video file
@@ -96,8 +96,8 @@ async def api_create_pdf_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> BlockRead:
     """
     Create new pdf file
@@ -109,8 +109,8 @@ async def api_create_pdf_file_block(
 async def api_get_pdf_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get pdf file

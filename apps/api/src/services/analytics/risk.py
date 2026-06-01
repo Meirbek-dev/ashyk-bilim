@@ -7,6 +7,7 @@ from datetime import UTC, date
 from sqlalchemy import select
 from sqlmodel import Session, col
 
+from src.infra.db.execute import sa_execute
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -98,7 +99,7 @@ def _previous_snapshots(
     course_ids = sorted({course_id for course_id, _user_id in pairs})
     user_ids = sorted({user_id for _course_id, user_id in pairs})
     rows = list(
-        db_session.exec(
+        sa_execute(db_session, 
             select(LearnerRiskSnapshot)
             .where(
                 col(LearnerRiskSnapshot.snapshot_date) < before_date,
@@ -106,7 +107,7 @@ def _previous_snapshots(
                 col(LearnerRiskSnapshot.user_id).in_(user_ids),
             )
             .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
-        ).all()
+        ).scalars().all()
     )
     latest: dict[tuple[int, int], LearnerRiskSnapshot] = {}
     for row in rows:
@@ -122,14 +123,14 @@ def _interventions_by_pair(
     if not scope.course_ids:
         return {}
     rows = list(
-        db_session.exec(
+        sa_execute(db_session, 
             select(TeacherIntervention)
             .where(
                 col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
                 col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
             .order_by(col(TeacherIntervention.created_at).desc())
-        ).all()
+        ).scalars().all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)
     for row in rows:

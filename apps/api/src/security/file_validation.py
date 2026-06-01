@@ -5,8 +5,19 @@ Validates file types and content to prevent unrestricted uploads (CWE-434).
 """
 
 import re
+from collections.abc import Callable
+from typing import TypedDict
 
 from fastapi import HTTPException, UploadFile
+
+type ContentValidator = Callable[[bytes], bool]
+
+
+class FileTypeConfig(TypedDict):
+    extensions: list[str]
+    mime_types: list[str]
+    max_size: int
+    validator: ContentValidator
 
 
 def validate_image_content(content: bytes) -> bool:
@@ -119,7 +130,7 @@ def validate_document_content(content: bytes) -> bool:
 
 
 # File type configurations
-FILE_TYPES = {
+FILE_TYPES: dict[str, FileTypeConfig] = {
     "image": {
         "extensions": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"],
         "mime_types": [
@@ -192,7 +203,7 @@ def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | 
     Raises:
         HTTPException: If validation fails
     """
-    if not file or not file.filename:
+    if not file.filename:
         raise HTTPException(status_code=400, detail="Файл не предоставлен")
 
     # Read file content once
@@ -205,7 +216,7 @@ def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | 
         raise HTTPException(status_code=415, detail="SVG-файлы запрещены по соображениям безопасности")
 
     # Find matching file type configuration
-    config = None
+    config: FileTypeConfig | None = None
     for file_type in allowed_types:
         if file_type in FILE_TYPES and ext in FILE_TYPES[file_type]["extensions"]:
             config = FILE_TYPES[file_type]

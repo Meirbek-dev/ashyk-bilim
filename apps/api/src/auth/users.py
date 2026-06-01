@@ -26,7 +26,7 @@ current_optional_user = fastapi_users.current_user(active=True, optional=True)
 
 
 def get_public_user(
-    user: Annotated[User, Depends(current_active_user)] = None,
+    user: Annotated[User | None, Depends(current_active_user)] = None,
 ) -> PublicUser:
     assert user is not None
     return PublicUser.model_validate(user)
@@ -41,7 +41,7 @@ def get_optional_public_user(
 
 
 def _require_superuser(
-    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> PublicUser:
     assert user is not None
     if not user.is_superuser:

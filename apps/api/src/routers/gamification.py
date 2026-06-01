@@ -203,10 +203,12 @@ async def update_streak(
 
 @router.patch("/preferences", response_model=ProfileRead)
 async def update_preferences(
-    data: Annotated[dict[str, Any], Body()] = ...,
-    user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db: Annotated[Session, Depends(get_db_session)] = None,
-):
+    data: Annotated[dict[str, Any], Body()],
+    user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db: Annotated[Session | None, Depends(get_db_session)] = None,
+) -> ProfileRead:
+    assert user is not None
+    assert db is not None
     try:
         profile = service.update_preferences(db, user.id, data)
         return _profile_to_read(profile)
@@ -219,9 +221,11 @@ async def update_preferences(
 async def get_leaderboard(
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
     offset: Annotated[int, Query(ge=0)] = 0,
-    user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db: Annotated[Session, Depends(get_db_session)] = None,
-):
+    user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db: Annotated[Session | None, Depends(get_db_session)] = None,
+) -> LeaderboardRead:
+    assert user is not None
+    assert db is not None
     try:
         return service.get_leaderboard_read(db, limit=limit, offset=offset)
     except Exception:
