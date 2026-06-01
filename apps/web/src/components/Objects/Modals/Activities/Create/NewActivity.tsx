@@ -1,6 +1,15 @@
 'use client'
 
-import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, LayoutTemplate, Video } from 'lucide-react'
+import {
+  ArrowLeft,
+  ChevronRight,
+  Code2,
+  FileArchive,
+  FileText,
+  GraduationCap,
+  LayoutTemplate,
+  Video,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'

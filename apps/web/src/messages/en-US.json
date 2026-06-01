@@ -3630,7 +3630,7 @@
           }
         },
         "empty": {
-          "createAction": "Create with guided setup",
+          "createAction": "Create your first course",
           "title": "No matching courses on this page",
           "withQuery": "Adjust the search or preset.",
           "withoutQuery": "Create a course or widen the current preset."
@@ -3639,7 +3639,7 @@
           "cannotDeleteSelection": "No selected courses can be deleted.",
           "cannotUpdateSelection": "No selected courses can be updated."
         },
-        "guidedSetup": "Guided setup",
+        "guidedSetup": "New Course",
         "header": {
           "description": "Review the catalog in a management-first table, filter by lifecycle state, and launch directly into the guided creation flow or an existing course workspace.",
           "label": "Course management",
@@ -3771,7 +3771,29 @@
           "certificate": "Certificate",
           "collaboration": "Collaboration"
         },
-        "workspacePulse": "Workspace pulse"
+        "workspacePulse": "Workspace pulse",
+        "tasks": {
+          "details": {
+            "label": "Add course details",
+            "description": "Set learning outcomes, tags, and thumbnail so the course looks intentional."
+          },
+          "curriculum": {
+            "label": "Build curriculum",
+            "description": "Add at least one chapter and one activity before publishing."
+          },
+          "access": {
+            "label": "Review access",
+            "description": "Confirm who can discover and enroll in this course."
+          },
+          "review": {
+            "label": "Review and publish",
+            "description": "Confirm content quality, visibility, and launch state."
+          }
+        },
+        "nextStepsHeading": "Next steps",
+        "nextStepsDescription": "Complete these steps to get the course ready for learners.",
+        "completed": "Completed",
+        "continueSetup": "Continue setup"
       },
       "Readiness": {
         "checklist": {
@@ -3833,6 +3855,99 @@
         "toasts": {
           "movedPrivate": "Course moved back to private.",
           "published": "Course is now public."
+        }
+      },
+      "Create": {
+        "actions": {
+          "cancel": "Cancel",
+          "create": "Create Course",
+          "creating": "Creating…"
+        },
+        "basics": {
+          "courseTitle": "Course title",
+          "courseTitlePlaceholder": "e.g. Data Analysis for Teachers",
+          "description": "Short description",
+          "descriptionHelp": "Explain what learners will get from this course and who it is for.",
+          "descriptionPlaceholder": "Describe the course goal, audience, and key outcomes."
+        },
+        "destination": {
+          "curriculum": {
+            "description": "Jump straight into building chapters and activities.",
+            "title": "Open curriculum"
+          },
+          "overview": {
+            "description": "See the workspace setup checklist first.",
+            "title": "Open overview"
+          }
+        },
+        "formLabel": "Create course",
+        "header": {
+          "description": "Set the title, starting structure, and where to go after creation.",
+          "title": "Create Course"
+        },
+        "review": {
+          "blockingReasons": {
+            "description": "Add a short description.",
+            "source": "Select a source course.",
+            "title": "Add a course title."
+          },
+          "heading": "Ready to create",
+          "rows": {
+            "destination": "After creation",
+            "source": "Source course",
+            "sourceEmpty": "Not selected",
+            "sourceSelected": "Course selected",
+            "structure": "Starting structure",
+            "title": "Title",
+            "titleEmpty": "Not set",
+            "visibility": "Visibility"
+          }
+        },
+        "sections": {
+          "afterCreation": "After creation",
+          "afterCreationHelp": "Choose where to land after the course is created.",
+          "basics": "Basics",
+          "basicsHelp": "The public-facing identity for this course.",
+          "structure": "Starting structure",
+          "structureHelp": "Choose how much structure the new course starts with.",
+          "visibility": "Initial visibility",
+          "visibilityHelp": "Control who can find this course after creation."
+        },
+        "structure": {
+          "blank": {
+            "description": "Start with an empty course. Build chapters manually.",
+            "title": "Blank"
+          },
+          "copyOutline": {
+            "description": "Copy chapter titles from another course. Activities are not included.",
+            "noResults": "No courses found.",
+            "searchError": "Unable to load courses.",
+            "searching": "Searching…",
+            "searchPlaceholder": "Search courses…",
+            "selectPlaceholder": "Select a course",
+            "sourceCourseHelp": "Copies chapter titles only. Activities and content stay in the source course.",
+            "sourceCourseLabel": "Source course",
+            "title": "Copy outline"
+          },
+          "starter": {
+            "description": "Start with two pre-built chapters: Introduction and Core Lessons.",
+            "title": "Starter outline"
+          }
+        },
+        "toasts": {
+          "created": "Course created.",
+          "partial": "Course created. {imported} of {imported, number} chapters imported. {failed} failed."
+        },
+        "visibility": {
+          "private": {
+            "description": "Keep this course internal while the team builds and reviews it.",
+            "title": "Private"
+          },
+          "public": {
+            "description": "Visible to everyone after creation.",
+            "title": "Public",
+            "warning": "This course will be publicly visible immediately. You can move it to private from the access settings."
+          }
         }
       },
       "Wizard": {
@@ -3950,6 +4065,7 @@
           "content": "Content",
           "details": "Details",
           "gradebook": "Gradebook",
+          "overview": "Overview",
           "publish": "Review & Publish",
           "settings": "Settings"
         },

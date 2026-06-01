@@ -1,6 +1,12 @@
-import { redirect } from 'next/navigation'
+import CourseOverview from '@components/Dashboard/Courses/CourseOverview'
+import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 
 export default async function PlatformCourseWorkspacePage(props: { params: Promise<{ courseuuid: string }> }) {
   const { courseuuid } = await props.params
-  redirect(`/dash/courses/${courseuuid}/curriculum`)
+
+  return renderCourseWorkspacePage({
+    courseuuid,
+    activeStage: 'overview',
+    children: <CourseOverview courseuuid={courseuuid} />,
+  })
 }

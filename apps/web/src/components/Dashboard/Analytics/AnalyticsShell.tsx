@@ -10,7 +10,6 @@ import { getAnalyticsExportUrl } from '@services/analytics/teacher'
 import AnalyticsExportButton from './AnalyticsExportButton'
 import { useTranslations } from 'next-intl'
 import TeacherFilterBar from './TeacherFilterBar'
-import { Badge } from '@/components/ui/badge'
 import { useSearchParams } from 'next/navigation'
 import { LayoutDashboard, Users, Award, Clock, ShieldCheck } from 'lucide-react'
 import SavedViewsBar from './SavedViewsBar'
@@ -91,19 +90,6 @@ export default function AnalyticsShell({
       <DashHeader
         breadcrumbType="analytics"
         title={t('pages.shellTitle')}
-        badge={
-          <div className="ml-2.5 flex items-center gap-2 text-xs">
-            <Badge
-              variant="outline"
-              className="border-primary/20 bg-primary/5 text-primary h-4.5 px-1.5 py-0 text-[10px] font-semibold tracking-wider uppercase"
-            >
-              {t('overview.label')}
-            </Badge>
-            <span className="text-muted-foreground/60 text-xs font-semibold">
-              • {t('overview.labelScopedCourses')}: {overview.scope.course_ids.length}
-            </span>
-          </div>
-        }
         actions={
           <div className="flex shrink-0 items-center gap-2">
             <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />

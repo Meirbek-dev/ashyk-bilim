@@ -13,9 +13,8 @@ type CourseWorkflowBadgeTone = 'default' | 'info' | 'success' | 'warning' | 'dan
 const courseWorkflowBadgeToneClass: Record<CourseWorkflowBadgeTone, string> = {
   default: 'border-border bg-background text-foreground',
   info: 'border-border bg-muted/70 text-muted-foreground',
-  success:
-    'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300',
-  warning: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200',
+  success: 'border-border bg-muted/60 text-foreground',
+  warning: 'border-border bg-muted/60 text-muted-foreground',
   danger: 'border-destructive/20 bg-destructive/10 text-destructive',
 }
 
@@ -36,13 +35,13 @@ export function CourseWorkflowBadge({
 }) {
   return (
     <Badge variant="outline" className={cn('gap-1.5', getCourseWorkflowToneClass(tone), className)}>
-      {Icon ? <Icon className="size-3.5" /> : null}
+      {Icon ? <Icon className="size-3.5" aria-hidden /> : null}
       <span>{children}</span>
     </Badge>
   )
 }
 
-export const courseWorkflowCardClass = 'rounded-xl border bg-card shadow-sm'
+export const courseWorkflowCardClass = 'rounded-lg border bg-card'
 
 export function CourseStatusBadge({
   status,
@@ -110,30 +109,28 @@ export function CourseChoiceCard({
         }
       }}
       className={cn(
-        'flex cursor-pointer items-start gap-4 rounded-xl border p-5 transition-all duration-150',
+        'flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors duration-150',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1',
         checked
-          ? 'border-primary bg-primary/5 text-accent-foreground shadow-sm'
-          : 'border-border bg-card text-card-foreground hover:border-muted-foreground/30 hover:bg-muted/40',
+          ? 'border-primary bg-primary/5 text-accent-foreground'
+          : 'border-border bg-card text-card-foreground hover:bg-muted/40',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >
       <RadioGroupItem value={value} id={id} className="sr-only" disabled={disabled} />
       <div
         className={cn(
-          'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-lg border',
+          'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border',
           checked ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground',
         )}
       >
-        <Icon className="size-5" />
+        <Icon className="size-4" aria-hidden />
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="text-foreground text-sm leading-5 font-semibold">{title}</div>
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="text-foreground text-sm leading-5 font-medium">{title}</div>
         <div className="text-muted-foreground text-sm leading-5">{description}</div>
       </div>
-      <div className={cn('mt-0.5 shrink-0 transition-opacity', checked ? 'opacity-100' : 'opacity-0')}>
-        <CheckCircle2 className="text-primary size-5" />
-      </div>
+      {checked ? <CheckCircle2 className="text-primary mt-0.5 size-4 shrink-0" aria-hidden /> : null}
     </Label>
   )
 }

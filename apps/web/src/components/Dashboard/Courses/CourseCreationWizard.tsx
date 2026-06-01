@@ -361,11 +361,7 @@ export default function CourseCreationWizard() {
                         title={option.title}
                         description={option.description}
                         icon={
-                          option.value === 'outline'
-                            ? ListTree
-                            : option.value === 'starter'
-                              ? BookOpen
-                              : CheckCircle2
+                          option.value === 'outline' ? ListTree : option.value === 'starter' ? BookOpen : CheckCircle2
                         }
                         onSelect={value => form.setValue('template', value as CourseWizardValues['template'])}
                       />

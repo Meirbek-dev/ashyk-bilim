@@ -5,7 +5,18 @@
  * Replaces scattered constants with a cohesive system.
  */
 
-import { Award, CalendarCheck, ClipboardCheck, Crown, GraduationCap, Medal, Star, Target, TrendingUp, Trophy } from 'lucide-react'
+import {
+  Award,
+  CalendarCheck,
+  ClipboardCheck,
+  Crown,
+  GraduationCap,
+  Medal,
+  Star,
+  Target,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { colors } from './design-tokens'
 

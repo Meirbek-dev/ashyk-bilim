@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getTranslations } from 'next-intl/server'
-import { ChevronRight, Shield, Users, Database, Activity, FileText, CheckCircle } from 'lucide-react'
+import { ChevronRight, Shield, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Link } from '@/i18n/navigation'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
@@ -32,24 +32,6 @@ export default async function PlatformAdminPage() {
       iconBg:
         'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
     },
-  ]
-
-  // Mock platform overview data to flesh out visual layout and avoid empty spaces
-  const stats = [
-    { label: 'База данных', value: 'Активна', icon: Database, color: 'text-emerald-500 bg-emerald-500/10' },
-    { label: 'Системные логи', value: 'В норме', icon: FileText, color: 'text-sky-500 bg-sky-500/10' },
-    { label: 'Нагрузка API', value: 'Низкая (0.2s)', icon: Activity, color: 'text-amber-500 bg-amber-500/10' },
-  ]
-
-  const recentLogs = [
-    { event: 'Изменение роли пользователя', user: 'admin@ashyq-bilim.kz', time: '10 мин. назад', status: 'success' },
-    {
-      event: 'Создание новой политики доступа',
-      user: 'manager@ashyq-bilim.kz',
-      time: '1 час назад',
-      status: 'success',
-    },
-    { event: 'Синхронизация базы пользователей', user: 'system', time: '3 часа назад', status: 'success' },
   ]
 
   return (
@@ -89,58 +71,6 @@ export default async function PlatformAdminPage() {
                 </Card>
               </Link>
             ))}
-          </div>
-        </div>
-
-        <div className="grid gap-6 pt-4 md:grid-cols-3">
-          {/* Status Metrics */}
-          <div className="space-y-4 md:col-span-1">
-            <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-              {t('platformStatus')}
-            </h2>
-            <div className="bg-muted/40 space-y-3 rounded-2xl border p-4">
-              {stats.map(item => (
-                <div
-                  key={item.label}
-                  className="bg-card flex items-center justify-between rounded-xl border p-3 shadow-2xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`rounded-lg p-2 ${item.color}`}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <span className="text-foreground text-sm font-semibold">{item.label}</span>
-                  </div>
-                  <span className="text-muted-foreground bg-muted rounded-md px-2.5 py-1 text-xs font-medium">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Operations */}
-          <div className="space-y-4 md:col-span-2">
-            <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-              {t('recentEvents')}
-            </h2>
-            <div className="bg-card divide-border/60 divide-y overflow-hidden rounded-2xl border shadow-2xs">
-              {recentLogs.map((log, index) => (
-                <div key={index} className="hover:bg-accent/15 flex items-center justify-between p-4 transition-all">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="mt-0.5 shrink-0 text-emerald-500">
-                      <CheckCircle className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-foreground truncate text-sm font-semibold">{log.event}</p>
-                      <p className="text-muted-foreground mt-0.5 text-xs font-medium">{log.user}</p>
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="text-muted-foreground text-[11px] font-semibold">{log.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </main>

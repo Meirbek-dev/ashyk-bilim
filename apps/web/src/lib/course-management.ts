@@ -34,11 +34,15 @@ export function prefixedCourseUuid(courseUuid: string): string {
 
 export function buildCourseWorkspacePath(courseUuid: string, stage: CourseWorkspaceStage = 'curriculum'): string {
   const cleanUuid = cleanCourseUuid(courseUuid)
-  return stage === 'overview' ? `/dash/courses/${cleanUuid}/curriculum` : `/dash/courses/${cleanUuid}/${stage}`
+  return stage === 'overview' ? `/dash/courses/${cleanUuid}` : `/dash/courses/${cleanUuid}/${stage}`
+}
+
+export function buildCourseOverviewPath(courseUuid: string): string {
+  return `/dash/courses/${cleanCourseUuid(courseUuid)}`
 }
 
 export function buildCourseCreationPath(sourceCourseUuid?: string): string {
-  const query = sourceCourseUuid ? `?tpl=outline&src=${cleanCourseUuid(sourceCourseUuid)}` : ''
+  const query = sourceCourseUuid ? `?start=outline&source=${cleanCourseUuid(sourceCourseUuid)}` : ''
   return `/dash/courses/new${query}`
 }
 

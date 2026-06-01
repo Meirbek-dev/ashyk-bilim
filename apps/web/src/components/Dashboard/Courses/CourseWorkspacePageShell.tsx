@@ -20,6 +20,7 @@ import {
   FileStack,
   Globe,
   LayoutDashboard,
+  LayoutGrid,
   ShieldCheck,
 } from 'lucide-react'
 import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal'
@@ -64,6 +65,12 @@ function CourseWorkspaceChrome({
     message: t('unsavedChangesWarning'),
   })
   const stageConfig = [
+    {
+      key: 'overview',
+      label: t('tabs.overview'),
+      icon: LayoutGrid,
+      capability: 'canEditDetails',
+    },
     {
       key: 'details',
       label: t('tabs.details'),

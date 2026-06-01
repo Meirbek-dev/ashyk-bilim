@@ -19,7 +19,20 @@ import {
   getCourseReadinessSummary,
 } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { AlertTriangle, Globe, LayoutGrid, List, Lock, MoreHorizontal, Plus, Search, ShieldCheck, Trash2, Workflow, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Globe,
+  LayoutGrid,
+  List,
+  Lock,
+  MoreHorizontal,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Workflow,
+  X,
+} from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'

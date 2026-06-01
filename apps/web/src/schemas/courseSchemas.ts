@@ -55,7 +55,7 @@ const courseContributorsSchema = v.object({
 export type CourseContributorsValues = v.InferOutput<typeof courseContributorsSchema>
 
 // ---------------------------------------------------------------------------
-// Course creation wizard
+// Course creation wizard (legacy — kept for compatibility)
 // ---------------------------------------------------------------------------
 
 export const courseWizardSchema = v.object({
@@ -67,3 +67,24 @@ export const courseWizardSchema = v.object({
 })
 
 export type CourseWizardValues = v.InferOutput<typeof courseWizardSchema>
+
+// ---------------------------------------------------------------------------
+// Course create form (new)
+// ---------------------------------------------------------------------------
+
+export const courseCreateSchema = v.pipe(
+  v.object({
+    title: v.pipe(v.string(), v.minLength(1, 'title_required'), v.maxLength(100, 'title_too_long')),
+    description: v.pipe(v.string(), v.minLength(1, 'description_required'), v.maxLength(8000, 'description_too_long')),
+    structureMode: v.picklist(['blank', 'starter', 'copy-outline'] as const),
+    sourceCourseUuid: v.optional(v.string()),
+    initialVisibility: v.picklist(['private', 'public'] as const),
+    destination: v.picklist(['overview', 'curriculum'] as const),
+  }),
+  v.check(
+    values => values.structureMode !== 'copy-outline' || Boolean(values.sourceCourseUuid?.trim()),
+    'source_course_required',
+  ),
+)
+
+export type CourseCreateValues = v.InferOutput<typeof courseCreateSchema>
