@@ -78,21 +78,23 @@ def get_admin_analytics(
     )
 
     course_health: list[AdminAnalyticsCourseRow] = []
-    for row in course_rows:
-        course = context.courses_by_id.get(row.course_id)
-        activity_count = sum(1 for activity in context.activities_by_id.values() if activity.course_id == row.course_id)
+    for course_row in course_rows:
+        course_model = context.courses_by_id.get(course_row.course_id)
+        activity_count = sum(
+            1 for activity in context.activities_by_id.values() if activity.course_id == course_row.course_id
+        )
         effort = max(1, activity_count)
-        roi_score = round((row.completion_rate + row.content_health_score) / effort, 2)
+        roi_score = round((course_row.completion_rate + course_row.content_health_score) / effort, 2)
         course_health.append(
             AdminAnalyticsCourseRow(
-                course_id=row.course_id,
-                course_uuid=row.course_uuid,
-                course_name=row.course_name,
-                health_score=row.content_health_score,
-                completion_rate=row.completion_rate,
-                active_learners_7d=row.active_learners_7d,
-                at_risk_learners=row.at_risk_learners,
-                content_roi_score=roi_score if course is not None else None,
+                course_id=course_row.course_id,
+                course_uuid=course_row.course_uuid,
+                course_name=course_row.course_name,
+                health_score=course_row.content_health_score,
+                completion_rate=course_row.completion_rate,
+                active_learners_7d=course_row.active_learners_7d,
+                at_risk_learners=course_row.at_risk_learners,
+                content_roi_score=roi_score if course_model is not None else None,
             )
         )
     course_health.sort(key=lambda row: row.health_score)
@@ -126,9 +128,9 @@ def get_admin_analytics(
 
     program_rows: list[AdminAnalyticsProgramRow] = []
     by_creator: dict[int | None, list[AdminAnalyticsCourseRow]] = defaultdict(list)
-    for row in course_health:
-        course = context.courses_by_id.get(row.course_id)
-        by_creator[course.creator_id if course is not None else None].append(row)
+    for health_row in course_health:
+        creator_course = context.courses_by_id.get(health_row.course_id)
+        by_creator[creator_course.creator_id if creator_course is not None else None].append(health_row)
     for creator_id, rows in by_creator.items():
         teacher = context.users_by_id.get(creator_id) if creator_id is not None else None
         course_ids = {row.course_id for row in rows}

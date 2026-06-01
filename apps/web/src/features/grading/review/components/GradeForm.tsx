@@ -432,7 +432,7 @@ export default function GradeForm({
                     onChange={e => setDraft(cur => ({ ...cur, score: e.target.value }))}
                     className="w-24"
                   />
-                    <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
+                  <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
                 </div>
                 <Input
                   placeholder={tItemGrading('overrideReason')}

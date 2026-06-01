@@ -6,7 +6,7 @@ or run as a repair/backfill job to rebuild `activity_progress` and
 """
 
 from datetime import UTC, datetime
-from collections.abc import SupportsInt
+from typing import SupportsInt
 
 from sqlmodel import Session, col, select
 from ulid import ULID

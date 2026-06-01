@@ -227,9 +227,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
   }, [])
 
   const shortcutLabel =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-      ? '⌘B'
-      : 'Ctrl+B'
+    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘B' : 'Ctrl+B'
 
   if (!user) {
     return <SidebarSkeleton />
@@ -369,9 +367,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
           >
             <div className="text-sidebar-foreground/50 flex items-center gap-1 text-xs">
               <kbd className="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm select-none">
-                <span className="font-mono">
-                  {shortcutLabel}
-                </span>
+                <span className="font-mono">{shortcutLabel}</span>
               </kbd>
               <span>{t('keyboardShortcut.toToggle')}</span>
             </div>

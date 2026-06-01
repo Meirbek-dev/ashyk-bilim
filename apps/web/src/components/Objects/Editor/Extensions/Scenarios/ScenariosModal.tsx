@@ -531,13 +531,16 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                                   value={option.nextScenarioId ?? END_SCENARIO_VALUE}
                                   onChange={event =>
                                     updateOption(scenario.id, option.id, {
-                                      nextScenarioId: event.target.value === END_SCENARIO_VALUE ? null : event.target.value,
+                                      nextScenarioId:
+                                        event.target.value === END_SCENARIO_VALUE ? null : event.target.value,
                                     })
                                   }
                                   className="flex-1 text-xs"
                                   aria-label={t('endScenarioOption')}
                                 >
-                                  <NativeSelectOption value={END_SCENARIO_VALUE}>{t('endScenarioOption')}</NativeSelectOption>
+                                  <NativeSelectOption value={END_SCENARIO_VALUE}>
+                                    {t('endScenarioOption')}
+                                  </NativeSelectOption>
                                   {nextScenarioOptions.map(item => (
                                     <NativeSelectOption key={item.value} value={item.value}>
                                       {item.label}

@@ -77,10 +77,7 @@ export default async function PlatformDashHomePage() {
   return (
     <div className="bg-background flex min-h-screen w-full flex-col">
       {/* Standard Header */}
-      <DashHeader
-        title={tGeneral('dashboard')}
-        description={tGeneral('dashboardWelcome')}
-      />
+      <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
       <main className="container mx-auto space-y-8 px-4 py-8 lg:px-8">
         {/* Welcome and Status Banner Component */}

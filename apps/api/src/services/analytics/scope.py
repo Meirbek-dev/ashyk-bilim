@@ -6,12 +6,12 @@ from typing import Any
 from sqlalchemy import and_, or_, select
 from sqlmodel import Session, col
 
-from src.infra.db.execute import sa_execute
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import AnonymousUser, PublicUser
+from src.infra.db.execute import sa_execute
 from src.security.rbac import (
     AuthenticationRequired,
     PermissionChecker,

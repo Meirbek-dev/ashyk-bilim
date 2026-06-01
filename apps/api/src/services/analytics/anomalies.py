@@ -96,20 +96,21 @@ def build_anomalies(
         fast_cutoff = percentile(durations, 0.1) or 0
         fast_count = sum(1 for duration in durations if duration <= max(20, fast_cutoff))
         if fast_count >= max(3, len(durations) * 0.25):
-            activity = context.activities_by_id.get(activity_id)
+            activity_for_anomaly = context.activities_by_id.get(activity_id)
+            course_for_anomaly = (
+                context.courses_by_id.get(activity_for_anomaly.course_id) if activity_for_anomaly is not None else None
+            )
             anomalies.append(
                 AnomalyItem(
                     id=f"fast-quiz-{activity_id}",
                     type="fast_quiz_completion",
                     severity="warning",
-                    title=f"{activity.name if activity else 'Тест'}: подозрительно быстрое завершение",
+                    title=f"{activity_for_anomaly.name if activity_for_anomaly is not None else 'Тест'}: подозрительно быстрое завершение",
                     detail="Значительная часть попыток завершена за время, близкое к минимально наблюдаемому.",
                     observed_value=float(fast_count),
                     baseline_value=float(len(durations)),
-                    course_id=activity.course_id if activity is not None else None,
-                    course_name=context.courses_by_id.get(activity.course_id).name
-                    if activity is not None and activity.course_id in context.courses_by_id
-                    else None,
+                    course_id=activity_for_anomaly.course_id if activity_for_anomaly is not None else None,
+                    course_name=course_for_anomaly.name if course_for_anomaly is not None else None,
                     assessment_type="quiz",
                     assessment_id=activity_id,
                     activity_id=activity_id,

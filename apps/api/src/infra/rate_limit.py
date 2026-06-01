@@ -65,7 +65,7 @@ def rate_limit(
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Locate the Request object in args/kwargs
-            request = cast(Request | None, kwargs.get("request"))
+            request = cast("Request | None", kwargs.get("request"))
             if request is None:
                 for arg in args:
                     if isinstance(arg, Request):

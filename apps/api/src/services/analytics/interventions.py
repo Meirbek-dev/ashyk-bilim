@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlmodel import Session, col
 
-from src.infra.db.execute import sa_execute
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
+from src.infra.db.execute import sa_execute
 from src.services.analytics.queries import to_iso
 from src.services.analytics.schemas import (
     InterventionSummary,

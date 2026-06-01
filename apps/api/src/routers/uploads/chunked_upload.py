@@ -276,6 +276,7 @@ async def cancel_chunked_upload(
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ) -> None:
     """Cancel a resumable chunked upload and remove all staged chunk files."""
+    assert current_user is not None
     _owned_chunked_session(upload_id, current_user.id)
     cleanup_session(upload_id)
 
@@ -328,6 +329,7 @@ async def initiate_chunked_upload(
     Returns:
         upload_uuid: Unique identifier for this upload session
     """
+    assert current_user is not None
     upload_id = create_upload_session(
         directory=directory,
         type_of_dir=type_of_dir,
@@ -362,6 +364,7 @@ async def upload_chunk(
     Returns:
         Status of the upload including progress
     """
+    assert current_user is not None
     _owned_chunked_session(upload_id, current_user.id)
     result = await process_chunk(upload_id, chunk_index, chunk)
 
@@ -390,6 +393,7 @@ async def complete_chunked_upload(
         Final filename and upload details
     """
     try:
+        assert current_user is not None
         _owned_chunked_session(upload_id, current_user.id)
         # Assemble chunks
         file_data, session = await complete_upload(upload_id)
@@ -434,6 +438,7 @@ async def get_upload_status(
     Returns:
         Upload progress and details
     """
+    assert current_user is not None
     session = _owned_chunked_session(upload_id, current_user.id)
     return {
         "upload_uuid": session.upload_id,

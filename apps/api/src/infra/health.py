@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
 from taskiq import InMemoryBroker
 
-from src.infra.db.execute import sa_execute
 from src.infra import redis as redis_infra
+from src.infra.db.execute import sa_execute
 from src.infra.db.session import session_scope
 from src.infra.settings import get_settings
 from src.worker.broker import broker

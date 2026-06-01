@@ -5,12 +5,12 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlmodel import Session, col
 
-from src.infra.db.execute import sa_execute
 from src.db.analytics import (
     DailyCourseMetrics,
     DailyTeacherMetrics,
     LearnerRiskSnapshot,
 )
+from src.infra.db.execute import sa_execute
 from src.services.analytics.anomalies import build_anomalies
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
@@ -70,7 +70,7 @@ def _metric(
     delta_value = round(value - previous, 1) if previous is not None else None
     # When previous is 0 and current is non-zero, delta_pct is infinite — return None and
     # let the frontend display "no prior data" rather than the misleading "Stable" label.
-    delta_pct = round(((value - previous) / previous) * 100, 1) if previous not in {None, 0} else None
+    delta_pct = round(((value - previous) / previous) * 100, 1) if previous is not None and previous != 0 else None
     return MetricCard(
         value=round(value, 1),
         delta_value=delta_value,

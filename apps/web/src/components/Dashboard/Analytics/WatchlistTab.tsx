@@ -93,9 +93,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {summaryCards.map(({ label, value, borderClass }) => (
               <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${borderClass}`}>
-                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  {label}
-                </div>
+                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{label}</div>
                 <div className="text-foreground mt-3 text-3xl font-extrabold">{value}</div>
               </div>
             ))}

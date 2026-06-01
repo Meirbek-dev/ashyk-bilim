@@ -55,9 +55,9 @@ async def get_collection(
         .where(CollectionCourse.collection_id == collection.id, Course.public)
         .distinct()
     )
-    statement = statement_public if current_user.user_uuid == "user_anonymous" else statement_all
+    courses_statement = statement_public if current_user.user_uuid == "user_anonymous" else statement_all
 
-    courses = list(db_session.exec(statement).all())
+    courses = list(db_session.exec(courses_statement).all())
 
     can_update = (
         checker.check(
@@ -145,15 +145,17 @@ async def create_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
-    courses = list(db_session.exec(statement).all())
+    created_courses_statement = (
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
+    )
+    courses = list(db_session.exec(created_courses_statement).all())
 
-    collection = CollectionRead(
+    collection_read = CollectionRead(
         **collection.model_dump(),
         courses=[CourseRead.model_validate(c) for c in courses],
     )
 
-    return CollectionRead.model_validate(collection)
+    return CollectionRead.model_validate(collection_read)
 
 
 async def update_collection(
@@ -191,8 +193,8 @@ async def update_collection(
 
     collection.update_date = str(datetime.now())
 
-    statement = select(CollectionCourse).where(CollectionCourse.collection_id == collection.id)
-    collection_courses = db_session.exec(statement).all()
+    collection_courses_statement = select(CollectionCourse).where(CollectionCourse.collection_id == collection.id)
+    collection_courses = db_session.exec(collection_courses_statement).all()
 
     # Delete all collection_courses
     for collection_course in collection_courses:
@@ -213,8 +215,10 @@ async def update_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
-    courses = list(db_session.exec(statement).all())
+    updated_courses_statement = (
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
+    )
+    courses = list(db_session.exec(updated_courses_statement).all())
 
     return CollectionRead(
         **collection.model_dump(),

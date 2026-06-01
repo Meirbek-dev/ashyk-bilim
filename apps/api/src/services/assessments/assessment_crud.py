@@ -417,17 +417,19 @@ async def update_assessment_item(
 
     changes = payload.model_dump(exclude_unset=True)
     next_kind = payload.kind
-    if payload.body is not None:
-        next_kind = ItemKind(payload.body.kind)
+    payload_body = payload.body
+    if payload_body is not None:
+        next_kind = ItemKind(payload_body.kind)
     if next_kind is not None:
         _ensure_item_kind_supported(assessment, next_kind)
 
     for field, value in changes.items():
         if field == "body" and value is not None:
-            item.body_json = payload.body.model_dump(mode="json")
-            item.kind = ItemKind(payload.body.kind)
+            if payload_body is not None:
+                item.body_json = payload_body.model_dump(mode="json")
+                item.kind = ItemKind(payload_body.kind)
         elif field == "metadata" and value is not None:
-            item.metadata_json = payload.metadata.model_dump(mode="json")
+            item.metadata_json = payload.metadata.model_dump(mode="json") if payload.metadata is not None else {}
         elif value is not None:
             setattr(item, field, value)
 

@@ -50,7 +50,7 @@ v1_router.include_router(
 )
 
 v1_router.include_router(
-    fastapi_users.get_register_router(cast(type[Any], UserRead), cast(type[Any], UserCreate)),
+    fastapi_users.get_register_router(cast("type[Any]", UserRead), cast("type[Any]", UserCreate)),
     prefix="/auth",
     tags=["auth"],
     dependencies=[Depends(auth.auth_sensitive_rate_limit)],

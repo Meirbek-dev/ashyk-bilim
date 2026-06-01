@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated
+from typing import Annotated, Any, cast
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -97,7 +97,8 @@ async def _build_login_response(
     user: User,
     user_manager: UserManager,
 ) -> Response:
-    access_token = await auth_backend.get_strategy().write_token(user)
+    strategy = cast("Any", auth_backend.get_strategy())
+    access_token = await strategy.write_token(user)
     response = await auth_backend.transport.get_login_response(access_token)
 
     _, refresh_token = await create_auth_session(
@@ -275,7 +276,8 @@ async def refresh_token(
         user_agent=ua,
     )
 
-    access_token = await auth_backend.get_strategy().write_token(user)
+    strategy = cast("Any", auth_backend.get_strategy())
+    access_token = await strategy.write_token(user)
     set_access_cookie(response, access_token)
     set_refresh_cookie(response, new_refresh_token)
 

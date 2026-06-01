@@ -45,9 +45,7 @@ def build_insight_feed(
         if assessment_row.pass_rate is None or assessment_row.pass_rate >= 65:
             continue
         reason = (
-            "диагностикой качества"
-            if assessment_row.discrimination_index is not None
-            else "низким уровнем прохождения"
+            "диагностикой качества" if assessment_row.discrimination_index is not None else "низким уровнем прохождения"
         )
         items.append(
             InsightFeedItem(

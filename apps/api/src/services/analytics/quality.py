@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlmodel import Session, col
 
-from src.infra.db.execute import sa_execute
 from src.db.analytics import DailyTeacherMetrics
+from src.infra.db.execute import sa_execute
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import AnalyticsContext, progress_snapshots, to_iso
 from src.services.analytics.rollups import supports_teacher_rollup_reads

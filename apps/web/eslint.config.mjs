@@ -113,7 +113,7 @@ const COMMON_RULES = {
           '^\\\\int_\\{.*$',
           '^\\d+(\\.\\d+)?(px|rem|em|vh|vw|%|s|ms|deg)?$',
           '^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$',
-          
+
           // Kebab-case, snake_case and camelCase words (almost entirely technical identifiers or CSS classes)
           '^[a-z0-9]+(-[a-z0-9]+)+$',
           '^[a-z0-9]+(_[a-z0-9]+)+$',

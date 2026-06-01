@@ -301,7 +301,7 @@ async def submit_assessment(
         )
 
         if payload is not None:
-            draft = await save_assessment_draft(
+            saved_draft = await save_assessment_draft(
                 assessment_uuid,
                 payload,
                 current_user,
@@ -309,8 +309,8 @@ async def submit_assessment(
                 if_match=if_match,
                 enforce_throttle=False,
             )
-            answers_payload = draft.answers_json
-            submission_uuid = draft.submission_uuid
+            answers_payload = saved_draft.answers_json
+            submission_uuid = saved_draft.submission_uuid
         else:
             draft = _get_or_create_submission_draft(
                 assessment=assessment,
@@ -393,7 +393,9 @@ async def get_attempt_state(
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
-        disabled_action_reasons=list(state["disabled_action_reasons"]),
+        disabled_action_reasons=(
+            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
+        ),
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
         started_at=state["started_at"],

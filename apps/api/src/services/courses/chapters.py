@@ -209,10 +209,10 @@ async def move_activity_to_order(
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
 
     # Resolve source chapter and its course for permission check.
-    source_chapter = _get_chapter_by_uuid(
-        db_session.exec(select(Chapter).where(Chapter.id == activity.chapter_id)).first().chapter_uuid,
-        db_session,
-    )
+    source_chapter_row = db_session.exec(select(Chapter).where(Chapter.id == activity.chapter_id)).first()
+    if source_chapter_row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Исходная глава не найдена")
+    source_chapter = _get_chapter_by_uuid(source_chapter_row.chapter_uuid, db_session)
     source_course = _get_course_for_chapter(source_chapter, db_session)
 
     checker = PermissionChecker(db_session)
@@ -224,6 +224,8 @@ async def move_activity_to_order(
         if target_chapter.course_id != source_course.id:
             target_course = _get_course_for_chapter(target_chapter, db_session)
             require_course_permission("chapter:update", current_user, target_course, checker)
+        if target_chapter.id is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Целевая глава не найдена")
         activity.chapter_id = target_chapter.id
         # Sync the denormalized FK.
         activity.course_id = target_chapter.course_id
@@ -404,6 +406,8 @@ async def reorder_chapters_and_activities(
 
     for chapter_order in chapters_order.chapter_order_by_uuids:
         chapter = chapters_by_uuid[chapter_order.chapter_uuid]
+        if chapter.id is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Глава не найдена")
         for index, activity_uuid in enumerate(chapter_order.activities_order_by_uuids):
             activity = activities_by_uuid[activity_uuid]
             activity.chapter_id = chapter.id

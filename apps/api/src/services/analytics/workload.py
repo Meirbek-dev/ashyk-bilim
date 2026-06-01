@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import SupportsFloat, SupportsInt
 from datetime import datetime
+from typing import SupportsFloat, SupportsInt
 
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (

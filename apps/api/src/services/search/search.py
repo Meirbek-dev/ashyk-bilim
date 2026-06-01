@@ -38,7 +38,7 @@ async def search_platform_content(
     # Search courses using existing search_courses function
     courses = await search_courses(request, current_user, search_query, db_session, page, limit)
 
-    dialect_name = db_session.bind.dialect.name
+    dialect_name = db_session.bind.dialect.name if db_session.bind is not None else ""
 
     # Search collections
     if dialect_name == "postgresql":

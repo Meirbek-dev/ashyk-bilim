@@ -772,7 +772,10 @@ async def get_courses(
         has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         has_own_delete = PermissionChecker.has_perm(granted, "course", "delete", "own")
 
-    for course, authors in courses_map.values():
+    for course_entry, authors in courses_map.values():
+        if course_entry is None:
+            continue
+        course = course_entry
         can_update = can_delete = is_owner = False
         if not isinstance(current_user, AnonymousUser) and current_user.id:
             is_author = any(

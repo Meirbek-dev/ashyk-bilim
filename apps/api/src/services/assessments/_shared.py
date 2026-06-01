@@ -237,7 +237,9 @@ def _build_attempt_projection(
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
-        disabled_action_reasons=list(state["disabled_action_reasons"]),
+        disabled_action_reasons=(
+            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
+        ),
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
         started_at=state["started_at"],
@@ -435,7 +437,7 @@ def _assert_attempt_action_allowed(
         "submit": "can_submit",
     }[action]
     if not state[allowed_key]:
-        reasons = list(state["disabled_action_reasons"])
+        reasons = list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
         reason = reasons[0] if reasons else "ACTION_NOT_ALLOWED"
         logger.warning(
             "ASSESSMENT_ATTEMPT_BLOCKED action=%s reason=%s assessment_uuid=%s activity_uuid=%s user_id=%s",
@@ -876,7 +878,7 @@ def _get_or_create_policy(
     if patch is not None:
         for field, value in _normalized_policy_patch(kind, patch).items():
             if field == "late_policy_json":
-                policy.late_policy_json = value
+                policy.late_policy_json = value if isinstance(value, dict) else {}
                 continue
             if hasattr(policy, field):
                 setattr(policy, field, value)
@@ -1486,7 +1488,7 @@ def _build_student_submission_read(
 ) -> StudentSubmissionRead:
     result = StudentSubmissionRead.model_validate(submission)
     release_state = _release_state_for_submission(submission, db_session)
-    result.release_state = release_state
+    result.release_state = release_state  # type: ignore[assignment]
     result.is_result_visible = release_state in {"VISIBLE", "RETURNED_FOR_REVISION"}
     if not result.is_result_visible:
         result.auto_score = None
@@ -1502,7 +1504,7 @@ def _build_teacher_submission_read(
     db_session: Session,
 ) -> TeacherSubmissionRead:
     result = TeacherSubmissionRead.model_validate(submission)
-    result.release_state = _release_state_for_submission(submission, db_session)
+    result.release_state = _release_state_for_submission(submission, db_session)  # type: ignore[assignment]
     result.is_result_visible = result.release_state in {
         "VISIBLE",
         "RETURNED_FOR_REVISION",

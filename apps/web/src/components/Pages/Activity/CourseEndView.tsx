@@ -373,18 +373,18 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
-                     certificationName={userCertificate.certification.config.certification_name}
-                     certificationDescription={userCertificate.certification.config.certification_description}
-                     certificationType={userCertificate.certification.config.certification_type}
-                     certificatePattern={userCertificate.certification.config.certificate_pattern}
-                     certificateInstructor={userCertificate.certification.config.certificate_instructor}
-                     certificateId={userCertificate.certificate_user.user_certification_uuid}
-                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-                       year: 'numeric',
-                       month: 'long',
-                       day: 'numeric',
-                     })}
-                     qrCodeLink={qrCodeLink}
+                    certificationName={userCertificate.certification.config.certification_name}
+                    certificationDescription={userCertificate.certification.config.certification_description}
+                    certificationType={userCertificate.certification.config.certification_type}
+                    certificatePattern={userCertificate.certification.config.certificate_pattern}
+                    certificateInstructor={userCertificate.certification.config.certificate_instructor}
+                    certificateId={userCertificate.certificate_user.user_certification_uuid}
+                    awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                    qrCodeLink={qrCodeLink}
                   />
                 </div>
               </div>

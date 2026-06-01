@@ -7,11 +7,11 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlmodel import Session, col
 
-from src.infra.db.execute import sa_execute
 from src.db.analytics import DailyCourseMetrics
 from src.db.courses.courses import Course
 from src.db.grading.progress import ActivityProgress, ActivityProgressState
 from src.db.usergroups import UserGroup
+from src.infra.db.execute import sa_execute
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
 from src.services.analytics.filters import AnalyticsFilters
