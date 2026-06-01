@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -110,7 +110,7 @@ async def create_video_activity(
             detail="Either video_file or video_uploaded_path must be provided",
         )
 
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     activity = Activity(
         name=name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
@@ -217,7 +217,7 @@ async def create_external_video_activity(
     activity_uuid = f"activity_{ULID()}"
     details = json.loads(data.details)
 
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     activity = Activity(
         name=data.name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,

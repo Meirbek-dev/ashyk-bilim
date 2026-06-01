@@ -1,5 +1,5 @@
 import shutil
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import HTTPException, Request, UploadFile, status
@@ -119,6 +119,7 @@ async def create_documentpdf_activity(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Pdf : No pdf file provided")
 
     activity_uuid = f"activity_{ULID()}"
+    now = datetime.now(UTC)
 
     activity = Activity(
         name=name,
@@ -131,8 +132,8 @@ async def create_documentpdf_activity(
         chapter_id=chapter.id,
         course_id=chapter.course_id,  # keep legacy column in sync
         activity_uuid=activity_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=now,
+        update_date=now,
         order=_next_activity_order(chapter_id, db_session),
         creator_id=current_user.id,
     )
