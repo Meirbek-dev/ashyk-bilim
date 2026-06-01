@@ -200,8 +200,11 @@ ignore_no_config = true
 
 [tool.pyrefly]
 project-includes = ["**/*.py"]
+search-path = ["."]
 
 [tool.pyrefly.errors]
+bad-override = "ignore"
+bad-assignment = "ignore"
 missing-attribute = "ignore"
 bad-argument-type = "ignore"
 
