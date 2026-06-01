@@ -15,7 +15,7 @@ import {
   TextCursorInput,
   Trophy,
 } from 'lucide-react'
-import { useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
@@ -24,9 +24,9 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { CalendarDateTimePicker } from '@/components/ui/calendar'
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
@@ -69,7 +69,6 @@ export default function PublishDashboardTab({
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
   const [isPending, startTransition] = useTransition()
-  const scheduleInputRef = useRef<HTMLInputElement>(null)
 
   // Compute all validation issues (assessment-level + item-level)
   const classifiedIssues = dedupeIssues(validationIssues).map(classifyValidationIssue)
@@ -184,12 +183,7 @@ export default function PublishDashboardTab({
                 />
                 <PopoverContent align="end" className="w-64 space-y-3 p-3">
                   <p className="text-sm font-medium">{tPublish('schedulePublication')}</p>
-                  <Input
-                    ref={scheduleInputRef}
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={e => setScheduledAt(e.target.value)}
-                  />
+                  <CalendarDateTimePicker value={scheduledAt} onChange={setScheduledAt} />
                   <Button
                     size="sm"
                     className="w-full"

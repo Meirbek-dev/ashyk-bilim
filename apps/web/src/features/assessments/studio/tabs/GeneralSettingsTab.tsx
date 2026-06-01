@@ -27,6 +27,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { MarkdownEditor } from '@/features/content-markdown'
+import { CalendarDateTimePicker } from '@/components/ui/calendar'
 
 interface GeneralSettingsTabProps {
   state: AssessmentEditorState
@@ -122,24 +123,23 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="assessment-available-from">{tSetup('availableFromLabel')}</Label>
-            <Input
+            <CalendarDateTimePicker
               id="assessment-available-from"
-              type="datetime-local"
               value={state.availableFrom}
+              onChange={availableFrom => onChange({ ...state, availableFrom })}
               disabled={disabled}
-              onChange={e => onChange({ ...state, availableFrom: e.target.value })}
+              placeholder={tSetup('availableFromLabel')}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
-            <Input
+            <CalendarDateTimePicker
               id="assessment-due-at"
-              type="datetime-local"
               value={state.dueAt}
+              onChange={dueAt => onChange({ ...state, dueAt })}
               disabled={disabled}
-              aria-invalid={hasIssue('dueAt')}
               className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={e => onChange({ ...state, dueAt: e.target.value })}
+              placeholder={t('dueDateLabel')}
             />
           </div>
           <div className="space-y-2">

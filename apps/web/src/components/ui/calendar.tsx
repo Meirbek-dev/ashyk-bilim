@@ -4,8 +4,17 @@ import { DayPicker, getDefaultClassNames } from '@daypicker/react'
 import type { DayButtonProps, Locale } from '@daypicker/react'
 import * as React from 'react'
 
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import {
+  Calendar as CalendarIcon,
+  CalendarClock,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Clock3,
+} from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_MIN_DATE = new Date(1900, 0, 1)
@@ -192,4 +201,219 @@ function CalendarDayButton({
   )
 }
 
-export { Calendar, CalendarDayButton }
+function CalendarDatePicker({
+  id,
+  value,
+  onChange,
+  placeholder = 'Pick a date',
+  className,
+  buttonVariant = 'outline',
+  disabled = false,
+  locale,
+  minDate = DEFAULT_MIN_DATE,
+  maxDate,
+}: {
+  id?: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  buttonVariant?: React.ComponentProps<typeof Button>['variant']
+  disabled?: boolean
+  locale?: Partial<Locale>
+  minDate?: Date
+  maxDate?: Date
+}) {
+  const [open, setOpen] = React.useState(false)
+  const selectedDate = parseDateOnly(value)
+  const datePickerProps = {
+    mode: 'single' as const,
+    required: false,
+    captionLayout: 'dropdown' as const,
+    selected: selectedDate,
+    locale,
+    minDate,
+    maxDate,
+    onSelect: (date: Date | undefined) => {
+      if (!date) return
+      onChange(formatDateOnlyValue(date))
+      setOpen(false)
+    },
+  } as React.ComponentProps<typeof DayPicker>
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            id={id}
+            type="button"
+            variant={buttonVariant}
+            disabled={disabled}
+            className={cn('w-full justify-start gap-2 text-left font-normal', !value && 'text-muted-foreground', className)}
+          />
+        }
+      >
+        <CalendarIcon className="size-4" />
+        <span>{selectedDate ? formatDateOnly(selectedDate, locale) : placeholder}</span>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar {...datePickerProps} />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function CalendarDateTimePicker({
+  id,
+  value,
+  onChange,
+  placeholder = 'Pick date and time',
+  className,
+  buttonVariant = 'outline',
+  disabled = false,
+  locale,
+  minDate = DEFAULT_MIN_DATE,
+  maxDate,
+}: {
+  id?: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  buttonVariant?: React.ComponentProps<typeof Button>['variant']
+  disabled?: boolean
+  locale?: Partial<Locale>
+  minDate?: Date
+  maxDate?: Date
+}) {
+  const [open, setOpen] = React.useState(false)
+  const parsedValue = parseDateTimeLocal(value)
+  const [draftDate, setDraftDate] = React.useState<Date | undefined>(parsedValue ?? undefined)
+  const [draftTime, setDraftTime] = React.useState(parsedValue ? formatTimeOnly(parsedValue) : '')
+  const dateTimePickerProps = {
+    mode: 'single' as const,
+    required: false,
+    captionLayout: 'dropdown' as const,
+    selected: draftDate,
+    locale,
+    minDate,
+    maxDate,
+    onSelect: (date: Date | undefined) => {
+      if (!date) return
+      setDraftDate(date)
+      setDraftTime(current => current || '00:00')
+    },
+  } as React.ComponentProps<typeof DayPicker>
+
+  React.useEffect(() => {
+    if (!open) return
+    setDraftDate(parsedValue ?? undefined)
+    setDraftTime(parsedValue ? formatTimeOnly(parsedValue) : '')
+  }, [open, parsedValue])
+
+  const commit = () => {
+    if (!draftDate) return
+    const nextDate = combineDateAndTime(draftDate, draftTime || '00:00')
+    onChange(formatDateTimeLocalValue(nextDate))
+    setOpen(false)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            id={id}
+            type="button"
+            variant={buttonVariant}
+            disabled={disabled}
+            className={cn('w-full justify-start gap-2 text-left font-normal', !value && 'text-muted-foreground', className)}
+          />
+        }
+      >
+        <CalendarClock className="size-4" />
+        <span>{parsedValue ? formatDateTimeDisplay(parsedValue, locale) : placeholder}</span>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3">
+        <div className="space-y-3">
+          <Calendar {...dateTimePickerProps} />
+          <div className="flex items-center gap-2">
+            <Clock3 className="text-muted-foreground size-4 shrink-0" />
+            <Input
+              type="time"
+              value={draftTime}
+              disabled={disabled || !draftDate}
+              className="w-32"
+              onChange={event => setDraftTime(event.target.value)}
+            />
+            <Button type="button" size="sm" disabled={disabled || !draftDate} onClick={commit}>
+              Set
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function parseDateOnly(value: string) {
+  if (!value) return undefined
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return undefined
+  const date = new Date(year, month - 1, day)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function formatDateOnly(date: Date, locale?: Partial<Locale>) {
+  return new Intl.DateTimeFormat(locale?.code, { dateStyle: 'medium' }).format(date)
+}
+
+function formatDateOnlyValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseDateTimeLocal(value: string) {
+  if (!value) return undefined
+  const parts = value.split('T')
+  const datePart = parts[0]
+  if (!datePart) return undefined
+  const timePart = parts[1] || '00:00'
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hours = 0, minutes = 0] = timePart.split(':').map(Number)
+  if (!year || !month || !day) return undefined
+  const date = new Date(year, month - 1, day, hours, minutes)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function formatDateTimeDisplay(date: Date, locale?: Partial<Locale>) {
+  return new Intl.DateTimeFormat(locale?.code, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
+function formatTimeOnly(date: Date) {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+function combineDateAndTime(date: Date, time: string) {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes)
+}
+
+function formatDateTimeLocalValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+export { Calendar, CalendarDayButton, CalendarDatePicker, CalendarDateTimePicker }

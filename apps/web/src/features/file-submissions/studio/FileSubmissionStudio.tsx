@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { CalendarDateTimePicker } from '@/components/ui/calendar'
 import Link from '@components/ui/AppLink'
 import {
   getFileSubmissionByActivity,
@@ -292,7 +293,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           <div className="grid gap-4 md:grid-cols-3">
             <Field>
               <FieldLabel>{t('dueDate')}</FieldLabel>
-              <Input type="datetime-local" value={dueAt} onChange={event => setDueAt(event.target.value)} />
+              <CalendarDateTimePicker value={dueAt} onChange={setDueAt} placeholder={t('dueDate')} />
             </Field>
             <Field>
               <FieldLabel>{t('maxFiles')}</FieldLabel>

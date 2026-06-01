@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
@@ -11,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
@@ -162,10 +162,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
         <Field>
           <FieldLabel>{t('dueDate')}</FieldLabel>
           <FieldContent>
-            <div className="relative">
-              <Input type="date" value={dueAt} onChange={event => setDueAt(event.target.value)} />
-              <CalendarIcon className="text-muted-foreground pointer-events-none absolute top-2.5 right-3 size-4" />
-            </div>
+            <CalendarDatePicker value={dueAt} onChange={setDueAt} placeholder={t('dueDate')} />
           </FieldContent>
         </Field>
         <Field>

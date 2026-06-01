@@ -12,6 +12,7 @@ import { createStudentPolicyOverride } from '@/services/assessments/assessment-a
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { CalendarDateTimePicker } from '@/components/ui/calendar'
 import {
   Dialog,
   DialogContent,
@@ -217,19 +218,18 @@ export default function ReviewBulkActionBar({
         <Send className="size-4" />
         {t('releaseHidden')}
       </Button>
-      <Input
-        type="datetime-local"
+      <CalendarDateTimePicker
         value={deadlineLocal}
+        onChange={setDeadlineLocal}
         disabled={disabled || isPending}
         className="w-48"
-        onChange={event => setDeadlineLocal(event.target.value)}
       />
       <Input
         value={reason}
         disabled={disabled || isPending}
         placeholder={t('reasonPlaceholder')}
         className="w-40"
-        onChange={event => setReason(event.target.value)}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setReason(event.target.value)}
       />
       <Button
         variant="outline"

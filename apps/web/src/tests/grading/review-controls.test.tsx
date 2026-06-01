@@ -229,9 +229,16 @@ describe('teacher review controls', () => {
       />,
     )
 
-    const dueAtInput = document.querySelector('input[type="datetime-local"]')
-    expect(dueAtInput).not.toBeNull()
-    fireEvent.change(dueAtInput!, { target: { value: '2026-05-10T14:30' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Pick date and time' }))
+
+    const dueAtDialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /May 10/i }))
+
+    const dueAtTimeInput = dueAtDialog.querySelector('input[type="time"]')
+    expect(dueAtTimeInput).not.toBeNull()
+    fireEvent.change(dueAtTimeInput!, { target: { value: '14:30' } })
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: 'Set' }))
+
     fireEvent.change(screen.getByPlaceholderText('reasonPlaceholder'), {
       target: { value: 'Medical extension' },
     })
