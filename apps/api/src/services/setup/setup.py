@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.permission_enums import RoleSlug
 from src.db.platform import Platform, PlatformCreate
 from src.db.users import User, UserCreate, UserRead
@@ -26,8 +25,9 @@ def install_create_platform(platform_object: PlatformCreate, db_session: Session
     platform_record = Platform.model_validate(platform_object)
 
     # Complete the platform object
-    platform_record.creation_date = str(datetime.now())
-    platform_record.update_date = str(datetime.now())
+    current_time = utcnow()
+    platform_record.creation_date = current_time
+    platform_record.update_date = current_time
 
     db_session.add(platform_record)
     db_session.commit()

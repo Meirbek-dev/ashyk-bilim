@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import Field
@@ -149,8 +150,8 @@ class SavedAnalyticsViewRow(PydanticStrictBaseModel):
     name: str
     view_type: str
     query: dict[str, object]
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class SavedAnalyticsViewListResponse(PydanticStrictBaseModel):
@@ -304,9 +305,9 @@ class TeacherInterventionRow(PydanticStrictBaseModel):
     notes: str | None = None
     risk_score_before: float | None = None
     risk_score_after: float | None = None
-    created_at: str
-    updated_at: str
-    resolved_at: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: datetime | None = None
 
 
 class TeacherInterventionListResponse(PydanticStrictBaseModel):

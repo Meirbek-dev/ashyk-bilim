@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
@@ -30,8 +30,9 @@ async def create_usergroup(
 
     # Complete the object
     usergroup.usergroup_uuid = f"usergroup_{ULID()}"
-    usergroup.creation_date = str(datetime.now())
-    usergroup.update_date = str(datetime.now())
+    current_time = utcnow()
+    usergroup.creation_date = current_time
+    usergroup.update_date = current_time
     usergroup.creator_id = current_user.id
 
     # Save the object
@@ -180,7 +181,7 @@ async def update_usergroup_by_id(
         usergroup.name = usergroup_update.name
     if usergroup_update.description is not None:
         usergroup.description = usergroup_update.description
-    usergroup.update_date = str(datetime.now())
+    usergroup.update_date = utcnow()
 
     db_session.add(usergroup)
     db_session.commit()
@@ -271,7 +272,7 @@ async def add_users_to_usergroup(
         ).all()
     }
 
-    current_time = str(datetime.now())
+    current_time = utcnow()
     new_entries = []
     for user_id in parsed_ids:
         if user_id in existing_user_ids:
@@ -394,7 +395,7 @@ async def add_resources_to_usergroup(
         ).all()
     }
 
-    current_time = str(datetime.now())
+    current_time = utcnow()
     new_entries = []
     for resource_uuid in resources_uuids_array:
         if resource_uuid in existing_uuids:

@@ -1036,8 +1036,8 @@ async def create_course(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CREATOR,
         authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
-        creation_date=datetime.now(tz=UTC).isoformat(),
-        update_date=datetime.now(tz=UTC).isoformat(),
+        creation_date=datetime.now(tz=UTC),
+        update_date=datetime.now(tz=UTC),
     )
     db_session.add(resource_author)
     db_session.commit()

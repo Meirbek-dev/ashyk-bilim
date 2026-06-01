@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 
 from src.db.permission_enums import RoleSlug
 from src.db.permissions import Role, RoleRead
+from src.core.timezone import utcnow_iso
 from src.db.users import (
     AnonymousUser,
     PublicUser,
@@ -268,7 +269,7 @@ def update_user_password(
     # Add password_changed_at field for session invalidation tracking
     if user.profile is None:
         user.profile = {}
-    user.profile["password_changed_at"] = datetime.now().isoformat()
+    user.profile["password_changed_at"] = utcnow_iso()
 
     # Update user in database
     db_session.add(user)

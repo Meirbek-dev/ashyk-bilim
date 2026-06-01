@@ -1,5 +1,6 @@
 """Canonical assessment settings read/write path."""
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -42,7 +43,7 @@ class CodeAssessmentSettings(PydanticStrictBaseModel):
     execution_mode: ExecutionMode = ExecutionMode.COMPLETE_FEEDBACK
     allow_custom_input: bool = True
     points: int = 100
-    due_date: str | None = None
+    due_date: datetime | None = None
     starter_code: dict[str, str] = PydanticField(default_factory=dict)
     visible_tests: list[dict[str, object]] = PydanticField(default_factory=list)
     hidden_tests: list[dict[str, object]] = PydanticField(default_factory=list)

@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.trail_runs import TrailRun, TrailRunRead
@@ -94,8 +94,9 @@ async def create_user_trail(
 
     trail = Trail.model_validate(trail_object.model_dump())
 
-    trail.creation_date = str(datetime.now())
-    trail.update_date = str(datetime.now())
+    current_time = utcnow()
+    trail.creation_date = current_time
+    trail.update_date = current_time
     trail.trail_uuid = f"trail_{ULID()}"
 
     # create trail
@@ -167,12 +168,13 @@ async def add_activity_to_trail(
     trailrun = db_session.exec(run_stmt).first()
 
     if not trailrun:
+        current_time = utcnow()
         trailrun = TrailRun(
             trail_id=trail.id if trail.id is not None else 0,
             course_id=course.id if course.id is not None else 0,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=current_time,
+            update_date=current_time,
         )
         db_session.add(trailrun)
         db_session.commit()
@@ -186,6 +188,7 @@ async def add_activity_to_trail(
     trailstep = db_session.exec(step_stmt).first()
 
     if not trailstep:
+        current_time = utcnow()
         trailstep = TrailStep(
             trailrun_id=trailrun.id if trailrun.id is not None else 0,
             activity_id=activity.id if activity.id is not None else 0,
@@ -195,8 +198,8 @@ async def add_activity_to_trail(
             teacher_verified=False,
             grade=0,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=current_time,
+            update_date=current_time,
         )
         db_session.add(trailstep)
         db_session.commit()
@@ -302,12 +305,13 @@ async def add_course_to_trail(
     trail_run = db_session.exec(trail_run_stmt).first()
 
     if not trail_run:
+        current_time = utcnow()
         trail_run = TrailRun(
             trail_id=trail.id if trail.id is not None else 0,
             course_id=course.id if course.id is not None else 0,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=current_time,
+            update_date=current_time,
         )
         db_session.add(trail_run)
         db_session.commit()

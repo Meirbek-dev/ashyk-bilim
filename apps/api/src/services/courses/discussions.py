@@ -1,10 +1,10 @@
 import asyncio
-from datetime import datetime
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.courses.courses import Course
 from src.db.courses.discussions import (
     CourseDiscussion,
@@ -66,7 +66,7 @@ async def create_discussion(
 
     # Generate UUID
     discussion_uuid = f"discussion_{ULID()}"
-    discussion_creation_date = str(datetime.now())
+    discussion_creation_date = utcnow()
     discussion = CourseDiscussion(
         **discussion_object.model_dump(),
         course_id=course.id,
@@ -284,7 +284,7 @@ async def update_discussion(
         if value is not None:
             setattr(discussion, key, value)
 
-    discussion.update_date = str(datetime.now())
+    discussion.update_date = utcnow()
 
     db_session.add(discussion)
     db_session.commit()
@@ -364,7 +364,7 @@ async def like_discussion(
     like = DiscussionLike(
         discussion_id=discussion.id,
         user_id=current_user.id,
-        creation_date=str(datetime.now()),
+        creation_date=utcnow(),
     )
 
     db_session.add(like)
@@ -477,7 +477,7 @@ async def toggle_discussion_like(
         like = DiscussionLike(
             discussion_id=discussion.id,
             user_id=current_user.id,
-            creation_date=str(datetime.now()),
+            creation_date=utcnow(),
         )
         db_session.add(like)
         discussion.likes_count += 1
@@ -550,7 +550,7 @@ async def toggle_discussion_dislike(
         dislike = DiscussionDislike(
             discussion_id=discussion.id,
             user_id=current_user.id,
-            creation_date=str(datetime.now()),
+            creation_date=utcnow(),
         )
         db_session.add(dislike)
         discussion.dislikes_count += 1

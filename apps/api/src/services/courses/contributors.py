@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, and_, col, select
 
+from src.core.timezone import utcnow
 from src.db.courses.courses import Course
 from src.db.resource_authors import (
     ResourceAuthor,
@@ -75,13 +74,14 @@ async def apply_course_contributor(
         )
 
     # Create pending contributor application
+    current_time = utcnow()
     resource_author = ResourceAuthor(
         resource_uuid=course_uuid,
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CONTRIBUTOR,
         authorship_status=ResourceAuthorshipStatusEnum.PENDING,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=current_time,
+        update_date=current_time,
     )
 
     db_session.add(resource_author)
@@ -159,7 +159,7 @@ async def update_course_contributor(
     # Update the contributor's role and status
     existing_authorship.authorship = authorship
     existing_authorship.authorship_status = authorship_status
-    existing_authorship.update_date = str(datetime.now())
+    existing_authorship.update_date = utcnow()
 
     db_session.add(existing_authorship)
     db_session.commit()
@@ -257,7 +257,7 @@ async def add_bulk_course_contributors(
     # Process results
     results = {"successful": [], "failed": []}
 
-    current_time = str(datetime.now())
+    current_time = utcnow()
 
     # Pre-fetch all users and existing authorships in 2 batch queries
     user_map = {u.username: u for u in db_session.exec(select(User).where(col(User.username).in_(usernames))).all()}

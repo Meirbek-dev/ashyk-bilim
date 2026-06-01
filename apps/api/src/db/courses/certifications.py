@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import field_validator
-from sqlalchemy import JSON, Column, ForeignKey
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -17,8 +17,14 @@ class Certifications(CertificationBase, table=True):
     certification_uuid: str = Field(unique=True)
     course_id: int = Field(sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE")))
     config: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
-    creation_date: str = ""
-    update_date: str = ""
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class CertificationCreate(SQLModelStrictBaseModel):
@@ -61,8 +67,8 @@ class CertificationRead(SQLModelStrictBaseModel):
     certification_uuid: str
     course_id: int
     config: dict[str, object]
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
 
 class CertificateUserBase(SQLModelStrictBaseModel):
@@ -80,8 +86,14 @@ class CertificateUser(CertificateUserBase, table=True):
         sa_column=Column("certification_id", ForeignKey("certifications.id", ondelete="CASCADE"))
     )
     user_certification_uuid: str
-    created_at: str = ""
-    updated_at: str = ""
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class CertificateUserCreate(SQLModelStrictBaseModel):
@@ -95,8 +107,8 @@ class CertificateUserRead(SQLModelStrictBaseModel):
     user_id: int
     certification_id: int
     user_certification_uuid: str
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class CertificateUserUpdate(SQLModelStrictBaseModel):

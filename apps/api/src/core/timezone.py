@@ -60,6 +60,11 @@ def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+def utcnow_iso() -> str:
+    """Return the current UTC timestamp as an ISO 8601 string."""
+    return utcnow().isoformat()
+
+
 def to_timezone(dt: datetime) -> datetime:
     """
     Convert a datetime to the configured timezone.

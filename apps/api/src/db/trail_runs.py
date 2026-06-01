@@ -1,8 +1,9 @@
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
 from pydantic import ConfigDict, field_validator
-from sqlalchemy import JSON, Column, ForeignKey, Integer
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
@@ -29,7 +30,10 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
     course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
     user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     # timestamps
-    creation_date: str
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
 
     @field_validator("status", mode="before")
     @classmethod
@@ -38,7 +42,10 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
             return StatusEnum(v)
         return v
 
-    update_date: str
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class TrailRunCreate(SQLModelStrictBaseModel):
@@ -69,8 +76,8 @@ class TrailRunRead(PydanticStrictBaseModel):
     # course object
     course: dict[str, Any] | None = None
     # timestamps
-    creation_date: str | None = None
-    update_date: str | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
 
     # number of activities in course
     course_total_steps: int

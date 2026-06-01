@@ -62,8 +62,8 @@ async def create_certification(
         course_id=certification_object.course_id,
         config=certification_object.config or {},
         certification_uuid=str(f"certification_{ULID()}"),
-        creation_date=now.isoformat(),
-        update_date=now.isoformat(),
+        creation_date=now,
+        update_date=now,
     )
 
     course.update_date = now
@@ -184,7 +184,7 @@ async def update_certification(
 
     # Update the update_date
     now = tz_now()
-    certification.update_date = now.isoformat()
+    certification.update_date = now
     course.update_date = now
 
     db_session.add(course)
@@ -361,8 +361,8 @@ async def create_certificate_user(
             "user_id": user_id,
             "certification_id": certification_id,
             "user_certification_uuid": user_certification_uuid,
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat(),
+            "created_at": now,
+            "updated_at": now,
         }
 
         certificate_user = CertificateUser(**certificate_data)

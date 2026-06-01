@@ -1,7 +1,8 @@
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import field_validator
-from sqlalchemy import JSON, Column, ForeignKey
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -40,8 +41,14 @@ class Block(BlockBase, table=True):
     )
     activity_id: int = Field(sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE")))
     block_uuid: str
-    creation_date: str
-    update_date: str
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class BlockCreate(BlockBase):
@@ -56,5 +63,5 @@ class BlockRead(BlockBase):
     chapter_id: int | None
     activity_id: int
     block_uuid: str
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime

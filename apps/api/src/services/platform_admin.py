@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from fastapi import Request, UploadFile
 from sqlmodel import Session
 
+from src.core.timezone import utcnow
 from src.db.platform import PlatformRead, PlatformUpdate
 from src.db.users import AnonymousUser, PublicUser
 from src.services.platform import get_platform
@@ -71,7 +70,7 @@ def update_platform(
         if value is not None:
             setattr(platform_record, field, value)
 
-    platform_record.update_date = str(datetime.now())
+    platform_record.update_date = utcnow()
 
     db_session.add(platform_record)
     db_session.commit()
@@ -90,7 +89,7 @@ async def update_app_logo(
 
     filename = await upload_app_logo(logo_file)
     platform_record.logo_image = filename
-    platform_record.update_date = str(datetime.now())
+    platform_record.update_date = utcnow()
 
     db_session.add(platform_record)
     db_session.commit()
@@ -109,7 +108,7 @@ async def update_platform_thumbnail(
 
     filename = await upload_platform_thumbnail(thumbnail_file)
     platform_record.thumbnail_image = filename
-    platform_record.update_date = str(datetime.now())
+    platform_record.update_date = utcnow()
 
     db_session.add(platform_record)
     db_session.commit()
@@ -137,7 +136,7 @@ def update_platform_landing(
     platform_record = get_platform(db_session)
 
     platform_record.landing = landing_object
-    platform_record.update_date = str(datetime.now())
+    platform_record.update_date = utcnow()
 
     db_session.add(platform_record)
     db_session.commit()

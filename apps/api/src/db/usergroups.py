@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, Column, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -12,8 +14,14 @@ class UserGroupBase(SQLModelStrictBaseModel):
 class UserGroup(UserGroupBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     usergroup_uuid: str = ""
-    creation_date: str = ""
-    update_date: str = ""
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
     creator_id: int | None = Field(
         default=None,
         sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="SET NULL")),
@@ -33,8 +41,8 @@ class UserGroupRead(UserGroupBase):
     id: int
     creator_id: int | None = None
     usergroup_uuid: str
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
 
 class UserGroupReadWithPermissions(UserGroupRead):

@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.courses.blocks import Block, BlockRead, BlockTypeEnum
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
 from src.services.courses._utils import (
@@ -31,14 +30,15 @@ async def create_image_block(request: Request, image_file: UploadFile, activity_
     )
 
     # create block
+    current_time = utcnow()
     block = Block(
         activity_id=activity.id or 0,
         block_type=BlockTypeEnum.BLOCK_IMAGE,
         content=block_data.model_dump(),
         course_id=course.id or 0,
         block_uuid=block_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=current_time,
+        update_date=current_time,
     )
 
     # insert block

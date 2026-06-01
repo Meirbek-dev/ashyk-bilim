@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.collections import (
     Collection,
     CollectionCreate,
@@ -107,8 +106,9 @@ async def create_collection(
     # Complete the collection object
     collection.collection_uuid = f"collection_{ULID()}"
     collection.creator_id = current_user.id  # Set creator
-    collection.creation_date = str(datetime.now())
-    collection.update_date = str(datetime.now())
+    current_time = utcnow()
+    collection.creation_date = current_time
+    collection.update_date = current_time
 
     # Add collection to database
     db_session.add(collection)
@@ -133,11 +133,12 @@ async def create_collection(
                 )
 
             for course in found_courses:
+                current_time = utcnow()
                 collection_course = CollectionCourse(
                     collection_id=int(collection.id),
                     course_id=course.id,
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=current_time,
+                    update_date=current_time,
                 )
                 db_session.add(collection_course)
 
@@ -191,7 +192,7 @@ async def update_collection(
         if value is not None:
             setattr(collection, field, value)
 
-    collection.update_date = str(datetime.now())
+    collection.update_date = utcnow()
 
     collection_courses_statement = select(CollectionCourse).where(CollectionCourse.collection_id == collection.id)
     collection_courses = db_session.exec(collection_courses_statement).all()
@@ -202,11 +203,12 @@ async def update_collection(
 
     # Add new collection_courses
     for course in courses or []:
+        current_time = utcnow()
         collection_course = CollectionCourse(
             collection_id=int(collection.id),
             course_id=int(course),
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=current_time,
+            update_date=current_time,
         )
         # Add collection_course to database
         db_session.add(collection_course)

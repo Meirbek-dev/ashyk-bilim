@@ -1,5 +1,7 @@
+from datetime import UTC, datetime
+
 from pydantic import ConfigDict
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, DateTime, func
 from sqlmodel import Field
 from sqlmodel._compat import SQLModelConfig
 
@@ -29,8 +31,14 @@ class Platform(PlatformBase, table=True):
     """Database table model for the platform."""
 
     id: int | None = Field(default=None, primary_key=True)
-    creation_date: str = ""
-    update_date: str = ""
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
     landing: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
@@ -44,7 +52,7 @@ class PlatformUpdate(SQLModelStrictBaseModel):
     thumbnail_image: str | None = None
     previews: dict[str, object] | None = None
     email: str | None = None
-    update_date: str | None = None
+    update_date: datetime | None = None
 
 
 class PlatformCreate(PlatformBase):
@@ -55,8 +63,8 @@ class PlatformRead(PlatformBase):
     """Model for reading the platform with all related data."""
 
     landing: dict[str, object] | None = None
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
 
 class PlatformUser(PydanticStrictBaseModel):

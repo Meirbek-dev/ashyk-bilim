@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.courses.course_updates import (
     CourseUpdate,
     CourseUpdateCreate,
@@ -35,13 +34,14 @@ async def create_update(
 
     # Generate UUID
     courseupdate_uuid = f"courseupdate_{ULID()}"
+    current_time = utcnow()
 
     update = CourseUpdate(
         **update_object.model_dump(),
         course_id=course.id,
         courseupdate_uuid=courseupdate_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=current_time,
+        update_date=current_time,
     )
 
     db_session.add(update)

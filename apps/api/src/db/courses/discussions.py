@@ -1,7 +1,8 @@
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import field_validator
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -34,8 +35,14 @@ class CourseDiscussion(SQLModelStrictBaseModel, table=True):
     likes_count: int = Field(default=0)
     dislikes_count: int = Field(default=0)
     replies_count: int = Field(default=0)
-    creation_date: str = Field(default="")
-    update_date: str = Field(default="")
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
     @field_validator("type", mode="before")
     @classmethod
@@ -97,8 +104,8 @@ class CourseDiscussionRead(SQLModelStrictBaseModel):
     likes_count: int
     dislikes_count: int
     replies_count: int
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
     user: UserRead | None = None
     replies: list[CourseDiscussionRead] | None = None
     is_liked: bool = False
@@ -146,7 +153,10 @@ class DiscussionLike(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     discussion_id: int = Field(sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")))
     user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
-    creation_date: str = Field(default="")
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
 
 
 class DiscussionLikeCreate(SQLModelStrictBaseModel):
@@ -157,14 +167,17 @@ class DiscussionLikeRead(SQLModelStrictBaseModel):
     id: int
     discussion_id: int
     user_id: int
-    creation_date: str
+    creation_date: datetime
 
 
 class DiscussionDislike(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     discussion_id: int = Field(sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")))
     user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
-    creation_date: str = Field(default="")
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
 
 
 class DiscussionDislikeCreate(SQLModelStrictBaseModel):
@@ -175,4 +188,4 @@ class DiscussionDislikeRead(SQLModelStrictBaseModel):
     id: int
     discussion_id: int
     user_id: int
-    creation_date: str
+    creation_date: datetime

@@ -25,8 +25,8 @@ class AuthorWithRole(SQLModelStrictBaseModel):
     user: UserRead
     authorship: ResourceAuthorshipEnum
     authorship_status: ResourceAuthorshipStatusEnum
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
     @field_validator("authorship", mode="before")
     @classmethod
@@ -298,8 +298,8 @@ class FullCourseRead(PydanticStrictBaseModel):
     id: int
     creator_id: int | None = None
     course_uuid: str | None = None
-    creation_date: str | None = None
-    update_date: str | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
     thumbnail_type: ThumbnailType | None = PydanticField(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = PydanticField(default="")
     thumbnail_video: str | None = PydanticField(default="")
@@ -323,23 +323,13 @@ class FullCourseRead(PydanticStrictBaseModel):
             return ThumbnailType(v)
         return v
 
-    @field_validator("creation_date", "update_date", mode="before")
-    @classmethod
-    def validate_dates(cls, v: object) -> object:
-        # Accept datetime values and coerce to ISO strings centrally
-        from datetime import datetime
-
-        if isinstance(v, datetime):
-            return v.isoformat()
-        return v
-
 
 class FullCourseReadWithTrail(PydanticStrictBaseModel):
     id: int
     creator_id: int | None = None
     course_uuid: str | None = None
-    creation_date: str | None = None
-    update_date: str | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
     authors: list[AuthorWithRole]
     chapters: list[ChapterRead]
     trail: TrailRead | None = None
@@ -364,12 +354,3 @@ class FullCourseReadWithTrail(PydanticStrictBaseModel):
             return ThumbnailType(v)
         return v
 
-    @field_validator("creation_date", "update_date", mode="before")
-    @classmethod
-    def validate_dates(cls, v: object) -> object:
-        # Accept datetime values and coerce to ISO strings centrally
-        from datetime import datetime
-
-        if isinstance(v, datetime):
-            return v.isoformat()
-        return v
