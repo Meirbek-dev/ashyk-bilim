@@ -110,6 +110,7 @@ async def create_video_activity(
             detail="Either video_file or video_uploaded_path must be provided",
         )
 
+    now = datetime.now()
     activity = Activity(
         name=name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
@@ -119,8 +120,8 @@ async def create_video_activity(
         course_id=chapter.course_id,  # keep legacy column in sync
         content={"filename": f"video.{video_format}", "activity_uuid": activity_uuid},
         details=details_dict if isinstance(details_dict, dict) else json.loads(details_dict),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=now,
+        update_date=now,
         order=_next_activity_order(chapter_id, db_session),
         creator_id=current_user.id,
     )
@@ -216,6 +217,7 @@ async def create_external_video_activity(
     activity_uuid = f"activity_{ULID()}"
     details = json.loads(data.details)
 
+    now = datetime.now()
     activity = Activity(
         name=data.name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
@@ -225,8 +227,8 @@ async def create_external_video_activity(
         course_id=chapter.course_id,
         content={"uri": data.uri, "type": data.type, "activity_uuid": activity_uuid},
         details=details,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=now,
+        update_date=now,
         order=_next_activity_order(data.chapter_id, db_session),
         creator_id=current_user.id,
     )

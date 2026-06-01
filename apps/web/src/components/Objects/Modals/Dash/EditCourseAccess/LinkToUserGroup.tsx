@@ -64,7 +64,7 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
         <div className="flex items-end gap-3">
           <div className="flex flex-1 flex-col gap-1.5">
             <Label htmlFor="usergroup-select" className="flex items-center gap-1.5">
-              <Users className="size-3.5 text-muted-foreground" />
+              <Users className="text-muted-foreground size-3.5" />
               {t('userGroupNameLabel')}
             </Label>
             <Select value={effectiveUserGroup ?? undefined} onValueChange={setSelectedUserGroup}>
@@ -86,9 +86,9 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
         </div>
       ) : (
         <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
-          <p className="text-sm text-muted-foreground">{t('noUserGroupsAvailable')}</p>
+          <p className="text-muted-foreground text-sm">{t('noUserGroupsAvailable')}</p>
           <Link
-            className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            className="text-primary flex items-center gap-1.5 text-sm font-medium hover:underline"
             target="_blank"
             href={getAbsoluteUrl('/dash/users/settings/usergroups')}
           >

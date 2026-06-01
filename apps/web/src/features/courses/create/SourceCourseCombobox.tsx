@@ -52,6 +52,7 @@ export function SourceCourseCombobox({ value, onSelect, initialSelectedName, id 
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls={open ? 'source-course-combobox-list' : undefined}
             aria-label={t('structure.copyOutline.sourceCourseLabel')}
             className="h-10 w-full justify-between font-normal"
           />
@@ -75,7 +76,7 @@ export function SourceCourseCombobox({ value, onSelect, initialSelectedName, id 
             value={query}
             onValueChange={search}
           />
-          <CommandList>
+          <CommandList id="source-course-combobox-list">
             {state === 'loading' && (
               <div className="text-muted-foreground py-4 text-center text-sm">
                 {t('structure.copyOutline.searching')}

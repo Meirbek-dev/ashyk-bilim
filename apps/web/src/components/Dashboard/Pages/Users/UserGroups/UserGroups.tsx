@@ -169,12 +169,7 @@ const UserGroups = () => {
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
             <span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleOpenModal('manage', row.original)}
-                type="button"
-              >
+              <Button variant="outline" size="sm" onClick={() => handleOpenModal('manage', row.original)} type="button">
                 <Users className="size-3.5" />
                 {t('manageUsersButton')}
               </Button>

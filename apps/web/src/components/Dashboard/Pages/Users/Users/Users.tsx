@@ -36,7 +36,7 @@ import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import React, { useState, useTransition } from 'react'
+import React, { useEffect, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -135,9 +135,14 @@ const Users = () => {
   })()
 
   const [currentPage, setCurrentPage] = useState(1)
+  const [hasMounted, setHasMounted] = useState(false)
   const queryClient = useQueryClient()
 
   const { data: usersData, isLoading } = useMembers(currentPage, USERS_PER_PAGE)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   const totalUsers = usersData?.total ?? 0
   const totalPages = usersData?.total_pages ?? 1
@@ -199,10 +204,7 @@ const Users = () => {
       accessorFn: row => row.role?.name || '',
       id: 'role',
       header: t('roleHeader'),
-      cell: ({ row }) =>
-        row.original.role?.name ? (
-          <Badge variant="secondary">{row.original.role.name}</Badge>
-        ) : null,
+      cell: ({ row }) => (row.original.role?.name ? <Badge variant="secondary">{row.original.role.name}</Badge> : null),
     },
     {
       id: 'actions',
@@ -214,17 +216,17 @@ const Users = () => {
         const targetPriority = getRolePriority(user.role)
         const canManage = !isSelf && currentUserPriority > targetPriority
 
-        if (isSelf) return <span className="text-xs text-muted-foreground">{t('cannotEditSelf')}</span>
+        if (isSelf) return <span className="text-muted-foreground text-xs">{t('cannotEditSelf')}</span>
         if (currentUserPriority <= targetPriority) {
-          return <span className="text-xs text-muted-foreground">{t('cannotManageHigherRole')}</span>
+          return <span className="text-muted-foreground text-xs">{t('cannotManageHigherRole')}</span>
         }
-        if (!canManage) return <span className="text-xs text-muted-foreground">{t('noActionsForAdministrators')}</span>
+        if (!canManage) return <span className="text-muted-foreground text-xs">{t('noActionsForAdministrators')}</span>
 
         const showEditRole = canUpdateRole
         const showRemoveUser = canDeleteUser
 
         if (!showEditRole && !showRemoveUser) {
-          return <span className="text-xs text-muted-foreground">{t('noActionsForAdministrators')}</span>
+          return <span className="text-muted-foreground text-xs">{t('noActionsForAdministrators')}</span>
         }
 
         return (
@@ -268,7 +270,7 @@ const Users = () => {
     },
   ]
 
-  if (isLoading) {
+  if (!hasMounted || isLoading) {
     return (
       <div className="mx-10 mt-6 space-y-3">
         <Skeleton className="h-16 w-full rounded-xl" />
@@ -299,7 +301,7 @@ const Users = () => {
           />
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between border-t pt-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {t('paginationInfo', {
                   start: String((currentPage - 1) * USERS_PER_PAGE + 1),
                   end: String(Math.min(currentPage * USERS_PER_PAGE, totalUsers)),
