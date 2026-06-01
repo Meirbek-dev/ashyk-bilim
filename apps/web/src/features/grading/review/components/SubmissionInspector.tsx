@@ -94,14 +94,16 @@ export default function SubmissionInspector({
                 className="font-mono text-[10px]"
               >
                 {plagiarismState.status === 'failed'
-                  ? 'Plagiarism: Failed'
+                  ? t('submissionInspector.plagiarism.failed')
                   : plagiarismState.status === 'checking'
-                    ? 'Plagiarism: Checking'
+                    ? t('submissionInspector.plagiarism.checking')
                     : plagiarismState.status === 'pending'
-                      ? 'Plagiarism: Pending'
+                      ? t('submissionInspector.plagiarism.pending')
                       : plagiarismState.flagged
-                        ? `Plagiarism: ${Math.round((plagiarismState.score ?? 0) * 100)}% Match`
-                        : 'Plagiarism: Clear'}
+                        ? t('submissionInspector.plagiarism.match', {
+                            score: Math.round((plagiarismState.score ?? 0) * 100),
+                          })
+                        : t('submissionInspector.plagiarism.clear')}
               </Badge>
             </div>
           </div>

@@ -105,6 +105,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   }, [deleteNode])
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  const loadingLabel = `${tCommon('loading')} ${t('providers.tldraw.label')}…`
   const iframeSrc = url ? buildTldrawSrc(url) : null
 
   return (
@@ -128,7 +129,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50">
             <Si.SiTldraw className="size-10 text-gray-300" />
-            <p className="text-sm text-gray-400">{`${tCommon('loading')} ${t('providers.tldraw.label')}…`}</p>
+            <p className="text-sm text-gray-400">{loadingLabel}</p>
           </div>
         )}
 

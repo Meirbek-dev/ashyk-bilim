@@ -350,18 +350,18 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             <dl className="grid gap-3 text-sm">
               <div>
                 <dt className="text-muted-foreground">{t('attempts')}</dt>
-                <dd>{data.max_attempts ?? 'Unlimited'}</dd>
+                <dd>{data.max_attempts ?? t('unlimitedAttempts')}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">{t('lateWork')}</dt>
-                <dd>{data.allow_late ? 'Allowed' : 'Blocked'}</dd>
+                <dd>{data.allow_late ? t('allowLateAllowed') : t('allowLateBlocked')}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">{t('allowedFiles')}</dt>
                 <dd>
                   {data.allowed_mime_types.length > 0
                     ? data.allowed_mime_types.map(getFriendlyMimeName).join(', ')
-                    : 'Any file type'}
+                    : t('anyFileType')}
                 </dd>
               </div>
             </dl>

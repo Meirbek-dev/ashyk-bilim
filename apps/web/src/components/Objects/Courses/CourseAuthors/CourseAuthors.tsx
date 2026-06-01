@@ -114,7 +114,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
                 ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                     .filter(Boolean)
                     .join(' ')
-                : `@${authors[0]?.user?.username || 'Unknown'}`}
+                : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
             </span>
           ) : (
             <>
@@ -134,11 +134,11 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
         </div>
         <div className="mt-0.5 text-xs text-neutral-500">
           {authors.length === 1 ? (
-            <span>@{authors[0]?.user?.username || 'Unknown'}</span>
+            <span>@{authors[0]?.user?.username || t('unknownAuthor')}</span>
           ) : (
             displayedNames.map((author, index) => (
               <span key={author.user.user_uuid}>
-                @{author.user?.username || 'Unknown'}
+                @{author.user?.username || t('unknownAuthor')}
                 {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
               </span>
             ))

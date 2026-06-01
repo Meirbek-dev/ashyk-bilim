@@ -39,8 +39,8 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
                     </Badge>
                   </div>
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {submission.created_at ? new Date(submission.created_at).toLocaleString() : 'Unknown time'}
-                    {submission.language_id ? ` - Language ${submission.language_id}` : ''}
+                    {submission.created_at ? new Date(submission.created_at).toLocaleString() : t('unknownTime')}
+                    {submission.language_id ? ` - ${t('languageIdFallback', { id: submission.language_id })}` : ''}
                   </div>
                 </div>
                 {onRestoreSubmission ? (

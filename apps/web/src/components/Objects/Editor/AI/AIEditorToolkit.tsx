@@ -303,6 +303,7 @@ function AiEditorActionScreen({
       <div className="flex w-full flex-col items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs text-zinc-500">{t('critisizeScopeLabel')}:</span>
+          {/* eslint-disable-next-line i18next/no-literal-string -- internal scope tokens */}
           {(['selection', 'lecture'] as const).map(scope => (
             <Button
               key={scope}

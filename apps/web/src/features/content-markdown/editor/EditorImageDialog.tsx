@@ -112,7 +112,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={src}
-              alt={alt || 'Preview'}
+              alt={alt || t('imageDialog.preview')}
               className="max-h-32 max-w-full rounded object-contain"
               onError={() => setPreviewFailed(true)}
             />

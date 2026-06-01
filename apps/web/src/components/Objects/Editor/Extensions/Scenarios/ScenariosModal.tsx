@@ -49,9 +49,10 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
   const [showImageInputs, setShowImageInputs] = useState<Record<string, boolean>>({})
 
   const t = useTranslations('DashPage.Editor.Scenarios')
+  const END_SCENARIO_VALUE = '__end'
 
   const nextScenarioOptions = [
-    { value: '__end', label: t('endScenarioOption') },
+    { value: END_SCENARIO_VALUE, label: t('endScenarioOption') },
     ...scenarios.map(s => ({
       value: s.id,
       label: t('scenarioOptionLabel', { id: s.id }),
@@ -175,7 +176,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
   const deleteOption = (scenarioId: string, optionId: string) => {
     const scenario = scenarios.find(s => s.id === scenarioId)
     if (!scenario || scenario.options.length <= 1) {
-      setDialogAlertMessage('At least one option is required per scenario')
+      setDialogAlertMessage(t('atLeastOneScenarioRequired'))
       setDialogAlertOpen(true)
       return
     }
@@ -330,7 +331,9 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-2 py-1.5">
               <div className="h-2 w-2 rounded-full bg-slate-400" />
-              <span className="text-xs font-medium text-slate-600">{scenarios.length}/40</span>
+              <span className="text-xs font-medium text-slate-600">
+                {t('scenariosConfigured', { count: scenarios.length, max: 40 })}
+              </span>
             </div>
             <Button
               variant="default"
@@ -525,16 +528,16 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-slate-500">→</span>
                                 <NativeSelect
-                                  value={option.nextScenarioId ?? '__end'}
+                                  value={option.nextScenarioId ?? END_SCENARIO_VALUE}
                                   onChange={event =>
                                     updateOption(scenario.id, option.id, {
-                                      nextScenarioId: event.target.value === '__end' ? null : event.target.value,
+                                      nextScenarioId: event.target.value === END_SCENARIO_VALUE ? null : event.target.value,
                                     })
                                   }
                                   className="flex-1 text-xs"
                                   aria-label={t('endScenarioOption')}
                                 >
-                                  <NativeSelectOption value="__end">{t('endScenarioOption')}</NativeSelectOption>
+                                  <NativeSelectOption value={END_SCENARIO_VALUE}>{t('endScenarioOption')}</NativeSelectOption>
                                   {nextScenarioOptions.map(item => (
                                     <NativeSelectOption key={item.value} value={item.value}>
                                       {item.label}

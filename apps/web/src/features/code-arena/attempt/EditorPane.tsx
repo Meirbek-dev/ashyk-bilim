@@ -151,7 +151,7 @@ export function EditorPane({
         onMount={handleMount}
         options={monacoOptions}
         {...(selectedLanguage?.monaco_language ? { monacoLanguage: selectedLanguage.monaco_language } : {})}
-        {...(readOnly ? { readOnlyMessage: 'This submission is read-only.' } : {})}
+        {...(readOnly ? { readOnlyMessage: t('editorReadOnly') } : {})}
       />
     </div>
   )

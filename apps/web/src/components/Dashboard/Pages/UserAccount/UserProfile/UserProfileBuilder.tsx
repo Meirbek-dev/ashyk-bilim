@@ -1196,7 +1196,7 @@ const ExperienceEditor: FC<{
                         }
                         onChange({ ...section, experiences: newExperiences })
                       }}
-                      placeholder={t('ExperienceEditor.startDatePlaceholder') || 'Select start date'}
+                      placeholder={t('ExperienceEditor.startDatePlaceholder')}
                       locale={dateFnsLocale}
                     />
                   </div>
@@ -1212,7 +1212,7 @@ const ExperienceEditor: FC<{
                         }
                         onChange({ ...section, experiences: newExperiences })
                       }}
-                      placeholder={t('ExperienceEditor.endDatePlaceholder') || 'Select end date'}
+                      placeholder={t('ExperienceEditor.endDatePlaceholder')}
                       disabled={experience.current}
                       locale={dateFnsLocale}
                     />
@@ -1407,7 +1407,7 @@ const EducationEditor: FC<{
                         }
                         onChange({ ...section, education: newEducation })
                       }}
-                      placeholder={t('EducationEditor.startDatePlaceholder') || 'Select start date'}
+                      placeholder={t('EducationEditor.startDatePlaceholder')}
                       locale={dateFnsLocale}
                     />
                   </div>
@@ -1423,7 +1423,7 @@ const EducationEditor: FC<{
                         }
                         onChange({ ...section, education: newEducation })
                       }}
-                      placeholder={t('EducationEditor.endDatePlaceholder') || 'Select end date'}
+                      placeholder={t('EducationEditor.endDatePlaceholder')}
                       disabled={edu.current}
                       locale={dateFnsLocale}
                     />

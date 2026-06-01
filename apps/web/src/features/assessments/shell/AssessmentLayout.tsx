@@ -146,7 +146,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           <div className="flex h-11 shrink-0 items-center justify-between border-b px-4">
             <div className="flex min-w-0 items-center gap-2">
               <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                {kindModule?.label ?? 'Code Challenge'}
+                {kindModule?.label ?? t('codeChallenge')}
               </span>
               <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
             </div>
@@ -238,7 +238,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       <div className="bg-background pb-28">
         <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-4">
           <AssessmentChrome
-            kindLabel={kindModule?.label ?? 'Assessment'}
+            kindLabel={kindModule?.label ?? t('assessmentTitle')}
             title={vm.title}
             description={vm.description}
             dueAt={vm.dueAt}

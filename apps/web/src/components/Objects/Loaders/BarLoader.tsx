@@ -1,5 +1,19 @@
 import { cn } from '@/lib/utils'
 
+const BAR_LOADER_KEYFRAMES = `
+@keyframes bar-loader-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+`
+
 interface BarLoaderProps {
   width?: number
   color?: string
@@ -10,21 +24,7 @@ interface BarLoaderProps {
 export const BarLoader: React.FC<BarLoaderProps> = ({ width = 60, color = '#000000', className, cssOverride }) => {
   return (
     <>
-      <style>
-        {`
-          @keyframes bar-loader-slide {
-            0% {
-              transform: translateX(-100%);
-            }
-            50% {
-              transform: translateX(0%);
-            }
-            100% {
-              transform: translateX(100%);
-            }
-          }
-        `}
-      </style>
+      <style dangerouslySetInnerHTML={{ __html: BAR_LOADER_KEYFRAMES }} />
       <div
         className={cn('bar-loader', className)}
         style={{

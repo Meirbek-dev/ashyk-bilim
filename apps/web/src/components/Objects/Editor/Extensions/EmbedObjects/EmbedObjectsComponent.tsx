@@ -209,6 +209,8 @@ const EmbedContent = ({
   embedType: EmbedType
   embeddedTitle?: string
 }) => {
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
+
   useEffect(() => {
     if (embedType !== 'code' || !sanitizedEmbedCode) return
 
@@ -249,7 +251,7 @@ const EmbedContent = ({
         src={embedUrl}
         className="h-full w-full border-0"
         allowFullScreen
-        title={embeddedTitle ?? 'Embedded content'}
+        title={embeddedTitle ?? t('embeddedContent')}
       />
     )
   }

@@ -44,10 +44,8 @@ export class EmbedObjectsErrorBoundary extends Component<
           role="alert"
         >
           <div>
-            <p className="text-sm font-semibold text-amber-700">{this.props.title || 'Embedded content'}</p>
-            <p className="mt-1 text-xs text-amber-600">
-              {this.props.message || 'This embedded block could not be rendered. Please try editing or removing it.'}
-            </p>
+            <p className="text-sm font-semibold text-amber-700">{this.props.title}</p>
+            <p className="mt-1 text-xs text-amber-600">{this.props.message}</p>
           </div>
         </div>
       )

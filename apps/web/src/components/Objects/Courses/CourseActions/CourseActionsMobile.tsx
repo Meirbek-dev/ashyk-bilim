@@ -114,7 +114,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
               ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                   .filter(Boolean)
                   .join(' ')
-              : `@${authors[0]?.user?.username || 'Unknown'}`}
+              : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
           </span>
         ) : (
           <span className="text-sm font-semibold text-neutral-800">
@@ -122,7 +122,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
               ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                   .filter(Boolean)
                   .join(' ')
-              : `@${authors[0]?.user?.username || 'Unknown'}`}
+              : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
             {authors.length > 1 && ` ${t('moreAuthors', { count: authors.length - 1 })}`}
           </span>
         )}

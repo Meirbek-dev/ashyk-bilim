@@ -358,7 +358,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           )}
           <span className="truncate text-xs font-semibold">{t('caseNumber', { number: index + 1 })}</span>
           <Badge variant={result.passed ? 'success' : 'destructive'} className="px-1 py-0 text-[10px]">
-            {result.passed ? 'Passed' : result.status_description}
+            {result.passed ? t('passed') : result.status_description}
           </Badge>
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
@@ -391,12 +391,12 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
               <CodeDiffViewer expected={result.expected!} actual={result.stdout!} />
             </div>
           ) : (
-            result.stdout && <Output label="Actual output" value={result.stdout} />
+            result.stdout && <Output label={t('actualOutput')} value={result.stdout} />
           )}
 
-          {result.stderr && <Output label="Stderr" value={result.stderr} destructive />}
+          {result.stderr && <Output label={t('stderr')} value={result.stderr} destructive />}
 
-          {result.compile_output && <Output label="Compile output" value={result.compile_output} destructive />}
+          {result.compile_output && <Output label={t('compileOutput')} value={result.compile_output} destructive />}
         </div>
       )}
     </div>
