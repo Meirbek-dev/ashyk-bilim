@@ -629,18 +629,18 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
       const startWidth = resizeRef.current?.offsetWidth || 0
       const startHeight = resizeRef.current?.offsetHeight || 0
 
-      const handleMouseMove = (e: MouseEvent) => {
+      const handleMouseMove = (mouseEvent: MouseEvent) => {
         if (!resizeRef.current) return
 
         if (direction === 'horizontal') {
-          const newWidth = startWidth + e.clientX - startX
-          const parentWidth = resizeRef.current.parentElement?.offsetWidth || 1
-          const widthPercentage = Math.min(100, Math.max(10, (newWidth / parentWidth) * 100))
+          const newWidth = startWidth + mouseEvent.clientX - startX
+          const currentParentWidth = resizeRef.current.parentElement?.offsetWidth || 1
+          const widthPercentage = Math.min(100, Math.max(10, (newWidth / currentParentWidth) * 100))
           const newWidthValue = `${widthPercentage}%`
           dimensionsRef.current.width = newWidthValue
           resizeRef.current.style.width = newWidthValue
         } else {
-          const newHeight = Math.max(100, startHeight + e.clientY - startY)
+          const newHeight = Math.max(100, startHeight + mouseEvent.clientY - startY)
           dimensionsRef.current.height = newHeight
           resizeRef.current.style.height = `${newHeight}px`
         }

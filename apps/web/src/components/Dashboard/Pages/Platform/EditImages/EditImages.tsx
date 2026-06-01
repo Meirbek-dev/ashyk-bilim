@@ -47,7 +47,7 @@ interface Preview {
 // Update the height constant
 const PREVIEW_HEIGHT = 'h-28' // Reduced height
 
-function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory }: any) {
+function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory: resolvePreviewMediaDirectory }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: preview.id,
   })
@@ -93,7 +93,7 @@ function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory 
           )}
         >
           <NextImage
-            src={getPreviewMediaDirectory(preview.id)}
+            src={resolvePreviewMediaDirectory(preview.id)}
             alt={`Preview ${preview.id}`}
             fill
             className="rounded-xl object-contain"

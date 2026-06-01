@@ -38,7 +38,7 @@ export default function SettingsTabs({
   const pathname = usePathname()
 
   // When callers don't pass an explicit value, derive it from the last path segment.
-  const value = valueProp ?? pathname.split('/').filter(Boolean).pop() ?? ''
+  const value = valueProp ?? pathname.split('/').findLast(Boolean) ?? ''
 
   const defaultRender = (tab: TabItem, isActive: boolean) => {
     const Icon = tab.icon

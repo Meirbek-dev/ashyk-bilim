@@ -54,8 +54,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     // Check if all activities are completed
     const isActivityDone = (activity: any) => {
       const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+      const run = trailData?.runs?.find((activeRun: any) => {
+        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
 
@@ -272,8 +272,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
     const isActivityDone = (activity: any) => {
       const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+      const run = trailData?.runs?.find((activeRun: any) => {
+        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
 

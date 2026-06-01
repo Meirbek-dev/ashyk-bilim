@@ -66,11 +66,16 @@ export const CodeBlockShiki = CodeBlock.extend({
         key: new PluginKey('shiki'),
         view(editorView) {
           if (!getResolvedHighlighter()) {
-            getHighlighter().then(() => {
-              // Dispatch dummy transaction to trigger decoration update
-              const tr = editorView.state.tr.setMeta('shikiLoaded', true)
-              editorView.dispatch(tr)
-            })
+            void getHighlighter()
+              .then(() => {
+                // Dispatch dummy transaction to trigger decoration update
+                const tr = editorView.state.tr.setMeta('shikiLoaded', true)
+                editorView.dispatch(tr)
+                return undefined
+              })
+              .catch((error: unknown) => {
+                console.error('Failed to load Shiki highlighter:', error)
+              })
           }
           return {}
         },
@@ -90,7 +95,8 @@ export const CodeBlockShiki = CodeBlock.extend({
             if (tr.docChanged || tr.getMeta('shikiLoaded')) {
               return getDecorations(tr.doc, highlighter)
             }
-            return set.map(tr.mapping, tr.doc)
+            const mapDecorations = set.map.bind(set)
+            return mapDecorations(tr.mapping, tr.doc)
           },
         },
         props: {

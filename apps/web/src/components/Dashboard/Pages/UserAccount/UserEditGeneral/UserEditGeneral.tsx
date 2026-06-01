@@ -582,11 +582,11 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   key={id}
                   id={id}
                   detail={detail}
-                  onUpdate={(id, field, value) => {
+                  onUpdate={(targetId, field, value) => {
                     const newDetails = { ...details }
-                    const existingDetail = newDetails[id]
-                    newDetails[id] = {
-                      id: existingDetail?.id || id,
+                    const existingDetail = newDetails[targetId]
+                    newDetails[targetId] = {
+                      id: existingDetail?.id || targetId,
                       label: existingDetail?.label || '',
                       icon: existingDetail?.icon || '',
                       text: existingDetail?.text || '',
@@ -595,16 +595,16 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     }
                     form.setValue('details', newDetails)
                   }}
-                  onRemove={id => {
+                  onRemove={targetId => {
                     const newDetails = { ...details }
-                    const { [id]: removed, ...nextDetails } = newDetails
+                    const { [targetId]: removed, ...nextDetails } = newDetails
                     form.setValue('details', nextDetails)
                   }}
-                  onLabelChange={(id, newLabel) => {
+                  onLabelChange={(targetId, newLabel) => {
                     const newDetails = { ...details }
-                    const existingDetail = newDetails[id]
-                    newDetails[id] = {
-                      id: existingDetail?.id || id,
+                    const existingDetail = newDetails[targetId]
+                    newDetails[targetId] = {
+                      id: existingDetail?.id || targetId,
                       label: newLabel,
                       icon: existingDetail?.icon || '',
                       text: existingDetail?.text || '',
@@ -752,9 +752,9 @@ const UserEditGeneral = () => {
             bio: userDataResponse.bio || '',
             details,
           })
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-          console.error('Error fetching initial data:', errorMessage, error)
+        } catch (fetchError) {
+          const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error'
+          console.error('Error fetching initial data:', errorMessage, fetchError)
           setError('Failed to load user data.')
         } finally {
           setInitialLoading(false)
@@ -821,8 +821,8 @@ const UserEditGeneral = () => {
         setSuccess(t('avatarSuccess'))
         router.refresh()
       }
-    } catch (error) {
-      console.error('Avatar upload error:', error)
+    } catch (uploadError) {
+      console.error('Avatar upload error:', uploadError)
       setError(t('avatarError'))
     } finally {
       setIsLoading(false)
@@ -864,8 +864,8 @@ const UserEditGeneral = () => {
         router.refresh()
         toast.success(t('profileUpdateSuccess'))
       }
-    } catch (error) {
-      console.error('Profile update error:', error)
+    } catch (updateError) {
+      console.error('Profile update error:', updateError)
       toast.error(t('profileUpdateError'), {
         id: loadingToast,
       })

@@ -292,18 +292,18 @@ export default function BuilderCanvasTab({
                             section={section}
                             isEditable={isEditable}
                             onRename={label => {
-                              const item = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
-                              if (!item) return
-                              void patchItemMetadata(item.item_uuid, {
-                                ...defaultMetadata(item.metadata),
+                              const targetItem = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
+                              if (!targetItem) return
+                              void patchItemMetadata(targetItem.item_uuid, {
+                                ...defaultMetadata(targetItem.metadata),
                                 section_label: label,
                               })
                             }}
                             onDelete={() => {
-                              const item = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
-                              if (!item) return
-                              void patchItemMetadata(item.item_uuid, {
-                                ...defaultMetadata(item.metadata),
+                              const targetItem = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
+                              if (!targetItem) return
+                              void patchItemMetadata(targetItem.item_uuid, {
+                                ...defaultMetadata(targetItem.metadata),
                                 section_label: null,
                               })
                             }}

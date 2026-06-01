@@ -72,9 +72,9 @@ const CourseClient = (props: any) => {
             if (item && typeof item === 'object') {
               // Keep shape but ensure text field exists if possible
               const text = item.text ?? item.name ?? item.title
-              const t = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
-              if (!t || t.toLowerCase() === 'null' || t.toLowerCase() === 'undefined') return null
-              return { ...item, text: t }
+              const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
+              if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined') return null
+              return { ...item, text: learningText }
             }
             return null
           })
@@ -168,8 +168,8 @@ const CourseClient = (props: any) => {
 
   const isActivityDone = (activity: any) => {
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+    const run = trailData?.runs?.find((activeRun: any) => {
+      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
     if (run) {
@@ -297,8 +297,8 @@ const CourseClient = (props: any) => {
                 {/* Progress indicators */}
                 {(() => {
                   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-                  return trailData?.runs?.find((run: any) => {
-                    const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+                  return trailData?.runs?.find((activeRun: any) => {
+                    const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
                     return cleanRunCourseUuid === cleanCourseUuid
                   })
                 })() && (

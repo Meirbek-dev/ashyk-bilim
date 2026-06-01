@@ -110,8 +110,8 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
         })
         setFile(compressed)
         setPreview(URL.createObjectURL(compressed))
-      } catch (error) {
-        console.error('Image compression failed, using original file', error)
+      } catch (compressionError) {
+        console.error('Image compression failed, using original file', compressionError)
         setFile(selectedFile)
         setPreview(URL.createObjectURL(selectedFile))
       }
@@ -130,8 +130,8 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
       onSuccess(result)
       setFile(null)
       setPreview(null)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : t('uploadFailed'))
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : t('uploadFailed'))
     } finally {
       setIsUploading(false)
     }

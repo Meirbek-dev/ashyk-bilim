@@ -262,9 +262,9 @@ const SearchPage = () => {
                 count={totalResults}
                 icon={Search}
                 selectedType={selectedType}
-                onTypeChange={type => {
+                onTypeChange={selectedTypeKey => {
                   updateSearchParams({
-                    type: type === 'all' ? '' : type,
+                    type: selectedTypeKey === 'all' ? '' : selectedTypeKey,
                     page: '1',
                   })
                 }}
@@ -275,9 +275,9 @@ const SearchPage = () => {
                 count={searchResults.total_courses}
                 icon={GraduationCap}
                 selectedType={selectedType}
-                onTypeChange={type => {
+                onTypeChange={selectedTypeKey => {
                   updateSearchParams({
-                    type: type === 'all' ? '' : type,
+                    type: selectedTypeKey === 'all' ? '' : selectedTypeKey,
                     page: '1',
                   })
                 }}
@@ -288,9 +288,9 @@ const SearchPage = () => {
                 count={searchResults.total_collections}
                 icon={Book}
                 selectedType={selectedType}
-                onTypeChange={type => {
+                onTypeChange={selectedTypeKey => {
                   updateSearchParams({
-                    type: type === 'all' ? '' : type,
+                    type: selectedTypeKey === 'all' ? '' : selectedTypeKey,
                     page: '1',
                   })
                 }}
@@ -301,9 +301,9 @@ const SearchPage = () => {
                 count={searchResults.total_users}
                 icon={Users}
                 selectedType={selectedType}
-                onTypeChange={type => {
+                onTypeChange={selectedTypeKey => {
                   updateSearchParams({
-                    type: type === 'all' ? '' : type,
+                    type: selectedTypeKey === 'all' ? '' : selectedTypeKey,
                     page: '1',
                   })
                 }}

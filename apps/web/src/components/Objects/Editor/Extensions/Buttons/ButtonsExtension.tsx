@@ -54,11 +54,11 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
     }
   }, [])
 
-  const handleEmojiSelect = (emoji: any) => {
-    setEmoji(emoji.emoji)
+  const handleEmojiSelect = (selectedEmoji: any) => {
+    setEmoji(selectedEmoji.emoji)
     setShowEmojiPicker(false)
     props.updateAttributes({
-      emoji: emoji.emoji,
+      emoji: selectedEmoji.emoji,
     })
   }
 
@@ -101,8 +101,8 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
     })
   }
 
-  const getButtonColor = (color: string) => {
-    switch (color) {
+  const getButtonColor = (colorKey: string) => {
+    switch (colorKey) {
       case 'sky': {
         return 'bg-sky-500 hover:bg-sky-600'
       }

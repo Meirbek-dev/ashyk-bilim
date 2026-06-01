@@ -96,8 +96,8 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         })
         toast.success(t('lifecycleChanged', { state: lifecycleLabels.ARCHIVED }))
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'))
+      } catch (updateError) {
+        toast.error(updateError instanceof Error ? updateError.message : t('updateLifecycleFailed'))
       }
     })
   }

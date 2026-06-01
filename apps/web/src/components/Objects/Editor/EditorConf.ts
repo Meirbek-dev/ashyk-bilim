@@ -46,8 +46,8 @@ export const getLinkExtension = (options: Partial<LinkOptions> = {}) => {
         }
 
         // only allow protocols specified in ctx.protocols
-        const allowedProtocols = ctx.protocols.map(protocol =>
-          typeof protocol === 'string' ? protocol : protocol.scheme,
+        const allowedProtocols = ctx.protocols.map(allowedScheme =>
+          typeof allowedScheme === 'string' ? allowedScheme : allowedScheme.scheme,
         )
 
         if (!allowedProtocols.includes(protocol)) {

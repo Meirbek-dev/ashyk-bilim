@@ -277,11 +277,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
       // Update UI based on API response
       setPosts(
-        posts.map(post => {
-          if (post.id === postId) {
+        posts.map(currentPost => {
+          if (currentPost.id === postId) {
             return {
-              ...post,
-              replies: post.replies?.map((r: any) => {
+              ...currentPost,
+              replies: currentPost.replies?.map((r: any) => {
                 if (r.id === replyId) {
                   return {
                     ...r,
@@ -296,7 +296,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
               }),
             }
           }
-          return post
+          return currentPost
         }),
       )
 
@@ -315,7 +315,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
     try {
       await deleteDiscussion(courseUuid, post.discussion_uuid)
-      setPosts(posts.filter(post => post.id !== postId))
+      setPosts(posts.filter(currentPost => currentPost.id !== postId))
 
       // Refresh data from server
       if (onMutate) {
@@ -344,13 +344,13 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
       // Update local state
       setPosts(
-        posts.map(post =>
-          post.id === postId
+        posts.map(currentPost =>
+          currentPost.id === postId
             ? {
-                ...post,
-                replies: post.replies?.filter((reply: any) => reply.id !== replyId),
+                ...currentPost,
+                replies: currentPost.replies?.filter((currentReply: any) => currentReply.id !== replyId),
               }
-            : post,
+            : currentPost,
         ),
       )
 
@@ -372,14 +372,14 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         content: newMessage,
       })
       setPosts(
-        posts.map(post =>
-          post.id === postId
+        posts.map(currentPost =>
+          currentPost.id === postId
             ? {
-                ...post,
+                ...currentPost,
                 postMessage: newMessage,
                 updateDate: new Date().toISOString(),
               }
-            : post,
+            : currentPost,
         ),
       )
 
@@ -412,21 +412,21 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
       // Update local state with the updated reply data from server
       setPosts(
-        posts.map(post =>
-          post.id === postId
+        posts.map(currentPost =>
+          currentPost.id === postId
             ? {
-                ...post,
-                replies: post.replies?.map((reply: any) =>
-                  reply.id === replyId
+                ...currentPost,
+                replies: currentPost.replies?.map((currentReply: any) =>
+                  currentReply.id === replyId
                     ? {
-                        ...reply,
+                        ...currentReply,
                         replyMessage: updatedReply.content,
                         updateDate: updatedReply.update_date || new Date().toISOString(),
                       }
-                    : reply,
+                    : currentReply,
                 ),
               }
-            : post,
+            : currentPost,
         ),
       )
 

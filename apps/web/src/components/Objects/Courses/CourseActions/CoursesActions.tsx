@@ -65,8 +65,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   const isStarted =
-    trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+    trailData?.runs?.find((activeRun: any) => {
+      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     }) ?? false
 
@@ -248,8 +248,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
     const totalActivities =
       course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0
 
-    const run = trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+    const run = trailData?.runs?.find((activeRun: any) => {
+      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
 

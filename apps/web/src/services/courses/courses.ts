@@ -98,13 +98,13 @@ async function getTypedResponseMetadata<T>(response: Response): Promise<Response
   return await getResponseMetadata(response)
 }
 
-function normalizeTags(tags: string | null | undefined): string[] {
-  if (!tags) {
+function normalizeTags(rawTags: string | null | undefined): string[] {
+  if (!rawTags) {
     return []
   }
 
   try {
-    const parsed = JSON.parse(tags)
+    const parsed = JSON.parse(rawTags)
     if (Array.isArray(parsed)) {
       return parsed.filter((tag): tag is string => typeof tag === 'string')
     }
@@ -112,7 +112,7 @@ function normalizeTags(tags: string | null | undefined): string[] {
     // Fall back to treating the stored value as a comma-delimited string.
   }
 
-  return tags
+    return rawTags
     .split(',')
     .map(tag => tag.trim())
     .filter(Boolean)
@@ -137,7 +137,7 @@ function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCour
 }
 
 function normalizeCourse(course: CourseRead): NormalizedCourse {
-  const { about, authors, description, learnings, tags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
+  const { about, authors, description, learnings, tags: courseTags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
     course
 
   return {
@@ -147,7 +147,7 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
     description: description ?? '',
     learnings: learnings ?? '',
     mini_description: description ?? '',
-    tags: normalizeTags(tags),
+    tags: normalizeTags(courseTags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
     ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
@@ -155,7 +155,7 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
 }
 
 function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
-  const { about, authors, description, learnings, tags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
+  const { about, authors, description, learnings, tags: courseTags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
     course
 
   return {
@@ -165,7 +165,7 @@ function normalizeCourseWithPermissions(course: CourseReadWithPermissions): Norm
     description: description ?? '',
     learnings: learnings ?? '',
     mini_description: description ?? '',
-    tags: normalizeTags(tags),
+    tags: normalizeTags(courseTags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
     ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
@@ -181,7 +181,7 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     creation_date,
     description,
     learnings,
-    tags,
+    tags: courseTags,
     thumbnail_image,
     thumbnail_type,
     thumbnail_video,
@@ -198,7 +198,7 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     description: description ?? '',
     learnings: learnings ?? '',
     mini_description: description ?? '',
-    tags: normalizeTags(tags),
+    tags: normalizeTags(courseTags),
     thumbnail_image: thumbnail_image ?? '',
     thumbnail_video: thumbnail_video ?? '',
     ...(creation_date === null || creation_date === undefined ? {} : { creation_date }),

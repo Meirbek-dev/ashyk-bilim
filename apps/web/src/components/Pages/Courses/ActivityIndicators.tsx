@@ -260,8 +260,8 @@ const ActivityIndicators = (props: Props) => {
   // Memoized set of completed activity IDs for fast lookup
   const completedActivityIds = useMemo(() => {
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = props.trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+    const run = props.trailData?.runs?.find((activeRun: any) => {
+      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
     return new Set(

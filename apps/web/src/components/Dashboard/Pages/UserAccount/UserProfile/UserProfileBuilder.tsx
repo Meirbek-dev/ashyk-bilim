@@ -378,8 +378,8 @@ const UserProfileBuilder = () => {
     fetchUserDataEvent()
   }, [me])
 
-  const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
-    const sectionTypesConfig = getSectionTypesConfig(t)
+  const createEmptySection = (translateFn: Function, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
+    const sectionTypesConfig = getSectionTypesConfig(translateFn)
     const baseSection = {
       id: `section-${Date.now()}`,
       type,

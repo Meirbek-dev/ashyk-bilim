@@ -47,11 +47,11 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
     }
   }, [])
 
-  const handleEmojiSelect = (emoji: any) => {
-    setEmoji(emoji.emoji)
+  const handleEmojiSelect = (selectedEmoji: any) => {
+    setEmoji(selectedEmoji.emoji)
     setShowEmojiPicker(false)
     props.updateAttributes({
-      emoji: emoji.emoji,
+      emoji: selectedEmoji.emoji,
     })
   }
 
@@ -137,8 +137,8 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
     },
   ]
 
-  const getBadgeColor = (color: string) => {
-    switch (color) {
+  const getBadgeColor = (colorKey: string) => {
+    switch (colorKey) {
       case 'sky': {
         return 'bg-sky-400 text-sky-50'
       }

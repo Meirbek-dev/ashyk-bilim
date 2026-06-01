@@ -29,22 +29,22 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
   const tests = [...(draft.visible_tests ?? []), ...(draft.hidden_tests ?? [])]
 
   // Find currently selected test case details
-  const selectedTestCase = tests.find(t => t.id === selectedCaseId) ?? null
+  const selectedTestCase = tests.find(testCase => testCase.id === selectedCaseId) ?? null
 
   const updateTest = (id: string, patch: Partial<TestCase>) => {
-    const next = tests.map(t => (t.id === id ? { ...t, ...patch } : t))
+    const next = tests.map(testCase => (testCase.id === id ? { ...testCase, ...patch } : testCase))
     onChange({
-      visible_tests: next.filter(t => t.is_visible),
-      hidden_tests: next.filter(t => !t.is_visible),
+      visible_tests: next.filter(testCase => testCase.is_visible),
+      hidden_tests: next.filter(testCase => !testCase.is_visible),
     })
   }
 
   const removeTest = (id: string) => {
     if (selectedCaseId === id) setSelectedCaseId(null)
-    const next = tests.filter(t => t.id !== id)
+    const next = tests.filter(testCase => testCase.id !== id)
     onChange({
-      visible_tests: next.filter(t => t.is_visible),
-      hidden_tests: next.filter(t => !t.is_visible),
+      visible_tests: next.filter(testCase => testCase.is_visible),
+      hidden_tests: next.filter(testCase => !testCase.is_visible),
     })
     toast.success(t('testCaseRemoved'))
   }
@@ -79,8 +79,8 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
     }
 
     onChange({
-      visible_tests: next.filter(t => t.is_visible),
-      hidden_tests: next.filter(t => !t.is_visible),
+      visible_tests: next.filter(testCase => testCase.is_visible),
+      hidden_tests: next.filter(testCase => !testCase.is_visible),
     })
   }
 
@@ -100,15 +100,15 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         const headers = ['id', 'is_visible', 'description', 'input', 'expected_output', 'weight', 'match_mode']
         const csvRows = [headers.join(',')]
 
-        for (const t of tests) {
+        for (const testCase of tests) {
           const values = [
-            t.id,
-            t.is_visible,
-            `"${(t.description || '').replace(/"/g, '""')}"`,
-            `"${t.input.replace(/"/g, '""')}"`,
-            `"${t.expected_output.replace(/"/g, '""')}"`,
-            t.weight ?? 1,
-            t.match_mode ?? 'EXACT',
+            testCase.id,
+            testCase.is_visible,
+            `"${(testCase.description || '').replace(/"/g, '""')}"`,
+            `"${testCase.input.replace(/"/g, '""')}"`,
+            `"${testCase.expected_output.replace(/"/g, '""')}"`,
+            testCase.weight ?? 1,
+            testCase.match_mode ?? 'EXACT',
           ]
           csvRows.push(values.join(','))
         }
@@ -190,8 +190,8 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
 
         if (imported.length > 0) {
           onChange({
-            visible_tests: [...(draft.visible_tests ?? []), ...imported.filter(t => t.is_visible)],
-            hidden_tests: [...(draft.hidden_tests ?? []), ...imported.filter(t => !t.is_visible)],
+            visible_tests: [...(draft.visible_tests ?? []), ...imported.filter(testCase => testCase.is_visible)],
+            hidden_tests: [...(draft.hidden_tests ?? []), ...imported.filter(testCase => !testCase.is_visible)],
           })
           toast.success(t('importSuccess', { count: imported.length }))
         }
@@ -204,7 +204,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
   }
 
   // Math stats
-  const totalWeight = tests.reduce((sum, t) => sum + (t.weight ?? 1), 0)
+  const totalWeight = tests.reduce((sum, testCase) => sum + (testCase.weight ?? 1), 0)
   const sampleCount = draft.visible_tests?.length ?? 0
   const hiddenCount = draft.hidden_tests?.length ?? 0
 
