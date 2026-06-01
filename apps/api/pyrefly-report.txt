@@ -1,4 +1,3 @@
- INFO Checking project configured at `X:\projects\ashyq-bilim\apps\api\pyproject.toml`
 ERROR Could not import `app` from `app` [missing-module-attribute]
   --> scripts\export_openapi.py:13:21
    |
@@ -35,6 +34,30 @@ ERROR No matching overload found for function `dict.__init__` called with argume
   (iterable: Iterable[tuple[str, _VT]], /, **kwargs: _VT) -> None
   (iterable: Iterable[list[str]], /) -> None
   (iterable: Iterable[list[bytes]], /) -> None
+ERROR Default `None` is not assignable to parameter `session_factory` with type `() -> AbstractContextManager[Session]` [bad-function-definition]
+  --> src\auth\db.py:82:80
+   |
+82 |     session_factory: Annotated[SessionFactory, Depends(get_session_factory)] = None,
+   |                      -------------------------------------------------------   ^^^^
+   |                      |
+   |                      declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `User` [bad-function-definition]
+  --> src\auth\users.py:29:59
+   |
+29 |     user: Annotated[User, Depends(current_active_user)] = None,
+   |           ---------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\auth\users.py:44:61
+   |
+44 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
 ERROR No matching overload found for function `sqlmodel.orm.session.Session.exec` called with arguments: (TextClause) [no-matching-overload]
   --> src\infra\health.py:27:25
    |
@@ -70,6 +93,462 @@ ERROR No matching overload found for function `sqlmodel.orm.session.Session.exec
   (statement: Select[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None, execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = None, _parent_execute_state: Any | None = None, _add_event: Any | None = None) -> TupleResult[_TSelectParam] [closest match]
   (statement: SelectOfScalar[_TSelectParam], *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None, execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = None, _parent_execute_state: Any | None = None, _add_event: Any | None = None) -> ScalarResult[_TSelectParam]
   (statement: UpdateBase, *, params: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None, execution_options: Mapping[str, Any] = ..., bind_arguments: dict[str, Any] | None = None, _parent_execute_state: Any | None = None, _add_event: Any | None = None) -> CursorResult[Any]
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\assessments\unified.py:302:69
+    |
+302 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+   --> src\routers\assessments\unified.py:303:63
+    |
+303 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+    |                 -------------------------------------------   ^^^^
+    |                 |
+    |                 declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:35:63
+   |
+35 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:36:69
+   |
+36 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |                   -----------------------------------------------   ^^^^
+   |                   |
+   |                   declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:48:63
+   |
+48 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `AnonymousUser | PublicUser` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:49:94
+   |
+49 |     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+   |                   ------------------------------------------------------------------------   ^^^^
+   |                   |
+   |                   declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:67:63
+   |
+67 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:68:69
+   |
+68 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |                   -----------------------------------------------   ^^^^
+   |                   |
+   |                   declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:80:63
+   |
+80 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `AnonymousUser | PublicUser` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:81:94
+   |
+81 |     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+   |                   ------------------------------------------------------------------------   ^^^^
+   |                   |
+   |                   declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\activities\blocks.py:99:63
+   |
+99 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\courses\activities\blocks.py:100:69
+    |
+100 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+   --> src\routers\courses\activities\blocks.py:112:63
+    |
+112 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+    |                 -------------------------------------------   ^^^^
+    |                 |
+    |                 declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `AnonymousUser | PublicUser` [bad-function-definition]
+   --> src\routers\courses\activities\blocks.py:113:94
+    |
+113 |     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+    |                   ------------------------------------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\chapters.py:35:63
+   |
+35 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\chapters.py:45:63
+   |
+45 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\chapters.py:56:63
+   |
+56 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\chapters.py:69:63
+   |
+69 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\chapters.py:88:63
+   |
+88 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+   --> src\routers\courses\chapters.py:100:63
+    |
+100 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+    |                 -------------------------------------------   ^^^^
+    |                 |
+    |                 declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+   --> src\routers\courses\chapters.py:110:63
+    |
+110 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+    |                 -------------------------------------------   ^^^^
+    |                 |
+    |                 declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\collections.py:32:63
+   |
+32 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\collections.py:45:63
+   |
+45 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\collections.py:59:63
+   |
+59 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\collections.py:79:63
+   |
+79 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\courses\collections.py:92:63
+   |
+92 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `checker` with type `PermissionChecker` [bad-function-definition]
+   --> src\routers\courses\courses.py:257:37
+    |
+257 |     checker: PermissionCheckerDep = None,
+    |              --------------------   ^^^^
+    |              |
+    |              declared type
+    |
+ERROR Default `None` is not assignable to parameter `checker` with type `PermissionChecker` [bad-function-definition]
+   --> src\routers\courses\courses.py:292:37
+    |
+292 |     checker: PermissionCheckerDep = None,
+    |              --------------------   ^^^^
+    |              |
+    |              declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\file_submissions.py:179:69
+    |
+179 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+   --> src\routers\file_submissions.py:180:63
+    |
+180 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+    |                 -------------------------------------------   ^^^^
+    |                 |
+    |                 declared type
+    |
+ERROR Default `Ellipsis` is not assignable to parameter `data` with type `dict[str, Any]` [bad-function-definition]
+   --> src\routers\gamification.py:206:47
+    |
+206 |     data: Annotated[dict[str, Any], Body()] = ...,
+    |           ---------------------------------   ^^^
+    |           |
+    |           declared type
+    |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\gamification.py:207:61
+    |
+207 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |           -----------------------------------------------   ^^^^
+    |           |
+    |           declared type
+    |
+ERROR Default `None` is not assignable to parameter `db` with type `Session` [bad-function-definition]
+   --> src\routers\gamification.py:208:55
+    |
+208 |     db: Annotated[Session, Depends(get_db_session)] = None,
+    |         -------------------------------------------   ^^^^
+    |         |
+    |         declared type
+    |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\gamification.py:222:61
+    |
+222 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |           -----------------------------------------------   ^^^^
+    |           |
+    |           declared type
+    |
+ERROR Default `None` is not assignable to parameter `db` with type `Session` [bad-function-definition]
+   --> src\routers\gamification.py:223:55
+    |
+223 |     db: Annotated[Session, Depends(get_db_session)] = None,
+    |         -------------------------------------------   ^^^^
+    |         |
+    |         declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\rbac.py:188:69
+    |
+188 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `checker` with type `PermissionChecker` [bad-function-definition]
+   --> src\routers\rbac.py:189:37
+    |
+189 |     checker: PermissionCheckerDep = None,
+    |              --------------------   ^^^^
+    |              |
+    |              declared type
+    |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\search.py:20:63
+   |
+20 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\search.py:21:78
+   |
+21 |     current_user: Annotated[PublicUser, Depends(get_optional_public_user)] = None,
+   |                   --------------------------------------------------------   ^^^^
+   |                   |
+   |                   declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:27:61
+   |
+27 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:28:63
+   |
+28 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `AnonymousUser | PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:39:86
+   |
+39 |     user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+   |           ------------------------------------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:40:63
+   |
+40 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:54:61
+   |
+54 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:55:63
+   |
+55 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:67:61
+   |
+67 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:68:63
+   |
+68 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:80:61
+   |
+80 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:81:63
+   |
+81 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `user` with type `PublicUser` [bad-function-definition]
+  --> src\routers\trail.py:93:61
+   |
+93 |     user: Annotated[PublicUser, Depends(get_public_user)] = None,
+   |           -----------------------------------------------   ^^^^
+   |           |
+   |           declared type
+   |
+ERROR Default `None` is not assignable to parameter `db_session` with type `Session` [bad-function-definition]
+  --> src\routers\trail.py:94:63
+   |
+94 |     db_session: Annotated[Session, Depends(get_db_session)] = None,
+   |                 -------------------------------------------   ^^^^
+   |                 |
+   |                 declared type
+   |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\uploads\chunked_upload.py:276:69
+    |
+276 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\uploads\chunked_upload.py:315:69
+    |
+315 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\uploads\chunked_upload.py:352:69
+    |
+352 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\uploads\chunked_upload.py:381:69
+    |
+381 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `None` is not assignable to parameter `current_user` with type `PublicUser` [bad-function-definition]
+   --> src\routers\uploads\chunked_upload.py:426:69
+    |
+426 |     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    |                   -----------------------------------------------   ^^^^
+    |                   |
+    |                   declared type
+    |
+ERROR Default `Ellipsis` is not assignable to parameter `url` with type `str` [bad-function-definition]
+  --> src\routers\utils.py:15:83
+   |
+15 | async def link_preview(url: Annotated[str, Query(description="URL to preview")] = ...):
+   |                             ---------------------------------------------------   ^^^
+   |                             |
+   |                             declared type
+   |
 ERROR `in` is not supported between `str` and `(content: bytes) -> bool` [not-iterable]
    --> src\security\file_validation.py:210:40
     |
@@ -105,7 +584,7 @@ ERROR `>` is not supported between `int` and `list[str]` [unsupported-operation]
 ERROR `/` is not supported between `(content: bytes) -> bool` and `Literal[1024]` [unsupported-operation]
    --> src\security\file_validation.py:227:82
     |
-227 | ...   detail=f"╨ñ╨░╨╣╨╗ ╤ü╨╗╨╕╤ê╨║╨╛╨╝ ╨▒╨╛╨╗╤î╤ê╨╛╨╣ ({len(content) / 1024 / 1024:.1f}╨£╨æ > {size_limit / 1024 / 1024:.1f}╨£╨æ)",
+227 | ...   detail=f"Файл слишком большой ({len(content) / 1024 / 1024:.1f}МБ > {size_limit / 1024 / 1024:.1f}МБ)",
     |                                                                            ----------^^^----
     |                                                                            |            |
     |                                                                            |            has type `Literal[1024]`
@@ -115,7 +594,7 @@ ERROR `/` is not supported between `(content: bytes) -> bool` and `Literal[1024]
 ERROR `/` is not supported between `list[str]` and `Literal[1024]` [unsupported-operation]
    --> src\security\file_validation.py:227:82
     |
-227 | ...   detail=f"╨ñ╨░╨╣╨╗ ╤ü╨╗╨╕╤ê╨║╨╛╨╝ ╨▒╨╛╨╗╤î╤ê╨╛╨╣ ({len(content) / 1024 / 1024:.1f}╨£╨æ > {size_limit / 1024 / 1024:.1f}╨£╨æ)",
+227 | ...   detail=f"Файл слишком большой ({len(content) / 1024 / 1024:.1f}МБ > {size_limit / 1024 / 1024:.1f}МБ)",
     |                                                                            ----------^^^----
     |                                                                            |            |
     |                                                                            |            has type `Literal[1024]`
@@ -804,4 +1283,3 @@ ERROR Result of `await` is itself a coroutine that is silently discarded. Either
 50 |         await asyncio.to_thread(run_deadline_extension_action, action_uuid)
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
- INFO 74 errors (28 suppressed, 98 warnings not shown)
