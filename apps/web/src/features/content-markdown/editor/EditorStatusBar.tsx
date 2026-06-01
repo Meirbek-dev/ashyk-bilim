@@ -8,6 +8,8 @@ import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation'
 import { getHighestMarkdownIssueSeverity } from '../hooks/useMarkdownValidation'
 import { useTranslations } from 'next-intl'
 
+const formatStatusNumber = (value: number) => new Intl.NumberFormat('en-US').format(value)
+
 interface EditorStatusBarProps {
   config: MarkdownPresetConfig
   charCount: number
@@ -108,7 +110,7 @@ export function EditorStatusBar({ config, charCount, wordCount, isEmpty, saveSta
             !nearLimit && 'text-muted-foreground',
           )}
         >
-          {charCount.toLocaleString()}/{config.maxLength.toLocaleString()}
+          {formatStatusNumber(charCount)}/{formatStatusNumber(config.maxLength)}
         </span>
       </div>
     </div>

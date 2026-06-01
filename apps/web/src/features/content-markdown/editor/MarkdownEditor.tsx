@@ -2,6 +2,7 @@
 
 import { EditorContent, useEditor } from '@tiptap/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '../renderer/MarkdownContent'
@@ -54,7 +55,8 @@ export function MarkdownEditor({
   onModeChange,
   onBlur,
 }: MarkdownEditorProps) {
-  const config = getMarkdownPreset(preset)
+  const t = useTranslations('MarkdownEditor')
+  const config = useMemo(() => getMarkdownPreset(preset, t), [preset, t])
   const [viewMode, setViewMode] = useState<ViewMode>('write')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const sourceValue = (value ?? '').replace(/\r\n?/g, '\n')

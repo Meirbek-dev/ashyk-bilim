@@ -31,6 +31,8 @@ export interface MarkdownSnippet {
   markdown: string
 }
 
+type MarkdownTranslator = (key: string, values?: Record<string, string | number>) => string
+
 /** Groups of toolbar actions for preset-driven toolbar composition. */
 export type ToolbarGroup =
   | 'formatting' // Bold, italic, strikethrough, inline code
@@ -40,6 +42,35 @@ export type ToolbarGroup =
   | 'media' // Link, image
   | 'table' // Insert table
   | 'math' // Math inline / block
+
+interface MarkdownPresetRules {
+  icon: LucideIcon
+  renderMode: MarkdownRenderMode
+  minHeight: number
+  maxHeight?: number
+  maxLength: number
+  /** Feature gates — controls both toolbar visibility and extension registration. */
+  allowTaskList: boolean
+  allowTable: boolean
+  allowMath: boolean
+  allowCodeBlock: boolean
+  allowImages: boolean
+  /** Ordered list of toolbar groups to render. */
+  toolbarGroups: ToolbarGroup[]
+}
+
+interface MarkdownSnippetDefinition {
+  id: string
+  labelKey: string
+  markdownKey: string
+}
+
+interface MarkdownPresetTextDefinition {
+  labelKey: string
+  descriptionKey: string
+  placeholderKey: string
+  snippets: MarkdownSnippetDefinition[]
+}
 
 export interface MarkdownPresetConfig {
   label: string
@@ -63,71 +94,66 @@ export interface MarkdownPresetConfig {
 
 // ── Snippet libraries ─────────────────────────────────────────────────────────
 
-const taskSnippets: MarkdownSnippet[] = [
+const taskSnippetDefinitions: MarkdownSnippetDefinition[] = [
   {
     id: 'objective',
-    label: 'Task objective',
-    markdown: '## Objective\n\nDescribe what learners need to produce and why it matters.\n',
+    labelKey: 'presets.shared.objective.label',
+    markdownKey: 'presets.shared.objective.markdown',
   },
   {
     id: 'rubric',
-    label: 'Rubric table',
-    markdown:
-      '| Criteria | Excellent | Needs work |\n| --- | --- | --- |\n| Accuracy | Complete and correct | Missing key requirements |\n',
+    labelKey: 'presets.shared.rubric.label',
+    markdownKey: 'presets.shared.rubric.markdown',
   },
   {
     id: 'checklist',
-    label: 'Checklist',
-    markdown: '- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n',
+    labelKey: 'presets.shared.checklist.label',
+    markdownKey: 'presets.shared.checklist.markdown',
   },
 ]
 
-const codeSnippets: MarkdownSnippet[] = [
+const codeSnippetDefinitions: MarkdownSnippetDefinition[] = [
   {
     id: 'problem-template',
-    label: 'Problem template',
-    markdown:
-      '## Problem\n\nDescribe the task.\n\n## Example\n\n```text\nInput:\n\nOutput:\n```\n\n## Constraints\n\n- `1 <= n <= 10^5`\n',
+    labelKey: 'presets.shared.problemTemplate.label',
+    markdownKey: 'presets.shared.problemTemplate.markdown',
   },
   {
     id: 'example-block',
-    label: 'Example block',
-    markdown: '```text\nInput:\n\nOutput:\n```\n\n**Explanation:** Add the reasoning here.\n',
+    labelKey: 'presets.shared.exampleBlock.label',
+    markdownKey: 'presets.shared.exampleBlock.markdown',
   },
   {
     id: 'complexity',
-    label: 'Complexity target',
-    markdown: '**Expected complexity:** `O(n)` time and `O(1)` extra memory.\n',
+    labelKey: 'presets.shared.complexityTarget.label',
+    markdownKey: 'presets.shared.complexityTarget.markdown',
   },
 ]
 
-const courseSnippets: MarkdownSnippet[] = [
+const courseSnippetDefinitions: MarkdownSnippetDefinition[] = [
   {
     id: 'course-overview',
-    label: 'Course overview',
-    markdown: '## Overview\n\nDescribe who this course is for and what learners will build.\n',
+    labelKey: 'presets.shared.courseOverview.label',
+    markdownKey: 'presets.shared.courseOverview.markdown',
   },
   {
     id: 'prerequisites',
-    label: 'Prerequisites',
-    markdown: '## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n',
+    labelKey: 'presets.shared.prerequisites.label',
+    markdownKey: 'presets.shared.prerequisites.markdown',
   },
   {
     id: 'outcomes',
-    label: 'Learning outcomes',
-    markdown: '## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n',
+    labelKey: 'presets.shared.learningOutcomes.label',
+    markdownKey: 'presets.shared.learningOutcomes.markdown',
   },
 ]
 
 // ── Preset definitions ────────────────────────────────────────────────────────
 
-export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig> = {
+const MARKDOWN_PRESET_RULES: Record<MarkdownEditorPreset, MarkdownPresetRules> = {
   assessmentDescription: {
-    label: 'Assessment description',
-    description: 'Student-facing overview, policy notes, and exam instructions.',
     icon: ClipboardCheck,
     renderMode: 'taskDescription',
-    placeholder: 'Write the assessment instructions students will see...',
     minHeight: 220,
     maxLength: 10_000,
     allowTaskList: true,
@@ -136,14 +162,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
-    snippets: taskSnippets,
   },
   questionPrompt: {
-    label: 'Question prompt',
-    description: 'Prompt text shown inside assessment questions.',
     icon: MessageSquareText,
     renderMode: 'prompt',
-    placeholder: 'Write the question prompt...',
     minHeight: 160,
     maxLength: 12_000,
     allowTaskList: false,
@@ -152,14 +174,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
-    snippets: taskSnippets.slice(0, 2),
   },
   explanation: {
-    label: 'Explanation',
-    description: 'Rubrics, explanations, and teacher feedback.',
     icon: Lightbulb,
     renderMode: 'compactRichText',
-    placeholder: 'Write an explanation or rubric...',
     minHeight: 140,
     maxLength: 8000,
     allowTaskList: true,
@@ -168,14 +186,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
-    snippets: taskSnippets.slice(1),
   },
   fileSubmissionInstructions: {
-    label: 'Submission instructions',
-    description: 'Requirements, accepted files, rubric, and submission checklist.',
     icon: FileText,
     renderMode: 'taskDescription',
-    placeholder: 'Write clear upload instructions, naming rules, and grading expectations...',
     minHeight: 300,
     maxLength: 12_000,
     allowTaskList: true,
@@ -184,21 +198,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table'],
-    snippets: [
-      {
-        id: 'file-rules',
-        label: 'File naming rules',
-        markdown: '## File naming\n\nUse this format: `lastname_firstname_taskname.ext`.\n',
-      },
-      ...taskSnippets,
-    ],
   },
   codeProblemStatement: {
-    label: 'Problem statement',
-    description: 'Competitive-programming style statement with examples and constraints.',
     icon: Code2,
     renderMode: 'codeProblem',
-    placeholder: 'Write the coding challenge statement...',
     minHeight: 360,
     maxLength: 12_000,
     allowTaskList: false,
@@ -207,14 +210,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
-    snippets: codeSnippets,
   },
   codeInputSpec: {
-    label: 'Input specification',
-    description: 'Describe stdin or function input shape.',
     icon: Code2,
     renderMode: 'codeSpec',
-    placeholder: 'Describe the input format...',
     minHeight: 160,
     maxLength: 4000,
     allowTaskList: false,
@@ -223,14 +222,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'lists', 'blocks', 'table', 'math'],
-    snippets: codeSnippets.slice(1),
   },
   codeOutputSpec: {
-    label: 'Output specification',
-    description: 'Describe expected output shape.',
     icon: Code2,
     renderMode: 'codeSpec',
-    placeholder: 'Describe the output format...',
     minHeight: 160,
     maxLength: 4000,
     allowTaskList: false,
@@ -239,14 +234,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'lists', 'blocks', 'table', 'math'],
-    snippets: codeSnippets.slice(1),
   },
   codeExampleExplanation: {
-    label: 'Example explanation',
-    description: 'Explain a visible sample test.',
     icon: Code2,
     renderMode: 'compactRichText',
-    placeholder: 'Explain why this sample produces the expected output...',
     minHeight: 140,
     maxLength: 4000,
     allowTaskList: false,
@@ -255,14 +246,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'lists', 'blocks', 'math'],
-    snippets: codeSnippets.slice(1),
   },
   codeHint: {
-    label: 'Hint',
-    description: 'Progressive help without revealing the full solution.',
     icon: Lightbulb,
     renderMode: 'compactRichText',
-    placeholder: 'Write a focused hint...',
     minHeight: 120,
     maxLength: 2000,
     allowTaskList: false,
@@ -271,14 +258,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'lists', 'blocks', 'math'],
-    snippets: codeSnippets.slice(2, 3),
   },
   codeEditorial: {
-    label: 'Editorial',
-    description: 'Solution explanation released by policy.',
     icon: BookOpen,
     renderMode: 'codeProblem',
-    placeholder: 'Explain the intended solution...',
     minHeight: 300,
     maxLength: 12_000,
     allowTaskList: false,
@@ -287,14 +270,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: true,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
-    snippets: codeSnippets,
   },
   courseDescription: {
-    label: 'Course description',
-    description: 'Public course overview shown to learners.',
     icon: GraduationCap,
     renderMode: 'courseDescription',
-    placeholder: 'Describe the course, audience, prerequisites, and outcomes...',
     minHeight: 300,
     maxLength: 8000,
     allowTaskList: false,
@@ -303,10 +282,113 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowCodeBlock: false,
     allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'media', 'table'],
-    snippets: courseSnippets,
   },
 }
 
-export function getMarkdownPreset(preset: MarkdownEditorPreset): MarkdownPresetConfig {
-  return MARKDOWN_PRESETS[preset]
+const MARKDOWN_PRESET_TEXT: Record<MarkdownEditorPreset, MarkdownPresetTextDefinition> = {
+  assessmentDescription: {
+    labelKey: 'presets.assessmentDescription.label',
+    descriptionKey: 'presets.assessmentDescription.description',
+    placeholderKey: 'presets.assessmentDescription.placeholder',
+    snippets: taskSnippetDefinitions,
+  },
+  questionPrompt: {
+    labelKey: 'presets.questionPrompt.label',
+    descriptionKey: 'presets.questionPrompt.description',
+    placeholderKey: 'presets.questionPrompt.placeholder',
+    snippets: taskSnippetDefinitions.slice(0, 2),
+  },
+  explanation: {
+    labelKey: 'presets.explanation.label',
+    descriptionKey: 'presets.explanation.description',
+    placeholderKey: 'presets.explanation.placeholder',
+    snippets: taskSnippetDefinitions.slice(1),
+  },
+  fileSubmissionInstructions: {
+    labelKey: 'presets.fileSubmissionInstructions.label',
+    descriptionKey: 'presets.fileSubmissionInstructions.description',
+    placeholderKey: 'presets.fileSubmissionInstructions.placeholder',
+    snippets: [
+      {
+        id: 'file-rules',
+        labelKey: 'presets.shared.fileNamingRules.label',
+        markdownKey: 'presets.shared.fileNamingRules.markdown',
+      },
+      ...taskSnippetDefinitions,
+    ],
+  },
+  codeProblemStatement: {
+    labelKey: 'presets.codeProblemStatement.label',
+    descriptionKey: 'presets.codeProblemStatement.description',
+    placeholderKey: 'presets.codeProblemStatement.placeholder',
+    snippets: codeSnippetDefinitions,
+  },
+  codeInputSpec: {
+    labelKey: 'presets.codeInputSpec.label',
+    descriptionKey: 'presets.codeInputSpec.description',
+    placeholderKey: 'presets.codeInputSpec.placeholder',
+    snippets: codeSnippetDefinitions.slice(1),
+  },
+  codeOutputSpec: {
+    labelKey: 'presets.codeOutputSpec.label',
+    descriptionKey: 'presets.codeOutputSpec.description',
+    placeholderKey: 'presets.codeOutputSpec.placeholder',
+    snippets: codeSnippetDefinitions.slice(1),
+  },
+  codeExampleExplanation: {
+    labelKey: 'presets.codeExampleExplanation.label',
+    descriptionKey: 'presets.codeExampleExplanation.description',
+    placeholderKey: 'presets.codeExampleExplanation.placeholder',
+    snippets: codeSnippetDefinitions.slice(1),
+  },
+  codeHint: {
+    labelKey: 'presets.codeHint.label',
+    descriptionKey: 'presets.codeHint.description',
+    placeholderKey: 'presets.codeHint.placeholder',
+    snippets: codeSnippetDefinitions.slice(2, 3),
+  },
+  codeEditorial: {
+    labelKey: 'presets.codeEditorial.label',
+    descriptionKey: 'presets.codeEditorial.description',
+    placeholderKey: 'presets.codeEditorial.placeholder',
+    snippets: codeSnippetDefinitions,
+  },
+  courseDescription: {
+    labelKey: 'presets.courseDescription.label',
+    descriptionKey: 'presets.courseDescription.description',
+    placeholderKey: 'presets.courseDescription.placeholder',
+    snippets: courseSnippetDefinitions,
+  },
+}
+
+const defaultMarkdownTranslator: MarkdownTranslator = key => key
+
+function localizeSnippet(t: MarkdownTranslator, definition: MarkdownSnippetDefinition): MarkdownSnippet {
+  return {
+    id: definition.id,
+    label: t(definition.labelKey),
+    markdown: t(definition.markdownKey),
+  }
+}
+
+function localizePreset(t: MarkdownTranslator, preset: MarkdownEditorPreset): MarkdownPresetConfig {
+  const rules = MARKDOWN_PRESET_RULES[preset]
+  const text = MARKDOWN_PRESET_TEXT[preset]
+
+  return {
+    ...rules,
+    label: t(text.labelKey),
+    description: t(text.descriptionKey),
+    placeholder: t(text.placeholderKey),
+    snippets: text.snippets.map(snippet => localizeSnippet(t, snippet)),
+  }
+}
+
+export const MARKDOWN_PRESETS = MARKDOWN_PRESET_RULES
+
+export function getMarkdownPreset(
+  preset: MarkdownEditorPreset,
+  t: MarkdownTranslator = defaultMarkdownTranslator,
+): MarkdownPresetConfig {
+  return localizePreset(t, preset)
 }

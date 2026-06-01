@@ -1,5 +1,5 @@
 import type { MarkdownEditorPreset } from '../presets/presets'
-import { getMarkdownPreset } from '../presets/presets'
+import { MARKDOWN_PRESETS } from '../presets/presets'
 import { findUnsafeMarkdownLinks, hasRawHtml, isMarkdownStructurallyEmpty } from '../utils/markdown-sanitize'
 
 export interface MarkdownValidationIssue {
@@ -46,7 +46,7 @@ export function validateMarkdownContent(
   preset: MarkdownEditorPreset,
   options: { required?: boolean } = {},
 ): MarkdownValidationIssue[] {
-  const config = getMarkdownPreset(preset)
+  const config = MARKDOWN_PRESETS[preset]
   const issues: MarkdownValidationIssue[] = []
 
   // ── Required field ────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'content.empty',
-      message: 'Content is required.',
+      message: 'Содержание не может быть пустым.',
     })
   }
 
