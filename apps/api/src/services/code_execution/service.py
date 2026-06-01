@@ -450,6 +450,7 @@ class CodeExecutionService:
         client = self._client_factory.get_client()
         settings = get_settings().integrations.judge0
         allowed = set(settings.allowed_language_ids)
+        languages = client.languages or []
         return [
             {
                 "id": language.id,
@@ -457,7 +458,7 @@ class CodeExecutionService:
                 "is_archived": language.is_archived is True,
                 "monaco_language": monaco_language_for(language.name),
             }
-            for language in client.languages
+            for language in languages
             if language.is_archived is not True and (not allowed or int(language.id) in allowed)
         ]
 

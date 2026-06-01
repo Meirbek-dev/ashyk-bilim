@@ -43,10 +43,11 @@ def get_platform_users(
             .where(col(UserRole.user_id).in_(user_ids))
         ).all()
         for role, user_role in all_role_rows:
-            roles_by_user[user_role.user_id].append(role)
+            if user_role.user_id is not None:
+                roles_by_user[user_role.user_id].append(role)
 
     for user in users:
-        user_roles = roles_by_user.get(user.id, [])
+        user_roles = roles_by_user.get(user.id or 0, [])
 
         if not user_roles:
             logger.warning("No roles found for user %s in platform", user.id)

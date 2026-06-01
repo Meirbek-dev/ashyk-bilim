@@ -88,7 +88,7 @@ def build_anomalies(
         duration_seconds = metadata.get("duration_seconds")
         if duration_seconds is None and submission.started_at and submission.submitted_at:
             duration_seconds = (submission.submitted_at - submission.started_at).total_seconds()
-        if duration_seconds is not None and float(duration_seconds) > 0:
+        if activity.id is not None and duration_seconds is not None and float(duration_seconds) > 0:
             durations_by_activity[activity.id].append(float(duration_seconds))
     for activity_id, durations in durations_by_activity.items():
         if len(durations) < 5:

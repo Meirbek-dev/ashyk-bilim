@@ -144,9 +144,14 @@ async def teacher_course_detail_by_uuid_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    course = sa_execute(db_session, 
-        sa_select(Course).where(col(Course.course_uuid) == course_uuid, col(Course.id).in_(scope.course_ids))
-    ).scalars().first()
+    course = (
+        sa_execute(
+            db_session,
+            sa_select(Course).where(col(Course.course_uuid) == course_uuid, col(Course.id).in_(scope.course_ids)),
+        )
+        .scalars()
+        .first()
+    )
     if course is None:
         raise HTTPException(status_code=404, detail="Курс не найден в этой области")
     try:

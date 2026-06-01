@@ -75,7 +75,7 @@ def load_chat_session(
         storage_type = "redis"
         key = _redis_key(session_id)
         try:
-            total_messages = client.llen(key)
+            total_messages = cast(int, client.llen(key))
             raw_messages = cast("list[bytes]", client.lrange(key, -window_size, -1))
             messages = [ChatMessage.model_validate_json(_decode_redis_value(item)) for item in raw_messages]
 

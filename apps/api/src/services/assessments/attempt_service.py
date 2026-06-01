@@ -691,7 +691,7 @@ async def validate_code_challenge_service(
     all_tests = body.tests
     service = get_code_execution_service()
 
-    results_by_lang = {}
+    results_by_lang: dict[int, dict[str, object]] = {}
     from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 
     for lang_id in body.languages:

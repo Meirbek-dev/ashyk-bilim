@@ -300,10 +300,11 @@ async def get_collections(
 
     courses_by_collection: dict[int, list] = {}
     for cc, course in db_session.exec(batch_stmt).all():
-        courses_by_collection.setdefault(cc.collection_id, []).append(course)
+        if cc.collection_id is not None:
+            courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
     for collection in collections:
-        courses = courses_by_collection.get(collection.id, [])
+        courses = courses_by_collection.get(collection.id or 0, [])
 
         can_update = (
             checker.check(

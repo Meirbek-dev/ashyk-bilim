@@ -193,7 +193,7 @@ async def get_assessment_submission_stats(
         )
     ).one()
 
-    graded_scores = db_session.exec(
+    raw_graded_scores = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity.id,
             col(Submission.status).in_([
@@ -203,6 +203,7 @@ async def get_assessment_submission_stats(
             col(Submission.final_score).is_not(None),
         )
     ).all()
+    graded_scores = [float(score) for score in raw_graded_scores if score is not None]
 
     avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
     passing = [score for score in graded_scores if score >= 50.0]

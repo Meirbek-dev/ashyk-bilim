@@ -37,15 +37,20 @@ def _row_from_model(item: TeacherIntervention) -> TeacherInterventionRow:
 
 
 def _latest_risk_score(db_session: Session, *, user_id: int, course_id: int) -> float | None:
-    snapshot = sa_execute(db_session, 
-        select(LearnerRiskSnapshot)
-        .where(
-            col(LearnerRiskSnapshot.user_id) == user_id,
-            col(LearnerRiskSnapshot.course_id) == course_id,
+    snapshot = (
+        sa_execute(
+            db_session,
+            select(LearnerRiskSnapshot)
+            .where(
+                col(LearnerRiskSnapshot.user_id) == user_id,
+                col(LearnerRiskSnapshot.course_id) == course_id,
+            )
+            .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
+            .limit(1),
         )
-        .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
-        .limit(1)
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     return float(snapshot.risk_score) if snapshot is not None else None
 
 
@@ -97,7 +102,11 @@ def list_teacher_interventions(
         statement = statement.where(col(TeacherIntervention.user_id) == user_id)
     if course_id is not None:
         statement = statement.where(col(TeacherIntervention.course_id) == course_id)
-    rows = list(sa_execute(db_session, statement.order_by(col(TeacherIntervention.created_at).desc()).limit(limit)).scalars().all())
+    rows = list(
+        sa_execute(db_session, statement.order_by(col(TeacherIntervention.created_at).desc()).limit(limit))
+        .scalars()
+        .all()
+    )
     return TeacherInterventionListResponse(
         generated_at=to_iso(datetime.now(tz=UTC)) or "",
         total=len(rows),
@@ -111,14 +120,17 @@ def intervention_rows_by_learner(
     if not scope.course_ids:
         return {}
     rows = list(
-        sa_execute(db_session, 
+        sa_execute(
+            db_session,
             select(TeacherIntervention)
             .where(
                 col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
                 col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
-            .order_by(col(TeacherIntervention.created_at).desc())
-        ).scalars().all()
+            .order_by(col(TeacherIntervention.created_at).desc()),
+        )
+        .scalars()
+        .all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)
     for row in rows:

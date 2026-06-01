@@ -197,7 +197,9 @@ def test_course_author_can_test_after_previous_attempt_when_access_restricted(
         assert state["can_edit"] is True
         assert state["can_start"] is True
         assert state["effective_policy"].max_attempts is None
-        assert "MAX_ATTEMPTS_REACHED" not in state["disabled_action_reasons"]
+        disabled_action_reasons = state["disabled_action_reasons"]
+        assert isinstance(disabled_action_reasons, list)
+        assert "MAX_ATTEMPTS_REACHED" not in disabled_action_reasons
 
 
 def _seed_assessment(db_session_factory) -> tuple[str, int]:

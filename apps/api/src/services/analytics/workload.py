@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
@@ -94,7 +96,7 @@ def build_teacher_workload(context: AnalyticsContext, filters: AnalyticsFilters)
             item["sla_breaches"] = int(item["sla_breaches"]) + 1
         if submitted_at is not None:
             oldest = item.get("oldest_submitted_at")
-            if oldest is None or submitted_at < oldest:
+            if not isinstance(oldest, datetime) or submitted_at < oldest:
                 item["oldest_submitted_at"] = submitted_at
         if age_hours is not None:
             current_age = item.get("max_age_hours")

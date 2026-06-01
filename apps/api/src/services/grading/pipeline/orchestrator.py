@@ -17,7 +17,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
 
-from src.db.assessments import Assessment, CodeItemAnswer, CodeRunResult
+from src.db.assessments import Assessment, CodeItemAnswer, CodeItemBody, CodeRunResult
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import Activity
 from src.db.grading.overrides import StudentPolicyOverride
@@ -378,7 +378,7 @@ async def _run_final_code_answers(
     draft: Submission,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Run final Judge0 grading for canonical CODE answers server-side."""
-    code_items = [item for item in settings.items if item.body.kind == "CODE"]
+    code_items = [item for item in settings.items if isinstance(item.body, CodeItemBody)]
     if not code_items:
         return answers_by_item_uuid, answers_payload
 
@@ -387,6 +387,8 @@ async def _run_final_code_answers(
     assessment_uuid = assessment.assessment_uuid if assessment is not None else f"activity_{draft.activity_id}"
     enriched_answers = dict(answers_by_item_uuid)
     for item in code_items:
+        body = item.body
+        assert isinstance(body, CodeItemBody)
         raw_answer = answers_by_item_uuid.get(item.item_uuid)
         answer = _coerce_code_answer(raw_answer)
         if answer is None:
@@ -394,13 +396,13 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Missing CODE answer for item {item.item_uuid}",
             )
-        if item.body.languages and answer.language not in item.body.languages:
+        if body.languages and answer.language not in body.languages:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "LANGUAGE_NOT_ALLOWED",
                     "message": f"Language {answer.language} is not allowed.",
-                    "allowed_languages": item.body.languages,
+                    "allowed_languages": body.languages,
                 },
             )
 

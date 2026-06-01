@@ -154,7 +154,8 @@ async def get_discussions_by_course_uuid(
         # Group replies by parent discussion id
         replies_by_discussion_id: dict[int, list] = {}
         for reply in all_replies:
-            replies_by_discussion_id.setdefault(reply.parent_discussion_id, []).append(reply)
+            if reply.parent_discussion_id is not None:
+                replies_by_discussion_id.setdefault(reply.parent_discussion_id, []).append(reply)
 
         # Gather all reply details in parallel
         all_reply_details = list(
@@ -163,7 +164,7 @@ async def get_discussions_by_course_uuid(
         reply_details_by_id = {r.id: detail for r, detail in zip(all_replies, all_reply_details, strict=False)}
 
         for discussion, discussion_data in zip(discussions, all_discussion_data, strict=False):
-            replies = replies_by_discussion_id.get(discussion.id, [])
+            replies = replies_by_discussion_id.get(discussion.id or 0, [])
             discussion_data.replies = [reply_details_by_id[r.id] for r in replies]
 
     result = []

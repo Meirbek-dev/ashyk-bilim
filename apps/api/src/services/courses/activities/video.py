@@ -142,7 +142,7 @@ async def create_video_activity(
         subtitle_info = []
         valid_subtitles: list[tuple] = []
         for subtitle_file in subtitle_files:
-            if subtitle_file.filename and subtitle_file.size > 0:
+            if subtitle_file.filename and subtitle_file.size is not None and subtitle_file.size > 0:
                 if not subtitle_file.filename.endswith((".srt", ".vtt")):
                     continue
                 filename_parts = subtitle_file.filename.split(".")

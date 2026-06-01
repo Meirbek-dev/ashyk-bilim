@@ -21,12 +21,15 @@ def build_data_quality(
     freshness_seconds: int,
 ) -> AnalyticsDataQuality:
     teacher_rollup = (
-        sa_execute(db_session, 
+        sa_execute(
+            db_session,
             select(DailyTeacherMetrics)
             .where(col(DailyTeacherMetrics.teacher_user_id) == scope.teacher_user_id)
             .order_by(col(DailyTeacherMetrics.metric_date).desc())
-            .limit(1)
-        ).scalars().first()
+            .limit(1),
+        )
+        .scalars()
+        .first()
         if supports_teacher_rollup_reads(filters)
         else None
     )

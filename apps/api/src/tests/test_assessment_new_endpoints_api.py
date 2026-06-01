@@ -288,6 +288,7 @@ def _seed_assessment(db_session_factory) -> tuple[str, int]:
         session.flush()
         uuid = assessment.assessment_uuid
         pid = policy.id
+        assert pid is not None
         session.commit()
         return uuid, pid
 

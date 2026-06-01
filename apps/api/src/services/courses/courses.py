@@ -167,7 +167,7 @@ def _apply_lms_sort(query: Any, current_user: PublicUser | AnonymousUser) -> Any
     is_collaborator = case((is_collaborator_author, 1), else_=0)
 
     last_accessed = (
-        select(TrailRun.update_date)
+        select(col(TrailRun.update_date))
         .where(
             col(TrailRun.course_id) == Course.id,
             col(TrailRun.user_id) == current_user.id,
@@ -733,12 +733,14 @@ async def get_courses(
     results = db_session.exec(combined_query).all()
 
     # Group results by course, preserving correct sorting order
-    courses_map: OrderedDict[int, tuple] = OrderedDict()
+    courses_map: OrderedDict[int, tuple[Course | None, list[AuthorWithRole]]] = OrderedDict()
     for cid in course_ids:
         courses_map[cid] = (None, [])
 
     for course, ra, author_user in results:
         cid = course.id
+        if cid is None:
+            continue
         if courses_map[cid][0] is None:
             courses_map[cid] = (course, courses_map[cid][1])
         if ra is not None and author_user is not None:
@@ -1539,9 +1541,11 @@ async def get_editable_courses(
     if not results:
         return []
 
-    courses_map: OrderedDict[int, tuple] = OrderedDict()
+    courses_map: OrderedDict[int, tuple[Course, list[AuthorWithRole]]] = OrderedDict()
     for course, ra, author_user in results:
         cid = course.id
+        if cid is None:
+            continue
         if cid not in courses_map:
             courses_map[cid] = (course, [])
         if ra is not None and author_user is not None:

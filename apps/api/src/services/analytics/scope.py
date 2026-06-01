@@ -77,35 +77,45 @@ def resolve_teacher_scope(
     target_user_id = teacher_user_id if has_platform_scope else current_user.id
 
     if has_platform_scope and filters.teacher_user_id:
-        course_ids = sa_execute(db_session, 
-            select(col(Course.id))
-            .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
-            .where(
-                or_(
-                    col(Course.creator_id) == target_user_id,
-                    and_(
-                        col(ResourceAuthor.user_id) == target_user_id,
-                        col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
-                    ),
-                )
+        course_ids = (
+            sa_execute(
+                db_session,
+                select(col(Course.id))
+                .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+                .where(
+                    or_(
+                        col(Course.creator_id) == target_user_id,
+                        and_(
+                            col(ResourceAuthor.user_id) == target_user_id,
+                            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ),
+                    )
+                ),
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
     elif has_platform_scope:
         course_ids = sa_execute(db_session, select(col(Course.id))).scalars().all()
     else:
-        course_ids = sa_execute(db_session, 
-            select(col(Course.id))
-            .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
-            .where(
-                or_(
-                    col(Course.creator_id) == current_user.id,
-                    and_(
-                        col(ResourceAuthor.user_id) == current_user.id,
-                        col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
-                    ),
-                )
+        course_ids = (
+            sa_execute(
+                db_session,
+                select(col(Course.id))
+                .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+                .where(
+                    or_(
+                        col(Course.creator_id) == current_user.id,
+                        and_(
+                            col(ResourceAuthor.user_id) == current_user.id,
+                            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ),
+                    )
+                ),
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
     normalized_course_ids = sorted({
         normalized_course_id
@@ -145,10 +155,11 @@ def resolve_course_id_for_assessment(
     assessment_id: int,
 ) -> int | None:
     if assessment_type in {"manual_assessment", "exam"}:
-        row = sa_execute(db_session, 
+        row = sa_execute(
+            db_session,
             select(Assessment, Activity)
             .join(Activity, col(Activity.id) == Assessment.activity_id)
-            .where(col(Assessment.id) == assessment_id)
+            .where(col(Assessment.id) == assessment_id),
         ).first()
         if row is None:
             return None

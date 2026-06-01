@@ -1029,7 +1029,7 @@ def sync_activity_lifecycle(
     activity: Activity,
 ) -> None:
     lifecycle = AssessmentLifecycle(assessment.lifecycle)
-    details = activity.details if isinstance(activity.details, dict) else {}
+    details: dict[str, object] = activity.details if isinstance(activity.details, dict) else {}
     details["lifecycle_status"] = lifecycle.value
     details["scheduled_at"] = _dt_iso(assessment.scheduled_at)
     details["published_at"] = _dt_iso(assessment.published_at)

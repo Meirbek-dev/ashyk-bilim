@@ -328,6 +328,7 @@ def _seed_course_and_assessment(
 
         session.commit()
         session.refresh(activity)
+        assert activity.id is not None
         return assessment.assessment_uuid, activity.id, activity.activity_uuid
 
 

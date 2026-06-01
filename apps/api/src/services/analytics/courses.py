@@ -59,20 +59,26 @@ def _activity_progress_completed(progress: ActivityProgress) -> bool:
 def _previous_completion_by_course(db_session: Session, course_ids: list[int], before_date: date) -> dict[int, float]:
     if not course_ids:
         return {}
-    latest_date = sa_execute(db_session, 
+    latest_date = sa_execute(
+        db_session,
         select(func.max(DailyCourseMetrics.metric_date)).where(
             col(DailyCourseMetrics.metric_date) < before_date,
             col(DailyCourseMetrics.course_id).in_(course_ids),
-        )
+        ),
     ).scalar_one_or_none()
     if latest_date is None:
         return {}
-    rows = sa_execute(db_session, 
-        select(DailyCourseMetrics).where(
-            DailyCourseMetrics.metric_date == latest_date,
-            col(DailyCourseMetrics.course_id).in_(course_ids),
+    rows = (
+        sa_execute(
+            db_session,
+            select(DailyCourseMetrics).where(
+                DailyCourseMetrics.metric_date == latest_date,
+                col(DailyCourseMetrics.course_id).in_(course_ids),
+            ),
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return {row.course_id: float(row.completion_rate) for row in rows if row.completion_rate is not None}
 
 
@@ -100,9 +106,11 @@ def _build_rollup_course_rows(
 
     courses = {
         course.id: course
-        for course in sa_execute(db_session, 
-            select(Course).where(col(Course.id).in_([rollup.course_id for rollup in rollups]))
-        ).scalars().all()
+        for course in sa_execute(
+            db_session, select(Course).where(col(Course.id).in_([rollup.course_id for rollup in rollups]))
+        )
+        .scalars()
+        .all()
     }
 
     rows: list[TeacherCourseRow] = []
@@ -396,7 +404,9 @@ def get_teacher_course_list(
         paged_rows = rows[filters.offset : filters.offset + filters.page_size]
         course_map = {
             course.id: course
-            for course in sa_execute(db_session, select(Course).where(col(Course.id).in_(scope.course_ids))).scalars().all()
+            for course in sa_execute(db_session, select(Course).where(col(Course.id).in_(scope.course_ids)))
+            .scalars()
+            .all()
         }
         usergroups = list(sa_execute(db_session, select(UserGroup)).scalars().all())
         return TeacherCourseListResponse(
@@ -500,7 +510,9 @@ def get_teacher_course_detail(
     )
 
     ordered_steps = []
-    chapter_order = {item.id: item.order for item in context.course_chapters if item.course_id == course_id}
+    chapter_order = {
+        item.id: item.order for item in context.course_chapters if item.id is not None and item.course_id == course_id
+    }
     for chapter_activity in context.chapter_activities:
         if chapter_activity.course_id != course_id:
             continue
@@ -525,6 +537,8 @@ def get_teacher_course_detail(
     activity_dropoff: list[ActivityDropoffRow] = []
     previous_count: int | None = None
     for _chapter_order, _activity_order, chapter_activity, activity in ordered_steps:
+        if activity.id is None:
+            continue
         current_count = len(completion_by_activity.get(activity.id, set()))
         if previous_count is None:
             previous_count = current_count
@@ -562,7 +576,11 @@ def get_teacher_course_detail(
     chapter_funnel = []
     previous_chapter_count = None
     chapter_counts: dict[int, set[int]] = defaultdict(set)
-    activity_chapter = {item.id: item.chapter_id for item in context.chapter_activities if item.course_id == course_id}
+    activity_chapter = {
+        item.id: item.chapter_id
+        for item in context.chapter_activities
+        if item.id is not None and item.course_id == course_id
+    }
     for progress in context.activity_progress:
         if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
             continue

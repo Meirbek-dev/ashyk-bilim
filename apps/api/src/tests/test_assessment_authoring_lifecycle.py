@@ -222,6 +222,8 @@ def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
         session.commit()
         session.refresh(course)
         session.refresh(chapter)
+        assert course.id is not None
+        assert chapter.id is not None
         return course.id, chapter.id
 
 

@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from fastapi import APIRouter, Depends
 
 from src.app.routing import StrictAPIRoute
@@ -48,7 +50,7 @@ v1_router.include_router(
 )
 
 v1_router.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
+    fastapi_users.get_register_router(cast(type[Any], UserRead), cast(type[Any], UserCreate)),
     prefix="/auth",
     tags=["auth"],
     dependencies=[Depends(auth.auth_sensitive_rate_limit)],
