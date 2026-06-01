@@ -109,7 +109,7 @@
       "dismissError": "Закрыть ошибку",
       "errorTitle": "Что-то пошло не так",
       "longerPlaceholder": "Выберите текст, чтобы сделать его длиннее",
-      "appLogoAlt": "Логотип Ashyk Bilim",
+      "appLogoAlt": "Логотип",
       "processingRequest": "Обрабатываю ваш запрос",
       "prompt_continueWriting": "Продолжить писать о {selection}",
       "prompt_critisize": "Раскритикуй этот фрагмент лекции и предложи улучшения: {selection}",
@@ -1009,7 +1009,7 @@
       "hasSuccessfullyCompleted": "успешно завершил(а)",
       "instructor": "Преподаватель",
       "instructorName": "Иван Петров",
-      "organizationLogoAlt": "Логотип Ashyk Bilim",
+      "organizationLogoAlt": "Логотип",
       "previewNote": "Предпросмотр использует только токены темы. Выбор шаблона теперь меняет плотность макета и обрамление, а не отдельные цветовые наборы.",
       "qrLabel": "QR",
       "scanToVerify": "Отсканируйте для проверки",
@@ -1237,8 +1237,8 @@
     },
     "googleLogo": "Логотип Google",
     "loading": "Загрузка...",
-    "logoAlt": "Логотип Ashyk Bilim",
-    "appLogoAlt": "Логотип Ashyk Bilim",
+    "logoAlt": "Логотип",
+    "appLogoAlt": "Логотип",
     "owner": "Создатель",
     "save": "Сохранить",
     "saved": "Сохранено",
@@ -1783,7 +1783,7 @@
       "step1Desc": "Добро пожаловать в Ashyk Bilim, LMS, созданную для простоты, удобства использования и производительности. Откройте для себя новый способ создания, обмена и взаимодействия с образовательным контентом.",
       "step1Title": "Обучайте мир!",
       "step2Button": "Создать новый курс",
-      "step2Desc": "Курсы являются основными строительными блоками Ashyk Bilim, они всегда содержат Главы, а Главы содержат Активности.",
+      "step2Desc": "Курсы являются основными строительными блоками, они всегда содержат Главы, а Главы содержат Активности.",
       "step2Title": "Создание курсов",
       "step3Button": "Узнать больше об Активностях",
       "step3Desc": "Активности - это элементы, которые вы можете добавлять в свои Курсы через Главы: Динамические страницы, Видео, Документы, Учебные задачи и многое другое в ближайшее время.",
@@ -1792,7 +1792,7 @@
       "step4Desc": "Динамические страницы - это страницы с динамическим контентом, подобным страницам Notion, они могут включать различные компоненты, такие как Тесты, Изображения, Видео, Документы и т. д.",
       "step4Title": "Динамические страницы и Редактор",
       "step5Button": "Узнать больше об Ashyk Ai",
-      "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента, который вы создаете в Ashyk Bilim",
+      "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента",
       "step5Title": "Искусственный интеллект",
       "step6Button": "Создать группы пользователей",
       "step6Desc": "С помощью групп пользователей вы можете разделить студентов на группы и предоставить доступ к курсам в зависимости от их потребностей",
@@ -1808,7 +1808,7 @@
       "account": "Аккаунт",
       "closeMenu": "Закрыть меню",
       "language": "Язык",
-      "logoAlt": "Логотип Ashyk Bilim",
+      "logoAlt": "Логотип",
       "navigation": "Навигация",
       "openMenu": "Открыть меню",
       "overlayClose": "Закрыть меню",
@@ -1994,7 +1994,7 @@
       "assignedRoleSuccess": "Роль успешно назначена",
       "basicAccess": "Базовый доступ",
       "cardDescription": "Управляйте ролями и разрешениями вашей организации",
-      "cardTitle": "Роли Ashyk Bilim",
+      "cardTitle": "Роли",
       "createRole": "Создать роль",
       "createRoleDescription": "Определите новую роль с конкретными разрешениями",
       "createRoleTitle": "Создание новой роли",
@@ -2494,9 +2494,9 @@
     "Platform": {
       "adminDescription": "Управляйте настройками платформы и доступом",
       "adminTitle": "Администрирование",
-      "fetchError": "Произошла ошибка при загрузке данных Ashyk Bilim",
+      "fetchError": "Произошла ошибка при загрузке данных",
       "home": "На главную",
-      "notMemberInfo": "Вы еще не являетесь членом Ashyk Bilim",
+      "notMemberInfo": "Вы еще не являетесь пользователем Ashyk Bilim",
       "signOut": "Выйти"
     }
   },
@@ -3609,7 +3609,7 @@
         "title": "Платформа"
       },
       "Users": {
-        "description": "Управляйте пользователями и ролями Ashyk Bilim",
+        "description": "Управляйте пользователями и ролями",
         "title": "Пользователи"
       },
       "Admin": {
@@ -3618,7 +3618,7 @@
         "badge": "Системно"
       },
       "noAccess": "У вас пока нет доступа к функциям панели управления.",
-      "appLogo": "Логотип Ashyk Bilim",
+      "appLogo": "Логотип",
       "touUniversity": "Торайгыров Университет",
       "welcomeUser": "Рады вас видеть, {name}",
       "defaultUser": "Пользователь",
@@ -4210,7 +4210,7 @@
           }
         },
         "courseOwnershipTypes": "Типы владения курсом",
-        "description": "Разбор прав, ролей и доступа в Ashyk Bilim",
+        "description": "Разбор прав, ролей и доступа",
         "roleHierarchy": "Иерархия ролей",
         "roles": {
           "admin": {
@@ -4219,7 +4219,7 @@
             "permissions": {
               "allPermissions": "Все права",
               "manageCourses": "Управлять курсами",
-              "manageOrganization": "Управлять Ashyk Bilim",
+              "manageOrganization": "Управлять",
               "manageRoles": "Управлять ролями",
               "manageUsers": "Управлять пользователями"
             }
@@ -4258,7 +4258,7 @@
       "purchasedCourses": "Курсы, которые вы приобрели или на которые подписались",
       "title": "Курсы"
     },
-    "DashboardTitle": "Панель управления Ashyk Bilim",
+    "DashboardTitle": "Панель управления",
     "EditCourseContributors": {
       "active": "Активный",
       "activeBadge": "Активный",
@@ -5407,7 +5407,7 @@
       "uploadingAndCreating": "Загрузка файла и создание активности...",
       "uploadingImage": "Загрузка изображения...",
       "userGroupDeletedSuccess": "Группа пользователей удалена.",
-      "userRemovedSuccess": "Пользователь удален из Ashyk Bilim."
+      "userRemovedSuccess": "Пользователь удален."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -5730,7 +5730,7 @@
         "savingButton": "Сохранение...",
         "title": "Домашняя страница"
       },
-      "Manage additional organization settings": "Управление дополнительными настройками Ashyk Bilim",
+      "Manage additional organization settings": "Управление дополнительными настройками",
       "Socials": {
         "Form": {
           "addCustomLinkButton": "Добавить ссылку",
@@ -5749,10 +5749,10 @@
         "customLinksTitle": "Пользовательские ссылки",
         "description": "Управляйте присутствием в социальных сетях",
         "platformUpdateFailed": "Не удалось обновить платформу",
-        "platformUpdatedSuccess": "Данные Ashyk Bilim обновлены",
+        "platformUpdatedSuccess": "Данные обновлены",
         "socialLinksTitle": "Социальные ссылки",
         "title": "Социальные ссылки",
-        "updatingPlatform": "Обновление данных Ashyk Bilim."
+        "updatingPlatform": "Обновление данных."
       },
       "general": "Общее",
       "generalDescription": "Управление настройками",
@@ -5878,7 +5878,7 @@
           "profile": "Профиль",
           "progress": "Прогресс",
           "quickStats": "Быстрая статистика",
-          "rank": "Место №{rank} в Ashyk Bilim",
+          "rank": "Место №{rank}",
           "rankInOrg": "Место №{rank} в Ashyk Bilim",
           "recentAchievements": "Недавние достижения",
           "recentActivity": "Недавние активности",
@@ -5945,7 +5945,7 @@
           "unknownError": "Произошла неизвестная ошибка"
         },
         "errors": {
-          "orgNotAvailable": "Данные Ashyk Bilim недоступны. Пожалуйста, обновите страницу."
+          "orgNotAvailable": "Данные недоступны. Пожалуйста, обновите страницу."
         },
         "leaderboard": {
           "anonymous": "Аноним",
@@ -6674,7 +6674,7 @@
     },
     "UserSettings": {
       "add": "Пригласить участников",
-      "addDescription": "Пригласите участников присоединиться к Ashyk Bilim",
+      "addDescription": "Пригласите участников, отправив им приглашение по электронной почте. (BETA)",
       "addSection": {
         "description": "Отправить приглашение по электронной почте, через запятую",
         "emailHeader": "Электронная почта",
@@ -6687,7 +6687,7 @@
         "statusPending": "В ожидании",
         "statusSigned": "Зарегистрирован",
         "textAreaPlaceholder": "Пример: spike.spiegel@teachers.tou.edu.kz, michael.scott@students.tou.edu.kz",
-        "title": "Пригласить пользователей в Ashyk Bilim"
+        "title": "Пригласить пользователей"
       },
       "addTitle": "Пригласить участников",
       "desktopOnlyMessage1": "Эта страница доступна только с настольного устройства.",
@@ -6775,7 +6775,7 @@
         "noSearchResults": "Пользователи не найдены по вашему запросу.",
         "noUsersFound": "Пользователи не найдены.",
         "paginationInfo": "Показано {start}-{end} из {total} пользователей",
-        "removeFromOrgButton": "Удалить из Ashyk Bilim",
+        "removeFromOrgButton": "Удалить пользователя",
         "removeUserButton": "Удалить пользователя",
         "removeUserModalMessage": "Вы уверены, что хотите удалить этого пользователя из Ashyk Bilim?",
         "removeUserModalTitle": "Удалить {username}?",
@@ -7174,7 +7174,7 @@
   },
   "HomePage": {
     "Collections": {
-      "collectionOfCourses": "Коллекции курсов от Ashyk Bilim",
+      "collectionOfCourses": "Коллекции курсов",
       "newCollection": "Новая коллекция",
       "noContent": "Пока нет коллекций",
       "noContentDescription": "Создавайте коллекции для организации ваших курсов и контента",
@@ -7250,7 +7250,7 @@
       "success": "Коллекция успешно создана!"
     },
     "visibilityLabel": "Видимость",
-    "visibilityPrivate": "Частная коллекция - Видна только членам Ashyk Bilim",
+    "visibilityPrivate": "Частная коллекция - Видна только пользователям",
     "visibilityPublic": "Публичная коллекция - Видна всем"
   },
   "NotFoundPage": {
@@ -7306,7 +7306,7 @@
       "manageCourses": "Управление курсами",
       "manageUsers": "Управление пользователями",
       "platformSettings": "Настройки платформы",
-      "appLogo": "Логотип Ashyk Bilim",
+      "appLogo": "Логотип",
       "userAccountSettings": "Настройки аккаунта пользователя",
       "userSettings": "Настройки пользователя"
     },
@@ -9610,7 +9610,7 @@
     "scope": "Область",
     "description": "Описание"
   },
-  "appLogo": "Логотип Ashyk Bilim",
+  "appLogo": "Логотип",
   "previous": "Назад",
   "seconds": "Секунды",
   "selectDeadline": "Выберите дедлайн для выполнения задачи",

@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, Loader2, Pencil, SquareUserRound, Users, X } from 'lucide-react'
 import EditUserGroup from '@/components/Objects/Modals/Dash/UserGroups/EditUserGroup'
 import AddUserGroup from '@/components/Objects/Modals/Dash/UserGroups/AddUserGroup'
@@ -23,7 +24,7 @@ import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
 import type { ColumnDef } from '@tanstack/react-table'
 import DataTable from '@components/ui/data-table'
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -56,13 +57,9 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger
         render={
-          <Button
-            type="button"
-            variant="ghost"
-            className="flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer hover:bg-rose-800"
-          >
-            <X className="h-4 w-4" />
-            <span>{t('deleteButton')}</span>
+          <Button type="button" variant="destructive" size="sm">
+            <X className="size-3.5" />
+            {t('deleteButton')}
           </Button>
         }
       />
@@ -94,12 +91,7 @@ const UserGroups = () => {
   const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null)
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
   const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null)
-  const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   const { data: usergroups, error, isLoading } = useUserGroups()
 
@@ -144,7 +136,7 @@ const UserGroups = () => {
     }
   }
 
-  if (!isMounted || isLoading) {
+  if (isLoading) {
     return <Loader2 size={16} className="mr-2 animate-spin" />
   }
   if (error) return <div>{t('errorLoadingUserGroups')}</div>
@@ -177,16 +169,15 @@ const UserGroups = () => {
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
             <span>
-              <button
-                className="flex items-center space-x-2 rounded-md bg-yellow-700 p-1 px-3 text-sm font-bold text-yellow-100 hover:cursor-pointer"
-                onClick={() => {
-                  handleOpenModal('manage', row.original)
-                }}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenModal('manage', row.original)}
                 type="button"
               >
-                <Users className="h-4 w-4" />
-                <span>{t('manageUsersButton')}</span>
-              </button>
+                <Users className="size-3.5" />
+                {t('manageUsersButton')}
+              </Button>
             </span>
           }
         />
@@ -197,7 +188,7 @@ const UserGroups = () => {
       header: t('actionsHeader'),
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex space-x-2">
+        <div className="flex items-center gap-2">
           <Modal
             isDialogOpen={editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false}
             onOpenChange={isOpen => {
@@ -205,16 +196,15 @@ const UserGroups = () => {
             }}
             dialogTrigger={
               <span>
-                <button
-                  className="flex items-center space-x-2 rounded-md bg-sky-700 p-1 px-3 text-sm font-bold text-sky-100 hover:cursor-pointer"
-                  onClick={() => {
-                    handleOpenModal('edit', row.original)
-                  }}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleOpenModal('edit', row.original)}
                   type="button"
                 >
-                  <Pencil className="size-4" />
-                  <span>{t('editButton')}</span>
-                </button>
+                  <Pencil className="size-3.5" />
+                  {t('editButton')}
+                </Button>
               </span>
             }
             minHeight="sm"
@@ -230,39 +220,43 @@ const UserGroups = () => {
   return (
     <>
       <div className="h-6" />
-      <div className="border-border bg-card mx-auto mr-10 ml-10 rounded-xl border px-4 py-4 shadow-xs">
-        <div className="bg-muted mb-3 flex flex-col -space-y-1 rounded-md px-5 py-3">
-          <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
-          <h2 className="text-muted-foreground text-sm">{t('description')}</h2>
-        </div>
-        <DataTable
-          columns={columns}
-          data={usergroups ?? []}
-          pageSize={10}
-          storageKey="platform-usergroups"
-          labels={{ emptyMessage: t('noUserGroupsFound') }}
-        />
-        <div className="mt-3 mr-2 flex justify-end">
-          <Modal
-            isDialogOpen={createUserGroupModal}
-            onOpenChange={isOpen => {
-              if (!isOpen) handleCloseModal('create')
-              else setCreateUserGroupModal(true)
-            }}
-            minHeight="no-min"
-            dialogContent={<AddUserGroup setCreateUserGroupModal={setCreateUserGroupModal} />}
-            dialogTitle={t('createUserGroupModalTitle')}
-            dialogDescription={t('createUserGroupModalDescription')}
-            dialogTrigger={
-              <span>
-                <button className="flex items-center space-x-2 rounded-md bg-green-700 p-1 px-3 text-sm font-semibold text-green-100 hover:cursor-pointer">
-                  <SquareUserRound className="h-4 w-4" />
-                  <span>{t('createUserGroupButton')}</span>
-                </button>
-              </span>
-            }
-          />
-        </div>
+      <div className="mx-10">
+        <Card>
+          <CardHeader className="border-b">
+            <CardTitle>{t('title')}</CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
+            <CardAction>
+              <Modal
+                isDialogOpen={createUserGroupModal}
+                onOpenChange={isOpen => {
+                  if (!isOpen) handleCloseModal('create')
+                  else setCreateUserGroupModal(true)
+                }}
+                minHeight="no-min"
+                dialogContent={<AddUserGroup setCreateUserGroupModal={setCreateUserGroupModal} />}
+                dialogTitle={t('createUserGroupModalTitle')}
+                dialogDescription={t('createUserGroupModalDescription')}
+                dialogTrigger={
+                  <span>
+                    <Button size="sm">
+                      <SquareUserRound className="size-3.5" />
+                      {t('createUserGroupButton')}
+                    </Button>
+                  </span>
+                }
+              />
+            </CardAction>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <DataTable
+              columns={columns}
+              data={usergroups ?? []}
+              pageSize={10}
+              storageKey="platform-usergroups"
+              labels={{ emptyMessage: t('noUserGroupsFound') }}
+            />
+          </CardContent>
+        </Card>
       </div>
     </>
   )

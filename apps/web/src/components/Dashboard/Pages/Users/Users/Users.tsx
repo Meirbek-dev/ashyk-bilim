@@ -22,6 +22,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
@@ -30,7 +33,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import DataTable from '@/components/ui/data-table'
 
 import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
-import PageLoading from '@components/Objects/Loaders/PageLoading'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -81,13 +83,9 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger
         render={
-          <Button
-            type="button"
-            variant="ghost"
-            className="mr-2 flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer hover:bg-rose-800"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>{t('removeFromOrgButton')}</span>
+          <Button type="button" variant="destructive" size="sm">
+            <LogOut className="size-3.5" />
+            {t('removeFromOrgButton')}
           </Button>
         }
       />
@@ -137,12 +135,7 @@ const Users = () => {
   })()
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
-
-  React.useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   const { data: usersData, isLoading } = useMembers(currentPage, USERS_PER_PAGE)
 
@@ -188,24 +181,28 @@ const Users = () => {
           .join(' '),
       id: 'user',
       header: t('userHeader'),
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <span>
-            {[row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
-              .filter(Boolean)
-              .join(' ')}
-          </span>
-          <span className="rounded-full bg-neutral-100 p-1 px-2 text-xs font-semibold text-neutral-400">
-            @{row.original.user.username}
-          </span>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const fullName = [row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
+          .filter(Boolean)
+          .join(' ')
+        return (
+          <div className="flex items-center gap-2">
+            {fullName && <span className="font-medium">{fullName}</span>}
+            <Badge variant="outline" className="font-mono text-xs">
+              @{row.original.user.username}
+            </Badge>
+          </div>
+        )
+      },
     },
     {
       accessorFn: row => row.role?.name || '',
       id: 'role',
       header: t('roleHeader'),
-      cell: ({ row }) => row.original.role?.name,
+      cell: ({ row }) =>
+        row.original.role?.name ? (
+          <Badge variant="secondary">{row.original.role.name}</Badge>
+        ) : null,
     },
     {
       id: 'actions',
@@ -217,21 +214,21 @@ const Users = () => {
         const targetPriority = getRolePriority(user.role)
         const canManage = !isSelf && currentUserPriority > targetPriority
 
-        if (isSelf) return <div className="text-neutral-500">{t('cannotEditSelf')}</div>
+        if (isSelf) return <span className="text-xs text-muted-foreground">{t('cannotEditSelf')}</span>
         if (currentUserPriority <= targetPriority) {
-          return <div className="text-neutral-500">{t('cannotManageHigherRole')}</div>
+          return <span className="text-xs text-muted-foreground">{t('cannotManageHigherRole')}</span>
         }
-        if (!canManage) return <div className="text-neutral-500">{t('noActionsForAdministrators')}</div>
+        if (!canManage) return <span className="text-xs text-muted-foreground">{t('noActionsForAdministrators')}</span>
 
         const showEditRole = canUpdateRole
         const showRemoveUser = canDeleteUser
 
         if (!showEditRole && !showRemoveUser) {
-          return <div className="text-neutral-500">{t('noActionsForAdministrators')}</div>
+          return <span className="text-xs text-muted-foreground">{t('noActionsForAdministrators')}</span>
         }
 
         return (
-          <div className="flex items-end space-x-2">
+          <div className="flex items-center gap-2">
             {showEditRole && (
               <Modal
                 isDialogOpen={rolesModal ? selectedUser?.user?.user_uuid === user.user.user_uuid : false}
@@ -254,20 +251,14 @@ const Users = () => {
                 })}
                 dialogTrigger={
                   <span>
-                    <button
-                      className="flex items-center space-x-2 rounded-md bg-yellow-700 p-1 px-3 text-sm font-bold text-yellow-100 hover:cursor-pointer"
-                      onClick={() => {
-                        handleRolesModal(user)
-                      }}
-                    >
-                      <KeyRound className="h-4 w-4" />
-                      <span>{t('editRoleButton')}</span>
-                    </button>
+                    <Button variant="outline" size="sm" onClick={() => handleRolesModal(user)}>
+                      <KeyRound className="size-3.5" />
+                      {t('editRoleButton')}
+                    </Button>
                   </span>
                 }
               />
             )}
-
             {showRemoveUser && (
               <RemoveUserButton userId={user.user.id} username={user.user.username} onRemove={handleRemoveUser} t={t} />
             )}
@@ -277,92 +268,95 @@ const Users = () => {
     },
   ]
 
-  return (
-    <div>
-      {!isMounted || isLoading ? (
-        <div>
-          <PageLoading />
-        </div>
-      ) : (
-        <>
-          <div className="h-6" />
+  if (isLoading) {
+    return (
+      <div className="mx-10 mt-6 space-y-3">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full rounded-lg" />
+        ))}
+      </div>
+    )
+  }
 
-          <div className="border-border bg-card mx-auto mr-10 ml-10 rounded-xl border px-4 py-4 shadow-xs">
-            <div className="bg-muted mb-3 flex flex-col -space-y-1 rounded-md px-5 py-3">
-              <h1 className="text-foreground text-xl font-bold">{t('activeUsersTitle')}</h1>
-              <h2 className="text-muted-foreground text-base"> {t('description')}</h2>
-            </div>
-            <DataTable
-              columns={columns}
-              data={users}
-              serverPaginated
-              storageKey="platform-users"
-              labels={{
-                searchPlaceholder: t('searchPlaceholder'),
-                emptyMessage: t('noUsersFound'),
-              }}
-            />
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between px-2">
-                <div className="text-muted-foreground text-sm">
-                  {t('paginationInfo', {
-                    start: String((currentPage - 1) * USERS_PER_PAGE + 1),
-                    end: String(Math.min(currentPage * USERS_PER_PAGE, totalUsers)),
-                    total: String(totalUsers),
-                  })}
-                </div>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem key="prev">
-                      <PaginationPrevious
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        aria-disabled={currentPage === 1}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(page => {
-                        if (totalPages <= 7) return true
-                        if (page === 1 || page === totalPages) return true
-                        if (Math.abs(page - currentPage) <= 1) return true
-                        return false
-                      })
-                      .map((page, idx, arr) => {
-                        const prev = arr[idx - 1]
-                        const showEllipsisBefore = idx > 0 && typeof prev !== 'undefined' && page - prev > 1
-                        return (
-                          <React.Fragment key={`fragment-${page}`}>
-                            {showEllipsisBefore && (
-                              <PaginationItem key={`ellipsis-${page}`}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            )}
-                            <PaginationItem key={`page-${page}`}>
-                              <PaginationLink
-                                onClick={() => setCurrentPage(page)}
-                                isActive={currentPage === page}
-                                className="cursor-pointer"
-                              >
-                                {page}
-                              </PaginationLink>
+  return (
+    <div className="mx-10 mt-6">
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>{t('activeUsersTitle')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <DataTable
+            columns={columns}
+            data={users}
+            serverPaginated
+            storageKey="platform-users"
+            labels={{
+              searchPlaceholder: t('searchPlaceholder'),
+              emptyMessage: t('noUsersFound'),
+            }}
+          />
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                {t('paginationInfo', {
+                  start: String((currentPage - 1) * USERS_PER_PAGE + 1),
+                  end: String(Math.min(currentPage * USERS_PER_PAGE, totalUsers)),
+                  total: String(totalUsers),
+                })}
+              </p>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem key="prev">
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      aria-disabled={currentPage === 1}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      if (totalPages <= 7) return true
+                      if (page === 1 || page === totalPages) return true
+                      if (Math.abs(page - currentPage) <= 1) return true
+                      return false
+                    })
+                    .map((page, idx, arr) => {
+                      const prev = arr[idx - 1]
+                      const showEllipsisBefore = idx > 0 && typeof prev !== 'undefined' && page - prev > 1
+                      return (
+                        <React.Fragment key={`fragment-${page}`}>
+                          {showEllipsisBefore && (
+                            <PaginationItem key={`ellipsis-${page}`}>
+                              <PaginationEllipsis />
                             </PaginationItem>
-                          </React.Fragment>
-                        )
-                      })}
-                    <PaginationItem key="next">
-                      <PaginationNext
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        aria-disabled={currentPage === totalPages}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                          )}
+                          <PaginationItem key={`page-${page}`}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </React.Fragment>
+                      )
+                    })}
+                  <PaginationItem key="next">
+                    <PaginationNext
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      aria-disabled={currentPage === totalPages}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
