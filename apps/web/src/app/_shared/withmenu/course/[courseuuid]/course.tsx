@@ -73,7 +73,8 @@ const CourseClient = (props: any) => {
               // Keep shape but ensure text field exists if possible
               const text = item.text ?? item.name ?? item.title
               const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
-              if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined') return null
+              if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
+                return null
               return { ...item, text: learningText }
             }
             return null

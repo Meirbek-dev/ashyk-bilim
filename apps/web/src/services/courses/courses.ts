@@ -112,7 +112,7 @@ function normalizeTags(rawTags: string | null | undefined): string[] {
     // Fall back to treating the stored value as a comma-delimited string.
   }
 
-    return rawTags
+  return rawTags
     .split(',')
     .map(tag => tag.trim())
     .filter(Boolean)
@@ -137,8 +137,17 @@ function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCour
 }
 
 function normalizeCourse(course: CourseRead): NormalizedCourse {
-  const { about, authors, description, learnings, tags: courseTags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
-    course
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags: courseTags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
 
   return {
     ...rest,
@@ -155,8 +164,17 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
 }
 
 function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
-  const { about, authors, description, learnings, tags: courseTags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
-    course
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags: courseTags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
 
   return {
     ...rest,
