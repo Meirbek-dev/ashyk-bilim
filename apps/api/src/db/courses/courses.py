@@ -353,4 +353,3 @@ class FullCourseReadWithTrail(PydanticStrictBaseModel):
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
-

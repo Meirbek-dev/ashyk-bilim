@@ -7,9 +7,9 @@ from typing import cast
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
 
+from src.core.timezone import utcnow_iso
 from src.db.permission_enums import RoleSlug
 from src.db.permissions import Role, RoleRead
-from src.core.timezone import utcnow_iso
 from src.db.users import (
     AnonymousUser,
     PublicUser,
@@ -314,7 +314,7 @@ def get_user_session(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
 ) -> UserSession:
-    from datetime import UTC, datetime
+    from datetime import UTC
 
     from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 
