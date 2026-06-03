@@ -127,6 +127,8 @@ docker-compose build
 
 # 3. Apply migrations (only if this release includes schema changes)
 docker-compose ps db                  # confirm healthy
+docker-compose run --rm --entrypoint "" migrate \
+  uv run --no-sync python scripts/check_migration_graph.py --require-single-head
 docker-compose run --rm migrate
 docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic current   # verify revision
@@ -165,6 +167,16 @@ docker-compose run --rm --entrypoint "" migrate \
 ```bash
 docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic downgrade -1
+```
+
+**Rollback from the current head:**
+
+The current schema head is `44e39d920b74`. To roll back only that migration,
+downgrade to its parent revision:
+
+```bash
+docker-compose run --rm --entrypoint "" migrate \
+  uv run --no-sync alembic downgrade c4d5e6f7a8b9
 ```
 
 **Rollback to a specific revision:**
