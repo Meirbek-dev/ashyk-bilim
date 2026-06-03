@@ -6,10 +6,12 @@ from sqlmodel import Session
 
 from src.auth.users import get_public_user
 from src.db.courses.certifications import (
+    CertificateUserRead,
     CertificationCreate,
     CertificationRead,
     CertificationUpdate,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.courses.certifications import (
@@ -26,7 +28,47 @@ from src.services.courses.certifications import (
 router = APIRouter()
 
 
-@router.post("")
+class CertificateCourseSummary(PydanticStrictBaseModel):
+    id: int | None = None
+    course_uuid: str
+    name: str
+    description: str | None = None
+    thumbnail_image: str | None = None
+
+
+class CertificateUserSummary(PydanticStrictBaseModel):
+    id: int | None = None
+    user_uuid: str | None = None
+    username: str
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+
+class CourseCertificateResponse(PydanticStrictBaseModel):
+    certificate_user: CertificateUserRead
+    certification: CertificationRead | None = None
+    course: CertificateCourseSummary
+
+
+class PublicCertificateResponse(PydanticStrictBaseModel):
+    certificate_user: CertificateUserRead
+    certification: CertificationRead
+    course: CertificateCourseSummary
+
+
+class UserCertificateResponse(PydanticStrictBaseModel):
+    certificate_user: CertificateUserRead
+    certification: CertificationRead
+    course: CertificateCourseSummary
+    user: CertificateUserSummary | None = None
+
+
+class CertificationDetailResponse(PydanticStrictBaseModel):
+    detail: str
+
+
+@router.post("", response_model=CertificationRead)
 async def api_create_certification(
     request: Request,
     certification_object: CertificationCreate,
@@ -39,7 +81,7 @@ async def api_create_certification(
     return await create_certification(request, certification_object, current_user, db_session)
 
 
-@router.get("/{certification_uuid}")
+@router.get("/{certification_uuid}", response_model=CertificationRead)
 async def api_get_certification(
     request: Request,
     certification_uuid: str,
@@ -52,7 +94,7 @@ async def api_get_certification(
     return await get_certification(request, certification_uuid, current_user, db_session)
 
 
-@router.get("/course/{course_uuid}")
+@router.get("/course/{course_uuid}", response_model=list[CertificationRead])
 async def api_get_certifications_by_course(
     request: Request,
     course_uuid: str,
@@ -65,7 +107,7 @@ async def api_get_certifications_by_course(
     return await get_certifications_by_course(request, course_uuid, current_user, db_session)
 
 
-@router.put("/{certification_uuid}")
+@router.put("/{certification_uuid}", response_model=CertificationRead)
 async def api_update_certification(
     request: Request,
     certification_uuid: str,
@@ -79,7 +121,7 @@ async def api_update_certification(
     return await update_certification(request, certification_uuid, certification_object, current_user, db_session)
 
 
-@router.delete("/{certification_uuid}")
+@router.delete("/{certification_uuid}", response_model=CertificationDetailResponse)
 async def api_delete_certification(
     request: Request,
     certification_uuid: str,
@@ -99,7 +141,7 @@ async def api_delete_certification(
     )
 
 
-@router.get("/user/course/{course_uuid}")
+@router.get("/user/course/{course_uuid}", response_model=list[CourseCertificateResponse])
 async def api_get_user_certificates_for_course(
     request: Request,
     course_uuid: str,
@@ -112,7 +154,7 @@ async def api_get_user_certificates_for_course(
     return await get_user_certificates_for_course(request, course_uuid, current_user, db_session)
 
 
-@router.get("/certificate/{user_certification_uuid}")
+@router.get("/certificate/{user_certification_uuid}", response_model=PublicCertificateResponse)
 async def api_get_certificate_by_user_certification_uuid(
     request: Request,
     user_certification_uuid: str,
@@ -124,7 +166,7 @@ async def api_get_certificate_by_user_certification_uuid(
     return await get_certificate_by_user_certification_uuid(request, user_certification_uuid, None, db_session)
 
 
-@router.get("/user/all")
+@router.get("/user/all", response_model=list[UserCertificateResponse])
 async def api_get_all_user_certificates(
     request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],

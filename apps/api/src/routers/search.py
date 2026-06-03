@@ -11,7 +11,7 @@ from src.services.search.search import SearchResult, search_platform_content
 router = APIRouter()
 
 
-@router.get("")
+@router.get("", response_model=SearchResult)
 async def api_search_platform_content(
     request: Request,
     query: str,

@@ -112,6 +112,10 @@ class UserRoleAssignmentResponse(BaseModel):
     role: UserRoleSummary
 
 
+class RoleMutationResponse(BaseModel):
+    message: str
+
+
 # ============================================================================
 # Permission check endpoints (never 403 - used by frontend for UI state)
 # ============================================================================
@@ -226,7 +230,7 @@ def list_user_roles(
     ]
 
 
-@router.post("/roles/assign")
+@router.post("/roles/assign", response_model=RoleMutationResponse)
 async def assign_role(
     request: RoleAssignmentRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -263,7 +267,7 @@ async def assign_role(
     return {"message": "Role assigned"}
 
 
-@router.post("/roles/revoke")
+@router.post("/roles/revoke", response_model=RoleMutationResponse)
 async def revoke_role(
     request: RoleRevocationRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],

@@ -11,6 +11,7 @@ from src.db.courses.discussions import (
     CourseDiscussionUpdate,
     DiscussionLikeRead,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.courses.discussions import (
@@ -28,7 +29,19 @@ from src.services.courses.discussions import (
 router = APIRouter()
 
 
-@router.get("/{course_uuid}/discussions")
+class DiscussionMessageResponse(PydanticStrictBaseModel):
+    message: str
+
+
+class DiscussionToggleResponse(PydanticStrictBaseModel):
+    message: str
+    is_liked: bool
+    is_disliked: bool
+    likes_count: int
+    dislikes_count: int
+
+
+@router.get("/{course_uuid}/discussions", response_model=list[CourseDiscussionReadWithPermissions])
 async def api_get_course_discussions(
     request: Request,
     course_uuid: str,
@@ -46,7 +59,7 @@ async def api_get_course_discussions(
     )
 
 
-@router.post("/{course_uuid}/discussions")
+@router.post("/{course_uuid}/discussions", response_model=CourseDiscussionRead)
 async def api_create_course_discussion(
     request: Request,
     course_uuid: str,
@@ -60,7 +73,7 @@ async def api_create_course_discussion(
     return await create_discussion(request, course_uuid, discussion_object, current_user, db_session)
 
 
-@router.put("/{course_uuid}/discussions/{discussion_uuid}")
+@router.put("/{course_uuid}/discussions/{discussion_uuid}", response_model=CourseDiscussionRead)
 async def api_update_course_discussion(
     request: Request,
     course_uuid: str,
@@ -75,7 +88,7 @@ async def api_update_course_discussion(
     return await update_discussion(request, discussion_uuid, discussion_object, current_user, db_session)
 
 
-@router.delete("/{course_uuid}/discussions/{discussion_uuid}")
+@router.delete("/{course_uuid}/discussions/{discussion_uuid}", response_model=DiscussionMessageResponse)
 async def api_delete_course_discussion(
     request: Request,
     course_uuid: str,
@@ -89,7 +102,7 @@ async def api_delete_course_discussion(
     return await delete_discussion(request, discussion_uuid, current_user, db_session)
 
 
-@router.post("/{course_uuid}/discussions/{discussion_uuid}/like")
+@router.post("/{course_uuid}/discussions/{discussion_uuid}/like", response_model=DiscussionLikeRead)
 async def api_like_course_discussion(
     request: Request,
     course_uuid: str,
@@ -103,7 +116,7 @@ async def api_like_course_discussion(
     return await like_discussion(request, discussion_uuid, current_user, db_session)
 
 
-@router.delete("/{course_uuid}/discussions/{discussion_uuid}/like")
+@router.delete("/{course_uuid}/discussions/{discussion_uuid}/like", response_model=DiscussionMessageResponse)
 async def api_unlike_course_discussion(
     request: Request,
     course_uuid: str,
@@ -117,7 +130,7 @@ async def api_unlike_course_discussion(
     return await unlike_discussion(request, discussion_uuid, current_user, db_session)
 
 
-@router.put("/{course_uuid}/discussions/{discussion_uuid}/like")
+@router.put("/{course_uuid}/discussions/{discussion_uuid}/like", response_model=DiscussionToggleResponse)
 async def api_toggle_course_discussion_like(
     request: Request,
     course_uuid: str,
@@ -131,7 +144,7 @@ async def api_toggle_course_discussion_like(
     return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
 
 
-@router.put("/{course_uuid}/discussions/{discussion_uuid}/dislike")
+@router.put("/{course_uuid}/discussions/{discussion_uuid}/dislike", response_model=DiscussionToggleResponse)
 async def api_toggle_course_discussion_dislike(
     request: Request,
     course_uuid: str,
@@ -145,7 +158,7 @@ async def api_toggle_course_discussion_dislike(
     return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
 
 
-@router.get("/{course_uuid}/discussions/{discussion_uuid}/replies")
+@router.get("/{course_uuid}/discussions/{discussion_uuid}/replies", response_model=list[CourseDiscussionRead])
 async def api_get_discussion_replies(
     request: Request,
     course_uuid: str,

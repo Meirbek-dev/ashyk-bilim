@@ -32,7 +32,7 @@ from src.services.users.usergroups import (
 router = APIRouter()
 
 
-@router.post("", tags=["usergroups"])
+@router.post("", tags=["usergroups"], response_model=UserGroupRead)
 async def api_create_usergroup(
     *,
     request: Request,
@@ -51,7 +51,7 @@ async def api_create_usergroup(
     return await create_usergroup(request, db_session, current_user, usergroup_object)
 
 
-@router.get("/{usergroup_id}", tags=["usergroups"])
+@router.get("/{usergroup_id}", tags=["usergroups"], response_model=UserGroupRead)
 async def api_get_usergroup(
     *,
     request: Request,
@@ -65,7 +65,7 @@ async def api_get_usergroup(
     return await read_usergroup_by_id(request, db_session, current_user, usergroup_id)
 
 
-@router.get("/{usergroup_id}/users", tags=["usergroups"])
+@router.get("/{usergroup_id}/users", tags=["usergroups"], response_model=list[UserRead])
 async def api_get_users_linked_to_usergroup(
     *,
     request: Request,
@@ -79,7 +79,7 @@ async def api_get_users_linked_to_usergroup(
     return await get_users_linked_to_usergroup(request, db_session, current_user, usergroup_id)
 
 
-@router.get("", tags=["usergroups"])
+@router.get("", tags=["usergroups"], response_model=list[UserGroupRead])
 async def api_get_usergroups(
     *,
     request: Request,
@@ -96,7 +96,7 @@ async def api_get_usergroups(
     )
 
 
-@router.get("/resource/{resource_uuid}", tags=["usergroups"])
+@router.get("/resource/{resource_uuid}", tags=["usergroups"], response_model=list[UserGroupRead])
 async def api_get_usergroupsby_resource(
     *,
     request: Request,
@@ -110,7 +110,7 @@ async def api_get_usergroupsby_resource(
     return await get_usergroups_by_resource(request, db_session, current_user, resource_uuid)
 
 
-@router.put("/{usergroup_id}", tags=["usergroups"])
+@router.put("/{usergroup_id}", tags=["usergroups"], response_model=UserGroupRead)
 async def api_update_usergroup(
     *,
     request: Request,
@@ -127,7 +127,7 @@ async def api_update_usergroup(
     return await update_usergroup_by_id(request, db_session, current_user, usergroup_id, usergroup_object)
 
 
-@router.delete("/{usergroup_id}", tags=["usergroups"])
+@router.delete("/{usergroup_id}", tags=["usergroups"], response_model=str)
 async def api_delete_usergroup(
     *,
     request: Request,
@@ -143,7 +143,7 @@ async def api_delete_usergroup(
     return await delete_usergroup_by_id(request, db_session, current_user, usergroup_id)
 
 
-@router.post("/{usergroup_id}/add_users", tags=["usergroups"])
+@router.post("/{usergroup_id}/add_users", tags=["usergroups"], response_model=str)
 async def api_add_users_to_usergroup(
     *,
     request: Request,
@@ -160,7 +160,7 @@ async def api_add_users_to_usergroup(
     return await add_users_to_usergroup(request, db_session, current_user, usergroup_id, user_ids)
 
 
-@router.delete("/{usergroup_id}/remove_users", tags=["usergroups"])
+@router.delete("/{usergroup_id}/remove_users", tags=["usergroups"], response_model=str)
 async def api_delete_users_from_usergroup(
     *,
     request: Request,
@@ -175,7 +175,7 @@ async def api_delete_users_from_usergroup(
     return await remove_users_from_usergroup(request, db_session, current_user, usergroup_id, user_ids)
 
 
-@router.post("/{usergroup_id}/add_resources", tags=["usergroups"])
+@router.post("/{usergroup_id}/add_resources", tags=["usergroups"], response_model=str)
 async def api_add_resources_to_usergroup(
     *,
     request: Request,
@@ -190,7 +190,7 @@ async def api_add_resources_to_usergroup(
     return await add_resources_to_usergroup(request, db_session, current_user, usergroup_id, resource_uuids)
 
 
-@router.delete("/{usergroup_id}/remove_resources", tags=["usergroups"])
+@router.delete("/{usergroup_id}/remove_resources", tags=["usergroups"], response_model=str)
 async def api_delete_resources_from_usergroup(
     *,
     request: Request,

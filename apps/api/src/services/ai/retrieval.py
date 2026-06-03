@@ -24,7 +24,7 @@ _VECTOR_DIMENSIONS = _AI_SETTINGS.embedding_dimensions
 _COLLECTION_LOCK_TTL_SECONDS = max(300, min(_AI_SETTINGS.collection_retention, 86400))
 _collection_locks: TTLCache[str, asyncio.Lock] = TTLCache(
     maxsize=1000,
-    ttl=_COLLECTION_LOCK_TTL_SECONDS,
+    global_ttl=_COLLECTION_LOCK_TTL_SECONDS,
 )
 _collection_locks_guard = asyncio.Lock()
 

@@ -23,7 +23,7 @@ class _Cache:
     __slots__ = ("_cache", "_lock")
 
     def __init__(self, maxsize: int, ttl: int) -> None:
-        self._cache: TTLCache[str, Any] = TTLCache(maxsize=maxsize, ttl=ttl)
+        self._cache: TTLCache[str, Any] = TTLCache(maxsize=maxsize, global_ttl=ttl)
         self._lock = Lock()
 
     def get(self, key: str) -> Any | None:

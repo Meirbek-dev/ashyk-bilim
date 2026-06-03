@@ -130,8 +130,7 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
                 )
         return normalized
 
-    _raise_invalid("В отправке должны быть ответы", code="empty_answers")
-    return None
+    return _raise_invalid("В отправке должны быть ответы", code="empty_answers")
 
 
 def _raise_invalid(

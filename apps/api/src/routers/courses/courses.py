@@ -30,7 +30,7 @@ from src.db.student_activity_runtime import (
     StudentActivityActionRequest,
     StudentActivityRuntime,
 )
-from src.db.users import AnonymousUser, PublicUser
+from src.db.users import AnonymousUser, PublicUser, UserRead
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep
 from src.services.courses.contributors import (
@@ -86,6 +86,40 @@ logger = logging.getLogger(__name__)
 
 class CourseDetailResponse(PydanticStrictBaseModel):
     detail: str
+
+
+class CourseUpdateDeleteResponse(PydanticStrictBaseModel):
+    message: str
+
+
+class CourseContributorApplicationResponse(PydanticStrictBaseModel):
+    detail: str
+    status: str
+
+
+class CourseContributorResponse(PydanticStrictBaseModel):
+    user_id: int
+    authorship: ResourceAuthorshipEnum
+    authorship_status: ResourceAuthorshipStatusEnum
+    creation_date: datetime
+    update_date: datetime
+    user: UserRead
+
+
+class CourseContributorMutationResponse(PydanticStrictBaseModel):
+    detail: str
+    status: str
+
+
+class CourseBulkContributorItem(PydanticStrictBaseModel):
+    username: str
+    user_id: int | None = None
+    reason: str | None = None
+
+
+class CourseBulkContributorResponse(PydanticStrictBaseModel):
+    successful: list[CourseBulkContributorItem]
+    failed: list[CourseBulkContributorItem]
 
 
 class CourseUserRightsPermissions(PydanticStrictBaseModel):
@@ -178,7 +212,7 @@ async def api_run_student_activity_action(
 # ---------------------------------------------------------------------------
 
 
-@router.post("")
+@router.post("", response_model=CourseRead)
 async def api_create_course(
     request: Request,
     name: Annotated[str | None, Form()] = None,
@@ -221,7 +255,7 @@ async def api_create_course(
     )
 
 
-@router.put("/{course_uuid}/thumbnail")
+@router.put("/{course_uuid}/thumbnail", response_model=CourseRead)
 async def api_create_course_thumbnail(
     request: Request,
     course_uuid: str,
@@ -385,7 +419,7 @@ async def api_get_platform_courses(
     return courses
 
 
-@router.get("/editable/page/{page}/limit/{limit}")
+@router.get("/editable/page/{page}/limit/{limit}", response_model=list[CourseReadWithPermissions])
 async def api_get_platform_editable_courses(
     request: Request,
     response: Response,
@@ -421,7 +455,7 @@ async def api_get_platform_editable_courses(
     return courses
 
 
-@router.get("/search")
+@router.get("/search", response_model=list[CourseRead])
 async def api_search_platform_courses(
     request: Request,
     query: str,
@@ -435,7 +469,7 @@ async def api_search_platform_courses(
     return await search_courses(request, current_user, query, db_session, page, limit)
 
 
-@router.put("/{course_uuid}/metadata")
+@router.put("/{course_uuid}/metadata", response_model=CourseRead)
 async def api_update_course_metadata(
     request: Request,
     course_uuid: str,
@@ -448,7 +482,7 @@ async def api_update_course_metadata(
     return await update_course_metadata(request, course_uuid, metadata_object, current_user, db_session)
 
 
-@router.put("/{course_uuid}/access")
+@router.put("/{course_uuid}/access", response_model=CourseRead)
 async def api_update_course_access(
     request: Request,
     course_uuid: str,
@@ -478,7 +512,7 @@ async def api_delete_course(
     return await delete_course(request, course_uuid, current_user, db_session)
 
 
-@router.post("/{course_uuid}/apply-contributor")
+@router.post("/{course_uuid}/apply-contributor", response_model=CourseContributorApplicationResponse)
 async def api_apply_course_contributor(
     request: Request,
     course_uuid: str,
@@ -493,7 +527,7 @@ async def api_apply_course_contributor(
     return await apply_course_contributor(request, course_uuid, current_user, db_session)
 
 
-@router.get("/{course_uuid}/updates")
+@router.get("/{course_uuid}/updates", response_model=list[CourseUpdateRead])
 async def api_get_course_updates(
     request: Request,
     course_uuid: str,
@@ -508,7 +542,7 @@ async def api_get_course_updates(
     return await get_updates_by_course_uuid(request, course_uuid, current_user, db_session)
 
 
-@router.post("/{course_uuid}/updates")
+@router.post("/{course_uuid}/updates", response_model=CourseUpdateRead)
 async def api_create_course_update(
     request: Request,
     course_uuid: str,
@@ -524,7 +558,7 @@ async def api_create_course_update(
     return await create_update(request, course_uuid, update_object, current_user, db_session)
 
 
-@router.put("/{course_uuid}/update/{courseupdate_uuid}")
+@router.put("/{course_uuid}/update/{courseupdate_uuid}", response_model=CourseUpdateRead)
 async def api_update_course_update(
     request: Request,
     course_uuid: str,
@@ -541,7 +575,7 @@ async def api_update_course_update(
     return await update_update(request, courseupdate_uuid, update_object, current_user, db_session)
 
 
-@router.delete("/{course_uuid}/update/{courseupdate_uuid}")
+@router.delete("/{course_uuid}/update/{courseupdate_uuid}", response_model=CourseUpdateDeleteResponse)
 async def api_delete_course_update(
     request: Request,
     course_uuid: str,
@@ -557,7 +591,7 @@ async def api_delete_course_update(
     return await delete_update(request, courseupdate_uuid, current_user, db_session)
 
 
-@router.get("/{course_uuid}/contributors")
+@router.get("/{course_uuid}/contributors", response_model=list[CourseContributorResponse])
 async def api_get_course_contributors(
     request: Request,
     course_uuid: str,
@@ -572,7 +606,7 @@ async def api_get_course_contributors(
     return await get_course_contributors(request, course_uuid, current_user, db_session)
 
 
-@router.put("/{course_uuid}/contributors/{contributor_user_id}")
+@router.put("/{course_uuid}/contributors/{contributor_user_id}", response_model=CourseContributorMutationResponse)
 async def api_update_course_contributor(
     request: Request,
     course_uuid: str,
@@ -600,7 +634,7 @@ async def api_update_course_contributor(
     )
 
 
-@router.post("/{course_uuid}/bulk-add-contributors")
+@router.post("/{course_uuid}/bulk-add-contributors", response_model=CourseBulkContributorResponse)
 async def api_add_bulk_course_contributors(
     request: Request,
     course_uuid: str,
@@ -618,7 +652,7 @@ async def api_add_bulk_course_contributors(
     return await add_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
 
 
-@router.delete("/{course_uuid}/bulk-remove-contributors")
+@router.delete("/{course_uuid}/bulk-remove-contributors", response_model=CourseBulkContributorResponse)
 async def api_remove_bulk_course_contributors(
     request: Request,
     course_uuid: str,

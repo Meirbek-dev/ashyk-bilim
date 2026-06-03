@@ -69,7 +69,7 @@ def _get_streamable_submission(
     return submission
 
 
-@router.get("/submissions/{submission_uuid}/feedback-stream")
+@router.get("/submissions/{submission_uuid}/feedback-stream", response_class=StreamingResponse)
 async def api_feedback_stream(
     request: Request,
     submission_uuid: str,

@@ -33,7 +33,7 @@ class ActivityDetailResponse(PydanticStrictBaseModel):
     detail: str
 
 
-@router.post("")
+@router.post("", response_model=ActivityRead)
 async def api_create_activity(
     request: Request,
     activity_object: ActivityCreate,
@@ -44,7 +44,7 @@ async def api_create_activity(
     return await create_activity(request, activity_object, current_user, db_session)
 
 
-@router.get("/{activity_uuid}")
+@router.get("/{activity_uuid}", response_model=ActivityReadWithPermissions)
 async def api_get_activity(
     request: Request,
     activity_uuid: str,
@@ -55,7 +55,7 @@ async def api_get_activity(
     return await get_activity(request, activity_uuid, current_user=current_user, db_session=db_session)
 
 
-@router.patch("/{activity_uuid}")
+@router.patch("/{activity_uuid}", response_model=ActivityRead)
 async def api_update_activity(
     request: Request,
     activity_object: ActivityUpdate,
@@ -81,7 +81,7 @@ async def api_delete_activity(
 # Video activity
 
 
-@router.post("/video")
+@router.post("/video", response_model=ActivityRead)
 async def api_create_video_activity(
     request: Request,
     name: Annotated[str, Form()],
@@ -109,7 +109,7 @@ async def api_create_video_activity(
     )
 
 
-@router.post("/external_video")
+@router.post("/external_video", response_model=ActivityRead)
 async def api_create_external_video_activity(
     request: Request,
     external_video: ExternalVideo,
@@ -120,7 +120,7 @@ async def api_create_external_video_activity(
     return await create_external_video_activity(request, current_user, external_video, db_session)
 
 
-@router.post("/documentpdf")
+@router.post("/documentpdf", response_model=ActivityRead)
 async def api_create_documentpdf_activity(
     request: Request,
     name: Annotated[str, Form()],

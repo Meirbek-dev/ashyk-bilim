@@ -228,19 +228,19 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
-    { name = "cachebox", specifier = ">=5.2.3" },
+    { name = "cachebox", specifier = ">=6.0.0" },
     { name = "fastapi", specifier = ">=0.136.3" },
     { name = "fastapi-pagination", specifier = ">=0.15.14" },
     { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=15.0.5" },
     { name = "granian", extras = ["reload", "uvloop"], specifier = ">=2.7.5" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "judge0", specifier = ">=0.0.8" },
-    { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=4.34.0" },
-    { name = "openai", specifier = ">=2.38.0" },
+    { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=4.35.0" },
+    { name = "openai", specifier = ">=2.40.0" },
     { name = "pgvector", specifier = ">=0.4.2" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.13.4" },
-    { name = "pydantic-ai-slim", extras = ["logfire", "openai"], specifier = ">=1.104.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire", "openai"], specifier = ">=1.105.0" },
     { name = "pydantic-settings", specifier = ">=2.14.1" },
     { name = "pyjwt", specifier = ">=2.13.0" },
     { name = "python-multipart", specifier = ">=0.0.30" },
@@ -254,13 +254,13 @@ requires-dist = [
     { name = "taskiq-fastapi", specifier = ">=0.5.0" },
     { name = "taskiq-redis", specifier = ">=1.2.2" },
     { name = "tiktoken", specifier = ">=0.13.0" },
-    { name = "typer", specifier = ">=0.26.4" },
+    { name = "typer", specifier = ">=0.26.6" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.39.6" },
-    { name = "faker", specifier = ">=40.19.1" },
+    { name = "faker", specifier = ">=40.21.0" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "pyrefly", specifier = ">=1.0.0" },
     { name = "pytest", specifier = ">=9.0.3" },
@@ -656,14 +656,14 @@ wheels = [
 
 [[package]]
 name = "faker"
-version = "40.20.0"
+version = "40.21.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/9d/e83d22cf16c58585445a2b444f8c42b82ac99e63a723f1ca8640e09f2b90/faker-40.20.0.tar.gz", hash = "sha256:0305002eb7441dbbc774b48ec95f4794188fcedf1f4697d205cb59a38db8d6ee", size = 1970005, upload-time = "2026-06-01T22:21:02.78Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/6f/d7b251fb31de7dce0e482680bf7ca876aa0043f475c04aeefa1459ea80d4/faker-40.21.0.tar.gz", hash = "sha256:2fdee1b650a723a54432db9c6dfe17cfa29d1adc8bd60520444a07698524ba4d", size = 1970295, upload-time = "2026-06-02T17:53:46.27Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/10/9c60cc41aff51780ffa1475130c03cebe1256b69af944ce863511da49b5d/faker-40.20.0-py3-none-any.whl", hash = "sha256:d66c65751b70e179515c163bfb3e3fb89139395bb9f0eb78bfdf8c6c81aa9c8c", size = 2008434, upload-time = "2026-06-01T22:21:00.554Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/77/6adb5a9dcd028f687f81fc9f789591f9572cb5a46454337122add004e134/faker-40.21.0-py3-none-any.whl", hash = "sha256:cb6601b2ae8e128895dc96814d271eab6b930a2d2d7932c6f9ff26785c24ee18", size = 2008808, upload-time = "2026-06-02T17:53:44.346Z" },
 ]
 
 [[package]]

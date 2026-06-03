@@ -69,6 +69,7 @@
     "no-shadow": "warn",
     "typescript/no-explicit-any": "off",
     /* ── Noisy / pedantic — keep off ──────────────────────────── */
+    "prefer-named-capture-group": "off",
     "arrow-body-style": "off",
     "capitalized-comments": "off",
     "complexity": "off",

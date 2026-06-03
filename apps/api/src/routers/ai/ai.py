@@ -127,6 +127,7 @@ async def api_ai_send_activity_chat_message(
 @router.post(
     "/start/activity_chat_session_stream",
     dependencies=[Depends(_limit_ai_start)],
+    response_class=StreamingResponse,
 )
 async def api_ai_start_activity_chat_session_stream(
     request: Request,
@@ -220,6 +221,7 @@ async def api_ai_start_activity_chat_session_stream(
 @router.post(
     "/send/activity_chat_message_stream",
     dependencies=[Depends(_limit_ai_message)],
+    response_class=StreamingResponse,
 )
 async def api_ai_send_activity_chat_message_stream(
     request: Request,

@@ -1,15 +1,20 @@
+import contextlib
 import logging
 from typing import Annotated, Any, cast
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_users import exceptions
+from fastapi_users.router.common import ErrorCode
+from pydantic import EmailStr
 from sqlmodel import Session, select
 
 from config.config import secret_value
 from src.auth.manager import UserManager, get_user_manager
 from src.auth.users import CurrentActiveUser, auth_backend
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, User, UserSession
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
@@ -46,6 +51,28 @@ from src.services.users.users import get_user_session
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
+class AuthLoginResponse(PydanticStrictBaseModel):
+    access_token: str
+    token_type: str
+
+
+class AuthSessionRead(PydanticStrictBaseModel):
+    session_id: str
+    ip_address: str | None = None
+    user_agent: str | None = None
+    created_at: int
+    last_seen_at: int
+
+
+class AuthRefreshResponse(PydanticStrictBaseModel):
+    status: str
+
+
+class AuthActionResponse(PydanticStrictBaseModel):
+    status: str
+
+
 _limit_auth_login_ip = rate_limit_dependency(
     namespace="auth:login:ip",
     max_requests=20,
@@ -65,6 +92,62 @@ _limit_google_oauth_ip = rate_limit_dependency(
     key_func=ip_key,
 )
 auth_sensitive_rate_limit = _limit_auth_login_ip
+
+
+@router.post(
+    "/forgot-password",
+    response_model=AuthActionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(auth_sensitive_rate_limit)],
+)
+async def forgot_password(
+    request: Request,
+    email: Annotated[EmailStr, Body(embed=True)],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
+) -> AuthActionResponse:
+    try:
+        user = await user_manager.get_by_email(email)
+    except exceptions.UserNotExists:
+        return AuthActionResponse(status="accepted")
+
+    with contextlib.suppress(exceptions.UserInactive):
+        await user_manager.forgot_password(user, request)
+
+    return AuthActionResponse(status="accepted")
+
+
+@router.post(
+    "/reset-password",
+    response_model=AuthActionResponse,
+    dependencies=[Depends(auth_sensitive_rate_limit)],
+)
+async def reset_password(
+    request: Request,
+    token: Annotated[str, Body()],
+    password: Annotated[str, Body()],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
+) -> AuthActionResponse:
+    try:
+        await user_manager.reset_password(token, password, request)
+    except (
+        exceptions.InvalidResetPasswordToken,
+        exceptions.UserNotExists,
+        exceptions.UserInactive,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ErrorCode.RESET_PASSWORD_BAD_TOKEN,
+        )
+    except exceptions.InvalidPasswordException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": ErrorCode.RESET_PASSWORD_INVALID_PASSWORD,
+                "reason": exc.reason,
+            },
+        ) from exc
+
+    return AuthActionResponse(status="ok")
 
 
 def _client_ip(request: Request) -> str | None:
@@ -159,7 +242,7 @@ def _rate_limit_http_error(exc: RateLimitExceeded) -> HTTPException:
     )
 
 
-@router.post("/login", dependencies=[Depends(_limit_auth_login_ip)])
+@router.post("/login", response_model=AuthLoginResponse, dependencies=[Depends(_limit_auth_login_ip)])
 async def login(
     request: Request,
     credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -196,7 +279,7 @@ async def login(
     return await _build_login_response(request, user, user_manager)
 
 
-@router.post("/logout")
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -223,14 +306,14 @@ def get_me(
     return get_user_session(request, db_session, current_user)
 
 
-@router.get("/sessions")
+@router.get("/sessions", response_model=list[AuthSessionRead])
 async def list_sessions(
     current_user: CurrentActiveUser,
-):
+) -> list[dict[str, Any]]:
     return await get_user_active_sessions(current_user.id)
 
 
-@router.post("/refresh", dependencies=[Depends(_limit_auth_refresh_ip)])
+@router.post("/refresh", response_model=AuthRefreshResponse, dependencies=[Depends(_limit_auth_refresh_ip)])
 async def refresh_token(
     request: Request,
     response: Response,
@@ -284,7 +367,11 @@ async def refresh_token(
     return {"status": "ok"}
 
 
-@router.get("/google/authorize", dependencies=[Depends(_limit_google_oauth_ip)])
+@router.get(
+    "/google/authorize",
+    response_class=RedirectResponse,
+    dependencies=[Depends(_limit_google_oauth_ip)],
+)
 async def google_authorize(
     callback: str,
 ):
@@ -306,7 +393,11 @@ async def google_authorize(
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/google/callback", dependencies=[Depends(_limit_google_oauth_ip)])
+@router.get(
+    "/google/callback",
+    response_class=RedirectResponse,
+    dependencies=[Depends(_limit_google_oauth_ip)],
+)
 async def google_callback(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],

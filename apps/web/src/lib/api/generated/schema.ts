@@ -1113,8 +1113,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Reset:Forgot Password */
-    post: operations['reset_forgot_password_api_v1_auth_forgot_password_post']
+    /** Forgot Password */
+    post: operations['forgot_password_api_v1_auth_forgot_password_post']
     delete?: never
     options?: never
     head?: never
@@ -1258,8 +1258,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Reset:Reset Password */
-    post: operations['reset_reset_password_api_v1_auth_reset_password_post']
+    /** Reset Password */
+    post: operations['reset_password_api_v1_auth_reset_password_post']
     delete?: never
     options?: never
     head?: never
@@ -4966,6 +4966,17 @@ export interface components {
       /** Summary */
       summary: string
     }
+    /** AssessmentAuditTrailResponse */
+    AssessmentAuditTrailResponse: {
+      /** Items */
+      items: components['schemas']['AuditEventRead'][]
+      /** Page */
+      page: number
+      /** Page Size */
+      page_size: number
+      /** Total */
+      total: number
+    }
     /** AssessmentCohortRow */
     AssessmentCohortRow: {
       /** Avg Attempts */
@@ -5033,6 +5044,11 @@ export interface components {
        * @default 1
        */
       weight: number
+    }
+    /** AssessmentDetailResponse */
+    AssessmentDetailResponse: {
+      /** Detail */
+      detail: string
     }
     /** AssessmentDiagnosticsSnapshot */
     AssessmentDiagnosticsSnapshot: {
@@ -5707,13 +5723,76 @@ export interface components {
       /** Total */
       total: number
     }
+    /**
+     * AuditEventRead
+     * @description API projection of an audit event.
+     */
+    AuditEventRead: {
+      /** Actor Id */
+      actor_id?: number | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Event Type */
+      event_type: string
+      /** Event Uuid */
+      event_uuid: string
+      /** Id */
+      id: number
+      /** Payload Json */
+      payload_json: {
+        [key: string]: unknown
+      }
+      /** Target Kind */
+      target_kind: string
+      /** Target Uuid */
+      target_uuid: string
+    }
+    /** AuthActionResponse */
+    AuthActionResponse: {
+      /** Status */
+      status: string
+    }
+    /** AuthLoginResponse */
+    AuthLoginResponse: {
+      /** Access Token */
+      access_token: string
+      /** Token Type */
+      token_type: string
+    }
+    /** AuthRefreshResponse */
+    AuthRefreshResponse: {
+      /** Status */
+      status: string
+    }
+    /** AuthSessionRead */
+    AuthSessionRead: {
+      /** Created At */
+      created_at: number
+      /** Ip Address */
+      ip_address?: string | null
+      /** Last Seen At */
+      last_seen_at: number
+      /** Session Id */
+      session_id: string
+      /** User Agent */
+      user_agent?: string | null
+    }
     /** AuthorWithRole */
     AuthorWithRole: {
       authorship: components['schemas']['ResourceAuthorshipEnum']
       authorship_status: components['schemas']['ResourceAuthorshipStatusEnum']
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
       user: components['schemas']['UserRead']
     }
@@ -5805,11 +5884,17 @@ export interface components {
       }
       /** Course Id */
       course_id: number
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Id */
       id: number
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /**
@@ -5927,6 +6012,14 @@ export interface components {
       /** Upload Id */
       upload_id: string
     }
+    /** Body_forgot_password_api_v1_auth_forgot_password_post */
+    Body_forgot_password_api_v1_auth_forgot_password_post: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+    }
     /** Body_initiate_chunked_upload_api_v1_uploads_initiate_post */
     Body_initiate_chunked_upload_api_v1_uploads_initiate_post: {
       /** Directory */
@@ -5966,16 +6059,8 @@ export interface components {
       /** Username */
       username: string
     }
-    /** Body_reset_forgot_password_api_v1_auth_forgot_password_post */
-    Body_reset_forgot_password_api_v1_auth_forgot_password_post: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-    }
-    /** Body_reset_reset_password_api_v1_auth_reset_password_post */
-    Body_reset_reset_password_api_v1_auth_reset_password_post: {
+    /** Body_reset_password_api_v1_auth_reset_password_post */
+    Body_reset_password_api_v1_auth_reset_password_post: {
       /** Password */
       password: string
       /** Token */
@@ -6042,6 +6127,55 @@ export interface components {
       /** Published Count */
       published_count: number
     }
+    /** CertificateCourseSummary */
+    CertificateCourseSummary: {
+      /** Course Uuid */
+      course_uuid: string
+      /** Description */
+      description?: string | null
+      /** Id */
+      id?: number | null
+      /** Name */
+      name: string
+      /** Thumbnail Image */
+      thumbnail_image?: string | null
+    }
+    /** CertificateUserRead */
+    CertificateUserRead: {
+      /** Certification Id */
+      certification_id: number
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string
+      /** User Certification Uuid */
+      user_certification_uuid: string
+      /** User Id */
+      user_id: number
+    }
+    /** CertificateUserSummary */
+    CertificateUserSummary: {
+      /** Email */
+      email: string
+      /** First Name */
+      first_name?: string | null
+      /** Id */
+      id?: number | null
+      /** Last Name */
+      last_name?: string | null
+      /** User Uuid */
+      user_uuid?: string | null
+      /** Username */
+      username: string
+    }
     /** CertificationCreate */
     CertificationCreate: {
       /** Config */
@@ -6053,6 +6187,11 @@ export interface components {
       /** Last Known Update Date */
       last_known_update_date?: string | null
     }
+    /** CertificationDetailResponse */
+    CertificationDetailResponse: {
+      /** Detail */
+      detail: string
+    }
     /** CertificationRead */
     CertificationRead: {
       /** Certification Uuid */
@@ -6063,11 +6202,17 @@ export interface components {
       }
       /** Course Id */
       course_id: number
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Id */
       id: number
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /** CertificationUpdate */
@@ -6098,6 +6243,11 @@ export interface components {
        * @default
        */
       thumbnail_image: string | null
+    }
+    /** ChapterDetailResponse */
+    ChapterDetailResponse: {
+      /** Detail */
+      detail: string
     }
     /** ChapterOrderByUuid */
     ChapterOrderByUuid: {
@@ -6309,6 +6459,45 @@ export interface components {
       total_chunks: number
       /** Upload Uuid */
       upload_uuid: string
+    }
+    /** CodeChallengeValidationDetail */
+    CodeChallengeValidationDetail: {
+      /** Memory */
+      memory?: number | null
+      /** Passed */
+      passed: boolean
+      /** Status Description */
+      status_description?: string | null
+      /** Test Id */
+      test_id?: string | null
+      /** Time */
+      time?: number | null
+    }
+    /** CodeChallengeValidationResponse */
+    CodeChallengeValidationResponse: {
+      /** Results */
+      results: {
+        [key: string]: components['schemas']['CodeChallengeValidationResult']
+      }
+    }
+    /** CodeChallengeValidationResult */
+    CodeChallengeValidationResult: {
+      /** Compile Output */
+      compile_output?: string | null
+      /** Details */
+      details?: components['schemas']['CodeChallengeValidationDetail'][] | null
+      /** Message */
+      message?: string | null
+      /** Ok */
+      ok: boolean
+      /** Passed */
+      passed?: number | null
+      /** Score */
+      score?: number | null
+      /** Status */
+      status: string
+      /** Total */
+      total?: number | null
     }
     /** CodeItemAnswer */
     CodeItemAnswer: {
@@ -6526,13 +6715,21 @@ export interface components {
       /** Public */
       public: boolean
     }
+    /** CollectionDetailResponse */
+    CollectionDetailResponse: {
+      /** Detail */
+      detail: string
+    }
     /** CollectionRead */
     CollectionRead: {
       /** Collection Uuid */
       collection_uuid: string
       /** Courses */
       courses: components['schemas']['CourseRead'][]
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Creator Id */
       creator_id?: number | null
@@ -6547,7 +6744,10 @@ export interface components {
       name: string
       /** Public */
       public: boolean
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /**
@@ -6563,7 +6763,10 @@ export interface components {
       collection_uuid: string
       /** Courses */
       courses: components['schemas']['CourseRead'][]
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Creator Id */
       creator_id?: number | null
@@ -6580,7 +6783,10 @@ export interface components {
       name: string
       /** Public */
       public: boolean
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /** CollectionUpdate */
@@ -6682,6 +6888,60 @@ export interface components {
       /** Public */
       public?: boolean | null
     }
+    /** CourseBulkContributorItem */
+    CourseBulkContributorItem: {
+      /** Reason */
+      reason?: string | null
+      /** User Id */
+      user_id?: number | null
+      /** Username */
+      username: string
+    }
+    /** CourseBulkContributorResponse */
+    CourseBulkContributorResponse: {
+      /** Failed */
+      failed: components['schemas']['CourseBulkContributorItem'][]
+      /** Successful */
+      successful: components['schemas']['CourseBulkContributorItem'][]
+    }
+    /** CourseCertificateResponse */
+    CourseCertificateResponse: {
+      certificate_user: components['schemas']['CertificateUserRead']
+      certification?: components['schemas']['CertificationRead'] | null
+      course: components['schemas']['CertificateCourseSummary']
+    }
+    /** CourseContributorApplicationResponse */
+    CourseContributorApplicationResponse: {
+      /** Detail */
+      detail: string
+      /** Status */
+      status: string
+    }
+    /** CourseContributorMutationResponse */
+    CourseContributorMutationResponse: {
+      /** Detail */
+      detail: string
+      /** Status */
+      status: string
+    }
+    /** CourseContributorResponse */
+    CourseContributorResponse: {
+      authorship: components['schemas']['ResourceAuthorshipEnum']
+      authorship_status: components['schemas']['ResourceAuthorshipStatusEnum']
+      /**
+       * Creation Date
+       * Format: date-time
+       */
+      creation_date: string
+      /**
+       * Update Date
+       * Format: date-time
+       */
+      update_date: string
+      user: components['schemas']['UserRead']
+      /** User Id */
+      user_id: number
+    }
     /** CourseDetailResponse */
     CourseDetailResponse: {
       /** Detail */
@@ -6702,7 +6962,10 @@ export interface components {
       content: string
       /** Course Id */
       course_id: number
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Discussion Uuid */
       discussion_uuid: string
@@ -6730,7 +6993,10 @@ export interface components {
       replies_count: number
       status: components['schemas']['DiscussionStatusEnum']
       type: components['schemas']['DiscussionType']
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
       user?: components['schemas']['UserRead'] | null
       /** User Id */
@@ -6753,7 +7019,10 @@ export interface components {
       content: string
       /** Course Id */
       course_id: number
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Discussion Uuid */
       discussion_uuid: string
@@ -6785,7 +7054,10 @@ export interface components {
       replies_count: number
       status: components['schemas']['DiscussionStatusEnum']
       type: components['schemas']['DiscussionType']
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
       user?: components['schemas']['UserRead'] | null
       /** User Id */
@@ -6964,6 +7236,11 @@ export interface components {
       /** Title */
       title: string
     }
+    /** CourseUpdateDeleteResponse */
+    CourseUpdateDeleteResponse: {
+      /** Message */
+      message: string
+    }
     /** CourseUpdateRead */
     CourseUpdateRead: {
       /** Content */
@@ -6972,7 +7249,10 @@ export interface components {
       course_id: number
       /** Courseupdate Uuid */
       courseupdate_uuid: string
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Id */
       id: number
@@ -6980,7 +7260,10 @@ export interface components {
       linked_activity_uuids?: string | null
       /** Title */
       title: string
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /** CourseUpdateUpdate */
@@ -7102,9 +7385,16 @@ export interface components {
       /** User Uuids */
       user_uuids: string[]
     }
+    /** DevConfigResponse */
+    DevConfigResponse: {
+      [key: string]: unknown
+    }
     /** DiscussionLikeRead */
     DiscussionLikeRead: {
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Discussion Id */
       discussion_id: number
@@ -7113,11 +7403,29 @@ export interface components {
       /** User Id */
       user_id: number
     }
+    /** DiscussionMessageResponse */
+    DiscussionMessageResponse: {
+      /** Message */
+      message: string
+    }
     /**
      * DiscussionStatusEnum
      * @enum {string}
      */
     DiscussionStatusEnum: 'active' | 'hidden' | 'deleted'
+    /** DiscussionToggleResponse */
+    DiscussionToggleResponse: {
+      /** Dislikes Count */
+      dislikes_count: number
+      /** Is Disliked */
+      is_disliked: boolean
+      /** Is Liked */
+      is_liked: boolean
+      /** Likes Count */
+      likes_count: number
+      /** Message */
+      message: string
+    }
     /**
      * DiscussionType
      * @enum {string}
@@ -7833,6 +8141,17 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][]
     }
+    /** HealthStatusResponse */
+    HealthStatusResponse: {
+      /** Checks */
+      checks: {
+        [key: string]: {
+          [key: string]: unknown
+        }
+      }
+      /** Status */
+      status: string
+    }
     /** HistogramBucket */
     HistogramBucket: {
       /** Count */
@@ -8172,6 +8491,23 @@ export interface components {
       /** Total Participants */
       total_participants: number
     }
+    /** LinkPreviewResponse */
+    LinkPreviewResponse: {
+      /** Description */
+      description?: string | null
+      /** Favicon */
+      favicon?: string | null
+      /** Og Image */
+      og_image?: string | null
+      /** Og Type */
+      og_type?: string | null
+      /** Og Url */
+      og_url?: string | null
+      /** Title */
+      title?: string | null
+      /** Url */
+      url?: string | null
+    }
     /** MatchPair */
     MatchPair: {
       /** Left */
@@ -8343,7 +8679,10 @@ export interface components {
     PlatformRead: {
       /** About */
       about?: string | null
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Description */
       description?: string | null
@@ -8373,7 +8712,10 @@ export interface components {
       } | null
       /** Thumbnail Image */
       thumbnail_image?: string | null
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
     }
     /**
@@ -8464,6 +8806,12 @@ export interface components {
       /** Xp To Next Level */
       xp_to_next_level: number
     }
+    /** PublicCertificateResponse */
+    PublicCertificateResponse: {
+      certificate_user: components['schemas']['CertificateUserRead']
+      certification: components['schemas']['CertificationRead']
+      course: components['schemas']['CertificateCourseSummary']
+    }
     /** QuestionDifficultyRow */
     QuestionDifficultyRow: {
       /** Accuracy Pct */
@@ -8541,6 +8889,11 @@ export interface components {
        */
       medium: number
     }
+    /** RoleActionResponse */
+    RoleActionResponse: {
+      /** Ok */
+      ok: boolean
+    }
     /**
      * RoleAssignmentRequest
      * @description Assign a role to a user.
@@ -8593,6 +8946,11 @@ export interface components {
       priority: number
       /** Slug */
       slug: string
+    }
+    /** RoleMutationResponse */
+    RoleMutationResponse: {
+      /** Message */
+      message: string
     }
     /** RoleRead */
     RoleRead: {
@@ -8654,6 +9012,16 @@ export interface components {
       /** Priority */
       priority?: number | null
     }
+    /** RoleUsersCountResponse */
+    RoleUsersCountResponse: {
+      /** Count */
+      count: number
+    }
+    /** RootResponse */
+    RootResponse: {
+      /** Message */
+      Message: string
+    }
     /** RubricCriterion */
     RubricCriterion: {
       /** Criterion Id */
@@ -8707,7 +9075,10 @@ export interface components {
     }
     /** SavedAnalyticsViewRow */
     SavedAnalyticsViewRow: {
-      /** Created At */
+      /**
+       * Created At
+       * Format: date-time
+       */
       created_at: string
       /** Id */
       id: number
@@ -8719,7 +9090,10 @@ export interface components {
       }
       /** Teacher User Id */
       teacher_user_id: number
-      /** Updated At */
+      /**
+       * Updated At
+       * Format: date-time
+       */
       updated_at: string
       /** View Type */
       view_type: string
@@ -9642,7 +10016,10 @@ export interface components {
     TeacherInterventionRow: {
       /** Course Id */
       course_id: number
-      /** Created At */
+      /**
+       * Created At
+       * Format: date-time
+       */
       created_at: string
       /** Id */
       id: number
@@ -9662,7 +10039,10 @@ export interface components {
       status: string
       /** Teacher User Id */
       teacher_user_id: number
-      /** Updated At */
+      /**
+       * Updated At
+       * Format: date-time
+       */
       updated_at: string
       /** User Id */
       user_id: number
@@ -9892,9 +10272,9 @@ export interface components {
     Trail: {
       /**
        * Creation Date
-       * @default
+       * Format: date-time
        */
-      creation_date: string
+      creation_date?: string
       /** Id */
       id?: number | null
       /**
@@ -9904,9 +10284,9 @@ export interface components {
       trail_uuid: string
       /**
        * Update Date
-       * @default
+       * Format: date-time
        */
-      update_date: string
+      update_date?: string
       /** User Id */
       user_id: number
     }
@@ -10093,6 +10473,13 @@ export interface components {
       /** Upload Uuid */
       upload_uuid: string
     }
+    /** UserCertificateResponse */
+    UserCertificateResponse: {
+      certificate_user: components['schemas']['CertificateUserRead']
+      certification: components['schemas']['CertificationRead']
+      course: components['schemas']['CertificateCourseSummary']
+      user?: components['schemas']['CertificateUserSummary'] | null
+    }
     /** UserCreate */
     UserCreate: {
       /**
@@ -10157,7 +10544,10 @@ export interface components {
     }
     /** UserGroupRead */
     UserGroupRead: {
-      /** Creation Date */
+      /**
+       * Creation Date
+       * Format: date-time
+       */
       creation_date: string
       /** Creator Id */
       creator_id?: number | null
@@ -10167,7 +10557,10 @@ export interface components {
       id: number
       /** Name */
       name: string
-      /** Update Date */
+      /**
+       * Update Date
+       * Format: date-time
+       */
       update_date: string
       /** Usergroup Uuid */
       usergroup_uuid: string
@@ -10469,9 +10862,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: string
-          }
+          'application/json': components['schemas']['RootResponse']
         }
       }
     }
@@ -10756,9 +11147,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -10822,9 +11211,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -11170,9 +11557,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -11212,9 +11597,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -11254,9 +11637,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -11296,9 +11677,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -11988,7 +12367,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['AssessmentAuditTrailResponse']
         }
       }
       /** @description Validation Error */
@@ -12019,7 +12398,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CodeChallengeValidationResponse']
         }
       }
       /** @description Validation Error */
@@ -12216,9 +12595,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: string
-          }
+          'application/json': components['schemas']['AssessmentDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -12522,9 +12899,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: string
-          }
+          'application/json': components['schemas']['AssessmentDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -12729,9 +13104,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -12923,7 +13296,7 @@ export interface operations {
       }
     }
   }
-  reset_forgot_password_api_v1_auth_forgot_password_post: {
+  forgot_password_api_v1_auth_forgot_password_post: {
     parameters: {
       query?: never
       header?: never
@@ -12932,7 +13305,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['Body_reset_forgot_password_api_v1_auth_forgot_password_post']
+        'application/json': components['schemas']['Body_forgot_password_api_v1_auth_forgot_password_post']
       }
     }
     responses: {
@@ -12942,7 +13315,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['AuthActionResponse']
         }
       }
       /** @description Validation Error */
@@ -12968,13 +13341,11 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      200: {
+      307: {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -13001,13 +13372,11 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      200: {
+      307: {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -13039,7 +13408,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['AuthLoginResponse']
         }
       }
       /** @description Validation Error */
@@ -13063,13 +13432,11 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      200: {
+      204: {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
     }
   }
@@ -13108,7 +13475,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['AuthRefreshResponse']
         }
       }
     }
@@ -13155,7 +13522,7 @@ export interface operations {
       }
     }
   }
-  reset_reset_password_api_v1_auth_reset_password_post: {
+  reset_password_api_v1_auth_reset_password_post: {
     parameters: {
       query?: never
       header?: never
@@ -13164,7 +13531,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['Body_reset_reset_password_api_v1_auth_reset_password_post']
+        'application/json': components['schemas']['Body_reset_password_api_v1_auth_reset_password_post']
       }
     }
     responses: {
@@ -13174,16 +13541,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorModel']
+          'application/json': components['schemas']['AuthActionResponse']
         }
       }
       /** @description Validation Error */
@@ -13212,7 +13570,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['AuthSessionRead'][]
         }
       }
     }
@@ -13459,9 +13817,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
+          'application/json': components['schemas']['PublicCertificateResponse']
         }
       }
       /** @description Validation Error */
@@ -13521,9 +13877,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }[]
+          'application/json': components['schemas']['UserCertificateResponse'][]
         }
       }
     }
@@ -13545,9 +13899,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }[]
+          'application/json': components['schemas']['CourseCertificateResponse'][]
         }
       }
       /** @description Validation Error */
@@ -13646,7 +13998,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CertificationDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -13714,9 +14066,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
+          'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -13778,9 +14128,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
+          'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -13851,9 +14199,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
+          'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -14070,7 +14416,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CollectionDetailResponse']
         }
       }
       /** @description Validation Error */
@@ -14400,7 +14746,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseContributorApplicationResponse']
         }
       }
       /** @description Validation Error */
@@ -14435,7 +14781,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseBulkContributorResponse']
         }
       }
       /** @description Validation Error */
@@ -14470,7 +14816,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseBulkContributorResponse']
         }
       }
       /** @description Validation Error */
@@ -14501,7 +14847,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseContributorResponse'][]
         }
       }
       /** @description Validation Error */
@@ -14536,7 +14882,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseContributorMutationResponse']
         }
       }
       /** @description Validation Error */
@@ -14677,7 +15023,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['DiscussionMessageResponse']
         }
       }
       /** @description Validation Error */
@@ -14709,7 +15055,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['DiscussionToggleResponse']
         }
       }
       /** @description Validation Error */
@@ -14741,7 +15087,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['DiscussionToggleResponse']
         }
       }
       /** @description Validation Error */
@@ -14805,7 +15151,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['DiscussionMessageResponse']
         }
       }
       /** @description Validation Error */
@@ -15044,7 +15390,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['CourseUpdateDeleteResponse']
         }
       }
       /** @description Validation Error */
@@ -15139,7 +15485,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['DevConfigResponse']
         }
       }
     }
@@ -15224,9 +15570,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -15553,9 +15897,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -15584,9 +15926,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -16158,9 +16498,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -16357,9 +16695,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': unknown
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -16387,7 +16723,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['HealthStatusResponse']
         }
       }
     }
@@ -16407,9 +16743,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
+          'application/json': components['schemas']['HealthStatusResponse']
         }
       }
     }
@@ -16429,7 +16763,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['HealthStatusResponse']
         }
       }
     }
@@ -16821,7 +17155,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['RoleMutationResponse']
         }
       }
       /** @description Validation Error */
@@ -16854,7 +17188,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['RoleMutationResponse']
         }
       }
       /** @description Validation Error */
@@ -17076,9 +17410,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: boolean
-          }
+          'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
@@ -17144,9 +17476,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: boolean
-          }
+          'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
@@ -17178,9 +17508,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: boolean
-          }
+          'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
@@ -17211,7 +17539,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['RoleUsersCountResponse']
         }
       }
       /** @description Validation Error */
@@ -18387,7 +18715,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': string
         }
       }
       /** @description Validation Error */
@@ -18550,7 +18878,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['LinkPreviewResponse']
         }
       }
       /** @description Validation Error */

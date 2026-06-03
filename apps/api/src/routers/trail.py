@@ -20,7 +20,7 @@ from src.services.trail.trail import (
 router = APIRouter()
 
 
-@router.post("/start")
+@router.post("/start", response_model=Trail)
 async def api_start_trail(
     request: Request,
     trail_object: TrailCreate,
@@ -33,7 +33,7 @@ async def api_start_trail(
     return await create_user_trail(request, user, trail_object, db_session)
 
 
-@router.get("")
+@router.get("", response_model=TrailRead)
 async def api_get_user_trail(
     request: Request,
     user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
@@ -47,7 +47,7 @@ async def api_get_user_trail(
     return await get_user_trails(request, user=user, db_session=db_session)
 
 
-@router.post("/add_course/{course_uuid}")
+@router.post("/add_course/{course_uuid}", response_model=TrailRead)
 async def api_add_course_to_trail(
     request: Request,
     course_uuid: str,
@@ -60,7 +60,7 @@ async def api_add_course_to_trail(
     return await add_course_to_trail(request, user, course_uuid, db_session)
 
 
-@router.delete("/remove_course/{course_uuid}")
+@router.delete("/remove_course/{course_uuid}", response_model=TrailRead)
 async def api_remove_course_to_trail(
     request: Request,
     course_uuid: str,
@@ -73,7 +73,7 @@ async def api_remove_course_to_trail(
     return await remove_course_from_trail(request, user, course_uuid, db_session)
 
 
-@router.post("/add_activity/{activity_uuid}")
+@router.post("/add_activity/{activity_uuid}", response_model=TrailRead)
 async def api_add_activity_to_trail(
     request: Request,
     activity_uuid: str,
@@ -86,7 +86,7 @@ async def api_add_activity_to_trail(
     return await add_activity_to_trail(request, user, activity_uuid, db_session)
 
 
-@router.delete("/remove_activity/{activity_uuid}")
+@router.delete("/remove_activity/{activity_uuid}", response_model=TrailRead)
 async def api_remove_activity_from_trail(
     request: Request,
     activity_uuid: str,

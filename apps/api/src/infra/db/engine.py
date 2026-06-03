@@ -25,7 +25,7 @@ def _after_cursor_execute(
     start_time = getattr(context, "_query_start_time", None)
     if start_time is not None:
         duration = time.perf_counter() - start_time
-        if duration >= 0.3:  # 500ms threshold
+        if duration >= 0.3:  # 300ms threshold
             logger.warning(
                 "SLOW DB QUERY: %.2fms\nSQL: %s\nParams: %s",
                 duration * 1000,

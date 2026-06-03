@@ -232,7 +232,7 @@ async def _get_local_embedding_cache(ttl_seconds: int) -> TTLCache[str, list[flo
     fingerprint = (5000, max(1, ttl_seconds))
     async with _embedding_cache_lock:
         if _embedding_cache is None or _embedding_cache_fingerprint != fingerprint:
-            _embedding_cache = TTLCache(maxsize=fingerprint[0], ttl=fingerprint[1])
+            _embedding_cache = TTLCache(maxsize=fingerprint[0], global_ttl=fingerprint[1])
             _embedding_cache_fingerprint = fingerprint
         return _embedding_cache
 

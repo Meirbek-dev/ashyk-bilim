@@ -208,7 +208,7 @@ async def api_get_submission_stats(
     )
 
 
-@router.get("/submissions/export")
+@router.get("/submissions/export", response_class=StreamingResponse)
 def api_export_submissions_csv(
     activity_id: int,
     db_session: Annotated[Session, Depends(get_db_session)],

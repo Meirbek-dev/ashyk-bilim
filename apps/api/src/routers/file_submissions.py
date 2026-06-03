@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
@@ -94,7 +94,7 @@ async def api_get_file_submission_file_url(
     )
 
 
-@router.get("/files/{attempt_file_uuid}/download")
+@router.get("/files/{attempt_file_uuid}/download", response_class=StreamingResponse)
 async def api_download_file_submission_file(
     attempt_file_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -219,21 +219,21 @@ async def api_list_file_submission_submissions(
     )
 
 
-@router.get("/{file_submission_uuid}/submissions/export")
+@router.get("/{file_submission_uuid}/submissions/export", response_class=StreamingResponse)
 async def api_export_file_submission_csv(
     file_submission_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> Response:
+) -> StreamingResponse:
     csv_body = await export_file_submission_csv(file_submission_uuid, current_user, db_session)
-    return Response(
-        content=csv_body,
+    return StreamingResponse(
+        iter([csv_body]),
         media_type="text/csv",
         headers={"Content-Disposition": get_content_disposition_header(f"file-submissions-{file_submission_uuid}.csv")},
     )
 
 
-@router.post("/{file_submission_uuid}/submissions/download")
+@router.post("/{file_submission_uuid}/submissions/download", response_class=StreamingResponse)
 async def api_download_file_submission_zip(
     file_submission_uuid: str,
     payload: FileSubmissionBulkDownloadRequest,

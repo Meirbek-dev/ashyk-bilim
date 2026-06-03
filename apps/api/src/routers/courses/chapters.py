@@ -12,6 +12,7 @@ from src.db.courses.chapters import (
     ChapterUpdate,
     ChapterUpdateOrder,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.courses.chapters import (
@@ -27,7 +28,11 @@ from src.services.courses.chapters import (
 router = APIRouter()
 
 
-@router.post("")
+class ChapterDetailResponse(PydanticStrictBaseModel):
+    detail: str
+
+
+@router.post("", response_model=ChapterRead)
 async def api_create_coursechapter(
     request: Request,
     coursechapter_object: ChapterCreateRequest,
@@ -37,7 +42,7 @@ async def api_create_coursechapter(
     return await create_chapter(request, coursechapter_object, current_user, db_session)
 
 
-@router.get("/{chapter_uuid}")
+@router.get("/{chapter_uuid}", response_model=ChapterRead)
 async def api_get_coursechapter(
     request: Request,
     chapter_uuid: str,
@@ -47,7 +52,7 @@ async def api_get_coursechapter(
     return await get_chapter(request, chapter_uuid, current_user, db_session)
 
 
-@router.patch("/{chapter_uuid}/order")
+@router.patch("/{chapter_uuid}/order", response_model=ChapterRead)
 async def api_move_chapter_to_order(
     request: Request,
     chapter_uuid: str,
@@ -59,7 +64,7 @@ async def api_move_chapter_to_order(
     return await move_chapter_to_order(request, chapter_uuid, payload.position, current_user, db_session)
 
 
-@router.patch("/{chapter_uuid}/activities/{activity_uuid}/order")
+@router.patch("/{chapter_uuid}/activities/{activity_uuid}/order", response_model=ChapterDetailResponse)
 async def api_move_activity_to_order(
     request: Request,
     chapter_uuid: str,
@@ -79,7 +84,7 @@ async def api_move_activity_to_order(
     )
 
 
-@router.patch("/course/{course_uuid}/order")
+@router.patch("/course/{course_uuid}/order", response_model=ChapterDetailResponse)
 async def api_reorder_chapters_and_activities(
     request: Request,
     course_uuid: str,
@@ -91,7 +96,7 @@ async def api_reorder_chapters_and_activities(
     return await reorder_chapters_and_activities(request, course_uuid, order, current_user, db_session)
 
 
-@router.patch("/{chapter_uuid}")
+@router.patch("/{chapter_uuid}", response_model=ChapterRead)
 async def api_update_coursechapter(
     request: Request,
     coursechapter_object: ChapterUpdate,
@@ -102,7 +107,7 @@ async def api_update_coursechapter(
     return await update_chapter(request, coursechapter_object, chapter_uuid, current_user, db_session)
 
 
-@router.delete("/{chapter_uuid}")
+@router.delete("/{chapter_uuid}", response_model=ChapterDetailResponse)
 async def api_delete_coursechapter(
     request: Request,
     chapter_uuid: str,

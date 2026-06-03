@@ -354,7 +354,7 @@ def _get_memory_cache(
         max(1, settings.cache_ttl_seconds),
     )
     if _memory_cache is None or _memory_cache_fingerprint != fingerprint:
-        _memory_cache = TTLCache(maxsize=fingerprint[0], ttl=fingerprint[1])
+        _memory_cache = TTLCache(maxsize=fingerprint[0], global_ttl=fingerprint[1])
         _memory_cache_fingerprint = fingerprint
     return _memory_cache
 

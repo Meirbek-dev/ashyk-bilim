@@ -43,13 +43,6 @@ v1_router = APIRouter(prefix="/api/v1", route_class=StrictAPIRoute)
 
 # Auth domains
 v1_router.include_router(
-    fastapi_users.get_reset_password_router(),
-    prefix="/auth",
-    tags=["auth"],
-    dependencies=[Depends(auth.auth_sensitive_rate_limit)],
-)
-
-v1_router.include_router(
     fastapi_users.get_register_router(cast("type[Any]", UserRead), cast("type[Any]", UserCreate)),
     prefix="/auth",
     tags=["auth"],

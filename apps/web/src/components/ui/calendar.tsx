@@ -250,7 +250,11 @@ function CalendarDatePicker({
             type="button"
             variant={buttonVariant}
             disabled={disabled}
-            className={cn('w-full justify-start gap-2 text-left font-normal', !value && 'text-muted-foreground', className)}
+            className={cn(
+              'w-full justify-start gap-2 text-left font-normal',
+              !value && 'text-muted-foreground',
+              className,
+            )}
           />
         }
       >
@@ -328,7 +332,11 @@ function CalendarDateTimePicker({
             type="button"
             variant={buttonVariant}
             disabled={disabled}
-            className={cn('w-full justify-start gap-2 text-left font-normal', !value && 'text-muted-foreground', className)}
+            className={cn(
+              'w-full justify-start gap-2 text-left font-normal',
+              !value && 'text-muted-foreground',
+              className,
+            )}
           />
         }
       >

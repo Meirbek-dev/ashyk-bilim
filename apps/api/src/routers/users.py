@@ -61,7 +61,7 @@ def api_get_public_user_session(
     )
 
 
-@router.post("", tags=["users"])
+@router.post("", tags=["users"], response_model=UserRead)
 async def api_create_user_without_platform(
     *,
     request: Request,
@@ -75,7 +75,7 @@ async def api_create_user_without_platform(
     return await create_user_without_platform(request, db_session, current_user, user_object)
 
 
-@router.get("/id/{user_id}", tags=["users"])
+@router.get("/id/{user_id}", tags=["users"], response_model=UserRead)
 def api_get_user_by_id(
     *,
     request: Request,
@@ -92,7 +92,7 @@ def api_get_user_by_id(
     return read_user_by_id(request, db_session, current_user, user_id)
 
 
-@router.get("/uuid/{user_uuid}", tags=["users"])
+@router.get("/uuid/{user_uuid}", tags=["users"], response_model=UserRead)
 def api_get_user_by_uuid(
     *,
     request: Request,
@@ -106,7 +106,7 @@ def api_get_user_by_uuid(
     return read_user_by_uuid(request, db_session, current_user, user_uuid)
 
 
-@router.get("/username/{username}", tags=["users"])
+@router.get("/username/{username}", tags=["users"], response_model=UserRead)
 def api_get_user_by_username(
     *,
     request: Request,
@@ -123,7 +123,7 @@ def api_get_user_by_username(
     return read_user_by_username(request, db_session, current_user, username)
 
 
-@router.put("/{user_id}", tags=["users"])
+@router.put("/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user(
     *,
     request: Request,
@@ -147,7 +147,7 @@ def api_update_user(
     return cast("UserRead", update_user(request, db_session, user_id, current_user, user_object))
 
 
-@router.put("/update_avatar/{user_id}", tags=["users"])
+@router.put("/update_avatar/{user_id}", tags=["users"], response_model=UserRead)
 async def api_update_avatar_user(
     *,
     request: Request,
@@ -171,7 +171,7 @@ async def api_update_avatar_user(
     return await update_user_avatar(request, db_session, current_user, avatar_file)
 
 
-@router.put("/change_password/{user_id}", tags=["users"])
+@router.put("/change_password/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_password(
     *,
     request: Request,
@@ -192,7 +192,7 @@ def api_update_user_password(
     return update_user_password(request, db_session, current_user, user_id, form)
 
 
-@router.put("/preferences/theme/{user_id}", tags=["users"])
+@router.put("/preferences/theme/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_theme(
     *,
     request: Request,
@@ -213,7 +213,7 @@ def api_update_user_theme(
     )
 
 
-@router.put("/preferences/locale/{user_id}", tags=["users"])
+@router.put("/preferences/locale/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_locale(
     *,
     request: Request,
@@ -234,7 +234,7 @@ def api_update_user_locale(
     )
 
 
-@router.delete("/user_id/{user_id}", tags=["users"])
+@router.delete("/user_id/{user_id}", tags=["users"], response_model=str)
 def api_delete_user(
     *,
     request: Request,
@@ -257,7 +257,7 @@ def api_delete_user(
     return delete_user_by_id(request, db_session, current_user, user_id)
 
 
-@router.get("/{user_id}/courses", tags=["users"])
+@router.get("/{user_id}/courses", tags=["users"], response_model=list[CourseRead])
 async def api_get_user_courses(
     *,
     request: Request,

@@ -44,7 +44,7 @@ class PlatformLandingUploadResponse(PydanticStrictBaseModel):
     filename: str
 
 
-@router.get("/platform")
+@router.get("/platform", response_model=PlatformRead)
 def api_get_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> PlatformRead:
@@ -59,7 +59,7 @@ def api_get_platform(
     return PlatformRead.model_validate(platform_record)
 
 
-@router.get("/members")
+@router.get("/members", response_model=PaginatedPlatformUsers)
 def api_get_platform_users(
     request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -193,7 +193,7 @@ async def api_update_platform_preview(
     )
 
 
-@router.put("/platform")
+@router.put("/platform", response_model=PlatformRead)
 def api_update_platform(
     request: Request,
     platform_object: PlatformUpdate,

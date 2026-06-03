@@ -6,7 +6,7 @@ teacher submission lists.
 
 import asyncio
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -42,6 +42,7 @@ from src.db.assessments import (
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
+from src.db.audit import AuditEventRead
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
@@ -49,6 +50,7 @@ from src.db.grading.submissions import (
     SubmissionStats,
     TeacherGradeInput,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.assessments.core import (
@@ -99,6 +101,40 @@ from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
 _SUBMIT_SEMAPHORE = asyncio.Semaphore(15)
 
 router = APIRouter()
+
+
+class AssessmentDetailResponse(PydanticStrictBaseModel):
+    detail: str
+
+
+class CodeChallengeValidationDetail(PydanticStrictBaseModel):
+    test_id: str | None = None
+    passed: bool
+    status_description: str | None = None
+    time: float | None = None
+    memory: int | None = None
+
+
+class CodeChallengeValidationResult(PydanticStrictBaseModel):
+    ok: bool
+    status: str
+    message: str | None = None
+    passed: int | None = None
+    total: int | None = None
+    score: float | None = None
+    compile_output: str | None = None
+    details: list[CodeChallengeValidationDetail] | None = None
+
+
+class CodeChallengeValidationResponse(PydanticStrictBaseModel):
+    results: dict[int, CodeChallengeValidationResult]
+
+
+class AssessmentAuditTrailResponse(PydanticStrictBaseModel):
+    items: list[AuditEventRead]
+    total: int
+    page: int
+    page_size: int
 
 
 @router.post("", response_model=AssessmentRead)
@@ -234,7 +270,7 @@ async def api_reorder_items(
     return await reorder_assessment_items(assessment_uuid, payload, current_user, db_session)
 
 
-@router.delete("/{assessment_uuid}/items/{item_uuid}")
+@router.delete("/{assessment_uuid}/items/{item_uuid}", response_model=AssessmentDetailResponse)
 async def api_delete_item(
     assessment_uuid: str,
     item_uuid: str,
@@ -390,7 +426,7 @@ async def api_get_item_analytics(
     return await get_item_analytics(assessment_uuid, current_user, db_session)
 
 
-@router.get("/{assessment_uuid}/submissions/export")
+@router.get("/{assessment_uuid}/submissions/export", response_class=StreamingResponse)
 async def api_export_assessment_submissions_csv(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -537,12 +573,13 @@ async def api_get_code_item_run(
 
 @router.post(
     "/{assessment_uuid}/code-challenge/validate",
+    response_model=CodeChallengeValidationResponse,
 )
 async def api_validate_code_challenge(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> dict[str, Any]:
     """Проверить эталонные решения для всех настроенных языков на тестовом наборе."""
     from src.services.assessments.attempt_service import validate_code_challenge_service
 
@@ -629,7 +666,7 @@ async def api_update_override(
     return await update_student_policy_override(assessment_uuid, user_id, payload, current_user, db_session)
 
 
-@router.delete("/{assessment_uuid}/overrides/{user_id}")
+@router.delete("/{assessment_uuid}/overrides/{user_id}", response_model=AssessmentDetailResponse)
 async def api_delete_override(
     assessment_uuid: str,
     user_id: int,
@@ -655,19 +692,19 @@ async def api_create_inline_quiz(
 # ── Audit trail ────────────────────────────────────────────────────────────────
 
 
-@router.get("/{assessment_uuid}/audit")
+@router.get("/{assessment_uuid}/audit", response_model=AssessmentAuditTrailResponse)
 async def api_get_audit_trail(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
-):
+) -> dict[str, Any]:
     """Показать события аудита для оценивания (только для преподавателя)."""
     from sqlalchemy import desc, func
     from sqlmodel import select
 
-    from src.db.audit import AuditEvent, AuditEventRead
+    from src.db.audit import AuditEvent
     from src.services.assessments._shared import (
         _get_activity_and_course,
         _get_assessment_by_uuid_or_404,

@@ -1,0 +1,73 @@
+from sqlmodel import SQLModel
+
+from src.db.model_registry import import_orm_models
+
+EXPECTED_TABLE_NAMES = {
+    "activity",
+    "activity_progress",
+    "analytics_event",
+    "analytics_saved_view",
+    "assessment",
+    "assessment_access_policy",
+    "assessment_access_user",
+    "assessment_access_usergroup",
+    "assessment_item",
+    "assessment_policy",
+    "audit_event",
+    "auth_audit_log",
+    "auth_sessions",
+    "block",
+    "bulk_action",
+    "certificateuser",
+    "certifications",
+    "chapter",
+    "code_run",
+    "code_run_case",
+    "collection",
+    "collectioncourse",
+    "course",
+    "course_progress",
+    "coursediscussion",
+    "courseupdate",
+    "daily_assessment_metrics",
+    "daily_course_engagement",
+    "daily_course_metrics",
+    "daily_teacher_metrics",
+    "daily_user_course_progress",
+    "discussiondislike",
+    "discussionlike",
+    "file_submission_activity",
+    "file_submission_attempt",
+    "file_submission_attempt_file",
+    "gamification_profiles",
+    "grading_entry",
+    "item_feedback",
+    "learner_risk_snapshot",
+    "org_gamification_config",
+    "permissions",
+    "platform",
+    "resourceauthor",
+    "role_permissions",
+    "roles",
+    "student_policy_override",
+    "submission",
+    "teacher_intervention",
+    "trail",
+    "trailrun",
+    "trailstep",
+    "upload",
+    "user",
+    "user_roles",
+    "usergroup",
+    "usergroupresource",
+    "usergroupuser",
+    "xp_transactions",
+}
+
+
+def test_import_orm_models_registers_all_expected_tables() -> None:
+    import_orm_models()
+
+    registered_tables = set(SQLModel.metadata.tables)
+
+    assert registered_tables >= EXPECTED_TABLE_NAMES

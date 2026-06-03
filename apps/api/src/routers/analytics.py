@@ -342,7 +342,7 @@ async def teacher_drillthrough_platform(
     )
 
 
-@router.get("/teacher/exports/at-risk.csv")
+@router.get("/teacher/exports/at-risk.csv", response_class=StreamingResponse)
 async def teacher_at_risk_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
@@ -355,7 +355,7 @@ async def teacher_at_risk_export_platform(
     )
 
 
-@router.get("/teacher/exports/grading-backlog.csv")
+@router.get("/teacher/exports/grading-backlog.csv", response_class=StreamingResponse)
 async def teacher_grading_backlog_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
@@ -368,7 +368,7 @@ async def teacher_grading_backlog_export_platform(
     )
 
 
-@router.get("/teacher/exports/course-progress.csv")
+@router.get("/teacher/exports/course-progress.csv", response_class=StreamingResponse)
 async def teacher_course_progress_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
@@ -381,7 +381,7 @@ async def teacher_course_progress_export_platform(
     )
 
 
-@router.get("/teacher/exports/assessment-outcomes.csv")
+@router.get("/teacher/exports/assessment-outcomes.csv", response_class=StreamingResponse)
 async def teacher_assessment_outcomes_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],

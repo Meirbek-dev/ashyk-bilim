@@ -48,16 +48,6 @@ The main issue is not missing ambition. The main issue is systemization. The rep
 
 The backlog below contains **150 concrete suggestions**. Items intentionally skew toward low-cost/high-gain changes before larger product architecture work.
 
-### Data & migrations
-
-#### 002. [P0] Make `src.db.model_registry.import_orm_models()` real
-
-- **Effort:** S
-- **Impact:** Very high
-- **Evidence:** `import_orm_models()` currently only toggles `_models_imported` and imports no ORM modules, yet Alembic env.py and engine startup rely on it.
-- **Action:** Replace the no-op with explicit imports for every SQLModel table module, or generate the registry from a checked-in module list. Avoid filesystem walking in production.
-- **Done when:** A test asserts that SQLModel.metadata contains every expected table after `import_orm_models()`; autogenerate sees model metadata.
-
 ### Build reproducibility
 
 #### 003. [P0] Commit and enforce lockfiles
@@ -400,14 +390,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Action:** Run bundle analysis, then dynamically import Monaco, TipTap extensions, Shiki, chart panels, certificate PDF generation, and video player only where used.
 - **Done when:** Initial dashboard and course list bundles exclude heavy authoring/runtime libraries.
 
-#### 052. [P1] Add performance budgets
-
-- **Effort:** S/M
-- **Impact:** High
-- **Evidence:** Next config has optimizePackageImports but no visible budget enforcement.
-- **Action:** Create CI bundle-size budgets for route groups: auth, dashboard shell, course list, learner activity, assessment attempt, editor.
-- **Done when:** PRs that add >10% JS to critical routes require explicit approval.
-
 #### 053. [P2] Replace repeated `useEffect` state syncing with URL/query utilities
 
 - **Effort:** S/M
@@ -602,14 +584,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Action:** Use SQLAlchemy event counters in tests for course detail, activity runtime, gradebook, analytics overview, search.
 - **Done when:** Hot endpoint query counts have budgets and regression tests.
 
-#### 077. [P2] Fix slow-query logging threshold comment/config
-
-- **Effort:** S/M
-- **Impact:** Medium
-- **Evidence:** `engine.py` comment says 500ms threshold but code uses `duration >= 0.3`.
-- **Action:** Move threshold to settings and make comment match. Log query hash and route/request_id instead of full params in production.
-- **Done when:** Slow query logs are consistent and safe.
-
 #### 078. [P1] Create a repository/query helper for SQLModel typing
 
 - **Effort:** S/M
@@ -617,14 +591,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Evidence:** Mypy/pyrefly reports show many SQLModel `Session.exec` overload issues.
 - **Action:** Wrap common select patterns with typed helpers or use SQLAlchemy execute/scalars consistently. Document when to use `sa_execute`.
 - **Done when:** New SQL queries no longer require ad-hoc type ignores.
-
-#### 079. [P1] Remove `Annotated[..., Depends(...)] = None` patterns
-
-- **Effort:** S/M
-- **Impact:** High
-- **Evidence:** Pyrefly report flags many FastAPI dependencies defaulting to None despite non-optional types.
-- **Action:** Use `Annotated[T, Depends(dep)]` with no default, or `T | None` only where truly optional.
-- **Done when:** Type checkers stop reporting bad-function-definition for route dependencies.
 
 #### 080. [P2] Introduce API pagination standards
 

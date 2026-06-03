@@ -1829,6 +1829,37 @@
         "title": "AssessmentAuditEventRow",
         "type": "object"
       },
+      "AssessmentAuditTrailResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "AssessmentAuditTrailResponse",
+        "type": "object"
+      },
       "AssessmentCohortRow": {
         "properties": {
           "avg_attempts": {
@@ -1976,6 +2007,19 @@
           "chapter_id"
         ],
         "title": "AssessmentCreate",
+        "type": "object"
+      },
+      "AssessmentDetailResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AssessmentDetailResponse",
         "type": "object"
       },
       "AssessmentDiagnosticsSnapshot": {
@@ -3843,6 +3887,152 @@
         "title": "AtRiskLearnersResponse",
         "type": "object"
       },
+      "AuditEventRead": {
+        "description": "API projection of an audit event.",
+        "properties": {
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "event_uuid": {
+            "title": "Event Uuid",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "payload_json": {
+            "additionalProperties": true,
+            "title": "Payload Json",
+            "type": "object"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "target_uuid": {
+            "title": "Target Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "event_uuid",
+          "event_type",
+          "target_kind",
+          "target_uuid",
+          "payload_json",
+          "created_at"
+        ],
+        "title": "AuditEventRead",
+        "type": "object"
+      },
+      "AuthActionResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AuthActionResponse",
+        "type": "object"
+      },
+      "AuthLoginResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "token_type": {
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "token_type"
+        ],
+        "title": "AuthLoginResponse",
+        "type": "object"
+      },
+      "AuthRefreshResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AuthRefreshResponse",
+        "type": "object"
+      },
+      "AuthSessionRead": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "last_seen_at": {
+            "title": "Last Seen At",
+            "type": "integer"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          }
+        },
+        "required": [
+          "session_id",
+          "created_at",
+          "last_seen_at"
+        ],
+        "title": "AuthSessionRead",
+        "type": "object"
+      },
       "AuthorWithRole": {
         "properties": {
           "authorship": {
@@ -3852,10 +4042,12 @@
             "$ref": "#/components/schemas/ResourceAuthorshipStatusEnum"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           },
@@ -4070,6 +4262,7 @@
             "type": "integer"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -4078,6 +4271,7 @@
             "type": "integer"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -4483,6 +4677,20 @@
         "title": "Body_complete_chunked_upload_api_v1_uploads_complete_post",
         "type": "object"
       },
+      "Body_forgot_password_api_v1_auth_forgot_password_post": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Body_forgot_password_api_v1_auth_forgot_password_post",
+        "type": "object"
+      },
       "Body_initiate_chunked_upload_api_v1_uploads_initiate_post": {
         "properties": {
           "directory": {
@@ -4586,21 +4794,7 @@
         "title": "Body_login_api_v1_auth_login_post",
         "type": "object"
       },
-      "Body_reset_forgot_password_api_v1_auth_forgot_password_post": {
-        "properties": {
-          "email": {
-            "format": "email",
-            "title": "Email",
-            "type": "string"
-          }
-        },
-        "required": [
-          "email"
-        ],
-        "title": "Body_reset_forgot_password_api_v1_auth_forgot_password_post",
-        "type": "object"
-      },
-      "Body_reset_reset_password_api_v1_auth_reset_password_post": {
+      "Body_reset_password_api_v1_auth_reset_password_post": {
         "properties": {
           "password": {
             "title": "Password",
@@ -4615,7 +4809,7 @@
           "token",
           "password"
         ],
-        "title": "Body_reset_reset_password_api_v1_auth_reset_password_post",
+        "title": "Body_reset_password_api_v1_auth_reset_password_post",
         "type": "object"
       },
       "Body_upload_chunk_api_v1_uploads_chunk_post": {
@@ -4763,6 +4957,159 @@
         "title": "BulkPublishGradesResponse",
         "type": "object"
       },
+      "CertificateCourseSummary": {
+        "properties": {
+          "course_uuid": {
+            "title": "Course Uuid",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "thumbnail_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Image"
+          }
+        },
+        "required": [
+          "course_uuid",
+          "name"
+        ],
+        "title": "CertificateCourseSummary",
+        "type": "object"
+      },
+      "CertificateUserRead": {
+        "properties": {
+          "certification_id": {
+            "title": "Certification Id",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_certification_uuid": {
+            "title": "User Certification Uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "certification_id",
+          "user_certification_uuid",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CertificateUserRead",
+        "type": "object"
+      },
+      "CertificateUserSummary": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "user_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Uuid"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email"
+        ],
+        "title": "CertificateUserSummary",
+        "type": "object"
+      },
       "CertificationCreate": {
         "properties": {
           "config": {
@@ -4793,6 +5140,19 @@
         "title": "CertificationCreate",
         "type": "object"
       },
+      "CertificationDetailResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "CertificationDetailResponse",
+        "type": "object"
+      },
       "CertificationRead": {
         "properties": {
           "certification_uuid": {
@@ -4809,6 +5169,7 @@
             "type": "integer"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -4817,6 +5178,7 @@
             "type": "integer"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -4903,6 +5265,19 @@
           "course_uuid"
         ],
         "title": "ChapterCreateRequest",
+        "type": "object"
+      },
+      "ChapterDetailResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ChapterDetailResponse",
         "type": "object"
       },
       "ChapterOrderByUuid": {
@@ -5399,6 +5774,166 @@
           "file_size"
         ],
         "title": "ChunkedUploadStatusResponse",
+        "type": "object"
+      },
+      "CodeChallengeValidationDetail": {
+        "properties": {
+          "memory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "status_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Description"
+          },
+          "test_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Id"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          }
+        },
+        "required": [
+          "passed"
+        ],
+        "title": "CodeChallengeValidationDetail",
+        "type": "object"
+      },
+      "CodeChallengeValidationResponse": {
+        "properties": {
+          "results": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CodeChallengeValidationResult"
+            },
+            "title": "Results",
+            "type": "object"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "CodeChallengeValidationResponse",
+        "type": "object"
+      },
+      "CodeChallengeValidationResult": {
+        "properties": {
+          "compile_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compile Output"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CodeChallengeValidationDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "required": [
+          "ok",
+          "status"
+        ],
+        "title": "CodeChallengeValidationResult",
         "type": "object"
       },
       "CodeItemAnswer": {
@@ -5948,6 +6483,19 @@
         "title": "CollectionCreate",
         "type": "object"
       },
+      "CollectionDetailResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "CollectionDetailResponse",
+        "type": "object"
+      },
       "CollectionRead": {
         "properties": {
           "collection_uuid": {
@@ -5962,6 +6510,7 @@
             "type": "array"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -6001,6 +6550,7 @@
             "type": "boolean"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -6040,6 +6590,7 @@
             "type": "array"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -6083,6 +6634,7 @@
             "type": "boolean"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -6375,6 +6927,164 @@
         "title": "CourseAccessUpdate",
         "type": "object"
       },
+      "CourseBulkContributorItem": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "CourseBulkContributorItem",
+        "type": "object"
+      },
+      "CourseBulkContributorResponse": {
+        "properties": {
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/CourseBulkContributorItem"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "successful": {
+            "items": {
+              "$ref": "#/components/schemas/CourseBulkContributorItem"
+            },
+            "title": "Successful",
+            "type": "array"
+          }
+        },
+        "required": [
+          "successful",
+          "failed"
+        ],
+        "title": "CourseBulkContributorResponse",
+        "type": "object"
+      },
+      "CourseCertificateResponse": {
+        "properties": {
+          "certificate_user": {
+            "$ref": "#/components/schemas/CertificateUserRead"
+          },
+          "certification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CertificationRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "course": {
+            "$ref": "#/components/schemas/CertificateCourseSummary"
+          }
+        },
+        "required": [
+          "certificate_user",
+          "course"
+        ],
+        "title": "CourseCertificateResponse",
+        "type": "object"
+      },
+      "CourseContributorApplicationResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "status"
+        ],
+        "title": "CourseContributorApplicationResponse",
+        "type": "object"
+      },
+      "CourseContributorMutationResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "status"
+        ],
+        "title": "CourseContributorMutationResponse",
+        "type": "object"
+      },
+      "CourseContributorResponse": {
+        "properties": {
+          "authorship": {
+            "$ref": "#/components/schemas/ResourceAuthorshipEnum"
+          },
+          "authorship_status": {
+            "$ref": "#/components/schemas/ResourceAuthorshipStatusEnum"
+          },
+          "creation_date": {
+            "format": "date-time",
+            "title": "Creation Date",
+            "type": "string"
+          },
+          "update_date": {
+            "format": "date-time",
+            "title": "Update Date",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserRead"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "authorship",
+          "authorship_status",
+          "creation_date",
+          "update_date",
+          "user"
+        ],
+        "title": "CourseContributorResponse",
+        "type": "object"
+      },
       "CourseDetailResponse": {
         "properties": {
           "detail": {
@@ -6427,6 +7137,7 @@
             "type": "integer"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -6492,6 +7203,7 @@
             "$ref": "#/components/schemas/DiscussionType"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           },
@@ -6559,6 +7271,7 @@
             "type": "integer"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -6632,6 +7345,7 @@
             "$ref": "#/components/schemas/DiscussionType"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           },
@@ -7181,6 +7895,19 @@
         "title": "CourseUpdateCreate",
         "type": "object"
       },
+      "CourseUpdateDeleteResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "CourseUpdateDeleteResponse",
+        "type": "object"
+      },
       "CourseUpdateRead": {
         "properties": {
           "content": {
@@ -7196,6 +7923,7 @@
             "type": "string"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -7219,6 +7947,7 @@
             "type": "string"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -7570,9 +8299,16 @@
         "title": "DeadlineExtensionRequest",
         "type": "object"
       },
+      "DevConfigResponse": {
+        "additionalProperties": true,
+        "properties": {},
+        "title": "DevConfigResponse",
+        "type": "object"
+      },
       "DiscussionLikeRead": {
         "properties": {
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -7598,6 +8334,19 @@
         "title": "DiscussionLikeRead",
         "type": "object"
       },
+      "DiscussionMessageResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "DiscussionMessageResponse",
+        "type": "object"
+      },
       "DiscussionStatusEnum": {
         "enum": [
           "active",
@@ -7606,6 +8355,39 @@
         ],
         "title": "DiscussionStatusEnum",
         "type": "string"
+      },
+      "DiscussionToggleResponse": {
+        "properties": {
+          "dislikes_count": {
+            "title": "Dislikes Count",
+            "type": "integer"
+          },
+          "is_disliked": {
+            "title": "Is Disliked",
+            "type": "boolean"
+          },
+          "is_liked": {
+            "title": "Is Liked",
+            "type": "boolean"
+          },
+          "likes_count": {
+            "title": "Likes Count",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "is_liked",
+          "is_disliked",
+          "likes_count",
+          "dislikes_count"
+        ],
+        "title": "DiscussionToggleResponse",
+        "type": "object"
       },
       "DiscussionType": {
         "enum": [
@@ -8845,6 +9627,7 @@
           "creation_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -8951,6 +9734,7 @@
           "update_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -9400,6 +10184,28 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthStatusResponse": {
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "HealthStatusResponse",
         "type": "object"
       },
       "HistogramBucket": {
@@ -10324,6 +11130,89 @@
         "title": "LeaderboardRead",
         "type": "object"
       },
+      "LinkPreviewResponse": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "favicon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favicon"
+          },
+          "og_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Og Image"
+          },
+          "og_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Og Type"
+          },
+          "og_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Og Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "LinkPreviewResponse",
+        "type": "object"
+      },
       "MatchPair": {
         "properties": {
           "left": {
@@ -10758,6 +11647,7 @@
             "title": "About"
           },
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -10862,6 +11752,7 @@
             "title": "Thumbnail Image"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           }
@@ -10961,6 +11852,7 @@
           "update_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -11116,6 +12008,26 @@
           "updated_at"
         ],
         "title": "ProfileRead",
+        "type": "object"
+      },
+      "PublicCertificateResponse": {
+        "properties": {
+          "certificate_user": {
+            "$ref": "#/components/schemas/CertificateUserRead"
+          },
+          "certification": {
+            "$ref": "#/components/schemas/CertificationRead"
+          },
+          "course": {
+            "$ref": "#/components/schemas/CertificateCourseSummary"
+          }
+        },
+        "required": [
+          "certificate_user",
+          "certification",
+          "course"
+        ],
+        "title": "PublicCertificateResponse",
         "type": "object"
       },
       "QuestionDifficultyRow": {
@@ -11306,6 +12218,19 @@
         "title": "RiskDistributionCounts",
         "type": "object"
       },
+      "RoleActionResponse": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "RoleActionResponse",
+        "type": "object"
+      },
       "RoleAssignmentRequest": {
         "description": "Assign a role to a user.",
         "properties": {
@@ -11453,6 +12378,19 @@
         "title": "RoleCreate",
         "type": "object"
       },
+      "RoleMutationResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "RoleMutationResponse",
+        "type": "object"
+      },
       "RoleRead": {
         "properties": {
           "created_at": {
@@ -11577,6 +12515,32 @@
         "title": "RoleUpdate",
         "type": "object"
       },
+      "RoleUsersCountResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "RoleUsersCountResponse",
+        "type": "object"
+      },
+      "RootResponse": {
+        "properties": {
+          "Message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "Message"
+        ],
+        "title": "RootResponse",
+        "type": "object"
+      },
       "RubricCriterion": {
         "properties": {
           "criterion_id": {
@@ -11662,6 +12626,7 @@
       "SavedAnalyticsViewRow": {
         "properties": {
           "created_at": {
+            "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
@@ -11683,6 +12648,7 @@
             "type": "integer"
           },
           "updated_at": {
+            "format": "date-time",
             "title": "Updated At",
             "type": "string"
           },
@@ -14133,6 +15099,7 @@
             "type": "integer"
           },
           "created_at": {
+            "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
@@ -14169,6 +15136,7 @@
           "resolved_at": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -14208,6 +15176,7 @@
             "type": "integer"
           },
           "updated_at": {
+            "format": "date-time",
             "title": "Updated At",
             "type": "string"
           },
@@ -14763,7 +15732,7 @@
       "Trail": {
         "properties": {
           "creation_date": {
-            "default": "",
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -14784,7 +15753,7 @@
             "type": "string"
           },
           "update_date": {
-            "default": "",
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           },
@@ -14817,6 +15786,7 @@
           "creation_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -14857,6 +15827,7 @@
           "update_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -14902,6 +15873,7 @@
           "creation_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -14944,6 +15916,7 @@
           "update_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -14993,6 +15966,7 @@
           "creation_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -15037,6 +16011,7 @@
           "update_date": {
             "anyOf": [
               {
+                "format": "date-time",
                 "type": "string"
               },
               {
@@ -15305,6 +16280,36 @@
         "title": "UploadUrlResponse",
         "type": "object"
       },
+      "UserCertificateResponse": {
+        "properties": {
+          "certificate_user": {
+            "$ref": "#/components/schemas/CertificateUserRead"
+          },
+          "certification": {
+            "$ref": "#/components/schemas/CertificationRead"
+          },
+          "course": {
+            "$ref": "#/components/schemas/CertificateCourseSummary"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CertificateUserSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "certificate_user",
+          "certification",
+          "course"
+        ],
+        "title": "UserCertificateResponse",
+        "type": "object"
+      },
       "UserCreate": {
         "properties": {
           "avatar_image": {
@@ -15444,6 +16449,7 @@
       "UserGroupRead": {
         "properties": {
           "creation_date": {
+            "format": "date-time",
             "title": "Creation Date",
             "type": "string"
           },
@@ -15471,6 +16477,7 @@
             "type": "string"
           },
           "update_date": {
+            "format": "date-time",
             "title": "Update Date",
             "type": "string"
           },
@@ -16275,11 +17282,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Root  Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RootResponse"
                 }
               }
             },
@@ -16683,11 +17686,6 @@
         },
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -16775,11 +17773,6 @@
         },
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -18520,11 +19513,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -18724,11 +19712,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -18928,11 +19911,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -19132,11 +20110,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -21237,7 +22210,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentAuditTrailResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -21283,7 +22258,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CodeChallengeValidationResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -21613,11 +22590,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Api Delete Item Api V1 Assessments  Assessment Uuid  Items  Item Uuid  Delete",
-                  "type": "object"
+                  "$ref": "#/components/schemas/AssessmentDetailResponse"
                 }
               }
             },
@@ -22147,11 +23120,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Api Delete Override Api V1 Assessments  Assessment Uuid  Overrides  User Id  Delete",
-                  "type": "object"
+                  "$ref": "#/components/schemas/AssessmentDetailResponse"
                 }
               }
             },
@@ -22588,11 +23557,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -22986,12 +23950,12 @@
     },
     "/api/v1/auth/forgot-password": {
       "post": {
-        "operationId": "reset_forgot_password_api_v1_auth_forgot_password_post",
+        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_reset_forgot_password_api_v1_auth_forgot_password_post"
+                "$ref": "#/components/schemas/Body_forgot_password_api_v1_auth_forgot_password_post"
               }
             }
           },
@@ -23001,7 +23965,9 @@
           "202": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AuthActionResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -23017,7 +23983,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Reset:Forgot Password",
+        "summary": "Forgot Password",
         "tags": [
           "auth"
         ]
@@ -23039,12 +24005,7 @@
           }
         ],
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
+          "307": {
             "description": "Successful Response"
           },
           "422": {
@@ -23119,12 +24080,7 @@
           }
         ],
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
+          "307": {
             "description": "Successful Response"
           },
           "422": {
@@ -23161,7 +24117,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -23187,12 +24145,7 @@
       "post": {
         "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
+          "204": {
             "description": "Successful Response"
           }
         },
@@ -23236,7 +24189,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRefreshResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -23318,12 +24273,12 @@
     },
     "/api/v1/auth/reset-password": {
       "post": {
-        "operationId": "reset_reset_password_api_v1_auth_reset_password_post",
+        "operationId": "reset_password_api_v1_auth_reset_password_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_reset_reset_password_api_v1_auth_reset_password_post"
+                "$ref": "#/components/schemas/Body_reset_password_api_v1_auth_reset_password_post"
               }
             }
           },
@@ -23333,37 +24288,12 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "RESET_PASSWORD_BAD_TOKEN": {
-                    "summary": "Bad or expired token.",
-                    "value": {
-                      "detail": "RESET_PASSWORD_BAD_TOKEN"
-                    }
-                  },
-                  "RESET_PASSWORD_INVALID_PASSWORD": {
-                    "summary": "Password validation failed.",
-                    "value": {
-                      "detail": {
-                        "code": "RESET_PASSWORD_INVALID_PASSWORD",
-                        "reason": "Password should be at least 3 characters"
-                      }
-                    }
-                  }
-                },
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
+                  "$ref": "#/components/schemas/AuthActionResponse"
                 }
               }
             },
-            "description": "Bad Request"
+            "description": "Successful Response"
           },
           "422": {
             "content": {
@@ -23376,7 +24306,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Reset:Reset Password",
+        "summary": "Reset Password",
         "tags": [
           "auth"
         ]
@@ -23389,7 +24319,13 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuthSessionRead"
+                  },
+                  "title": "Response List Sessions Api V1 Auth Sessions Get",
+                  "type": "array"
+                }
               }
             },
             "description": "Successful Response"
@@ -23752,9 +24688,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Get Certificate By User Certification Uuid Api V1 Certifications Certificate  User Certification Uuid  Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/PublicCertificateResponse"
                 }
               }
             },
@@ -23839,8 +24773,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/UserCertificateResponse"
                   },
                   "title": "Response Api Get All User Certificates Api V1 Certifications User All Get",
                   "type": "array"
@@ -23882,8 +24815,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/CourseCertificateResponse"
                   },
                   "title": "Response Api Get User Certificates For Course Api V1 Certifications User Course  Course Uuid  Get",
                   "type": "array"
@@ -23950,7 +24882,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CertificationDetailResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -24155,9 +25089,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Reorder Chapters And Activities Api V1 Chapters Course  Course Uuid  Order Patch",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ChapterDetailResponse"
                 }
               }
             },
@@ -24204,9 +25136,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Delete Coursechapter Api V1 Chapters  Chapter Uuid  Delete",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ChapterDetailResponse"
                 }
               }
             },
@@ -24373,9 +25303,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Move Activity To Order Api V1 Chapters  Chapter Uuid  Activities  Activity Uuid  Order Patch",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ChapterDetailResponse"
                 }
               }
             },
@@ -24618,7 +25546,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionDetailResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -25327,7 +26257,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Apply Course Contributor Api V1 Courses  Course Uuid  Apply Contributor Post"
+                  "$ref": "#/components/schemas/CourseContributorApplicationResponse"
                 }
               }
             },
@@ -25389,7 +26319,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Add Bulk Course Contributors Api V1 Courses  Course Uuid  Bulk Add Contributors Post"
+                  "$ref": "#/components/schemas/CourseBulkContributorResponse"
                 }
               }
             },
@@ -25451,7 +26381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Remove Bulk Course Contributors Api V1 Courses  Course Uuid  Bulk Remove Contributors Delete"
+                  "$ref": "#/components/schemas/CourseBulkContributorResponse"
                 }
               }
             },
@@ -25499,7 +26429,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Get Course Contributors Api V1 Courses  Course Uuid  Contributors Get"
+                  "items": {
+                    "$ref": "#/components/schemas/CourseContributorResponse"
+                  },
+                  "title": "Response Api Get Course Contributors Api V1 Courses  Course Uuid  Contributors Get",
+                  "type": "array"
                 }
               }
             },
@@ -25572,7 +26506,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Update Course Contributor Api V1 Courses  Course Uuid  Contributors  Contributor User Id  Put"
+                  "$ref": "#/components/schemas/CourseContributorMutationResponse"
                 }
               }
             },
@@ -25773,7 +26707,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionMessageResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -25893,7 +26829,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionToggleResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -25948,7 +26886,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionMessageResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -26056,7 +26996,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DiscussionToggleResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -26418,7 +27360,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Api Delete Course Update Api V1 Courses  Course Uuid  Update  Courseupdate Uuid  Delete"
+                  "$ref": "#/components/schemas/CourseUpdateDeleteResponse"
                 }
               }
             },
@@ -26626,7 +27568,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DevConfigResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -26747,11 +27691,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -27322,11 +28261,6 @@
         },
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -27367,11 +28301,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -28384,11 +29313,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -28722,11 +29646,6 @@
         ],
         "responses": {
           "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "description": "Successful Response"
           },
           "422": {
@@ -28758,7 +29677,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -28778,9 +29699,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Health Live Api V1 Health Live Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/HealthStatusResponse"
                 }
               }
             },
@@ -28800,7 +29719,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -29368,7 +30289,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMutationResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -29413,7 +30336,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMutationResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -29659,11 +30584,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Role Api V1 Roles  Role Id  Delete",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RoleActionResponse"
                 }
               }
             },
@@ -29873,11 +30794,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Add Permission To Role Api V1 Roles  Role Id  Permissions Post",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RoleActionResponse"
                 }
               }
             },
@@ -29934,11 +30851,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Remove Permission From Role Api V1 Roles  Role Id  Permissions  Permission Id  Delete",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RoleActionResponse"
                 }
               }
             },
@@ -29984,7 +30897,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RoleUsersCountResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -31837,7 +32752,10 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Api Delete User Api V1 Users User Id  User Id  Delete",
+                  "type": "string"
+                }
               }
             },
             "description": "Successful Response"
@@ -32115,7 +33033,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LinkPreviewResponse"
+                }
               }
             },
             "description": "Successful Response"

@@ -30,6 +30,14 @@ class AddPermissionBody(BaseModel):
     permission_id: int
 
 
+class RoleActionResponse(BaseModel):
+    ok: bool
+
+
+class RoleUsersCountResponse(BaseModel):
+    count: int
+
+
 def _caller_max_priority(checker: PermissionChecker, user_id: int) -> int:
     return max((r["priority"] for r in checker.get_user_roles(user_id)), default=0)
 
@@ -173,7 +181,7 @@ def update_role(
     return RoleRead.model_validate(role)
 
 
-@router.delete("/{role_id}")
+@router.delete("/{role_id}", response_model=RoleActionResponse)
 def delete_role(
     role_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -204,7 +212,7 @@ def delete_role(
     return {"ok": True}
 
 
-@router.get("/{role_id}/users/count")
+@router.get("/{role_id}/users/count", response_model=RoleUsersCountResponse)
 def get_role_users_count(
     role_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -232,7 +240,7 @@ def get_role_permissions(
     return [PermissionRead.model_validate(p) for p in repo.get_role_permissions(role_id)]
 
 
-@router.post("/{role_id}/permissions")
+@router.post("/{role_id}/permissions", response_model=RoleActionResponse)
 def add_permission_to_role(
     role_id: int,
     body: AddPermissionBody,
@@ -272,7 +280,7 @@ def add_permission_to_role(
     return {"ok": True}
 
 
-@router.delete("/{role_id}/permissions/{permission_id}")
+@router.delete("/{role_id}/permissions/{permission_id}", response_model=RoleActionResponse)
 def remove_permission_from_role(
     role_id: int,
     permission_id: int,

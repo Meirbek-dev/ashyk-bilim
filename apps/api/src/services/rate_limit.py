@@ -20,7 +20,7 @@ class RateLimitRule:
 
 RateLimitKeyFunc = Callable[[Request], str | Awaitable[str]]
 
-_LOCAL_LIMITS: TTLCache[str, list[float]] = TTLCache(maxsize=20_000, ttl=3600)
+_LOCAL_LIMITS: TTLCache[str, list[float]] = TTLCache(maxsize=20_000, global_ttl=3600)
 _LOCAL_LIMIT_LOCK = asyncio.Lock()
 
 
