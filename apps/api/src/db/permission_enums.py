@@ -1,6 +1,4 @@
-"""
-Permission Enums - single source of truth for RBAC definitions.
-"""
+"""Permission Enums - single source of truth for RBAC definitions."""
 
 from enum import StrEnum
 from typing import Any

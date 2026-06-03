@@ -1,5 +1,4 @@
-"""
-Teacher-facing grading routes.
+"""Teacher-facing grading routes.
 
 GET   /grading/submissions           — paginated + filterable + searchable list
 GET   /grading/submissions/stats     — aggregate stats for dashboard header
@@ -95,8 +94,7 @@ async def api_bulk_publish_grades(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BulkPublishGradesResponse:
-    """
-    Опубликовать все оценённые отправки для активности сразу (режим BATCH).
+    """Опубликовать все оценённые отправки для активности сразу (режим BATCH).
 
     For each PUBLISHED submission without an existing published GradingEntry,
     a new immutable GradingEntry is inserted with published_at stamped to now.
@@ -168,8 +166,7 @@ async def api_list_submissions(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 25,
 ) -> SubmissionListResponse:
-    """
-    Paginated, filterable, searchable submissions list for a teacher.
+    """Paginated, filterable, searchable submissions list for a teacher.
 
     Query params:
     - activity_id: required
@@ -214,8 +211,7 @@ def api_export_submissions_csv(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> StreamingResponse:
-    """
-    Export all non-draft submissions for an activity as CSV.
+    """Export all non-draft submissions for an activity as CSV.
 
     Streams the full dataset — no row cap.
     Content-Disposition header triggers a browser download.
@@ -277,8 +273,7 @@ async def api_save_grade(
         ),
     ] = None,
 ) -> SubmissionRead:
-    """
-    Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.
+    """Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.
 
     Permission is checked in save_grade via the activity's creator_id.
 

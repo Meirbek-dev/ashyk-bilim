@@ -33,7 +33,7 @@ async def upload_subtitle(
     language: str,
     subtitle_id: str | None = None,
 ) -> dict[str, object]:
-    """Upload subtitle file to storage in the same directory as video"""
+    """Upload subtitle file to storage in the same directory as video."""
     contents = await subtitle_file.read()
     subtitle_format = (subtitle_file.filename or "subtitle.vtt").split(".")[-1]
 

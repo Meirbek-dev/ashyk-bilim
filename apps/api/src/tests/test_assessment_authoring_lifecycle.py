@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Integration tests for the assessment authoring and lifecycle workflow.
+"""Integration tests for the assessment authoring and lifecycle workflow.
 
 Covers (all teacher-side):
   - Creating an assessment via POST /assessments
@@ -228,8 +227,7 @@ def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
 
 
 def _seed_published_assessment(db_session_factory) -> str:
-    """
-    Create a published assessment with one item.
+    """Create a published assessment with one item.
 
     Returns assessment_uuid.
     """

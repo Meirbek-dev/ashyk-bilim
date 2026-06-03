@@ -37,8 +37,7 @@ async def create_certification(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CertificationRead:
-    """Create a new certification for a course"""
-
+    """Create a new certification for a course."""
     # Check if course exists
     statement = select(Course).where(Course.id == certification_object.course_id)
     course = db_session.exec(statement).first()
@@ -83,8 +82,7 @@ async def get_certification(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CertificationRead:
-    """Get a single certification by certification_id"""
-
+    """Get a single certification by certification_id."""
     statement = select(Certifications).where(col(Certifications.certification_uuid) == certification_uuid)
     certification = db_session.exec(statement).first()
 
@@ -117,8 +115,7 @@ async def get_certifications_by_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> list[CertificationRead]:
-    """Get all certifications for a course"""
-
+    """Get all certifications for a course."""
     # Get course for RBAC check
     statement = select(Course).where(col(Course.course_uuid) == course_uuid)
     course = db_session.exec(statement).first()
@@ -147,8 +144,7 @@ async def update_certification(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CertificationRead:
-    """Update a certification"""
-
+    """Update a certification."""
     statement = select(Certifications).where(col(Certifications.certification_uuid) == certification_uuid)
     certification = db_session.exec(statement).first()
 
@@ -202,8 +198,7 @@ async def delete_certification(
     db_session: Session,
     last_known_update_date: datetime | None = None,
 ) -> dict[str, Any]:
-    """Delete a certification"""
-
+    """Delete a certification."""
     statement = select(Certifications).where(col(Certifications.certification_uuid) == certification_uuid)
     certification = db_session.exec(statement).first()
 
@@ -251,8 +246,7 @@ async def create_certificate_user(
     current_user: PublicUser | AnonymousUser | None = None,
     idempotency_key: str | None = None,
 ) -> CertificateUserRead:
-    """
-    Create a certificate user link with enhanced idempotency and race condition protection.
+    """Create a certificate user link with enhanced idempotency and race condition protection.
 
     SECURITY NOTES:
     - This function should only be called by authorized users (course owners, instructors, or system)
@@ -272,8 +266,8 @@ async def create_certificate_user(
 
     Raises:
         HTTPException: If validation fails or database error occurs
-    """
 
+    """
     # Check if certification exists
     statement = select(Certifications).where(col(Certifications.id) == certification_id)
     certification = db_session.exec(statement).first()
@@ -429,8 +423,7 @@ async def get_user_certificates_for_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> list[dict[str, Any]]:
-    """Get all certificates for a user in a specific course with certification details"""
-
+    """Get all certificates for a user in a specific course with certification details."""
     # Accept both raw id and 'course_'-prefixed UUIDs
     if not course_uuid.startswith("course_"):
         course_uuid = f"course_{course_uuid}"
@@ -536,8 +529,7 @@ async def check_course_completion_and_create_certificate(
     db_session: Session,
     idempotency_key: str | None = None,
 ) -> bool:
-    """
-    Check if all activities in a course are completed and create certificate if so.
+    """Check if all activities in a course are completed and create certificate if so.
     Enhanced with server-authoritative XP awarding and better idempotency.
 
     SECURITY NOTES:
@@ -554,8 +546,8 @@ async def check_course_completion_and_create_certificate(
 
     Returns:
         bool: True if course completion was processed (certificate created/existed or XP awarded), False otherwise
-    """
 
+    """
     # Get the user object for gamification
     from src.db.users import User
 
@@ -675,8 +667,7 @@ async def get_certificate_by_user_certification_uuid(
     current_user: PublicUser | AnonymousUser | None,
     db_session: Session,
 ) -> dict[str, Any]:
-    """Get a certificate by user_certification_uuid with certification details"""
-
+    """Get a certificate by user_certification_uuid with certification details."""
     # Get certificate user by user_certification_uuid
     statement = select(CertificateUser).where(col(CertificateUser.user_certification_uuid) == user_certification_uuid)
     certificate_user = db_session.exec(statement).first()
@@ -727,8 +718,7 @@ async def get_all_user_certificates(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> list[dict[str, Any]]:
-    """Get all certificates for the current user with complete linked information"""
-
+    """Get all certificates for the current user with complete linked information."""
     # Get all certificate users for this user
     statement = select(CertificateUser).where(col(CertificateUser.user_id) == current_user.id)
     certificate_users = db_session.exec(statement).all()

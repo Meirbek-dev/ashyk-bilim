@@ -29,7 +29,6 @@ def grade_canonical_choice_items(
     negative_marking_percent: float = 0.0,
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CHOICE and MATCHING items from answers[item_uuid]."""
-
     gradable_items = [item for item in items if isinstance(item.body, (ChoiceItemBody, MatchingItemBody))]
     if not gradable_items:
         return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)

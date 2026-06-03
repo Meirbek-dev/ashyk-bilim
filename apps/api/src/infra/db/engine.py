@@ -118,5 +118,6 @@ def get_bg_engine() -> Engine:
     Raises ``RuntimeError`` if called before ``register_engine()``.
     """
     if _bg_engine is None:
-        raise RuntimeError("No engine registered. Ensure register_engine() is called during lifespan startup.")
+        msg = "No engine registered. Ensure register_engine() is called during lifespan startup."
+        raise RuntimeError(msg)
     return _bg_engine

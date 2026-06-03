@@ -116,7 +116,8 @@ class SecurityConfig(PlatformSectionSettings):
     def normalize_jwt_secret(cls, value: SecretStr | str | None) -> str:
         stripped = _strip_optional_string(value)
         if not stripped:
-            raise ValueError("PLATFORM_JWT_SECRET must be set")
+            msg = "PLATFORM_JWT_SECRET must be set"
+            raise ValueError(msg)
         return stripped
 
 
@@ -294,7 +295,8 @@ class HostingConfig(PlatformSectionSettings):
 
         stripped = value.strip()
         if not stripped:
-            raise ValueError("Hosting configuration values must not be empty")
+            msg_0 = "Hosting configuration values must not be empty"
+            raise ValueError(msg_0)
 
         return stripped
 
@@ -364,7 +366,8 @@ class DatabaseConfig(PlatformSectionSettings):
 
         stripped = value.strip()
         if not stripped:
-            raise ValueError("PLATFORM_SQL_CONNECTION_STRING must not be empty")
+            msg_0 = "PLATFORM_SQL_CONNECTION_STRING must not be empty"
+            raise ValueError(msg_0)
 
         if stripped.startswith("sqlite"):
             return stripped
@@ -405,7 +408,8 @@ class RedisConfig(PlatformSectionSettings):
 
         stripped = value.strip()
         if not stripped:
-            raise ValueError("PLATFORM_REDIS_CONNECTION_STRING must not be empty")
+            msg_0 = "PLATFORM_REDIS_CONNECTION_STRING must not be empty"
+            raise ValueError(msg_0)
 
         _REDIS_DSN.validate_python(stripped)
         return stripped
@@ -488,7 +492,8 @@ class Judge0Config(PlatformSectionSettings):
 
         stripped = value.strip()
         if not stripped:
-            raise ValueError("JUDGE0_URL must not be empty")
+            msg_0 = "JUDGE0_URL must not be empty"
+            raise ValueError(msg_0)
 
         return stripped.rstrip("/")
 
@@ -572,16 +577,22 @@ class PlatformConfig(PydanticStrictBaseModel):
     def validate_security_posture(self) -> PlatformConfig:
         if not self.general_config.development_mode:
             if self.hosting_config.ssl and not self.hosting_config.cookies_use_secure_transport():
-                raise ValueError(
+                msg = (
                     "Secure cookies are required when SSL is enabled. "
                     "Set PLATFORM_COOKIE_SECURE=true or remove PLATFORM_SSL."
                 )
+                raise ValueError(
+                    msg
+                )
             broad_cors = {".*", r"\b((?:https?://)[^\s/$.?#].[^\s]*)\b", ""}
             if self.hosting_config.allowed_regexp in broad_cors:
-                raise ValueError(
+                msg = (
                     "Broad CORS regex is not allowed in production. "
                     "Set PLATFORM_ALLOWED_REGEXP to a specific pattern or "
                     "use PLATFORM_ALLOWED_ORIGINS instead."
+                )
+                raise ValueError(
+                    msg
                 )
         return self
 

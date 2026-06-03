@@ -203,8 +203,7 @@ def _seed_file_submission(
 
 
 def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
-    """
-    Reproduce 409 Conflict when a student tries to start a draft
+    """Reproduce 409 Conflict when a student tries to start a draft
     after an attempt has been RETURNED and max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)
@@ -244,8 +243,7 @@ def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, 
 
 
 def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
-    """
-    Ensure student can save a draft (patch files) on a RETURNED attempt
+    """Ensure student can save a draft (patch files) on a RETURNED attempt
     even when max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)
@@ -283,8 +281,7 @@ def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, s
 
 
 def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
-    """
-    Ensure student can re-submit a RETURNED attempt
+    """Ensure student can re-submit a RETURNED attempt
     even when max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)

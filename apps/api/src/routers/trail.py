@@ -27,9 +27,7 @@ async def api_start_trail(
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> Trail:
-    """
-    Start trail
-    """
+    """Start trail."""
     return await create_user_trail(request, user, trail_object, db_session)
 
 
@@ -39,9 +37,7 @@ async def api_get_user_trail(
     user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
-    """
-    Get a user trails
-    """
+    """Get a user trails."""
     if isinstance(user, AnonymousUser):
         return TrailRead(user_id=0, runs=[], trail_uuid="anonymous")
     return await get_user_trails(request, user=user, db_session=db_session)
@@ -54,9 +50,7 @@ async def api_add_course_to_trail(
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
-    """
-    Add Course to trail
-    """
+    """Add Course to trail."""
     return await add_course_to_trail(request, user, course_uuid, db_session)
 
 
@@ -67,9 +61,7 @@ async def api_remove_course_to_trail(
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
-    """
-    Remove Course from trail
-    """
+    """Remove Course from trail."""
     return await remove_course_from_trail(request, user, course_uuid, db_session)
 
 
@@ -80,9 +72,7 @@ async def api_add_activity_to_trail(
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
-    """
-    Add Course to trail
-    """
+    """Add Course to trail."""
     return await add_activity_to_trail(request, user, activity_uuid, db_session)
 
 
@@ -93,7 +83,5 @@ async def api_remove_activity_from_trail(
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
-    """
-    Remove Activity from trail
-    """
+    """Remove Activity from trail."""
     return await remove_activity_from_trail(request, user, activity_uuid, db_session)

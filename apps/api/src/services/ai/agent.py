@@ -78,7 +78,8 @@ def get_openrouter_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
     api_key = secret_value(settings.openrouter_api_key)
     if not api_key:
-        raise RetrievalError("OpenRouter API key not configured")
+        msg = "OpenRouter API key not configured"
+        raise RetrievalError(msg)
 
     openai_client = AsyncOpenAI(
         base_url=settings.openrouter_base_url,
@@ -98,7 +99,8 @@ def get_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
     api_key = secret_value(settings.openai_api_key)
     if not api_key:
-        raise RetrievalError("OpenAI API key not configured")
+        msg = "OpenAI API key not configured"
+        raise RetrievalError(msg)
 
     return OpenAIChatModel(
         settings.chat_model,

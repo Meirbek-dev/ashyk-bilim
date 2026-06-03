@@ -56,4 +56,5 @@ def get_session_factory(request: Request) -> SessionFactory:
     if override is not None:
         return contextlib.contextmanager(override)
 
-    raise RuntimeError("Database session factory is not configured")
+    msg = "Database session factory is not configured"
+    raise RuntimeError(msg)

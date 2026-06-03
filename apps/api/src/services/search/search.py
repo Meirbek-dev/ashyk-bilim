@@ -29,9 +29,7 @@ async def search_platform_content(
     page: int = 1,
     limit: int = 10,
 ) -> SearchResult:
-    """
-    Search across courses, collections and users within the platform
-    """
+    """Search across courses, collections and users within the platform."""
     offset = (page - 1) * limit
     normalized_query = search_query.strip()
 

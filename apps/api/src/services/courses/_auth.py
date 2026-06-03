@@ -73,6 +73,7 @@ def require_course_permission(
         HTTPException(403): When the check fails.
         HTTPException(401): If *current_user* is anonymous and the action is
             not publicly accessible.
+
     """
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(

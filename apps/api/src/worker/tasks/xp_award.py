@@ -42,6 +42,7 @@ async def award_xp_for_submission(
         submission_uuid: The submission that was just published.
         user_id: The student who owns the submission.
         assessment_type: ``AssessmentType`` value string (QUIZ, EXAM, etc.).
+
     """
     try:
         import asyncio

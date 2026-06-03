@@ -374,7 +374,8 @@ def test_code_execution_filters_allowed_languages() -> None:
 async def test_code_execution_language_discovery_reports_service_unavailable() -> None:
     class Factory:
         def get_client(self) -> Never:
-            raise RuntimeError("Judge0 unavailable")
+            msg = "Judge0 unavailable"
+            raise RuntimeError(msg)
 
     service = CodeExecutionService(client_factory=Factory())
 

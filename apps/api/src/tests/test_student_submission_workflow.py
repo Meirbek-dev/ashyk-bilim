@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Integration tests for the core student submission workflow.
+"""Integration tests for the core student submission workflow.
 
 Covers:
   - Starting a submission (DRAFT creation, idempotency)
@@ -203,8 +202,7 @@ def _seed_assessment(
     grading_mode: AssessmentGradingMode = AssessmentGradingMode.AUTO,
     grade_release_mode: GradeReleaseMode = GradeReleaseMode.IMMEDIATE,
 ) -> tuple[str, int, str]:
-    """
-    Insert a minimal course/chapter/activity/assessment/policy row set.
+    """Insert a minimal course/chapter/activity/assessment/policy row set.
 
     Returns (assessment_uuid, activity_id, activity_uuid).
     """

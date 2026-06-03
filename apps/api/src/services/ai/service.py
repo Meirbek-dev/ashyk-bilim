@@ -428,13 +428,15 @@ async def generate_chat_answer(
     cancel_event: asyncio.Event | None = None,
 ) -> AgentAnswer:
     if not question or not question.strip():
-        raise AIProcessingError("Вопрос не может быть пустым")
+        msg = "Вопрос не может быть пустым"
+        raise AIProcessingError(msg)
 
     settings = get_settings().ai_config
     timeout_seconds = settings.request_timeout
 
     if cancel_event and cancel_event.is_set():
-        raise AIProcessingError("Обработка AI отменена до запуска")
+        msg = "Обработка AI отменена до запуска"
+        raise AIProcessingError(msg)
 
     try:
         async with asyncio.timeout(timeout_seconds):
@@ -486,7 +488,8 @@ async def generate_chat_answer(
 
     output = result.output.strip()
     if not output:
-        raise AIProcessingError("AI вернул пустой ответ")
+        msg_0 = "AI вернул пустой ответ"
+        raise AIProcessingError(msg_0)
 
     append_messages(
         ctx.session_id,
@@ -517,7 +520,8 @@ async def stream_chat_answer(
     cancel_event: asyncio.Event | None = None,
 ) -> AsyncGenerator[StatusEvent | DeltaEvent | FinalEvent]:
     if not question or not question.strip():
-        raise AIProcessingError("Вопрос не может быть пустым")
+        msg = "Вопрос не может быть пустым"
+        raise AIProcessingError(msg)
 
     settings = get_settings().ai_config
     timeout_seconds = settings.request_timeout
@@ -637,7 +641,8 @@ async def stream_chat_answer(
         ) from exc
 
     if not full_response:
-        raise AIProcessingError("AI вернул пустой ответ")
+        msg_0 = "AI вернул пустой ответ"
+        raise AIProcessingError(msg_0)
 
     append_messages(
         ctx.session_id,

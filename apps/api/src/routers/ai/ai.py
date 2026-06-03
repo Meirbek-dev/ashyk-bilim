@@ -67,8 +67,7 @@ async def api_ai_start_activity_chat_session(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ActivityAIChatSessionResponse:
-    """
-    Start a new AI Chat session with a Course Activity.
+    """Start a new AI Chat session with a Course Activity.
 
     Rate limit: 10 requests per minute per IP address.
 
@@ -78,6 +77,7 @@ async def api_ai_start_activity_chat_session(
         HTTPException 403: AI feature disabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
+
     """
     logger.info("Запрос на старт AI-чата от пользователя %s", current_user.id)
 
@@ -101,8 +101,7 @@ async def api_ai_send_activity_chat_message(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ActivityAIChatSessionResponse:
-    """
-    Send a message to an AI Chat session with a Course Activity.
+    """Send a message to an AI Chat session with a Course Activity.
 
     Rate limit: 20 requests per minute per IP address.
 
@@ -112,6 +111,7 @@ async def api_ai_send_activity_chat_message(
         HTTPException 403: AI feature disabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
+
     """
     logger.info("Запрос AI-сообщения от пользователя %s", current_user.id)
 
@@ -135,8 +135,7 @@ async def api_ai_start_activity_chat_session_stream(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StreamingResponse:
-    """
-    Start a new AI Chat session with streaming responses (SSE).
+    """Start a new AI Chat session with streaming responses (SSE).
 
     This endpoint provides real-time streaming of AI responses for better
     perceived performance. Clients receive response chunks as they're generated.
@@ -158,6 +157,7 @@ async def api_ai_start_activity_chat_session_stream(
         HTTPException 403: AI feature disabled or streaming not enabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
+
     """
     logger.info("Запрос на старт стримингового AI-чата от пользователя %s", current_user.id)
 
@@ -229,8 +229,7 @@ async def api_ai_send_activity_chat_message_stream(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StreamingResponse:
-    """
-    Send a message to AI Chat session with streaming responses (SSE).
+    """Send a message to AI Chat session with streaming responses (SSE).
 
     Rate limit: 20 requests per minute per IP address.
 
@@ -243,6 +242,7 @@ async def api_ai_send_activity_chat_message_stream(
         HTTPException 403: AI feature disabled or streaming not enabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
+
     """
     logger.info("Запрос стримингового AI-сообщения от пользователя %s", current_user.id)
 

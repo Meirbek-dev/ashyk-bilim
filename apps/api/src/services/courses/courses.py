@@ -317,7 +317,6 @@ def _build_editable_course_insights(
 
 def _attention_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course needs attention (missing thumbnail, description, or activities)."""
-
     has_activities = (
         select(Activity.id)
         .join(Chapter, col(Chapter.id) == Activity.chapter_id)
@@ -335,7 +334,6 @@ def _attention_sql_condition() -> ColumnElement[bool]:
 
 def _ready_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course is fully ready to publish."""
-
     has_chapters = select(Chapter.id).where(col(Chapter.course_id) == Course.id).exists()
     has_activities = (
         select(Activity.id)
@@ -832,7 +830,8 @@ async def search_courses(
     offset = (page - 1) * limit
     bind = db_session.bind
     if bind is None:
-        raise ValueError("Database session bind not configured")
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
     dialect_name = bind.dialect.name
     search_filter = _course_search_filter(search_query, dialect_name)
 
@@ -984,15 +983,13 @@ async def create_course(
     thumbnail_type: ThumbnailType = ThumbnailType.IMAGE,
     checker: PermissionChecker | None = None,
 ):
-    """
-    Create a new course
+    """Create a new course.
 
     SECURITY NOTES:
     - User becomes the CREATOR of the course automatically
     - Requires proper permissions to create courses on the platform
     - Course creation is subject to platform limits and permissions
     """
-
     # Create Course object from CourseCreate data
     course = Course.model_validate(course_object.model_dump())
 
@@ -1163,8 +1160,7 @@ async def update_course(
     db_session: Session,
     checker: PermissionChecker | None = None,
 ):
-    """
-    Update a course
+    """Update a course.
 
     SECURITY NOTES:
     - Requires course ownership (CREATOR, MAINTAINER) or admin role
@@ -1445,8 +1441,7 @@ async def get_editable_courses(
     apply_pagination: bool = True,
     extra_filter: ColumnElement[bool] | None = None,
 ) -> list[CourseReadWithPermissions]:
-    """
-    Return courses for the platform that the current user has permission to edit
+    """Return courses for the platform that the current user has permission to edit
     (i.e. course:update). Anonymous users always get an empty list.
 
     Scope resolution:
@@ -1469,7 +1464,8 @@ async def get_editable_courses(
     )
     bind = db_session.bind
     if bind is None:
-        raise ValueError("Database session bind not configured")
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
     dialect_name = bind.dialect.name
     search_filter = _course_search_filter(search_query, dialect_name)
 
@@ -1617,7 +1613,8 @@ async def count_editable_courses(
     )
     bind = db_session.bind
     if bind is None:
-        raise ValueError("Database session bind not configured")
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
     search_filter = _course_search_filter(search_query, bind.dialect.name)
 
     if has_broad_update:
@@ -1658,8 +1655,7 @@ async def get_course_user_rights(
     db_session: Session,
     checker: PermissionChecker | None = None,
 ) -> dict:
-    """
-    Get detailed user rights for a specific course.
+    """Get detailed user rights for a specific course.
 
     This function returns comprehensive rights information that can be used
     by the UI to enable/disable features based on user permissions.

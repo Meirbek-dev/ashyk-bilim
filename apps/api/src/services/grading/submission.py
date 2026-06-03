@@ -1,5 +1,4 @@
-"""
-Submission state-machine service.
+"""Submission state-machine service.
 
 Owns the explicit student-facing state transitions:
 
@@ -103,8 +102,7 @@ def start_submission_v2(
     skip_permission: bool = False,
     skip_attempt_limit: bool = False,
 ) -> SubmissionRead:
-    """
-    Create a DRAFT Submission and record the server-stamped start time.
+    """Create a DRAFT Submission and record the server-stamped start time.
 
     Idempotent — returns the existing DRAFT if one is already open for this
     user/activity pair.
@@ -162,8 +160,7 @@ def create_resubmission_draft(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionRead:
-    """
-    Create a new DRAFT from a RETURNED submission (resubmission flow).
+    """Create a new DRAFT from a RETURNED submission (resubmission flow).
 
     The original RETURNED submission is left intact.  A new Submission row is
     inserted with attempt_number = previous_attempt + 1 and status = DRAFT.
@@ -303,8 +300,7 @@ def _enforce_attempt_limit_from_policy(
     user_id: int,
     db_session: Session,
 ) -> None:
-    """
-    Enforce max_attempts from AssessmentPolicy.
+    """Enforce max_attempts from AssessmentPolicy.
 
     Unlike the block-content-based check in submit.py, this reads from the
     canonical AssessmentPolicy row so limits are consistent regardless of which

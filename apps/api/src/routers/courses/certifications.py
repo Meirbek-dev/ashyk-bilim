@@ -75,9 +75,7 @@ async def api_create_certification(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CertificationRead:
-    """
-    Create new certification for a course
-    """
+    """Create new certification for a course."""
     return await create_certification(request, certification_object, current_user, db_session)
 
 
@@ -88,9 +86,7 @@ async def api_get_certification(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CertificationRead:
-    """
-    Get single certification by certification_id
-    """
+    """Get single certification by certification_id."""
     return await get_certification(request, certification_uuid, current_user, db_session)
 
 
@@ -101,9 +97,7 @@ async def api_get_certifications_by_course(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[CertificationRead]:
-    """
-    Get all certifications for a specific course
-    """
+    """Get all certifications for a specific course."""
     return await get_certifications_by_course(request, course_uuid, current_user, db_session)
 
 
@@ -115,9 +109,7 @@ async def api_update_certification(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CertificationRead:
-    """
-    Update certification by certification_id
-    """
+    """Update certification by certification_id."""
     return await update_certification(request, certification_uuid, certification_object, current_user, db_session)
 
 
@@ -129,9 +121,7 @@ async def api_delete_certification(
     db_session: Annotated[Session, Depends(get_db_session)],
     last_known_update_date: Annotated[datetime | None, Query()] = None,
 ):
-    """
-    Delete certification by certification_id
-    """
+    """Delete certification by certification_id."""
     return await delete_certification(
         request,
         certification_uuid,
@@ -148,9 +138,7 @@ async def api_get_user_certificates_for_course(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[dict]:
-    """
-    Get all certificates for the current user in a specific course with certification details
-    """
+    """Get all certificates for the current user in a specific course with certification details."""
     return await get_user_certificates_for_course(request, course_uuid, current_user, db_session)
 
 
@@ -160,9 +148,7 @@ async def api_get_certificate_by_user_certification_uuid(
     user_certification_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> dict:
-    """
-    Get a certificate by user_certification_uuid with certification and course details
-    """
+    """Get a certificate by user_certification_uuid with certification and course details."""
     return await get_certificate_by_user_certification_uuid(request, user_certification_uuid, None, db_session)
 
 
@@ -172,7 +158,5 @@ async def api_get_all_user_certificates(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[dict]:
-    """
-    Get all certificates obtained by the current user with complete linked information
-    """
+    """Get all certificates obtained by the current user with complete linked information."""
     return await get_all_user_certificates(request, current_user, db_session)

@@ -2,8 +2,7 @@ from urllib.parse import quote
 
 
 def get_content_disposition_header(filename: str) -> str:
-    """
-    Generate a Content-Disposition header that safely handles non-ASCII characters
+    """Generate a Content-Disposition header that safely handles non-ASCII characters
     according to RFC 6266.
     """
     try:

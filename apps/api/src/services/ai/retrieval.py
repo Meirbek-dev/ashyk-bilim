@@ -128,8 +128,9 @@ def _sync_upsert_collection(
         except sqlalchemy.exc.ProgrammingError as exc:
             session.rollback()
             if _is_missing_document_chunks_table_error(exc):
+                msg = "Vector retrieval storage unavailable"
                 raise RetrievalError(
-                    "Vector retrieval storage unavailable",
+                    msg,
                     details={"reason": "document_chunks_table_missing"},
                 ) from exc
             raise
@@ -166,8 +167,9 @@ def _sync_query_collection(
         except sqlalchemy.exc.ProgrammingError as exc:
             session.rollback()
             if _is_missing_document_chunks_table_error(exc):
+                msg = "Vector retrieval storage unavailable"
                 raise RetrievalError(
-                    "Vector retrieval storage unavailable",
+                    msg,
                     details={"reason": "document_chunks_table_missing"},
                 ) from exc
             raise
@@ -238,7 +240,8 @@ async def ensure_collection(
     collection_name: str | None,
 ) -> str:
     if not documents:
-        raise RetrievalError("No documents available for retrieval")
+        msg = "No documents available for retrieval"
+        raise RetrievalError(msg)
 
     content_hash = _content_hash(documents)
     resolved_name = _collection_name(collection_name, content_hash)
@@ -263,8 +266,9 @@ async def ensure_collection(
 
         chunks = await asyncio.to_thread(chunk_documents, documents, embedding_model_name)
         if not chunks:
+            msg = "No valid chunks created from documents"
             raise RetrievalError(
-                "No valid chunks created from documents",
+                msg,
                 details={"document_count": len(documents)},
             )
 
@@ -276,8 +280,9 @@ async def ensure_collection(
             embedding_model_name,
         )
         if len(embeddings) != len(chunks):
+            msg = "Embedding count did not match chunk count"
             raise RetrievalError(
-                "Embedding count did not match chunk count",
+                msg,
                 details={"chunks": len(chunks), "embeddings": len(embeddings)},
             )
 
@@ -310,7 +315,8 @@ async def retrieve_chunks(
 
     query_embedding = await embed_texts([query], embedding_model_name)
     if not query_embedding:
-        raise RetrievalError("Failed to create query embedding")
+        msg = "Failed to create query embedding"
+        raise RetrievalError(msg)
 
     settings = get_settings().ai_config
     retrieved = await asyncio.to_thread(

@@ -1,6 +1,4 @@
-"""
-Custom exceptions for AI services.
-"""
+"""Custom exceptions for AI services."""
 
 from typing import Any
 

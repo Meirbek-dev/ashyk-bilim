@@ -32,7 +32,8 @@ def get_openai_client() -> AsyncOpenAI:
                 settings = get_settings()
                 api_key = secret_value(settings.ai_config.openai_api_key)
                 if not api_key:
-                    raise RetrievalError("OpenAI API key not configured")
+                    msg = "OpenAI API key not configured"
+                    raise RetrievalError(msg)
                 _openai_client = AsyncOpenAI(api_key=api_key)
     return _openai_client
 

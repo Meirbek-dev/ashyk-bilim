@@ -1,5 +1,4 @@
-"""
-Activity settings loader — extracts canonical items and grading config.
+"""Activity settings loader — extracts canonical items and grading config.
 
 Keeps the router layer clean: routers pass activity_id + assessment_type,
 this service resolves the assessment + policy and returns a typed
@@ -49,8 +48,7 @@ def load_activity_settings(
     assessment_type: AssessmentType,
     db_session: Session,
 ) -> AssessmentSettings:
-    """
-    Load questions and grading settings for any assessment type.
+    """Load questions and grading settings for any assessment type.
 
     Uses the canonical Assessment + AssessmentPolicy as the single source of truth.
     No legacy Block-based fallback.

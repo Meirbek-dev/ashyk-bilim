@@ -1,5 +1,4 @@
-"""
-RBAC - Permission Checker, Dependencies & Exceptions
+"""RBAC - Permission Checker, Dependencies & Exceptions.
 
 This is the ONE file for all authorization logic.
 
@@ -152,8 +151,7 @@ class ResourceAccessDenied(HTTPException):
 
 
 class PermissionChecker:
-    """
-    Loads user's granted permission strings once per user within a request,
+    """Loads user's granted permission strings once per user within a request,
     then resolves scope from context.
 
     Permission format in DB: "resource:action:scope" (3-part).
@@ -191,6 +189,7 @@ class PermissionChecker:
             is_assigned: Set to True when the service layer has verified that this
                 resource is available to the user through enrollment or another
                 explicit access grant. Unlocks ``assigned``-scope permissions.
+
         """
         granted = self._get_or_load(user_id)
         return self._resolve(
@@ -333,13 +332,13 @@ class PermissionChecker:
         *,
         assigned_by: int | None = None,
     ) -> None:
-        """
-        Assign a role to a user.
+        """Assign a role to a user.
 
         Args:
             user_id: Target user ID
             role_id: Numeric role ID
             assigned_by: User ID who is assigning the role
+
         """
         from src.db.permissions import Role, UserRole
 
@@ -382,12 +381,12 @@ class PermissionChecker:
         user_id: int,
         role_id: int,
     ) -> None:
-        """
-        Revoke a role from a user.
+        """Revoke a role from a user.
 
         Args:
             user_id: Target user ID
             role_id: Numeric role ID
+
         """
         from src.db.permissions import Role, UserRole
 

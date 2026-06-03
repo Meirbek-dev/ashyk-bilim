@@ -23,8 +23,9 @@ _SUMMARY_CONTENT_LIMIT = 180
 def _session_id(aichat_uuid: str | None, user_id: int | None) -> str:
     if aichat_uuid and user_id is not None:
         if aichat_uuid.startswith("user_") and not aichat_uuid.startswith(f"user_{user_id}_"):
+            msg = "Session does not belong to this user"
             raise ChatSessionError(
-                "Session does not belong to this user",
+                msg,
                 details={"session": aichat_uuid},
             )
         return aichat_uuid

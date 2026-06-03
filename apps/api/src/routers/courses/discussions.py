@@ -51,9 +51,7 @@ async def api_get_course_discussions(
     limit: Annotated[int, Query(le=100, description="Количество обсуждений для возврата")] = 50,
     offset: Annotated[int, Query(description="Количество обсуждений для пропуска")] = 0,
 ) -> list[CourseDiscussionReadWithPermissions]:
-    """
-    Get Course Discussions by course_uuid
-    """
+    """Get Course Discussions by course_uuid."""
     return await get_discussions_by_course_uuid(
         request, course_uuid, current_user, db_session, include_replies, limit, offset
     )
@@ -67,9 +65,7 @@ async def api_create_course_discussion(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> CourseDiscussionRead:
-    """
-    Create new Course Discussion
-    """
+    """Create new Course Discussion."""
     return await create_discussion(request, course_uuid, discussion_object, current_user, db_session)
 
 
@@ -82,9 +78,7 @@ async def api_update_course_discussion(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> CourseDiscussionRead:
-    """
-    Update Course Discussion by discussion_uuid
-    """
+    """Update Course Discussion by discussion_uuid."""
     return await update_discussion(request, discussion_uuid, discussion_object, current_user, db_session)
 
 
@@ -96,9 +90,7 @@ async def api_delete_course_discussion(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ):
-    """
-    Delete Course Discussion by discussion_uuid
-    """
+    """Delete Course Discussion by discussion_uuid."""
     return await delete_discussion(request, discussion_uuid, current_user, db_session)
 
 
@@ -110,9 +102,7 @@ async def api_like_course_discussion(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> DiscussionLikeRead:
-    """
-    Like a Course Discussion
-    """
+    """Like a Course Discussion."""
     return await like_discussion(request, discussion_uuid, current_user, db_session)
 
 
@@ -124,9 +114,7 @@ async def api_unlike_course_discussion(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ):
-    """
-    Unlike a Course Discussion
-    """
+    """Unlike a Course Discussion."""
     return await unlike_discussion(request, discussion_uuid, current_user, db_session)
 
 
@@ -138,9 +126,7 @@ async def api_toggle_course_discussion_like(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ):
-    """
-    Toggle like status for a Course Discussion (like if not liked, unlike if liked)
-    """
+    """Toggle like status for a Course Discussion (like if not liked, unlike if liked)."""
     return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
 
 
@@ -152,9 +138,7 @@ async def api_toggle_course_discussion_dislike(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ):
-    """
-    Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)
-    """
+    """Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)."""
     return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
 
 
@@ -168,7 +152,5 @@ async def api_get_discussion_replies(
     limit: Annotated[int, Query(le=100, description="Количество ответов для возврата")] = 50,
     offset: Annotated[int, Query(description="Количество ответов для пропуска")] = 0,
 ) -> list[CourseDiscussionRead]:
-    """
-    Get replies for a specific discussion
-    """
+    """Get replies for a specific discussion."""
     return await get_discussion_replies(request, discussion_uuid, current_user, db_session, limit, offset)

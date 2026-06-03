@@ -32,8 +32,7 @@ async def apply_course_contributor(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """
-    Apply to become a course contributor
+    """Apply to become a course contributor.
 
     SECURITY NOTES:
     - Any authenticated user can apply to become a contributor
@@ -103,8 +102,7 @@ async def update_course_contributor(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """
-    Update a course contributor's role and status
+    """Update a course contributor's role and status.
 
     SECURITY NOTES:
     - Only course owners (CREATOR, MAINTAINER) or admins can update contributors
@@ -174,8 +172,7 @@ async def get_course_contributors(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> list[dict]:
-    """
-    Get all contributors for a course with their user information
+    """Get all contributors for a course with their user information.
 
     SECURITY NOTES:
     - Requires read access to the course
@@ -224,8 +221,7 @@ async def add_bulk_course_contributors(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """
-    Add multiple contributors to a course by their usernames
+    """Add multiple contributors to a course by their usernames.
 
     SECURITY NOTES:
     - Only course owners (CREATOR, MAINTAINER) or admins can add contributors
@@ -322,8 +318,7 @@ async def remove_bulk_course_contributors(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """
-    Remove multiple contributors from a course by their usernames
+    """Remove multiple contributors from a course by their usernames.
 
     SECURITY NOTES:
     - Only course owners (CREATOR, MAINTAINER) or admins can remove contributors

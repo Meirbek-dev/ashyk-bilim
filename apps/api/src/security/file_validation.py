@@ -1,5 +1,4 @@
-"""
-Secure file validation utilities.
+"""Secure file validation utilities.
 Blocks SVG files entirely to prevent XSS attacks (CWE-79).
 Validates file types and content to prevent unrestricted uploads (CWE-434).
 """
@@ -189,8 +188,7 @@ FILE_TYPES: dict[str, FileTypeConfig] = {
 
 
 def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | None = None) -> tuple[str, bytes]:
-    """
-    Validate uploaded file for security and type compliance.
+    """Validate uploaded file for security and type compliance.
 
     Args:
         file: The uploaded file
@@ -202,6 +200,7 @@ def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | 
 
     Raises:
         HTTPException: If validation fails
+
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="Файл не предоставлен")

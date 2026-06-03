@@ -41,8 +41,7 @@ async def api_create_usergroup(
     checker: PermissionCheckerDep,
     usergroup_object: UserGroupCreate,
 ) -> UserGroupRead:
-    """
-    Create UserGroup
+    """Create UserGroup.
 
     **Required Permission**: `usergroup:create:platform`
     """
@@ -59,9 +58,7 @@ async def api_get_usergroup(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     usergroup_id: int,
 ) -> UserGroupRead:
-    """
-    Get UserGroup
-    """
+    """Get UserGroup."""
     return await read_usergroup_by_id(request, db_session, current_user, usergroup_id)
 
 
@@ -73,9 +70,7 @@ async def api_get_users_linked_to_usergroup(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     usergroup_id: int,
 ) -> list[UserRead]:
-    """
-    Get Users linked to UserGroup
-    """
+    """Get Users linked to UserGroup."""
     return await get_users_linked_to_usergroup(request, db_session, current_user, usergroup_id)
 
 
@@ -86,9 +81,7 @@ async def api_get_usergroups(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> list[UserGroupRead]:
-    """
-    Get platform user groups
-    """
+    """Get platform user groups."""
     return await read_usergroups(
         request,
         db_session,
@@ -104,9 +97,7 @@ async def api_get_usergroupsby_resource(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     resource_uuid: str,
 ) -> list[UserGroupRead]:
-    """
-    Get platform user groups by resource
-    """
+    """Get platform user groups by resource."""
     return await get_usergroups_by_resource(request, db_session, current_user, resource_uuid)
 
 
@@ -119,8 +110,7 @@ async def api_update_usergroup(
     usergroup_id: int,
     usergroup_object: UserGroupUpdate,
 ) -> UserGroupRead:
-    """
-    Update UserGroup
+    """Update UserGroup.
 
     **Required Permission**: `usergroup:update:platform` or `usergroup:update:own`
     """
@@ -135,8 +125,7 @@ async def api_delete_usergroup(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     usergroup_id: int,
 ) -> str:
-    """
-    Delete UserGroup
+    """Delete UserGroup.
 
     **Required Permission**: `usergroup:delete:platform` or `usergroup:delete:own`
     """
@@ -152,8 +141,7 @@ async def api_add_users_to_usergroup(
     usergroup_id: int,
     user_ids: str,
 ) -> str:
-    """
-    Add Users to UserGroup
+    """Add Users to UserGroup.
 
     **Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`
     """
@@ -169,9 +157,7 @@ async def api_delete_users_from_usergroup(
     usergroup_id: int,
     user_ids: str,
 ) -> str:
-    """
-    Delete Users from UserGroup
-    """
+    """Delete Users from UserGroup."""
     return await remove_users_from_usergroup(request, db_session, current_user, usergroup_id, user_ids)
 
 
@@ -184,9 +170,7 @@ async def api_add_resources_to_usergroup(
     usergroup_id: int,
     resource_uuids: str,
 ) -> str:
-    """
-    Add Resources to UserGroup
-    """
+    """Add Resources to UserGroup."""
     return await add_resources_to_usergroup(request, db_session, current_user, usergroup_id, resource_uuids)
 
 
@@ -199,7 +183,5 @@ async def api_delete_resources_from_usergroup(
     usergroup_id: int,
     resource_uuids: str,
 ) -> str:
-    """
-    Delete Resources from UserGroup
-    """
+    """Delete Resources from UserGroup."""
     return await remove_resources_from_usergroup(request, db_session, current_user, usergroup_id, resource_uuids)

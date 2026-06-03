@@ -1,5 +1,4 @@
-"""
-StudentPolicyOverride — per-student exceptions to AssessmentPolicy limits.
+"""StudentPolicyOverride — per-student exceptions to AssessmentPolicy limits.
 
 A teacher can grant a specific student extra attempts, a deadline extension,
 or an exemption from late penalties without changing the policy for the whole

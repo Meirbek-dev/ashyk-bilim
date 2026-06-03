@@ -11,8 +11,7 @@ def grade_code_challenge(
     run_results: list[dict[str, Any]],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
-    """
-    Grade a code challenge submission.
+    """Grade a code challenge submission.
 
     Args:
         run_results: List of {test_id, passed, weight} dicts from the test runner.
@@ -21,6 +20,7 @@ def grade_code_challenge(
 
     Returns:
         (auto_score 0–100, GradingBreakdown)
+
     """
     if not run_results:
         return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
@@ -63,7 +63,6 @@ def grade_canonical_code_item(
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CODE items using answer.latest_run when present."""
-
     code_items = [item for item in items if item.body.kind == "CODE"]
     if not code_items:
         return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)

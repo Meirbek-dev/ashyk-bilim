@@ -53,8 +53,9 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
     except ContentModerationError:
         raise
     except Exception as exc:
+        msg = "Content moderation failed"
         raise AIProcessingError(
-            "Content moderation failed",
+            msg,
             details={"error_type": type(exc).__name__, "stage": stage},
         ) from exc
 

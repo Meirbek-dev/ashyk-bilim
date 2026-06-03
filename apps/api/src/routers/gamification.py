@@ -1,5 +1,4 @@
-"""
-Gamification Router
+"""Gamification Router.
 
 - GET /        → Dashboard
 - POST /xp     → Award XP
@@ -90,7 +89,7 @@ async def get_unified_dashboard(
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
 ) -> DashboardRead:
-    """Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config"""
+    """Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config."""
     try:
         data = service.get_dashboard_data(db, user.id, include_leaderboard=True)
         profile = _profile_to_read(data["profile"])

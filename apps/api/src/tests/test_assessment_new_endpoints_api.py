@@ -1,12 +1,11 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Tests for new assessment endpoints added in the world-class LMS plan:
-  - GET  /assessments/{uuid}/attempt-state
-  - GET  /assessments/policy-preset/{kind}
-  - GET  /assessments/{uuid}/overrides
-  - POST /assessments/{uuid}/overrides
-  - PATCH /assessments/{uuid}/overrides/{user_id}
-  - DELETE /assessments/{uuid}/overrides/{user_id}
+"""Tests for new assessment endpoints added in the world-class LMS plan:
+- GET  /assessments/{uuid}/attempt-state
+- GET  /assessments/policy-preset/{kind}
+- GET  /assessments/{uuid}/overrides
+- POST /assessments/{uuid}/overrides
+- PATCH /assessments/{uuid}/overrides/{user_id}
+- DELETE /assessments/{uuid}/overrides/{user_id}.
 """
 
 import pathlib

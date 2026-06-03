@@ -13,9 +13,7 @@ from src.security.security import security_hash_password
 
 # Install Default roles
 def install_default_elements(db_session: Session) -> bool:
-    """
-    Install default elements including system roles and permissions.
-    """
+    """Install default elements including system roles and permissions."""
     created_roles = RoleRepository(db_session).seed_default_roles()
     return len(created_roles) > 0
 

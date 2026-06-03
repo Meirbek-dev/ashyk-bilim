@@ -39,9 +39,7 @@ router = APIRouter()
 def api_get_public_user(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> UserRead:
-    """
-    Get current user
-    """
+    """Get current user."""
     return current_user
 
 
@@ -51,9 +49,7 @@ def api_get_public_user_session(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> UserSession:
-    """
-    Get current user session.
-    """
+    """Get current user session."""
     return get_user_session(
         request,
         db_session,
@@ -69,9 +65,7 @@ async def api_create_user_without_platform(
     current_user: Annotated[PublicUser, Depends(get_optional_public_user)],
     user_object: UserCreate,
 ) -> UserRead:
-    """
-    Create User
-    """
+    """Create User."""
     return await create_user_without_platform(request, db_session, current_user, user_object)
 
 
@@ -84,9 +78,7 @@ def api_get_user_by_id(
     user_id: int,
     response: Response,
 ) -> UserRead:
-    """
-    Get User by ID
-    """
+    """Get User by ID."""
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
     return read_user_by_id(request, db_session, current_user, user_id)
@@ -100,9 +92,7 @@ def api_get_user_by_uuid(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     user_uuid: str,
 ) -> UserRead:
-    """
-    Get User by UUID
-    """
+    """Get User by UUID."""
     return read_user_by_uuid(request, db_session, current_user, user_uuid)
 
 
@@ -115,9 +105,7 @@ def api_get_user_by_username(
     username: str,
     response: Response,
 ) -> UserRead:
-    """
-    Get User by Username
-    """
+    """Get User by Username."""
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
     return read_user_by_username(request, db_session, current_user, username)
@@ -133,8 +121,7 @@ def api_update_user(
     user_id: int,
     user_object: UserUpdate,
 ) -> UserRead:
-    """
-    Update User
+    """Update User.
 
     **Required Permission**: `user:update:own` (for own profile) or `user:update:platform` (for others)
     """
@@ -157,8 +144,7 @@ async def api_update_avatar_user(
     checker: PermissionCheckerDep,
     avatar_file: UploadFile | None = None,
 ) -> UserRead:
-    """
-    Update User Avatar
+    """Update User Avatar.
 
     **Required Permission**: `user:update:own` (for own avatar) or `user:update:platform` (for others)
     """
@@ -180,8 +166,7 @@ def api_update_user_password(
     user_id: int,
     form: UserUpdatePassword,
 ) -> UserRead:
-    """
-    Update User Password
+    """Update User Password.
 
     **Required Permission**: Own account only (for security)
     """
@@ -201,9 +186,7 @@ def api_update_user_theme(
     user_id: int,
     theme: str,
 ) -> UserRead:
-    """
-    Update User Theme Preference
-    """
+    """Update User Theme Preference."""
     return update_user_preferences(
         request,
         db_session,
@@ -222,9 +205,7 @@ def api_update_user_locale(
     user_id: int,
     locale: str,
 ) -> UserRead:
-    """
-    Update User Locale Preference
-    """
+    """Update User Locale Preference."""
     return update_user_preferences(
         request,
         db_session,
@@ -243,8 +224,7 @@ def api_delete_user(
     checker: PermissionCheckerDep,
     user_id: int,
 ):
-    """
-    Delete User
+    """Delete User.
 
     **Required Permission**: `user:delete:platform`
     """
@@ -267,9 +247,7 @@ async def api_get_user_courses(
     page: int = 1,
     limit: int = 20,
 ) -> list[CourseRead]:
-    """
-    Get courses made or contributed by a user.
-    """
+    """Get courses made or contributed by a user."""
     return await get_user_courses(
         request=request,
         current_user=current_user,

@@ -66,23 +66,29 @@ async def close_link_preview_client() -> None:
 
 def _normalize_user_url(url: str) -> str:
     if not isinstance(url, str):  # pyright: ignore[reportUnnecessaryIsInstance]
-        raise UnsafeLinkPreviewURL("URL must be a string")  # pyright: ignore[reportUnreachable]
+        msg = "URL must be a string"
+        raise UnsafeLinkPreviewURL(msg)  # pyright: ignore[reportUnreachable]
 
     stripped = url.strip()
     if not stripped:
-        raise UnsafeLinkPreviewURL("URL must not be empty")
+        msg = "URL must not be empty"
+        raise UnsafeLinkPreviewURL(msg)
 
     parsed = urlsplit(stripped)
     if parsed.scheme.lower() not in {"http", "https"}:
-        raise UnsafeLinkPreviewURL("Only http and https URLs are allowed")
+        msg = "Only http and https URLs are allowed"
+        raise UnsafeLinkPreviewURL(msg)
     if parsed.username or parsed.password:
-        raise UnsafeLinkPreviewURL("URLs with embedded credentials are not allowed")
+        msg = "URLs with embedded credentials are not allowed"
+        raise UnsafeLinkPreviewURL(msg)
     if not parsed.hostname:
-        raise UnsafeLinkPreviewURL("URL must include a hostname")
+        msg = "URL must include a hostname"
+        raise UnsafeLinkPreviewURL(msg)
 
     hostname = parsed.hostname.strip().lower().rstrip(".")
     if hostname in _LOCAL_HOSTNAMES or hostname.endswith(".localhost"):
-        raise UnsafeLinkPreviewURL("Localhost URLs are not allowed")
+        msg = "Localhost URLs are not allowed"
+        raise UnsafeLinkPreviewURL(msg)
 
     path = parsed.path or "/"
     return urlunsplit((
@@ -98,7 +104,8 @@ async def _assert_public_destination(url: str) -> None:
     parsed = urlsplit(url)
     host = parsed.hostname
     if host is None:
-        raise UnsafeLinkPreviewURL("URL must include a hostname")
+        msg = "URL must include a hostname"
+        raise UnsafeLinkPreviewURL(msg)
 
     try:
         literal_ip = ipaddress.ip_address(host)
@@ -119,10 +126,12 @@ async def _assert_public_destination(url: str) -> None:
             proto=socket.IPPROTO_TCP,
         )
     except socket.gaierror as exc:
-        raise UnsafeLinkPreviewURL("URL hostname could not be resolved") from exc
+        msg = "URL hostname could not be resolved"
+        raise UnsafeLinkPreviewURL(msg) from exc
 
     if not results:
-        raise UnsafeLinkPreviewURL("URL hostname could not be resolved")
+        msg = "URL hostname could not be resolved"
+        raise UnsafeLinkPreviewURL(msg)
 
     for result in results:
         sockaddr = result[4]
@@ -153,10 +162,12 @@ async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
                 _assert_response_peer_is_public(response)
                 if response.is_redirect:
                     if redirect_count >= settings.max_redirects:
-                        raise LinkPreviewError("Too many redirects")
+                        msg = "Too many redirects"
+                        raise LinkPreviewError(msg)
                     location = response.headers.get("location")
                     if not location:
-                        raise LinkPreviewError("Redirect response did not include Location")
+                        msg = "Redirect response did not include Location"
+                        raise LinkPreviewError(msg)
                     current_url = _normalize_user_url(urljoin(current_url, location))
                     await _assert_public_destination(current_url)
                     continue
@@ -170,31 +181,36 @@ async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
             msg = f"Failed to fetch link preview: {exc}"
             raise LinkPreviewError(msg) from exc
 
-    raise LinkPreviewError("Too many redirects")
+    msg_0 = "Too many redirects"
+    raise LinkPreviewError(msg_0)
 
 
 def _assert_html_response(response: httpx.Response) -> None:
     content_type = response.headers.get("content-type", "")
     media_type = content_type.split(";", 1)[0].strip().lower()
     if media_type not in _HTML_CONTENT_TYPES:
-        raise LinkPreviewError("Link preview response must be HTML")
+        msg = "Link preview response must be HTML"
+        raise LinkPreviewError(msg)
 
 
 def _assert_response_peer_is_public(response: httpx.Response) -> None:
     stream = response.extensions.get("network_stream")
     if stream is None:
-        raise LinkPreviewError("Unable to verify link preview peer address")
+        msg = "Unable to verify link preview peer address"
+        raise LinkPreviewError(msg)
 
     server_addr = stream.get_extra_info("server_addr")
     if not server_addr:
-        raise LinkPreviewError("Unable to verify link preview peer address")
+        msg = "Unable to verify link preview peer address"
+        raise LinkPreviewError(msg)
 
     ip_text = str(server_addr[0])
     host = urlsplit(str(response.url)).hostname or ip_text
     try:
         address = ipaddress.ip_address(ip_text)
     except ValueError as exc:
-        raise LinkPreviewError("Unable to verify link preview peer address") from exc
+        msg = "Unable to verify link preview peer address"
+        raise LinkPreviewError(msg) from exc
     _assert_public_ip(address, host)
 
 
@@ -204,7 +220,8 @@ async def _read_limited_response(response: httpx.Response, max_bytes: int) -> by
     async for chunk in response.aiter_bytes():
         total += len(chunk)
         if total > max_bytes:
-            raise LinkPreviewError("Link preview response is too large")
+            msg = "Link preview response is too large"
+            raise LinkPreviewError(msg)
         chunks.append(chunk)
     return b"".join(chunks)
 

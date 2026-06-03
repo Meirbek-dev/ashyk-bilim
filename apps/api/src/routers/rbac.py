@@ -1,5 +1,4 @@
-"""
-RBAC API Endpoints
+"""RBAC API Endpoints.
 
 - POST /check           - check single permission (returns granted/denied, never 403)
 - POST /check/batch     - batch check
@@ -237,8 +236,7 @@ async def assign_role(
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
-    """
-    Assign a role to a user.
+    """Assign a role to a user.
 
     **Required Permission**: `role:create`
     """
@@ -274,8 +272,7 @@ async def revoke_role(
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
-    """
-    Revoke a role from a user.
+    """Revoke a role from a user.
 
     **Required Permission**: `role:delete`
     """

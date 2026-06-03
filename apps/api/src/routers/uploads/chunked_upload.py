@@ -315,8 +315,7 @@ async def initiate_chunked_upload(
     uuid: Annotated[str | None, Form()] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
-    """
-    Initiate a chunked upload session.
+    """Initiate a chunked upload session.
 
     Args:
         directory: Target directory (e.g., "courses/xxx/activities/yyy/video")
@@ -328,6 +327,7 @@ async def initiate_chunked_upload(
 
     Returns:
         upload_uuid: Unique identifier for this upload session
+
     """
     assert current_user is not None
     upload_id = create_upload_session(
@@ -353,8 +353,7 @@ async def upload_chunk(
     chunk: Annotated[UploadFile, File()],
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
-    """
-    Upload a single chunk.
+    """Upload a single chunk.
 
     Args:
         upload_id: Upload session ID from initiate endpoint
@@ -363,6 +362,7 @@ async def upload_chunk(
 
     Returns:
         Status of the upload including progress
+
     """
     assert current_user is not None
     _owned_chunked_session(upload_id, current_user.id)
@@ -383,14 +383,14 @@ async def complete_chunked_upload(
     upload_id: Annotated[str, Form()],
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
-    """
-    Complete the chunked upload by assembling all chunks.
+    """Complete the chunked upload by assembling all chunks.
 
     Args:
         upload_id: Upload session ID
 
     Returns:
         Final filename and upload details
+
     """
     try:
         assert current_user is not None
@@ -429,14 +429,14 @@ async def get_upload_status(
     upload_id: str,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
 ):
-    """
-    Get the status of an upload session.
+    """Get the status of an upload session.
 
     Args:
         upload_id: Upload session ID
 
     Returns:
         Upload progress and details
+
     """
     assert current_user is not None
     session = _owned_chunked_session(upload_id, current_user.id)

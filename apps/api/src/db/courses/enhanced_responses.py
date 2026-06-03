@@ -1,5 +1,4 @@
-"""
-Enhanced response models with permission metadata.
+"""Enhanced response models with permission metadata.
 
 These models extend the base Read models to include permission information
 that the frontend can use to determine what actions are available to the user.
@@ -11,8 +10,7 @@ from src.db.courses.courses import CourseRead, FullCourseRead
 
 
 class CourseReadWithPermissions(CourseRead):
-    """
-    Course response with permission metadata.
+    """Course response with permission metadata.
 
     Extends CourseRead with fields that indicate what actions
     the current user can perform on this course.
@@ -27,8 +25,7 @@ class CourseReadWithPermissions(CourseRead):
 
 
 class FullCourseReadWithPermissions(FullCourseRead):
-    """
-    Full course response with permission metadata.
+    """Full course response with permission metadata.
 
     Extends FullCourseRead with permission information.
     """

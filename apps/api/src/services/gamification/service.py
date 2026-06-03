@@ -1,5 +1,4 @@
-"""
-Gamification Service - cohesive business logic layer
+"""Gamification Service - cohesive business logic layer.
 
 Responsibilities:
 - Idempotent, atomic XP awards with daily caps and level computation
@@ -10,6 +9,7 @@ Responsibilities:
 
 Notes:
 - Policy (rewards/daily limit) resolution is handled via PolicyRepo with a TTL cache
+
 """
 
 from __future__ import annotations
@@ -38,11 +38,11 @@ logger = logging.getLogger(__name__)
 
 
 class GamificationError(Exception):
-    """Base gamification error"""
+    """Base gamification error."""
 
 
 class DailyLimitExceededError(GamificationError):
-    """Daily XP limit exceeded"""
+    """Daily XP limit exceeded."""
 
 
 def _find_existing_transaction(

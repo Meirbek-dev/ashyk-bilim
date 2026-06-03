@@ -1,5 +1,4 @@
-"""
-RoleRepository — all DB operations for Role, Permission, RolePermission.
+"""RoleRepository — all DB operations for Role, Permission, RolePermission.
 
 Authorization is NOT performed here; callers must call PermissionChecker.require()
 before any mutating operation.  Seeding (idempotent upsert of system roles) lives

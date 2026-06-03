@@ -1,5 +1,4 @@
-"""
-Cache manager for AI services.
+"""Cache manager for AI services.
 
 AICacheManager holds TTL caches for retrieval collections, agents, and DB query results.
 It also tracks which cache keys belong to which activity so they can be

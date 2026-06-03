@@ -1,6 +1,4 @@
-"""
-Teacher grading service.
-"""
+"""Teacher grading service."""
 
 import csv
 import io
@@ -127,8 +125,7 @@ async def get_submissions_for_activity(
     page: int = 1,
     page_size: int = 25,
 ) -> SubmissionListResponse:
-    """
-    Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
+    """Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
 
     Использует SQL LIMIT/OFFSET — без загрузки в память.
     """
@@ -206,8 +203,7 @@ async def get_submission_stats(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionStats:
-    """
-    Return aggregate statistics for the teacher dashboard.
+    """Return aggregate statistics for the teacher dashboard.
 
     Uses two SQL queries instead of five:
       1. Status counts (GROUP BY status)
@@ -277,8 +273,7 @@ async def get_submission_for_teacher(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionRead:
-    """
-    Получить одну отправку с полными ответами и детализацией оценивания.
+    """Получить одну отправку с полными ответами и детализацией оценивания.
 
     Требует права assessment:read, ограниченного создателем активности,
     чтобы исключить утечку данных между активностями и курсами.
@@ -315,8 +310,7 @@ def export_grades_csv(
     submitted_after: datetime | None = None,
     submitted_before: datetime | None = None,
 ) -> Generator[str]:
-    """
-     Потоково отдавать CSV-строки всех отправок, кроме черновиков, по одному батчу за раз.
+    """Потоково отдавать CSV-строки всех отправок, кроме черновиков, по одному батчу за раз.
 
     Сначала возвращает строку заголовков, затем строки батчами по 200,
     чтобы ответ начинался сразу и использование памяти оставалось
@@ -625,7 +619,6 @@ async def _save_teacher_grade(
     ``submission.version``, вызывается 412 Precondition Failed, чтобы показать
     наличие параллельного изменения.
     """
-
     # ── Optimistic lock check ─────────────────────────────────────────────────
     if expected_version is not None and submission.version != expected_version:
         raise HTTPException(

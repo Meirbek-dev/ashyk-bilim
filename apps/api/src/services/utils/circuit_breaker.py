@@ -16,9 +16,7 @@ class CircuitBreakerOpenException(Exception):
 
 
 class CircuitBreaker:
-    """
-    A generic Circuit Breaker implementation supporting both sync and async execution paths.
-    """
+    """A generic Circuit Breaker implementation supporting both sync and async execution paths."""
 
     def __init__(
         self,

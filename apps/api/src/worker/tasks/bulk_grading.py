@@ -41,6 +41,7 @@ async def execute_deadline_extension_task(action_uuid: str) -> None:
 
     Args:
         action_uuid: ``BulkAction.action_uuid`` to execute.
+
     """
     from src.services.grading.bulk import run_deadline_extension_action
 

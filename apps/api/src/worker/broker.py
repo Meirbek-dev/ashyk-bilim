@@ -28,7 +28,8 @@ def _build_broker() -> Any:
     try:
         from taskiq_redis import ListQueueBroker, RedisAsyncResultBackend
     except ImportError as exc:
-        raise RuntimeError("taskiq-redis is not installed. Run `uv add taskiq-redis` to install it.") from exc
+        msg = "taskiq-redis is not installed. Run `uv add taskiq-redis` to install it."
+        raise RuntimeError(msg) from exc
 
     from src.infra.settings import get_settings
 

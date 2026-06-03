@@ -30,7 +30,7 @@ async def create_discussion(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseDiscussionRead:
-    """Create a new discussion post or reply"""
+    """Create a new discussion post or reply."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,7 +101,7 @@ async def get_discussions_by_course_uuid(
     limit: int = 50,
     offset: int = 0,
 ) -> list[CourseDiscussionReadWithPermissions]:
-    """Get discussions for a course"""
+    """Get discussions for a course."""
     # Check if course exists
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()
@@ -199,7 +199,7 @@ async def get_discussion_with_details(
     db_session: Session,
     current_user: PublicUser | AnonymousUser | None = None,
 ) -> CourseDiscussionRead:
-    """Get discussion with user details and like status"""
+    """Get discussion with user details and like status."""
     # Join discussion with user data
     discussion_query = (
         select(CourseDiscussion, User)
@@ -261,7 +261,7 @@ async def update_discussion(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseDiscussionRead:
-    """Update a discussion"""
+    """Update a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
@@ -330,7 +330,7 @@ async def like_discussion(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> DiscussionLikeRead:
-    """Like a discussion"""
+    """Like a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -385,7 +385,7 @@ async def unlike_discussion(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """Unlike a discussion"""
+    """Unlike a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
@@ -430,7 +430,7 @@ async def toggle_discussion_like(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> dict:
-    """Toggle like status for a discussion - like if not liked, unlike if liked"""
+    """Toggle like status for a discussion - like if not liked, unlike if liked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -503,7 +503,7 @@ async def toggle_discussion_dislike(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> dict:
-    """Toggle dislike status for a discussion - dislike if not disliked, undislike if disliked"""
+    """Toggle dislike status for a discussion - dislike if not disliked, undislike if disliked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -578,7 +578,7 @@ async def get_discussion_replies(
     limit: int = 50,
     offset: int = 0,
 ) -> list[CourseDiscussionRead]:
-    """Get replies for a specific discussion"""
+    """Get replies for a specific discussion."""
     # Find the discussion
     statement = select(CourseDiscussion).where(
         CourseDiscussion.discussion_uuid == discussion_uuid,

@@ -1,5 +1,4 @@
-"""
-Timezone utilities
+"""Timezone utilities.
 
 Provides a centralized way to get timezone-aware datetime objects
 based on the configured backend settings
@@ -14,11 +13,11 @@ _cached_timezone: ZoneInfo | None = None
 
 
 def get_timezone() -> ZoneInfo:
-    """
-    Get the configured timezone as a ZoneInfo object.
+    """Get the configured timezone as a ZoneInfo object.
 
     Returns:
         ZoneInfo: Configured timezone (defaults to UTC if invalid)
+
     """
     global _cached_timezone
 
@@ -38,24 +37,24 @@ def get_timezone() -> ZoneInfo:
 
 
 def now() -> datetime:
-    """
-    Get current datetime in the configured timezone.
+    """Get current datetime in the configured timezone.
 
     Returns:
         datetime: Current datetime with configured timezone
+
     """
     return datetime.now(get_timezone())
 
 
 def utcnow() -> datetime:
-    """
-    Get current datetime in UTC.
+    """Get current datetime in UTC.
 
     This is useful when you explicitly need UTC time
     regardless of the configured timezone.
 
     Returns:
         datetime: Current datetime in UTC
+
     """
     return datetime.now(UTC)
 
@@ -66,14 +65,14 @@ def utcnow_iso() -> str:
 
 
 def to_timezone(dt: datetime) -> datetime:
-    """
-    Convert a datetime to the configured timezone.
+    """Convert a datetime to the configured timezone.
 
     Args:
         dt: datetime object to convert
 
     Returns:
         datetime: datetime in configured timezone
+
     """
     if dt.tzinfo is None:
         # If naive, assume UTC
@@ -83,8 +82,7 @@ def to_timezone(dt: datetime) -> datetime:
 
 
 def invalidate_cache() -> None:
-    """
-    Invalidate the cached timezone.
+    """Invalidate the cached timezone.
     Useful for testing or when config changes.
     """
     global _cached_timezone

@@ -1,5 +1,4 @@
-"""
-RBAC Database Models & API Schemas
+"""RBAC Database Models & API Schemas.
 
 Single source of truth for all permission-related tables and Pydantic models.
 """

@@ -48,6 +48,7 @@ async def write_audit_event_task(
         user_agent: Client User-Agent header.
         metadata:   Arbitrary JSON-serialisable extra data.
         severity:   Log severity level (``"info"``, ``"warning"``, etc.).
+
     """
     import asyncio
 

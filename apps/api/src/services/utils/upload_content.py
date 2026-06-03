@@ -21,8 +21,7 @@ async def upload_file(
     filename_prefix: str,
     max_size: int | None = None,
 ) -> str:
-    """
-    Secure file upload with validation.
+    """Secure file upload with validation.
 
     Args:
         file: The uploaded file
@@ -35,6 +34,7 @@ async def upload_file(
 
     Returns:
         The saved filename
+
     """
     from ulid import ULID
 

@@ -83,7 +83,6 @@ def mark_manual_activity_complete(
     pipelines. This helper is for learning content such as dynamic lessons,
     videos, and documents where the student explicitly marks completion.
     """
-
     activity = db_session.get(Activity, activity_id)
     if activity is None or activity.course_id is None:
         return None
@@ -127,7 +126,6 @@ def unmark_manual_activity_complete(
     commit: bool = True,
 ) -> ActivityProgress | None:
     """Remove explicit completion for a non-submission activity."""
-
     activity = db_session.get(Activity, activity_id)
     if activity is None or activity.course_id is None:
         return None
@@ -366,7 +364,6 @@ def backfill_activity_progress(
     commit: bool = True,
 ) -> dict[str, int]:
     """Repair canonical progress rows for known enrolled/interacting learners."""
-
     activity_query = select(Activity).where(Activity.published)
     if course_id is not None:
         activity_query = activity_query.where(Activity.course_id == course_id)

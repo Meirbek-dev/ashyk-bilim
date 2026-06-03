@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Integration tests for the core teacher grading workflow.
+"""Integration tests for the core teacher grading workflow.
 
 Covers:
   - Listing submissions (queue) with status filter, search, and pagination
@@ -151,8 +150,7 @@ def _seed_course_and_assessment(
     *,
     grade_release_mode: GradeReleaseMode = GradeReleaseMode.IMMEDIATE,
 ) -> tuple[str, int, str]:
-    """
-    Create the minimal rows needed for grading tests.
+    """Create the minimal rows needed for grading tests.
 
     Returns (assessment_uuid, activity_id, activity_uuid).
     """

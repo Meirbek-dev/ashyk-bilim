@@ -25,7 +25,8 @@ def _build_client(*, raise_server_exceptions: bool = True) -> TestClient:
 
     @app.get("/boom")
     def boom() -> None:
-        raise RuntimeError("secret database failure")
+        msg = "secret database failure"
+        raise RuntimeError(msg)
 
     return TestClient(app, raise_server_exceptions=raise_server_exceptions)
 

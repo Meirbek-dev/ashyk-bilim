@@ -15,8 +15,7 @@ class TrailStepTypeEnum(StrEnum):
 
 
 class TrailStep(SQLModelStrictBaseModel, table=True):
-    """
-    TrailStep database model representing a step in a learning trail.
+    """TrailStep database model representing a step in a learning trail.
 
     This model tracks completion status, verification, grading, and metadata
     for individual steps within a learning trail.

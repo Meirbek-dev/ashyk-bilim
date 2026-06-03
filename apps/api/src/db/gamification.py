@@ -1,6 +1,4 @@
-"""
-Gamification Models
-"""
+"""Gamification Models."""
 
 from datetime import datetime
 from enum import StrEnum
@@ -32,7 +30,7 @@ MAX_LEVEL = 100
 
 
 class XPSource(StrEnum):
-    """XP source types"""
+    """XP source types."""
 
     ACTIVITY_COMPLETION = "activity_completion"
     COURSE_COMPLETION = "course_completion"
@@ -48,7 +46,7 @@ class XPSource(StrEnum):
 
 
 class StreakType(StrEnum):
-    """Streak types"""
+    """Streak types."""
 
     LOGIN = "login"
     LEARNING = "learning"
@@ -79,7 +77,7 @@ def get_xp_for_level(level: int) -> int:
 
 
 class GamificationProfile(SQLModel, table=True):
-    """Single gamification profile model with consistent naming"""
+    """Single gamification profile model with consistent naming."""
 
     __tablename__ = "gamification_profiles"  # pyright: ignore[reportAssignmentType]
 
@@ -120,14 +118,14 @@ class GamificationProfile(SQLModel, table=True):
     # Computed properties
     @property
     def xp_to_next_level(self) -> int:
-        """XP needed to reach next level"""
+        """XP needed to reach next level."""
         if self.level >= MAX_LEVEL:
             return 0
         return get_xp_for_level(self.level + 1) - self.total_xp
 
     @property
     def level_progress_percent(self) -> float:
-        """Progress through current level (0.0 to 100.0)"""
+        """Progress through current level (0.0 to 100.0)."""
         if self.level >= MAX_LEVEL:
             return 100.0
         current_level_xp = get_xp_for_level(self.level)
@@ -139,12 +137,12 @@ class GamificationProfile(SQLModel, table=True):
 
     @property
     def xp_in_current_level(self) -> int:
-        """XP earned in current level"""
+        """XP earned in current level."""
         return self.total_xp - get_xp_for_level(self.level)
 
 
 class XPTransaction(SQLModel, table=True):
-    """XP transaction audit trail"""
+    """XP transaction audit trail."""
 
     __tablename__ = "xp_transactions"  # pyright: ignore[reportAssignmentType]
 

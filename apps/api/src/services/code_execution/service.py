@@ -241,7 +241,8 @@ class Judge0SdkClientFactory:
                 last_error = exc
                 logger.info("Judge0 endpoint unavailable: %s", endpoint)
 
-        raise RuntimeError("Judge0 client initialization failed") from last_error
+        msg = "Judge0 client initialization failed"
+        raise RuntimeError(msg) from last_error
 
     def close(self) -> None:
         with self._lock:
@@ -279,7 +280,8 @@ class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
             self.config = self.get_config_info()
         except Exception as exc:
             self.client.close()
-            raise RuntimeError("Judge0 client initialization failed") from exc
+            msg = "Judge0 client initialization failed"
+            raise RuntimeError(msg) from exc
 
     @property
     @override

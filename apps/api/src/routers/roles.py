@@ -1,5 +1,4 @@
-"""
-Roles Router - CRUD for roles + permission assignment.
+"""Roles Router - CRUD for roles + permission assignment.
 
 Role assignment/revocation to *users* is in rbac.py.
 """

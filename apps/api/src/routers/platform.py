@@ -48,8 +48,7 @@ class PlatformLandingUploadResponse(PydanticStrictBaseModel):
 def api_get_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> PlatformRead:
-    """
-    Get the single platform.
+    """Get the single platform.
 
     This endpoint is intentionally public in single-platform mode because the
     frontend bootstraps navigation, auth pages, and public landing content from
@@ -90,8 +89,7 @@ def api_update_platform_user_role(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Update a user's role in the platform.
+    """Update a user's role in the platform.
 
     **Path Parameter**: `role_id` - numeric role ID
 
@@ -115,9 +113,7 @@ def api_remove_user_from_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Remove a user from the platform.
-    """
+    """Remove a user from the platform."""
     return remove_platform_user(
         request,
         user_id,
@@ -135,8 +131,7 @@ async def api_update_app_logo(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Update the platform logo.
+    """Update the platform logo.
 
     **Required Permission**: `platform:update`
     """
@@ -157,8 +152,7 @@ async def api_update_platform_thumbnail(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Update the platform thumbnail.
+    """Update the platform thumbnail.
 
     **Required Permission**: `platform:update`
     """
@@ -179,8 +173,7 @@ async def api_update_platform_preview(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Update the platform preview.
+    """Update the platform preview.
 
     **Required Permission**: `platform:update`
     """
@@ -201,8 +194,7 @@ def api_update_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ) -> PlatformRead:
-    """
-    Update the platform.
+    """Update the platform.
 
     **Required Permission**: `platform:update`
     """
@@ -218,8 +210,7 @@ def api_update_platform_landing(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Update the platform landing object.
+    """Update the platform landing object.
 
     **Required Permission**: `platform:update`
     """
@@ -235,8 +226,7 @@ async def api_upload_platform_landing_content(
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
 ):
-    """
-    Upload content for the platform landing page.
+    """Upload content for the platform landing page.
 
     **Required Permission**: `platform:update`
     """

@@ -49,6 +49,7 @@ async def publish_grading_event_task(
         event_type: SSE event name, e.g. ``"grade.published"``.
         submission_uuid: The submission this event belongs to.
         payload: Arbitrary JSON-serialisable payload dict.
+
     """
     from src.services.grading.events import publish_grading_event
 

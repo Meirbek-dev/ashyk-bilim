@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
-    """
-    Applies patches to the Judge0 languages database table.
+    """Applies patches to the Judge0 languages database table.
     Enforces compiler/runtime flags for managed runtimes so they run
     correctly inside Judge0 sandbox constraints.
     """
@@ -132,8 +131,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
 
 
 def start_judge0_patcher(session_factory: sessionmaker[Session]) -> None:
-    """
-    Spawns a daemon thread to apply Judge0 patches asynchronously,
+    """Spawns a daemon thread to apply Judge0 patches asynchronously,
     preventing any blockage of the main application/startup lifespan.
     """
     thread = threading.Thread(target=apply_judge0_patches, args=(session_factory,), daemon=True)

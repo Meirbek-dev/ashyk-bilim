@@ -805,7 +805,8 @@ class AssessmentItemCreate(PydanticStrictBaseModel):
     @model_validator(mode="after")
     def kind_matches_body(self) -> Self:
         if str(self.kind) != str(self.body.kind):
-            raise ValueError("Item kind must match body.kind")
+            msg = "Item kind must match body.kind"
+            raise ValueError(msg)
         return self
 
 
@@ -826,7 +827,8 @@ class AssessmentItemUpdate(PydanticStrictBaseModel):
     @model_validator(mode="after")
     def kind_matches_body(self) -> Self:
         if self.kind is not None and self.body is not None and str(self.kind) != str(self.body.kind):
-            raise ValueError("Item kind must match body.kind")
+            msg = "Item kind must match body.kind"
+            raise ValueError(msg)
         return self
 
 

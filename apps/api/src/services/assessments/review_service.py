@@ -305,7 +305,6 @@ async def publish_assessment_grades(
 
 def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
     """Return kind-appropriate default policy settings."""
-
     presets: dict[AssessmentType, AssessmentPolicyPreset] = {
         AssessmentType.EXAM: AssessmentPolicyPreset(
             kind=AssessmentType.EXAM,

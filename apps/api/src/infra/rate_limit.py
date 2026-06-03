@@ -54,6 +54,7 @@ def rate_limit(
         key_func: Function that extracts the rate-limit key from the request.
         namespace: Logical namespace prefix stored in Redis to prevent
             key collisions between different limiters.
+
     """
     rule = RateLimitRule(
         namespace=namespace,
