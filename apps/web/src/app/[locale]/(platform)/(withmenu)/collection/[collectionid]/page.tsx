@@ -44,6 +44,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
   const col = await getCollectionById(collectionid)
+  const courses = (col.courses ?? []).filter((course): course is AppCourse => typeof course === 'object' && course !== null)
 
   return (
     <GeneralWrapper>
@@ -55,7 +56,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
             {t('collection')}
           </Badge>
           <Badge variant="outline" className="text-muted-foreground rounded-md px-2 py-1 font-medium">
-            {tCol('courseCount', { count: col.courses.length })}
+            {tCol('courseCount', { count: courses.length })}
           </Badge>
         </div>
 
@@ -68,7 +69,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {col.courses.map((course: AppCourse) => (
+        {courses.map((course: AppCourse) => (
           <Link
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}
             key={course.course_uuid}
@@ -95,7 +96,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
         ))}
       </div>
 
-      {col.courses.length === 0 && (
+      {courses.length === 0 && (
         <div className="border-border bg-muted/30 mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
           <Layers className="text-muted-foreground/30 mb-4 h-12 w-12" />
           <h3 className="text-xl font-semibold">{t('collectionEmptyTitle')}</h3>

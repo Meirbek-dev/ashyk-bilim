@@ -69,7 +69,7 @@ export interface CourseThumbnailProps {
   course: Course
   customLink?: string
   actionLink?: string
-  trailData?: AppTrailData
+  trailData?: AppTrailData | null | undefined
   trailLoading?: boolean
   /** Set to true for above-the-fold cards to eager-load the thumbnail (fixes LCP) */
   priority?: boolean

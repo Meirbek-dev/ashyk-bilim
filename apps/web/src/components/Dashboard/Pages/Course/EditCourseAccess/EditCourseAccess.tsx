@@ -44,7 +44,7 @@ const EditCourseAccess = () => {
   const t = useTranslations('DashPage.Courses.Access')
   const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
   const [draftPublic, setDraftPublic] = useState<boolean | undefined>(() => courseStructure?.public)
-  const usergroups = editorData.linkedUserGroups.data ?? []
+  const usergroups = (editorData.linkedUserGroups.data ?? []) as AppUserGroup[]
   const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null
 
   const isDirtyRef = useRef(false)
@@ -210,9 +210,10 @@ const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: AppUserGroup
 
   const removeUserGroupLink = () => {
     if (typeof usergroup.id !== 'number') return
+    const userGroupId = usergroup.id
     startTransition(async () => {
       try {
-        const res = await unLinkResourcesToUserGroup(usergroup.id, [courseUuid], {
+        const res = await unLinkResourcesToUserGroup(userGroupId, [courseUuid], {
           courseUuid,
         })
         if (res.status === 200) {

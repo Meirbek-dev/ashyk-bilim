@@ -318,7 +318,7 @@ const CurriculumEditor = () => {
                   key={chapter.chapter_uuid}
                   chapterIndex={index}
                   course_uuid={course_uuid}
-                  chapter={chapter}
+                  chapter={chapter as never}
                 />
               ))}
             </div>

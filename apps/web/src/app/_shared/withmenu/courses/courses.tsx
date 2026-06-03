@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 interface CourseProps {
   courses: AppCourse[]
   totalCourses: number
-  trailData: AppTrailData
+  trailData: AppTrailData | null
   currentPage: number
   isAuthenticated: boolean
   canManagePlatform: boolean

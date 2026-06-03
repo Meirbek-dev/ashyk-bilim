@@ -55,17 +55,17 @@ interface CoursesContentProps {
   searchParams: Promise<PageSearchParams>
 }
 
-function sortCoursesByProgress(courses: unknown[], trailData: AppTrailData) {
+function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | null) {
   if (!trailData?.runs) return courses
 
   return [...courses].toSorted((a, b) => {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
-    const aRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
+    const aRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
+    const bRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
 
-    const getProgress = (run: AppTrailRun, course: AppCourse) => {
+    const getProgress = (run: AppTrailRun | undefined, course: AppCourse) => {
       if (!run) return 0
       const total =
         run.course_total_steps ||

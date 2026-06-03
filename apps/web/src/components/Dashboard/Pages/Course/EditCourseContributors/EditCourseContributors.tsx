@@ -80,6 +80,15 @@ interface BulkAddResponse {
   failed: { username: string; reason: string }[]
 }
 
+interface ContributorSearchResponse {
+  users?: SearchUser[]
+}
+
+type UpdateContributorHandler = (
+  contributorId: number,
+  data: { authorship?: ContributorRole; authorship_status?: ContributorStatus },
+) => Promise<void>
+
 const formatDate = (dateString: string, locale: Locale) => {
   return new Date(dateString).toLocaleDateString(locale, {
     year: 'numeric',
@@ -94,7 +103,7 @@ const RoleDropdown = ({
   t,
 }: {
   contributor: Contributor
-  updateContributor: (payload: unknown) => void
+  updateContributor: UpdateContributorHandler
   t: AppTranslator
 }) => (
   <DropdownMenu>
@@ -132,7 +141,7 @@ const StatusDropdown = ({
   getStatusStyle,
 }: {
   contributor: Contributor
-  updateContributor: (payload: unknown) => void
+  updateContributor: UpdateContributorHandler
   t: AppTranslator
   getStatusStyle: (s: ContributorStatus) => string
 }) => (
@@ -179,7 +188,7 @@ const EditCourseContributors = () => {
   const locale = useLocale() as Locale
   const course = useCourse()
   const { courseStructure, editorData } = course
-  const contributors = (editorData.contributors.data ?? []) as Contributor[]
+  const contributors = (editorData.contributors.data ?? []) as unknown as Contributor[]
   const isContributorsLoading = course.isEditorDataLoading && editorData.contributors.data === null
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const {
@@ -189,8 +198,10 @@ const EditCourseContributors = () => {
     updateContributor: updateContributorMutation,
   } = useCoursesMutations(courseStructure?.course_uuid ?? '')
 
+  const initialOpenToContributors =
+    typeof courseStructure?.open_to_contributors === 'boolean' ? courseStructure.open_to_contributors : undefined
   const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(
-    () => courseStructure?.open_to_contributors,
+    () => initialOpenToContributors,
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -206,8 +217,8 @@ const EditCourseContributors = () => {
     enabled: hasSearchQuery,
   })
   const fetchedSearchResults: SearchUser[] =
-    contributorSearchResponse?.success && contributorSearchResponse.data?.users
-      ? contributorSearchResponse.data.users.map((user: SearchUser) =>
+    contributorSearchResponse?.success && (contributorSearchResponse.data as ContributorSearchResponse | undefined)?.users
+      ? ((contributorSearchResponse.data as ContributorSearchResponse).users ?? []).map((user: SearchUser) =>
           Object.assign(user, {
             avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ``,
           }),
@@ -228,7 +239,7 @@ const EditCourseContributors = () => {
     isOpenToContributors !== undefined && isOpenToContributors !== courseStructure?.open_to_contributors
   const isDirty = isDirtyRef.current
 
-  const handleDiscard = () => setIsOpenToContributors(courseStructure?.open_to_contributors)
+  const handleDiscard = () => setIsOpenToContributors(initialOpenToContributors)
 
   useSyncDirtySection('contributors', isDirty)
 
@@ -236,7 +247,7 @@ const EditCourseContributors = () => {
     section: 'contributors',
   })
 
-  const openToContributors = courseStructure?.open_to_contributors
+  const openToContributors = initialOpenToContributors
 
   // Rehydrate from server when not dirty
   useEffect(() => {
@@ -291,8 +302,9 @@ const EditCourseContributors = () => {
       setSearchOpen(result.failed.length > 0)
       setSearchResultsOverride(searchResults.filter(user => failedUsernames.has(user.username)))
     } catch (error: unknown) {
-      if (error?.status === 409) {
-        raiseContributorConflict(error?.detail || error?.message, async () => {
+      const apiError = error as AppApiError
+      if (apiError.status === 409) {
+        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
           await addContributors(selectedUsers, selectedUserObjects, {
             lastKnownUpdateDate: courseStructure.update_date,
           })
@@ -322,14 +334,16 @@ const EditCourseContributors = () => {
         lastKnownUpdateDate: courseStructure.update_date,
       })
 
-      if (res.status === 200 && res.data?.status === 'success') {
-        toast.success(res.data.detail || t('successfullyUpdatedContributor'))
+      const responseData = res.data as { detail?: unknown; status?: string } | null
+      if (res.status === 200 && responseData?.status === 'success') {
+        toast.success(String(responseData.detail || t('successfullyUpdatedContributor')))
       } else {
-        toast.error(res.data?.detail || t('failedToUpdateContributor'))
+        toast.error(String(responseData?.detail || t('failedToUpdateContributor')))
       }
     } catch (error: unknown) {
-      if (error?.status === 409) {
-        raiseContributorConflict(error?.detail || error?.message, async () => {
+      const apiError = error as AppApiError
+      if (apiError.status === 409) {
+        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
           const retryContributor = contributors.find(contributor => contributor.user_id === contributorId)
           if (!retryContributor) return
 
@@ -402,8 +416,9 @@ const EditCourseContributors = () => {
           .map(contributor => contributor.user_id),
       )
     } catch (error: unknown) {
-      if (error?.status === 409) {
-        raiseContributorConflict(error?.detail || error?.message, async () => {
+      const apiError = error as AppApiError
+      if (apiError.status === 409) {
+        raiseContributorConflict(String(apiError.detail || apiError.message || ''), async () => {
           const retryRows = contributors.filter(contributor => selectedContributors.includes(contributor.user_id))
           await removeContributors(
             retryRows.map(contributor => contributor.user.username),

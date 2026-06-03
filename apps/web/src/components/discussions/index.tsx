@@ -5,7 +5,7 @@ import DiscussionList from './discussion-list'
 
 interface CourseDiscussionsProps {
   initialPosts: Discussion[]
-  currentUser: AppUserSummary
+  currentUser: AppUserSummary | null
   courseUuid: string
   onMutate?: () => void
 }

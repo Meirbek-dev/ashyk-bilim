@@ -15,6 +15,7 @@ import { LayoutDashboard, Users, Award, Clock, ShieldCheck } from 'lucide-react'
 import SavedViewsBar from './SavedViewsBar'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import SettingsTabs from '@/components/Dashboard/Misc/SettingsTabs'
+import type { TabItem } from '@/components/Dashboard/Misc/SettingsTabs'
 import { cn } from '@/lib/utils'
 
 interface AnalyticsShellProps {
@@ -28,10 +29,8 @@ interface AnalyticsShellProps {
 }
 
 const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
-interface AnalyticsTab {
-  icon: AppIcon
+interface AnalyticsTab extends TabItem {
   id: AnalyticsShellProps['activeTab']
-  labelKey: string
 }
 
 export default function AnalyticsShell({
@@ -60,10 +59,10 @@ export default function AnalyticsShell({
     { id: 'watchlist', labelKey: 'tabs.watchlist', icon: Users },
     { id: 'performance', labelKey: 'tabs.performance', icon: Award },
     { id: 'operations', labelKey: 'tabs.operations', icon: Clock },
-    ...(adminData ? [{ id: 'admin', labelKey: 'tabs.admin', icon: ShieldCheck }] : []),
+    ...(adminData ? ([{ id: 'admin', labelKey: 'tabs.admin', icon: ShieldCheck }] satisfies AnalyticsTab[]) : []),
   ]
 
-  const renderAnalyticsTab = (tab: AnalyticsTab, isActive: boolean) => {
+  const renderAnalyticsTab = (tab: TabItem, isActive: boolean) => {
     const Icon = tab.icon
     return (
       <div

@@ -43,11 +43,12 @@ import { MarkdownContent } from '@/features/content-markdown'
 interface CourseClientProps {
   course: AppCourse
   courseuuid: string
+  current_activity?: string
   initialDiscussions?: AppDiscussionPost[]
-  trailData?: AppTrailData
+  trailData?: AppTrailData | null | undefined
 }
 
-type LearningItem = string | { text: string }
+type LearningItem = string | { emoji?: string; id?: number | string; link?: string; text: string }
 
 const CourseClient = (props: CourseClientProps) => {
   const t = useTranslations('CoursePage')
@@ -89,12 +90,12 @@ const CourseClient = (props: CourseClientProps) => {
             }
             return null
           })
-          .filter(Boolean)
+          .filter((item): item is LearningItem => Boolean(item))
       }
 
       // Object: maybe { learnings: [...] } or similar
       if (input && typeof input === 'object') {
-        const obj = input as unknown
+        const obj = input as Record<string, unknown>
         if (Array.isArray(obj.learnings)) return normalize(obj.learnings)
         if (Array.isArray(obj.items)) return normalize(obj.items)
         if (Array.isArray(obj.data)) return normalize(obj.data)
@@ -148,7 +149,9 @@ const CourseClient = (props: CourseClientProps) => {
       const defaultExpanded: Record<string, boolean> = {}
       for (const [idx, chapter] of course.chapters.entries()) {
         // Always expand the first chapter
-        defaultExpanded[chapter.chapter_uuid] = idx === 0 ? true : totalActivities <= 5
+        if (chapter.chapter_uuid) {
+          defaultExpanded[chapter.chapter_uuid] = idx === 0 ? true : totalActivities <= 5
+        }
       }
       setExpandedChapters(defaultExpanded)
     }
@@ -184,7 +187,7 @@ const CourseClient = (props: CourseClientProps) => {
       return cleanRunCourseUuid === cleanCourseUuid
     })
     if (run) {
-      return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+      return run.steps?.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
     }
     return false
   }
@@ -212,7 +215,9 @@ const CourseClient = (props: CourseClientProps) => {
             <div className="flex flex-col gap-10 md:flex-row md:items-start">
               {/* Main content */}
               <div className="w-full min-w-0 space-y-10 md:w-3/4">
-                {isMobile && <CourseActionsMobile courseuuid={courseuuid} course={course} trailData={trailData} />}
+                {isMobile && (
+                  <CourseActionsMobile courseuuid={courseuuid} course={course as never} trailData={trailData} />
+                )}
 
                 {/* Thumbnail */}
                 {(() => {
@@ -319,14 +324,14 @@ const CourseClient = (props: CourseClientProps) => {
                 {/* Course description */}
                 {(course.description || course.about) && (
                   <MarkdownContent
-                    content={course.description || course.about}
+                    content={course.description || course.about || ''}
                     mode="courseDescription"
                     className="text-foreground/90"
                   />
                 )}
 
                 {/* What you will learn */}
-                {learnings.length > 0 && learnings[0]?.text !== 'null' && (
+                {learnings.length > 0 && (typeof learnings[0] === 'string' || learnings[0]?.text !== 'null') && (
                   <div>
                     <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('whatYouWillLearn')}</h2>
                     <div className="border-border rounded-xl border p-5">
@@ -374,8 +379,9 @@ const CourseClient = (props: CourseClientProps) => {
                 <div>
                   <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
                   <div className="border-border overflow-hidden rounded-xl border">
-                    {course.chapters.map((chapter: AppChapter, idx: number) => {
-                      const isExpanded = expandedChapters[chapter.chapter_uuid] ?? idx === 0
+                    {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
+                      const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
+                      const isExpanded = expandedChapters[chapterKey] ?? idx === 0
                       return (
                         <Collapsible
                           key={chapter.chapter_uuid || `chapter-${chapter.name}`}
@@ -383,7 +389,7 @@ const CourseClient = (props: CourseClientProps) => {
                           onOpenChange={open => {
                             setExpandedChapters(prev => ({
                               ...prev,
-                              [chapter.chapter_uuid]: open,
+                              [chapterKey]: open,
                             }))
                           }}
                         >
@@ -406,7 +412,7 @@ const CourseClient = (props: CourseClientProps) => {
                               <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
                                 <Layers size={11} />
                                 {t('activitiesCount', {
-                                  count: chapter.activities.length,
+                                  count: chapter.activities?.length ?? 0,
                                 })}
                               </span>
                             </div>
@@ -420,7 +426,7 @@ const CourseClient = (props: CourseClientProps) => {
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <div className="border-border border-t">
-                              {chapter.activities.map((activity: AppActivity, actIdx: number) => {
+                              {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
                                 const done = isActivityDone(activity)
                                 const current = isActivityCurrent(activity)
                                 return (
@@ -469,7 +475,9 @@ const CourseClient = (props: CourseClientProps) => {
                                         {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
                                         {activity.activity_type === 'TYPE_FILE_SUBMISSION' && <FileArchive size={11} />}
                                         {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
-                                        <span className="text-xs">{getActivityTypeLabel(activity.activity_type)}</span>
+                                        <span className="text-xs">
+                                          {getActivityTypeLabel(activity.activity_type ?? '')}
+                                        </span>
                                       </div>
                                     </div>
                                     {/* Arrow */}
@@ -490,7 +498,7 @@ const CourseClient = (props: CourseClientProps) => {
 
                 {/* Discussions */}
                 <CourseDiscussions
-                  initialPosts={initialDiscussions}
+                  initialPosts={initialDiscussions as never}
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}
@@ -502,7 +510,7 @@ const CourseClient = (props: CourseClientProps) => {
                 <CoursesActions courseuuid={courseuuid} course={course} trailData={trailData} />
                 <Card className="p-0">
                   <CardContent className="p-4">
-                    <CourseAuthors authors={course.authors} courseUuid={course.course_uuid} />
+                    <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
                   </CardContent>
                 </Card>
               </div>

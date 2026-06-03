@@ -22,7 +22,7 @@ interface LandingClassicProps {
   totalCourses: number
   collections: AppCollection[]
   gamificationData?: DashboardData | null
-  trailData: AppTrailData
+  trailData: AppTrailData | null
   isAuthenticated: boolean
 }
 
@@ -110,7 +110,7 @@ const LandingClassic = async ({
   const hasCollections = collections.length > 0
 
   return (
-    <GamificationProvider initialData={{ dashboard: gamificationData }}>
+    <GamificationProvider initialData={gamificationData === undefined ? undefined : { dashboard: gamificationData }}>
       <LoginBonusHandler />
       <div className="min-h-screen w-full">
         <GeneralWrapper>

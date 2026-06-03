@@ -82,7 +82,7 @@ export default function CourseCreationWizard() {
         setSourceOptions(
           results.map((c: AppCourse) => ({
             course_uuid: c.course_uuid,
-            name: c.name,
+            name: c.name ?? c.course_uuid,
             cleanUuid: cleanCourseUuid(c.course_uuid) ?? c.course_uuid,
           })),
         )

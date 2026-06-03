@@ -363,7 +363,7 @@ export async function getCourseMetadata(course_uuid: string, _next?: unknown, wi
 }
 
 interface CourseWriteOptions {
-  lastKnownUpdateDate?: string | null
+  lastKnownUpdateDate?: string | null | undefined
   includeEditableList?: boolean
   includePublicList?: boolean
 }

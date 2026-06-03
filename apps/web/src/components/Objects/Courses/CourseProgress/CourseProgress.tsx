@@ -46,7 +46,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       let chapterCompleted = 0
 
       chapterActivities.forEach((activity: AppActivity) => {
-        if (completedActivityIds.has(activity.id)) {
+        if (activity.id !== null && completedActivityIds.has(activity.id)) {
           chapterCompleted += 1
         }
       })
@@ -69,7 +69,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
   }, [completedActivityIds, course.chapters])
 
   function isActivityDone(activity: AppActivity) {
-    return completedActivityIds.has(activity.id)
+    return activity.id !== null && completedActivityIds.has(activity.id)
   }
 
   const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)

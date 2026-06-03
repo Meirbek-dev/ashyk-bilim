@@ -221,7 +221,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
           : '/empty_thumbnail.avif'
       }
-      return course.courseStructure.thumbnail_video
+      return typeof course.courseStructure.thumbnail_video === 'string'
         ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_video)
         : undefined
     },

@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest) {
     )
   }
 
-  let collections: { collection_uuid: string }[] = []
+  let collections: AppCollection[] = []
   try {
     collections = await getCollections()
   } catch {
@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest) {
       changefreq: 'weekly',
     })),
     // Collections
-    ...collections.map((collection: { collection_uuid: string }) => ({
+    ...collections.filter((collection): collection is AppCollection & { collection_uuid: string } => Boolean(collection.collection_uuid)).map(collection => ({
       loc: `${baseUrl}collections/${collection.collection_uuid.replace('collection_', '')}`,
       priority: 0.6,
       changefreq: 'weekly',

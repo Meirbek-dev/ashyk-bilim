@@ -4,6 +4,7 @@ import { queryOptions } from '@tanstack/react-query'
 import type { CourseListKeyOptions } from '@/hooks/courses/courseKeys'
 import { courseEndpoints, courseKeys } from '@/hooks/courses/courseKeys'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import type { PlatformLeaderboard } from '@/types/gamification'
 
 interface CourseListResponse<TCourse> {
   courses: TCourse[]
@@ -60,8 +61,9 @@ export function courseListQueryOptions<TCourse = unknown>(options: CourseListKey
     queryKey: courseKeys.list(options),
     queryFn: async (): Promise<CourseListResponse<TCourse>> => {
       const response = await apiFetcherWithHeaders(courseEndpoints.list(options))
+      const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
       return {
-        courses: Array.isArray(response.data) ? response.data : [],
+        courses,
         total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
       }
     },
@@ -73,8 +75,9 @@ export function editableCourseListQueryOptions<TCourse = unknown>(options: Cours
     queryKey: courseKeys.editable(options),
     queryFn: async (): Promise<CourseListResponse<TCourse>> => {
       const response = await apiFetcherWithHeaders(courseEndpoints.editable(options))
+      const courses = Array.isArray(response.data) ? (response.data as TCourse[]) : []
       return {
-        courses: Array.isArray(response.data) ? response.data : [],
+        courses,
         total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
         summary: {
           total: Number.parseInt(response.headers['x-summary-total'] ?? response.headers['x-total-count'] ?? '0', 10),
@@ -125,14 +128,14 @@ export function courseDiscussionsQueryOptions(
 export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
-    queryFn: () => apiFetcher<{ runs: unknown[] }>(`trail`),
+    queryFn: () => apiFetcher<AppTrailData>(`trail`),
   })
 }
 
 export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
-    queryFn: () => apiFetcher<{ entries: unknown[] }>(`gamification/leaderboard?limit=${limit}`),
+    queryFn: () => apiFetcher<PlatformLeaderboard>(`gamification/leaderboard?limit=${limit}`),
   })
 }
 
@@ -160,7 +163,7 @@ export function certificateDetailQueryOptions(certificateUuid: string) {
 export function courseContributorsQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.contributors(courseUuid),
-    queryFn: () => fetchResponseMetadata(`courses/${courseUuid}/contributors`),
+    queryFn: () => fetchResponseMetadata<AppCourseAuthor[]>(`courses/${courseUuid}/contributors`),
   })
 }
 
@@ -183,8 +186,9 @@ export function platformCoursesQueryOptions() {
     queryKey: queryKeys.platform.courses(),
     queryFn: async () => {
       const { data, headers } = await apiFetcherWithHeaders(courseEndpoints.list({ page: 1, limit: 20 }))
+      const courses = Array.isArray(data) ? (data as AppCourse[]) : []
       return {
-        courses: Array.isArray(data) ? data : [],
+        courses,
         total: Number.parseInt(headers['x-total-count'] ?? '0', 10),
       }
     },

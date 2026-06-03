@@ -75,7 +75,7 @@ export function ActivityContentRenderer({
     case 'TYPE_VIDEO': {
       return (
         <section className="w-full">
-          <VideoActivity course={course} activity={activity as unknown} />
+          <VideoActivity course={course} activity={activity as never} />
         </section>
       )
     }
@@ -119,7 +119,7 @@ function CourseEndPanel({ course, courseuuid }: { course: CourseStructure; cours
       courseUuid={courseuuid}
       thumbnailImage={course.thumbnail_image ?? ''}
       course={course}
-      trailData={trailData}
+      trailData={trailData ?? { runs: [] }}
     />
   )
 }

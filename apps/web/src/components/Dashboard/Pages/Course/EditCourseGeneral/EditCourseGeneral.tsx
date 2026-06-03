@@ -30,13 +30,12 @@ const LEARNINGS_PLACEHOLDER_ID = '__placeholder_0__'
 
 function initializeLearnings(learnings: unknown): string {
   if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
+  if (typeof learnings !== 'string') return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
   try {
     const parsed = JSON.parse(learnings)
     if (Array.isArray(parsed)) return learnings
   } catch {
-    if (typeof learnings === 'string') {
-      return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '📝' }])
-    }
+    return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '📝' }])
   }
   return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
 }
@@ -67,7 +66,9 @@ function buildFormValues(courseStructure: AppCourse): CourseGeneralValues {
     learnings: initializeLearnings(courseStructure?.learnings || ''),
     tags: parseTags(courseStructure?.tags),
     public: courseStructure?.public ?? false,
-    thumbnail_type: courseStructure?.thumbnail_type || 'image',
+    thumbnail_type: ['image', 'video', 'both'].includes(String(courseStructure?.thumbnail_type))
+      ? (courseStructure.thumbnail_type as 'image' | 'video' | 'both')
+      : 'image',
   }
 }
 

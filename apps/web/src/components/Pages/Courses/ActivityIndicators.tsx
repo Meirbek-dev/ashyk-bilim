@@ -25,7 +25,7 @@ interface Props {
   course_uuid: string
   current_activity?: string
   enableNavigation?: boolean
-  trailData?: AppTrailData
+  trailData?: AppTrailData | null | undefined
 }
 
 // Helper functions
@@ -250,7 +250,7 @@ const ActivityIndicators = (props: Props) => {
   const router = useRouter()
 
   // Build activity index for efficient lookups
-  const activityIndex = useMemo(() => buildCourseActivityIndex(course.chapters), [course.chapters])
+  const activityIndex = useMemo(() => buildCourseActivityIndex(course.chapters as never), [course.chapters])
   const { allActivities } = activityIndex
   const cleanCurrentActivityId = normalizeActivityUuid(props.current_activity)
   const currentActivityIndex = cleanCurrentActivityId
@@ -269,11 +269,11 @@ const ActivityIndicators = (props: Props) => {
     )
   }, [props.trailData, course.course_uuid])
 
-  function isActivityDone(activity: AppActivity) {
+  function isActivityDone(activity: { id?: number | null }) {
     return completedActivityIds.has(Number(activity.id))
   }
 
-  function isActivityCurrent(activity: AppActivity) {
+  function isActivityCurrent(activity: { cleanUuid?: string }) {
     return activity.cleanUuid === cleanCurrentActivityId
   }
 
@@ -297,7 +297,7 @@ const ActivityIndicators = (props: Props) => {
 
   // Check if all activities are completed
   const totalActivitiesCount = allActivities.length
-  const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
+  const completedActivities = allActivities.filter(activity => isActivityDone(activity)).length
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount
 
   return (
@@ -380,7 +380,7 @@ const ActivityIndicators = (props: Props) => {
                     <ToolTip
                       sideOffset={10}
                       unstyled
-                      content={<ActivityTooltipContent activity={activity} isDone={isDone} isCurrent={isCurrent} />}
+	                      content={<ActivityTooltipContent activity={activity as never} isDone={isDone} isCurrent={isCurrent} />}
                       key={activity.activity_uuid}
                     >
                       <Link

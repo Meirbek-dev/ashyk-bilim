@@ -3,19 +3,17 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { searchContentQueryOptions } from '../queries/search.query'
 
-function searchContentHookOptions(query: string, page = 1, limit = 20, enabled = true) {
+export function useSearchContent(query: string, options?: { page?: number; limit?: number; enabled?: boolean }) {
   const normalizedQuery = query.trim()
 
-  return queryOptions({
-    ...searchContentQueryOptions({
-      query: normalizedQuery || '__disabled__',
-      page,
-      limit,
+  return useQuery(
+    queryOptions({
+      ...searchContentQueryOptions({
+        query: normalizedQuery || '__disabled__',
+        page: options?.page ?? 1,
+        limit: options?.limit ?? 20,
+      }),
+      enabled: (options?.enabled ?? true) && normalizedQuery.length > 0,
     }),
-    enabled: enabled && normalizedQuery.length > 0,
-  })
-}
-
-export function useSearchContent(query: string, options?: { page?: number; limit?: number; enabled?: boolean }) {
-  return useQuery(searchContentHookOptions(query, options?.page ?? 1, options?.limit ?? 20, options?.enabled ?? true))
+  )
 }

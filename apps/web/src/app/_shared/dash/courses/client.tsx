@@ -57,6 +57,8 @@ import { toast } from 'sonner'
 import { getAbsoluteUrl } from '@services/config/config'
 
 interface ManageableCourse extends Course {
+  course_uuid: string
+  name: string
   public?: boolean
 }
 
@@ -132,7 +134,7 @@ const CoursesHome = ({
   const courseReadinessMap = useMemo(() => {
     const map = new Map<string, boolean>()
     for (const course of optimisticCourses) {
-      map.set(course.course_uuid, getCourseReadinessSummary(course, null).readyToPublish)
+      map.set(course.course_uuid, getCourseReadinessSummary(course as AppCourse, null).readyToPublish)
     }
     return map
   }, [optimisticCourses])
@@ -256,9 +258,7 @@ const CoursesHome = ({
           ),
         )
 
-        const successCount = results.filter(
-          (result): result is PromiseFulfilledResult<unknown> => result.status === 'fulfilled' && result.value?.success,
-        ).length
+        const successCount = results.filter(result => result.status === 'fulfilled' && result.value.success).length
         const failedCount = targetCourses.length - successCount
 
         if (successCount > 0) {
@@ -439,7 +439,7 @@ const CoursesHome = ({
         meta: { label: t('table.course') },
         cell: ({ row }) => {
           const course = row.original
-          const stats = getCourseContentStats(course)
+          const stats = getCourseContentStats(course as AppCourse)
 
           return (
             <div className="space-y-1">
@@ -476,7 +476,7 @@ const CoursesHome = ({
             <div className="flex flex-wrap gap-2">
               <CourseStatusBadge status={course.public ? 'public' : 'private'} />
               <CourseStatusBadge status={ready ? 'ready' : 'needs-review'} />
-              {courseNeedsAttention(course) ? <CourseStatusBadge status="attention" /> : null}
+              {courseNeedsAttention(course as AppCourse) ? <CourseStatusBadge status="attention" /> : null}
             </div>
           )
         },

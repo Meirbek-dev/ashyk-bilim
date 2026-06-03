@@ -19,7 +19,7 @@ import type { DiscussionPostData, DiscussionReplyData } from './types'
 
 interface DiscussionListProps {
   initialPosts: Discussion[]
-  currentUser: AppUserSummary
+  currentUser: AppUserSummary | null
   courseUuid: string
   onMutate?: () => void
 }
@@ -93,6 +93,7 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
 export default function DiscussionList({ initialPosts, currentUser, courseUuid, onMutate }: DiscussionListProps) {
   const t = useTranslations('CoursePage')
   const anonymousLabel = t('anonymous')
+  const discussionUser = currentUser ?? {}
   // Use lazy initialization to transform initial posts
   const [posts, setPosts] = useState<DiscussionPostData[]>(() => {
     if (Array.isArray(initialPosts)) {
@@ -445,14 +446,14 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         </Badge>
       </div>
 
-      <DiscussionForm currentUser={currentUser} onSubmit={handleSubmitDiscussion} />
+      <DiscussionForm currentUser={discussionUser} onSubmit={handleSubmitDiscussion} />
 
       <div className="space-y-4">
         {posts.map(post => (
           <DiscussionPost
             key={post.id}
             post={post}
-            currentUser={currentUser}
+            currentUser={discussionUser}
             onVotePost={handleVotePost}
             onVoteReply={handleVoteReply}
             onDeletePost={handleDeletePost}

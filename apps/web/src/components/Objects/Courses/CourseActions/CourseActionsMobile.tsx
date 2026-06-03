@@ -52,7 +52,7 @@ interface Course {
 interface CourseActionsMobileProps {
   courseuuid: string
   course: Course
-  trailData?: AppTrailData
+  trailData?: AppTrailData | null | undefined
 }
 
 // Component for displaying multiple authors

@@ -65,7 +65,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-const ActivityPage = async (params: { params: Promise<Record<string, string>> }) => {
+const ActivityPage = async (params: { params: Promise<{ courseuuid: string; activityid: string }> }) => {
   const { courseuuid, activityid } = await params.params
 
   // Don't fetch activity if it's the end page

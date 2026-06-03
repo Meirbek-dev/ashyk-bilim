@@ -161,7 +161,7 @@ const SubtitleManager = ({
     if (existingLang) {
       return {
         valid: false,
-        error: t('errorSubtitleLanguageExists', { language: potentialLang }),
+        error: t('errorSubtitleLanguageExists', { language: potentialLang ?? fileName }),
       }
     }
     return { valid: true }
@@ -755,7 +755,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
             chapter_id: chapterId,
             activity_type: 'TYPE_VIDEO',
             activity_sub_type: 'SUBTYPE_VIDEO_HOSTED',
-            details: videoDetails as AppPayload,
+            details: videoDetails,
           },
           chapterId,
         })
@@ -771,7 +771,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
           details: videoDetails,
         }
 
-        await submitExternalVideo?.(external_video_object as AppPayload, { name: submittedName } as AppPayload, chapterId)
+        await submitExternalVideo?.(external_video_object, { name: submittedName }, chapterId)
         toast.success(t('successYouTubeVideoActivityCreated'))
       }
     } catch (error) {

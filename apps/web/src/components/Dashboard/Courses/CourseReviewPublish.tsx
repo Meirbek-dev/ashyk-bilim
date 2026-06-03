@@ -72,10 +72,11 @@ export default function CourseReviewPublish({
           )
           toast.success(wasPublic ? t('toasts.movedPrivate') : t('toasts.published'))
         } catch (error: unknown) {
-          if (error?.status === 409) {
+          const apiError = error as AppApiError
+          if (apiError.status === 409) {
             setConflict({
               serverVersion: course.courseStructure,
-              message: error?.detail || error?.message,
+              message: String(apiError.detail || apiError.message || ''),
               pendingSave: async () => {
                 await updateAccess(
                   { public: !wasPublic },
@@ -87,7 +88,7 @@ export default function CourseReviewPublish({
             })
             return
           }
-          toast.error(error?.message || t('errors.visibilityUpdate'))
+          toast.error(apiError.message || t('errors.visibilityUpdate'))
         } finally {
           setIsRefreshing(false)
         }

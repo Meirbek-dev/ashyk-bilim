@@ -17,7 +17,7 @@ import { assertSuccess } from '@/lib/api/assertSuccess'
 import { useCourseEditorStore } from '@/stores/courses'
 
 interface MutationOptions {
-  lastKnownUpdateDate?: string | null
+  lastKnownUpdateDate?: string | null | undefined
 }
 
 interface ContributorDraftUser {

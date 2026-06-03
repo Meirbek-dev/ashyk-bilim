@@ -268,7 +268,7 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
   }
 
   return (
-    <GamificationProvider initialData={{ dashboard: gamificationData }}>
+    <GamificationProvider initialData={gamificationData === undefined ? undefined : { dashboard: gamificationData }}>
       <LoginBonusHandler />
       <div className="mx-auto flex h-full w-full max-w-(--breakpoint-2xl) flex-col items-center justify-between px-4 sm:px-6 lg:px-16">
         {landing.sections.map(section => renderSection(section))}

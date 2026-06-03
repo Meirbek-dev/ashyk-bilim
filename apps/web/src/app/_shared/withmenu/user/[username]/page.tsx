@@ -22,14 +22,14 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 
     return {
       title: t('metaTitle', {
-        firstName: userData.first_name,
-        lastName: userData.last_name,
+        firstName: userData.first_name ?? '',
+        lastName: userData.last_name ?? '',
       }),
       description:
         userData.bio ||
         t('metaDescriptionFallback', {
-          firstName: userData.first_name,
-          lastName: userData.last_name,
+          firstName: userData.first_name ?? '',
+          lastName: userData.last_name ?? '',
         }),
     }
   } catch {
@@ -60,7 +60,7 @@ async function UserPage({ params }: UserPageProps) {
     hasError = true
   }
 
-  if (hasError) {
+  if (hasError || !userData) {
     return (
       <div className="container mx-auto py-8">
         <div className="soft-shadow bg-card rounded-xl p-6">

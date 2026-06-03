@@ -10,9 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useGamificationStore } from '@/stores/gamification'
 import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/useTrail'
 import { useTranslations } from 'next-intl'
+import type { XPTransaction } from '@/types/gamification'
 import { BookOpen } from 'lucide-react'
 
-const EMPTY_RECENT_TRANSACTIONS: unknown[] = []
+const EMPTY_RECENT_TRANSACTIONS: XPTransaction[] = []
 
 function TrailCourseSkeletons() {
   return (
@@ -51,7 +52,7 @@ const Trail = () => {
   }, [])
 
   const gamificationProfile = useGamificationStore(s => s.profile)
-  const recentTransactions = useGamificationStore(s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS)
+  const recentTransactions = useGamificationStore(s => (s.dashboard?.recent_transactions as XPTransaction[] | undefined) ?? EMPTY_RECENT_TRANSACTIONS)
   const userRank = useGamificationStore(s => s.dashboard?.user_rank)
   const isGamificationLoading = useGamificationStore(s => s.isLoading)
   const gamificationData = {

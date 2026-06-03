@@ -21,7 +21,7 @@ import { toast } from 'sonner'
 interface CourseActionsProps {
   courseuuid: string
   course: AppCourse
-  trailData?: AppTrailData
+  trailData?: AppTrailData | null | undefined
 }
 
 const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) => {
@@ -352,7 +352,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           course={course}
           isOpen={isProgressOpen}
           onClose={() => setIsProgressOpen(false)}
-          trailData={trailData}
+          trailData={trailData ?? undefined}
         />
       </CardContent>
     </Card>

@@ -40,7 +40,7 @@ const NewCollection = () => {
   const [isPending, startTransition] = useTransition()
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
-  const { data: courses, error, isLoading } = useCourseList()
+  const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
   const [isPublic, setIsPublic] = useState(true)
 
   const filteredCourses = useMemo(() => {

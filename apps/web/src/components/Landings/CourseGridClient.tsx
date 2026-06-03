@@ -18,7 +18,7 @@ const COURSES_PER_PAGE = 20
 interface CourseGridClientProps {
   initialCourses: AppCourse[]
   initialTotal: number
-  trailData: AppTrailData
+  trailData: AppTrailData | null
   currentPage: number
   isAuthenticated: boolean
 }

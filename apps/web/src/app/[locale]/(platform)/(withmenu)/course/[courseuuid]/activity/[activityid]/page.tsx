@@ -53,7 +53,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     }
   } catch (error: unknown) {
-    if (error.status === 401 || error.status === 403) {
+    const apiError = error as AppApiError
+    if (apiError.status === 401 || apiError.status === 403) {
       return {
         title: `Access Denied`,
       }
@@ -78,14 +79,15 @@ export default async function PlatformActivityPage(props: {
       isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
     ])
   } catch (error: unknown) {
-    if (error.status === 401) {
+    const apiError = error as AppApiError
+    if (apiError.status === 401) {
       const locale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}/activity/${activityid}`)}`,
         locale,
       })
     }
-    if (error.status === 403) {
+    if (apiError.status === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }

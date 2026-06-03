@@ -58,7 +58,8 @@ const NewExam = ({ chapterId, course, closeModal }: AppActivityModalProps) => {
 
   const { data: limits } = useExamConfig()
   const validationSchema = createValidationSchema(validationT, limits)
-  const withUnpublishedActivities = course?.withUnpublishedActivities ?? false
+  const withUnpublishedActivities =
+    typeof course?.withUnpublishedActivities === 'boolean' ? course.withUnpublishedActivities : false
   const courseUuid = getCourseUuid(course)
   const createExamMutation = useCreateExamWithActivity(courseUuid, {
     withUnpublishedActivities,

@@ -6,6 +6,7 @@ import { getCollections } from '@services/courses/collections'
 import { getPlatform } from '@/services/platform/platform'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
+import type { LandingSection } from '@/components/Dashboard/Pages/Platform/EditLanding/landing_types'
 
 function isExpectedPrerenderCancellation(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -17,7 +18,7 @@ function isExpectedPrerenderCancellation(error: unknown): boolean {
     message.includes('prerender') ||
     message.includes('cookies()') ||
     message.includes('dynamic server usage') ||
-    (error as unknown).digest?.startsWith('NEXT_')
+    Boolean((error as { digest?: string }).digest?.startsWith('NEXT_'))
 
   return (
     error.name === 'AbortError' ||
@@ -40,17 +41,17 @@ function logLandingFetchError(scope: string, error: unknown) {
   })
 }
 
-function sortCoursesByProgress(courses: unknown[], trailData: AppTrailData) {
+function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | null) {
   if (!trailData?.runs) return courses
 
   return [...courses].toSorted((a, b) => {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
-    const aRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
+    const aRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
+    const bRun = trailData.runs?.find(r => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
 
-    const getProgress = (run: AppTrailRun, course: AppCourse) => {
+    const getProgress = (run: AppTrailRun | undefined, course: AppCourse) => {
       if (!run) return 0
       const total =
         run.course_total_steps ||
@@ -109,12 +110,7 @@ export async function LandingContent() {
     if (hasCustomLanding && platform?.landing) {
       const gamificationData = await gamificationPromise
 
-      return (
-        <LandingCustom
-          landing={platform.landing as { sections: unknown[]; enabled: boolean }}
-          gamificationData={gamificationData}
-        />
-      )
+      return <LandingCustom landing={platform.landing as { sections: LandingSection[]; enabled: boolean }} gamificationData={gamificationData} />
     }
 
     const [coursesData, collections, gamificationData, trailData] = await Promise.all([

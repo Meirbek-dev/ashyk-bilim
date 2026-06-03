@@ -24,14 +24,15 @@ export default async function PlatformAssessmentStudioPage(props: {
     ;[activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)])
     assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
   } catch (error: unknown) {
-    if (error.status === 401) {
+    const apiError = error as AppApiError
+    if (apiError.status === 401) {
       const locale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/activity/${activityid}/studio`)}`,
         locale,
       })
     }
-    if (error.status === 403) {
+    if (apiError.status === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }

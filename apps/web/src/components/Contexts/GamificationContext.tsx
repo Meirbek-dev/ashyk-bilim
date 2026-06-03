@@ -2,7 +2,7 @@
 
 import { useSession } from '@/hooks/useSession'
 import { useXPToast } from '@/lib/gamification/components/xp-toast'
-import type { UserGamificationProfile } from '@/types/gamification'
+import type { DashboardData, PlatformLeaderboard, UserGamificationProfile } from '@/types/gamification'
 import { useGamificationStore } from '@/stores/gamification'
 import { AnimatePresence } from 'motion/react'
 import React, { lazy, useEffect } from 'react'
@@ -23,10 +23,16 @@ const LevelUpCelebration = lazy(() =>
 interface GamificationProviderProps {
   children: React.ReactNode
   initialData?: {
-    profile?: UserGamificationProfile | null
-    dashboard?: unknown
-    leaderboard?: unknown
-  }
+    profile?: UserGamificationProfile | null | undefined
+    dashboard?: DashboardData | null | undefined
+    leaderboard?: PlatformLeaderboard | null | undefined
+  } | undefined
+}
+
+function getCompactMode(preferences: UserGamificationProfile['preferences'] | undefined): boolean {
+  const display = preferences?.display
+  if (!display || typeof display !== 'object') return false
+  return (display as { compactMode?: boolean }).compactMode ?? false
 }
 
 export function GamificationProvider({ children, initialData }: GamificationProviderProps) {
@@ -43,8 +49,9 @@ export function GamificationProvider({ children, initialData }: GamificationProv
 
   useEffect(() => {
     if (initialData) {
+      const initialProfile = initialData.dashboard?.profile ?? initialData.profile
       hydrate({
-        profile: initialData.dashboard?.profile ?? initialData.profile,
+        ...(initialProfile === undefined ? {} : { profile: initialProfile }),
         dashboard: initialData.dashboard ?? null,
         leaderboard: initialData.dashboard?.leaderboard ?? initialData.leaderboard ?? null,
       })
@@ -79,7 +86,7 @@ export function GamificationProvider({ children, initialData }: GamificationProv
               key={`level-up-${levelUpQueue[0].newLevel}`}
               newLevel={levelUpQueue[0].newLevel}
               onDismiss={dismissLevelUpCelebration}
-              compact={(profile?.preferences as unknown)?.display?.compactMode ?? false}
+              compact={getCompactMode(profile?.preferences)}
             />
           </React.Suspense>
         )}

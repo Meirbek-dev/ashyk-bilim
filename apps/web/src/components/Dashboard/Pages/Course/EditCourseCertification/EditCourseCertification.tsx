@@ -39,6 +39,11 @@ const CERTIFICATE_PATTERNS = [
   { value: 'modern', icon: '✨' },
 ] as const
 
+interface CourseCertificationResource {
+  certification_uuid: string
+  config: AppCertification['certification']['config']
+}
+
 // Module-level type-only schema (no translated messages needed for type inference)
 const _certFormSchemaForTypes = v.object({
   enable_certification: v.boolean(),
@@ -156,7 +161,7 @@ const EditCourseCertification = () => {
     [t],
   )
 
-  const certifications = editorData.certifications.data ?? []
+  const certifications = (editorData.certifications.data ?? []) as CourseCertificationResource[]
   const certificationsError = editorData.certifications.error
   const [existingCertification] = certifications
   const hasExistingCertification = Boolean(existingCertification)
@@ -175,8 +180,9 @@ const EditCourseCertification = () => {
 
   const getInitialValues = useCallback((): FormValues => {
     const getInstructorName = () => {
-      if (courseStructure?.authors?.length > 0) {
-        const [author] = courseStructure.authors
+      if ((courseStructure?.authors?.length ?? 0) > 0) {
+        const [author] = courseStructure.authors ?? []
+        if (!author) return ''
         const firstName = author.user?.first_name || ''
         const lastName = author.user?.last_name || ''
         if (firstName || lastName) return `${firstName} ${lastName}`.trim()
@@ -184,7 +190,7 @@ const EditCourseCertification = () => {
       return ''
     }
 
-    const config = existingCertification?.config || {}
+    const config = (existingCertification?.config ?? {}) as Partial<AppCertification['certification']['config']>
     return {
       enable_certification: hasExistingCertification,
       certification_name: config.certification_name || courseStructure?.name || '',
@@ -300,7 +306,7 @@ const EditCourseCertification = () => {
           }
 
           await createCertification({
-            course_id: courseStructure.id,
+            course_id: courseStructure.id ?? 0,
             config,
             options: {
               courseUuid: courseStructure.course_uuid,

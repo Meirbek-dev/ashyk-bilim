@@ -39,8 +39,8 @@ declare global {
   type AppIcon = ComponentType<
     {
       className?: string
-      size?: number | string
-      strokeWidth?: number | string
+      size?: number
+      strokeWidth?: number
       [key: string]: unknown
     }
   >
@@ -65,6 +65,8 @@ declare global {
 
   interface AppCourseContextShape {
     courseStructure?: AppCourse
+    course_uuid?: string
+    id?: number
     withUnpublishedActivities?: boolean
   }
 
@@ -108,7 +110,7 @@ declare global {
   }
 
   interface AppCourseAuthor {
-    id?: number | string
+    id?: number | string | null
     user_id?: number
     authorship?: string
     authorship_status?: string
@@ -117,7 +119,7 @@ declare global {
   }
 
   interface AppActivity {
-    id?: number
+    id?: number | string | null
     activity_uuid: string
     name?: string
     activity_type?: string
@@ -149,7 +151,9 @@ declare global {
   interface AppCourse {
     id?: number
     course_uuid: string
+    courseStructure?: AppCourse
     name?: string
+    withUnpublishedActivities?: boolean
     description?: string
     about?: string
     learnings?: string | string[] | AppPayload | null
@@ -162,6 +166,7 @@ declare global {
     authors?: AppCourseAuthor[]
     update_date?: string
     creation_date?: string
+    created_at?: string
     [key: string]: unknown
   }
 
@@ -173,14 +178,14 @@ declare global {
   }
 
   interface AppTrailRun {
-    course?: Pick<AppCourse, 'course_uuid' | 'id' | 'name'> | null
+    course: AppCourse
     steps?: AppTrailStep[]
     course_total_steps?: number
     [key: string]: unknown
   }
 
   interface AppTrailData {
-    runs?: AppTrailRun[]
+    runs: AppTrailRun[]
     recent_transactions?: unknown[]
     [key: string]: unknown
   }

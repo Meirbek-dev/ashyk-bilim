@@ -20,7 +20,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
     if (result.success && result.data) {
       const certificateData = result.data
       const certificationName = certificateData.certification.config.certification_name
-      const courseName = certificateData.course.name
+      const courseName = certificateData.course.name ?? ''
 
       return {
         title: t('title', { certificationName, courseName }),

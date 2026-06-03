@@ -13,7 +13,7 @@ import {
 } from '@/features/courses/mutations/course.mutation'
 
 interface MutationOptions {
-  lastKnownUpdateDate?: string | null
+  lastKnownUpdateDate?: string | null | undefined
 }
 
 interface ContributorDraftUser {

@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Circle, ArrowRight, FileCog, FileStack, Globe, Star } from 'lucide-react'
 import { buildCourseWorkspacePath } from '@/lib/course-management'
+import type { CourseReadinessItemId } from '@/lib/course-management'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
@@ -46,7 +47,7 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
 
   const completedIds = new Set(checklist.filter(c => c.complete).map(c => c.id))
 
-  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id as unknown))
+  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id as CourseReadinessItemId))
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -56,7 +57,7 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
 
         <div className="mt-4 flex flex-col gap-2">
           {taskConfig.map(task => {
-            const complete = completedIds.has(task.id as unknown)
+            const complete = completedIds.has(task.id as CourseReadinessItemId)
             const Icon = task.icon
             return (
               <AppLink

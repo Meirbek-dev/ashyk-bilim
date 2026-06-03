@@ -19,6 +19,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
 interface NewActivityButtonProps {
   chapterId: number
@@ -139,7 +140,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
         toast.success(tNotify('activityCreatedSuccess'))
         setNewActivityModal(false)
       } catch (error: unknown) {
-        toast.error(error?.message || tNotify('uploadFailed'))
+        toast.error(error instanceof Error ? error.message : tNotify('uploadFailed'))
         throw error
       } finally {
         toast.dismiss(toast_loading)
@@ -176,7 +177,10 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
             submitActivity={submitActivity}
             createAndOpenActivity={createAndOpenActivity}
             chapterId={props.chapterId}
-            course={course}
+            course={{
+              courseStructure: course.courseStructure,
+              withUnpublishedActivities: course.withUnpublishedActivities,
+            }}
           />
         </DialogContent>
       </Dialog>

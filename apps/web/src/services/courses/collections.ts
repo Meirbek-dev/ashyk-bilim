@@ -9,11 +9,11 @@ import { getAPIUrl } from '../config/config'
  This file includes POST, PUT, DELETE requests and cached GET requests
 */
 
-export async function deleteCollection(collection_uuid: string) {
+export async function deleteCollection(collection_uuid: string): Promise<AppPayload> {
   const result = await apiFetch(`collections/${collection_uuid}`, {
     method: 'DELETE',
   })
-  const data_result = await errorHandling(result)
+  const data_result = await errorHandling<AppPayload>(result)
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache')
@@ -23,13 +23,13 @@ export async function deleteCollection(collection_uuid: string) {
   return data_result
 }
 
-export async function createCollection(collection: AppCollection) {
+export async function createCollection(collection: AppCollection): Promise<AppCollection> {
   const result = await apiFetch('collections/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(collection),
   })
-  const data_result = await errorHandling(result)
+  const data_result = await errorHandling<AppCollection>(result)
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache')
@@ -39,14 +39,14 @@ export async function createCollection(collection: AppCollection) {
   return data_result
 }
 
-async function fetchCollectionById(collection_uuid: string) {
+async function fetchCollectionById(collection_uuid: string): Promise<AppCollection> {
   const result = await apiFetch(`collections/collection_${collection_uuid}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling(result)
+  return await errorHandling<AppCollection>(result)
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: unknown) {
@@ -56,14 +56,14 @@ export async function getCollectionById(collection_uuid: string, _next?: unknown
 /**
  * Cached fetch for collections
  */
-async function fetchCollections() {
+async function fetchCollections(): Promise<AppCollection[]> {
   const result = await apiFetch('collections/page/1/limit/20', {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling(result)
+  return await errorHandling<AppCollection[]>(result)
 }
 
 export async function getCollections(_next?: unknown) {

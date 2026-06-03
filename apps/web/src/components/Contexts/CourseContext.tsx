@@ -13,11 +13,12 @@ import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 export interface Activity {
-  id: number
+  id?: number | string
   activity_uuid: string
   name?: string
   activity_type?: string
   public?: boolean
+  open_to_contributors?: boolean
   published?: boolean
   // Backend permission metadata (returned by /courses/{uuid}/meta)
   can_update?: boolean
@@ -29,8 +30,8 @@ export interface Activity {
 }
 
 export interface Chapter {
-  id: number
-  chapter_uuid: string
+  id?: number
+  chapter_uuid?: string
   name?: string
   activities?: Activity[]
   [key: string]: unknown
@@ -41,16 +42,18 @@ export type CourseSectionKey = 'general' | 'access' | 'contributors' | 'certific
 
 // Course structure interface with improved typing
 export interface CourseStructure {
+  id?: number
   course_uuid: string
   name?: string
   description?: string
   about?: string
   learnings?: Learnings
-  tags?: string[]
+  tags?: string[] | string | null
   public?: boolean
-  thumbnail_image?: string
-  thumbnail_type?: 'image' | 'video' | 'both'
+  thumbnail_image?: string | null
+  thumbnail_type?: 'image' | 'video' | 'both' | string | null
   chapters: Chapter[]
+  authors?: AppCourseAuthor[]
   _certificationData?: unknown
   update_date?: string
   [key: string]: unknown
@@ -131,11 +134,11 @@ export const CourseProvider = ({
   const readiness = useMemo(
     () =>
       getCourseReadinessSummary(
-        courseStructureData || {
+        (courseStructureData || {
           ...initialCourse,
           course_uuid: initialCourse?.course_uuid || courseuuid,
           chapters: initialCourse?.chapters || [],
-        },
+        }) as AppCourse,
         editorBundleData || createEmptyCourseEditorBundle(),
       ),
     [courseStructureData, courseuuid, editorBundleData, initialCourse],

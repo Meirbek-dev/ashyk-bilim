@@ -218,7 +218,11 @@ export default function CourseWorkspacePageShell({
   children,
 }: CourseWorkspacePageShellProps) {
   return (
-    <CourseProvider courseuuid={prefixedCourseUuid(courseuuid)} withUnpublishedActivities initialCourse={initialCourse}>
+    <CourseProvider
+      courseuuid={prefixedCourseUuid(courseuuid)}
+      withUnpublishedActivities
+      initialCourse={{ ...initialCourse, chapters: initialCourse.chapters ?? [] } as never}
+    >
       <CourseWorkspaceChrome courseuuid={courseuuid} activeStage={activeStage} capabilities={capabilities}>
         {children}
       </CourseWorkspaceChrome>

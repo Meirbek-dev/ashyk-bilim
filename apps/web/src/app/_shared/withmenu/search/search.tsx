@@ -23,7 +23,7 @@ interface User {
   email: string
   avatar_image: string
   bio: string
-  details: Record<string, unknown>
+  details: Record<string, { text?: string }>
   profile: Record<string, unknown>
   id: number
   user_uuid: string
@@ -174,7 +174,7 @@ const SearchPage = () => {
   const perPage = 9
   const selectedType = type
   const searchResultsQuery = useSearchContent(query, { page, limit: perPage })
-  const rawSearchResults = searchResultsQuery.data?.data
+  const rawSearchResults = searchResultsQuery.data?.data as SearchResults | undefined
   const searchResults: SearchResults = query.trim()
     ? {
         courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
