@@ -6,7 +6,7 @@ from src.services.ai import embeddings
 
 
 @pytest.mark.asyncio
-async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch):
+async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch) -> None:
     calls: list[list[str]] = []
 
     class FakeEmbeddings:

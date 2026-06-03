@@ -80,17 +80,39 @@ dev = [
 target-version = "py315"
 preview = true
 line-length = 120
+force-exclude = true
 
-exclude = [".git", ".ruff_cache", ".venv", "__pycache__", "node_modules", "dist", "build", "alembic", "migrations", ".turbo", ".logfire", ".agents", ".mypy_cache", ".pyrefly_cache", "content"]
+exclude = [
+  ".git",
+  ".ruff_cache",
+  ".venv",
+  "__pycache__",
+  "node_modules",
+  "dist",
+  "build",
+  "alembic",
+  "migrations",
+  ".turbo",
+  ".logfire",
+  ".agents",
+  ".mypy_cache",
+  ".pyrefly_cache",
+  "content",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]
 fixable = ["ALL"]
+unfixable = [
+  "ERA001", # Do not auto-delete commented code; require human review.
+]
+
 ignore = [
+  # --- Annotations (flake8-annotations) ---
+  "ANN401", # any-type: Disallow Any (handled by mypy and basedpyright)
+
   # --- General & Style ---
-  "F401", # unused-import: Module imported but not used
-  "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
-  "PLC0415", # import-outside-top-level: Import should be at the top of the file
+  "COM812",  # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
   "PLR2004", # magic-value-comparison: Use of unnamed numerical constants in comparisons
   "PLR0913", # too-many-arguments: Function has too many arguments (typically > 5)
 
@@ -99,33 +121,23 @@ ignore = [
   "TC002", # move-to-type-checking: Move third-party imports into TYPE_CHECKING blocks
   "TC003", # move-to-type-checking: Move stdlib imports into TYPE_CHECKING blocks
 
-  # --- Annotations (flake8-annotations) ---
-  "ANN001", # missing-type-function-argument: Missing type annotation for function argument
-  "ANN201", # missing-return-type-undocumented-public-function: Missing return type for public function
-  "ANN401", # any-type: Disallow Any (handled by mypy and basedpyright)
-  "ANN202", # missing-return-type-private-function: Handled by mypy and basedpyright
-  "ANN206", # missing-return-type-class-method: Handled by mypy and basedpyright
-  "ANN002", # missing-type-args: Missing type annotation for *args
-  "ANN003", # missing-type-kwargs: Missing type annotation for **kwargs
-
   # --- Security (flake8-bandit) ---
-  "S101", # assert: Use of `assert` (can be optimized out in production)
   "S105", # hardcoded-password-string: Possible hardcoded password string assignment
   "S106", # hardcoded-password-func-arg: Possible hardcoded password in function call
   "S110", # try-except-pass: Exception caught and silenced with `pass`
   "S104", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
 
   # --- Exceptions (tryceratops / flake8-errmsg) ---
-  "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
-  "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
-  "EM101", # raw-string-in-exception: Exception must not use a string literal directly
+  "BLE001",  # blind-except: Do not catch `Exception` directly; use specific exceptions
+  "TRY003",  # raise-vanilla-args: Avoid long message strings in exception raises
+  "EM101",   # raw-string-in-exception: Exception must not use a string literal directly
   "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
-  "TRY300", # try-consider-else: Move code to else block (noisy)
-  "TRY301", # raise-within-try: Disallow raising within try block (noisy)
+  "TRY300",  # try-consider-else: Move code to else block (noisy)
+  "TRY301",  # raise-within-try: Disallow raising within try block (noisy)
 
   # --- Docstrings (pydocstyle) ---
-  "D", # docstring-rules: Disables all docstring-related rules
-  "D100", # missing-docstring-in-public-module: Missing docstring at the top of a file
+  "D",      # docstring-rules: Disables all docstring-related rules
+  "D100",   # missing-docstring-in-public-module: Missing docstring at the top of a file
   "DOC201", # missing-docstring-in-function: Missing docstring in function
   "DOC202", # missing-docstring-in-method: Missing docstring in method
   "DOC501", # missing-docstring-in-class: Missing docstring in class
@@ -133,25 +145,23 @@ ignore = [
   "DOC402", # docstring-missing-yields: Docstring rule
 
   # --- Miscellaneous ---
-  "DTZ005", # call-datetime-now-without-tzinfo: `datetime.now()` used without a timezone
-  "T20", # flake8-print: Disallows `print` statements (prevents debug debris)
-  "ARG002", # unused-method-argument: Method argument is defined but never used
-  "TD002", # missing-todo-author: TODO comment is missing an author name
-  "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
+  "T20",    # flake8-print: Disallows `print` statements (prevents debug debris)
+  "TD002",  # missing-todo-author: TODO comment is missing an author name
+  "TD003",  # missing-todo-link: TODO comment is missing a link to a tracker/issue
   "FIX002", # line-contains-todo: Disallow TODOs
 
   "PLC2701",
   "RUF001",
-  "RUF002", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
-  "RUF003", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
-  "E501", # line-too-long: Line is too long
+  "RUF002",  # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
+  "RUF003",  # ambiguous-unicode-character-comment: False positives on Cyrillic comments
+  "E501",    # line-too-long: Line is too long
 
   # --- Project Specific Ignores ---
-  "CPY001", # missing-copyright-notice: Checks for copyright notice at the top of every file
-  "INP001", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
-  "ARG001", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
-  "RUF029", # unused-async: Functions defined as async but without await (noisy for route consistency)
-  "FBT",    # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
+  "CPY001",  # missing-copyright-notice: Checks for copyright notice at the top of every file
+  "INP001",  # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
+  "ARG001",  # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
+  "RUF029",  # unused-async: Functions defined as async but without await (noisy for route consistency)
+  "FBT",     # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
   "PLC1901", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
   "PLW0603", # global-statement: Discourage use of global statements (required for lazy singletons)
   "PLR0911", # too-many-return-statements: Pylint complexity check
@@ -163,27 +173,52 @@ ignore = [
   "C901",    # complex-structure: McCabe complexity check
   "PLR1702", # too-many-nested-blocks: Pylint complexity check
   "PLR6301", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
-  "N818",   # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
-  "SLF001", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
-  "G004",   # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
-  "RUF067", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
-  "B904",   # raise-without-from-inside-except: Checks for raise within except block without 'from'
-  "N806",   # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
-  "ERA001", # commented-out-code: Allow code-like text in comments
+  "N818",    # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
+  "SLF001",  # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
+  "G004",    # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
+  "RUF067",  # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
+  "B904",    # raise-without-from-inside-except: Checks for raise within except block without 'from'
+  "N806",    # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
+  "ERA001",  # commented-out-code: Allow code-like text in comments
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**/*.py" = [
-  "F811", # Allow redefinition of unused imports in tests (e.g. TestClient)
-  "RUF069", # Allow float equality comparisons in tests
+"**/__init__.py" = [
+  "F401", # Allow explicit re-export imports.
+  "F403",
 ]
+
+"**/tests/**/*.py" = [
+  "ARG001",
+  "ARG002",
+  "F811",
+  "PLR2004",
+  "RUF069",
+  "S101",
+  "S105",
+  "S106",
+  "SLF001",
+]
+
+"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 split-on-trailing-comma = true
 
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
 [tool.ruff.lint.pylint]
-max-args = 8 # Slightly more relaxed than default for FastAPI dependencies
+max-args = 8
+max-positional-args = 6
+max-branches = 12
+max-returns = 6
+max-statements = 60
+max-locals = 20
+max-bool-expr = 5
+max-nested-blocks = 5
+max-statements-in-try = 10
 
 [tool.ruff.format]
 quote-style = "double"
@@ -195,12 +230,41 @@ asyncio_default_fixture_loop_scope = "function"
 
 markers = ["asyncio: mark test as async"]
 
+addopts = ["--strict-config", "--strict-markers"]
 [tool.logfire]
 ignore_no_config = true
-
 [tool.pyrefly]
-project-includes = ["**/*.py"]
+project-includes = ["src", "tests"]
+
+project-excludes = [
+  "**/.[!/.]*",
+  "**/__pycache__",
+  ".venv",
+  "alembic",
+  "migrations",
+  "content",
+]
+
 search-path = ["."]
+
+python-version = "3.15"
+python-platform = "linux"
+
+preset = "strict"
+min-severity = "error"
+
+check-unannotated-defs = true
+infer-return-types = "checked"
+
+permissive-ignores = false
+enabled-ignores = ["type", "pyrefly"]
+
+ignore-missing-imports = [
+  "cachebox.*",
+  "judge0.*",
+  "python_ulid.*",
+  "selectolax.*",
+]
 
 [tool.pyrefly.errors]
 bad-override = "ignore"
@@ -210,51 +274,82 @@ bad-argument-type = "ignore"
 
 [tool.mypy]
 python_version = "3.15"
-strict = true
-plugins = ["pydantic.mypy"]
-exclude = "migrations/"
+files = ["src", "tests"]
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
 
-# Robustness settings
-warn_unreachable = false
+plugins = ["pydantic.mypy"]
+
+strict = true
+
+# Make suppressions and config drift visible.
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+
+# Useful CI/editor output.
 show_error_codes = true
-enable_error_code = ["ignore-without-code"]
-disable_error_code = [
-  "arg-type",
-  "attr-defined",
-  "import-untyped",
-  "no-redef",
-  "no-untyped-call",
-  "no-untyped-def",
+show_error_code_links = true
+pretty = true
+
+# Stronger correctness checks.
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_any_explicit = true
+disallow_subclassing_any = true
+strict_equality = true
+strict_equality_for_none = true
+implicit_reexport = false
+
+enable_error_code = [
+  "deprecated",
+  "exhaustive-match",
+  "explicit-override",
+  "ignore-without-code",
+  "mutable-override",
+  "possibly-undefined",
   "redundant-expr",
+  "redundant-self",
   "truthy-bool",
-  "type-arg",
-  "unused-ignore",
-  "var-annotated",
+  "truthy-iterable",
+  "unimported-reveal",
+  "unused-awaitable",
 ]
 
-# Lowering the "Nitpick" factor
-disallow_untyped_decorators = false # FastAPI routes often use untyped decorators
-warn_return_any = false # Too noisy with FastAPI's dynamic responses
-implicit_reexport = true # Useful for __init__.py patterns
-
-# Better agentic determinism
-check_untyped_defs = true
-strict_equality = true
+exclude = ["^alembic/", "^migrations/", "^content/"]
 
 [[tool.mypy.overrides]]
-module = "src.tests.*"
-ignore_errors = true
+module = ["tests.*", "src.tests.*"]
+disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
-# Libraries that traditionally have poor or no typing
 module = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
 ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.basedpyright]
 pythonVersion = "3.15"
 typeCheckingMode = "strict"
 
-exclude = ["**/__pycache__", "**/alembic", "**/node_modules", "**/tests", "**/venv", ".venv", "**/migrations"]
+exclude = [
+  "**/__pycache__",
+  "**/alembic",
+  "**/node_modules",
+  "**/tests",
+  "**/venv",
+  ".venv",
+  "**/migrations",
+]
 
 # Robustness without the "Any" nitpicking
 reportAny = false

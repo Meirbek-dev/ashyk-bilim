@@ -36,7 +36,7 @@ def _moderation_response(*, flagged: bool) -> SimpleNamespace:
 
 
 @pytest.mark.asyncio
-async def test_moderate_text_input_allows_safe_text(monkeypatch: pytest.MonkeyPatch):
+async def test_moderate_text_input_allows_safe_text(monkeypatch: pytest.MonkeyPatch) -> None:
     create = AsyncMock(return_value=_moderation_response(flagged=False))
     monkeypatch.setattr(
         moderation,
@@ -53,7 +53,7 @@ async def test_moderate_text_input_allows_safe_text(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_moderate_text_input_blocks_flagged_text(monkeypatch: pytest.MonkeyPatch):
+async def test_moderate_text_input_blocks_flagged_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         moderation,
         "get_openai_client",
@@ -73,7 +73,7 @@ async def test_moderate_text_input_blocks_flagged_text(monkeypatch: pytest.Monke
 @pytest.mark.asyncio
 async def test_generate_chat_answer_rejects_moderated_input(
     monkeypatch: pytest.MonkeyPatch,
-):
+) -> None:
     async def reject_input(_text: str, *, stage: str) -> None:
         raise ContentModerationError(details={"stage": stage})
 

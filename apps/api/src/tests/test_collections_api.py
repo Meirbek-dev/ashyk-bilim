@@ -5,14 +5,14 @@ from datetime import datetime
 
 import pytest
 from fastapi import FastAPI
-from sqlmodel import SQLModel, select
+from sqlmodel import SQLModel
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
-from src.db.collections import Collection, CollectionRead, CollectionReadWithPermissions
+from src.db.collections import Collection
 from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course, ThumbnailType
 from src.db.users import PublicUser, User

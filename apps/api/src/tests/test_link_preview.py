@@ -39,7 +39,7 @@ def test_link_preview_rejects_non_http_and_local_hosts() -> None:
 
 
 @pytest.mark.asyncio
-async def test_link_preview_rejects_private_ip_literal():
+async def test_link_preview_rejects_private_ip_literal() -> None:
     with pytest.raises(UnsafeLinkPreviewURL):
         await _assert_public_destination("http://127.0.0.1/")
 
@@ -96,7 +96,7 @@ def test_link_preview_parser_extracts_metadata_and_resolves_assets() -> None:
 
 
 @pytest.mark.asyncio
-async def test_link_preview_omits_unsafe_asset_urls():
+async def test_link_preview_omits_unsafe_asset_urls() -> None:
     preview = {
         "title": "Unsafe asset",
         "description": None,
@@ -114,7 +114,7 @@ async def test_link_preview_omits_unsafe_asset_urls():
 
 
 @pytest.mark.asyncio
-async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch):
+async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch) -> None:
     monkeypatch.setattr(link_preview, "get_async_redis_client", lambda: None)
     settings = LinkPreviewConfig(cache_ttl_seconds=60)
     url = "https://example.com/"
