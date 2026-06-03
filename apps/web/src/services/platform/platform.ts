@@ -9,7 +9,6 @@ import { requireSession } from '@/lib/auth/session'
 
 type PlatformRead = components['schemas']['PlatformRead']
 type PlatformDetailResponse = components['schemas']['PlatformDetailResponse']
-type PlatformLandingUploadResponse = components['schemas']['PlatformLandingUploadResponse']
 
 type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
   data: T | null
@@ -41,38 +40,6 @@ export async function getPlatform() {
   return fetchPlatform()
 }
 
-export async function updateLanding(
-  landing_object: Record<string, unknown>,
-): Promise<ResponseMetadata<PlatformDetailResponse>> {
-  await requireSession()
-  const result = await apiFetch('landing', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(landing_object),
-  })
-  const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result)
-
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache')
-    revalidateTag(tags.platform, 'max')
-  }
-
-  return metadata
-}
-
-export async function uploadLandingContent(
-  content_file: File,
-): Promise<ResponseMetadata<PlatformLandingUploadResponse>> {
-  await requireSession()
-  const formData = new FormData()
-  formData.append('content_file', content_file)
-
-  const result = await apiFetch('landing/content', {
-    method: 'POST',
-    body: formData,
-  })
-  return await getTypedResponseMetadata<PlatformLandingUploadResponse>(result)
-}
 
 export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
   await requireSession()

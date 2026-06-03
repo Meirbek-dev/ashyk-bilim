@@ -49,7 +49,7 @@ export default async function PlatformDashHomePage() {
     },
     {
       visible: hasPlatformAccess,
-      href: '/dash/platform/settings/landing',
+      href: '/dash/platform/settings/previews',
       icon: <School size={20} className="text-amber-500" />,
       iconBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white',
       title: t('Platform.title'),

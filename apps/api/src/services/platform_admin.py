@@ -44,18 +44,6 @@ async def upload_platform_preview(file: UploadFile) -> str:
     )
 
 
-async def upload_platform_landing_content(file: UploadFile) -> str:
-    return await upload_file(
-        file=file,
-        directory="landing",
-        type_of_dir="platform",
-        uuid=None,
-        allowed_types=["image", "video", "document"],
-        filename_prefix="landing",
-        max_size=50 * 1024 * 1024,
-    )
-
-
 def update_platform(
     request: Request,
     platform_object: PlatformUpdate,
@@ -127,29 +115,3 @@ async def update_platform_preview(
     return {"name_in_disk": filename}
 
 
-def update_platform_landing(
-    request: Request,
-    landing_object: dict,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> dict[str, str]:
-    platform_record = get_platform(db_session)
-
-    platform_record.landing = landing_object
-    platform_record.update_date = utcnow()
-
-    db_session.add(platform_record)
-    db_session.commit()
-    db_session.refresh(platform_record)
-
-    return {"detail": "Landing object updated"}
-
-
-async def upload_platform_landing_content_service(
-    request: Request,
-    content_file: UploadFile,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> dict:
-    filename = await upload_platform_landing_content(content_file)
-    return {"detail": "Landing content uploaded successfully", "filename": filename}

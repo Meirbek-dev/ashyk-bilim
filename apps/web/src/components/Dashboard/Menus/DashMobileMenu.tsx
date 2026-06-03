@@ -63,7 +63,7 @@ const DashMobileMenu = () => {
     ...(canSeePlatform
       ? [
           {
-            href: '/dash/platform/settings/landing',
+            href: '/dash/platform/settings/previews',
             icon: School,
             label: t('mobile.platform'),
             tooltip: t('tooltips.platform'),

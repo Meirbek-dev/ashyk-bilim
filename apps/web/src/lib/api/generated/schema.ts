@@ -1292,13 +1292,13 @@ export interface paths {
         };
         /**
          * Api Get Image File Block
-         * @description Get image file
+         * @description Get image file.
          */
         get: operations["api_get_image_file_block_api_v1_blocks_image_get"];
         put?: never;
         /**
          * Api Create Image File Block
-         * @description Create new image file
+         * @description Create new image file.
          */
         post: operations["api_create_image_file_block_api_v1_blocks_image_post"];
         delete?: never;
@@ -1316,13 +1316,13 @@ export interface paths {
         };
         /**
          * Api Get Pdf File Block
-         * @description Get pdf file
+         * @description Get pdf file.
          */
         get: operations["api_get_pdf_file_block_api_v1_blocks_pdf_get"];
         put?: never;
         /**
          * Api Create Pdf File Block
-         * @description Create new pdf file
+         * @description Create new pdf file.
          */
         post: operations["api_create_pdf_file_block_api_v1_blocks_pdf_post"];
         delete?: never;
@@ -1340,13 +1340,13 @@ export interface paths {
         };
         /**
          * Api Get Video File Block
-         * @description Get video file
+         * @description Get video file.
          */
         get: operations["api_get_video_file_block_api_v1_blocks_video_get"];
         put?: never;
         /**
          * Api Create Video File Block
-         * @description Create new video file
+         * @description Create new video file.
          */
         post: operations["api_create_video_file_block_api_v1_blocks_video_post"];
         delete?: never;
@@ -1366,7 +1366,7 @@ export interface paths {
         put?: never;
         /**
          * Api Create Certification
-         * @description Create new certification for a course
+         * @description Create new certification for a course.
          */
         post: operations["api_create_certification_api_v1_certifications_post"];
         delete?: never;
@@ -1384,7 +1384,7 @@ export interface paths {
         };
         /**
          * Api Get Certificate By User Certification Uuid
-         * @description Get a certificate by user_certification_uuid with certification and course details
+         * @description Get a certificate by user_certification_uuid with certification and course details.
          */
         get: operations["api_get_certificate_by_user_certification_uuid_api_v1_certifications_certificate__user_certification_uuid__get"];
         put?: never;
@@ -1404,7 +1404,7 @@ export interface paths {
         };
         /**
          * Api Get Certifications By Course
-         * @description Get all certifications for a specific course
+         * @description Get all certifications for a specific course.
          */
         get: operations["api_get_certifications_by_course_api_v1_certifications_course__course_uuid__get"];
         put?: never;
@@ -1424,7 +1424,7 @@ export interface paths {
         };
         /**
          * Api Get All User Certificates
-         * @description Get all certificates obtained by the current user with complete linked information
+         * @description Get all certificates obtained by the current user with complete linked information.
          */
         get: operations["api_get_all_user_certificates_api_v1_certifications_user_all_get"];
         put?: never;
@@ -1444,7 +1444,7 @@ export interface paths {
         };
         /**
          * Api Get User Certificates For Course
-         * @description Get all certificates for the current user in a specific course with certification details
+         * @description Get all certificates for the current user in a specific course with certification details.
          */
         get: operations["api_get_user_certificates_for_course_api_v1_certifications_user_course__course_uuid__get"];
         put?: never;
@@ -1464,18 +1464,18 @@ export interface paths {
         };
         /**
          * Api Get Certification
-         * @description Get single certification by certification_id
+         * @description Get single certification by certification_id.
          */
         get: operations["api_get_certification_api_v1_certifications__certification_uuid__get"];
         /**
          * Api Update Certification
-         * @description Update certification by certification_id
+         * @description Update certification by certification_id.
          */
         put: operations["api_update_certification_api_v1_certifications__certification_uuid__put"];
         post?: never;
         /**
          * Api Delete Certification
-         * @description Delete certification by certification_id
+         * @description Delete certification by certification_id.
          */
         delete: operations["api_delete_certification_api_v1_certifications__certification_uuid__delete"];
         options?: never;
@@ -1607,7 +1607,7 @@ export interface paths {
         put?: never;
         /**
          * Api Create Collection
-         * @description Create new Collection
+         * @description Create new Collection.
          */
         post: operations["api_create_collection_api_v1_collections_post"];
         delete?: never;
@@ -1625,7 +1625,7 @@ export interface paths {
         };
         /**
          * Api Get Platform Collections
-         * @description Get collections by page and limit with permission metadata
+         * @description Get collections by page and limit with permission metadata.
          */
         get: operations["api_get_platform_collections_api_v1_collections_page__page__limit__limit__get"];
         put?: never;
@@ -1645,18 +1645,18 @@ export interface paths {
         };
         /**
          * Api Get Collection
-         * @description Get single collection by ID with permission metadata
+         * @description Get single collection by ID with permission metadata.
          */
         get: operations["api_get_collection_api_v1_collections__collection_uuid__get"];
         /**
          * Api Update Collection
-         * @description Update collection by ID
+         * @description Update collection by ID.
          */
         put: operations["api_update_collection_api_v1_collections__collection_uuid__put"];
         post?: never;
         /**
          * Api Delete Collection
-         * @description Delete collection by ID
+         * @description Delete collection by ID.
          */
         delete: operations["api_delete_collection_api_v1_collections__collection_uuid__delete"];
         options?: never;
@@ -1675,7 +1675,7 @@ export interface paths {
         put?: never;
         /**
          * Api Create Course
-         * @description Create new Course
+         * @description Create new Course.
          *
          *     **Required Permission**: `course:create:platform`
          *
@@ -1748,14 +1748,14 @@ export interface paths {
         };
         /**
          * Api Get Course
-         * @description Get single Course by course_uuid
+         * @description Get single Course by course_uuid.
          */
         get: operations["api_get_course_api_v1_courses__course_uuid__get"];
         put?: never;
         post?: never;
         /**
          * Api Delete Course
-         * @description Delete Course by ID
+         * @description Delete Course by ID.
          *
          *     **Required Permission**: `course:delete:own` or `course:delete:platform`
          */
@@ -1827,7 +1827,7 @@ export interface paths {
         put?: never;
         /**
          * Api Apply Course Contributor
-         * @description Apply to be a contributor for a course
+         * @description Apply to be a contributor for a course.
          */
         post: operations["api_apply_course_contributor_api_v1_courses__course_uuid__apply_contributor_post"];
         delete?: never;
@@ -1847,7 +1847,7 @@ export interface paths {
         put?: never;
         /**
          * Api Add Bulk Course Contributors
-         * @description Add multiple contributors to a course by their usernames
+         * @description Add multiple contributors to a course by their usernames.
          *
          *     **Required Permission**: `course:manage:own` or `course:manage:platform`
          */
@@ -1870,7 +1870,7 @@ export interface paths {
         post?: never;
         /**
          * Api Remove Bulk Course Contributors
-         * @description Remove multiple contributors from a course by their usernames
+         * @description Remove multiple contributors from a course by their usernames.
          */
         delete: operations["api_remove_bulk_course_contributors_api_v1_courses__course_uuid__bulk_remove_contributors_delete"];
         options?: never;
@@ -1887,7 +1887,7 @@ export interface paths {
         };
         /**
          * Api Get Course Contributors
-         * @description Get all contributors for a specific course
+         * @description Get all contributors for a specific course.
          */
         get: operations["api_get_course_contributors_api_v1_courses__course_uuid__contributors_get"];
         put?: never;
@@ -1908,7 +1908,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update Course Contributor
-         * @description Update a course contributor's role and status
+         * @description Update a course contributor's role and status.
          *
          *     **Required Permission**: `course:manage:own` or `course:manage:platform`
          */
@@ -1929,13 +1929,13 @@ export interface paths {
         };
         /**
          * Api Get Course Discussions
-         * @description Get Course Discussions by course_uuid
+         * @description Get Course Discussions by course_uuid.
          */
         get: operations["api_get_course_discussions_api_v1_courses__course_uuid__discussions_get"];
         put?: never;
         /**
          * Api Create Course Discussion
-         * @description Create new Course Discussion
+         * @description Create new Course Discussion.
          */
         post: operations["api_create_course_discussion_api_v1_courses__course_uuid__discussions_post"];
         delete?: never;
@@ -1954,13 +1954,13 @@ export interface paths {
         get?: never;
         /**
          * Api Update Course Discussion
-         * @description Update Course Discussion by discussion_uuid
+         * @description Update Course Discussion by discussion_uuid.
          */
         put: operations["api_update_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__put"];
         post?: never;
         /**
          * Api Delete Course Discussion
-         * @description Delete Course Discussion by discussion_uuid
+         * @description Delete Course Discussion by discussion_uuid.
          */
         delete: operations["api_delete_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__delete"];
         options?: never;
@@ -1978,7 +1978,7 @@ export interface paths {
         get?: never;
         /**
          * Api Toggle Course Discussion Dislike
-         * @description Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)
+         * @description Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked).
          */
         put: operations["api_toggle_course_discussion_dislike_api_v1_courses__course_uuid__discussions__discussion_uuid__dislike_put"];
         post?: never;
@@ -1998,17 +1998,17 @@ export interface paths {
         get?: never;
         /**
          * Api Toggle Course Discussion Like
-         * @description Toggle like status for a Course Discussion (like if not liked, unlike if liked)
+         * @description Toggle like status for a Course Discussion (like if not liked, unlike if liked).
          */
         put: operations["api_toggle_course_discussion_like_api_v1_courses__course_uuid__discussions__discussion_uuid__like_put"];
         /**
          * Api Like Course Discussion
-         * @description Like a Course Discussion
+         * @description Like a Course Discussion.
          */
         post: operations["api_like_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__like_post"];
         /**
          * Api Unlike Course Discussion
-         * @description Unlike a Course Discussion
+         * @description Unlike a Course Discussion.
          */
         delete: operations["api_unlike_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__like_delete"];
         options?: never;
@@ -2025,7 +2025,7 @@ export interface paths {
         };
         /**
          * Api Get Discussion Replies
-         * @description Get replies for a specific discussion
+         * @description Get replies for a specific discussion.
          */
         get: operations["api_get_discussion_replies_api_v1_courses__course_uuid__discussions__discussion_uuid__replies_get"];
         put?: never;
@@ -2181,7 +2181,7 @@ export interface paths {
         get?: never;
         /**
          * Api Create Course Thumbnail
-         * @description Update Course Thumbnail (Image or Video)
+         * @description Update Course Thumbnail (Image or Video).
          */
         put: operations["api_create_course_thumbnail_api_v1_courses__course_uuid__thumbnail_put"];
         post?: never;
@@ -2201,13 +2201,13 @@ export interface paths {
         get?: never;
         /**
          * Api Update Course Update
-         * @description Update Course Update by courseupdate_uuid
+         * @description Update Course Update by courseupdate_uuid.
          */
         put: operations["api_update_course_update_api_v1_courses__course_uuid__update__courseupdate_uuid__put"];
         post?: never;
         /**
          * Api Delete Course Update
-         * @description Delete Course Update by courseupdate_uuid
+         * @description Delete Course Update by courseupdate_uuid.
          */
         delete: operations["api_delete_course_update_api_v1_courses__course_uuid__update__courseupdate_uuid__delete"];
         options?: never;
@@ -2224,13 +2224,13 @@ export interface paths {
         };
         /**
          * Api Get Course Updates
-         * @description Get Course Updates by course_uuid
+         * @description Get Course Updates by course_uuid.
          */
         get: operations["api_get_course_updates_api_v1_courses__course_uuid__updates_get"];
         put?: never;
         /**
          * Api Create Course Update
-         * @description Create new Course Update
+         * @description Create new Course Update.
          */
         post: operations["api_create_course_update_api_v1_courses__course_uuid__updates_post"];
         delete?: never;
@@ -2489,7 +2489,7 @@ export interface paths {
         };
         /**
          * Get Unified Dashboard
-         * @description Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config
+         * @description Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config.
          */
         get: operations["get_unified_dashboard_api_v1_gamification__get"];
         put?: never;
@@ -2926,50 +2926,6 @@ export interface paths {
         get: operations["health_ready_api_v1_health_ready_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/landing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Api Update Platform Landing
-         * @description Update the platform landing object.
-         *
-         *     **Required Permission**: `platform:update`
-         */
-        put: operations["api_update_platform_landing_api_v1_landing_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/landing/content": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Upload Platform Landing Content
-         * @description Upload content for the platform landing page.
-         *
-         *     **Required Permission**: `platform:update`
-         */
-        post: operations["api_upload_platform_landing_content_api_v1_landing_content_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3424,7 +3380,7 @@ export interface paths {
         };
         /**
          * Api Get User Trail
-         * @description Get a user trails
+         * @description Get a user trails.
          */
         get: operations["api_get_user_trail_api_v1_trail_get"];
         put?: never;
@@ -3446,7 +3402,7 @@ export interface paths {
         put?: never;
         /**
          * Api Add Activity To Trail
-         * @description Add Course to trail
+         * @description Add Course to trail.
          */
         post: operations["api_add_activity_to_trail_api_v1_trail_add_activity__activity_uuid__post"];
         delete?: never;
@@ -3466,7 +3422,7 @@ export interface paths {
         put?: never;
         /**
          * Api Add Course To Trail
-         * @description Add Course to trail
+         * @description Add Course to trail.
          */
         post: operations["api_add_course_to_trail_api_v1_trail_add_course__course_uuid__post"];
         delete?: never;
@@ -3487,7 +3443,7 @@ export interface paths {
         post?: never;
         /**
          * Api Remove Activity From Trail
-         * @description Remove Activity from trail
+         * @description Remove Activity from trail.
          */
         delete: operations["api_remove_activity_from_trail_api_v1_trail_remove_activity__activity_uuid__delete"];
         options?: never;
@@ -3507,7 +3463,7 @@ export interface paths {
         post?: never;
         /**
          * Api Remove Course To Trail
-         * @description Remove Course from trail
+         * @description Remove Course from trail.
          */
         delete: operations["api_remove_course_to_trail_api_v1_trail_remove_course__course_uuid__delete"];
         options?: never;
@@ -3526,7 +3482,7 @@ export interface paths {
         put?: never;
         /**
          * Api Start Trail
-         * @description Start trail
+         * @description Start trail.
          */
         post: operations["api_start_trail_api_v1_trail_start_post"];
         delete?: never;
@@ -3766,13 +3722,13 @@ export interface paths {
         };
         /**
          * Api Get Usergroups
-         * @description Get platform user groups
+         * @description Get platform user groups.
          */
         get: operations["api_get_usergroups_api_v1_usergroups_get"];
         put?: never;
         /**
          * Api Create Usergroup
-         * @description Create UserGroup
+         * @description Create UserGroup.
          *
          *     **Required Permission**: `usergroup:create:platform`
          */
@@ -3792,7 +3748,7 @@ export interface paths {
         };
         /**
          * Api Get Usergroupsby Resource
-         * @description Get platform user groups by resource
+         * @description Get platform user groups by resource.
          */
         get: operations["api_get_usergroupsby_resource_api_v1_usergroups_resource__resource_uuid__get"];
         put?: never;
@@ -3812,12 +3768,12 @@ export interface paths {
         };
         /**
          * Api Get Usergroup
-         * @description Get UserGroup
+         * @description Get UserGroup.
          */
         get: operations["api_get_usergroup_api_v1_usergroups__usergroup_id__get"];
         /**
          * Api Update Usergroup
-         * @description Update UserGroup
+         * @description Update UserGroup.
          *
          *     **Required Permission**: `usergroup:update:platform` or `usergroup:update:own`
          */
@@ -3825,7 +3781,7 @@ export interface paths {
         post?: never;
         /**
          * Api Delete Usergroup
-         * @description Delete UserGroup
+         * @description Delete UserGroup.
          *
          *     **Required Permission**: `usergroup:delete:platform` or `usergroup:delete:own`
          */
@@ -3846,7 +3802,7 @@ export interface paths {
         put?: never;
         /**
          * Api Add Resources To Usergroup
-         * @description Add Resources to UserGroup
+         * @description Add Resources to UserGroup.
          */
         post: operations["api_add_resources_to_usergroup_api_v1_usergroups__usergroup_id__add_resources_post"];
         delete?: never;
@@ -3866,7 +3822,7 @@ export interface paths {
         put?: never;
         /**
          * Api Add Users To Usergroup
-         * @description Add Users to UserGroup
+         * @description Add Users to UserGroup.
          *
          *     **Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`
          */
@@ -3889,7 +3845,7 @@ export interface paths {
         post?: never;
         /**
          * Api Delete Resources From Usergroup
-         * @description Delete Resources from UserGroup
+         * @description Delete Resources from UserGroup.
          */
         delete: operations["api_delete_resources_from_usergroup_api_v1_usergroups__usergroup_id__remove_resources_delete"];
         options?: never;
@@ -3909,7 +3865,7 @@ export interface paths {
         post?: never;
         /**
          * Api Delete Users From Usergroup
-         * @description Delete Users from UserGroup
+         * @description Delete Users from UserGroup.
          */
         delete: operations["api_delete_users_from_usergroup_api_v1_usergroups__usergroup_id__remove_users_delete"];
         options?: never;
@@ -3926,7 +3882,7 @@ export interface paths {
         };
         /**
          * Api Get Users Linked To Usergroup
-         * @description Get Users linked to UserGroup
+         * @description Get Users linked to UserGroup.
          */
         get: operations["api_get_users_linked_to_usergroup_api_v1_usergroups__usergroup_id__users_get"];
         put?: never;
@@ -3948,7 +3904,7 @@ export interface paths {
         put?: never;
         /**
          * Api Create User Without Platform
-         * @description Create User
+         * @description Create User.
          */
         post: operations["api_create_user_without_platform_api_v1_users_post"];
         delete?: never;
@@ -3967,7 +3923,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update User Password
-         * @description Update User Password
+         * @description Update User Password.
          *
          *     **Required Permission**: Own account only (for security)
          */
@@ -3988,7 +3944,7 @@ export interface paths {
         };
         /**
          * Api Get User By Id
-         * @description Get User by ID
+         * @description Get User by ID.
          */
         get: operations["api_get_user_by_id_api_v1_users_id__user_id__get"];
         put?: never;
@@ -4009,7 +3965,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update User Locale
-         * @description Update User Locale Preference
+         * @description Update User Locale Preference.
          */
         put: operations["api_update_user_locale_api_v1_users_preferences_locale__user_id__put"];
         post?: never;
@@ -4029,7 +3985,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update User Theme
-         * @description Update User Theme Preference
+         * @description Update User Theme Preference.
          */
         put: operations["api_update_user_theme_api_v1_users_preferences_theme__user_id__put"];
         post?: never;
@@ -4048,7 +4004,7 @@ export interface paths {
         };
         /**
          * Api Get Public User
-         * @description Get current user
+         * @description Get current user.
          */
         get: operations["api_get_public_user_api_v1_users_profile_get"];
         put?: never;
@@ -4089,7 +4045,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update Avatar User
-         * @description Update User Avatar
+         * @description Update User Avatar.
          *
          *     **Required Permission**: `user:update:own` (for own avatar) or `user:update:platform` (for others)
          */
@@ -4113,7 +4069,7 @@ export interface paths {
         post?: never;
         /**
          * Api Delete User
-         * @description Delete User
+         * @description Delete User.
          *
          *     **Required Permission**: `user:delete:platform`
          */
@@ -4132,7 +4088,7 @@ export interface paths {
         };
         /**
          * Api Get User By Username
-         * @description Get User by Username
+         * @description Get User by Username.
          */
         get: operations["api_get_user_by_username_api_v1_users_username__username__get"];
         put?: never;
@@ -4152,7 +4108,7 @@ export interface paths {
         };
         /**
          * Api Get User By Uuid
-         * @description Get User by UUID
+         * @description Get User by UUID.
          */
         get: operations["api_get_user_by_uuid_api_v1_users_uuid__user_uuid__get"];
         put?: never;
@@ -4173,7 +4129,7 @@ export interface paths {
         get?: never;
         /**
          * Api Update User
-         * @description Update User
+         * @description Update User.
          *
          *     **Required Permission**: `user:update:own` (for own profile) or `user:update:platform` (for others)
          */
@@ -5996,11 +5952,6 @@ export interface components {
         Body_api_update_platform_thumbnail_api_v1_thumbnail_put: {
             /** Thumbnail File */
             thumbnail_file: string;
-        };
-        /** Body_api_upload_platform_landing_content_api_v1_landing_content_post */
-        Body_api_upload_platform_landing_content_api_v1_landing_content_post: {
-            /** Content File */
-            content_file: string;
         };
         /** Body_complete_chunked_upload_api_v1_uploads_complete_post */
         Body_complete_chunked_upload_api_v1_uploads_complete_post: {
@@ -8640,13 +8591,6 @@ export interface components {
             /** Detail */
             detail: string;
         };
-        /** PlatformLandingUploadResponse */
-        PlatformLandingUploadResponse: {
-            /** Detail */
-            detail: string;
-            /** Filename */
-            filename: string;
-        };
         /** PlatformPreviewUploadResponse */
         PlatformPreviewUploadResponse: {
             /** Name In Disk */
@@ -8670,10 +8614,6 @@ export interface components {
             email: string;
             /** Label */
             label?: string | null;
-            /** Landing */
-            landing?: {
-                [key: string]: unknown;
-            } | null;
             /** Links */
             links?: {
                 [key: string]: unknown;
@@ -9120,7 +9060,7 @@ export interface components {
         StatusEnum: "STATUS_IN_PROGRESS" | "STATUS_COMPLETED" | "STATUS_PAUSED" | "STATUS_CANCELLED";
         /**
          * StreakType
-         * @description Streak types
+         * @description Streak types.
          * @enum {string}
          */
         StreakType: "login" | "learning";
@@ -10746,7 +10686,7 @@ export interface components {
         };
         /**
          * XPSource
-         * @description XP source types
+         * @description XP source types.
          * @enum {string}
          */
         XPSource: "activity_completion" | "course_completion" | "login_bonus" | "quiz_completion" | "exam_completion" | "streak_bonus" | "admin_award" | "code_challenge_completion" | "code_challenge_perfect" | "code_challenge_first_solve";
@@ -18278,92 +18218,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthStatusResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    api_update_platform_landing_api_v1_landing_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlatformDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    api_upload_platform_landing_content_api_v1_landing_content_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_api_upload_platform_landing_content_api_v1_landing_content_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlatformLandingUploadResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
                 };
             };
             /** @description Internal server error */

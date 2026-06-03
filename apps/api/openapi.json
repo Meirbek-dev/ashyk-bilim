@@ -4744,20 +4744,6 @@
         "title": "Body_api_update_platform_thumbnail_api_v1_thumbnail_put",
         "type": "object"
       },
-      "Body_api_upload_platform_landing_content_api_v1_landing_content_post": {
-        "properties": {
-          "content_file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "Content File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content_file"
-        ],
-        "title": "Body_api_upload_platform_landing_content_api_v1_landing_content_post",
-        "type": "object"
-      },
       "Body_complete_chunked_upload_api_v1_uploads_complete_post": {
         "properties": {
           "upload_id": {
@@ -11695,24 +11681,6 @@
         "title": "PlatformDetailResponse",
         "type": "object"
       },
-      "PlatformLandingUploadResponse": {
-        "properties": {
-          "detail": {
-            "title": "Detail",
-            "type": "string"
-          },
-          "filename": {
-            "title": "Filename",
-            "type": "string"
-          }
-        },
-        "required": [
-          "detail",
-          "filename"
-        ],
-        "title": "PlatformLandingUploadResponse",
-        "type": "object"
-      },
       "PlatformPreviewUploadResponse": {
         "properties": {
           "name_in_disk": {
@@ -11770,18 +11738,6 @@
               }
             ],
             "title": "Label"
-          },
-          "landing": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Landing"
           },
           "links": {
             "anyOf": [
@@ -12870,7 +12826,7 @@
         "type": "string"
       },
       "StreakType": {
-        "description": "Streak types",
+        "description": "Streak types.",
         "enum": [
           "login",
           "learning"
@@ -17336,7 +17292,7 @@
         "type": "object"
       },
       "XPSource": {
-        "description": "XP source types",
+        "description": "XP source types.",
         "enum": [
           "activity_completion",
           "course_completion",
@@ -25211,7 +25167,7 @@
     },
     "/api/v1/blocks/image": {
       "get": {
-        "description": "Get image file",
+        "description": "Get image file.",
         "operationId": "api_get_image_file_block_api_v1_blocks_image_get",
         "parameters": [
           {
@@ -25267,7 +25223,7 @@
         ]
       },
       "post": {
-        "description": "Create new image file",
+        "description": "Create new image file.",
         "operationId": "api_create_image_file_block_api_v1_blocks_image_post",
         "requestBody": {
           "content": {
@@ -25324,7 +25280,7 @@
     },
     "/api/v1/blocks/pdf": {
       "get": {
-        "description": "Get pdf file",
+        "description": "Get pdf file.",
         "operationId": "api_get_pdf_file_block_api_v1_blocks_pdf_get",
         "parameters": [
           {
@@ -25380,7 +25336,7 @@
         ]
       },
       "post": {
-        "description": "Create new pdf file",
+        "description": "Create new pdf file.",
         "operationId": "api_create_pdf_file_block_api_v1_blocks_pdf_post",
         "requestBody": {
           "content": {
@@ -25437,7 +25393,7 @@
     },
     "/api/v1/blocks/video": {
       "get": {
-        "description": "Get video file",
+        "description": "Get video file.",
         "operationId": "api_get_video_file_block_api_v1_blocks_video_get",
         "parameters": [
           {
@@ -25493,7 +25449,7 @@
         ]
       },
       "post": {
-        "description": "Create new video file",
+        "description": "Create new video file.",
         "operationId": "api_create_video_file_block_api_v1_blocks_video_post",
         "requestBody": {
           "content": {
@@ -25550,7 +25506,7 @@
     },
     "/api/v1/certifications": {
       "post": {
-        "description": "Create new certification for a course",
+        "description": "Create new certification for a course.",
         "operationId": "api_create_certification_api_v1_certifications_post",
         "requestBody": {
           "content": {
@@ -25607,7 +25563,7 @@
     },
     "/api/v1/certifications/certificate/{user_certification_uuid}": {
       "get": {
-        "description": "Get a certificate by user_certification_uuid with certification and course details",
+        "description": "Get a certificate by user_certification_uuid with certification and course details.",
         "operationId": "api_get_certificate_by_user_certification_uuid_api_v1_certifications_certificate__user_certification_uuid__get",
         "parameters": [
           {
@@ -25660,7 +25616,7 @@
     },
     "/api/v1/certifications/course/{course_uuid}": {
       "get": {
-        "description": "Get all certifications for a specific course",
+        "description": "Get all certifications for a specific course.",
         "operationId": "api_get_certifications_by_course_api_v1_certifications_course__course_uuid__get",
         "parameters": [
           {
@@ -25722,7 +25678,7 @@
     },
     "/api/v1/certifications/user/all": {
       "get": {
-        "description": "Get all certificates obtained by the current user with complete linked information",
+        "description": "Get all certificates obtained by the current user with complete linked information.",
         "operationId": "api_get_all_user_certificates_api_v1_certifications_user_all_get",
         "responses": {
           "200": {
@@ -25763,7 +25719,7 @@
     },
     "/api/v1/certifications/user/course/{course_uuid}": {
       "get": {
-        "description": "Get all certificates for the current user in a specific course with certification details",
+        "description": "Get all certificates for the current user in a specific course with certification details.",
         "operationId": "api_get_user_certificates_for_course_api_v1_certifications_user_course__course_uuid__get",
         "parameters": [
           {
@@ -25825,7 +25781,7 @@
     },
     "/api/v1/certifications/{certification_uuid}": {
       "delete": {
-        "description": "Delete certification by certification_id",
+        "description": "Delete certification by certification_id.",
         "operationId": "api_delete_certification_api_v1_certifications__certification_uuid__delete",
         "parameters": [
           {
@@ -25898,7 +25854,7 @@
         ]
       },
       "get": {
-        "description": "Get single certification by certification_id",
+        "description": "Get single certification by certification_id.",
         "operationId": "api_get_certification_api_v1_certifications__certification_uuid__get",
         "parameters": [
           {
@@ -25954,7 +25910,7 @@
         ]
       },
       "put": {
-        "description": "Update certification by certification_id",
+        "description": "Update certification by certification_id.",
         "operationId": "api_update_certification_api_v1_certifications__certification_uuid__put",
         "parameters": [
           {
@@ -26508,7 +26464,7 @@
     },
     "/api/v1/collections": {
       "post": {
-        "description": "Create new Collection",
+        "description": "Create new Collection.",
         "operationId": "api_create_collection_api_v1_collections_post",
         "requestBody": {
           "content": {
@@ -26565,7 +26521,7 @@
     },
     "/api/v1/collections/page/{page}/limit/{limit}": {
       "get": {
-        "description": "Get collections by page and limit with permission metadata",
+        "description": "Get collections by page and limit with permission metadata.",
         "operationId": "api_get_platform_collections_api_v1_collections_page__page__limit__limit__get",
         "parameters": [
           {
@@ -26636,7 +26592,7 @@
     },
     "/api/v1/collections/{collection_uuid}": {
       "delete": {
-        "description": "Delete collection by ID",
+        "description": "Delete collection by ID.",
         "operationId": "api_delete_collection_api_v1_collections__collection_uuid__delete",
         "parameters": [
           {
@@ -26692,7 +26648,7 @@
         ]
       },
       "get": {
-        "description": "Get single collection by ID with permission metadata",
+        "description": "Get single collection by ID with permission metadata.",
         "operationId": "api_get_collection_api_v1_collections__collection_uuid__get",
         "parameters": [
           {
@@ -26748,7 +26704,7 @@
         ]
       },
       "put": {
-        "description": "Update collection by ID",
+        "description": "Update collection by ID.",
         "operationId": "api_update_collection_api_v1_collections__collection_uuid__put",
         "parameters": [
           {
@@ -26816,7 +26772,7 @@
     },
     "/api/v1/courses": {
       "post": {
-        "description": "Create new Course\n\n**Required Permission**: `course:create:platform`\n\nPass ``template=starter`` to automatically seed two default chapters.",
+        "description": "Create new Course.\n\n**Required Permission**: `course:create:platform`\n\nPass ``template=starter`` to automatically seed two default chapters.",
         "operationId": "api_create_course_api_v1_courses_post",
         "requestBody": {
           "content": {
@@ -27143,7 +27099,7 @@
     },
     "/api/v1/courses/{course_uuid}": {
       "delete": {
-        "description": "Delete Course by ID\n\n**Required Permission**: `course:delete:own` or `course:delete:platform`",
+        "description": "Delete Course by ID.\n\n**Required Permission**: `course:delete:own` or `course:delete:platform`",
         "operationId": "api_delete_course_api_v1_courses__course_uuid__delete",
         "parameters": [
           {
@@ -27199,7 +27155,7 @@
         ]
       },
       "get": {
-        "description": "Get single Course by course_uuid",
+        "description": "Get single Course by course_uuid.",
         "operationId": "api_get_course_api_v1_courses__course_uuid__get",
         "parameters": [
           {
@@ -27466,7 +27422,7 @@
     },
     "/api/v1/courses/{course_uuid}/apply-contributor": {
       "post": {
-        "description": "Apply to be a contributor for a course",
+        "description": "Apply to be a contributor for a course.",
         "operationId": "api_apply_course_contributor_api_v1_courses__course_uuid__apply_contributor_post",
         "parameters": [
           {
@@ -27524,7 +27480,7 @@
     },
     "/api/v1/courses/{course_uuid}/bulk-add-contributors": {
       "post": {
-        "description": "Add multiple contributors to a course by their usernames\n\n**Required Permission**: `course:manage:own` or `course:manage:platform`",
+        "description": "Add multiple contributors to a course by their usernames.\n\n**Required Permission**: `course:manage:own` or `course:manage:platform`",
         "operationId": "api_add_bulk_course_contributors_api_v1_courses__course_uuid__bulk_add_contributors_post",
         "parameters": [
           {
@@ -27596,7 +27552,7 @@
     },
     "/api/v1/courses/{course_uuid}/bulk-remove-contributors": {
       "delete": {
-        "description": "Remove multiple contributors from a course by their usernames",
+        "description": "Remove multiple contributors from a course by their usernames.",
         "operationId": "api_remove_bulk_course_contributors_api_v1_courses__course_uuid__bulk_remove_contributors_delete",
         "parameters": [
           {
@@ -27668,7 +27624,7 @@
     },
     "/api/v1/courses/{course_uuid}/contributors": {
       "get": {
-        "description": "Get all contributors for a specific course",
+        "description": "Get all contributors for a specific course.",
         "operationId": "api_get_course_contributors_api_v1_courses__course_uuid__contributors_get",
         "parameters": [
           {
@@ -27730,7 +27686,7 @@
     },
     "/api/v1/courses/{course_uuid}/contributors/{contributor_user_id}": {
       "put": {
-        "description": "Update a course contributor's role and status\n\n**Required Permission**: `course:manage:own` or `course:manage:platform`",
+        "description": "Update a course contributor's role and status.\n\n**Required Permission**: `course:manage:own` or `course:manage:platform`",
         "operationId": "api_update_course_contributor_api_v1_courses__course_uuid__contributors__contributor_user_id__put",
         "parameters": [
           {
@@ -27813,7 +27769,7 @@
     },
     "/api/v1/courses/{course_uuid}/discussions": {
       "get": {
-        "description": "Get Course Discussions by course_uuid",
+        "description": "Get Course Discussions by course_uuid.",
         "operationId": "api_get_course_discussions_api_v1_courses__course_uuid__discussions_get",
         "parameters": [
           {
@@ -27910,7 +27866,7 @@
         ]
       },
       "post": {
-        "description": "Create new Course Discussion",
+        "description": "Create new Course Discussion.",
         "operationId": "api_create_course_discussion_api_v1_courses__course_uuid__discussions_post",
         "parameters": [
           {
@@ -27978,7 +27934,7 @@
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}": {
       "delete": {
-        "description": "Delete Course Discussion by discussion_uuid",
+        "description": "Delete Course Discussion by discussion_uuid.",
         "operationId": "api_delete_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__delete",
         "parameters": [
           {
@@ -28043,7 +27999,7 @@
         ]
       },
       "put": {
-        "description": "Update Course Discussion by discussion_uuid",
+        "description": "Update Course Discussion by discussion_uuid.",
         "operationId": "api_update_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__put",
         "parameters": [
           {
@@ -28120,7 +28076,7 @@
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/dislike": {
       "put": {
-        "description": "Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)",
+        "description": "Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked).",
         "operationId": "api_toggle_course_discussion_dislike_api_v1_courses__course_uuid__discussions__discussion_uuid__dislike_put",
         "parameters": [
           {
@@ -28187,7 +28143,7 @@
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/like": {
       "delete": {
-        "description": "Unlike a Course Discussion",
+        "description": "Unlike a Course Discussion.",
         "operationId": "api_unlike_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__like_delete",
         "parameters": [
           {
@@ -28252,7 +28208,7 @@
         ]
       },
       "post": {
-        "description": "Like a Course Discussion",
+        "description": "Like a Course Discussion.",
         "operationId": "api_like_course_discussion_api_v1_courses__course_uuid__discussions__discussion_uuid__like_post",
         "parameters": [
           {
@@ -28317,7 +28273,7 @@
         ]
       },
       "put": {
-        "description": "Toggle like status for a Course Discussion (like if not liked, unlike if liked)",
+        "description": "Toggle like status for a Course Discussion (like if not liked, unlike if liked).",
         "operationId": "api_toggle_course_discussion_like_api_v1_courses__course_uuid__discussions__discussion_uuid__like_put",
         "parameters": [
           {
@@ -28384,7 +28340,7 @@
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/replies": {
       "get": {
-        "description": "Get replies for a specific discussion",
+        "description": "Get replies for a specific discussion.",
         "operationId": "api_get_discussion_replies_api_v1_courses__course_uuid__discussions__discussion_uuid__replies_get",
         "parameters": [
           {
@@ -28673,7 +28629,7 @@
     },
     "/api/v1/courses/{course_uuid}/thumbnail": {
       "put": {
-        "description": "Update Course Thumbnail (Image or Video)",
+        "description": "Update Course Thumbnail (Image or Video).",
         "operationId": "api_create_course_thumbnail_api_v1_courses__course_uuid__thumbnail_put",
         "parameters": [
           {
@@ -28740,7 +28696,7 @@
     },
     "/api/v1/courses/{course_uuid}/update/{courseupdate_uuid}": {
       "delete": {
-        "description": "Delete Course Update by courseupdate_uuid",
+        "description": "Delete Course Update by courseupdate_uuid.",
         "operationId": "api_delete_course_update_api_v1_courses__course_uuid__update__courseupdate_uuid__delete",
         "parameters": [
           {
@@ -28805,7 +28761,7 @@
         ]
       },
       "put": {
-        "description": "Update Course Update by courseupdate_uuid",
+        "description": "Update Course Update by courseupdate_uuid.",
         "operationId": "api_update_course_update_api_v1_courses__course_uuid__update__courseupdate_uuid__put",
         "parameters": [
           {
@@ -28882,7 +28838,7 @@
     },
     "/api/v1/courses/{course_uuid}/updates": {
       "get": {
-        "description": "Get Course Updates by course_uuid",
+        "description": "Get Course Updates by course_uuid.",
         "operationId": "api_get_course_updates_api_v1_courses__course_uuid__updates_get",
         "parameters": [
           {
@@ -28942,7 +28898,7 @@
         ]
       },
       "post": {
-        "description": "Create new Course Update",
+        "description": "Create new Course Update.",
         "operationId": "api_create_course_update_api_v1_courses__course_uuid__updates_post",
         "parameters": [
           {
@@ -30106,7 +30062,7 @@
     },
     "/api/v1/gamification/": {
       "get": {
-        "description": "Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config",
+        "description": "Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config.",
         "operationId": "get_unified_dashboard_api_v1_gamification__get",
         "responses": {
           "200": {
@@ -31600,122 +31556,6 @@
         ]
       }
     },
-    "/api/v1/landing": {
-      "put": {
-        "description": "Update the platform landing object.\n\n**Required Permission**: `platform:update`",
-        "operationId": "api_update_platform_landing_api_v1_landing_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "title": "Landing Object",
-                "type": "object"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlatformDetailResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Update Platform Landing",
-        "tags": [
-          "platform"
-        ]
-      }
-    },
-    "/api/v1/landing/content": {
-      "post": {
-        "description": "Upload content for the platform landing page.\n\n**Required Permission**: `platform:update`",
-        "operationId": "api_upload_platform_landing_content_api_v1_landing_content_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_api_upload_platform_landing_content_api_v1_landing_content_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlatformLandingUploadResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Upload Platform Landing Content",
-        "tags": [
-          "platform"
-        ]
-      }
-    },
     "/api/v1/logo": {
       "put": {
         "description": "Update the platform logo.\n\n**Required Permission**: `platform:update`",
@@ -33189,7 +33029,7 @@
     },
     "/api/v1/trail": {
       "get": {
-        "description": "Get a user trails",
+        "description": "Get a user trails.",
         "operationId": "api_get_user_trail_api_v1_trail_get",
         "responses": {
           "200": {
@@ -33226,7 +33066,7 @@
     },
     "/api/v1/trail/add_activity/{activity_uuid}": {
       "post": {
-        "description": "Add Course to trail",
+        "description": "Add Course to trail.",
         "operationId": "api_add_activity_to_trail_api_v1_trail_add_activity__activity_uuid__post",
         "parameters": [
           {
@@ -33284,7 +33124,7 @@
     },
     "/api/v1/trail/add_course/{course_uuid}": {
       "post": {
-        "description": "Add Course to trail",
+        "description": "Add Course to trail.",
         "operationId": "api_add_course_to_trail_api_v1_trail_add_course__course_uuid__post",
         "parameters": [
           {
@@ -33342,7 +33182,7 @@
     },
     "/api/v1/trail/remove_activity/{activity_uuid}": {
       "delete": {
-        "description": "Remove Activity from trail",
+        "description": "Remove Activity from trail.",
         "operationId": "api_remove_activity_from_trail_api_v1_trail_remove_activity__activity_uuid__delete",
         "parameters": [
           {
@@ -33400,7 +33240,7 @@
     },
     "/api/v1/trail/remove_course/{course_uuid}": {
       "delete": {
-        "description": "Remove Course from trail",
+        "description": "Remove Course from trail.",
         "operationId": "api_remove_course_to_trail_api_v1_trail_remove_course__course_uuid__delete",
         "parameters": [
           {
@@ -33458,7 +33298,7 @@
     },
     "/api/v1/trail/start": {
       "post": {
-        "description": "Start trail",
+        "description": "Start trail.",
         "operationId": "api_start_trail_api_v1_trail_start_post",
         "requestBody": {
           "content": {
@@ -34084,7 +33924,7 @@
     },
     "/api/v1/usergroups": {
       "get": {
-        "description": "Get platform user groups",
+        "description": "Get platform user groups.",
         "operationId": "api_get_usergroups_api_v1_usergroups_get",
         "responses": {
           "200": {
@@ -34124,7 +33964,7 @@
         ]
       },
       "post": {
-        "description": "Create UserGroup\n\n**Required Permission**: `usergroup:create:platform`",
+        "description": "Create UserGroup.\n\n**Required Permission**: `usergroup:create:platform`",
         "operationId": "api_create_usergroup_api_v1_usergroups_post",
         "requestBody": {
           "content": {
@@ -34182,7 +34022,7 @@
     },
     "/api/v1/usergroups/resource/{resource_uuid}": {
       "get": {
-        "description": "Get platform user groups by resource",
+        "description": "Get platform user groups by resource.",
         "operationId": "api_get_usergroupsby_resource_api_v1_usergroups_resource__resource_uuid__get",
         "parameters": [
           {
@@ -34245,7 +34085,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}": {
       "delete": {
-        "description": "Delete UserGroup\n\n**Required Permission**: `usergroup:delete:platform` or `usergroup:delete:own`",
+        "description": "Delete UserGroup.\n\n**Required Permission**: `usergroup:delete:platform` or `usergroup:delete:own`",
         "operationId": "api_delete_usergroup_api_v1_usergroups__usergroup_id__delete",
         "parameters": [
           {
@@ -34303,7 +34143,7 @@
         ]
       },
       "get": {
-        "description": "Get UserGroup",
+        "description": "Get UserGroup.",
         "operationId": "api_get_usergroup_api_v1_usergroups__usergroup_id__get",
         "parameters": [
           {
@@ -34360,7 +34200,7 @@
         ]
       },
       "put": {
-        "description": "Update UserGroup\n\n**Required Permission**: `usergroup:update:platform` or `usergroup:update:own`",
+        "description": "Update UserGroup.\n\n**Required Permission**: `usergroup:update:platform` or `usergroup:update:own`",
         "operationId": "api_update_usergroup_api_v1_usergroups__usergroup_id__put",
         "parameters": [
           {
@@ -34429,7 +34269,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}/add_resources": {
       "post": {
-        "description": "Add Resources to UserGroup",
+        "description": "Add Resources to UserGroup.",
         "operationId": "api_add_resources_to_usergroup_api_v1_usergroups__usergroup_id__add_resources_post",
         "parameters": [
           {
@@ -34498,7 +34338,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}/add_users": {
       "post": {
-        "description": "Add Users to UserGroup\n\n**Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`",
+        "description": "Add Users to UserGroup.\n\n**Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`",
         "operationId": "api_add_users_to_usergroup_api_v1_usergroups__usergroup_id__add_users_post",
         "parameters": [
           {
@@ -34567,7 +34407,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}/remove_resources": {
       "delete": {
-        "description": "Delete Resources from UserGroup",
+        "description": "Delete Resources from UserGroup.",
         "operationId": "api_delete_resources_from_usergroup_api_v1_usergroups__usergroup_id__remove_resources_delete",
         "parameters": [
           {
@@ -34636,7 +34476,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}/remove_users": {
       "delete": {
-        "description": "Delete Users from UserGroup",
+        "description": "Delete Users from UserGroup.",
         "operationId": "api_delete_users_from_usergroup_api_v1_usergroups__usergroup_id__remove_users_delete",
         "parameters": [
           {
@@ -34705,7 +34545,7 @@
     },
     "/api/v1/usergroups/{usergroup_id}/users": {
       "get": {
-        "description": "Get Users linked to UserGroup",
+        "description": "Get Users linked to UserGroup.",
         "operationId": "api_get_users_linked_to_usergroup_api_v1_usergroups__usergroup_id__users_get",
         "parameters": [
           {
@@ -34768,7 +34608,7 @@
     },
     "/api/v1/users": {
       "post": {
-        "description": "Create User",
+        "description": "Create User.",
         "operationId": "api_create_user_without_platform_api_v1_users_post",
         "requestBody": {
           "content": {
@@ -34826,7 +34666,7 @@
     },
     "/api/v1/users/change_password/{user_id}": {
       "put": {
-        "description": "Update User Password\n\n**Required Permission**: Own account only (for security)",
+        "description": "Update User Password.\n\n**Required Permission**: Own account only (for security)",
         "operationId": "api_update_user_password_api_v1_users_change_password__user_id__put",
         "parameters": [
           {
@@ -34895,7 +34735,7 @@
     },
     "/api/v1/users/id/{user_id}": {
       "get": {
-        "description": "Get User by ID",
+        "description": "Get User by ID.",
         "operationId": "api_get_user_by_id_api_v1_users_id__user_id__get",
         "parameters": [
           {
@@ -34954,7 +34794,7 @@
     },
     "/api/v1/users/preferences/locale/{user_id}": {
       "put": {
-        "description": "Update User Locale Preference",
+        "description": "Update User Locale Preference.",
         "operationId": "api_update_user_locale_api_v1_users_preferences_locale__user_id__put",
         "parameters": [
           {
@@ -35022,7 +34862,7 @@
     },
     "/api/v1/users/preferences/theme/{user_id}": {
       "put": {
-        "description": "Update User Theme Preference",
+        "description": "Update User Theme Preference.",
         "operationId": "api_update_user_theme_api_v1_users_preferences_theme__user_id__put",
         "parameters": [
           {
@@ -35090,7 +34930,7 @@
     },
     "/api/v1/users/profile": {
       "get": {
-        "description": "Get current user",
+        "description": "Get current user.",
         "operationId": "api_get_public_user_api_v1_users_profile_get",
         "responses": {
           "200": {
@@ -35164,7 +35004,7 @@
     },
     "/api/v1/users/update_avatar/{user_id}": {
       "put": {
-        "description": "Update User Avatar\n\n**Required Permission**: `user:update:own` (for own avatar) or `user:update:platform` (for others)",
+        "description": "Update User Avatar.\n\n**Required Permission**: `user:update:own` (for own avatar) or `user:update:platform` (for others)",
         "operationId": "api_update_avatar_user_api_v1_users_update_avatar__user_id__put",
         "parameters": [
           {
@@ -35232,7 +35072,7 @@
     },
     "/api/v1/users/user_id/{user_id}": {
       "delete": {
-        "description": "Delete User\n\n**Required Permission**: `user:delete:platform`",
+        "description": "Delete User.\n\n**Required Permission**: `user:delete:platform`",
         "operationId": "api_delete_user_api_v1_users_user_id__user_id__delete",
         "parameters": [
           {
@@ -35292,7 +35132,7 @@
     },
     "/api/v1/users/username/{username}": {
       "get": {
-        "description": "Get User by Username",
+        "description": "Get User by Username.",
         "operationId": "api_get_user_by_username_api_v1_users_username__username__get",
         "parameters": [
           {
@@ -35351,7 +35191,7 @@
     },
     "/api/v1/users/uuid/{user_uuid}": {
       "get": {
-        "description": "Get User by UUID",
+        "description": "Get User by UUID.",
         "operationId": "api_get_user_by_uuid_api_v1_users_uuid__user_uuid__get",
         "parameters": [
           {
@@ -35410,7 +35250,7 @@
     },
     "/api/v1/users/{user_id}": {
       "put": {
-        "description": "Update User\n\n**Required Permission**: `user:update:own` (for own profile) or `user:update:platform` (for others)",
+        "description": "Update User.\n\n**Required Permission**: `user:update:own` (for own profile) or `user:update:platform` (for others)",
         "operationId": "api_update_user_api_v1_users__user_id__put",
         "parameters": [
           {

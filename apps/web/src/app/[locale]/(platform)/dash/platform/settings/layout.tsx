@@ -2,13 +2,12 @@
 
 import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader'
 import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs'
-import { ImageIcon, LayoutDashboardIcon, Share2Icon } from 'lucide-react'
+import { ImageIcon, Share2Icon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import { Separator } from '@/components/ui/separator'
 
 const TABS = [
-  { id: 'landing', labelKey: 'landing', icon: LayoutDashboardIcon },
   { id: 'previews', labelKey: 'previews', icon: ImageIcon },
   { id: 'socials', labelKey: 'socials', icon: Share2Icon },
 ]

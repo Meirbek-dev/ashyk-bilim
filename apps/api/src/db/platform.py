@@ -39,7 +39,6 @@ class Platform(PlatformBase, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
-    landing: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class PlatformUpdate(SQLModelStrictBaseModel):
@@ -62,7 +61,6 @@ class PlatformCreate(PlatformBase):
 class PlatformRead(PlatformBase):
     """Model for reading the platform with all related data."""
 
-    landing: dict[str, object] | None = None
     creation_date: datetime
     update_date: datetime
 

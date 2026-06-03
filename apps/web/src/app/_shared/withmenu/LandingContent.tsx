@@ -1,12 +1,10 @@
 import { getServerGamificationDashboard } from '@/services/gamification/server'
 import { getSession } from '@/lib/auth/session'
 import LandingClassic from '@components/Landings/LandingClassic'
-import LandingCustom from '@components/Landings/LandingCustom'
 import { getCollections } from '@services/courses/collections'
 import { getPlatform } from '@/services/platform/platform'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
-import type { LandingSection } from '@/components/Dashboard/Pages/Platform/EditLanding/landing_types'
 
 function isExpectedPrerenderCancellation(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -83,9 +81,8 @@ function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | n
 export async function LandingContent() {
   try {
     // Fetch platform info with detailed error handling
-    let platform
     try {
-      platform = await getPlatform()
+      await getPlatform()
     } catch (error) {
       console.error('[LandingContent] Failed to fetch platform info:', {
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -96,8 +93,6 @@ export async function LandingContent() {
       })
     }
 
-    const hasCustomLanding = platform?.landing?.enabled
-
     // Only fetch gamification data if user is authenticated
     const session = await getSession()
     const gamificationPromise = session
@@ -106,12 +101,6 @@ export async function LandingContent() {
           return null
         })
       : Promise.resolve(null)
-
-    if (hasCustomLanding && platform?.landing) {
-      const gamificationData = await gamificationPromise
-
-      return <LandingCustom landing={platform.landing as { sections: LandingSection[]; enabled: boolean }} gamificationData={gamificationData} />
-    }
 
     const [coursesData, collections, gamificationData, trailData] = await Promise.all([
       getCourses(undefined, 1, 20).catch((error: unknown) => {

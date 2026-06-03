@@ -17,10 +17,8 @@ from src.services.platform import get_platform
 from src.services.platform_admin import (
     update_app_logo,
     update_platform,
-    update_platform_landing,
     update_platform_preview,
     update_platform_thumbnail,
-    upload_platform_landing_content_service,
 )
 from src.services.platform_users import (
     get_platform_users,
@@ -37,11 +35,6 @@ class PlatformDetailResponse(PydanticStrictBaseModel):
 
 class PlatformPreviewUploadResponse(PydanticStrictBaseModel):
     name_in_disk: str
-
-
-class PlatformLandingUploadResponse(PydanticStrictBaseModel):
-    detail: str
-    filename: str
 
 
 @router.get("/platform", response_model=PlatformRead)
@@ -202,38 +195,3 @@ def api_update_platform(
     return update_platform(request, platform_object, current_user, db_session)
 
 
-@router.put("/landing", response_model=PlatformDetailResponse)
-def api_update_platform_landing(
-    request: Request,
-    landing_object: dict[str, Any],
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-    checker: PermissionCheckerDep,
-):
-    """Update the platform landing object.
-
-    **Required Permission**: `platform:update`
-    """
-    checker.require(current_user.id, "platform:update")
-    return update_platform_landing(request, landing_object, current_user, db_session)
-
-
-@router.post("/landing/content", response_model=PlatformLandingUploadResponse)
-async def api_upload_platform_landing_content(
-    request: Request,
-    content_file: UploadFile,
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-    checker: PermissionCheckerDep,
-):
-    """Upload content for the platform landing page.
-
-    **Required Permission**: `platform:update`
-    """
-    checker.require(current_user.id, "platform:update")
-    return await upload_platform_landing_content_service(
-        request=request,
-        content_file=content_file,
-        current_user=current_user,
-        db_session=db_session,
-    )

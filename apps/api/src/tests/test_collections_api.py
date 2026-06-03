@@ -129,8 +129,8 @@ def test_collections_list_returns_full_course_objects(api_client, db_session_fac
             description="Testing CollectionRead courses parsing",
             creator_id=user.id,
             collection_uuid="collection_test_123",
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=datetime.now(),
+            update_date=datetime.now(),
         )
         session.add(collection)
         session.flush()
@@ -138,8 +138,8 @@ def test_collections_list_returns_full_course_objects(api_client, db_session_fac
         cc = CollectionCourse(
             collection_id=collection.id,
             course_id=course.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=datetime.now(),
+            update_date=datetime.now(),
         )
         session.add(cc)
         session.commit()
