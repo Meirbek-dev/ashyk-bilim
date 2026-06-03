@@ -5,10 +5,11 @@ from typing import cast, override
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
+from src.app.errors import api_error_response
 from src.infra.settings import AppSettings
 
 _STATIC_CACHE_HEADER = "public, max-age=31536000, immutable"
@@ -36,7 +37,7 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
         allow_methods=["*"],
         allow_credentials=True,
         allow_headers=["*"],
-        expose_headers=["Retry-After", "X-Total-Count", "X-Structure-Version"],
+        expose_headers=["Retry-After", "X-Request-ID", "X-Total-Count", "X-Structure-Version"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -46,6 +47,7 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = req_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
         return response
@@ -61,12 +63,11 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
             and request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
             and not request.headers.get("authorization")
         ):
-            return JSONResponse(
+            return api_error_response(
+                request,
                 status_code=403,
-                content={
-                    "error_code": "CSRF_CROSS_SITE_REQUEST",
-                    "message": "Cross-site requests are not allowed",
-                },
+                code="CSRF_CROSS_SITE_REQUEST",
+                message="Cross-site requests are not allowed",
             )
 
         return await call_next(request)

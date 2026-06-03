@@ -2,6 +2,7 @@
 
 import type { BulkPublishGradesResponse, Submission, TeacherGradeInput } from '@/types/grading'
 import { apiFetch, getResponseMetadata } from '@/lib/api-client'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import { revalidateTag } from 'next/cache'
 import { StaleGradeError } from './errors'
 
@@ -47,7 +48,7 @@ export async function saveGrade(
   }
 
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to save grade')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to save grade'))
 
   revalidateTag('submissions', 'max')
   return meta.data as Submission
@@ -58,7 +59,7 @@ export async function publishAssessmentGrades(assessmentUuid: string): Promise<B
     method: 'POST',
   })
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to publish grades')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to publish grades'))
 
   revalidateTag('submissions', 'max')
   return meta.data as BulkPublishGradesResponse

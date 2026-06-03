@@ -11,6 +11,7 @@ import AuthCard from '@components/auth/card'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import * as v from 'valibot'
 
 interface ForgotState {
@@ -43,9 +44,9 @@ const ForgotPasswordClient = () => {
 
       const res = await sendResetLink(result.output.email)
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { detail?: string }
+        const body = await res.json().catch(() => null)
         return {
-          error: body?.detail ?? t('unknownError'),
+          error: getApiErrorMessage(body, t('unknownError')),
           message: null,
           fieldErrors: {},
         }

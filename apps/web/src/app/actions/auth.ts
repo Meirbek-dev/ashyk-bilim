@@ -69,11 +69,15 @@ async function postAuthJson(path: string, body: unknown, requestHeaders: HeaderS
 }
 
 function getSignupCode(payload: unknown): string | undefined {
-  if (typeof payload !== 'object' || payload === null || !('detail' in payload)) {
+  if (typeof payload !== 'object' || payload === null) {
     return undefined
   }
 
-  const { detail } = payload
+  if ('code' in payload && typeof payload.code === 'string') {
+    return payload.code
+  }
+
+  const detail = (payload as { detail?: unknown }).detail
   if (typeof detail !== 'object' || detail === null || !('code' in detail)) {
     return undefined
   }

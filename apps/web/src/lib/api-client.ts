@@ -12,6 +12,7 @@
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
 import { isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
+import { getApiErrorMessage, parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
 
 type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   /** Override which base URL to use (defaults to environment-aware selection). */
@@ -208,27 +209,29 @@ export const apiFetcherWithHeaders = async (url: string): Promise<{ data: any; h
 
 export async function errorHandling<T = unknown>(res: Response): Promise<T> {
   if (!res.ok) {
-    let data: any
+    let data: unknown
     try {
       data = await res.json()
     } catch {
       data = null
     }
 
-    const detail =
-      typeof data?.detail === 'string'
-        ? data.detail
-        : Array.isArray(data?.detail)
-          ? data.detail
-              .map((item: { msg?: string }) => item?.msg)
-              .filter(Boolean)
-              .join(', ')
-          : res.statusText || 'Request failed'
-
-    const error: any = new Error(detail || 'Request failed')
+    const envelope = parseApiErrorEnvelope(data)
+    const dataRecord = data && typeof data === 'object' ? (data as Record<string, unknown>) : null
+    const error = new Error(getApiErrorMessage(data, res.statusText || 'Request failed')) as Error & {
+      code?: string
+      data?: unknown
+      detail?: unknown
+      requestId?: string | null
+      status?: number
+    }
     error.status = res.status
     error.data = data
-    error.detail = data?.detail
+    if (envelope) {
+      error.code = envelope.code
+    }
+    error.detail = envelope?.details ?? dataRecord?.detail
+    error.requestId = envelope?.request_id ?? null
     throw error
   }
   return res.json() as Promise<T>

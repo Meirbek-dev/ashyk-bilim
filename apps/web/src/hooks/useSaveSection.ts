@@ -5,6 +5,7 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
 type SaveResponse = { success?: boolean; status?: number; data?: any } | void
 
@@ -57,17 +58,17 @@ export function useSaveSection(options?: SaveSectionOptions) {
           if (response.status === 409) {
             setConflict({
               serverVersion: response.data,
-              message: typeof response.data?.detail === 'string' ? response.data.detail : undefined,
+              message: getApiErrorMessage(response.data, ''),
               pendingSave: async () => {
                 await runSave(saveFn, invocationOptions)
               },
             })
             return
           }
-          const message =
-            typeof response.data?.detail === 'string'
-              ? response.data.detail
-              : invocationOptions?.errorMessage || options?.errorMessage || 'Failed to save. Please try again.'
+          const message = getApiErrorMessage(
+            response.data,
+            invocationOptions?.errorMessage || options?.errorMessage || 'Failed to save. Please try again.',
+          )
           options?.onError?.(message)
           toast.error(message)
           return

@@ -1,4 +1,5 @@
 import { apiFetch, getResponseMetadata } from '@/lib/api-client'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
 export interface CourseEditorResource<T> {
   data: T | null
@@ -42,8 +43,7 @@ const toArrayResource = (response: {
   }
 
   if (!response.success) {
-    const detail =
-      typeof response.data?.detail === 'string' ? response.data.detail : response.HTTPmessage || 'Request failed'
+    const detail = getApiErrorMessage(response.data, response.HTTPmessage || 'Request failed')
     return createResource<any[]>([], response.status, detail, true)
   }
 

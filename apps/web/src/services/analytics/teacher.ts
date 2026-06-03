@@ -14,6 +14,7 @@ import type {
   SavedAnalyticsViewRow,
 } from '@/types/analytics'
 import { apiFetch } from '@/lib/api-client'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 
 export interface TeacherInterventionCreate {
@@ -77,8 +78,8 @@ async function analyticsRequest<T>(path: string, query?: AnalyticsQuery, init?: 
   const response = await apiFetch(`analytics/${path}${buildQueryString(query)}`, init)
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => ({}))
-    const message = payload?.detail?.message || payload?.detail || `Analytics request failed (${response.status})`
+    const payload = await response.json().catch(() => null)
+    const message = getApiErrorMessage(payload, `Analytics request failed (${response.status})`)
     throw new Error(message)
   }
 

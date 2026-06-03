@@ -8,6 +8,7 @@
  */
 
 import { apiFetch, getResponseMetadata } from '@/lib/api-client'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import { revalidateTag } from 'next/cache'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -216,7 +217,7 @@ export async function createStudentPolicyOverride(
     body: JSON.stringify(payload),
   })
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to create override')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to create override'))
   revalidateTag('overrides', 'max')
   return meta.data as StudentPolicyOverride
 }
@@ -232,7 +233,7 @@ export async function updateStudentPolicyOverride(
     body: JSON.stringify(payload),
   })
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to update override')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to update override'))
   revalidateTag('overrides', 'max')
   return meta.data as StudentPolicyOverride
 }
@@ -242,7 +243,7 @@ export async function deleteStudentPolicyOverride(assessmentUuid: string, userId
     method: 'DELETE',
   })
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to delete override')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to delete override'))
   revalidateTag('overrides', 'max')
 }
 
@@ -274,7 +275,7 @@ export async function saveGradingDraft(
   }
 
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to save grading draft')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to save grading draft'))
   revalidateTag('submissions', 'max')
   return meta.data
 }
@@ -296,6 +297,6 @@ export async function runCodeItem(
     body: JSON.stringify(payload),
   })
   const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to run code')
+  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to run code'))
   return meta.data as CodeRunResponse
 }

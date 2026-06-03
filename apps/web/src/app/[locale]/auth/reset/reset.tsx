@@ -12,6 +12,7 @@ import AuthCard from '@components/auth/card'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import * as v from 'valibot'
 
 interface ResetState {
@@ -84,9 +85,9 @@ const ResetPasswordClient = () => {
 
       const res = await resetPassword(result.output.reset_code, result.output.new_password)
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { detail?: string }
+        const body = await res.json().catch(() => null)
         return {
-          error: body?.detail ?? t('unknownError'),
+          error: getApiErrorMessage(body, t('unknownError')),
           message: null,
           fieldErrors: {},
         }

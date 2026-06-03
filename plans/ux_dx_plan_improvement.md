@@ -70,14 +70,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 
 ### API contracts
 
-#### 007. [P0] Require explicit `response_model` on all JSON routes
-
-- **Effort:** M
-- **Impact:** Very high
-- **Evidence:** Static scan found 123 of 248 route decorators without `response_model`; OpenAPI has 47 generic/empty schemas and 38 inline schemas.
-- **Action:** Create a lint script that allows exceptions only for 204, RedirectResponse, StreamingResponse, FileResponse, and SSE. Add DTOs for everything else.
-- **Done when:** Contract generator emits named schemas for all public JSON endpoints; generated frontend types stop degrading to unknown/any.
-
 #### 008. [P0] Standardize the error envelope
 
 - **Effort:** S
@@ -974,14 +966,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Action:** Create ADRs for API contracts, state machines, tenancy, auth cookies, background jobs, generated client, editor architecture.
 - **Done when:** New contributors can understand why architecture works this way.
 
-#### 127. [P2] Clean up duplicate agent skill directories
-
-- **Effort:** S/M
-- **Impact:** Medium
-- **Evidence:** `.agents` and `.claude` contain about 330 files total and appear largely duplicated.
-- **Action:** Decide whether both are needed. If not, keep one source or use a submodule/tooling install step. Exclude from broad searches where appropriate.
-- **Done when:** Repository search and review noise is reduced without losing agent instructions.
-
 #### 128. [P1] Add a source-of-truth module map
 
 - **Effort:** S/M
@@ -1006,14 +990,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Action:** Use Turborepo remote/local cache and changed package filters for fast PR checks, plus nightly full checks.
 - **Done when:** Normal PR quality feedback is fast enough to encourage small commits.
 
-#### 131. [P1] Make reports generated, not committed/stale
-
-- **Effort:** S/M
-- **Impact:** High
-- **Evidence:** `mypy-report.txt`, `pyright-report.txt`, `pyrefly-report.txt`, `tsc-errors.txt` are present in app dirs.
-- **Action:** Move reports to CI artifacts or regenerate via scripts. Do not leave stale reports in source unless deliberately used as baselines.
-- **Done when:** Developers trust reports because they are current.
-
 #### 132. [P1] Create a PR checklist optimized for SaaS LMS risk
 
 - **Effort:** S/M
@@ -1021,14 +997,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Evidence:** No checklist content inspected beyond issue templates.
 - **Action:** Checklist: contracts generated, migration tested, permissions covered, i18n keys added, empty/error/loading states, telemetry event, docs if needed.
 - **Done when:** Reviewers consistently catch LMS-specific regressions.
-
-#### 133. [P2] Add editor performance playbook
-
-- **Effort:** S/M
-- **Impact:** Medium
-- **Evidence:** TipTap/Shiki/Monaco/editor extensions are complex and can become slow.
-- **Action:** Document extension boundaries, nodeview rules, serialization expectations, paste/upload pipeline, and performance budgets.
-- **Done when:** Editor changes avoid accidental schema/performance regressions.
 
 #### 134. [P1] Create domain glossary in repo
 
@@ -1159,14 +1127,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Evidence:** No public status workflow was visible.
 - **Action:** Create basic status checks for web, API, DB readiness, Redis, workers, code runner, AI provider. Use hosted or simple static status page.
 - **Done when:** Teachers know whether an issue is platform-wide.
-
-#### 150. [P2] Add dependency update lanes
-
-- **Effort:** S/M
-- **Impact:** Medium
-- **Evidence:** Root has `taze` and many fast-moving dependencies.
-- **Action:** Separate patch/minor updates from major framework updates. Use automated PRs with smoke tests and rollback notes.
-- **Done when:** Dependency updates are regular and low-risk.
 
 ## Suggested engineering operating model
 
