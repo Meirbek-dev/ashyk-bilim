@@ -30,9 +30,9 @@ def _row_from_model(item: TeacherIntervention) -> TeacherInterventionRow:
         notes=item.notes,
         risk_score_before=float(item.risk_score_before) if item.risk_score_before is not None else None,
         risk_score_after=float(item.risk_score_after) if item.risk_score_after is not None else None,
-        created_at=to_iso(item.created_at) or "",
-        updated_at=to_iso(item.updated_at) or "",
-        resolved_at=to_iso(item.resolved_at),
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+        resolved_at=item.resolved_at,
     )
 
 

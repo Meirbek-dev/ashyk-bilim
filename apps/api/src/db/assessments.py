@@ -525,6 +525,12 @@ class AssessmentLifecycleTransition(PydanticStrictBaseModel):
             return AssessmentLifecycle(value)
         return value
 
+    @field_validator("scheduled_at", mode="before")
+    @classmethod
+    def validate_scheduled_at(cls, v: Any) -> Any:
+        return coerce_date_to_end_of_day(v)
+
+
 
 class AssessmentReadItem(PydanticStrictBaseModel):
     id: int
@@ -878,7 +884,7 @@ class StudentPolicyOverrideCreate(PydanticStrictBaseModel):
     note: str = ""
     expires_at: datetime | None = None
 
-    @field_validator("due_at_override", mode="before")
+    @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
     def validate_due_at_override(cls, v: Any) -> Any:
         return coerce_date_to_end_of_day(v)
@@ -892,10 +898,11 @@ class StudentPolicyOverrideUpdate(PydanticStrictBaseModel):
     note: str | None = None
     expires_at: datetime | None = None
 
-    @field_validator("due_at_override", mode="before")
+    @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
     def validate_due_at_override(cls, v: Any) -> Any:
         return coerce_date_to_end_of_day(v)
+
 
 
 class StudentPolicyOverrideRead(PydanticStrictBaseModel):

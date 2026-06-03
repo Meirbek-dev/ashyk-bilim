@@ -21,8 +21,8 @@ def _row(saved_view: AnalyticsSavedView) -> SavedAnalyticsViewRow:
         name=saved_view.name,
         view_type=saved_view.view_type,
         query=saved_view.query,
-        created_at=to_iso(saved_view.created_at) or "",
-        updated_at=to_iso(saved_view.updated_at) or "",
+        created_at=saved_view.created_at,
+        updated_at=saved_view.updated_at,
     )
 
 
