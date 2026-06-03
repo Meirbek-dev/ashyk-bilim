@@ -56,7 +56,7 @@ export async function uploadNewVideoFile(
       }
     } catch (error: unknown) {
       console.error('Chunked upload error:', error)
-      const message = error?.message || JSON.stringify(error)
+      const message = error instanceof Error ? error.message : JSON.stringify(error)
       throw new Error(message, { cause: error })
     }
   }

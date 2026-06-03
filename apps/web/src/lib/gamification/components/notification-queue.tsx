@@ -39,7 +39,7 @@ export interface XPNotificationQueueOptions {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 }
 
-interface BatchedNotification extends XPNotification {
+export interface BatchedNotification extends XPNotification {
   batchCount: number
   totalAmount: number
 }
@@ -372,7 +372,7 @@ export function useContextualPosition(
     scheduleCompute()
 
     // Use a single shared options object so add/removeEventListener use the exact same reference
-    const listenerOptions = { passive: true } as unknown
+    const listenerOptions: AddEventListenerOptions = { passive: true }
 
     // Listen to viewport changes
     window.addEventListener('resize', scheduleCompute, listenerOptions)

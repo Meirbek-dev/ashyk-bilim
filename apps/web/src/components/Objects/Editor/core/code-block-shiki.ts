@@ -3,8 +3,11 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { findChildren } from '@tiptap/core'
 import { getHighlighter, getResolvedHighlighter } from '@/features/content-markdown/lib/shiki'
+import type { Node as ProsemirrorNode } from '@tiptap/pm/model'
 
-function getDecorations(doc: unknown, highlighter: unknown) {
+type ShikiHighlighter = Awaited<ReturnType<typeof getHighlighter>>
+
+function getDecorations(doc: ProsemirrorNode, highlighter: ShikiHighlighter) {
   const decorations: Decoration[] = []
 
   findChildren(doc, node => node.type.name === 'codeBlock').forEach(block => {

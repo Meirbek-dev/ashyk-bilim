@@ -41,7 +41,7 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
     }
 
     try {
-      const res = await linkResourcesToUserGroup(Number(effectiveUserGroup), courseStructure.course_uuid, {
+      const res = await linkResourcesToUserGroup(Number(effectiveUserGroup), [courseStructure.course_uuid], {
         courseUuid: courseStructure.course_uuid,
       })
       if (res.status === 200) {
@@ -49,7 +49,8 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
         toast.success(t('linkSuccess'))
         await course.refreshEditorData()
       } else {
-        toast.error(t('linkError', { error: res.data?.detail || t('unknownError') }))
+        const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+        toast.error(t('linkError', { error: errorDetail }))
       }
     } catch {
       toast.error(t('linkError', { error: t('unknownError') }))

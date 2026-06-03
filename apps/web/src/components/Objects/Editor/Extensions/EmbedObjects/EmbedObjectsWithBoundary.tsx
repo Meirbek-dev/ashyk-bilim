@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import EmbedObjectsComponent from './EmbedObjectsComponent'
+import type { EmbedNodeAttrs } from './EmbedObjectsComponent'
 import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
@@ -11,7 +12,7 @@ import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodevie
  * malformed src attribute), the editor renders a visible error placeholder
  * in place of the node and does NOT crash or unmount the editor.
  */
-const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<Record<string, unknown>>) => {
+const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
   const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects')
   return (
     <EmbedObjectsErrorBoundary title={t('embeddedContent')} message={t('embeddedBlockRenderError')}>

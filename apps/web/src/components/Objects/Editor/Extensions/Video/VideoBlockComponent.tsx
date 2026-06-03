@@ -206,7 +206,8 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
       }, 1000)
     } catch (uploadError: unknown) {
       console.error(t('errorUpload'), uploadError)
-      setError(uploadError?.message || t('errorUpload'))
+      const err = uploadError as Error | AppApiError
+      setError((err && 'message' in err ? err.message : '') || t('errorUpload'))
     } finally {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)

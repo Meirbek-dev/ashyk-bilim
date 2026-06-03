@@ -180,7 +180,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                 input: matches[3] || '',
                 expected_output: matches[4] || '',
                 weight: Number(matches[5] || 1),
-                match_mode: (matches[6] as unknown) || 'EXACT',
+                match_mode: (matches[6] as TestCase['match_mode']) || 'EXACT',
               }
             })
           } else {
@@ -331,7 +331,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                             value={test.match_mode ?? 'EXACT'}
                             onChange={e =>
                               updateTest(test.id, {
-                                match_mode: e.target.value as unknown,
+                                match_mode: e.target.value as 'CUSTOM_CHECKER' | 'EXACT' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'TRIMMED',
                               })
                             }
                             className="select-xs h-8 py-0"

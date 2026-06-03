@@ -19,6 +19,12 @@ function clampHeight(value: number): number {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value))
 }
 
+function getSimpleIcon(iconName?: string): AppIcon | null {
+  if (!iconName) return null
+  const iconCandidate = (Si as Record<string, unknown>)[iconName]
+  return typeof iconCandidate === 'function' ? iconCandidate as AppIcon : null
+}
+
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { node, editor, updateAttributes, deleteNode, getPos } = props
   const { type, url, height: attrHeight } = node.attrs
@@ -94,7 +100,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     )
   }
 
-  const Icon = provider.iconName ? (Si as Record<string, unknown>)[provider.iconName] : null
+  const Icon = getSimpleIcon(provider.iconName)
 
   return (
     <NodeViewWrapper className="embed-block-node-view my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>

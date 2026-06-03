@@ -311,7 +311,7 @@ describe('searchCourses', () => {
     mocks.apiFetch.mockResolvedValue(makeResponse(courses))
     mocks.errorHandling.mockResolvedValue(courses)
 
-    const result = await searchCourses('python basics', 1, 10, undefined)
+    const result = await searchCourses('python basics', 1, 10)
 
     expect(mocks.apiFetch).toHaveBeenCalledWith(expect.stringContaining('query=python%20basics'))
     expect(result).toHaveLength(1)

@@ -9,6 +9,23 @@ import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
 type SaveResponse = { success?: boolean; status?: number; data?: unknown } | void
 
+interface NormalizedSaveResponse {
+  success: boolean
+  status?: number | undefined
+  data?: { update_date?: string | null; [key: string]: unknown } | null | undefined
+}
+
+function normalizeResponse(response: SaveResponse): NormalizedSaveResponse {
+  if (response && typeof response === 'object' && 'success' in response) {
+    return {
+      success: response.success,
+      status: response.status,
+      data: response.data as NormalizedSaveResponse['data'],
+    }
+  }
+  return { success: true, data: response as NormalizedSaveResponse['data'] }
+}
+
 interface SaveSectionOptions {
   onSuccess?: () => void
   onError?: (message: string) => void
@@ -22,13 +39,6 @@ interface SaveInvocationOptions {
   successMessage?: string
   errorMessage?: string
   refresh?: 'meta' | 'editor' | 'none'
-}
-
-function normalizeResponse(response: SaveResponse) {
-  if (response && typeof response === 'object' && 'success' in response) {
-    return response
-  }
-  return { success: true, data: response }
 }
 
 /**
@@ -57,7 +67,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
         if (!response.success) {
           if (response.status === 409) {
             setConflict({
-              serverVersion: response.data,
+              serverVersion: response.data ?? null,
               message: getApiErrorMessage(response.data, ''),
               pendingSave: async () => {
                 await runSave(saveFn, invocationOptions)
@@ -89,10 +99,11 @@ export function useSaveSection(options?: SaveSectionOptions) {
         invocationOptions?.onSuccess?.()
         options?.onSuccess?.()
       } catch (error: unknown) {
-        if (error?.status === 409) {
+        const apiError = error as AppApiError
+        if (apiError.status === 409) {
           setConflict({
-            serverVersion: error?.data,
-            message: error?.detail || error?.message,
+            serverVersion: (apiError.data as { update_date?: string | null } | null) ?? null,
+            message: String(apiError.detail || apiError.message),
             pendingSave: async () => {
               await runSave(saveFn, invocationOptions)
             },
@@ -100,7 +111,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
           return
         }
         const message =
-          error?.message ||
+          apiError.message ||
           invocationOptions?.errorMessage ||
           options?.errorMessage ||
           'Failed to save. Please try again.'

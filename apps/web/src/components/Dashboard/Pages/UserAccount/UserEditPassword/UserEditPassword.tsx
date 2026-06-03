@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
-const createValidationSchema = (t: (key: string, values?: AppTranslationValues) => string) =>
+const createValidationSchema = (t: AppTranslator) =>
   v.object({
     old_password: v.pipe(
       v.string(),

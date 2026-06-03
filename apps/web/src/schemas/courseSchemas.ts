@@ -11,7 +11,11 @@ const isValidLearningsJson = (value: string): boolean => {
     return (
       Array.isArray(parsed) &&
       parsed.length > 0 &&
-      parsed.every((i: unknown) => typeof (i)?.text === 'string' && (i).text.trim().length > 0)
+      parsed.every((i: unknown) => {
+        if (typeof i !== 'object' || i === null) return false
+        const item = i as Record<string, unknown>
+        return typeof item.text === 'string' && item.text.trim().length > 0
+      })
     )
   } catch {
     return false

@@ -155,7 +155,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
-      const run = trailData?.runs?.find((r: AppRoleSummary) => {
+      const run = trailData?.runs?.find((r: AppTrailRun) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })

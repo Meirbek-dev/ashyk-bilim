@@ -241,7 +241,9 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
           )
         }
 
-        const featuredCourses = allCourses.filter((course: AppCourse) => section.courses.includes(course.course_uuid))
+        const featuredCourses = allCourses.filter((course: AppCourse) =>
+          section.courses.some(c => c.course_uuid === course.course_uuid),
+        )
 
         return (
           <div key={`featured-courses-${section.title}`} className="mx-2 w-full py-16 sm:mx-4 lg:mx-16">

@@ -44,11 +44,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     if (!(trailData && course)) return false
 
     // Flatten all activities
-    const allActivities = course.chapters.flatMap((chapter: AppChapter) =>
-      chapter.activities.map((activity: AppActivity) => ({
-        ...activity,
-        chapterId: chapter.id,
-      })),
+    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
+      (chapter.activities ?? []).map((activity: AppActivity) => (Object.assign(activity, { chapterId: chapter.id }))),
     )
 
     // Check if all activities are completed
@@ -60,7 +57,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       })
 
       if (run) {
-        return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+        return (run.steps ?? []).find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
@@ -237,7 +234,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
         certificationName,
         certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
-        instructor: userCertificate.certification.config.certificate_instructor,
+        instructor: userCertificate.certification.config.certificate_instructor ?? null,
         labels: {
           authenticityGuaranteed: t('verifyCertificate'),
           awarded: t('labelAwarded'),
@@ -247,7 +244,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           instructor: t('instructor'),
           verificationNote: t('certificateCanBeVerified'),
         },
-        pattern: userCertificate.certification.config.certificate_pattern,
+        pattern: userCertificate.certification.config.certificate_pattern ?? '',
         verificationUrl: qrCodeLink,
       })
 
@@ -263,11 +260,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   const progressInfo = (() => {
     if (!(trailData && course) || isCourseCompleted) return null
 
-    const allActivities = course.chapters.flatMap((chapter: AppChapter) =>
-      chapter.activities.map((activity: AppActivity) => ({
-        ...activity,
-        chapterId: chapter.id,
-      })),
+    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
+      (chapter.activities ?? []).map((activity: AppActivity) => (Object.assign(activity, { chapterId: chapter.id }))),
     )
 
     const isActivityDone = (activity: AppActivity) => {
@@ -278,7 +272,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       })
 
       if (run) {
-        return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+        return (run.steps ?? []).find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
@@ -374,10 +368,10 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 <div id="certificate-content">
                   <CertificatePreview
                     certificationName={userCertificate.certification.config.certification_name}
-                    certificationDescription={userCertificate.certification.config.certification_description}
+                    certificationDescription={userCertificate.certification.config.certification_description ?? ''}
                     certificationType={userCertificate.certification.config.certification_type}
-                    certificatePattern={userCertificate.certification.config.certificate_pattern}
-                    certificateInstructor={userCertificate.certification.config.certificate_instructor}
+                    certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
+                    certificateInstructor={userCertificate.certification.config.certificate_instructor ?? undefined}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',

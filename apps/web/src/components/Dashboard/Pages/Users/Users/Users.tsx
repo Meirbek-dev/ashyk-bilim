@@ -116,18 +116,22 @@ const Users = () => {
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
-  const getRolePriority = (roleObj: AppRoleSummary) => {
+  const getRolePriority = (roleObj: { role?: unknown; priority?: number } | string | null | undefined) => {
     if (!roleObj) return 0
-    // roleObj may be the role itself or wrapped under `role`
-    const role = roleObj.role || roleObj
-    return role.priority ?? 0
+    if (typeof roleObj === 'string') return 0
+    let priority = roleObj.priority
+    if (roleObj.role && typeof roleObj.role === 'object' && 'priority' in roleObj.role) {
+      const nested = roleObj.role as { priority?: unknown }
+      if (typeof nested.priority === 'number') {
+        priority = nested.priority
+      }
+    }
+    return priority ?? 0
   }
 
   const currentUserPriority = (() => {
     try {
       if (!userRoles || userRoles.length === 0) return 0
-      if (userRoles.length === 0) return 0
-      // return highest priority among user's roles
       return Math.max(...userRoles.map((r: AppRoleSummary) => getRolePriority(r.role || r)))
     } catch {
       return 0
@@ -148,9 +152,9 @@ const Users = () => {
   const totalPages = usersData?.total_pages ?? 1
 
   const [rolesModal, setRolesModal] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<AppUserSummary | null>(null)
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
 
-  const handleRolesModal = (user: AppUserSummary) => {
+  const handleRolesModal = (user: UserRow) => {
     setSelectedUser(user)
     setRolesModal(true)
   }
@@ -241,9 +245,27 @@ const Users = () => {
                 dialogContent={
                   selectedUser ? (
                     <RolesUpdate
-                      alreadyAssignedRole={selectedUser.role?.id?.toString()}
+                      alreadyAssignedRole={selectedUser.role?.id?.toString() || ''}
                       setRolesModal={setRolesModal}
-                      user={selectedUser}
+                      user={{
+                        id: selectedUser.user.id,
+                        user_id: selectedUser.user.id,
+                        username: selectedUser.user.username,
+                        ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
+                        ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
+                        ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
+                        ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
+                        ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
+                        user: {
+                          id: selectedUser.user.id,
+                          username: selectedUser.user.username,
+                          ...(selectedUser.user.user_uuid ? { user_uuid: selectedUser.user.user_uuid } : {}),
+                          ...(selectedUser.user.email ? { email: selectedUser.user.email } : {}),
+                          ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
+                          ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
+                          ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
+                        }
+                      }}
                     />
                   ) : null
                 }

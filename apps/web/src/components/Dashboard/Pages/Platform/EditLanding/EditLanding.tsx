@@ -27,7 +27,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { createElement, useEffect, useMemo, useState, useTransition } from 'react'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
-import { getLandingMediaDirectory } from '@services/media/media'
+import { getLandingMediaDirectory, getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { usePlatformCourses } from '@/features/platform/hooks/usePlatform'
 import { Textarea } from '@components/ui/textarea'
 import NextImage from '@components/ui/NextImage'
@@ -35,7 +35,7 @@ import { Switch } from '@components/ui/switch'
 import { Button } from '@components/ui/button'
 import { Label } from '@components/ui/label'
 import { Input } from '@components/ui/input'
-import type { ChangeEvent, FC } from 'react'
+import type { ChangeEvent, FC, ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -260,6 +260,17 @@ const SECTION_TYPE_KEYS: Record<LandingSection['type'], string> = {
   'featured-courses': 'featuredCourses',
 }
 
+function isLandingSection(value: unknown): value is LandingSection {
+  return typeof value === 'object' && value !== null && typeof (value as { type?: unknown }).type === 'string'
+}
+
+function normalizeLandingObject(value: Record<string, unknown> | null | undefined): LandingObject {
+  return {
+    sections: Array.isArray(value?.sections) ? value.sections.filter(isLandingSection) : [],
+    enabled: Boolean(value?.enabled),
+  }
+}
+
 // AppTranslator to get translated section types
 const getSectionTypes = (t: AppTranslator) => ({
   hero: {
@@ -422,7 +433,7 @@ const makeSectionTypeItems = (t: AppTranslator) =>
       createElement(
         'div',
         { className: 'rounded-md bg-muted p-1.5' },
-        createElement(conf.icon as unknown, {
+        createElement(conf.icon as AppIcon, {
           size: 16,
           className: 'text-muted-foreground',
         }),
@@ -433,7 +444,7 @@ const makeSectionTypeItems = (t: AppTranslator) =>
         createElement('div', { className: 'text-sm font-medium text-foreground' }, conf.label),
         createElement('div', { className: 'text-xs text-muted-foreground' }, conf.description),
       ),
-    ) as unknown,
+    ) as ReactNode,
   }))
 
 const makeGradientPresetItems = (t: AppTranslator) =>
@@ -449,7 +460,7 @@ const makeGradientPresetItems = (t: AppTranslator) =>
         />
         <span className="capitalize">{getGradientPresetName(t, name)}</span>
       </div>
-    ) as unknown,
+    ) as ReactNode,
   }))
 
 const makeGradientDirectionItems = (t: AppTranslator) =>
@@ -459,7 +470,7 @@ const makeGradientDirectionItems = (t: AppTranslator) =>
   }))
 
 const EditLanding = () => {
-  const platform = usePlatform() as unknown
+  const platform = usePlatform()
   const [isLandingEnabled, setIsLandingEnabled] = useState(false)
   const tNotify = useTranslations('DashPage.Notifications')
   const t = useTranslations('DashPage.PlatformSettings.Landing')
@@ -485,7 +496,7 @@ const EditLanding = () => {
   )
 
   const sectionIds = useMemo(
-    () => landingData.sections.map((s: AppPayload, i: number) => s._id ?? `section-${i}`),
+    () => landingData.sections.map((s: LandingSection, i: number) => s._id ?? `section-${i}`),
     [landingData.sections],
   )
   const announcements = useDndAnnouncements(sectionIds)
@@ -493,9 +504,9 @@ const EditLanding = () => {
   // Initialize landing data from platform config
   useEffect(() => {
     if (platform?.landing) {
-      const landingConfig = platform.landing
+      const landingConfig = normalizeLandingObject(platform.landing)
       setLandingData({
-        sections: landingConfig.sections || [],
+        sections: landingConfig.sections,
         enabled: Boolean(landingConfig.enabled),
       })
       // Coerce to boolean to avoid switching between controlled/uncontrolled
@@ -538,8 +549,8 @@ const EditLanding = () => {
     }
 
     const items = [...landingData.sections]
-    const oldIndex = items.findIndex((item: unknown, index: number) => (item._id || `section-${index}`) === active.id)
-    const newIndex = items.findIndex((item: unknown, index: number) => (item._id || `section-${index}`) === over.id)
+    const oldIndex = items.findIndex((item: LandingSection, index: number) => (item._id || `section-${index}`) === active.id)
+    const newIndex = items.findIndex((item: LandingSection, index: number) => (item._id || `section-${index}`) === over.id)
 
     const reorderedItems = arrayMove(items, oldIndex, newIndex)
 
@@ -612,13 +623,13 @@ const EditLanding = () => {
                   <div className="space-y-2">
                     <SortableContext
                       items={landingData.sections.map(
-                        (section: AppPayload, index: number) => section._id || `section-${index}`,
+                        (section: LandingSection, index: number) => section._id || `section-${index}`,
                       )}
                       strategy={verticalListSortingStrategy}
                     >
                       {landingData.sections.map((section: LandingSection, index: number) => (
                         <SortableLandingSection
-                          key={(section as unknown)._id || `section-${index}`}
+                          key={section._id || `section-${index}`}
                           section={section}
                           index={index}
                           t={t}
@@ -1996,10 +2007,10 @@ const FeaturedCoursesEditor: FC<{
                   <div key={course.course_uuid} className="flex items-center justify-between rounded-lg border p-4">
                     <div className="flex items-center space-x-3">
                       <div className="bg-muted relative h-12 w-12 overflow-hidden rounded-md">
-                        {course.course_thumbnail ? (
+                        {course.thumbnail_image ? (
                           <NextImage
-                            src={course.course_thumbnail}
-                            alt={course.name}
+                            src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
+                            alt={course.name || ''}
                             fill
                             className="h-full w-full object-cover"
                             sizes="100vw"
@@ -2012,15 +2023,16 @@ const FeaturedCoursesEditor: FC<{
                       </div>
                     </div>
                     <Button
-                      variant={section.courses.includes(course.course_uuid) ? 'default' : 'outline'}
+                      variant={section.courses.some(c => c.course_uuid === course.course_uuid) ? 'default' : 'outline'}
                       onClick={() => {
-                        const newCourses = section.courses.includes(course.course_uuid)
-                          ? section.courses.filter(id => id !== course.course_uuid)
-                          : [...section.courses, course.course_uuid]
+                        const isSelected = section.courses.some(c => c.course_uuid === course.course_uuid)
+                        const newCourses = isSelected
+                          ? section.courses.filter(c => c.course_uuid !== course.course_uuid)
+                          : [...section.courses, { course_uuid: course.course_uuid }]
                         onChange({ ...section, courses: newCourses })
                       }}
                     >
-                      {section.courses.includes(course.course_uuid)
+                      {section.courses.some(c => c.course_uuid === course.course_uuid)
                         ? t('FeaturedCoursesEditor.selectedButton')
                         : t('FeaturedCoursesEditor.selectButton')}
                     </Button>

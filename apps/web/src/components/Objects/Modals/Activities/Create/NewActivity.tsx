@@ -36,12 +36,12 @@ interface ActivityTypeConfig {
 
 interface NewActivityModalProps {
   closeModal: () => void
-  submitActivity: (data?: unknown) => Promise<unknown>
-  submitFileActivity: (params: { file: File; type: string; activity: AppActivity; chapterId: number }) => Promise<void>
-  submitExternalVideo: (external_video_data: AppPayload, activity: AppActivity, chapterId: number) => Promise<void>
+  submitActivity: (payload: AppPayload) => Promise<void>
+  submitFileActivity: (params: AppFileActivityInput) => Promise<void>
+  submitExternalVideo: (external_video_data: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>
   createAndOpenActivity: (kind: 'dynamic' | 'codechallenge') => Promise<void>
   chapterId: number
-  course: unknown
+  course: AppCourse | AppCourseContextShape
 }
 
 const ACTIVITY_TYPES: ActivityTypeConfig[] = [
@@ -163,10 +163,11 @@ export default function NewActivityModal({
           submitExternalVideo={submitExternalVideo}
           chapterId={chapterId}
           course={course}
+          closeModal={closeModal}
         />
       )}
       {selectedView === 'documentpdf' && (
-        <DocumentPdfModal submitFileActivity={submitFileActivity} chapterId={chapterId} course={course} />
+        <DocumentPdfModal submitFileActivity={submitFileActivity} chapterId={chapterId} course={course} closeModal={closeModal} />
       )}
       {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
       {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}

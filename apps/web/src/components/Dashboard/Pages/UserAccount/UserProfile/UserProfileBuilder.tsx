@@ -47,13 +47,11 @@ function SortableProfileSection({
   section,
   index,
   t,
-  getSectionTypesConfig,
   selectedSection,
   setSelectedSection,
   deleteSection,
 }: {
   deleteSection: (index: number) => void
-  getSectionTypesConfig: typeof getSectionTypesConfig
   index: number
   section: ProfileSection
   selectedSection: number | null
@@ -600,7 +598,6 @@ const UserProfileBuilder = () => {
                       section={section}
                       index={index}
                       t={t}
-                      getSectionTypesConfig={getSectionTypesConfig}
                       selectedSection={selectedSection}
                       setSelectedSection={setSelectedSection}
                       deleteSection={deleteSection}

@@ -24,8 +24,10 @@ const RichTextEditor = dynamic(
   },
 )
 
+import type { DiscussionReplyData } from './types'
+
 interface DiscussionReplyProps {
-  reply: AppDiscussionReply
+  reply: DiscussionReplyData
   postId: string
   currentUser: AppUserSummary
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void

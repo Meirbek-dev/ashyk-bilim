@@ -34,8 +34,12 @@ type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 const getDefaultTimeLimit = (limits?: { time_limit?: { min?: number; max?: number } }) =>
   Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
 
-const getCourseUuid = (course: AppCourse): string | null =>
-  course?.courseStructure?.course_uuid ?? course?.course_uuid ?? course?.course?.course_uuid ?? null
+type ExamCourseInput = AppActivityModalProps['course']
+
+const getCourseUuid = (course?: ExamCourseInput | null): string | null =>
+  course?.courseStructure?.course_uuid ??
+  course?.course_uuid ??
+  null
 
 const getCreatedActivityUuid = (data: AppPayload): string | null =>
   data?.activity_uuid ??
@@ -54,7 +58,7 @@ const NewExam = ({ chapterId, course, closeModal }: AppActivityModalProps) => {
 
   const { data: limits } = useExamConfig()
   const validationSchema = createValidationSchema(validationT, limits)
-  const withUnpublishedActivities = course ? course.withUnpublishedActivities : false
+  const withUnpublishedActivities = course?.withUnpublishedActivities ?? false
   const courseUuid = getCourseUuid(course)
   const createExamMutation = useCreateExamWithActivity(courseUuid, {
     withUnpublishedActivities,

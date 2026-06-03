@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils'
 
 // Types
 interface LandingClassicProps {
-  courses: unknown[]
+  courses: AppCourse[]
   totalCourses: number
-  collections: unknown[]
+  collections: AppCollection[]
   gamificationData?: DashboardData | null
   trailData: AppTrailData
   isAuthenticated: boolean
@@ -31,7 +31,7 @@ interface EmptyStateProps {
 }
 
 interface GridProps {
-  collections: unknown[]
+  collections: AppCollection[]
 }
 
 // Empty State Components

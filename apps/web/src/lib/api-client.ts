@@ -187,11 +187,11 @@ export const apiFetcher = async <T = unknown>(url: string): Promise<T> => {
   return errorHandling<T>(response)
 }
 
-export const fetchResponseMetadata = async (url: string): Promise<CustomResponseTyping> => {
+export const fetchResponseMetadata = async <T = unknown>(url: string): Promise<CustomResponseTyping<T>> => {
   const response = await apiFetch(url, {
     method: 'GET',
   })
-  return getResponseMetadata(response)
+  return getResponseMetadata<T>(response)
 }
 
 export const apiFetcherWithHeaders = async (

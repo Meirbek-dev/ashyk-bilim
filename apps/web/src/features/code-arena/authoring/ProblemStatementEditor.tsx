@@ -75,7 +75,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</span>
                 <NativeSelect
                   value={draft.difficulty ?? 'EASY'}
-                  onChange={e => onChange({ difficulty: e.target.value as unknown })}
+                  onChange={e => onChange({ difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' })}
                 >
                   <NativeSelectOption value="EASY">{t('difficulty.easy')}</NativeSelectOption>
                   <NativeSelectOption value="MEDIUM">{t('difficulty.medium')}</NativeSelectOption>
@@ -160,7 +160,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                     draft.difficulty === 'EASY' ? 'success' : draft.difficulty === 'MEDIUM' ? 'warning' : 'destructive'
                   }
                 >
-                  {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}` as unknown)}
+                  {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}`)}
                 </Badge>
                 <Badge variant="outline">
                   {draft.points ?? 100} {t('pointsShort')}

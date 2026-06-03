@@ -71,8 +71,8 @@ interface ActivityElementProps {
   activityIndex: number
   course_uuid: string
   isDragging?: boolean
-  attributes?: DraggableAttributes
-  listeners?: SyntheticListenerMap
+  attributes?: DraggableAttributes | undefined
+  listeners?: SyntheticListenerMap | undefined
 }
 
 const ACTIVITY_CONFIG = {

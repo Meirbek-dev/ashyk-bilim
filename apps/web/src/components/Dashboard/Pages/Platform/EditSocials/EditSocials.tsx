@@ -27,9 +27,14 @@ interface SocialMediaData {
   links: Record<string, string>
 }
 
+interface PlatformSocialUpdatePayload extends AppPayload {
+  socials: SocialMediaData['socials']
+  links: SocialMediaData['links']
+}
+
 export default function EditSocials() {
   const queryClient = useQueryClient()
-  const platform = usePlatform() as unknown
+  const platform = usePlatform()
   const t = useTranslations('DashPage.PlatformSettings.Socials')
 
   const socialDefaults = {
@@ -41,12 +46,30 @@ export default function EditSocials() {
     tiktok: '',
   }
 
+  const socialsFromPlatform = platform?.socials ? {
+    twitter: typeof platform.socials.twitter === 'string' ? platform.socials.twitter : '',
+    facebook: typeof platform.socials.facebook === 'string' ? platform.socials.facebook : '',
+    instagram: typeof platform.socials.instagram === 'string' ? platform.socials.instagram : '',
+    linkedin: typeof platform.socials.linkedin === 'string' ? platform.socials.linkedin : '',
+    youtube: typeof platform.socials.youtube === 'string' ? platform.socials.youtube : '',
+    tiktok: typeof platform.socials.tiktok === 'string' ? platform.socials.tiktok : '',
+  } : {}
+
+  const linksFromPlatform: Record<string, string> = {}
+  if (platform?.links) {
+    for (const [key, val] of Object.entries(platform.links)) {
+      if (typeof val === 'string') {
+        linksFromPlatform[key] = val
+      }
+    }
+  }
+
   const defaultValues = {
     socials: {
       ...socialDefaults,
-      ...platform?.socials,
+      ...socialsFromPlatform,
     },
-    links: platform?.links || {},
+    links: linksFromPlatform,
   }
 
   const form = useForm<SocialMediaData>({
@@ -59,7 +82,11 @@ export default function EditSocials() {
   const updatePlatformSettings = async (values: SocialMediaData) => {
     const loadingToast = toast.loading(t('updatingPlatform'))
     try {
-      await updatePlatform(values)
+      const payload: PlatformSocialUpdatePayload = {
+        socials: values.socials,
+        links: values.links,
+      }
+      await updatePlatform(payload)
       await revalidateTags(['platform'])
       await queryClient.invalidateQueries({
         queryKey: queryKeys.platform.config(),

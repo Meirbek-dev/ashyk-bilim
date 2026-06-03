@@ -49,8 +49,7 @@ const UserCertificates: React.FC = () => {
     )
   }
 
-  // Handle the actual API response structure - certificates are returned as an array directly
-  const certificatesData = Array.isArray(certificates) ? certificates : certificates?.data || []
+  const certificatesData = Array.isArray(certificates) ? certificates : []
 
   if (!certificatesData || certificatesData.length === 0) {
     return (

@@ -36,7 +36,7 @@ export interface Chapter {
   [key: string]: unknown
 }
 
-type Learnings = string | object | null
+type Learnings = string | string[] | AppPayload | null
 export type CourseSectionKey = 'general' | 'access' | 'contributors' | 'certification' | 'content'
 
 // Course structure interface with improved typing
@@ -52,6 +52,7 @@ export interface CourseStructure {
   thumbnail_type?: 'image' | 'video' | 'both'
   chapters: Chapter[]
   _certificationData?: unknown
+  update_date?: string
   [key: string]: unknown
 }
 

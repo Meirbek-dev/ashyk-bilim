@@ -122,11 +122,11 @@ const ActivityTooltipContent = ({
     <div className="border-border bg-popover text-popover-foreground min-w-[200px] rounded-lg border p-3 shadow-md">
       <div className="flex items-start gap-2.5">
         <div className="bg-muted flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
-          <ActivityTypeIcon activityType={activity.activity_type} size={14} />
+          <ActivityTypeIcon activityType={activity.activity_type ?? ''} size={14} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-popover-foreground truncate text-sm font-medium">{activity.name}</p>
-          <p className="text-muted-foreground text-xs">{getActivityTypeLabel(activity.activity_type, t)}</p>
+          <p className="text-muted-foreground text-xs">{getActivityTypeLabel(activity.activity_type ?? '', t)}</p>
         </div>
       </div>
       <div className="border-border mt-2.5 border-t pt-2.5">

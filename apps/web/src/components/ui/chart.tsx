@@ -97,7 +97,7 @@ function ChartContainer({
           <div style={{ width: dimensions.width, height: dimensions.height }}>
             {React.Children.map(children, child => {
               if (React.isValidElement(child)) {
-                return React.cloneElement(child as React.ReactElement, {
+                return React.cloneElement(child as React.ReactElement<{ width?: number; height?: number }>, {
                   width: dimensions.width,
                   height: dimensions.height,
                 })

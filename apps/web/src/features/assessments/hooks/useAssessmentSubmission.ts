@@ -211,7 +211,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onError: (error: Error & { status?: number; payload?: unknown }) => {
       if (error.status === 409) {
-        const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined
+        const payload = error.payload as Record<string, unknown> | undefined
+        const detail = payload?.detail as Record<string, unknown> | undefined
+        const latest = detail?.latest as AssessmentSubmissionRead | undefined
         if (latest) {
           draftVersionRef.current = latest.draft_version
           versionRef.current = latest.version
@@ -294,7 +296,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onError: (error: Error & { status?: number; payload?: unknown }) => {
       if (error.status === 409) {
-        const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined
+        const payload = error.payload as Record<string, unknown> | undefined
+        const detail = payload?.detail as Record<string, unknown> | undefined
+        const latest = detail?.latest as AssessmentSubmissionRead | undefined
         if (latest) {
           draftVersionRef.current = latest.draft_version
           versionRef.current = latest.version
@@ -319,7 +323,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     const loadError = draftQuery.error ?? submissionsQuery.error
     if (!loadError) return
-    const errorStatus = (loadError as unknown)?.status
+    const errorStatus = (loadError as { status?: number })?.status
     if (errorStatus === 429) return
     const { message } = loadError
     const key = `${assessmentUuid ?? 'missing'}:${message}`
@@ -413,7 +417,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
       },
       onError: (error: unknown) => {
-        if (error.status === 429) {
+        const err = error as { status?: number }
+        if (err?.status === 429) {
           lastSaveTimeRef.current = 0
           setSaveState('dirty')
           if (!nextSaveTimeoutRef.current) {

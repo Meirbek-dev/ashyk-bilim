@@ -10,7 +10,7 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 interface ConflictState {
   isOpen: boolean
   message: string
-  serverVersion: unknown | null
+  serverVersion: { update_date?: string | null } | null
   /** Retry the failed save with the fresh lastKnownUpdateDate from the server version. */
   pendingSave: (() => Promise<unknown>) | null
 }
@@ -30,7 +30,7 @@ interface CourseEditorActions {
   setSectionDirty: (section: CourseDirtySection, dirty: boolean) => void
   clearDirtySections: () => void
   setConflict: (input: {
-    serverVersion?: unknown | null
+    serverVersion?: { update_date?: string | null } | null
     message?: string
     pendingSave?: (() => Promise<unknown>) | null
   }) => void

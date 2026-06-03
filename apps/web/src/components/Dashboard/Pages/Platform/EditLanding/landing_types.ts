@@ -84,12 +84,13 @@ export interface LandingHeroSection {
   contentAlign?: 'left' | 'center' | 'right'
 }
 
-export type LandingSection =
+export type LandingSection = (
   | LandingTextAndImageSection
   | LandingHeroSection
   | LandingLogos
   | LandingPeople
   | LandingFeaturedCourses
+) & { _id?: string }
 
 export interface LandingObject {
   sections: LandingSection[]

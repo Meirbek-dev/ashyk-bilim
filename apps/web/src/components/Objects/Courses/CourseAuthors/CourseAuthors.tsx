@@ -311,6 +311,14 @@ const NewUpdateForm = ({
   )
 }
 
+interface CourseUpdatePayload {
+  id: number
+  title: string
+  content: string
+  creation_date: string
+  courseupdate_uuid: number
+}
+
 const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   const { can, isAuthenticated } = useSession()
   const canManageCourse =
@@ -341,7 +349,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
 
   return (
     <div className="space-y-4">
-      {updates.map((update: AppPayload) => (
+      {updates.map((update: CourseUpdatePayload) => (
         <motion.div
           key={update.id}
           initial={{ opacity: 0 }}
@@ -377,7 +385,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   )
 }
 
-const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: AppPayload }) => {
+const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: CourseUpdatePayload }) => {
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const [isOpen, setIsOpen] = useState(false)

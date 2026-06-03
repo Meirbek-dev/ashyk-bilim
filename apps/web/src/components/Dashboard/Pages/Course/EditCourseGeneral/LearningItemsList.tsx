@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { Theme } from 'emoji-picker-react'
 import type { EmojiClickData } from 'emoji-picker-react'
 import { Link as LinkIcon, Plus, X } from 'lucide-react'
 import { Input } from '@components/ui/input'
@@ -408,7 +409,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
                   onEmojiClick={emoji => {
                     handleEmojiSelect(item.id, emoji)
                   }}
-                  theme={'light' as unknown}
+                  theme={Theme.LIGHT}
                   previewConfig={{ showPreview: false }}
                   searchPlaceHolder={t('searchEmojis')}
                   autoFocusSearch

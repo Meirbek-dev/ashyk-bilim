@@ -55,7 +55,7 @@ interface SupportedProduct {
   guide: string
 }
 
-interface EmbedNodeAttrs {
+export interface EmbedNodeAttrs {
   embedUrl: string | null
   embedCode: string | null
   embedType: EmbedType | null
@@ -621,7 +621,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
   }, [selectedProduct])
 
   const handleResizeStart = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>, direction: 'horizontal' | 'vertical') => {
+    (e: Pick<ReactMouseEvent<HTMLDivElement>, 'clientX' | 'clientY' | 'preventDefault'>, direction: 'horizontal' | 'vertical') => {
       e.preventDefault()
       setIsResizing(true)
       const startX = e.clientX
@@ -803,7 +803,15 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'horizontal')}
               onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as unknown, 'horizontal')
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const simulatedEvent = {
+                    preventDefault: () => e.preventDefault(),
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  }
+                  handleResizeStart(simulatedEvent, 'horizontal')
+                }
               }}
             >
               <GripVertical size={16} className="text-gray-600" />
@@ -814,7 +822,15 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'vertical')}
               onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as unknown, 'vertical')
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const simulatedEvent = {
+                    preventDefault: () => e.preventDefault(),
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  }
+                  handleResizeStart(simulatedEvent, 'vertical')
+                }
               }}
             >
               <GripHorizontal size={16} className="text-gray-600" />

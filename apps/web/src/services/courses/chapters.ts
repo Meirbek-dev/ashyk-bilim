@@ -8,13 +8,13 @@ import { courseTag, tags } from '@/lib/cacheTags'
  This file includes only POST, PATCH, DELETE requests
 */
 
-export async function updateChapter(chapterUuid: string, data: AppPayload) {
+export async function updateChapter(chapterUuid: string, data: AppPayload): Promise<AppChapter> {
   const result = await apiFetch(`chapters/${chapterUuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const response = await errorHandling(result)
+  const response = await errorHandling<AppChapter>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')
@@ -37,13 +37,13 @@ export async function updateCourseOrderStructure(course_uuid: string, data: Cour
   return response
 }
 
-export async function createChapter(data: AppPayload) {
+export async function createChapter(data: AppPayload): Promise<AppChapter> {
   const result = await apiFetch('chapters', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  const response = await errorHandling(result)
+  const response = await errorHandling<AppChapter>(result)
 
   const { revalidateTag } = await import('next/cache')
   revalidateTag(tags.courses, 'max')

@@ -19,13 +19,13 @@ export type AvatarVariant = 'default' | 'outline' | 'ghost'
 export interface UserAvatarProps {
   size?: AvatarSize
   variant?: AvatarVariant
-  avatar_url?: string
+  avatar_url?: string | null | undefined
   use_with_session?: boolean
   predefined_avatar?: PredefinedAvatar
   showProfilePopup?: boolean
-  userId?: number
-  username?: string
-  user?: AvatarUser | null
+  userId?: number | null | undefined
+  username?: string | null | undefined
+  user?: AvatarUser | null | undefined
   className?: string
   fallbackText?: string
   imageProps?: Pick<ComponentProps<typeof AvatarImage>, 'loading' | 'decoding' | 'referrerPolicy'>

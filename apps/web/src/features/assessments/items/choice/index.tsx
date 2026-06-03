@@ -559,4 +559,4 @@ export const choiceModules: ItemKindModule[] = (
   Author: ChoiceItemAuthor,
   Attempt: ChoiceItemAttempt,
   ReviewDetail: ChoiceItemReviewDetail,
-}))
+} as ItemKindModule))

@@ -9,7 +9,7 @@ const FIVE_MINUTES = 5 * 60 * 1000
 
 function handle401(error: unknown): void {
   const status =
-    typeof error === 'object' && error !== null && 'status' in error ? Number((error as unknown).status) : undefined
+    typeof error === 'object' && error !== null && 'status' in error ? Number((error as Record<string, unknown>).status) : undefined
   if (status !== 401 || environmentManager.isServer()) return
   const { pathname, search } = globalThis.location
   if (!isAuthRoute(pathname)) {
@@ -18,7 +18,7 @@ function handle401(error: unknown): void {
 }
 
 function shouldRetry(failureCount: number, error: unknown) {
-  const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : undefined
+  const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as Record<string, unknown>).status) : undefined
 
   if (status !== undefined && status >= 400 && status < 500 && status !== 429) {
     return false

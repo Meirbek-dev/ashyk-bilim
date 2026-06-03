@@ -87,10 +87,18 @@ export function editableCourseListQueryOptions<TCourse = unknown>(options: Cours
   })
 }
 
+interface CourseUpdateRead {
+  id: number
+  title: string
+  content: string
+  creation_date: string
+  courseupdate_uuid: number
+}
+
 export function courseUpdatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.updates(courseUuid),
-    queryFn: () => apiFetcher<unknown[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
+    queryFn: () => apiFetcher<CourseUpdateRead[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
   })
 }
 
@@ -131,21 +139,21 @@ export function trailLeaderboardQueryOptions(limit = 10) {
 export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
-    queryFn: () => apiFetcher(`certifications/user/all`),
+    queryFn: () => apiFetcher<AppCertification[]>(`certifications/user/all`),
   })
 }
 
 export function userCourseCertificatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.course(courseUuid),
-    queryFn: () => fetchResponseMetadata(`certifications/user/course/${courseUuid}`),
+    queryFn: () => fetchResponseMetadata<AppCertification[]>(`certifications/user/course/${courseUuid}`),
   })
 }
 
 export function certificateDetailQueryOptions(certificateUuid: string) {
   return queryOptions({
     queryKey: queryKeys.certifications.detail(certificateUuid),
-    queryFn: () => fetchResponseMetadata(`certifications/certificate/${certificateUuid}`),
+    queryFn: () => fetchResponseMetadata<AppCertification>(`certifications/certificate/${certificateUuid}`),
   })
 }
 

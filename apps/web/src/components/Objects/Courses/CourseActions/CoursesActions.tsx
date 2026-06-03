@@ -18,36 +18,9 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-interface CourseRun {
-  status: string
-  course_id: number
-  steps: {
-    activity_id: number
-    complete: boolean
-  }[]
-}
-
-interface Course {
-  id: number
-  course_uuid: string
-  trail?: {
-    runs: CourseRun[]
-  }
-  chapters?: {
-    name: string
-    activities: {
-      id: number
-      activity_uuid: string
-      name: string
-      activity_type: string
-    }[]
-  }[]
-  open_to_contributors?: boolean
-}
-
 interface CourseActionsProps {
   courseuuid: string
-  course: Course
+  course: AppCourse
   trailData?: AppTrailData
 }
 
@@ -78,21 +51,23 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
-      const run = trailData?.runs?.find((r: AppRoleSummary) => {
+      const run = trailData?.runs?.find((r: AppTrailRun) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
 
       // Find first unfinished activity
-      let firstUnfinishedActivity: { id: number; activity_uuid: string } | null = null
+      let firstUnfinishedActivity: AppActivity | null = null
 
       if (course.chapters) {
         for (const chapter of course.chapters) {
-          for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
-            if (!isCompleted) {
-              firstUnfinishedActivity = activity
-              break
+          if (chapter.activities) {
+            for (const activity of chapter.activities) {
+              const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
+              if (!isCompleted) {
+                firstUnfinishedActivity = activity
+                break
+              }
             }
           }
           if (firstUnfinishedActivity) break
@@ -102,12 +77,12 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       // If all activities are completed, go to first activity
       const targetActivity = firstUnfinishedActivity || course.chapters?.[0]?.activities?.[0]
 
-      if (targetActivity) {
+      if (targetActivity?.activity_uuid) {
         router.push(
           `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${targetActivity.activity_uuid.replace('activity_', '')}`,
         )
       }
-      return
+      return;
     }
 
     setIsActionLoading(true)
@@ -246,7 +221,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
   const renderProgressSection = () => {
     const totalActivities =
-      course.chapters?.reduce((acc: number, chapter: AppChapter) => acc + chapter.activities.length, 0) || 0
+      course.chapters?.reduce((acc: number, chapter: AppChapter) => acc + (chapter.activities?.length || 0), 0) || 0
 
     const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')

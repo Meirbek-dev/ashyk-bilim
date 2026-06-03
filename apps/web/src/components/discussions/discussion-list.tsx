@@ -15,6 +15,7 @@ import DiscussionForm from './discussion-form'
 import { Badge } from '@/components/ui/badge'
 import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import type { DiscussionPostData, DiscussionReplyData } from './types'
 
 interface DiscussionListProps {
   initialPosts: Discussion[]
@@ -23,8 +24,23 @@ interface DiscussionListProps {
   onMutate?: () => void
 }
 
+function userSummaryToDiscussionUser(user: AppUserSummary) {
+  return {
+    id: user.id ?? 0,
+    user_uuid: user.user_uuid || '',
+    username: user.username || '',
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
+    email: user.email || '',
+    avatar_image: user.avatar_image || '',
+    bio: typeof user.bio === 'string' ? user.bio : '',
+    details: user.details || {},
+    profile: user.profile || {},
+  }
+}
+
 // Helper to transform API response to UI format
-const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string) => {
+const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string): DiscussionPostData => {
   // Handle date formatting properly
   const formatDate = (dateStr: string) => {
     if (!dateStr) return new Date().toISOString()
@@ -50,8 +66,8 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
     postMessage: discussion.content || '',
     createDate: formatDate(discussion.creation_date),
     updateDate: formatDate(discussion.update_date),
-    upvotes: Number.parseInt(discussion.likes_count, 10) || 0,
-    downvotes: Number.parseInt(discussion.dislikes_count, 10) || 0,
+    upvotes: discussion.likes_count ?? 0,
+    downvotes: discussion.dislikes_count ?? 0,
     userVote: discussion.is_liked ? 'up' : discussion.is_disliked ? 'down' : null,
     is_liked: discussion.is_liked,
     is_disliked: discussion.is_disliked,
@@ -65,8 +81,8 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
         replyMessage: reply.content || '',
         createDate: formatDate(reply.creation_date),
         updateDate: formatDate(reply.update_date),
-        upvotes: Number.parseInt(reply.likes_count, 10) || 0,
-        downvotes: Number.parseInt(reply.dislikes_count, 10) || 0,
+        upvotes: reply.likes_count ?? 0,
+        downvotes: reply.dislikes_count ?? 0,
         userVote: reply.is_liked ? 'up' : reply.is_disliked ? 'down' : null,
         is_liked: reply.is_liked,
         is_disliked: reply.is_disliked,
@@ -78,7 +94,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   const t = useTranslations('CoursePage')
   const anonymousLabel = t('anonymous')
   // Use lazy initialization to transform initial posts
-  const [posts, setPosts] = useState<unknown[]>(() => {
+  const [posts, setPosts] = useState<DiscussionPostData[]>(() => {
     if (Array.isArray(initialPosts)) {
       return initialPosts.map(discussion => transformDiscussionToPost(discussion, anonymousLabel))
     }
@@ -114,18 +130,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
       // If the new discussion doesn't have user data, populate it with current user
       if (!newDiscussion.user && currentUser) {
-        newDiscussion.user = {
-          id: currentUser.id,
-          user_uuid: currentUser.user_uuid || '',
-          username: currentUser.username,
-          first_name: currentUser.first_name || '',
-          last_name: currentUser.last_name || '',
-          email: currentUser.email || '',
-          avatar_image: currentUser.avatar_image || '',
-          bio: currentUser.bio || '',
-          details: currentUser.details || {},
-          profile: currentUser.profile || {},
-        }
+        newDiscussion.user = userSummaryToDiscussionUser(currentUser)
       }
 
       // Transform API response to match UI expectations
@@ -139,10 +144,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       }
     } catch (error: unknown) {
       console.error('Failed to create discussion:', error)
+      const err = error as Error & { status?: number; stack?: string }
       console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        stack: error.stack,
+        message: err.message,
+        status: err.status,
+        stack: err.stack,
       })
     }
   }
@@ -164,18 +170,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
       // If the new reply doesn't have user data, populate it with current user
       if (!newReply.user && currentUser) {
-        newReply.user = {
-          id: currentUser.id,
-          user_uuid: currentUser.user_uuid || '',
-          username: currentUser.username,
-          first_name: currentUser.first_name || '',
-          last_name: currentUser.last_name || '',
-          email: currentUser.email || '',
-          avatar_image: currentUser.avatar_image || '',
-          bio: currentUser.bio || '',
-          details: currentUser.details || {},
-          profile: currentUser.profile || {},
-        }
+        newReply.user = userSummaryToDiscussionUser(currentUser)
       }
 
       // Transform the reply to match UI expectations
@@ -206,10 +201,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       }
     } catch (error: unknown) {
       console.error('Failed to create reply:', error)
+      const err = error as Error & { status?: number; stack?: string }
       console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        stack: error.stack,
+        message: err.message,
+        status: err.status,
+        stack: err.stack,
       })
     }
   }
@@ -261,7 +257,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
+    const reply = post.replies?.find((r: DiscussionReplyData) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -282,7 +278,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           if (currentPost.id === postId) {
             return {
               ...currentPost,
-              replies: currentPost.replies?.map((r: AppRoleSummary) => {
+              replies: currentPost.replies?.map((r: DiscussionReplyData) => {
                 if (r.id === replyId) {
                   return {
                     ...r,
@@ -334,7 +330,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
+    const reply = post.replies?.find((r: DiscussionReplyData) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -349,7 +345,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           currentPost.id === postId
             ? {
                 ...currentPost,
-                replies: currentPost.replies?.filter((currentReply: AppDiscussionReply) => currentReply.id !== replyId),
+                replies: currentPost.replies?.filter((currentReply: DiscussionReplyData) => currentReply.id !== replyId),
               }
             : currentPost,
         ),
@@ -400,7 +396,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
+    const reply = post.replies?.find((r: DiscussionReplyData) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -417,7 +413,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           currentPost.id === postId
             ? {
                 ...currentPost,
-                replies: currentPost.replies?.map((currentReply: AppDiscussionReply) =>
+                replies: currentPost.replies?.map((currentReply: DiscussionReplyData) =>
                   currentReply.id === replyId
                     ? {
                         ...currentReply,

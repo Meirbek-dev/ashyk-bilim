@@ -277,7 +277,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               </Alert>
             ) : null}
             {latestCompletedSubmission ? (
-              <ExamSubmissionStatePanel submission={latestCompletedSubmission as unknown} />
+              <ExamSubmissionStatePanel submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']} />
             ) : null}
           </div>
         }
@@ -370,16 +370,17 @@ function ExamTakingContent({
       for (const key of Object.keys(record)) {
         const ans = record[key]
         if (!ans || typeof ans !== 'object') return false
-        const { kind } = ans as unknown
-        if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
+        const itemAnswer = ans as Record<string, unknown>
+        const kind = itemAnswer.kind
+        if (typeof kind !== 'string' || !['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
           return false
         }
-        if (kind === 'CHOICE' && !Array.isArray((ans as unknown).selected)) return false
-        if (kind === 'OPEN_TEXT' && typeof (ans as unknown).text !== 'string') return false
-        if (kind === 'FORM' && (!(ans as unknown).values || typeof (ans as unknown).values !== 'object')) return false
-        if (kind === 'CODE' && (typeof (ans as unknown).language !== 'number' || typeof (ans as unknown).source !== 'string'))
+        if (kind === 'CHOICE' && !Array.isArray(itemAnswer.selected)) return false
+        if (kind === 'OPEN_TEXT' && typeof itemAnswer.text !== 'string') return false
+        if (kind === 'FORM' && (!itemAnswer.values || typeof itemAnswer.values !== 'object')) return false
+        if (kind === 'CODE' && (typeof itemAnswer.language !== 'number' || typeof itemAnswer.source !== 'string'))
           return false
-        if (kind === 'MATCHING' && !Array.isArray((ans as unknown).matches)) return false
+        if (kind === 'MATCHING' && !Array.isArray(itemAnswer.matches)) return false
       }
       return true
     },
@@ -646,7 +647,7 @@ function ExamTakingContent({
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as unknown} /> : null}
+      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']} /> : null}
 
       {/* Progress bar + view mode toggle */}
       <div className="flex items-center gap-3">

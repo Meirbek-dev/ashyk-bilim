@@ -36,11 +36,6 @@ interface DeleteUserGroupButtonProps {
   t: (key: string) => string
 }
 
-interface UserGroup {
-  id: number
-  name: string
-  description?: string
-}
 
 function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -115,10 +110,10 @@ const UserGroups = () => {
   const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: AppUserGroup) => {
     setSelectedUserGroup(userGroup)
     if (modalType === 'manage') {
-      setSelectedUserGroupIdForManage(userGroup.id)
+      setSelectedUserGroupIdForManage(userGroup.id ?? null)
       setUserGroupManagementModal(true)
     } else if (modalType === 'edit') {
-      setSelectedUserGroupIdForEdit(userGroup.id)
+      setSelectedUserGroupIdForEdit(userGroup.id ?? null)
       setEditUserGroupModal(true)
     }
   }
@@ -141,7 +136,7 @@ const UserGroups = () => {
   }
   if (error) return <div>{t('errorLoadingUserGroups')}</div>
 
-  const columns: ColumnDef<UserGroup>[] = [
+  const columns: ColumnDef<AppUserGroup>[] = [
     {
       accessorKey: 'name',
       header: t('userGroupHeader'),
@@ -164,7 +159,11 @@ const UserGroups = () => {
           }}
           minHeight="lg"
           minWidth="lg"
-          dialogContent={selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null}
+          dialogContent={
+            selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
+              <ManageUsers usergroup_id={selectedUserGroup.id} />
+            ) : null
+          }
           dialogTitle={t('manageUsersModalTitle')}
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
@@ -204,9 +203,21 @@ const UserGroups = () => {
             }
             minHeight="sm"
             minWidth="sm"
-            dialogContent={selectedUserGroup ? <EditUserGroup usergroup={selectedUserGroup} /> : null}
+            dialogContent={
+              selectedUserGroup && typeof selectedUserGroup.id === 'number' ? (
+                <EditUserGroup
+                  usergroup={{
+                    id: selectedUserGroup.id,
+                    name: selectedUserGroup.name ?? '',
+                    description: selectedUserGroup.description ?? '',
+                  }}
+                />
+              ) : null
+            }
           />
-          <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
+          {typeof row.original.id === 'number' && (
+            <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
+          )}
         </div>
       ),
     },

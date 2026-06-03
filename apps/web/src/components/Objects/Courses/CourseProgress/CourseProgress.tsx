@@ -14,7 +14,7 @@ interface CourseProgressProps {
   course: AppCourse
   isOpen: boolean
   onClose: () => void
-  trailData: AppTrailData
+  trailData?: AppTrailData | undefined
 }
 
 const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trailData }) => {
@@ -24,7 +24,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
 
   const completedActivityIds = useMemo(() => {
     const run = trailData?.runs?.find((candidateRun: AppTrailRun) => {
-      const runCourseUuid = candidateRun.course?.course_uuid ?? candidateRun.course_uuid
+      const runCourseUuid = candidateRun.course?.course_uuid ?? (typeof candidateRun.course_uuid === 'string' ? candidateRun.course_uuid : undefined)
       return runCourseUuid?.replace('course_', '') === cleanCourseUuid
     })
 
@@ -40,7 +40,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
     let nextCompletedActivities = 0
     const nextChapterProgress: Record<string, { completed: number; total: number }> = {}
 
-    course.chapters.forEach((chapter: AppChapter) => {
+    course.chapters?.forEach((chapter: AppChapter) => {
       const chapterActivities = chapter.activities ?? []
       const chapterTotal = chapterActivities.length
       let chapterCompleted = 0
@@ -53,9 +53,11 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
 
       nextTotalActivities += chapterTotal
       nextCompletedActivities += chapterCompleted
-      nextChapterProgress[chapter.chapter_uuid] = {
-        completed: chapterCompleted,
-        total: chapterTotal,
+      if (chapter.chapter_uuid) {
+        nextChapterProgress[chapter.chapter_uuid] = {
+          completed: chapterCompleted,
+          total: chapterTotal,
+        }
       }
     })
 
@@ -175,10 +177,10 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       {/* Chapters List */}
       <ScrollArea className="max-h-[400px]">
         <div className="mb-4 flex flex-col gap-3 p-0.5">
-          {course.chapters.map((chapter: AppChapter, chapterIndex: number) => {
-            const chapterStats = chapterProgress[chapter.chapter_uuid]
+          {course.chapters?.map((chapter: AppChapter, chapterIndex: number) => {
+            const chapterStats = chapter.chapter_uuid ? chapterProgress[chapter.chapter_uuid] : undefined
             const isChapterComplete = chapterStats?.completed === chapterStats?.total
-            const isExpanded = expandedChapters.has(chapter.chapter_uuid)
+            const isExpanded = chapter.chapter_uuid ? expandedChapters.has(chapter.chapter_uuid) : false
             const chapterPercentage =
               !chapterStats || chapterStats.total === 0
                 ? 0
@@ -186,13 +188,13 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
 
             return (
               <div
-                key={chapter.chapter_uuid}
+                key={chapter.chapter_uuid ?? chapterIndex}
                 className="border-border hover:border-border/80 overflow-hidden rounded-xl border transition-shadow"
               >
                 {/* Chapter Header */}
                 <Button
                   type="button"
-                  onClick={() => toggleChapter(chapter.chapter_uuid)}
+                  onClick={() => chapter.chapter_uuid && toggleChapter(chapter.chapter_uuid)}
                   variant="ghost"
                   className={cn(
                     'flex h-auto w-full items-center gap-3 bg-card p-4 text-left transition-colors hover:bg-muted/60',
@@ -250,9 +252,9 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                 {/* Activities List */}
                 {isExpanded && (
                   <div className="border-t border-neutral-100 bg-neutral-50/50">
-                    {chapter.activities.map((activity: AppActivity, activityIndex: number) => {
+                    {chapter.activities?.map((activity: AppActivity, activityIndex: number) => {
                       const activityId = activity.activity_uuid.replace('activity_', '')
-                      const courseId = course.course_uuid.replace('course_', '')
+                      const courseId = (course.course_uuid || '').replace('course_', '')
                       const isDone = isActivityDone(activity)
 
                       return (
@@ -264,7 +266,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                           <div
                             className={cn(
                               'group flex items-center gap-3 px-4 py-3 transition-colors',
-                              activityIndex !== chapter.activities.length - 1 && 'border-b border-neutral-100',
+                              activityIndex !== (chapter.activities?.length || 0) - 1 && 'border-b border-neutral-100',
                               isDone ? 'hover:bg-teal-50/50' : 'hover:bg-white',
                             )}
                           >
@@ -280,7 +282,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                             </div>
 
                             {/* Activity Type Icon */}
-                            {getActivityTypeIcon(activity.activity_type, isDone)}
+                            {getActivityTypeIcon(activity.activity_type || '', isDone)}
 
                             {/* Activity Name */}
                             <span

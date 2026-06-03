@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { getErrorMessage } from '@/types/shared'
 
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas'
 import ChapterElement from './DraggableElements/ChapterElement'
@@ -50,7 +51,10 @@ const CurriculumEditor = () => {
   const [activeDragType, setActiveDragType] = useState<DndItemType | null>(null)
 
   const chapterIds = useMemo(
-    () => course_structure.chapters.map((chapter: AppChapter) => chapter.chapter_uuid),
+    () =>
+      course_structure.chapters
+        .map((chapter: AppChapter) => chapter.chapter_uuid)
+        .filter((uuid): uuid is string => Boolean(uuid)),
     [course_structure.chapters],
   )
 
@@ -125,10 +129,14 @@ const CurriculumEditor = () => {
   }
 
   const buildPayload = (newCourseStructure: AppCourse): CourseOrderPayload => ({
-    chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: AppChapter) => ({
-      chapter_uuid: chapter.chapter_uuid,
-      activities_order_by_uuids: (chapter.activities ?? []).map((activity: AppActivity) => activity.activity_uuid),
-    })),
+    chapter_order_by_uuids: (newCourseStructure.chapters ?? [])
+      .filter((chapter: AppChapter) => Boolean(chapter.chapter_uuid))
+      .map((chapter: AppChapter) => ({
+        chapter_uuid: chapter.chapter_uuid || '',
+        activities_order_by_uuids: (chapter.activities ?? [])
+          .filter((activity: AppActivity) => Boolean(activity.activity_uuid))
+          .map((activity: AppActivity) => activity.activity_uuid || ''),
+      })),
   })
 
   const findChapterByActivityUuid = (activityUuid: string) => {
@@ -163,7 +171,7 @@ const CurriculumEditor = () => {
       setStructureStatus('saved')
     } catch (error: unknown) {
       setStructureStatus('error')
-      toast.error(error?.message || t('saveOrderError'))
+      toast.error(getErrorMessage(error, t('saveOrderError')))
     }
   }
 

@@ -54,7 +54,7 @@ export function CodeItemAttempt({
   answer,
   disabled,
   onAnswerChange,
-}: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | undefined>) {
+}: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined>) {
   const initialCode = answer?.source ?? item.initialCode
 
   return (
@@ -64,14 +64,10 @@ export function CodeItemAttempt({
         settings={item.settings}
         initialLanguageId={answer?.language ?? item.initialLanguageId}
         {...(initialCode === undefined ? {} : { initialCode })}
-        {...(answer === undefined ? {} : { answer })}
+        {...(answer === undefined || answer === null ? {} : { answer })}
         {...(onAnswerChange === undefined ? {} : { onAnswerChange })}
         {...(item.onSubmit === undefined ? {} : { onSubmit: item.onSubmit })}
         {...(disabled === undefined ? {} : { disabled })}
-        {...(item.title === undefined ? {} : { challengeTitle: item.title })}
-        {...(item.description === undefined ? {} : { challengeDescription: item.description })}
-        hideHeader
-        {...(disabled === undefined ? {} : { hideSubmitButton: disabled })}
         {...(item.onSubmitControlChange === undefined ? {} : { onSubmitControlChange: item.onSubmitControlChange })}
       />
     </div>
@@ -120,14 +116,18 @@ export function useCodeSubmitControl() {
 export function CodeItemReviewDetail({
   item,
   answer,
-}: ItemReviewDetailProps<CodeAttemptItem, ItemAnswer | null | undefined>) {
+}: ItemReviewDetailProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined>) {
   const codeAnswer = answer?.kind === 'CODE' ? answer : null
   const languageId = codeAnswer?.language ?? 0
   const starterTemplate = item?.settings.starter_code?.[String(languageId)] ?? ''
   return <CodeSubmissionReview answer={answer} starterTemplate={starterTemplate} />
 }
 
-export const codeModule: ItemKindModule = {
+export const codeModule: ItemKindModule<
+  unknown,
+  CodeAttemptItem,
+  Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined
+> = {
   kind: 'CODE',
   label: 'Code',
   Author: UnsupportedItemAuthor,

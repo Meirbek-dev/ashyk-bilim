@@ -15,10 +15,10 @@ interface CertificatePreviewProps {
   certificationDescription: string
   certificationType: string
   certificatePattern: string
-  certificateInstructor?: string
-  certificateId?: string
-  awardedDate?: string
-  qrCodeLink?: string
+  certificateInstructor?: string | undefined
+  certificateId?: string | undefined
+  awardedDate?: string | undefined
+  qrCodeLink?: string | undefined
 }
 
 type CertificateLayout = 'classic' | 'double' | 'minimal' | 'split'

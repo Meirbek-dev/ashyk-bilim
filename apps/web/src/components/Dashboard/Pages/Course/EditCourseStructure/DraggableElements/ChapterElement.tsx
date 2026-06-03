@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { getErrorMessage } from '@/types/shared'
 
 import NewActivityButton from '@/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton'
 import ActivityElement from './ActivityElement'
@@ -48,9 +49,9 @@ interface Activity {
 }
 
 interface Chapter {
-  id: number
-  chapter_uuid: string
-  name: string
+  id?: number
+  chapter_uuid?: string
+  name?: string
   activities?: Activity[]
 }
 
@@ -120,8 +121,12 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
   const publishedCount = activities.filter(activity => activity.published).length
   const draftCount = activities.length - publishedCount
 
+  const chapterUuid = chapter.chapter_uuid || ''
+  const chapterName = chapter.name || ''
+  const chapterId = chapter.id ?? 0
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: chapter.chapter_uuid,
+    id: chapterUuid,
     data: {
       type: 'chapter',
       chapter,
@@ -129,27 +134,27 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
   })
 
   const { setNodeRef: setActivitiesDroppableRef, isOver: isActivitiesOver } = useDroppable({
-    id: chapter.chapter_uuid,
+    id: chapterUuid,
     data: {
       type: 'chapter',
-      chapterUuid: chapter.chapter_uuid,
+      chapterUuid,
     },
   })
 
   const handleStartEdit = () => {
-    setEditedName(chapter.name)
+    setEditedName(chapterName)
     setIsEditing(true)
   }
 
   const handleCancelEdit = () => {
     setIsEditing(false)
-    setEditedName(chapter.name)
+    setEditedName(chapterName)
   }
 
   const handleSaveEdit = async () => {
     const trimmedName = editedName.trim()
 
-    if (!trimmedName || trimmedName === chapter.name) {
+    if (!trimmedName || trimmedName === chapterName) {
       handleCancelEdit()
       return
     }
@@ -157,11 +162,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     setIsSavingEdit(true)
 
     try {
-      await updateChapter(chapter.chapter_uuid, { name: trimmedName })
+      await updateChapter(chapterUuid, { name: trimmedName })
       setIsEditing(false)
     } catch (error: unknown) {
-      toast.error(error?.message || t('chapterUpdateFailed'))
-      setEditedName(chapter.name)
+      toast.error(getErrorMessage(error, t('chapterUpdateFailed')))
+      setEditedName(chapterName)
     } finally {
       setIsSavingEdit(false)
     }
@@ -171,10 +176,10 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     setIsDeletingChapter(true)
 
     try {
-      await deleteChapter(chapter.chapter_uuid)
+      await deleteChapter(chapterUuid)
       setIsDeleteDialogOpen(false)
     } catch (error: unknown) {
-      toast.error(error?.message || t('chapterDeleteFailed'))
+      toast.error(getErrorMessage(error, t('chapterDeleteFailed')))
       setIsDeleteDialogOpen(false)
     } finally {
       setIsDeletingChapter(false)
@@ -194,7 +199,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     }
   }
 
-  if (!chapter?.chapter_uuid) {
+  if (!chapterUuid) {
     return null
   }
 
@@ -220,11 +225,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
         >
           <GripVertical className="h-5 w-5" />
         </button>
-
+ 
         <div className="bg-muted shrink-0 rounded-lg p-2">
           <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
         </div>
-
+ 
         <div className="min-w-0 flex-1">
           {isEditing ? (
             <div className="flex items-center gap-1.5">
@@ -237,7 +242,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                 className="h-8 text-sm"
                 disabled={isSavingEdit}
               />
-
+ 
               <ToolTip content={t('save')} side="top">
                 <Button
                   size="sm"
@@ -249,7 +254,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
               </ToolTip>
-
+ 
               <ToolTip content={t('cancel')} side="top">
                 <Button
                   size="sm"
@@ -264,11 +269,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-foreground truncate text-sm font-medium sm:text-base">{chapter.name}</span>
+              <span className="text-foreground truncate text-sm font-medium sm:text-base">{chapterName}</span>
               <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
                 {activities.length}
               </span>
-
+ 
               <ToolTip content={t('edit')} side="top">
                 <Button
                   size="sm"
@@ -282,7 +287,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </div>
           )}
         </div>
-
+ 
         {!isEditing && (
           <ToolTip content={t('deleteChapterButton')} side="top">
             <Button
@@ -295,14 +300,14 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </Button>
           </ToolTip>
         )}
-
+ 
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogMedia className="bg-muted text-foreground">
                 <AlertTriangle className="size-8" />
               </AlertDialogMedia>
-              <AlertDialogTitle>{t('deleteChapterTitle', { name: chapter.name })}</AlertDialogTitle>
+              <AlertDialogTitle>{t('deleteChapterTitle', { name: chapterName })}</AlertDialogTitle>
               <AlertDialogDescription>
                 {activities.length > 0
                   ? t('deleteChapterConfirmationBreakdown', {
@@ -329,7 +334,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
           </AlertDialogContent>
         </AlertDialog>
       </div>
-
+ 
       <SortableContext items={activityIds} strategy={verticalListSortingStrategy}>
         <div
           ref={setActivitiesDroppableRef}
@@ -340,7 +345,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
               <SortableActivityElement
                 key={activity.activity_uuid}
                 course_uuid={course_uuid}
-                chapterUuid={chapter.chapter_uuid}
+                chapterUuid={chapterUuid}
                 activityIndex={index}
                 activity={activity}
               />
@@ -353,9 +358,9 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
           )}
         </div>
       </SortableContext>
-
+ 
       <div className="px-4 pb-4">
-        <NewActivityButton chapterId={chapter.id} />
+        <NewActivityButton chapterId={chapterId} />
       </div>
     </div>
   )

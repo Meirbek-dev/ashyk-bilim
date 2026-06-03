@@ -138,7 +138,7 @@ const EditCourseAccess = () => {
   )
 }
 
-const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: unknown[]; isLoading: boolean }) => {
+const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: AppUserGroup[]; isLoading: boolean }) => {
   const course = useCourse()
   const [userGroupModal, setUserGroupModal] = useState(false)
   const t = useTranslations('DashPage.Courses.Access')
@@ -209,9 +209,10 @@ const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: AppUserGroup
   const t = useTranslations('DashPage.Courses.Access')
 
   const removeUserGroupLink = () => {
+    if (typeof usergroup.id !== 'number') return
     startTransition(async () => {
       try {
-        const res = await unLinkResourcesToUserGroup(usergroup.id, courseUuid, {
+        const res = await unLinkResourcesToUserGroup(usergroup.id, [courseUuid], {
           courseUuid,
         })
         if (res.status === 200) {
@@ -219,7 +220,8 @@ const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: AppUserGroup
           await course.refreshEditorData()
           setIsOpen(false)
         } else {
-          toast.error(t('unlinkUserGroupErrorDetailed', { error: res.data.detail }))
+          const detail = (res.data as AppPayload | undefined)?.detail || ''
+          toast.error(t('unlinkUserGroupErrorDetailed', { error: detail }))
         }
       } catch {
         toast.error(t('unlinkUserGroupErrorGeneric'))

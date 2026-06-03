@@ -343,7 +343,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm leading-tight font-medium">{t(labelKey as unknown)}</span>
+                  <span className="text-sm leading-tight font-medium">{t(labelKey)}</span>
                   <Switch
                     checked={state[key]}
                     disabled={disabled}
@@ -351,7 +351,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                     className="shrink-0"
                   />
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">{tSetup(descKey as unknown)}</p>
+                <p className="text-muted-foreground mt-1 text-xs">{tSetup(descKey)}</p>
               </div>
             </div>
           ))}

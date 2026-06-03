@@ -137,7 +137,7 @@ export function AssessmentChrome({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function describeAntiCheat(policy: PolicyView | null | undefined, t: (key: string, values?: AppTranslationValues) => string): string {
+function describeAntiCheat(policy: PolicyView | null | undefined, t: AppTranslator): string {
   if (!policy) return t('antiCheatDefaultNotice')
   const enabled = [
     policy.antiCheat.copyPasteProtection ? t('antiCheatCopyPaste') : null,

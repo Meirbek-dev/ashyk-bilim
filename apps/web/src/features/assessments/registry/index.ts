@@ -84,15 +84,17 @@ export interface KindModule {
   ReviewDetail?: ComponentType<KindReviewDetailProps>
 }
 
+const registryMap = new Map<AssessmentKind, () => Promise<KindModule>>()
+let registryInitialized = false
+
 function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
-  const f = getRegistry as unknown
-  if (!f._map) {
-    f._map = new Map()
-    f._map.set('TYPE_EXAM', examModuleFactory)
-    f._map.set('TYPE_CODE_CHALLENGE', codeChallengeModuleFactory)
-    f._map.set('TYPE_CUSTOM', customModuleFactory)
+  if (!registryInitialized) {
+    registryMap.set('TYPE_EXAM', examModuleFactory)
+    registryMap.set('TYPE_CODE_CHALLENGE', codeChallengeModuleFactory)
+    registryMap.set('TYPE_CUSTOM', customModuleFactory)
+    registryInitialized = true
   }
-  return f._map
+  return registryMap
 }
 
 /** Register a kind module factory. Call once per kind (e.g., in kind's own file). */
@@ -109,14 +111,14 @@ async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
   return factory()
 }
 
+const loadedModulesMap = new Map<AssessmentKind, KindModule>()
+
 /**
  * Synchronous access for contexts where async loading is managed externally.
  * Returns undefined if the kind module has not been loaded yet.
  */
 function getLoadedModules(): Map<AssessmentKind, KindModule> {
-  const f = getLoadedModules as unknown
-  if (!f._map) f._map = new Map()
-  return f._map
+  return loadedModulesMap
 }
 
 export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> {

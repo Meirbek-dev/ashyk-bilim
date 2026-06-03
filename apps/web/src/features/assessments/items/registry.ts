@@ -41,19 +41,21 @@ export interface ItemKindModule<TAuthorValue = unknown, TAttemptItem = unknown, 
   ReviewDetail: ComponentType<ItemReviewDetailProps<TAttemptItem, TAttemptAnswer>>
 }
 
+const registryMap = new Map<ItemKind, ItemKindModule>()
+let registryInitialized = false
+
 function getRegistry(): Map<ItemKind, ItemKindModule> {
-  const f = getRegistry as unknown
-  if (!f.map) {
-    f.map = new Map<ItemKind, ItemKindModule>()
+  if (!registryInitialized) {
     for (const m of choiceModules) {
-      f.map.set(m.kind, m)
+      registryMap.set(m.kind, m)
     }
-    f.map.set(codeModule.kind, codeModule)
-    f.map.set(formModule.kind, formModule)
-    f.map.set(matchingModule.kind, matchingModule)
-    f.map.set(openTextModule.kind, openTextModule)
+    registryMap.set(codeModule.kind, codeModule as ItemKindModule)
+    registryMap.set(formModule.kind, formModule as ItemKindModule)
+    registryMap.set(matchingModule.kind, matchingModule as ItemKindModule)
+    registryMap.set(openTextModule.kind, openTextModule as ItemKindModule)
+    registryInitialized = true
   }
-  return f.map
+  return registryMap
 }
 
 export function registerItemKind(module: ItemKindModule): void {

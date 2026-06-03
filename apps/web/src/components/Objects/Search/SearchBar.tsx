@@ -115,7 +115,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
     page: 1,
     limit: 3,
   })
-  const rawSearchResults = searchQueryResult.data?.data
+  const rawSearchResults = searchQueryResult.data?.data as Partial<SearchResults> | undefined
   const searchResults: SearchResults = {
     courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
     collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],

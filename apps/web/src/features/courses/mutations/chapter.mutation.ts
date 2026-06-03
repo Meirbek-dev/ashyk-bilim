@@ -18,9 +18,9 @@ export function createChapterMutationOptions(queryClient: QueryClient, structure
       }
 
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
 
-      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
@@ -31,8 +31,12 @@ export function createChapterMutationOptions(queryClient: QueryClient, structure
 
       return { previousStructure, tempId }
     },
-    onSuccess: (createdChapter: AppChapter, _variables: unknown, context: AppMutationContext | undefined) => {
-      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
+    onSuccess: (
+      createdChapter: AppChapter,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined; tempId: string } | undefined,
+    ) => {
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
@@ -43,7 +47,11 @@ export function createChapterMutationOptions(queryClient: QueryClient, structure
           : current,
       )
     },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined; tempId: string } | undefined,
+    ) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {
@@ -58,9 +66,9 @@ export function updateChapterMutationOptions(queryClient: QueryClient, structure
       updateChapter(chapterUuid, payload),
     onMutate: async ({ chapterUuid, payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
 
-      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
@@ -73,7 +81,11 @@ export function updateChapterMutationOptions(queryClient: QueryClient, structure
 
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined } | undefined,
+    ) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {
@@ -87,9 +99,9 @@ export function deleteChapterMutationOptions(queryClient: QueryClient, structure
     mutationFn: async (chapterUuid: string) => deleteChapter(chapterUuid),
     onMutate: async (chapterUuid: string) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
 
-      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
@@ -100,7 +112,11 @@ export function deleteChapterMutationOptions(queryClient: QueryClient, structure
 
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined } | undefined,
+    ) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {
@@ -119,11 +135,15 @@ export function reorderStructureMutationOptions(
       updateCourseOrderStructure(courseUuid, payload),
     onMutate: async ({ nextStructure }: { nextStructure: AppCourse; payload: CourseOrderPayload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
       queryClient.setQueryData(structureKey, nextStructure)
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined } | undefined,
+    ) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {

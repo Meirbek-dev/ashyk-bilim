@@ -22,8 +22,8 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
   const courseid = course.course_uuid.replace('course_', '')
   const router = useRouter()
   const t = useTranslations('Trail')
-  const { course_total_steps } = run
-  const course_completed_steps = run.steps.length
+  const course_total_steps = run.course_total_steps ?? 0
+  const course_completed_steps = run.steps?.length ?? 0
   const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0
   const isCompleted = course_progress === 100
   const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)

@@ -16,7 +16,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 const COURSES_PER_PAGE = 20
 
 interface CourseGridClientProps {
-  initialCourses: unknown[]
+  initialCourses: AppCourse[]
   initialTotal: number
   trailData: AppTrailData
   currentPage: number

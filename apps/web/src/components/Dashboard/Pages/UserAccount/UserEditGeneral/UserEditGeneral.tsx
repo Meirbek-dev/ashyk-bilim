@@ -83,7 +83,7 @@ interface DetailItem {
   text: string
 }
 
-const createValidationSchema = (t: (key: string, values?: AppTranslationValues) => string) =>
+const createValidationSchema = (t: AppTranslator) =>
   v.object({
     email: v.pipe(
       v.string(),
@@ -711,7 +711,7 @@ const UserEditGeneral = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [success, setSuccess] = useState('')
-  const [userData, setUserData] = useState<unknown>(null)
+  const [userData, setUserData] = useState<AppUserSummary | null>(null)
   const [currentLocale, setCurrentLocale] = useState<Locale | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const t = useTranslations('DashPage.Notifications')
@@ -855,7 +855,7 @@ const UserEditGeneral = () => {
 
     try {
       await updateProfile(values, userData.id)
-      setUserData((current: AppTranslator) => ({ ...current, ...values }))
+      setUserData(current => current ? ({ ...current, ...values, middle_name: values.middle_name ?? null }) : null)
 
       toast.dismiss(loadingToast)
       if (isEmailChanged) {

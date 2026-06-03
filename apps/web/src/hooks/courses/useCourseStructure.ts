@@ -56,7 +56,7 @@ export function useCourseStructure<TCourseStructure = AppCourse>(
 }
 
 export function useCourseChapters(courseUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure<{ chapters?: unknown[] }>(courseUuid, {
+  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
     withUnpublishedActivities,
   })
 
@@ -66,15 +66,13 @@ export function useCourseChapters(courseUuid: string, withUnpublishedActivities 
   }
 }
 
-export function useChapter<TChapter = AppChapter>(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure<{
-    chapters?: TChapter[]
-  }>(courseUuid, {
+export function useChapter(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
+  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
     withUnpublishedActivities,
   })
 
   const chapter =
-    courseStructure?.chapters?.find((currentChapter: AppChapter) => currentChapter.chapter_uuid === chapterUuid) ?? null
+    courseStructure?.chapters?.find((currentChapter) => currentChapter.chapter_uuid === chapterUuid) ?? null
 
   return { ...rest, chapter }
 }
@@ -85,7 +83,7 @@ export function useChapterActivities(
   enabled: boolean,
   withUnpublishedActivities = false,
 ) {
-  const { chapter, ...rest } = useChapter<{ activities?: unknown[] }>(
+  const { chapter, ...rest } = useChapter(
     courseUuid,
     chapterUuid,
     withUnpublishedActivities,

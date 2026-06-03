@@ -5,29 +5,37 @@ declare global {
   type AppJsonValue = AppJsonPrimitive | AppJsonValue[] | { [key: string]: AppJsonValue }
   interface AppPayload {
     [key: string]: unknown
-    activity?: AppPayload
-    activity_uuid?: string
-    course_uuid?: string
-    data?: AppPayload
-    description?: string
-    detail?: string
-    details?: AppPayload & {
-      subtitles?: { file?: File; id?: number | string; label?: string; language?: string }[]
-    }
-    filename?: string
-    id?: number | string
-    message?: string
-    name?: string
-    order?: number
-    status?: number
-    success?: boolean
-    title?: string
-    type?: string
-    update_date?: string
-    url?: string
+    activity?: AppPayload | undefined
+    activity_uuid?: string | undefined
+    certification?: AppCertification | undefined
+    collections?: AppCollection[] | undefined
+    course?: AppCourse | undefined
+    course_uuid?: string | undefined
+    data?: AppPayload | undefined
+    description?: string | undefined
+    detail?: string | undefined
+    details?: (AppPayload & {
+      subtitles?: { file?: File | undefined; id?: number | string | undefined; label?: string | undefined; language?: string | undefined }[] | undefined
+    }) | undefined
+    filename?: string | undefined
+    id?: number | string | undefined
+    message?: string | undefined
+    name?: string | undefined
+    order?: number | undefined
+    status?: number | undefined
+    success?: boolean | undefined
+    title?: string | undefined
+    type?: string | undefined
+    update_date?: string | undefined
+    url?: string | undefined
+    // Commonly accessed payload properties
+    learnings?: string | string[] | null | undefined
+    tags?: string | string[] | null | undefined
+    visibility?: boolean | string | null | undefined
+    template?: string | null | undefined
   }
-  type AppTranslationValues = Record<string, string | number | boolean | Date | null | undefined>
-  type AppTranslator = (key: string, values?: unknown) => string
+  type AppTranslationValues = Record<string, string | number | Date>
+  type AppTranslator = (key: string, values?: AppTranslationValues) => string
   type AppIcon = ComponentType<
     {
       className?: string
@@ -70,7 +78,7 @@ declare global {
   interface AppActivityModalProps {
     chapterId: number
     closeModal: () => void
-    course?: AppCourse & AppCourseContextShape
+    course?: AppCourse | AppCourseContextShape
     submitActivity?: (payload: AppPayload) => Promise<void>
     submitExternalVideo?: (externalVideoData: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>
     submitFileActivity?: (params: AppFileActivityInput) => Promise<void>
@@ -167,6 +175,7 @@ declare global {
   interface AppTrailRun {
     course?: Pick<AppCourse, 'course_uuid' | 'id' | 'name'> | null
     steps?: AppTrailStep[]
+    course_total_steps?: number
     [key: string]: unknown
   }
 
@@ -203,10 +212,21 @@ declare global {
     updated_at?: string
     likes_count?: number
     is_liked?: boolean
-    [key: string]: unknown
   }
 
   interface AppDiscussionPost extends AppDiscussionReply {
+    discussion_uuid?: string
+    type?: 'post' | 'reply'
+    status?: 'active' | 'hidden' | 'deleted'
+    course_id?: number
+    user_id?: number
+    parent_discussion_id?: number
+    dislikes_count?: number
+    replies_count?: number
+    creation_date?: string
+    update_date?: string
+    user?: AppUserSummary | null
+    is_disliked?: boolean
     title?: string
     replies?: AppDiscussionReply[]
   }
@@ -214,7 +234,23 @@ declare global {
   interface AppCertification {
     id?: number
     certification_uuid?: string
-    course?: AppCourse
+    course: AppCourse
+    certificate_user: {
+      user_certification_uuid: string
+      created_at: string
+      [key: string]: unknown
+    }
+    certification: {
+      config: {
+        certification_name: string
+        certification_type: string
+        certification_description?: string
+        certificate_pattern?: string
+        certificate_instructor?: string | null
+        [key: string]: unknown
+      }
+      [key: string]: unknown
+    }
     [key: string]: unknown
   }
 }

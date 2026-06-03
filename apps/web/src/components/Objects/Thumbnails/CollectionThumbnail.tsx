@@ -31,7 +31,7 @@ interface PropsType {
 
 const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '')
 
-const CollectionMosaic = ({ courses }: { courses: unknown[] }) => {
+const CollectionMosaic = ({ courses }: { courses: AppCourse[] | number[] | undefined }) => {
   if (!courses || courses.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
@@ -40,8 +40,9 @@ const CollectionMosaic = ({ courses }: { courses: unknown[] }) => {
     )
   }
 
-  const courseImages = courses
-    .filter(c => c.thumbnail_image)
+  const courseList = courses.filter((c): c is AppCourse => typeof c === 'object' && c !== null)
+  const courseImages = courseList
+    .filter((c): c is typeof c & { thumbnail_image: string } => typeof c.thumbnail_image === 'string')
     .map(c => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image))
 
   if (courseImages.length === 0) {
@@ -101,12 +102,12 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
   const tCommon = useTranslations('Common')
 
   const isOwner = collection.is_owner ?? false
-  const canDelete = collection.can_delete ?? false
+  const canDelete = collection.can_delete === true
 
   return (
     <div className="group border-border bg-card hover:border-primary/20 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md">
       <Link
-        href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
+        href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
         className="border-border/50 relative block aspect-[16/9] w-full overflow-hidden border-b"
       >
         <CollectionMosaic courses={collection.courses} />
@@ -115,7 +116,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
 
       <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <CollectionDeleteAction
-          collection_uuid={collection.collection_uuid}
+          collection_uuid={collection.collection_uuid ?? ''}
           collection={collection}
           canDelete={canDelete}
         />
@@ -124,7 +125,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
-            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
+            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
             className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >
             {collection.name}
@@ -134,7 +135,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         <div className="mt-auto flex items-center justify-between pt-2">
           <div className="text-muted-foreground flex items-center gap-1.5">
             <Layers className="h-4 w-4" />
-            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses.length })}</p>
+            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses?.length ?? 0 })}</p>
           </div>
           {isOwner && (
             <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
@@ -192,7 +193,7 @@ const CollectionDeleteAction = ({
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name })}</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

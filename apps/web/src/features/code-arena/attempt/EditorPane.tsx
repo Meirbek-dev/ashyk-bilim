@@ -53,10 +53,10 @@ export function EditorPane({
 }: EditorPaneProps) {
   const t = useTranslations('Activities.CodeChallenges')
   const selectedLanguage = languages.find(language => language.id === languageId)
-  const editorRef = useRef<unknown>(null)
+  const editorRef = useRef<{ getAction(id: string): { run(): void } | null } | null>(null)
 
   const handleMount = (editor: unknown) => {
-    editorRef.current = editor
+    editorRef.current = editor as { getAction(id: string): { run(): void } | null } | null
   }
 
   const handleFormat = () => {

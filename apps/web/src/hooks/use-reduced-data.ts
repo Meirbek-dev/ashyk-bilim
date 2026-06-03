@@ -68,11 +68,7 @@ export function useReducedData(): boolean {
       setPrefersReducedData(event.matches)
     }
 
-    if ('addEventListener' in mediaQuery) {
-      mediaQuery.addEventListener('change', handleChange)
-    } else if ('addListener' in mediaQuery) {
-      mediaQuery.addListener(handleChange)
-    }
+    mediaQuery.addEventListener('change', handleChange)
 
     let prevOnChange: EventListenerOrEventListenerObject | null = null
     const handleNetworkChange = () => {
@@ -92,11 +88,7 @@ export function useReducedData(): boolean {
     }
 
     return () => {
-      if ('removeEventListener' in mediaQuery) {
-        mediaQuery.removeEventListener('change', handleChange)
-      } else if ('removeListener' in mediaQuery) {
-        mediaQuery.removeListener(handleChange)
-      }
+      mediaQuery.removeEventListener('change', handleChange)
 
       if (connection) {
         if ('removeEventListener' in connection) {

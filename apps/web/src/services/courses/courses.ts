@@ -332,7 +332,7 @@ export async function getCourseUserRights(course_uuid: string) {
   return await errorHandling(result)
 }
 
-export async function searchCourses(query: string, page = 1, limit = 20, _next: AppTranslator) {
+export async function searchCourses(query: string, page = 1, limit = 20) {
   const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
   const courses: CourseRead[] = await errorHandling(result)
   return courses.map(course => normalizeCourse(course))
@@ -464,18 +464,27 @@ export async function createNewCourse(
   thumbnail: Blob | File | null | undefined,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
+  const {
+    name = '',
+    description = '',
+    learnings = '',
+    tags: courseTags = '',
+    template,
+    visibility,
+  } = course_body
+
   // Send file thumbnail as form data
   const formData = new FormData()
-  formData.append('name', course_body.name)
-  formData.append('description', course_body.description || '')
-  formData.append('public', String(course_body.visibility))
-  formData.append('learnings', course_body.learnings || '')
-  formData.append('tags', course_body.tags || '')
-  formData.append('about', course_body.description || '')
+  formData.append('name', name)
+  formData.append('description', description)
+  formData.append('public', String(visibility ?? false))
+  formData.append('learnings', Array.isArray(learnings) ? JSON.stringify(learnings) : (learnings || ''))
+  formData.append('tags', Array.isArray(courseTags) ? JSON.stringify(courseTags) : (courseTags || ''))
+  formData.append('about', description)
 
   // Pass template so the backend can seed starter chapters atomically
-  if (course_body.template && course_body.template !== 'outline') {
-    formData.append('template', course_body.template)
+  if (template && template !== 'outline') {
+    formData.append('template', template)
   }
 
   if (thumbnail) {
@@ -573,7 +582,7 @@ export async function applyForContributor(course_uuid: string, data: AppPayload)
 
 export async function bulkAddContributors(
   course_uuid: string,
-  data: AppPayload,
+  data: string[],
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
@@ -594,7 +603,7 @@ export async function bulkAddContributors(
 
 export async function bulkRemoveContributors(
   course_uuid: string,
-  data: AppPayload,
+  data: string[],
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {

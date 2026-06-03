@@ -26,25 +26,7 @@ const RichTextEditor = dynamic(
   },
 )
 
-interface DiscussionPostData {
-  id: string
-  postMessage: string
-  username: string
-  firstName?: string
-  lastName?: string
-  createDate: string
-  updateDate?: string
-  upvotes: number
-  downvotes: number
-  userVote?: 'up' | 'down'
-  replies?: unknown[]
-  can_update?: boolean
-  can_delete?: boolean
-  can_moderate?: boolean
-  is_owner?: boolean
-  is_creator?: boolean
-  available_actions?: string[]
-}
+import type { DiscussionPostData, DiscussionReplyData } from './types'
 
 interface DiscussionPostProps {
   post: DiscussionPostData
@@ -319,7 +301,7 @@ export default function DiscussionPost({
           <>
             <Separator />
             <div className="bg-muted/80 py-1">
-              {post.replies.map((reply: AppDiscussionReply) => (
+              {post.replies.map((reply: DiscussionReplyData) => (
                 <DiscussionReply
                   key={reply.id}
                   reply={reply}

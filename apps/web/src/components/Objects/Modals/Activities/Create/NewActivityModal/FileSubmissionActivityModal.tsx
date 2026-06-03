@@ -106,6 +106,11 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       toast.error(t('requiredFields'))
       return
     }
+    const courseId = course?.courseStructure?.id
+    if (typeof courseId !== 'number') {
+      toast.error(t('createError'))
+      return
+    }
     setIsSubmitting(true)
     try {
       const result = await createFileSubmissionActivity({
@@ -115,7 +120,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
         max_files: maxFiles,
         max_file_size_mb: maxSize === '' ? null : maxSize,
         allowed_mime_types: selectedMimes,
-        course_id: course?.courseStructure?.id,
+        course_id: courseId,
         chapter_id: chapterId,
       })
       if (!result.success) {

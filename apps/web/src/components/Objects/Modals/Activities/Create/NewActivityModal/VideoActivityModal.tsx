@@ -51,6 +51,7 @@ interface VideoDetails {
   autoplay: boolean
   muted: boolean
   subtitles?: SubtitleFile[]
+  [key: string]: unknown
 }
 
 interface ExternalVideoObject {
@@ -59,6 +60,7 @@ interface ExternalVideoObject {
   uri: string
   chapter_id: number
   details: VideoDetails
+  [key: string]: unknown
 }
 
 const getLocalizedLanguageOptions = (t: AppTranslator) => [
@@ -745,7 +747,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
 
     try {
       if (selectedView === 'file' && selectedVideo) {
-        await submitFileActivity({
+        await submitFileActivity?.({
           file: selectedVideo,
           type: 'video',
           activity: {
@@ -753,7 +755,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
             chapter_id: chapterId,
             activity_type: 'TYPE_VIDEO',
             activity_sub_type: 'SUBTYPE_VIDEO_HOSTED',
-            details: videoDetails,
+            details: videoDetails as AppPayload,
           },
           chapterId,
         })
@@ -769,7 +771,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
           details: videoDetails,
         }
 
-        await submitExternalVideo(external_video_object, 'activity', chapterId)
+        await submitExternalVideo?.(external_video_object as AppPayload, { name: submittedName } as AppPayload, chapterId)
         toast.success(t('successYouTubeVideoActivityCreated'))
       }
     } catch (error) {

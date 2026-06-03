@@ -1,9 +1,10 @@
 'use client'
 
+import type { Discussion } from '@/services/courses/discussions'
 import DiscussionList from './discussion-list'
 
 interface CourseDiscussionsProps {
-  initialPosts: unknown[]
+  initialPosts: Discussion[]
   currentUser: AppUserSummary
   courseUuid: string
   onMutate?: () => void

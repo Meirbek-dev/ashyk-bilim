@@ -5,8 +5,8 @@ export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue
 export type JsonObject = Record<string, JsonValue>
 export type UnknownRecord = Record<string, unknown>
 
-export type TranslationValues = Record<string, string | number | boolean | Date | null | undefined>
-export type TranslationFunction = (key: string, values?: unknown) => string
+export type TranslationValues = Record<string, string | number | Date>
+export type TranslationFunction = (key: string, values?: TranslationValues) => string
 
 export type IconComponent = ComponentType<
   {

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import dynamic from 'next/dynamic'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { Theme } from 'emoji-picker-react'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
   ssr: false,
@@ -55,11 +56,13 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
   }, [])
 
   const handleEmojiSelect = (selectedEmoji: { emoji?: string; unified?: string; names?: string[] }) => {
-    setEmoji(selectedEmoji.emoji)
-    setShowEmojiPicker(false)
-    props.updateAttributes({
-      emoji: selectedEmoji.emoji,
-    })
+    if (selectedEmoji.emoji) {
+      setEmoji(selectedEmoji.emoji)
+      setShowEmojiPicker(false)
+      props.updateAttributes({
+        emoji: selectedEmoji.emoji,
+      })
+    }
   }
 
   const handleLinkChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -213,7 +216,7 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
             onEmojiClick={handleEmojiSelect}
             height="30rem"
             width="25rem"
-            theme={'light' as unknown}
+            theme={Theme.LIGHT}
             previewConfig={{ showPreview: false }}
             searchPlaceHolder={t('searchEmojis')}
             autoFocusSearch

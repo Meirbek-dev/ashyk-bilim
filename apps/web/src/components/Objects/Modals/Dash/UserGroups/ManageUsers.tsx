@@ -31,13 +31,14 @@ const ManageUsers = (props: ManageUsersProps) => {
   const queryClient = useQueryClient()
   const { data: Users } = useAllMembers()
   const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id)
-  const { data: UGusers } = useUserGroupUsers(props.usergroup_id)
+  const { data: UGusers } = useUserGroupUsers(props.usergroup_id) as { data?: AppUserSummary[] }
 
   // Normalize Users response which may be either an array or a paginated object { users: [], total, ... }
-  const platformUsersList = (data: AppPayload) => {
+  const platformUsersList = (data: unknown) => {
     if (!data) return []
-    if (Array.isArray(data)) return data
-    if (Array.isArray(data.users)) return data.users
+    const payload = data as AppPayload
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload.users)) return payload.users
     return []
   }
 
@@ -54,7 +55,8 @@ const ManageUsers = (props: ManageUsersProps) => {
       toast.success(t('linkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
     } else {
-      toast.error(t('linkError', { error: res.data?.detail || t('unknownError') }))
+      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+      toast.error(t('linkError', { error: errorDetail }))
     }
   }
 
@@ -64,7 +66,8 @@ const ManageUsers = (props: ManageUsersProps) => {
       toast.success(t('unlinkSuccess'))
       await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
     } else {
-      toast.error(t('unlinkError', { error: res.data?.detail || t('unknownError') }))
+      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+      toast.error(t('unlinkError', { error: errorDetail }))
     }
   }
 

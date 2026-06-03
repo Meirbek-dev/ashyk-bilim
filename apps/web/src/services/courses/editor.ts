@@ -9,7 +9,7 @@ export interface CourseEditorResource<T> {
 }
 
 export interface CourseEditorBundle {
-  contributors: CourseEditorResource<unknown[]>
+  contributors: CourseEditorResource<AppCourseAuthor[]>
   linkedUserGroups: CourseEditorResource<unknown[]>
   certifications: CourseEditorResource<unknown[]>
 }
@@ -27,27 +27,32 @@ const createResource = <T>(
 })
 
 export const createEmptyCourseEditorBundle = (): CourseEditorBundle => ({
-  contributors: createResource<unknown[]>(null, 0, null, false),
+  contributors: createResource<AppCourseAuthor[]>(null, 0, null, false),
   linkedUserGroups: createResource<unknown[]>(null, 0, null, false),
   certifications: createResource<unknown[]>(null, 0, null, false),
 })
 
-const toArrayResource = (response: {
+const toArrayResource = <T>(response: {
   success: boolean
-  data: AppPayload
+  data: unknown
   status: number
   HTTPmessage: string
-}): CourseEditorResource<unknown[]> => {
+}): CourseEditorResource<T[]> => {
   if (response.status === 401 || response.status === 403) {
-    return createResource<unknown[]>(null, response.status, null, false)
+    return createResource<T[]>(null, response.status, null, false)
   }
 
   if (!response.success) {
     const detail = getApiErrorMessage(response.data, response.HTTPmessage || 'Request failed')
-    return createResource<unknown[]>([], response.status, detail, true)
+    return createResource<T[]>([], response.status, detail, true)
   }
 
-  return createResource(Array.isArray(response.data) ? response.data : [], response.status, null, true)
+  return createResource(
+    (Array.isArray(response.data) ? response.data : []) as T[],
+    response.status,
+    null,
+    true,
+  )
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
@@ -58,8 +63,8 @@ export async function getCourseEditorBundle(courseUuid: string): Promise<CourseE
   ])
 
   return {
-    contributors: toArrayResource(contributors),
-    linkedUserGroups: toArrayResource(linkedUserGroups),
-    certifications: toArrayResource(certifications),
+    contributors: toArrayResource<AppCourseAuthor>(contributors),
+    linkedUserGroups: toArrayResource<unknown>(linkedUserGroups),
+    certifications: toArrayResource<unknown>(certifications),
   }
 }

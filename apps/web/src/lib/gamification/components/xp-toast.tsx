@@ -11,7 +11,7 @@
 'use client'
 
 import { XPNotificationContainer, useXPNotificationQueue } from '@/lib/gamification/components/notification-queue'
-import type { XPNotification } from '@/lib/gamification/components/notification-queue'
+import type { XPNotification, BatchedNotification } from '@/lib/gamification/components/notification-queue'
 import { ParticleEffect } from '@/lib/gamification/components/level-indicators'
 import { AnimatedValue } from '@/lib/gamification/components/animated-value'
 import { useReducedData } from '@/hooks/use-reduced-data'
@@ -136,7 +136,7 @@ export function useXPToast() {
     })
   }
 
-  const renderNotification = (notification: unknown) => (
+  const renderNotification = (notification: BatchedNotification) => (
     <XPToast notification={notification} onDismiss={() => dismissNotification(notification.id)} />
   )
 

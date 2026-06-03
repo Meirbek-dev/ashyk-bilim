@@ -49,29 +49,15 @@ import { getAbsoluteUrl } from '@services/config/config'
 // Types
 // ============================================================================
 
-export interface CourseAuthor {
-  user: {
-    id: number
-    user_uuid: string
-    avatar_image: string
-    first_name: string
-    middle_name?: string
-    last_name: string
-    username: string
-  }
-  authorship: 'CREATOR' | 'CONTRIBUTOR' | 'MAINTAINER' | 'REPORTER'
-  authorship_status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-}
-
 export interface Course {
-  course_uuid: string
-  name: string
-  description: string
-  thumbnail_image: string
-  update_date: string
-  authors?: CourseAuthor[]
+  course_uuid?: string
+  name?: string
+  description?: string
+  thumbnail_image?: string | null
+  update_date?: string | null
+  authors?: AppCourseAuthor[]
   chapters?: {
-    activities: unknown[]
+    activities?: unknown[]
   }[]
   can_update?: boolean
   can_delete?: boolean
@@ -93,10 +79,10 @@ export interface CourseThumbnailProps {
 // Utilities
 // ============================================================================
 
-const removeCoursePrefix = (courseUuid: string): string => courseUuid.replace('course_', '')
+const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').replace('course_', '')
 
-const getAuthorFullName = (author: CourseAuthor['user']): string =>
-  [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ')
+const getAuthorFullName = (author?: AppUserSummary): string =>
+  author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : ''
 
 const formatDate = (dateString: string, locale: string): string => {
   try {
@@ -181,7 +167,7 @@ const CourseImage: FC<CourseImageProps> = ({
 )
 
 interface AuthorsDisplayProps {
-  authors: CourseAuthor[]
+  authors: AppCourseAuthor[]
   t: AppTranslator
 }
 
@@ -201,8 +187,9 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
 
   const authorsText = useMemo(() => {
     const names = displayedAuthors.map(a => {
-      const fullName = getAuthorFullName(a.user)
-      return fullName.trim() !== '' ? fullName : a.user.username
+      const u = a.user
+      const fullName = getAuthorFullName(u)
+      return fullName.trim() !== '' ? fullName : (u?.username || '')
     })
 
     const joinedNames = names.join(', ')
@@ -220,31 +207,32 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
         aria-label={t('courseAuthorsAria', { defaultValue: 'Course authors' })}
       >
         {displayedAuthors.map((author, idx) => {
-          const authorName = getAuthorFullName(author.user).trim() || author.user.username
+          const u = author.user
+          const authorName = getAuthorFullName(u).trim() || (u?.username ?? '')
           // Format role for tooltip (e.g., "CREATOR" -> "Creator")
-          const roleLabel = author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase()
+          const roleLabel = author.authorship ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase() : ''
           const isCreator = author.authorship === 'CREATOR'
 
           return (
             <div
-              key={author.user.user_uuid}
+              key={u?.user_uuid ?? idx}
               className={`ring-background relative rounded-full ring-2 transition-all duration-200 hover:z-20 hover:-translate-y-0.5 hover:shadow-sm ${
                 isCreator ? 'ring-primary/10' : ''
               }`}
               style={{ zIndex: displayedAuthors.length - idx }}
-              title={`${authorName} (${roleLabel})`}
+              title={roleLabel ? `${authorName} (${roleLabel})` : authorName}
             >
               <UserAvatar
                 size="sm"
                 variant="outline"
                 avatar_url={
-                  author.user.avatar_image
-                    ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
+                  u?.avatar_image && u?.user_uuid
+                    ? getUserAvatarMediaDirectory(u.user_uuid, u.avatar_image)
                     : ''
                 }
-                {...(!author.user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                {...(!u?.avatar_image ? { predefined_avatar: 'empty' } : {})}
                 showProfilePopup
-                userId={author.user.id}
+                userId={u?.id}
               />
             </div>
           )
@@ -394,7 +382,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
       a =>
         a.authorship_status === 'ACTIVE' &&
         (a.authorship === 'CREATOR' || a.authorship === 'MAINTAINER') &&
-        a.user.id === currentUserId,
+        a.user?.id === currentUserId,
     )
   }, [currentUserId, course.authors, course.is_owner])
 
@@ -464,7 +452,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
             <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName: course.name })}</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName: course.name || '' })}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -529,7 +517,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const { progressPercentage } = useMemo(() => {
     const total =
       courseRun?.course_total_steps ||
-      course.chapters?.reduce((acc, chapter) => acc + chapter.activities.length, 0) ||
+      course.chapters?.reduce((acc, chapter) => acc + (chapter.activities?.length || 0), 0) ||
       0
     const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
@@ -539,7 +527,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
-      ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
+      ? getCourseThumbnailMediaDirectory(course.course_uuid || '', course.thumbnail_image)
       : '/empty_thumbnail.avif'
   }, [course.thumbnail_image, course.course_uuid])
 
@@ -556,13 +544,13 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const currentUserId = currentUser?.id
   const isOwner = useMemo(() => {
     if (!currentUserId || !activeAuthors.length) return false
-    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user.id === currentUserId)
+    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user?.id === currentUserId)
   }, [currentUserId, activeAuthors])
 
   const handleDelete = async () => {
     const toastId = toast.loading(t('deleting'))
     try {
-      await deleteCourseFromBackend(course.course_uuid)
+      await deleteCourseFromBackend(course.course_uuid || '')
       toast.success(t('toastDeleteSuccess'))
       router.refresh()
     } catch {
@@ -583,8 +571,8 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
       <CourseImage
         thumbnailUrl={thumbnailUrl}
-        courseName={course.name}
-        updateDate={course.update_date}
+        courseName={course.name || ''}
+        updateDate={course.update_date || ''}
         locale={locale}
         courseUrl={courseUrl}
         t={t}
@@ -597,7 +585,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           <Link
             href={courseUrl}
             className="group-hover:text-primary block transition-colors duration-150"
-            aria-label={t('openCourse', { course: course.name })}
+            aria-label={t('openCourse', { course: course.name || '' })}
           >
             <h3
               id={titleId}
@@ -607,7 +595,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
             </h3>
           </Link>
           <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
-            {extractMarkdownSummary(course.description, 140)}
+            {extractMarkdownSummary(course.description || '', 140)}
           </p>
         </div>
 
@@ -620,7 +608,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
           isLoading={effectiveTrailLoading}
           progressPercentage={progressPercentage}
           courseUrl={actionUrl}
-          courseName={course.name}
+          courseName={course.name || ''}
           t={t}
         />
       </CardFooter>

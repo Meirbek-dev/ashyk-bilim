@@ -301,7 +301,9 @@ export function FormItemAttempt({
   )
 }
 
-export function FormItemReviewDetail({ answer }: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) {
+export function FormItemReviewDetail({
+  answer,
+}: ItemReviewDetailProps<FormItemValue & { taskUuid?: string }, FormAnswer | null>) {
   return (
     <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">
       {JSON.stringify(answer?.form_data?.answers ?? {}, null, 2)}
@@ -309,7 +311,11 @@ export function FormItemReviewDetail({ answer }: ItemReviewDetailProps<FormItemV
   )
 }
 
-export const formModule: ItemKindModule = {
+export const formModule: ItemKindModule<
+  FormItemValue,
+  FormItemValue & { taskUuid?: string },
+  FormAnswer | null
+> = {
   kind: 'FORM',
   label: 'Form',
   Author: FormItemAuthor,

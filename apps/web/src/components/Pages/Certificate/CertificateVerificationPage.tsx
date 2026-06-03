@@ -187,10 +187,10 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
               <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <CertificatePreview
                   certificationName={certificateData.certification.config.certification_name}
-                  certificationDescription={certificateData.certification.config.certification_description}
+                  certificationDescription={certificateData.certification.config.certification_description ?? ''}
                   certificationType={certificateData.certification.config.certification_type}
-                  certificatePattern={certificateData.certification.config.certificate_pattern}
-                  certificateInstructor={certificateData.certification.config.certificate_instructor}
+                  certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
+                  certificateInstructor={certificateData.certification.config.certificate_instructor ?? undefined}
                   certificateId={certificateData.certificate_user.user_certification_uuid}
                   awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
                     year: 'numeric',
@@ -253,39 +253,36 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                       ) : null}
                     </div>
 
-                    {certificateData.course.authors && certificateData.course.authors.length > 0 ? (
-                      <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
-                        <span>{t('byLabel')}</span>
-                        <div className="flex items-center gap-1">
-                          {certificateData.course.authors
-                            .filter((author: AppCourseAuthor) => author.authorship_status === 'ACTIVE')
-                            .slice(0, 2)
-                            .map((author: AppCourseAuthor, index: number) => (
-                              <span key={author.user.user_uuid} className="text-foreground">
-                                {[author.user.first_name, author.user.middle_name, author.user.last_name]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                                {index <
-                                  Math.min(
-                                    2,
-                                    certificateData.course.authors.filter((a: AppCourseAuthor) => a.authorship_status === 'ACTIVE')
-                                      .length - 1,
-                                  ) && ', '}
+                    {(() => {
+                      const authors = certificateData.course.authors ?? []
+                      const activeAuthors = authors.filter(
+                        (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE' && author.user,
+                      )
+                      if (activeAuthors.length === 0) return null
+                      return (
+                        <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
+                          <span>{t('byLabel')}</span>
+                          <div className="flex items-center gap-1">
+                            {activeAuthors.slice(0, 2).map((author: AppCourseAuthor, index: number) => {
+                              const user = author.user!
+                              return (
+                                <span key={user.user_uuid} className="text-foreground">
+                                  {[user.first_name, user.middle_name, user.last_name]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                  {index < Math.min(2, activeAuthors.length - 1) && ', '}
+                                </span>
+                              )
+                            })}
+                            {activeAuthors.length > 2 && (
+                              <span className="text-muted-foreground">
+                                +{activeAuthors.length - 2} {t('moreAuthors')}
                               </span>
-                            ))}
-                          {certificateData.course.authors.filter((author: AppCourseAuthor) => author.authorship_status === 'ACTIVE')
-                            .length > 2 && (
-                            <span className="text-muted-foreground">
-                              +
-                              {certificateData.course.authors.filter(
-                                (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE',
-                              ).length - 2}{' '}
-                              {t('moreAuthors')}
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
+                      )
+                    })()}
                   </div>
                 </div>
 

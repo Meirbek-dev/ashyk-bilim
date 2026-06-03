@@ -7,6 +7,7 @@ import { twMerge } from 'tailwind-merge'
 import dynamic from 'next/dynamic'
 import type { FC } from 'react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { Theme } from 'emoji-picker-react'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
   ssr: false,
@@ -48,11 +49,13 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
   }, [])
 
   const handleEmojiSelect = (selectedEmoji: { emoji?: string; unified?: string; names?: string[] }) => {
-    setEmoji(selectedEmoji.emoji)
-    setShowEmojiPicker(false)
-    props.updateAttributes({
-      emoji: selectedEmoji.emoji,
-    })
+    if (selectedEmoji.emoji) {
+      setEmoji(selectedEmoji.emoji)
+      setShowEmojiPicker(false)
+      props.updateAttributes({
+        emoji: selectedEmoji.emoji,
+      })
+    }
   }
 
   const handleColorSelect = (selectedColor: string) => {
@@ -260,7 +263,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
             onEmojiClick={handleEmojiSelect}
             height="30rem"
             width="25rem"
-            theme={'light' as unknown}
+            theme={Theme.LIGHT}
             previewConfig={{ showPreview: false }}
             searchPlaceHolder={t('searchEmojis')}
             autoFocusSearch

@@ -18,33 +18,40 @@ interface ActivityInvalidationOptions {
 }
 
 interface VideoActivityDetails {
-  autoplay?: boolean
-  endTime?: number | null
-  muted?: boolean
-  startTime?: number
-  subtitles?: { file?: File; id?: string | number; label?: string; language?: string }[]
+  autoplay?: boolean | undefined
+  endTime?: number | null | undefined
+  muted?: boolean | undefined
+  startTime?: number | undefined
+  subtitles?: { file?: File | undefined; id?: string | number | undefined; label?: string | undefined; language?: string | undefined }[] | undefined
 }
 
 function buildVideoDetails(details: VideoActivityDetails): string {
   const detailsToSend: {
-    autoplay?: boolean
+    autoplay?: boolean | undefined
     endTime: number | null
-    muted?: boolean
+    muted?: boolean | undefined
     startTime: number
-    subtitles?: { id?: string | number; language?: string; label?: string }[]
+    subtitles?: { id?: string | number | undefined; language?: string | undefined; label?: string | undefined }[] | undefined
   } = {
     startTime: details.startTime ?? 0,
     endTime: details.endTime ?? null,
-    autoplay: details.autoplay,
-    muted: details.muted,
+  }
+
+  if (details.autoplay !== undefined) {
+    detailsToSend.autoplay = details.autoplay
+  }
+  if (details.muted !== undefined) {
+    detailsToSend.muted = details.muted
   }
 
   if (details.subtitles) {
-    detailsToSend.subtitles = details.subtitles.map(subtitle => ({
-      id: subtitle.id,
-      language: subtitle.language,
-      label: subtitle.label,
-    }))
+    detailsToSend.subtitles = details.subtitles.map(subtitle => {
+      const sub: { id?: string | number; language?: string; label?: string } = {}
+      if (subtitle.id !== undefined) sub.id = subtitle.id
+      if (subtitle.language !== undefined) sub.language = subtitle.language
+      if (subtitle.label !== undefined) sub.label = subtitle.label
+      return sub
+    })
   }
 
   return JSON.stringify(detailsToSend)
@@ -110,7 +117,7 @@ async function createVideoActivityStandard(
 
   const formData = new FormData()
   formData.append('chapter_id', chapterId.toString())
-  formData.append('name', data.name)
+  formData.append('name', data.name ?? '')
   formData.append('video_file', file)
 
   if (data.details?.subtitles && Array.isArray(data.details.subtitles)) {
@@ -158,7 +165,7 @@ async function createVideoActivityChunked(
 
   const formData = new FormData()
   formData.append('chapter_id', chapterId.toString())
-  formData.append('name', data.name)
+  formData.append('name', data.name ?? '')
   formData.append(
     'video_uploaded_path',
     `courses/${courseUuid}/activities/${tempActivityUuid}/video/video.${videoFormat}`,
@@ -210,7 +217,7 @@ async function createPdfActivityStandard(
   const formData = new FormData()
   formData.append('chapter_id', chapterId.toString())
   formData.append('pdf_file', file)
-  formData.append('name', data.name)
+  formData.append('name', data.name ?? '')
 
   return uploadFormData('activities/documentpdf', formData, onProgress)
 }
@@ -250,7 +257,7 @@ async function createPdfActivityChunked(
 
   const formData = new FormData()
   formData.append('chapter_id', chapterId.toString())
-  formData.append('name', data.name)
+  formData.append('name', data.name ?? '')
   formData.append('pdf_uploaded_path', uploadedPath)
 
   return uploadFormData('activities/documentpdf', formData, onProgress)

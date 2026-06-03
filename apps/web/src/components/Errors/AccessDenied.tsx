@@ -49,7 +49,7 @@ export default function AccessDenied({ session }: AccessDeniedProps) {
             {session ? tHeader('profile.dashboard') : tGeneral('home')}
           </Button>
 
-          {session && (
+          {!!session && (
             <Button
               variant="destructive"
               className="flex items-center gap-2 rounded-xl"

@@ -36,15 +36,15 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     setNewActivityModal(false)
   }
 
-  const submitActivity = async (activity: AppActivity) => {
+  const submitActivity = async (activity: AppPayload) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
-      const response = await activityMutations.createActivity(activity, props.chapterId)
+      await activityMutations.createActivity(activity as ActivityCreateValues, props.chapterId)
       toast.success(tNotify('activityCreatedSuccess'))
       setNewActivityModal(false)
-      return response
     } catch (error: unknown) {
-      toast.error(error?.message || tNotify('uploadFailed'))
+      const err = error as Error | AppApiError
+      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
       throw error
     } finally {
       toast.dismiss(toast_loading)
@@ -56,18 +56,13 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     type,
     activity,
     chapterId,
-  }: {
-    file: File
-    type: string
-    activity: AppActivity
-    chapterId: number
-  }) => {
+  }: AppFileActivityInput) => {
     const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
     const courseUuid = course.courseStructure.course_uuid
     const activityPayload = courseUuid ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid } : activity
 
     try {
-      await activityMutations.createFileActivity(file, type, activityPayload, chapterId, progress => {
+      await activityMutations.createFileActivity(file, type, activityPayload as Partial<ActivityCreateValues>, chapterId, progress => {
         toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
           id: toast_loading,
         })
@@ -79,18 +74,28 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
       toast.dismiss(toast_loading)
-      toast.error(error?.message || tNotify('uploadFailed'))
+      const err = error as Error | AppApiError
+      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
     }
   }
 
-  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppActivity) => {
+  const submitExternalVideo = async (
+    external_video_data: AppPayload,
+    activity: AppPayload,
+    chapterId: number,
+  ) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
-      await activityMutations.createExternalVideo(external_video_data, activity, props.chapterId)
+      await activityMutations.createExternalVideo(
+        external_video_data,
+        activity as Partial<ActivityCreateValues>,
+        chapterId,
+      )
       setNewActivityModal(false)
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
-      toast.error(error?.message || tNotify('uploadFailed'))
+      const err = error as Error | AppApiError
+      toast.error((err && 'message' in err ? err.message : '') || tNotify('uploadFailed'))
     } finally {
       toast.dismiss(toast_loading)
     }

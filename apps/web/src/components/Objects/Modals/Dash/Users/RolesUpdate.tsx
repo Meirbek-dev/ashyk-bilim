@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import type { FC } from 'react'
+import type { Role } from '@/types/permissions'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
@@ -37,7 +38,7 @@ const RolesUpdate: FC<Props> = props => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.RolesUpdate')
   const validationSchema = createValidationSchema(validationT)
-  const [error, setError] = useState<unknown>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<FormData, unknown, RoleFormValues>({
     resolver: valibotResolver(validationSchema),
@@ -49,7 +50,7 @@ const RolesUpdate: FC<Props> = props => {
   // Fetch available platform roles and sort them by system flag + priority
   const { data: roles, error: rolesError } = useRoles()
 
-  const sortedRoles = (roles ?? []).toSorted((a: AppRoleSummary, b: AppRoleSummary) => {
+  const sortedRoles = (roles ?? []).toSorted((a: Role, b: Role) => {
     // System roles first, then by descending priority, then by name
     const aSystem = a.is_system ? 0 : 1
     const bSystem = b.is_system ? 0 : 1
@@ -66,7 +67,10 @@ const RolesUpdate: FC<Props> = props => {
     try {
       const newRoleId = Number.parseInt(values.role, 10)
       const oldRoleId = Number.parseInt(props.alreadyAssignedRole, 10)
-      const userId = props.user.user.id
+      const userId = props.user.user?.id ?? props.user.id ?? props.user.user_id
+      if (typeof userId !== 'number') {
+        throw new Error('User ID is missing')
+      }
 
       if (!Number.isNaN(oldRoleId)) {
         await removeRoleFromUser(userId, oldRoleId)
@@ -117,7 +121,7 @@ const RolesUpdate: FC<Props> = props => {
                     {t('loadingRoles')}
                   </NativeSelectOption>
                 ) : (
-                  sortedRoles.map((role: AppRoleSummary) => (
+                  sortedRoles.map((role: Role) => (
                     <NativeSelectOption key={role.id} value={role.id.toString()}>
                       {role.name}
                     </NativeSelectOption>

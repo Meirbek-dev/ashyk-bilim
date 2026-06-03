@@ -1,6 +1,8 @@
 'use client'
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import type { UseQueryResult } from '@tanstack/react-query'
+import type { CustomResponseTyping } from '@/lib/api-client'
 import {
   certificateDetailQueryOptions,
   userCertificatesQueryOptions,
@@ -25,14 +27,18 @@ function certificateDetailHookOptions(certificateUuid: string | null | undefined
   })
 }
 
-export function useUserCertificates() {
+export function useUserCertificates(): UseQueryResult<AppCertification[]> {
   return useQuery(userCertificatesQueryOptions())
 }
 
-export function useUserCertificateByCourse(courseUuid: string | null | undefined) {
+export function useUserCertificateByCourse(
+  courseUuid: string | null | undefined,
+): UseQueryResult<CustomResponseTyping<AppCertification[]>> {
   return useQuery(userCourseCertificateHookOptions(courseUuid))
 }
 
-export function useCertificateByUuid(certificateUuid: string | null | undefined) {
+export function useCertificateByUuid(
+  certificateUuid: string | null | undefined,
+): UseQueryResult<CustomResponseTyping<AppCertification>> {
   return useQuery(certificateDetailHookOptions(certificateUuid))
 }

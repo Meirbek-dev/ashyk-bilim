@@ -71,14 +71,14 @@ export function updateCourseMetadataMutationOptions(
       assertSuccess(await updateCourseMetadata(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate))),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
-      queryClient.setQueryData(structureKey, (current: AppTranslator) => (current ? { ...current, ...payload } : current))
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) => (current ? { ...current, ...payload } : current))
       return { previousStructure }
     },
     onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
-    onSuccess: async (response: { data?: { update_date?: string } }) => {
+    onSuccess: async (response: Awaited<ReturnType<typeof updateCourseMetadata>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -105,14 +105,14 @@ export function updateCourseAccessMutationOptions(
       assertSuccess(await updateCourseAccess(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate))),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
-      const previousStructure = queryClient.getQueryData(structureKey)
-      queryClient.setQueryData(structureKey, (current: AppTranslator) => (current ? { ...current, ...payload } : current))
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) => (current ? { ...current, ...payload } : current))
       return { previousStructure }
     },
     onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
-    onSuccess: async (response: { data?: { update_date?: string } }) => {
+    onSuccess: async (response: Awaited<ReturnType<typeof updateCourseAccess>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -133,7 +133,7 @@ export function updateCourseThumbnailMutationOptions(
       assertSuccess(
         await updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
       ),
-    onSuccess: async (response: { data?: { update_date?: string } }) => {
+    onSuccess: async (response: Awaited<ReturnType<typeof updateCourseThumbnail>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -282,7 +282,11 @@ export function removeCourseContributorsMutationOptions(courseUuid: string, quer
           contributors: {
             ...current.contributors,
             data: (current.contributors.data ?? []).filter(
-              (contributor: AppCourseAuthor) => !userIdSet.has(contributor.user_id) && !usernameSet.has(contributor.user?.username),
+              (contributor: AppCourseAuthor) => {
+                const hasUserId = contributor.user_id !== undefined && userIdSet.has(contributor.user_id)
+                const hasUsername = contributor.user?.username !== undefined && usernameSet.has(contributor.user.username)
+                return !hasUserId && !hasUsername
+              },
             ),
           },
         }

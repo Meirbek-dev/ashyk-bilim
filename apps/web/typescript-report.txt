@@ -36,8 +36,6 @@ src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(65,18): error TS18048: '
 src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(65,71): error TS2339: Property 'course_uuid' does not exist on type '{}'.
 src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(66,18): error TS18048: 'trailData.runs' is possibly 'undefined'.
 src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(66,71): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(75,14): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
-src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(75,50): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
 src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(78,35): error TS2345: Argument of type 'AppTrailRun | undefined' is not assignable to parameter of type 'AppTrailRun'.
   Type 'undefined' is not assignable to type 'AppTrailRun'.
 src/app/[locale]/(platform)/(withmenu)/courses/page.tsx(79,35): error TS2345: Argument of type 'AppTrailRun | undefined' is not assignable to parameter of type 'AppTrailRun'.
@@ -66,33 +64,51 @@ src/app/[locale]/(platform)/(withmenu)/user/[username]/page.tsx(52,11): error TS
 src/app/[locale]/(platform)/(withmenu)/user/[username]/page.tsx(71,26): error TS2322: Type 'unknown' is not assignable to type 'UserProfileData'.
 src/app/[locale]/(platform)/dash/courses/[courseuuid]/activity/[activityid]/studio/page.tsx(27,9): error TS18046: 'error' is of type 'unknown'.
 src/app/[locale]/(platform)/dash/courses/[courseuuid]/activity/[activityid]/studio/page.tsx(34,9): error TS18046: 'error' is of type 'unknown'.
+src/app/_shared/dash/courses/client.tsx(104,101): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(135,15): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
 src/app/_shared/dash/courses/client.tsx(135,61): error TS2345: Argument of type 'ManageableCourse' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'chapters' are incompatible.
-    Type '{ activities: unknown[]; }[]' is not assignable to type 'AppChapter[]'.
-      Type '{ activities: unknown[]; }' is not assignable to type 'AppChapter'.
-        Types of property 'activities' are incompatible.
-          Type 'unknown[]' is not assignable to type 'AppActivity[]'.
-            Type 'unknown' is not assignable to type 'AppActivity'.
+  Property 'course_uuid' is optional in type 'ManageableCourse' but required in type 'AppCourse'.
+src/app/_shared/dash/courses/client.tsx(188,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(199,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(202,94): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(227,61): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(250,15): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
 src/app/_shared/dash/courses/client.tsx(260,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
   Type 'PromiseFulfilledResult<unknown>' is not assignable to type 'PromiseSettledResult<Omit<CustomResponseTyping<unknown>, "data"> & { data: NormalizedCourse | null; }>'.
     Type 'PromiseFulfilledResult<unknown>' is not assignable to type 'PromiseFulfilledResult<Omit<CustomResponseTyping<unknown>, "data"> & { data: NormalizedCourse | null; }>'.
       Type 'unknown' is not assignable to type 'Omit<CustomResponseTyping<unknown>, "data"> & { data: NormalizedCourse | null; }'.
         Type 'unknown' is not assignable to type 'Omit<CustomResponseTyping<unknown>, "data">'.
+src/app/_shared/dash/courses/client.tsx(293,31): error TS2345: Argument of type '(string | undefined)[]' is not assignable to parameter of type 'string[]'.
+  Type 'string | undefined' is not assignable to type 'string'.
+    Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(294,100): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(426,50): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(428,65): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(430,17): error TS2322: Type 'string | undefined' is not assignable to type 'string | number | Date'.
+  Type 'undefined' is not assignable to type 'string | number | Date'.
 src/app/_shared/dash/courses/client.tsx(442,47): error TS2345: Argument of type 'ManageableCourse' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'chapters' are incompatible.
-    Type '{ activities: unknown[]; }[]' is not assignable to type 'AppChapter[]'.
-      Type '{ activities: unknown[]; }' is not assignable to type 'AppChapter'.
-        Types of property 'activities' are incompatible.
-          Type 'unknown[]' is not assignable to type 'AppActivity[]'.
-            Type 'unknown' is not assignable to type 'AppActivity'.
+  Property 'course_uuid' is optional in type 'ManageableCourse' but required in type 'AppCourse'.
+src/app/_shared/dash/courses/client.tsx(473,48): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
 src/app/_shared/dash/courses/client.tsx(479,37): error TS2345: Argument of type 'ManageableCourse' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'chapters' are incompatible.
-    Type '{ activities: unknown[]; }[]' is not assignable to type 'AppChapter[]'.
-      Type '{ activities: unknown[]; }' is not assignable to type 'AppChapter'.
-        Types of property 'activities' are incompatible.
-          Type 'unknown[]' is not assignable to type 'AppActivity[]'.
-            Type 'unknown' is not assignable to type 'AppActivity'.
+  Property 'course_uuid' is optional in type 'ManageableCourse' but required in type 'AppCourse'.
 src/app/_shared/dash/courses/client.tsx(687,19): error TS2412: Type 'NoInfer<{ runs: unknown[]; }> | undefined' is not assignable to type 'AppTrailData | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+src/app/_shared/dash/courses/client.tsx(800,27): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(802,39): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/dash/courses/client.tsx(818,13): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
 src/app/_shared/withmenu/LandingContent.tsx(20,5): error TS2571: Object is of type 'unknown'.
 src/app/_shared/withmenu/LandingContent.tsx(47,24): error TS18046: 'a' is of type 'unknown'.
 src/app/_shared/withmenu/LandingContent.tsx(48,24): error TS18046: 'b' is of type 'unknown'.
@@ -100,8 +116,6 @@ src/app/_shared/withmenu/LandingContent.tsx(50,18): error TS18048: 'trailData.ru
 src/app/_shared/withmenu/LandingContent.tsx(50,71): error TS2339: Property 'course_uuid' does not exist on type '{}'.
 src/app/_shared/withmenu/LandingContent.tsx(51,18): error TS18048: 'trailData.runs' is possibly 'undefined'.
 src/app/_shared/withmenu/LandingContent.tsx(51,71): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/app/_shared/withmenu/LandingContent.tsx(60,14): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
-src/app/_shared/withmenu/LandingContent.tsx(60,50): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
 src/app/_shared/withmenu/LandingContent.tsx(63,35): error TS2345: Argument of type 'AppTrailRun | undefined' is not assignable to parameter of type 'AppTrailRun'.
   Type 'undefined' is not assignable to type 'AppTrailRun'.
 src/app/_shared/withmenu/LandingContent.tsx(64,35): error TS2345: Argument of type 'AppTrailRun | undefined' is not assignable to parameter of type 'AppTrailRun'.
@@ -118,7 +132,9 @@ src/app/_shared/withmenu/LandingContent.tsx(114,11): error TS2322: Type '{ secti
       Type 'unknown' is not assignable to type 'LandingSection'.
 src/app/_shared/withmenu/LandingContent.tsx(135,58): error TS2345: Argument of type '{ runs: unknown[]; } | null' is not assignable to parameter of type 'AppTrailData'.
   Type 'null' is not assignable to type 'AppTrailData'.
-src/app/_shared/withmenu/LandingContent.tsx(141,9): error TS2322: Type 'unknown' is not assignable to type 'unknown[]'.
+src/app/_shared/withmenu/LandingContent.tsx(139,9): error TS2322: Type 'unknown[]' is not assignable to type 'AppCourse[]'.
+  Type 'unknown' is not assignable to type 'AppCourse'.
+src/app/_shared/withmenu/LandingContent.tsx(141,9): error TS2322: Type 'unknown' is not assignable to type 'AppCollection[]'.
 src/app/_shared/withmenu/LandingContent.tsx(143,9): error TS2322: Type '{ runs: unknown[]; } | null' is not assignable to type 'AppTrailData'.
   Type 'null' is not assignable to type 'AppTrailData'.
 src/app/_shared/withmenu/collections/new/NewCollection.tsx(50,7): error TS2769: No overload matches this call.
@@ -138,16 +154,6 @@ src/app/_shared/withmenu/collections/new/NewCollection.tsx(296,43): error TS2345
 src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx(78,42): error TS2769: No overload matches this call.
   The last overload gave the following error.
     Type 'unknown' is not assignable to type '{ activity_sub_type: string; activity_uuid: string; content: { filename?: string; uri?: string; }; details?: VideoDetails; }'.
-src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx(85,32): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type 'CourseStructure' is not assignable to type 'AppCourse' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-      Types of property 'learnings' are incompatible.
-        Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-          Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
-src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx(121,7): error TS2375: Type 'CourseStructure' is not assignable to type 'AppCourse' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
 src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx(122,7): error TS2322: Type 'NoInfer<{ runs: unknown[]; }> | undefined' is not assignable to type 'AppTrailData'.
   Type 'undefined' is not assignable to type 'AppTrailData'.
 src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity.tsx(70,18): error TS2571: Object is of type 'unknown'.
@@ -200,19 +206,20 @@ src/app/_shared/withmenu/course/[courseuuid]/course.tsx(409,42): error TS18048: 
 src/app/_shared/withmenu/course/[courseuuid]/course.tsx(423,32): error TS18048: 'chapter.activities' is possibly 'undefined'.
 src/app/_shared/withmenu/course/[courseuuid]/course.tsx(472,89): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
+src/app/_shared/withmenu/course/[courseuuid]/course.tsx(493,19): error TS2322: Type 'AppDiscussionPost[]' is not assignable to type 'Discussion[]'.
+  Type 'AppDiscussionPost' is missing the following properties from type 'Discussion': discussion_uuid, type, status, course_id, and 6 more.
 src/app/_shared/withmenu/course/[courseuuid]/course.tsx(494,19): error TS2322: Type 'SessionUser | null' is not assignable to type 'AppUserSummary'.
   Type 'null' is not assignable to type 'AppUserSummary'.
-src/app/_shared/withmenu/course/[courseuuid]/course.tsx(502,57): error TS2375: Type 'AppCourse' is not assignable to type 'Course' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Property 'id' is optional in type 'AppCourse' but required in type 'Course'.
+src/app/_shared/withmenu/course/[courseuuid]/course.tsx(502,18): error TS2375: Type '{ courseuuid: string; course: AppCourse; trailData: AppTrailData | undefined; }' is not assignable to type 'CourseActionsProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'trailData' are incompatible.
+    Type 'AppTrailData | undefined' is not assignable to type 'AppTrailData'.
+      Type 'undefined' is not assignable to type 'AppTrailData'.
 src/app/_shared/withmenu/course/[courseuuid]/course.tsx(505,36): error TS2322: Type 'AppCourseAuthor[] | undefined' is not assignable to type 'Author[]'.
   Type 'undefined' is not assignable to type 'Author[]'.
 src/app/_shared/withmenu/course/[courseuuid]/page.tsx(61,73): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
 src/app/_shared/withmenu/course/[courseuuid]/page.tsx(82,21): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
   Type 'undefined' is not assignable to type 'string'.
-src/app/_shared/withmenu/courses/courses.tsx(64,70): error TS2322: Type 'Translator<Record<string, any>, "CoursesPage">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
 src/app/_shared/withmenu/search/search.tsx(180,50): error TS2339: Property 'courses' does not exist on type '{}'.
 src/app/_shared/withmenu/search/search.tsx(180,78): error TS2339: Property 'courses' does not exist on type '{}'.
 src/app/_shared/withmenu/search/search.tsx(181,54): error TS2339: Property 'collections' does not exist on type '{}'.
@@ -255,18 +262,11 @@ src/app/_shared/withmenu/user/[username]/page.tsx(55,22): error TS18046: 'userDa
 src/app/_shared/withmenu/user/[username]/page.tsx(56,11): error TS18046: 'userData' is of type 'unknown'.
 src/app/_shared/withmenu/user/[username]/page.tsx(75,26): error TS2322: Type 'unknown' is not assignable to type 'UserProfileData'.
 src/app/api/sitemap/route.ts(33,5): error TS2322: Type 'unknown' is not assignable to type '{ collection_uuid: string; }[]'.
-src/components/Contexts/CourseContext.tsx(120,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
-src/components/Contexts/CourseContext.tsx(133,9): error TS2345: Argument of type '{ name?: string; description?: string; about?: string; learnings?: Learnings; tags?: string[]; public?: boolean; thumbnail_image?: string; thumbnail_type?: 'image' | 'video' | 'both'; _certificationData?: unknown; course_uuid: string; chapters: Chapter[]; }' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
 src/components/Contexts/GamificationContext.tsx(47,41): error TS2339: Property 'profile' does not exist on type '{}'.
 src/components/Contexts/GamificationContext.tsx(48,9): error TS2322: Type '{} | null' is not assignable to type 'DashboardData | null'.
   Type '{}' is missing the following properties from type 'DashboardData': profile, recent_transactions, leaderboard, user_rank, streak_info
 src/components/Contexts/GamificationContext.tsx(49,45): error TS2339: Property 'leaderboard' does not exist on type '{}'.
 src/components/Contexts/GamificationContext.tsx(82,59): error TS2339: Property 'display' does not exist on type '{}'.
-src/components/Contexts/PlatformContext.tsx(17,36): error TS2322: Type '{} | null' is not assignable to type '{ about?: string | null; creation_date: string; description?: string | null; email: string; label?: string | null; landing?: { [key: string]: unknown; } | null; links?: { [key: string]: unknown; } | null; ... 5 more ...; update_date: string; } | null'.
-  Type '{}' is missing the following properties from type '{ about?: string | null; creation_date: string; description?: string | null; email: string; label?: string | null; landing?: { [key: string]: unknown; } | null; links?: { [key: string]: unknown; } | null; ... 5 more ...; update_date: string; }': creation_date, email, name, update_date
 src/components/Dashboard/Analytics/AnalyticsShell.tsx(63,5): error TS2322: Type '{ id: string; labelKey: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }' is not assignable to type 'AnalyticsTab'.
   Types of property 'id' are incompatible.
     Type 'string' is not assignable to type '"admin" | "operations" | "overview" | "performance" | "watchlist"'.
@@ -305,44 +305,52 @@ src/components/Dashboard/Courses/CourseCreationWizard.tsx(83,11): error TS2345: 
           Type 'undefined' is not assignable to type 'string'.
 src/components/Dashboard/Courses/CourseOverview.tsx(49,73): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'CourseReadinessItemId'.
 src/components/Dashboard/Courses/CourseOverview.tsx(59,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'CourseReadinessItemId'.
-src/components/Dashboard/Courses/CourseReviewPublish.tsx(36,39): error TS2345: Argument of type 'CourseStructure' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
-src/components/Dashboard/Courses/CourseReviewPublish.tsx(40,10): error TS2345: Argument of type '(contributor: AppCourseAuthor, index: number) => { key: string | number; label: string | undefined; }' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => { key: string | number; label: string | undefined; }'.
-  Types of parameters 'contributor' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCourseAuthor'.
-src/components/Dashboard/Courses/CourseReviewPublish.tsx(70,15): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Courses/CourseReviewPublish.tsx(69,13): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Courses/CourseReviewPublish.tsx(75,22): error TS2339: Property 'status' does not exist on type '{}'.
 src/components/Dashboard/Courses/CourseReviewPublish.tsx(78,31): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Courses/CourseReviewPublish.tsx(78,48): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Courses/CourseReviewPublish.tsx(83,21): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Courses/CourseReviewPublish.tsx(82,19): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Courses/CourseReviewPublish.tsx(90,30): error TS2339: Property 'message' does not exist on type '{}'.
 src/components/Dashboard/Courses/CourseWorkspacePageShell.tsx(221,91): error TS2375: Type 'AppCourse' is not assignable to type 'CourseStructure' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
   Types of property 'tags' are incompatible.
     Type 'string | string[] | null' is not assignable to type 'string[]'.
       Type 'null' is not assignable to type 'string[]'.
-src/components/Dashboard/Gamification/leaderboard.tsx(118,100): error TS2322: Type 'Translator<Record<string, any>, "DashPage.UserAccountSettings.Gamification">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(75,11): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
-src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(173,32): error TS2345: Argument of type '(usergroup: AppUserGroup) => JSX.Element' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => Element'.
-  Types of parameters 'usergroup' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppUserGroup'.
-src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(214,54): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(74,9): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(136,52): error TS2322: Type 'unknown[]' is not assignable to type 'AppUserGroup[]'.
+  Type 'unknown' is not assignable to type 'AppUserGroup'.
+src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(215,54): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
   Type 'undefined' is not assignable to type 'number'.
-src/components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess.tsx(222,66): error TS18046: 'res.data' is of type 'unknown'.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(178,37): error TS2339: Property 'length' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(179,15): error TS2488: Type 'unknown' must have a '[Symbol.iterator]()' method that returns an iterator.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(187,43): error TS2339: Property 'config' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(291,57): error TS2339: Property 'certification_uuid' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(296,17): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(294,15): error TS2375: Type '{ courseUuid: string; lastKnownUpdateDate: string | undefined; }' is not assignable to type 'CertificationInvalidationOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(303,13): error TS2322: Type 'unknown' is not assignable to type 'number'.
-src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(307,15): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(305,13): error TS2375: Type '{ courseUuid: string; lastKnownUpdateDate: string | undefined; }' is not assignable to type 'CertificationInvalidationOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(314,59): error TS2339: Property 'certification_uuid' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(316,13): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification.tsx(314,79): error TS2345: Argument of type '{ courseUuid: string; lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'CertificationInvalidationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(117,65): error TS2554: Expected 1 arguments, but got 2.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(157,52): error TS2554: Expected 1 arguments, but got 2.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(182,24): error TS2352: Conversion of type 'AppCourseAuthor[]' to type 'Contributor[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'creation_date' is missing in type 'AppCourseAuthor' but required in type 'Contributor'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(193,5): error TS2345: Argument of type '() => unknown' is not assignable to parameter of type 'boolean | (() => boolean | undefined) | undefined'.
   Type '() => unknown' is not assignable to type '() => boolean | undefined'.
     Type 'unknown' is not assignable to type 'boolean | undefined'.
@@ -350,65 +358,62 @@ src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContribut
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(210,40): error TS2339: Property 'users' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(231,55): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<boolean | undefined>'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(244,31): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<boolean | undefined>'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(271,9): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(270,82): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(294,18): error TS2339: Property 'status' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(295,41): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(295,58): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(297,13): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(322,9): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(296,69): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(321,79): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(325,43): error TS2339: Property 'status' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(326,32): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(328,31): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(331,18): error TS2339: Property 'status' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(332,41): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(332,58): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(337,13): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(377,9): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(336,113): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(376,85): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(405,18): error TS2339: Property 'status' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(406,41): error TS2339: Property 'detail' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(406,58): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(412,15): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(434,11): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(411,13): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(433,9): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(716,67): error TS2322: Type '(contributorId: number, data: { authorship?: ContributorRole; authorship_status?: ContributorStatus; }) => Promise<void>' is not assignable to type '(payload: unknown) => void'.
   Target signature provides too few arguments. Expected 2 or more, but got 1.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(716,105): error TS2322: Type 'Translator<Record<string, any>, "DashPage.EditCourseContributors">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
 src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(721,29): error TS2322: Type '(contributorId: number, data: { authorship?: ContributorRole; authorship_status?: ContributorStatus; }) => Promise<void>' is not assignable to type '(payload: unknown) => void'.
   Target signature provides too few arguments. Expected 2 or more, but got 1.
-src/components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors.tsx(722,29): error TS2322: Type 'Translator<Record<string, any>, "DashPage.EditCourseContributors">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
 src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(34,31): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(35,32): error TS2322: Type '{}' is not assignable to type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(70,5): error TS2322: Type 'string' is not assignable to type '"both" | "image" | "video"'.
-src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(115,54): error TS2345: Argument of type 'CourseStructure' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
-src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(165,11): error TS2322: Type 'unknown' is not assignable to type 'string | null'.
-src/components/Dashboard/Pages/Course/EditCourseGeneral/LearningItemsList.tsx(411,19): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type 'unknown' is not assignable to type 'Theme'.
-src/components/Dashboard/Pages/Course/EditCourseGeneral/ThumbnailUpdate.tsx(160,13): error TS2322: Type '{} | null' is not assignable to type 'string | null'.
-  Type '{}' is not assignable to type 'string'.
+src/components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral.tsx(164,32): error TS2345: Argument of type '{ lastKnownUpdateDate: string | undefined; }' is not assignable to parameter of type 'MutationOptions'.
+  Types of property 'lastKnownUpdateDate' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
 src/components/Dashboard/Pages/Course/EditCourseGeneral/ThumbnailUpdate.tsx(225,80): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(42,63): error TS2345: Argument of type 'AppActivity' is not assignable to parameter of type '{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }'.
-  Property 'name' is optional in type 'AppActivity' but required in type '{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(47,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(70,62): error TS2345: Argument of type 'AppActivity' is not assignable to parameter of type 'Partial<{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }>'.
-  Types of property 'activity_type' are incompatible.
-    Type 'string' is not assignable to type '"TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(82,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(89,72): error TS2345: Argument of type 'AppActivity' is not assignable to parameter of type 'Partial<{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }>'.
-  Types of property 'activity_type' are incompatible.
-    Type 'string' is not assignable to type '"TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(93,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(137,28): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(152,26): error TS2741: Property 'activity_uuid' is missing in type '{ name: string; chapter_id: number; activity_type: string; activity_sub_type: string; }' but required in type 'AppActivity'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(171,13): error TS2322: Type '(activity: AppActivity) => Promise<ResponseMetadata<{ activity_sub_type: components["schemas"]["ActivitySubTypeEnum"]; activity_type: components["schemas"]["ActivityTypeEnum"]; activity_uuid: string; ... 11 more ...; update_date: string; }>>' is not assignable to type '(data?: unknown) => Promise<unknown>'.
-  Types of parameters 'activity' and 'data' are incompatible.
-    Type 'unknown' is not assignable to type 'AppActivity'.
+src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(42,58): error TS2304: Cannot find name 'ActivityCreateValues'.
+src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(65,89): error TS2304: Cannot find name 'ActivityCreateValues'.
+src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(91,29): error TS2304: Cannot find name 'ActivityCreateValues'.
+src/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton.tsx(142,28): error TS2339: Property 'message' does not exist on type '{}'.
 src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(68,45): error TS2345: Argument of type '(string | undefined)[]' is not assignable to parameter of type 'string[]'.
   Type 'string | undefined' is not assignable to type 'string'.
     Type 'undefined' is not assignable to type 'string'.
@@ -419,822 +424,78 @@ src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(1
         Type 'undefined' is not assignable to type 'string'.
 src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(128,29): error TS18048: 'newCourseStructure.chapters' is possibly 'undefined'.
 src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(166,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(203,27): error TS2345: Argument of type 'CourseStructure' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(249,27): error TS2345: Argument of type 'CourseStructure' is not assignable to parameter of type 'AppCourse'.
-  Types of property 'learnings' are incompatible.
-    Type 'Learnings' is not assignable to type 'string | AppPayload | string[] | null'.
-      Type 'object' is not assignable to type 'string | AppPayload | string[] | null'.
 src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(306,28): error TS2322: Type '(string | undefined)[]' is not assignable to type '({ id: UniqueIdentifier; } | UniqueIdentifier)[]'.
   Type 'string | undefined' is not assignable to type '{ id: UniqueIdentifier; } | UniqueIdentifier'.
     Type 'undefined' is not assignable to type '{ id: UniqueIdentifier; } | UniqueIdentifier'.
 src/components/Dashboard/Pages/Course/EditCourseStructure/CurriculumEditor.tsx(313,19): error TS2375: Type 'AppChapter' is not assignable to type 'Chapter' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
   Property 'id' is optional in type 'AppChapter' but required in type 'Chapter'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ChapterElement.tsx(94,8): error TS2375: Type '{ course_uuid: string; activityIndex: number; activity: Activity; isDragging: boolean; attributes: DraggableAttributes; listeners: SyntheticListenerMap | undefined; }' is not assignable to type 'ActivityElementProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Types of property 'listeners' are incompatible.
-    Type 'SyntheticListenerMap | undefined' is not assignable to type 'SyntheticListenerMap'.
-      Type 'undefined' is not assignable to type 'SyntheticListenerMap'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ChapterElement.tsx(163,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ChapterElement.tsx(177,26): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Dashboard/Pages/Platform/EditImages/EditImages.tsx(746,57): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.PlatformSettings.Images">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(61,22): error TS2339: Property '_id' does not exist on type 'LandingSection'.
-  Property '_id' does not exist on type 'LandingFeaturedCourses'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(425,23): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'string | ComponentClass<{ size: number; className: string; }, any> | FunctionComponent<{ size: number; className: string; }>'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(468,49): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.PlatformSettings.Landing">' is not assignable to parameter of type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(488,36): error TS2345: Argument of type '(s: AppPayload, i: number) => {}' is not assignable to parameter of type '(value: LandingSection, index: number, array: LandingSection[]) => {}'.
-  Types of parameters 's' and 'value' are incompatible.
-    Type 'LandingSection' is not assignable to type 'AppPayload'.
-      Type 'LandingFeaturedCourses' is not assignable to type 'AppPayload'.
-        Index signature for type 'string' is missing in type 'LandingFeaturedCourses'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(491,45): error TS2345: Argument of type '{}[]' is not assignable to parameter of type 'string[]'.
-  Type '{}' is not assignable to type 'string'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(495,19): error TS2339: Property 'landing' does not exist on type '{}'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(496,38): error TS2339: Property 'landing' does not exist on type '{}'.
+    Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
+      Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
+        'string' index signatures are incompatible.
+          Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
+            Type 'undefined' is not assignable to type 'string | number | Date'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(509,59): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.PlatformSettings.Landing">' is not assignable to parameter of type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
+    Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
+      Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
+        'string' index signatures are incompatible.
+          Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
+            Type 'undefined' is not assignable to type 'string | number | Date'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(541,73): error TS18046: 'item' is of type 'unknown'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(542,73): error TS18046: 'item' is of type 'unknown'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(614,23): error TS2322: Type '{}[]' is not assignable to type '({ id: UniqueIdentifier; } | UniqueIdentifier)[]'.
-  Type '{}' is not assignable to type '{ id: UniqueIdentifier; } | UniqueIdentifier'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(615,25): error TS2345: Argument of type '(section: AppPayload, index: number) => {}' is not assignable to parameter of type '(value: LandingSection, index: number, array: LandingSection[]) => {}'.
-  Types of parameters 'section' and 'value' are incompatible.
-    Type 'LandingSection' is not assignable to type 'AppPayload'.
-      Type 'LandingFeaturedCourses' is not assignable to type 'AppPayload'.
-        Index signature for type 'string' is missing in type 'LandingFeaturedCourses'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(621,32): error TS2571: Object is of type 'unknown'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(624,27): error TS2322: Type 'Translator<Record<string, any>, "DashPage.PlatformSettings.Landing">' is not assignable to type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(643,21): error TS2322: Type '{ value: string; label: unknown; }[]' is not assignable to type 'readonly Group<any>[] | readonly { label: ReactNode; value: any; }[] | Record<string, ReactNode> | undefined'.
-  Type '{ value: string; label: unknown; }[]' is not assignable to type 'Record<string, ReactNode>'.
-    Index signature for type 'string' is missing in type '{ value: string; label: unknown; }[]'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(655,29): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+    Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
+      Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
+        'string' index signatures are incompatible.
+          Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
+            Type 'undefined' is not assignable to type 'string | number | Date'.
 src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(668,21): error TS2322: Type 'Translator<Record<string, any>, "DashPage.PlatformSettings.Landing">' is not assignable to type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(1110,23): error TS2322: Type '{ value: string; label: unknown; }[]' is not assignable to type 'readonly Group<any>[] | readonly { label: ReactNode; value: any; }[] | Record<string, ReactNode> | undefined'.
-  Type '{ value: string; label: unknown; }[]' is not assignable to type 'Record<string, ReactNode>'.
-    Index signature for type 'string' is missing in type '{ value: string; label: unknown; }[]'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(1119,31): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2001,29): error TS2322: Type '{}' is not assignable to type 'string | StaticImport'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2002,29): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2015,57): error TS2345: Argument of type 'string' is not assignable to parameter of type 'LandingCourse'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2017,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'LandingCourse'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2018,58): error TS2367: This comparison appears to be unintentional because the types 'LandingCourse' and 'string' have no overlap.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2020,48): error TS2322: Type '(string | LandingCourse)[]' is not assignable to type 'LandingCourse[]'.
-  Type 'string | LandingCourse' is not assignable to type 'LandingCourse'.
-    Type 'string' is not assignable to type 'LandingCourse'.
-src/components/Dashboard/Pages/Platform/EditLanding/EditLanding.tsx(2023,49): error TS2345: Argument of type 'string' is not assignable to parameter of type 'LandingCourse'.
-src/components/Dashboard/Pages/Platform/EditSocials/EditSocials.tsx(47,20): error TS2339: Property 'socials' does not exist on type '{}'.
-src/components/Dashboard/Pages/Platform/EditSocials/EditSocials.tsx(49,22): error TS2339: Property 'links' does not exist on type '{}'.
-src/components/Dashboard/Pages/Platform/EditSocials/EditSocials.tsx(62,28): error TS2345: Argument of type 'SocialMediaData' is not assignable to parameter of type 'AppPayload'.
-  Index signature for type 'string' is missing in type 'SocialMediaData'.
-src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(201,53): error TS2345: Argument of type '(newLabel: string) => void' is not assignable to parameter of type 'AnyFunction'.
-  Types of parameters 'newLabel' and 'args' are incompatible.
-    Type 'unknown' is not assignable to type 'string'.
-src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(718,51): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.Notifications">' is not assignable to parameter of type '(key: string, values?: AppTranslationValues | undefined) => string'.
+    Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
+      Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
+        'string' index signatures are incompatible.
+          Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
+            Type 'undefined' is not assignable to type 'string | number | Date'.
+src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(718,51): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.Notifications">' is not assignable to parameter of type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
     Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
       Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
         'string' index signatures are incompatible.
           Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
             Type 'undefined' is not assignable to type 'string | number | Date'.
-src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(848,20): error TS2339: Property 'id' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(853,54): error TS2339: Property 'email' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral.tsx(857,44): error TS2339: Property 'id' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserEditPassword/UserEditPassword.tsx(47,51): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.Notifications">' is not assignable to parameter of type '(key: string, values?: AppTranslationValues | undefined) => string'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-      Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
-        'string' index signatures are incompatible.
-          Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
-            Type 'undefined' is not assignable to type 'string | number | Date'.
-src/components/Dashboard/Pages/UserAccount/UserGamificationSettings/UserGamificationSettings.tsx(50,35): error TS2339: Property 'privacy' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserGamificationSettings/UserGamificationSettings.tsx(51,37): error TS2339: Property 'notifications' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserGamificationSettings/UserGamificationSettings.tsx(52,33): error TS2339: Property 'display' does not exist on type '{}'.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(50,3): error TS7022: 'getSectionTypesConfig' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(56,3): error TS2502: 'getSectionTypesConfig' is referenced directly or indirectly in its own type annotation.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(472,45): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.UserProfileBuilder">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(602,23): error TS2322: Type 'Translator<Record<string, any>, "DashPage.UserProfileBuilder">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(620,61): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.UserProfileBuilder">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(636,59): error TS2345: Argument of type 'Translator<Record<string, any>, "DashPage.UserProfileBuilder">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/UserAccount/UserProfile/UserProfileBuilder.tsx(659,17): error TS2322: Type 'Translator<Record<string, any>, "DashPage.UserProfileBuilder">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(118,39): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'SetStateAction<number | null>'.
-  Type 'undefined' is not assignable to type 'SetStateAction<number | null>'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(121,37): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'SetStateAction<number | null>'.
-  Type 'undefined' is not assignable to type 'SetStateAction<number | null>'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(167,59): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(172,92): error TS2345: Argument of type 'UserGroup' is not assignable to parameter of type 'AppUserGroup'.
-  Index signature for type 'string' is missing in type 'UserGroup'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(197,58): error TS2345: Argument of type 'UserGroup' is not assignable to parameter of type 'AppUserGroup'.
-  Index signature for type 'string' is missing in type 'UserGroup'.
-src/components/Dashboard/Pages/Users/UserGroups/UserGroups.tsx(207,63): error TS2322: Type 'AppUserGroup' is not assignable to type '{ id: number; name: string; description: string; }'.
-  Property 'id' is optional in type 'AppUserGroup' but required in type '{ id: number; name: string; description: string; }'.
-src/components/Dashboard/Pages/Users/Users/Users.tsx(123,17): error TS2339: Property 'priority' does not exist on type 'string | AppRoleSummary'.
-  Property 'priority' does not exist on type 'string'.
-src/components/Dashboard/Pages/Users/Users/Users.tsx(131,79): error TS2345: Argument of type 'string | AppRoleSummary' is not assignable to parameter of type 'AppRoleSummary'.
-  Type 'string' is not assignable to type 'AppRoleSummary'.
-src/components/Dashboard/Pages/Users/Users/Users.tsx(236,64): error TS2339: Property 'user_uuid' does not exist on type '{}'.
-src/components/Dashboard/Pages/Users/Users/Users.tsx(244,63): error TS2339: Property 'id' does not exist on type 'string | AppRoleSummary'.
-  Property 'id' does not exist on type 'string'.
-src/components/Dashboard/Pages/Users/Users/Users.tsx(256,89): error TS2345: Argument of type 'UserRow' is not assignable to parameter of type 'AppUserSummary'.
-  Index signature for type 'string' is missing in type 'UserRow'.
-src/components/Errors/AccessDenied.tsx(52,11): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Landings/CourseGridClient.tsx(80,29): error TS2345: Argument of type '(course: AppCourse, index: number) => JSX.Element' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => Element'.
-  Types of parameters 'course' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCourse'.
-src/components/Landings/CourseGridClient.tsx(83,15): error TS2375: Type 'AppCourse' is not assignable to type 'Course' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Property 'name' is optional in type 'AppCourse' but required in type 'Course'.
-src/components/Landings/LandingClassic.tsx(77,22): error TS2345: Argument of type '(collection: AppCollection) => JSX.Element' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => Element'.
-  Types of parameters 'collection' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCollection'.
-src/components/Landings/LandingClassic.tsx(139,38): error TS2322: Type 'Translator<Record<string, any>, "HomePage">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Landings/LandingClassic.tsx(162,105): error TS2322: Type 'Translator<Record<string, any>, "HomePage">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Landings/LandingCustom.tsx(244,99): error TS2345: Argument of type 'string' is not assignable to parameter of type 'LandingCourse'.
-src/components/Landings/LandingCustom.tsx(252,36): error TS2375: Type 'AppCourse' is not assignable to type 'Course' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Property 'name' is optional in type 'AppCourse' but required in type 'Course'.
-src/components/Objects/Activities/DocumentPdf/DocumentPdf.tsx(15,19): error TS18046: 'activity.content' is of type 'unknown'.
-src/components/Objects/Activities/Video/Artplayer.tsx(63,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/components/Objects/Activities/Video/Artplayer.tsx(66,7): error TS2322: Type 'HTMLDivElement | null' is not assignable to type 'string | HTMLDivElement'.
-  Type 'null' is not assignable to type 'string | HTMLDivElement'.
-src/components/Objects/Activities/Video/Artplayer.tsx(69,7): error TS2322: Type 'unknown' is not assignable to type 'boolean'.
-src/components/Objects/Activities/Video/Artplayer.tsx(88,28): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
-src/components/Objects/Courses/CourseActions/CourseActionsMobile.tsx(159,46): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/components/Objects/Courses/CourseActions/CoursesActions.tsx(82,46): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/components/Objects/Courses/CourseActions/CoursesActions.tsx(249,75): error TS18048: 'chapter.activities' is possibly 'undefined'.
-src/components/Objects/Courses/CourseActions/CoursesActions.tsx(377,11): error TS2375: Type 'Course' is not assignable to type 'AppCourse' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Index signature for type 'string' is missing in type 'Course'.
-src/components/Objects/Courses/CourseActions/CoursesActions.tsx(380,11): error TS2322: Type 'AppTrailData | undefined' is not assignable to type 'AppTrailData'.
-  Type 'undefined' is not assignable to type 'AppTrailData'.
-src/components/Objects/Courses/CourseAuthors/CourseAuthors.tsx(344,20): error TS2345: Argument of type '(update: AppPayload) => JSX.Element' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => Element'.
-  Types of parameters 'update' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload'.
-src/components/Objects/Courses/CourseAuthors/CourseAuthors.tsx(357,42): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'string | number'.
-src/components/Objects/Courses/CourseAuthors/CourseAuthors.tsx(360,49): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'string | number'.
-src/components/Objects/Courses/CourseAuthors/CourseAuthors.tsx(366,68): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Objects/Courses/CourseAuthors/CourseAuthors.tsx(389,56): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'number'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(28,29): error TS2339: Property 'replace' does not exist on type '{}'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(43,5): error TS18048: 'course.chapters' is possibly 'undefined'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(178,12): error TS18048: 'course.chapters' is possibly 'undefined'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(253,22): error TS18048: 'chapter.activities' is possibly 'undefined'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(267,49): error TS18048: 'chapter.activities' is possibly 'undefined'.
-src/components/Objects/Courses/CourseProgress/CourseProgress.tsx(283,50): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Editor/Extensions/Badges/BadgesExtension.tsx(51,14): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string>'.
-  Type 'undefined' is not assignable to type 'SetStateAction<string>'.
-src/components/Objects/Editor/Extensions/Badges/BadgesExtension.tsx(263,13): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type 'unknown' is not assignable to type 'Theme'.
-src/components/Objects/Editor/Extensions/Buttons/ButtonsExtension.tsx(58,14): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string>'.
-  Type 'undefined' is not assignable to type 'SetStateAction<string>'.
-src/components/Objects/Editor/Extensions/Buttons/ButtonsExtension.tsx(216,13): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type 'unknown' is not assignable to type 'Theme'.
-src/components/Objects/Editor/Extensions/EmbedBlock/GenericEmbedNodeView.tsx(119,13): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Objects/Editor/Extensions/EmbedBlock/GenericEmbedNodeView.tsx(121,18): error TS2604: JSX element type 'Icon' does not have any construct or call signatures.
-src/components/Objects/Editor/Extensions/EmbedBlock/GenericEmbedNodeView.tsx(121,18): error TS2786: 'Icon' cannot be used as a JSX component.
-  Its type '{}' is not a valid JSX element type.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsComponent.tsx(763,17): error TS2322: Type 'Translator<Record<string, any>, "DashPage.Editor.EmbedObjects">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsComponent.tsx(779,13): error TS2322: Type 'Translator<Record<string, any>, "DashPage.Editor.EmbedObjects">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsComponent.tsx(794,13): error TS2322: Type 'Translator<Record<string, any>, "DashPage.Editor.EmbedObjects">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsComponent.tsx(806,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'MouseEvent<HTMLDivElement, MouseEvent>'.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsComponent.tsx(817,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'MouseEvent<HTMLDivElement, MouseEvent>'.
-src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsWithBoundary.tsx(18,8): error TS2322: Type '{ decorations: readonly DecorationWithType[]; selected: boolean; updateAttributes: (attributes: Record<string, any>) => void; deleteNode: () => void; view: EditorView; ... 5 more ...; extension: Node<...> & { ...; }; }' is not assignable to type '{ node: Node & { attrs: EmbedNodeAttrs; }; extension: Node<any, any> & { options: Record<string, unknown>; }; }'.
-  Types of property 'node' are incompatible.
-    Type 'Node & { attrs: Record<string, unknown>; }' is not assignable to type 'Node & { attrs: EmbedNodeAttrs; }'.
-      Type 'Node & { attrs: Record<string, unknown>; }' is not assignable to type '{ attrs: EmbedNodeAttrs; }'.
-        Types of property 'attrs' are incompatible.
-          Type 'Attrs & Record<string, unknown>' is missing the following properties from type 'EmbedNodeAttrs': embedUrl, embedCode, embedType, embedHeight, and 2 more.
-src/components/Objects/Editor/Extensions/Video/VideoBlockComponent.tsx(209,29): error TS2339: Property 'message' does not exist on type '{}'.
-src/components/Objects/Editor/core/code-block-shiki.ts(10,16): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Node'.
-src/components/Objects/Editor/core/code-block-shiki.ts(13,18): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(15,20): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(23,21): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(24,20): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(25,21): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(26,20): error TS18046: 'highlighter' is of type 'unknown'.
-src/components/Objects/Editor/core/code-block-shiki.ts(58,31): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Node'.
-src/components/Objects/Elements/Titles/TypeOfContentTitle.tsx(25,10): error TS2604: JSX element type 'Icon' does not have any construct or call signatures.
-src/components/Objects/Elements/Titles/TypeOfContentTitle.tsx(25,10): error TS2786: 'Icon' cannot be used as a JSX component.
-  Its type '{}' is not a valid JSX element type.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(159,57): error TS2322: Type '(data?: unknown) => Promise<unknown>' is not assignable to type '(payload: AppPayload) => Promise<void>'.
-  Type 'Promise<unknown>' is not assignable to type 'Promise<void>'.
-    Type 'unknown' is not assignable to type 'void'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(162,11): error TS2322: Type '(params: { file: File; type: string; activity: AppActivity; chapterId: number; }) => Promise<void>' is not assignable to type '(params: AppFileActivityInput) => Promise<void>'.
-  Types of parameters 'params' and 'params' are incompatible.
-    Type 'AppFileActivityInput' is not assignable to type '{ file: File; type: string; activity: AppActivity; chapterId: number; }'.
-      The types of 'activity.id' are incompatible between these types.
-        Type 'string | number' is not assignable to type 'number'.
-          Type 'string' is not assignable to type 'number'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(163,11): error TS2322: Type '(external_video_data: AppPayload, activity: AppActivity, chapterId: number) => Promise<void>' is not assignable to type '(externalVideoData: AppPayload, activity: AppPayload, chapterId: number) => Promise<void>'.
-  Types of parameters 'activity' and 'activity' are incompatible.
-    Type 'AppPayload' is not assignable to type 'AppActivity' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-      Types of property 'id' are incompatible.
-        Type 'string | number' is not assignable to type 'number'.
-          Type 'string' is not assignable to type 'number'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(165,11): error TS2322: Type 'unknown' is not assignable to type 'AppCourse & AppCourseContextShape'.
-  Type 'unknown' is not assignable to type 'AppCourse'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(169,27): error TS2322: Type '(params: { file: File; type: string; activity: AppActivity; chapterId: number; }) => Promise<void>' is not assignable to type '(params: AppFileActivityInput) => Promise<void>'.
-  Types of parameters 'params' and 'params' are incompatible.
-    Type 'AppFileActivityInput' is not assignable to type '{ file: File; type: string; activity: AppActivity; chapterId: number; }'.
-      The types of 'activity.id' are incompatible between these types.
-        Type 'string | number' is not assignable to type 'number'.
-          Type 'string' is not assignable to type 'number'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(169,89): error TS2322: Type 'unknown' is not assignable to type 'AppCourse & AppCourseContextShape'.
-  Type 'unknown' is not assignable to type 'AppCourse'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(171,46): error TS2322: Type '{ chapterId: number; course: unknown; closeModal: () => void; }' is not assignable to type 'AppActivityModalProps'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(159,39): error TS2322: Type '{ chapterId: number; course: AppCourse | AppCourseContextShape; closeModal: () => void; submitActivity: (payload: AppPayload) => Promise<void>; }' is not assignable to type 'AppActivityModalProps'.
   Types of property 'course' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCourse & AppCourseContextShape'.
-      Type 'unknown' is not assignable to type 'AppCourse'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(172,42): error TS2322: Type '(data?: unknown) => Promise<unknown>' is not assignable to type '(payload: AppPayload) => Promise<void>'.
-  Type 'Promise<unknown>' is not assignable to type 'Promise<void>'.
-    Type 'unknown' is not assignable to type 'void'.
-src/components/Objects/Modals/Activities/Create/NewActivity.tsx(173,59): error TS2322: Type '(data?: unknown) => Promise<unknown>' is not assignable to type '(data: AppPayload) => Promise<void>'.
-  Type 'Promise<unknown>' is not assignable to type 'Promise<void>'.
-    Type 'unknown' is not assignable to type 'void'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/CodeChallengeActivityModal.tsx(49,47): error TS2339: Property 'id' does not exist on type '{}'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/ExamActivityModal.tsx(38,28): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/ExamActivityModal.tsx(38,82): error TS2339: Property 'course_uuid' does not exist on type '{}'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/ExamActivityModal.tsx(58,36): error TS2345: Argument of type '(AppCourse & AppCourseContextShape) | undefined' is not assignable to parameter of type 'AppCourse'.
-  Type 'undefined' is not assignable to type 'AppCourse'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/ExamActivityModal.tsx(59,68): error TS2345: Argument of type '{ withUnpublishedActivities: boolean | undefined; }' is not assignable to parameter of type '{ withUnpublishedActivities?: boolean; }'.
-  Types of property 'withUnpublishedActivities' are incompatible.
-    Type 'boolean | undefined' is not assignable to type 'boolean'.
-      Type 'undefined' is not assignable to type 'boolean'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/FileSubmissionActivityModal.tsx(118,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(748,15): error TS2722: Cannot invoke an object which is possibly 'undefined'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(756,13): error TS2375: Type 'VideoDetails' is not assignable to type 'AppPayload & { subtitles?: { file?: File; id?: string | number; label?: string; language?: string; }[]; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Type 'VideoDetails' is not assignable to type 'AppPayload'.
-    Index signature for type 'string' is missing in type 'VideoDetails'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(772,15): error TS2722: Cannot invoke an object which is possibly 'undefined'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(772,35): error TS2345: Argument of type 'ExternalVideoObject' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'details' are incompatible.
-    Type 'VideoDetails' is not assignable to type 'AppPayload & { subtitles?: { file?: File; id?: string | number; label?: string; language?: string; }[]; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-      Type 'VideoDetails' is not assignable to type 'AppPayload'.
-        Index signature for type 'string' is missing in type 'VideoDetails'.
-src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(984,90): error TS2322: Type 'Translator<Record<string, any>, "Components.VideoModal">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup.tsx(44,78): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[]'.
-src/components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup.tsx(52,55): error TS2339: Property 'detail' does not exist on type '{}'.
-src/components/Objects/Modals/Dash/UserGroups/AddUserGroup.tsx(43,39): error TS2345: Argument of type '{ name: string; description?: string | undefined; }' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'description' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Modals/Dash/UserGroups/EditUserGroup.tsx(46,59): error TS2345: Argument of type '{ name: string; description?: string | undefined; }' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'description' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Modals/Dash/UserGroups/ManageUsers.tsx(46,27): error TS2345: Argument of type '(user: AppUserSummary) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => unknown'.
-  Types of parameters 'user' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppUserSummary'.
-src/components/Objects/Modals/Dash/UserGroups/ManageUsers.tsx(57,53): error TS2339: Property 'detail' does not exist on type '{}'.
-src/components/Objects/Modals/Dash/UserGroups/ManageUsers.tsx(67,55): error TS2339: Property 'detail' does not exist on type '{}'.
-src/components/Objects/Modals/Dash/UserGroups/ManageUsers.tsx(71,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'AppPayload'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(52,46): error TS2345: Argument of type '(a: AppRoleSummary, b: AppRoleSummary) => number' is not assignable to parameter of type '(a: Role, b: Role) => number'.
-  Types of parameters 'a' and 'a' are incompatible.
-    Type 'Role' is not assignable to type 'AppRoleSummary'.
-      Index signature for type 'string' is missing in type 'Role'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(69,22): error TS18048: 'props.user.user' is possibly 'undefined'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(72,34): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(74,30): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(90,7): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(94,41): error TS2339: Property 'split' does not exist on type '{}'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(96,20): error TS2339: Property 'split' does not exist on type '{}'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(120,35): error TS2345: Argument of type '(role: AppRoleSummary) => JSX.Element' is not assignable to parameter of type '(value: Role, index: number, array: Role[]) => Element'.
-  Types of parameters 'role' and 'value' are incompatible.
-    Type 'Role' is not assignable to type 'AppRoleSummary'.
-      Index signature for type 'string' is missing in type 'Role'.
-src/components/Objects/Modals/Dash/Users/RolesUpdate.tsx(121,62): error TS18048: 'role.id' is possibly 'undefined'.
-src/components/Objects/Search/SearchBar.tsx(120,46): error TS2339: Property 'courses' does not exist on type '{}'.
-src/components/Objects/Search/SearchBar.tsx(120,74): error TS2339: Property 'courses' does not exist on type '{}'.
-src/components/Objects/Search/SearchBar.tsx(121,50): error TS2339: Property 'collections' does not exist on type '{}'.
-src/components/Objects/Search/SearchBar.tsx(121,82): error TS2339: Property 'collections' does not exist on type '{}'.
-src/components/Objects/Search/SearchBar.tsx(122,44): error TS2339: Property 'users' does not exist on type '{}'.
-src/components/Objects/Search/SearchBar.tsx(122,70): error TS2339: Property 'users' does not exist on type '{}'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(44,18): error TS18046: 'c' is of type 'unknown'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(45,48): error TS18046: 'c' is of type 'unknown'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(45,63): error TS18046: 'c' is of type 'unknown'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(109,68): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(112,27): error TS2322: Type 'number[] | AppCourse[] | undefined' is not assignable to type 'unknown[]'.
-  Type 'undefined' is not assignable to type 'unknown[]'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(118,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(120,11): error TS2322: Type '{}' is not assignable to type 'boolean'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(127,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(137,75): error TS18048: 'collection.courses' is possibly 'undefined'.
-src/components/Objects/Thumbnails/CollectionThumbnail.tsx(195,63): error TS2322: Type 'string | undefined' is not assignable to type 'string | number | Date'.
-  Type 'undefined' is not assignable to type 'string | number | Date'.
-src/components/Objects/Thumbnails/CourseThumbnail.tsx(535,24): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
-src/components/Objects/Thumbnails/CourseThumbnail.tsx(535,60): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
-src/components/Objects/Thumbnails/CourseThumbnail.tsx(590,9): error TS2322: Type 'Translator<Record<string, any>, "Components.CourseThumbnail">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Thumbnails/CourseThumbnail.tsx(614,49): error TS2322: Type 'Translator<Record<string, any>, "Components.CourseThumbnail">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Objects/Thumbnails/CourseThumbnail.tsx(624,11): error TS2322: Type 'Translator<Record<string, any>, "Components.CourseThumbnail">' is not assignable to type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(47,27): error TS18048: 'course.chapters' is possibly 'undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(48,7): error TS18048: 'chapter.activities' is possibly 'undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(63,16): error TS18048: 'run.steps' is possibly 'undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(74,27): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
-  Property '0' does not exist on type '{}'.
-src/components/Pages/Activity/CourseEndView.tsx(266,27): error TS18048: 'course.chapters' is possibly 'undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(267,7): error TS18048: 'chapter.activities' is possibly 'undefined'.
-src/components/Pages/Activity/CourseEndView.tsx(281,16): error TS18048: 'run.steps' is possibly 'undefined'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(153,70): error TS2339: Property 'certificate_user' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(189,54): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(190,61): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(191,54): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(192,55): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(193,58): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(194,50): error TS2339: Property 'certificate_user' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(195,57): error TS2339: Property 'certificate_user' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(211,38): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(214,43): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(215,43): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(217,49): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(247,42): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(249,40): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(251,44): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(256,38): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(256,72): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(260,44): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(264,42): error TS18048: 'author.user' is possibly 'undefined'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(265,35): error TS18048: 'author.user' is possibly 'undefined'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(265,59): error TS18048: 'author.user' is possibly 'undefined'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(265,84): error TS18048: 'author.user' is possibly 'undefined'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(271,53): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(276,44): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(280,48): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(295,69): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(318,40): error TS2339: Property 'certificate_user' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(326,72): error TS2339: Property 'course' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(334,66): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(343,49): error TS2339: Property 'certificate_user' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(354,34): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Certificate/CertificateVerificationPage.tsx(359,42): error TS2339: Property 'certification' does not exist on type '{}'.
-src/components/Pages/Courses/ActivityIndicators.tsx(125,29): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Pages/Courses/ActivityIndicators.tsx(129,78): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/Pages/Trail/TrailCourseElement.tsx(26,34): error TS18048: 'run.steps' is possibly 'undefined'.
-src/components/Pages/Trail/TrailCourseElement.tsx(27,27): error TS18046: 'course_total_steps' is of type 'unknown'.
-src/components/Pages/Trail/TrailCourseElement.tsx(27,89): error TS18046: 'course_total_steps' is of type 'unknown'.
-src/components/Pages/Trail/TrailCourseElement.tsx(30,29): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
-  Property '0' does not exist on type '{}'.
-src/components/Pages/Trail/TrailCourseElement.tsx(81,56): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/Pages/Trail/UserCertificates.tsx(53,87): error TS2339: Property 'data' does not exist on type '{}'.
-src/components/Pages/Trail/UserCertificates.tsx(84,30): error TS18046: 'certificate.certificate_user' is of type 'unknown'.
-src/components/Pages/Trail/UserCertificates.tsx(86,56): error TS18046: 'certificate.certificate_user' is of type 'unknown'.
-src/components/Pages/Trail/UserCertificates.tsx(96,20): error TS18046: 'certificate.certificate_user' is of type 'unknown'.
-src/components/Pages/Trail/UserCertificates.tsx(103,22): error TS18046: 'certificate.certification' is of type 'unknown'.
-src/components/Pages/Trail/UserCertificates.tsx(110,49): error TS18048: 'certificate.course' is possibly 'undefined'.
-src/components/Pages/Trail/UserCertificates.tsx(123,24): error TS18046: 'certificate.certificate_user' is of type 'unknown'.
-src/components/Pages/Trail/UserCertificates.tsx(130,22): error TS18046: 'certificate.certification' is of type 'unknown'.
-src/components/discussions/discussion-form.tsx(46,12): error TS2375: Type '{ size: "md"; variant: "default"; username: string | undefined; }' is not assignable to type 'UserAvatarProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Types of property 'username' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/components/discussions/discussion-list.tsx(53,30): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-list.tsx(54,32): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-list.tsx(68,34): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-list.tsx(69,36): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-list.tsx(118,11): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/discussions/discussion-list.tsx(120,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/discussions/discussion-list.tsx(125,11): error TS2322: Type '{}' is not assignable to type 'string'.
-src/components/discussions/discussion-list.tsx(143,18): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(144,17): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(145,16): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(152,43): error TS18046: 'post' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(162,58): error TS2339: Property 'id' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(168,11): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/components/discussions/discussion-list.tsx(170,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/components/discussions/discussion-list.tsx(175,11): error TS2322: Type '{}' is not assignable to type 'string'.
-src/components/discussions/discussion-list.tsx(199,11): error TS18046: 'post' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(199,34): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(199,57): error TS18046: 'post' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(210,18): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(211,17): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(212,16): error TS18046: 'error' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(218,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(225,64): error TS2339: Property 'discussion_uuid' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(227,67): error TS2339: Property 'discussion_uuid' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(233,15): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(235,15): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(258,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(264,24): error TS2339: Property 'replies' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(264,61): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(282,15): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(284,15): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(285,24): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(286,21): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(314,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(318,47): error TS2339: Property 'discussion_uuid' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(319,44): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(331,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(337,24): error TS2339: Property 'replies' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(337,61): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(349,11): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(351,17): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(352,26): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(352,92): error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(368,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(372,47): error TS2339: Property 'discussion_uuid' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(377,11): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(379,17): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(397,34): error TS18046: 'p' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(403,24): error TS2339: Property 'replies' does not exist on type '{}'.
-src/components/discussions/discussion-list.tsx(403,61): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(417,11): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(419,17): error TS2698: Spread types may only be created from object types.
-src/components/discussions/discussion-list.tsx(420,26): error TS18046: 'currentPost' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(421,19): error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
-src/components/discussions/discussion-list.tsx(457,18): error TS18046: 'post' is of type 'unknown'.
-src/components/discussions/discussion-list.tsx(458,13): error TS2322: Type 'unknown' is not assignable to type 'DiscussionPostData'.
-src/components/discussions/discussion-post.tsx(279,22): error TS2375: Type '{ size: "xs"; variant: "default"; username: string | undefined; }' is not assignable to type 'UserAvatarProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Types of property 'username' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/components/discussions/discussion-post.tsx(322,33): error TS2345: Argument of type '(reply: AppDiscussionReply) => JSX.Element' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => Element'.
-  Types of parameters 'reply' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppDiscussionReply'.
-src/components/discussions/discussion-reply.tsx(54,20): error TS18046: 'reply.upvotes' is of type 'unknown'.
-src/components/discussions/discussion-reply.tsx(54,36): error TS18046: 'reply.downvotes' is of type 'unknown'.
-src/components/discussions/discussion-reply.tsx(67,27): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(85,49): error TS2322: Type 'unknown' is not assignable to type 'string'.
-src/components/discussions/discussion-reply.tsx(92,17): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/discussions/discussion-reply.tsx(92,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | undefined'.
-src/components/discussions/discussion-reply.tsx(94,73): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/discussions/discussion-reply.tsx(95,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(102,53): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'string | number'.
-src/components/discussions/discussion-reply.tsx(103,17): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/discussions/discussion-reply.tsx(105,28): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type '{}' is not assignable to parameter of type 'string | number'.
-src/components/discussions/discussion-reply.tsx(105,69): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type '{}' is not assignable to parameter of type 'string | number'.
-src/components/discussions/discussion-reply.tsx(130,56): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(142,55): error TS2322: Type 'unknown' is not assignable to type 'string | number | readonly string[] | undefined'.
-src/components/discussions/discussion-reply.tsx(144,17): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type 'unknown' is not assignable to type 'string'.
-src/components/discussions/discussion-reply.tsx(159,78): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(168,19): error TS2322: Type 'unknown' is not assignable to type 'string'.
-src/components/discussions/discussion-reply.tsx(179,56): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(188,59): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/discussions/discussion-reply.tsx(194,56): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
-src/components/discussions/discussion-reply.tsx(203,59): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
-src/components/discussions/index.tsx(16,9): error TS2322: Type 'unknown[]' is not assignable to type 'Discussion[]'.
-  Type 'unknown' is not assignable to type 'Discussion'.
-src/components/ui/app-breadcrumbs.tsx(82,24): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/components/ui/chart.tsx(101,19): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Object literal may only specify known properties, and 'width' does not exist in type 'Partial<unknown> & Attributes'.
-src/components/ui/custom/tags-input.tsx(210,33): error TS2322: Type '{ value: string[]; onValueChange: (value: string[]) => void; inputValue: string; setInputValue: React.Dispatch<React.SetStateAction<string>>; activeIndex: number; setActiveIndex: React.Dispatch<...>; }' is not assignable to type 'TagsInputContextProps'.
-  Types of property 'onValueChange' are incompatible.
-    Type '(value: string[]) => void' is not assignable to type '(value: unknown) => void'.
-      Types of parameters 'value' and 'value' are incompatible.
-        Type 'unknown' is not assignable to type 'string[]'.
-src/features/ai-assistant/AiAssistantPanel.tsx(35,52): error TS2345: Argument of type 'Translator<Record<string, any>, "Activities.AiAssistantPanel">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/features/assessments/hooks/useAssessmentSubmission.ts(214,39): error TS2339: Property 'detail' does not exist on type '{}'.
-src/features/assessments/hooks/useAssessmentSubmission.ts(297,39): error TS2339: Property 'detail' does not exist on type '{}'.
-src/features/assessments/hooks/useAssessmentSubmission.ts(322,49): error TS2339: Property 'status' does not exist on type '{}'.
-src/features/assessments/hooks/useAssessmentSubmission.ts(416,13): error TS18046: 'error' is of type 'unknown'.
-src/features/assessments/items/choice/index.tsx(554,14): error TS2322: Type '{ kind: "CHOICE" | "CHOICE_MULTIPLE" | "CHOICE_SINGLE" | "MATCHING" | "TRUE_FALSE"; label: string; Author: ({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) => Element; Attempt: ({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<...>) => Element; ReviewDetail: ({ item, answer }: ItemRev...' is not assignable to type 'ItemKindModule<unknown, unknown, unknown>[]'.
-  Type '{ kind: "CHOICE" | "CHOICE_MULTIPLE" | "CHOICE_SINGLE" | "MATCHING" | "TRUE_FALSE"; label: string; Author: ({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) => JSX.Element; Attempt: ({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<ChoiceAttemptItem, ChoiceAnswer>) => JSX.Element; Revi...' is not assignable to type 'ItemKindModule<unknown, unknown, unknown>'.
-    Types of property 'Author' are incompatible.
-      Type '({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) => Element' is not assignable to type 'ComponentType<ItemAuthorProps<unknown>>'.
-        Type '({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) => Element' is not assignable to type 'FunctionComponent<ItemAuthorProps<unknown>>'.
-          Types of parameters '__0' and 'props' are incompatible.
-            Type 'ItemAuthorProps<unknown>' is not assignable to type 'ItemAuthorProps<ChoiceAuthorValue>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-              Types of property 'value' are incompatible.
-                Type 'unknown' is not assignable to type 'ChoiceAuthorValue'.
-src/features/assessments/items/code/index.tsx(134,3): error TS2322: Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<CodeAttemptItem, { kind: "CODE"; language: number; source: string; latest_run?: { passed: number; total: number; score?: number; details?: Record<string, unknown>[]; }; } | undefined>) => Element' is not assignable to type 'ComponentType<ItemAttemptProps<unknown, unknown>>'.
-  Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<CodeAttemptItem, { kind: "CODE"; language: number; source: string; latest_run?: { passed: number; total: number; score?: number; details?: Record<string, unknown>[]; }; } | undefined>) => Element' is not assignable to type 'FunctionComponent<ItemAttemptProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAttemptProps<unknown, unknown>' is not assignable to type 'ItemAttemptProps<CodeAttemptItem, { kind: "CODE"; language: number; source: string; latest_run?: { passed: number; total: number; score?: number; details?: Record<string, unknown>[]; }; } | undefined>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'item' are incompatible.
-          Type 'unknown' is not assignable to type 'CodeAttemptItem'.
-src/features/assessments/items/code/index.tsx(135,3): error TS2322: Type '({ item, answer, }: ItemReviewDetailProps<CodeAttemptItem, ItemAnswer | null | undefined>) => Element' is not assignable to type 'ComponentType<ItemReviewDetailProps<unknown, unknown>>'.
-  Type '({ item, answer, }: ItemReviewDetailProps<CodeAttemptItem, ItemAnswer | null | undefined>) => Element' is not assignable to type 'FunctionComponent<ItemReviewDetailProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemReviewDetailProps<unknown, unknown>' is not assignable to type 'ItemReviewDetailProps<CodeAttemptItem, ItemAnswer | null | undefined>'.
-        Type 'unknown' is not assignable to type 'CodeAttemptItem'.
-src/features/assessments/items/form/index.tsx(315,3): error TS2322: Type '({ value, disabled, onChange }: ItemAuthorProps<FormItemValue>) => Element' is not assignable to type 'ComponentType<ItemAuthorProps<unknown>>'.
-  Type '({ value, disabled, onChange }: ItemAuthorProps<FormItemValue>) => Element' is not assignable to type 'FunctionComponent<ItemAuthorProps<unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAuthorProps<unknown>' is not assignable to type 'ItemAuthorProps<FormItemValue>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'value' are incompatible.
-          Type 'unknown' is not assignable to type 'FormItemValue'.
-src/features/assessments/items/form/index.tsx(316,3): error TS2322: Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<FormItemValue & { taskUuid?: string; }, FormAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemAttemptProps<unknown, unknown>>'.
-  Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<FormItemValue & { taskUuid?: string; }, FormAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemAttemptProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAttemptProps<unknown, unknown>' is not assignable to type 'ItemAttemptProps<FormItemValue & { taskUuid?: string; }, FormAnswer | null>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'item' are incompatible.
-          Type 'unknown' is not assignable to type 'FormItemValue & { taskUuid?: string; }'.
-            Type 'unknown' is not assignable to type 'FormItemValue'.
-src/features/assessments/items/form/index.tsx(317,3): error TS2322: Type '({ answer }: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemReviewDetailProps<unknown, unknown>>'.
-  Type '({ answer }: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemReviewDetailProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemReviewDetailProps<unknown, unknown>' is not assignable to type 'ItemReviewDetailProps<FormItemValue, FormAnswer | null>'.
-        Type 'unknown' is not assignable to type 'FormItemValue'.
-src/features/assessments/items/matching/index.tsx(220,3): error TS2322: Type '({ value, disabled, onChange }: ItemAuthorProps<MatchingBody>) => Element' is not assignable to type 'ComponentType<ItemAuthorProps<unknown>>'.
-  Type '({ value, disabled, onChange }: ItemAuthorProps<MatchingBody>) => Element' is not assignable to type 'FunctionComponent<ItemAuthorProps<unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAuthorProps<unknown>' is not assignable to type 'ItemAuthorProps<MatchingBody>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'value' are incompatible.
-          Type 'unknown' is not assignable to type 'MatchingBody'.
-src/features/assessments/items/matching/index.tsx(221,3): error TS2322: Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<MatchingBody, MatchingAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemAttemptProps<unknown, unknown>>'.
-  Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<MatchingBody, MatchingAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemAttemptProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAttemptProps<unknown, unknown>' is not assignable to type 'ItemAttemptProps<MatchingBody, MatchingAnswer | null>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'item' are incompatible.
-          Type 'unknown' is not assignable to type 'MatchingBody'.
-src/features/assessments/items/matching/index.tsx(222,3): error TS2322: Type '({ item, answer }: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemReviewDetailProps<unknown, unknown>>'.
-  Type '({ item, answer }: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemReviewDetailProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemReviewDetailProps<unknown, unknown>' is not assignable to type 'ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>'.
-        Type 'unknown' is not assignable to type 'MatchingBody'.
-src/features/assessments/items/open-text/index.tsx(92,3): error TS2322: Type '({ value, disabled, onChange }: ItemAuthorProps<OpenTextValue>) => Element' is not assignable to type 'ComponentType<ItemAuthorProps<unknown>>'.
-  Type '({ value, disabled, onChange }: ItemAuthorProps<OpenTextValue>) => Element' is not assignable to type 'FunctionComponent<ItemAuthorProps<unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAuthorProps<unknown>' is not assignable to type 'ItemAuthorProps<OpenTextValue>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'value' are incompatible.
-          Type 'unknown' is not assignable to type 'OpenTextValue'.
-src/features/assessments/items/open-text/index.tsx(93,3): error TS2322: Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<OpenTextValue & { taskUuid?: string; }, OpenTextAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemAttemptProps<unknown, unknown>>'.
-  Type '({ item, answer, disabled, onAnswerChange, }: ItemAttemptProps<OpenTextValue & { taskUuid?: string; }, OpenTextAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemAttemptProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemAttemptProps<unknown, unknown>' is not assignable to type 'ItemAttemptProps<OpenTextValue & { taskUuid?: string; }, OpenTextAnswer | null>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-        Types of property 'item' are incompatible.
-          Type 'unknown' is not assignable to type 'OpenTextValue & { taskUuid?: string; }'.
-            Type 'unknown' is not assignable to type 'OpenTextValue'.
-src/features/assessments/items/open-text/index.tsx(94,3): error TS2322: Type '({ answer }: ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>) => Element' is not assignable to type 'ComponentType<ItemReviewDetailProps<unknown, unknown>>'.
-  Type '({ answer }: ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>) => Element' is not assignable to type 'FunctionComponent<ItemReviewDetailProps<unknown, unknown>>'.
-    Types of parameters '__0' and 'props' are incompatible.
-      Type 'ItemReviewDetailProps<unknown, unknown>' is not assignable to type 'ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>'.
-        Type 'unknown' is not assignable to type 'OpenTextValue'.
-src/features/assessments/items/registry.ts(46,8): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(47,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(49,7): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(51,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(52,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(53,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(54,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/items/registry.ts(56,10): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(280,41): error TS2322: Type 'unknown' is not assignable to type '{ status: "GRADED" | "PENDING" | "PUBLISHED" | "RETURNED"; final_score?: number | null; grading_json?: { feedback?: string; } | null; submitted_at?: string | null; }'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(373,17): error TS2339: Property 'kind' does not exist on type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(377,49): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(378,44): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(379,34): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(379,68): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(380,40): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(380,89): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(382,51): error TS2571: Object is of type 'unknown'.
-src/features/assessments/registry/exam/ExamAttemptContent.tsx(649,62): error TS2322: Type 'unknown' is not assignable to type '{ status: "GRADED" | "PENDING" | "PUBLISHED" | "RETURNED"; final_score?: number | null; grading_json?: { feedback?: string; } | null; submitted_at?: string | null; }'.
-src/features/assessments/registry/index.ts(89,8): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(90,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(91,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(92,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(93,5): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(95,10): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(118,8): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(118,16): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/registry/index.ts(119,10): error TS18046: 'f' is of type 'unknown'.
-src/features/assessments/shell/AssessmentChrome.tsx(129,40): error TS2345: Argument of type 'Translator<Record<string, any>, "Features.Assessments.Attempt.Exam">' is not assignable to parameter of type '(key: string, values?: AppTranslationValues | undefined) => string'.
+    Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+      Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(165,11): error TS2322: Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+  Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(170,89): error TS2322: Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+  Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(172,46): error TS2322: Type '{ chapterId: number; course: AppCourse | AppCourseContextShape; closeModal: () => void; }' is not assignable to type 'AppActivityModalProps'.
+  Types of property 'course' are incompatible.
+    Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+      Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(173,37): error TS2322: Type '{ chapterId: number; course: AppCourse | AppCourseContextShape; closeModal: () => void; submitActivity: (payload: AppPayload) => Promise<void>; }' is not assignable to type 'AppActivityModalProps'.
+  Types of property 'course' are incompatible.
+    Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+      Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivity.tsx(174,45): error TS2322: Type '{ chapterId: number; course: AppCourse | AppCourseContextShape; closeModal: () => void; submitActivity: (payload: AppPayload) => Promise<void>; }' is not assignable to type 'CodeChallengeActivityModalProps'.
+  Types of property 'course' are incompatible.
+    Type 'AppCourse | AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape'.
+      Type 'AppCourseContextShape' is not assignable to type 'AppCourse & AppCourseContextShape' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Property 'course_uuid' is missing in type 'AppCourseContextShape' but required in type 'AppCourse'.
+src/components/Objects/Modals/Activities/Create/NewActivityModal/VideoActivityModal.tsx(986,90): error TS2322: Type 'Translator<Record<string, any>, "Components.VideoModal">' is not assignable to type 'AppTranslator'.
   Types of parameters 'args' and 'values' are incompatible.
     Type 'AppTranslationValues | undefined' is not assignable to type 'Record<string, string | number | Date> | undefined'.
       Type 'AppTranslationValues' is not assignable to type 'Record<string, string | number | Date>'.
         'string' index signatures are incompatible.
           Type 'string | number | boolean | Date | null | undefined' is not assignable to type 'string | number | Date'.
             Type 'undefined' is not assignable to type 'string | number | Date'.
-src/features/assessments/studio/tabs/GeneralSettingsTab.tsx(346,74): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/features/assessments/studio/tabs/GeneralSettingsTab.tsx(354,75): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/features/code-arena/attempt/EditorPane.tsx(63,24): error TS2339: Property 'getAction' does not exist on type '{}'.
-src/features/code-arena/authoring/CodeChallengeBuilder.tsx(74,57): error TS2345: Argument of type 'Translator<Record<string, any>, "Activities.CodeChallenges">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/features/code-arena/authoring/ProblemStatementEditor.tsx(78,45): error TS2322: Type 'unknown' is not assignable to type '"EASY" | "HARD" | "MEDIUM"'.
-src/features/code-arena/authoring/ProblemStatementEditor.tsx(163,22): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-src/features/code-arena/authoring/PublishReadinessPanel.tsx(18,57): error TS2345: Argument of type 'Translator<Record<string, any>, "Activities.CodeChallenges">' is not assignable to parameter of type 'AppTranslator'.
-  Types of parameters 'args' and 'values' are incompatible.
-    Type 'unknown' is not assignable to type 'Record<string, string | number | Date> | undefined'.
-src/features/code-arena/authoring/TestSuiteBuilder.tsx(167,13): error TS2322: Type '{ id: string; is_visible: boolean; description: string; input: string; expected_output: string; weight: number; match_mode: {}; }[]' is not assignable to type 'TestCase[]'.
-  Type '{ id: string; is_visible: boolean; description: string; input: string; expected_output: string; weight: number; match_mode: {}; }' is not assignable to type 'TestCase'.
-    Types of property 'match_mode' are incompatible.
-      Type '{}' is not assignable to type '"CUSTOM_CHECKER" | "EXACT" | "IGNORE_WHITESPACE" | "NUMERIC_TOLERANCE" | "TRIMMED"'.
-src/features/code-arena/authoring/TestSuiteBuilder.tsx(334,33): error TS2322: Type 'unknown' is not assignable to type '"CUSTOM_CHECKER" | "EXACT" | "IGNORE_WHITESPACE" | "NUMERIC_TOLERANCE" | "TRIMMED"'.
-src/features/courses/mutations/activity.mutation.ts(35,34): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/activity.mutation.ts(53,32): error TS2345: Argument of type 'readonly unknown[] | undefined' is not assignable to parameter of type 'readonly unknown[]'.
-  Type 'undefined' is not assignable to type 'readonly unknown[]'.
-src/features/courses/mutations/activity.mutation.ts(81,34): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/activity.mutation.ts(106,42): error TS2345: Argument of type '{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'details' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload & { subtitles?: { file?: File; id?: string | number; label?: string; language?: string; }[]; }'.
-      Type 'unknown' is not assignable to type 'AppPayload'.
-src/features/courses/mutations/activity.mutation.ts(127,42): error TS2345: Argument of type 'Partial<{ name: string; activity_type: "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_FILE_SUBMISSION" | "TYPE_VIDEO"; activity_sub_type?: "SUBTYPE_DOCUMENT_PDF" | ... 4 more ... | undefined; published?: boolean | undefined; content?: unknown; details?: unknown; }>' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'details' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload & { subtitles?: { file?: File; id?: string | number; label?: string; language?: string; }[]; }'.
-      Type 'unknown' is not assignable to type 'AppPayload'.
-src/features/courses/mutations/chapter.mutation.ts(10,5): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '({ payload }: { payload: ChapterCreateValues; }) => Promise<unknown>' is not assignable to type 'MutationFunction<AppChapter, { payload: { name: string; description?: string | undefined; thumbnail_image?: string | undefined; course_uuid: string; }; }>'.
-      Type 'Promise<unknown>' is not assignable to type 'Promise<AppChapter>'.
-        Type 'unknown' is not assignable to type 'AppChapter'.
-src/features/courses/mutations/chapter.mutation.ts(10,88): error TS2345: Argument of type '{ name: string; description?: string | undefined; thumbnail_image?: string | undefined; course_uuid: string; }' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'description' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/features/courses/mutations/chapter.mutation.ts(27,38): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/chapter.mutation.ts(39,34): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/chapter.mutation.ts(40,51): error TS2339: Property 'tempId' does not exist on type 'AppMutationContext'.
-src/features/courses/mutations/chapter.mutation.ts(58,34): error TS2345: Argument of type '{ name?: string | undefined; description?: string | undefined; thumbnail_image?: string | undefined; }' is not assignable to parameter of type 'AppPayload'.
-  Types of property 'description' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/features/courses/mutations/chapter.mutation.ts(67,34): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/chapter.mutation.ts(96,34): error TS2339: Property 'chapters' does not exist on type 'AppTranslator'.
-src/features/courses/mutations/course.mutation.ts(70,5): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '({ options, payload }: { options: MutationOptions; payload: Partial<CourseGeneralValues>; }) => Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'MutationFunction<{ data?: { update_date?: string; }; }, { options: MutationOptions; payload: Partial<{ name: string; description: string; about?: string | undefined; learnings: string; tags: string[]; public: boolean; thumbnail_type: "both" | ... 1 more ... | "video"; }>; }>'.
-      Type 'Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'Promise<{ data?: { update_date?: string; }; }>'.
-        Type 'ResponseMetadata<NormalizedCourse>' is not assignable to type '{ data?: { update_date?: string; }; }'.
-          Types of property 'data' are incompatible.
-            Type 'NormalizedCourse | null' is not assignable to type '{ update_date?: string; }'.
-              Type 'null' is not assignable to type '{ update_date?: string; }'.
-src/features/courses/mutations/course.mutation.ts(98,5): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '({ options, payload, }: { options: MutationOptions; payload: Partial<CourseAccessValues & { open_to_contributors?: boolean; }>; }) => Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'MutationFunction<{ data?: { update_date?: string; }; }, { options: MutationOptions; payload: Partial<{ public: boolean; } & { open_to_contributors?: boolean; }>; }>'.
-      Type 'Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'Promise<{ data?: { update_date?: string; }; }>'.
-        Type 'ResponseMetadata<NormalizedCourse>' is not assignable to type '{ data?: { update_date?: string; }; }'.
-          Types of property 'data' are incompatible.
-            Type 'NormalizedCourse | null' is not assignable to type '{ update_date?: string; }'.
-              Type 'null' is not assignable to type '{ update_date?: string; }'.
-src/features/courses/mutations/course.mutation.ts(132,5): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '({ formData, options }: { formData: FormData; options: MutationOptions; }) => Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'MutationFunction<{ data?: { update_date?: string; }; }, { formData: FormData; options: MutationOptions; }>'.
-      Type 'Promise<ResponseMetadata<NormalizedCourse>>' is not assignable to type 'Promise<{ data?: { update_date?: string; }; }>'.
-        Type 'ResponseMetadata<NormalizedCourse>' is not assignable to type '{ data?: { update_date?: string; }; }'.
-          Types of property 'data' are incompatible.
-            Type 'NormalizedCourse | null' is not assignable to type '{ update_date?: string; }'.
-              Type 'null' is not assignable to type '{ update_date?: string; }'.
-src/features/courses/mutations/course.mutation.ts(154,63): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'AppPayload'.
-  Index signature for type 'string' is missing in type 'string[]'.
-src/features/courses/mutations/course.mutation.ts(168,70): error TS2345: Argument of type '(contributor: AppCourseAuthor) => string | undefined' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => string | undefined'.
-  Types of parameters 'contributor' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCourseAuthor'.
-src/features/courses/mutations/course.mutation.ts(238,57): error TS2345: Argument of type '(contributor: AppCourseAuthor) => AppCourseAuthor' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => AppCourseAuthor'.
-  Types of parameters 'contributor' and 'value' are incompatible.
-    Type 'unknown' is not assignable to type 'AppCourseAuthor'.
-src/features/courses/mutations/course.mutation.ts(266,62): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'AppPayload'.
-  Index signature for type 'string' is missing in type 'string[]'.
-src/features/courses/mutations/course.mutation.ts(285,15): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type '(contributor: AppCourseAuthor) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => unknown'.
-      Types of parameters 'contributor' and 'value' are incompatible.
-        Type 'unknown' is not assignable to type 'AppCourseAuthor'.
-src/features/courses/mutations/course.mutation.ts(285,64): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
-  Type 'undefined' is not assignable to type 'number'.
-src/features/courses/mutations/course.mutation.ts(285,105): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/hooks/courses/useCourseStructure.ts(77,37): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type '(currentChapter: AppChapter) => boolean' is not assignable to parameter of type '(value: TChapter, index: number, obj: TChapter[]) => unknown'.
-      Types of parameters 'currentChapter' and 'value' are incompatible.
-        Type 'TChapter' is not assignable to type 'AppChapter'.
-src/hooks/use-reduced-data.ts(74,18): error TS2339: Property 'addListener' does not exist on type 'never'.
-src/hooks/use-reduced-data.ts(98,20): error TS2339: Property 'removeListener' does not exist on type 'never'.
-src/hooks/useActivityAutosave.ts(34,46): error TS2345: Argument of type '(payload: AppPayload) => void' is not assignable to parameter of type 'AnyFunction'.
-  Types of parameters 'payload' and 'args' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload'.
-src/hooks/useSaveSection.ts(84,48): error TS2339: Property 'update_date' does not exist on type '{}'.
-src/hooks/useSaveSection.ts(92,20): error TS2339: Property 'status' does not exist on type '{}'.
-src/hooks/useSaveSection.ts(94,35): error TS2339: Property 'data' does not exist on type '{}'.
-src/hooks/useSaveSection.ts(95,29): error TS2339: Property 'detail' does not exist on type '{}'.
-src/hooks/useSaveSection.ts(95,46): error TS2339: Property 'message' does not exist on type '{}'.
-src/hooks/useSaveSection.ts(103,18): error TS2339: Property 'message' does not exist on type '{}'.
-src/lib/gamification/components/notification-queue.tsx(378,56): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | AddEventListenerOptions | undefined'.
-src/lib/gamification/components/notification-queue.tsx(379,56): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | AddEventListenerOptions | undefined'.
-src/lib/gamification/components/notification-queue.tsx(380,71): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | AddEventListenerOptions | undefined'.
-src/lib/gamification/components/notification-queue.tsx(386,61): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | EventListenerOptions | undefined'.
-src/lib/gamification/components/notification-queue.tsx(387,61): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | EventListenerOptions | undefined'.
-src/lib/gamification/components/notification-queue.tsx(388,76): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'unknown' is not assignable to parameter of type 'boolean | EventListenerOptions | undefined'.
-src/lib/gamification/components/xp-toast.tsx(140,14): error TS2322: Type 'unknown' is not assignable to type 'XPNotification & { batchCount: number; totalAmount: number; }'.
-  Type 'unknown' is not assignable to type 'XPNotification'.
-src/lib/gamification/components/xp-toast.tsx(140,79): error TS18046: 'notification' is of type 'unknown'.
-src/lib/react-query/queryClient.ts(12,79): error TS2571: Object is of type 'unknown'.
-src/schemas/courseSchemas.ts(14,48): error TS2339: Property 'text' does not exist on type '{}'.
-src/schemas/courseSchemas.ts(14,73): error TS2339: Property 'text' does not exist on type '{}'.
-src/services/blocks/Video/video.ts(59,30): error TS2339: Property 'message' does not exist on type '{}'.
-src/services/courses/activity-uploads.ts(29,9): error TS2375: Type '{ startTime: number; endTime: number | null; autoplay: boolean | undefined; muted: boolean | undefined; }' is not assignable to type '{ autoplay?: boolean; endTime: number | null; muted?: boolean; startTime: number; subtitles?: { id?: string | number; language?: string; label?: string; }[]; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-  Types of property 'autoplay' are incompatible.
-    Type 'boolean | undefined' is not assignable to type 'boolean'.
-      Type 'undefined' is not assignable to type 'boolean'.
-src/services/courses/activity-uploads.ts(43,5): error TS2322: Type '{ id: string | number | undefined; language: string | undefined; label: string | undefined; }[]' is not assignable to type '{ id?: string | number; language?: string; label?: string; }[]'.
-  Type '{ id: string | number | undefined; language: string | undefined; label: string | undefined; }' is not assignable to type '{ id?: string | number; language?: string; label?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
-    Types of property 'id' are incompatible.
-      Type 'string | number | undefined' is not assignable to type 'string | number'.
-        Type 'undefined' is not assignable to type 'string | number'.
-src/services/courses/activity-uploads.ts(113,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'string | undefined' is not assignable to parameter of type 'Blob'.
-      Type 'undefined' is not assignable to type 'Blob'.
-src/services/courses/activity-uploads.ts(161,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'string | undefined' is not assignable to parameter of type 'Blob'.
-      Type 'undefined' is not assignable to type 'Blob'.
-src/services/courses/activity-uploads.ts(213,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'string | undefined' is not assignable to parameter of type 'Blob'.
-      Type 'undefined' is not assignable to type 'Blob'.
-src/services/courses/activity-uploads.ts(253,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'string | undefined' is not assignable to parameter of type 'Blob'.
-      Type 'undefined' is not assignable to type 'Blob'.
-src/services/courses/courses.ts(469,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Argument of type 'string | undefined' is not assignable to parameter of type 'Blob'.
-      Type 'undefined' is not assignable to type 'Blob'.
-src/services/courses/courses.ts(472,32): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '{}' is missing the following properties from type 'Blob': size, type, arrayBuffer, bytes, and 3 more.
-src/services/courses/courses.ts(473,27): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '{}' is missing the following properties from type 'Blob': size, type, arrayBuffer, bytes, and 3 more.
-src/services/courses/courses.ts(478,33): error TS2769: No overload matches this call.
-  The last overload gave the following error.
-    Type '{}' is missing the following properties from type 'Blob': size, type, arrayBuffer, bytes, and 3 more.
-src/services/courses/editor.ts(61,35): error TS2345: Argument of type 'CustomResponseTyping<unknown>' is not assignable to parameter of type '{ success: boolean; data: AppPayload; status: number; HTTPmessage: string; }'.
-  Types of property 'data' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload'.
-src/services/courses/editor.ts(62,39): error TS2345: Argument of type 'CustomResponseTyping<unknown>' is not assignable to parameter of type '{ success: boolean; data: AppPayload; status: number; HTTPmessage: string; }'.
-  Types of property 'data' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload'.
-src/services/courses/editor.ts(63,37): error TS2345: Argument of type 'CustomResponseTyping<unknown>' is not assignable to parameter of type '{ success: boolean; data: AppPayload; status: number; HTTPmessage: string; }'.
-  Types of property 'data' are incompatible.
-    Type 'unknown' is not assignable to type 'AppPayload'.
-src/stores/courses/courseEditorStore.ts(107,56): error TS2339: Property 'update_date' does not exist on type '{}'.
-src/tests/courses/course-service.test.ts(314,64): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'AppTranslator'.

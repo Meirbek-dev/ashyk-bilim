@@ -86,7 +86,11 @@ export function OpenTextReviewDetail({ answer }: ItemReviewDetailProps<OpenTextV
   )
 }
 
-export const openTextModule: ItemKindModule = {
+export const openTextModule: ItemKindModule<
+  OpenTextValue,
+  OpenTextValue & { taskUuid?: string },
+  OpenTextAnswer | null
+> = {
   kind: 'OPEN_TEXT',
   label: 'Open text',
   Author: OpenTextAuthor,

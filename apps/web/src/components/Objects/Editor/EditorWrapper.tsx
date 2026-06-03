@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 
 import { AuthoringEditor } from './views'
 
+import type { Platform } from '@/types/platform'
+
 interface EditorWrapperProps {
   content: unknown
   activity: ActivityRef
@@ -18,7 +20,7 @@ interface EditorWrapperProps {
     name: string
     thumbnail_image?: string | null
   }
-  platform: unknown
+  platform?: Platform | null
 }
 
 const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
