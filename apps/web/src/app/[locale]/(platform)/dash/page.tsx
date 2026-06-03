@@ -1,11 +1,11 @@
-import { BarChart2, BookCopy, ChevronRight, School, Settings, ShieldCheck, Users } from 'lucide-react'
+import { BarChart2, BookCopy, ChevronRight, Settings, ShieldCheck, Users } from 'lucide-react'
 import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp'
 import ServerLink from '@/components/ui/ServerLink'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 
-import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUsers } from '@/lib/rbac/navigation-policy'
+import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/rbac/navigation-policy'
 import { requireSession } from '@/lib/auth/session'
 import { sessionCan } from '@/lib/auth/permissions'
 
@@ -25,7 +25,6 @@ export default async function PlatformDashHomePage() {
 
   const hasCoursesAccess = canSeeCourses(can)
   const hasAnalyticsAccess = canSeeAnalytics(can)
-  const hasPlatformAccess = canSeePlatform(can)
   const hasUsersAccess = canSeeUsers(can)
   const hasAdminAccess = canSeeAdmin(can)
 
@@ -46,14 +45,6 @@ export default async function PlatformDashHomePage() {
         'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
       title: t('Analytics.title'),
       description: t('Analytics.description'),
-    },
-    {
-      visible: hasPlatformAccess,
-      href: '/dash/platform/settings/previews',
-      icon: <School size={20} className="text-amber-500" />,
-      iconBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white',
-      title: t('Platform.title'),
-      description: t('Platform.description'),
     },
     {
       visible: hasUsersAccess,

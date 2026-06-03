@@ -80,14 +80,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 
 ### Frontend API
 
-#### 009. [P0] Stop returning `any` from the central API client
-
-- **Effort:** S
-- **Impact:** High
-- **Evidence:** `api-client.ts` and `assertSuccess.ts` use `any`; top service files still parse responses as `any`.
-- **Action:** Replace `any` with `unknown`, generated OpenAPI types, and typed helpers. Add `no-explicit-any` as warn with a baseline, then ratchet.
-- **Done when:** The central API client has zero `any`; new service modules cannot introduce untyped response bodies without an explicit waiver.
-
 #### 010. [P1] Create one typed generated client layer instead of handwritten endpoint parsing
 
 - **Effort:** M

@@ -4716,20 +4716,6 @@
         "title": "Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put",
         "type": "object"
       },
-      "Body_api_update_platform_preview_api_v1_preview_put": {
-        "properties": {
-          "preview_file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "Preview File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "preview_file"
-        ],
-        "title": "Body_api_update_platform_preview_api_v1_preview_put",
-        "type": "object"
-      },
       "Body_api_update_platform_thumbnail_api_v1_thumbnail_put": {
         "properties": {
           "thumbnail_file": {
@@ -11681,19 +11667,6 @@
         "title": "PlatformDetailResponse",
         "type": "object"
       },
-      "PlatformPreviewUploadResponse": {
-        "properties": {
-          "name_in_disk": {
-            "title": "Name In Disk",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name_in_disk"
-        ],
-        "title": "PlatformPreviewUploadResponse",
-        "type": "object"
-      },
       "PlatformRead": {
         "description": "Model for reading the platform with all related data.",
         "properties": {
@@ -11739,18 +11712,6 @@
             ],
             "title": "Label"
           },
-          "links": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Links"
-          },
           "logo_image": {
             "anyOf": [
               {
@@ -11765,30 +11726,6 @@
           "name": {
             "title": "Name",
             "type": "string"
-          },
-          "previews": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previews"
-          },
-          "socials": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Socials"
           },
           "thumbnail_image": {
             "anyOf": [
@@ -11841,18 +11778,6 @@
             ],
             "title": "Email"
           },
-          "links": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Links"
-          },
           "logo_image": {
             "anyOf": [
               {
@@ -11863,30 +11788,6 @@
               }
             ],
             "title": "Logo Image"
-          },
-          "previews": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previews"
-          },
-          "socials": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Socials"
           },
           "thumbnail_image": {
             "anyOf": [
@@ -31888,63 +31789,6 @@
           }
         ],
         "summary": "Api Update Platform",
-        "tags": [
-          "platform"
-        ]
-      }
-    },
-    "/api/v1/preview": {
-      "put": {
-        "description": "Update the platform preview.\n\n**Required Permission**: `platform:update`",
-        "operationId": "api_update_platform_preview_api_v1_preview_put",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_api_update_platform_preview_api_v1_preview_put"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlatformPreviewUploadResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            },
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Update Platform Preview",
         "tags": [
           "platform"
         ]

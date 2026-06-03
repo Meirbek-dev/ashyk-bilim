@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { BarChart3, BookCopy, Home, LogOut, Moon, School, Settings, ShieldCheck, Sun, Users } from 'lucide-react'
+import { BarChart3, BookCopy, Home, LogOut, Moon, Settings, ShieldCheck, Sun, Users } from 'lucide-react'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
 import appLogo from '@public/app_logo.svg'
@@ -81,7 +81,7 @@ const SidebarSkeleton = () => (
 const useNavigationItems = () => {
   const pathname = usePathname()
   const t = useTranslations('SidebarMenu')
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()
+  const { canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()
 
   return [
     {
@@ -121,17 +121,6 @@ const useNavigationItems = () => {
             icon: Users,
             tooltip: t('tooltips.users'),
             isActive: pathname.startsWith('/dash/users'),
-          },
-        ]
-      : []),
-    ...(canSeePlatform
-      ? [
-          {
-            title: t('tooltips.platform'),
-            href: '/dash/platform/settings/previews',
-            icon: School,
-            tooltip: t('tooltips.platform'),
-            isActive: pathname.startsWith('/dash/platform'),
           },
         ]
       : []),

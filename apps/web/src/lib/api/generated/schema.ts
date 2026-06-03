@@ -3045,28 +3045,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Api Update Platform Preview
-         * @description Update the platform preview.
-         *
-         *     **Required Permission**: `platform:update`
-         */
-        put: operations["api_update_platform_preview_api_v1_preview_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/rbac/check": {
         parameters: {
             query?: never;
@@ -5943,11 +5921,6 @@ export interface components {
             /** Avatar File */
             avatar_file?: string | null;
         };
-        /** Body_api_update_platform_preview_api_v1_preview_put */
-        Body_api_update_platform_preview_api_v1_preview_put: {
-            /** Preview File */
-            preview_file: string;
-        };
         /** Body_api_update_platform_thumbnail_api_v1_thumbnail_put */
         Body_api_update_platform_thumbnail_api_v1_thumbnail_put: {
             /** Thumbnail File */
@@ -8591,11 +8564,6 @@ export interface components {
             /** Detail */
             detail: string;
         };
-        /** PlatformPreviewUploadResponse */
-        PlatformPreviewUploadResponse: {
-            /** Name In Disk */
-            name_in_disk: string;
-        };
         /**
          * PlatformRead
          * @description Model for reading the platform with all related data.
@@ -8614,22 +8582,10 @@ export interface components {
             email: string;
             /** Label */
             label?: string | null;
-            /** Links */
-            links?: {
-                [key: string]: unknown;
-            } | null;
             /** Logo Image */
             logo_image?: string | null;
             /** Name */
             name: string;
-            /** Previews */
-            previews?: {
-                [key: string]: unknown;
-            } | null;
-            /** Socials */
-            socials?: {
-                [key: string]: unknown;
-            } | null;
             /** Thumbnail Image */
             thumbnail_image?: string | null;
             /**
@@ -8647,20 +8603,8 @@ export interface components {
             about?: string | null;
             /** Email */
             email?: string | null;
-            /** Links */
-            links?: {
-                [key: string]: unknown;
-            } | null;
             /** Logo Image */
             logo_image?: string | null;
-            /** Previews */
-            previews?: {
-                [key: string]: unknown;
-            } | null;
-            /** Socials */
-            socials?: {
-                [key: string]: unknown;
-            } | null;
             /** Thumbnail Image */
             thumbnail_image?: string | null;
             /** Update Date */
@@ -18444,48 +18388,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-        };
-    };
-    api_update_platform_preview_api_v1_preview_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_api_update_platform_preview_api_v1_preview_put"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlatformPreviewUploadResponse"];
                 };
             };
             /** @description Validation Error */

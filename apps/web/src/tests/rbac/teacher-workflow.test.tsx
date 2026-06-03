@@ -5,7 +5,7 @@ import React from 'react'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { PermissionGuard } from '@/components/Security/PermissionGuard'
 import { Actions, Resources, Scopes } from '@/types/permissions'
-import { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeAdmin } from '@/lib/rbac/navigation-policy'
+import { canSeeCourses, canSeeAnalytics, canSeeAdmin } from '@/lib/rbac/navigation-policy'
 import type { Session } from '@/lib/auth/types'
 
 // Mock useRouter
@@ -88,11 +88,6 @@ describe('Teacher (Instructor) Workflow', () => {
   it('should NOT allow instructor to see admin settings', () => {
     const mockCan = (r: any, a: any, s: any) => instructorPermissions.includes(`${r}:${a}:${s}`)
     expect(canSeeAdmin(mockCan as any)).toBe(false)
-  })
-
-  it('should NOT allow instructor to manage platform', () => {
-    const mockCan = (r: any, a: any, s: any) => instructorPermissions.includes(`${r}:${a}:${s}`)
-    expect(canSeePlatform(mockCan as any)).toBe(false)
   })
 
   describe('PermissionGuard for Instructor', () => {

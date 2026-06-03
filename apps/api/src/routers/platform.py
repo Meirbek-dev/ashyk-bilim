@@ -17,7 +17,6 @@ from src.services.platform import get_platform
 from src.services.platform_admin import (
     update_app_logo,
     update_platform,
-    update_platform_preview,
     update_platform_thumbnail,
 )
 from src.services.platform_users import (
@@ -31,10 +30,6 @@ router = APIRouter()
 
 class PlatformDetailResponse(PydanticStrictBaseModel):
     detail: str
-
-
-class PlatformPreviewUploadResponse(PydanticStrictBaseModel):
-    name_in_disk: str
 
 
 @router.get("/platform", response_model=PlatformRead)
@@ -153,27 +148,6 @@ async def api_update_platform_thumbnail(
     return await update_platform_thumbnail(
         request=request,
         thumbnail_file=thumbnail_file,
-        current_user=current_user,
-        db_session=db_session,
-    )
-
-
-@router.put("/preview", response_model=PlatformPreviewUploadResponse)
-async def api_update_platform_preview(
-    request: Request,
-    preview_file: UploadFile,
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-    checker: PermissionCheckerDep,
-):
-    """Update the platform preview.
-
-    **Required Permission**: `platform:update`
-    """
-    checker.require(current_user.id, "platform:update")
-    return await update_platform_preview(
-        request=request,
-        preview_file=preview_file,
         current_user=current_user,
         db_session=db_session,
     )

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  canSeePlatform,
   canSeeCourses,
   canSeeAnalytics,
   canSeeUsers,
@@ -14,23 +13,6 @@ describe('Navigation Policy', () => {
       return grantedPermissions.has(`${resource}:${action}:${scope}`)
     }
   }
-
-  describe('canSeePlatform', () => {
-    it('should return true if user has platform:manage:own', () => {
-      const can = mockCan(new Set(['platform:manage:own']))
-      expect(canSeePlatform(can)).toBe(true)
-    })
-
-    it('should return true if user has platform:update:platform', () => {
-      const can = mockCan(new Set(['platform:update:platform']))
-      expect(canSeePlatform(can)).toBe(true)
-    })
-
-    it('should return false if user lacks platform permissions', () => {
-      const can = mockCan(new Set(['course:read:all']))
-      expect(canSeePlatform(can)).toBe(false)
-    })
-  })
 
   describe('canSeeCourses', () => {
     it('should return true if user has course:create:platform', () => {

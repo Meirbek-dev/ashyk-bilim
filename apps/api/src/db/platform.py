@@ -18,11 +18,8 @@ class PlatformBase(SQLModelStrictBaseModel):
     name: str
     description: str | None = None
     about: str | None = None
-    socials: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
-    links: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))
     label: str | None = None
     email: str
 
@@ -45,11 +42,8 @@ class PlatformUpdate(SQLModelStrictBaseModel):
     """Model for updating the platform."""
 
     about: str | None = None
-    socials: dict[str, object] | None = None
-    links: dict[str, object] | None = None
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict[str, object] | None = None
     email: str | None = None
     update_date: datetime | None = None
 

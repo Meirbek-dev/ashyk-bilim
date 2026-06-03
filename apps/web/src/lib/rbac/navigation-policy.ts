@@ -3,15 +3,6 @@ import { Actions, Resources, Scopes } from '@/types/permissions'
 
 type CanCheck = (resource: Resource, action: Action, scope: Scope) => boolean
 
-export function canSeePlatform(can: CanCheck): boolean {
-  return (
-    can(Resources.APP, Actions.MANAGE, Scopes.OWN) ||
-    can(Resources.APP, Actions.UPDATE, Scopes.OWN) ||
-    can(Resources.APP, Actions.MANAGE, Scopes.APP) ||
-    can(Resources.APP, Actions.UPDATE, Scopes.APP)
-  )
-}
-
 export function canSeeCourses(can: CanCheck): boolean {
   return (
     can(Resources.COURSE, Actions.CREATE, Scopes.APP) ||
@@ -54,5 +45,5 @@ export function canSeeAdmin(can: CanCheck): boolean {
 }
 
 export function canAccessDashboard(can: CanCheck): boolean {
-  return canSeePlatform(can) || canSeeCourses(can) || canSeeAnalytics(can) || canSeeUsers(can) || canSeeAdmin(can)
+  return canSeeCourses(can) || canSeeAnalytics(can) || canSeeUsers(can) || canSeeAdmin(can)
 }

@@ -32,18 +32,6 @@ async def upload_platform_thumbnail(thumbnail_file: UploadFile) -> str:
     )
 
 
-async def upload_platform_preview(file: UploadFile) -> str:
-    return await upload_file(
-        file=file,
-        directory="previews",
-        type_of_dir="platform",
-        uuid=None,
-        allowed_types=["image"],
-        filename_prefix="preview",
-        max_size=5 * 1024 * 1024,
-    )
-
-
 def update_platform(
     request: Request,
     platform_object: PlatformUpdate,
@@ -105,13 +93,5 @@ async def update_platform_thumbnail(
     return {"detail": "Thumbnail updated"}
 
 
-async def update_platform_preview(
-    request: Request,
-    preview_file: UploadFile,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-):
-    filename = await upload_platform_preview(preview_file)
-    return {"name_in_disk": filename}
 
 
