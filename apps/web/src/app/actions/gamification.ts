@@ -27,7 +27,7 @@ export async function updateStreakAction(type: 'login' | 'learning') {
   return result
 }
 
-export async function updatePreferencesAction(preferences: Record<string, any>) {
+export async function updatePreferencesAction(preferences: Record<string, unknown>) {
   const result = await updatePreferencesOnServer(preferences)
   return result
 }

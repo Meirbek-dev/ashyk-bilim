@@ -18,12 +18,12 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
   const setActivitySaveStatus = useCourseEditorStore(state => state.setActivitySaveStatus)
 
   const persistDraft = useCallback(
-    async (payload: any) => {
+    async (payload: AppPayload) => {
       setActivitySaveStatus('saving')
       try {
         await updateActivity(options.activityUuid, payload)
         setActivitySaveStatus('saved')
-      } catch (error: any) {
+      } catch (error: unknown) {
         setActivitySaveStatus('error')
         throw error
       }
@@ -31,12 +31,12 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
     [options.activityUuid, setActivitySaveStatus, updateActivity],
   )
 
-  const debouncedSave = useDebouncedCallback((payload: any) => {
+  const debouncedSave = useDebouncedCallback((payload: AppPayload) => {
     void persistDraft(payload)
   }, options.delay ?? 1500)
 
   const onChange = useCallback(
-    (payload: any) => {
+    (payload: AppPayload) => {
       setActivitySaveStatus('saving')
       debouncedSave(payload)
     },
@@ -44,7 +44,7 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
   )
 
   const flush = useCallback(
-    async (payload: any) => {
+    async (payload: AppPayload) => {
       await persistDraft(payload)
     },
     [persistDraft],

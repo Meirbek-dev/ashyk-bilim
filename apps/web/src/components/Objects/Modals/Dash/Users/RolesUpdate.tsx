@@ -17,8 +17,8 @@ import { toast } from 'sonner'
 import * as v from 'valibot'
 
 interface Props {
-  user: any
-  setRolesModal: any
+  user: AppUserSummary & { user?: AppUserSummary }
+  setRolesModal: (open: boolean) => void
   alreadyAssignedRole: string
 }
 const createValidationSchema = (t: (key: string) => string) =>
@@ -37,9 +37,9 @@ const RolesUpdate: FC<Props> = props => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.RolesUpdate')
   const validationSchema = createValidationSchema(validationT)
-  const [error, setError] = useState<any>(null)
+  const [error, setError] = useState<unknown>(null)
 
-  const form = useForm<FormData, any, RoleFormValues>({
+  const form = useForm<FormData, unknown, RoleFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       role: props.alreadyAssignedRole,
@@ -49,7 +49,7 @@ const RolesUpdate: FC<Props> = props => {
   // Fetch available platform roles and sort them by system flag + priority
   const { data: roles, error: rolesError } = useRoles()
 
-  const sortedRoles = (roles ?? []).toSorted((a: any, b: any) => {
+  const sortedRoles = (roles ?? []).toSorted((a: AppRoleSummary, b: AppRoleSummary) => {
     // System roles first, then by descending priority, then by name
     const aSystem = a.is_system ? 0 : 1
     const bSystem = b.is_system ? 0 : 1
@@ -78,8 +78,8 @@ const RolesUpdate: FC<Props> = props => {
       })
       props.setRolesModal(false)
       toast.success(t('toastSuccess'), { id: toastId })
-    } catch (submitError: any) {
-      const detail = submitError?.message ?? 'Unknown error'
+    } catch (submitError: unknown) {
+      const detail = submitError instanceof Error ? submitError.message : 'Unknown error'
       setError(detail)
       toast.error(t('toastError'), { id: toastId })
     }
@@ -117,7 +117,7 @@ const RolesUpdate: FC<Props> = props => {
                     {t('loadingRoles')}
                   </NativeSelectOption>
                 ) : (
-                  sortedRoles.map((role: any) => (
+                  sortedRoles.map((role: AppRoleSummary) => (
                     <NativeSelectOption key={role.id} value={role.id.toString()}>
                       {role.name}
                     </NativeSelectOption>

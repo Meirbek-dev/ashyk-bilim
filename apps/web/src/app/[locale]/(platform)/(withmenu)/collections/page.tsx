@@ -65,7 +65,7 @@ export default async function PlatformCollectionsPage() {
           </PermissionGuard>
         </div>
         <div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4">
-          {collections.map((collection: any) => (
+          {collections.map((collection: AppCollection) => (
             <div key={collection.collection_uuid} className="p-3">
               <CollectionThumbnail collection={collection} />
             </div>

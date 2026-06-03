@@ -18,20 +18,20 @@ import { cn } from '@/lib/utils'
 
 // Types
 interface LandingClassicProps {
-  courses: any[]
+  courses: unknown[]
   totalCourses: number
-  collections: any[]
+  collections: unknown[]
   gamificationData?: DashboardData | null
-  trailData: any
+  trailData: AppTrailData
   isAuthenticated: boolean
 }
 
 interface EmptyStateProps {
-  t: any
+  t: AppTranslator
 }
 
 interface GridProps {
-  collections: any[]
+  collections: unknown[]
 }
 
 // Empty State Components
@@ -74,7 +74,7 @@ const EmptyCoursesState = ({ t }: EmptyStateProps) => (
 // Collection Grid Component
 const CollectionGrid = ({ collections }: GridProps) => (
   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    {collections.map((collection: any) => (
+    {collections.map((collection: AppCollection) => (
       <div
         key={collection.collection_uuid}
         className="transition-transform duration-200 focus-within:scale-[1.02] hover:scale-[1.02]"

@@ -37,7 +37,7 @@ interface DiscussionPostData {
   upvotes: number
   downvotes: number
   userVote?: 'up' | 'down'
-  replies?: any[]
+  replies?: unknown[]
   can_update?: boolean
   can_delete?: boolean
   can_moderate?: boolean
@@ -48,7 +48,7 @@ interface DiscussionPostData {
 
 interface DiscussionPostProps {
   post: DiscussionPostData
-  currentUser: any
+  currentUser: AppUserSummary
   onVotePost: (postId: string, voteType: 'up' | 'down') => void
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeletePost: (postId: string) => void
@@ -319,7 +319,7 @@ export default function DiscussionPost({
           <>
             <Separator />
             <div className="bg-muted/80 py-1">
-              {post.replies.map((reply: any) => (
+              {post.replies.map((reply: AppDiscussionReply) => (
                 <DiscussionReply
                   key={reply.id}
                   reply={reply}

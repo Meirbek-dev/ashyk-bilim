@@ -24,8 +24,8 @@ interface GamificationProviderProps {
   children: React.ReactNode
   initialData?: {
     profile?: UserGamificationProfile | null
-    dashboard?: any
-    leaderboard?: any
+    dashboard?: unknown
+    leaderboard?: unknown
   }
 }
 
@@ -79,7 +79,7 @@ export function GamificationProvider({ children, initialData }: GamificationProv
               key={`level-up-${levelUpQueue[0].newLevel}`}
               newLevel={levelUpQueue[0].newLevel}
               onDismiss={dismissLevelUpCelebration}
-              compact={(profile?.preferences as any)?.display?.compactMode ?? false}
+              compact={(profile?.preferences as unknown)?.display?.compactMode ?? false}
             />
           </React.Suspense>
         )}

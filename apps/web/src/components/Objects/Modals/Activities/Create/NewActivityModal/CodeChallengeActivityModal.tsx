@@ -22,9 +22,9 @@ const createValidationSchema = (t: (key: string) => string) =>
   })
 
 interface CodeChallengeActivityModalProps {
-  submitActivity?: (data: any) => Promise<void>
+  submitActivity?: (data: AppPayload) => Promise<void>
   chapterId: number
-  course: any
+  course: AppCourse
   closeModal?: () => void
 }
 
@@ -35,7 +35,7 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
   type ValidationInput = v.InferInput<typeof validationSchema>
   type ValidationOutput = v.InferOutput<typeof validationSchema>
 
-  const form = useForm<ValidationInput, any, ValidationOutput>({
+  const form = useForm<ValidationInput, unknown, ValidationOutput>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',

@@ -79,7 +79,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
   )
 }
 
-function buildReadiness(settings: CodeChallengeSettings, t: any) {
+function buildReadiness(settings: CodeChallengeSettings, t: AppTranslator) {
   const visible = settings.visible_tests ?? []
   const hidden = settings.hidden_tests ?? []
   const referenceSolutions = settings.reference_solutions ?? {}

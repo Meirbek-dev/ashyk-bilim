@@ -37,14 +37,14 @@ export function userGroupsQueryOptions() {
 export function userGroupUsersQueryOptions(userGroupId: number) {
   return queryOptions({
     queryKey: queryKeys.userGroups.users(userGroupId),
-    queryFn: () => apiFetcher<any[]>(`usergroups/${userGroupId}/users`),
+    queryFn: () => apiFetcher<unknown[]>(`usergroups/${userGroupId}/users`),
   })
 }
 
 export function allMembersQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.users.allMembers(),
-    queryFn: () => apiFetcher<any>(`members`),
+    queryFn: () => apiFetcher(`members`),
   })
 }
 
@@ -52,7 +52,7 @@ export function membersQueryOptions(page: number, perPage: number) {
   return queryOptions({
     queryKey: queryKeys.users.members(page, perPage),
     queryFn: () =>
-      apiFetcher<{ total: number; total_pages: number; users: any[] }>(`members?page=${page}&per_page=${perPage}`),
+      apiFetcher<{ total: number; total_pages: number; users: unknown[] }>(`members?page=${page}&per_page=${perPage}`),
   })
 }
 

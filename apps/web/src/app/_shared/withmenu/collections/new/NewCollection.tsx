@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { toast } from 'sonner'
 
 interface CourseListItem {
@@ -64,7 +64,7 @@ const NewCollection = () => {
     setDescription(event.target.value)
   }
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!name.trim()) {

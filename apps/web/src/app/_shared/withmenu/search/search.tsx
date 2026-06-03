@@ -23,8 +23,8 @@ interface User {
   email: string
   avatar_image: string
   bio: string
-  details: Record<string, any>
-  profile: Record<string, any>
+  details: Record<string, unknown>
+  profile: Record<string, unknown>
   id: number
   user_uuid: string
 }
@@ -85,7 +85,7 @@ const FilterButton = ({
 }: {
   type: ContentType
   count: number
-  icon: any
+  icon: AppIcon
   selectedType: ContentType
   onTypeChange: (type: ContentType) => void
   t: (key: string) => string
@@ -150,7 +150,7 @@ const LoadingState = () => (
   </div>
 )
 
-const EmptyState = ({ query, t }: { query: string; t: (key: string, params?: any) => string }) => (
+const EmptyState = ({ query, t }: { query: string; t: (key: string, params?: AppTranslationValues) => string }) => (
   <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
     <div className="bg-primary/10 mb-4 rounded-full p-4">
       <Search className="text-primary h-8 w-8" />

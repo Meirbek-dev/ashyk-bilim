@@ -25,9 +25,9 @@ const RichTextEditor = dynamic(
 )
 
 interface DiscussionReplyProps {
-  reply: any
+  reply: AppDiscussionReply
   postId: string
-  currentUser: any
+  currentUser: AppUserSummary
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void

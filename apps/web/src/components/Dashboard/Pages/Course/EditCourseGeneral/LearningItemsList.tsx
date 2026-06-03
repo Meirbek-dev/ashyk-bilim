@@ -126,7 +126,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
     }
   }, [onChange, items, value])
 
-  // Cleanup on unmount - cancel any scheduled animation frames
+  // Cleanup on unmount - cancel scheduled animation frames
   useEffect(() => {
     return () => {
       if (focusRafRef.current) cancelAnimationFrame(focusRafRef.current)
@@ -408,7 +408,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
                   onEmojiClick={emoji => {
                     handleEmojiSelect(item.id, emoji)
                   }}
-                  theme={'light' as any}
+                  theme={'light' as unknown}
                   previewConfig={{ showPreview: false }}
                   searchPlaceHolder={t('searchEmojis')}
                   autoFocusSearch

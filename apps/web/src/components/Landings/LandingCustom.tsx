@@ -241,13 +241,13 @@ const LandingCustom = ({ landing, gamificationData }: LandingCustomProps) => {
           )
         }
 
-        const featuredCourses = allCourses.filter((course: any) => section.courses.includes(course.course_uuid))
+        const featuredCourses = allCourses.filter((course: AppCourse) => section.courses.includes(course.course_uuid))
 
         return (
           <div key={`featured-courses-${section.title}`} className="mx-2 w-full py-16 sm:mx-4 lg:mx-16">
             <h2 className="text-foreground mb-6 text-left text-2xl font-bold md:text-3xl">{section.title}</h2>
             <div className="grid w-full grid-cols-1 gap-6 pb-12 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {featuredCourses.map((course: any) => (
+              {featuredCourses.map((course: AppCourse) => (
                 <div key={course.course_uuid} className="mx-auto w-full max-w-[300px]">
                   <CourseThumbnail course={course} />
                 </div>

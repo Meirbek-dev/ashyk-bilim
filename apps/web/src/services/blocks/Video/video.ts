@@ -54,7 +54,7 @@ export async function uploadNewVideoFile(
           activity_uuid,
         },
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chunked upload error:', error)
       const message = error?.message || JSON.stringify(error)
       throw new Error(message, { cause: error })

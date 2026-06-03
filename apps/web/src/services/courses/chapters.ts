@@ -8,7 +8,7 @@ import { courseTag, tags } from '@/lib/cacheTags'
  This file includes only POST, PATCH, DELETE requests
 */
 
-export async function updateChapter(chapterUuid: string, data: any) {
+export async function updateChapter(chapterUuid: string, data: AppPayload) {
   const result = await apiFetch(`chapters/${chapterUuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -37,7 +37,7 @@ export async function updateCourseOrderStructure(course_uuid: string, data: Cour
   return response
 }
 
-export async function createChapter(data: any) {
+export async function createChapter(data: AppPayload) {
   const result = await apiFetch('chapters', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -9,7 +9,7 @@ import { Button } from '@components/ui/button'
 
 interface AccessDeniedProps {
   courseuuid?: string
-  session?: any
+  session?: unknown
 }
 
 export default function AccessDenied({ session }: AccessDeniedProps) {

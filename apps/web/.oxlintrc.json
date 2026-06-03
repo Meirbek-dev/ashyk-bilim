@@ -67,7 +67,7 @@
 
   "rules": {
     "no-shadow": "warn",
-    "typescript/no-explicit-any": "off",
+    "typescript/no-explicit-any": "warn",
     /* ── Noisy / pedantic — keep off ──────────────────────────── */
     "prefer-named-capture-group": "off",
     "arrow-body-style": "off",

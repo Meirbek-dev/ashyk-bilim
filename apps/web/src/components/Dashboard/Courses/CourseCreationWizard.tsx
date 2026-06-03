@@ -31,7 +31,7 @@ export default function CourseCreationWizard() {
 
   type CourseWizardInputValues = v.InferInput<typeof courseWizardSchema>
 
-  const form = useForm<CourseWizardInputValues, any, CourseWizardValues>({
+  const form = useForm<CourseWizardInputValues, unknown, CourseWizardValues>({
     resolver: valibotResolver(courseWizardSchema),
     defaultValues: {
       name: '',
@@ -80,7 +80,7 @@ export default function CourseCreationWizard() {
       try {
         const results = await searchEditableCourses(query, 20)
         setSourceOptions(
-          results.map((c: any) => ({
+          results.map((c: AppCourse) => ({
             course_uuid: c.course_uuid,
             name: c.name,
             cleanUuid: cleanCourseUuid(c.course_uuid) ?? c.course_uuid,
@@ -122,7 +122,7 @@ export default function CourseCreationWizard() {
     !isMarkdownStructurallyEmpty(description) &&
     (template !== 'outline' || Boolean(sourceCourseUuid?.trim()))
 
-  const createOutlineFromSource = async (createdCourse: any) => {
+  const createOutlineFromSource = async (createdCourse: AppCourse) => {
     if (!sourceCourseUuid) return
     const sourceMetadata = await getCourseMetadata(prefixedCourseUuid(sourceCourseUuid), undefined, true)
     const chapters = Array.isArray(sourceMetadata?.chapters) ? sourceMetadata.chapters : []
@@ -176,8 +176,8 @@ export default function CourseCreationWizard() {
       const destination = buildCourseWorkspacePath(createdCourse.course_uuid, 'curriculum')
       toast.success(t('toasts.created'))
       router.replace(destination)
-    } catch (error: any) {
-      toast.error(error?.message || t('errors.createWorkspace'))
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('errors.createWorkspace'))
     }
   })
 

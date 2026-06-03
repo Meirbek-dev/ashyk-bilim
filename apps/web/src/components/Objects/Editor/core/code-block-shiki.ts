@@ -4,7 +4,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { findChildren } from '@tiptap/core'
 import { getHighlighter, getResolvedHighlighter } from '@/features/content-markdown/lib/shiki'
 
-function getDecorations(doc: any, highlighter: any) {
+function getDecorations(doc: unknown, highlighter: unknown) {
   const decorations: Decoration[] = []
 
   findChildren(doc, node => node.type.name === 'codeBlock').forEach(block => {

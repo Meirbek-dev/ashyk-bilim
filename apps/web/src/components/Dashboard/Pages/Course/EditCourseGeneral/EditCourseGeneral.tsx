@@ -28,7 +28,7 @@ import { MarkdownEditor, getMarkdownSaveGate } from '@/features/content-markdown
 // with a real UUID in a post-mount effect, avoiding hydration mismatches.
 const LEARNINGS_PLACEHOLDER_ID = '__placeholder_0__'
 
-function initializeLearnings(learnings: any): string {
+function initializeLearnings(learnings: unknown): string {
   if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
   try {
     const parsed = JSON.parse(learnings)
@@ -41,7 +41,7 @@ function initializeLearnings(learnings: any): string {
   return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
 }
 
-function parseTags(raw: any): string[] {
+function parseTags(raw: unknown): string[] {
   if (!raw) return []
   if (Array.isArray(raw)) return raw as string[]
   if (typeof raw === 'string') {
@@ -59,7 +59,7 @@ function parseTags(raw: any): string[] {
   return []
 }
 
-function buildFormValues(courseStructure: any): CourseGeneralValues {
+function buildFormValues(courseStructure: AppCourse): CourseGeneralValues {
   return {
     name: courseStructure?.name || '',
     description: courseStructure?.description || '',
@@ -116,7 +116,7 @@ function EditCourseGeneral() {
 
   type CourseGeneralInputValues = v.InferInput<typeof courseGeneralSchema>
 
-  const form = useForm<CourseGeneralInputValues, any, CourseGeneralValues>({
+  const form = useForm<CourseGeneralInputValues, unknown, CourseGeneralValues>({
     resolver: valibotResolver(courseGeneralSchema),
     defaultValues: serverValues,
     mode: 'onChange',

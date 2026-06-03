@@ -15,7 +15,7 @@ import { Switch } from '@components/ui/switch'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 
-const createValidationSchema = (t: (key: string) => string, limits?: any) =>
+const createValidationSchema = (t: (key: string) => string, limits?: { time_limit?: { min?: number; max?: number } }) =>
   v.object({
     exam_title: v.pipe(v.string(), v.minLength(1, t('examTitleRequired'))),
     activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
@@ -31,13 +31,13 @@ const createValidationSchema = (t: (key: string) => string, limits?: any) =>
 type FormValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
-const getDefaultTimeLimit = (limits?: any) =>
+const getDefaultTimeLimit = (limits?: { time_limit?: { min?: number; max?: number } }) =>
   Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
 
-const getCourseUuid = (course: any): string | null =>
+const getCourseUuid = (course: AppCourse): string | null =>
   course?.courseStructure?.course_uuid ?? course?.course_uuid ?? course?.course?.course_uuid ?? null
 
-const getCreatedActivityUuid = (data: any): string | null =>
+const getCreatedActivityUuid = (data: AppPayload): string | null =>
   data?.activity_uuid ??
   data?.activity?.activity_uuid ??
   data?.data?.activity_uuid ??
@@ -48,7 +48,7 @@ const navigateTo = (url: string) => {
   globalThis.location.href = url
 }
 
-const NewExam = ({ chapterId, course, closeModal }: any) => {
+const NewExam = ({ chapterId, course, closeModal }: AppActivityModalProps) => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.NewExamModal')
 
@@ -60,7 +60,7 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
     withUnpublishedActivities,
   })
 
-  const form = useForm<FormValues, any, SubmitValues>({
+  const form = useForm<FormValues, unknown, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       exam_title: '',
@@ -160,7 +160,7 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
       }
 
       closeModal()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toastLoading)
       toast.error(t('errorCreatingExam'))
       console.error('Error creating exam:', error)

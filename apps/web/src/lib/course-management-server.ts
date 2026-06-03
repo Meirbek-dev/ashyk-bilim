@@ -20,7 +20,9 @@ export interface CourseWorkspaceCapabilities {
   canDeleteCourse: boolean
 }
 
-function hasCreateCoursePermission(session: any) {
+type AuthSession = Awaited<ReturnType<typeof requireSession>>
+
+function hasCreateCoursePermission(session: AuthSession) {
   return sessionCan(session, Resources.COURSE, Actions.CREATE, Scopes.APP)
 }
 
@@ -36,7 +38,7 @@ interface CourseRightsResponse {
   }
 }
 
-function mapCourseRightsToCapabilities(session: any, rights: CourseRightsResponse): CourseWorkspaceCapabilities {
+function mapCourseRightsToCapabilities(session: AuthSession, rights: CourseRightsResponse): CourseWorkspaceCapabilities {
   const canEditDetails = Boolean(rights.permissions?.update)
   const canEditCurriculum = Boolean(rights.permissions?.update_content ?? rights.permissions?.update)
   const canManageAccess = Boolean(rights.permissions?.manage_access)

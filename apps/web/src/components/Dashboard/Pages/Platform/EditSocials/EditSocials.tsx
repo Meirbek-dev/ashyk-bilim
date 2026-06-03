@@ -29,7 +29,7 @@ interface SocialMediaData {
 
 export default function EditSocials() {
   const queryClient = useQueryClient()
-  const platform = usePlatform() as any
+  const platform = usePlatform() as unknown
   const t = useTranslations('DashPage.PlatformSettings.Socials')
 
   const socialDefaults = {

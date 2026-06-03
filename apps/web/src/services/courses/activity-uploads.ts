@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
+import type { ApiErrorLike } from '@/types/shared'
 import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
 
 type ActivityRead = components['schemas']['ActivityRead']
@@ -16,16 +17,30 @@ interface ActivityInvalidationOptions {
   courseUuid?: string
 }
 
-function buildVideoDetails(details: any): string {
-  const detailsToSend: any = {
-    startTime: details.startTime || 0,
-    endTime: details.endTime || null,
+interface VideoActivityDetails {
+  autoplay?: boolean
+  endTime?: number | null
+  muted?: boolean
+  startTime?: number
+  subtitles?: { file?: File; id?: string | number; label?: string; language?: string }[]
+}
+
+function buildVideoDetails(details: VideoActivityDetails): string {
+  const detailsToSend: {
+    autoplay?: boolean
+    endTime: number | null
+    muted?: boolean
+    startTime: number
+    subtitles?: { id?: string | number; language?: string; label?: string }[]
+  } = {
+    startTime: details.startTime ?? 0,
+    endTime: details.endTime ?? null,
     autoplay: details.autoplay,
     muted: details.muted,
   }
 
   if (details.subtitles) {
-    detailsToSend.subtitles = details.subtitles.map((subtitle: any) => ({
+    detailsToSend.subtitles = details.subtitles.map(subtitle => ({
       id: subtitle.id,
       language: subtitle.language,
       label: subtitle.label,
@@ -35,7 +50,8 @@ function buildVideoDetails(details: any): string {
   return JSON.stringify(detailsToSend)
 }
 
-function appendSubtitleFiles(formData: FormData, subtitles: any[]): void {
+function appendSubtitleFiles(formData: FormData, subtitles: VideoActivityDetails['subtitles']): void {
+  if (!subtitles) return
   for (const subtitle of subtitles) {
     if (subtitle.file) {
       formData.append('subtitle_files', subtitle.file)
@@ -65,7 +81,7 @@ async function uploadFormData(
       // Ignore JSON parse failures and preserve the generic message.
     }
 
-    const error: any = new Error(detail)
+    const error: ApiErrorLike = new Error(detail)
     error.status = result.status
     error.detail = detail
     throw error
@@ -85,7 +101,7 @@ async function uploadFormData(
 
 async function createVideoActivityStandard(
   file: File,
-  data: any,
+  data: AppPayload,
   chapterId: number,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
@@ -110,7 +126,7 @@ async function createVideoActivityStandard(
 
 async function createVideoActivityChunked(
   file: File,
-  data: any,
+  data: AppPayload,
   chapterId: number,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
@@ -173,7 +189,7 @@ async function createVideoActivityChunked(
       // Ignore JSON parse failures and preserve the generic message.
     }
 
-    const error: any = new Error(detail)
+    const error: ApiErrorLike = new Error(detail)
     error.status = result.status
     error.detail = detail
     throw error
@@ -184,7 +200,7 @@ async function createVideoActivityChunked(
 
 async function createPdfActivityStandard(
   file: File,
-  data: any,
+  data: AppPayload,
   chapterId: number,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
@@ -201,7 +217,7 @@ async function createPdfActivityStandard(
 
 async function createPdfActivityChunked(
   file: File,
-  data: any,
+  data: AppPayload,
   chapterId: number,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
@@ -243,7 +259,7 @@ async function createPdfActivityChunked(
 export async function createFileActivity(
   file: File,
   type: string,
-  data: any,
+  data: AppPayload,
   chapterId: number,
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,

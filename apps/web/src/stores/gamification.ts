@@ -18,6 +18,7 @@ import {
 import { create } from 'zustand'
 import { createJSONStorage, devtools, persist } from 'zustand/middleware'
 import { IS_DEVELOPMENT } from '@/services/config/env'
+import { getErrorMessage, getErrorStatus } from '@/types/shared'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -51,7 +52,7 @@ interface GamificationActions {
   refetch: () => Promise<void>
   awardXP: (payload: XPAwardRequest, options?: { silent?: boolean }) => Promise<XPAwardResponse>
   updateStreak: (type: 'login' | 'learning') => Promise<void>
-  updatePreferences: (preferences: Record<string, any>) => Promise<void>
+  updatePreferences: (preferences: Record<string, unknown>) => Promise<void>
   /** Push an XP toast to the queue for the UI bridge to drain. */
   showXPToast: (amount: number, source?: string) => void
   showLevelUpCelebration: (newLevel: number) => void
@@ -170,8 +171,8 @@ export const useGamificationStore = create<GamificationState & GamificationActio
             }
             return result
           } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to award XP'
-            const statusCode = (error as any)?.statusCode ?? 500
+            const message = getErrorMessage(error, 'Failed to award XP')
+            const statusCode = getErrorStatus(error)
             const gamificationError: GamificationError = {
               type: 'SERVER_ERROR',
               message,
@@ -202,8 +203,8 @@ export const useGamificationStore = create<GamificationState & GamificationActio
               })
             }
           } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to update streak'
-            const statusCode = (error as any)?.statusCode ?? 500
+            const message = getErrorMessage(error, 'Failed to update streak')
+            const statusCode = getErrorStatus(error)
             const gamificationError: GamificationError = {
               type: 'SERVER_ERROR',
               message,
@@ -231,8 +232,8 @@ export const useGamificationStore = create<GamificationState & GamificationActio
               return s
             })
           } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to update preferences'
-            const statusCode = (error as any)?.statusCode ?? 500
+            const message = getErrorMessage(error, 'Failed to update preferences')
+            const statusCode = getErrorStatus(error)
             const gamificationError: GamificationError = {
               type: 'SERVER_ERROR',
               message,

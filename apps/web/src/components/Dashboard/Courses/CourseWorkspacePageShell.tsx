@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 interface CourseWorkspacePageShellProps {
   courseuuid: string
   activeStage: CourseWorkspaceStage
-  initialCourse: any
+  initialCourse: AppCourse
   capabilities: CourseWorkspaceCapabilities
   children: ReactNode
 }

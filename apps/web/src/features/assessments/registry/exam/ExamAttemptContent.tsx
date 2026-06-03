@@ -277,7 +277,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               </Alert>
             ) : null}
             {latestCompletedSubmission ? (
-              <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} />
+              <ExamSubmissionStatePanel submission={latestCompletedSubmission as unknown} />
             ) : null}
           </div>
         }
@@ -370,16 +370,16 @@ function ExamTakingContent({
       for (const key of Object.keys(record)) {
         const ans = record[key]
         if (!ans || typeof ans !== 'object') return false
-        const { kind } = ans as any
+        const { kind } = ans as unknown
         if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
           return false
         }
-        if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false
-        if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false
-        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object')) return false
-        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string'))
+        if (kind === 'CHOICE' && !Array.isArray((ans as unknown).selected)) return false
+        if (kind === 'OPEN_TEXT' && typeof (ans as unknown).text !== 'string') return false
+        if (kind === 'FORM' && (!(ans as unknown).values || typeof (ans as unknown).values !== 'object')) return false
+        if (kind === 'CODE' && (typeof (ans as unknown).language !== 'number' || typeof (ans as unknown).source !== 'string'))
           return false
-        if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false
+        if (kind === 'MATCHING' && !Array.isArray((ans as unknown).matches)) return false
       }
       return true
     },
@@ -646,7 +646,7 @@ function ExamTakingContent({
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} /> : null}
+      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as unknown} /> : null}
 
       {/* Progress bar + view mode toggle */}
       <div className="flex items-center gap-3">
@@ -900,7 +900,7 @@ function ExamSubmissionStatePanel({
   )
 }
 
-function Instruction({ icon: Icon, label }: { icon: any; label: string }) {
+function Instruction({ icon: Icon, label }: { icon: AppIcon; label: string }) {
   return (
     <li className="flex gap-2">
       <Icon className="mt-0.5 size-4 shrink-0" />

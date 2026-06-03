@@ -26,12 +26,12 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 
 interface PropsType {
-  collection: any
+  collection: AppCollection
 }
 
 const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '')
 
-const CollectionMosaic = ({ courses }: { courses: any[] }) => {
+const CollectionMosaic = ({ courses }: { courses: unknown[] }) => {
   if (!courses || courses.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
@@ -154,7 +154,7 @@ const CollectionDeleteAction = ({
   canDelete,
 }: {
   collection_uuid: string
-  collection: any
+  collection: AppCollection
   canDelete: boolean
 }) => {
   const t = useTranslations('Components.CollectionThumbnail')

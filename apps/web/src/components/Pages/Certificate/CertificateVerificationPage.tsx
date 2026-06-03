@@ -258,9 +258,9 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                         <span>{t('byLabel')}</span>
                         <div className="flex items-center gap-1">
                           {certificateData.course.authors
-                            .filter((author: any) => author.authorship_status === 'ACTIVE')
+                            .filter((author: AppCourseAuthor) => author.authorship_status === 'ACTIVE')
                             .slice(0, 2)
-                            .map((author: any, index: number) => (
+                            .map((author: AppCourseAuthor, index: number) => (
                               <span key={author.user.user_uuid} className="text-foreground">
                                 {[author.user.first_name, author.user.middle_name, author.user.last_name]
                                   .filter(Boolean)
@@ -268,17 +268,17 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                                 {index <
                                   Math.min(
                                     2,
-                                    certificateData.course.authors.filter((a: any) => a.authorship_status === 'ACTIVE')
+                                    certificateData.course.authors.filter((a: AppCourseAuthor) => a.authorship_status === 'ACTIVE')
                                       .length - 1,
                                   ) && ', '}
                               </span>
                             ))}
-                          {certificateData.course.authors.filter((author: any) => author.authorship_status === 'ACTIVE')
+                          {certificateData.course.authors.filter((author: AppCourseAuthor) => author.authorship_status === 'ACTIVE')
                             .length > 2 && (
                             <span className="text-muted-foreground">
                               +
                               {certificateData.course.authors.filter(
-                                (author: any) => author.authorship_status === 'ACTIVE',
+                                (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE',
                               ).length - 2}{' '}
                               {t('moreAuthors')}
                             </span>

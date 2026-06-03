@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import * as v from 'valibot'
 
 interface AddUserGroupProps {
-  setCreateUserGroupModal: any
+  setCreateUserGroupModal: (open: boolean) => void
 }
 
 const createValidationSchema = (t: (key: string) => string) =>
@@ -30,7 +30,7 @@ const AddUserGroup = (props: AddUserGroupProps) => {
   const t = useTranslations('Components.AddUserGroup')
   const validationSchema = createValidationSchema(t)
 
-  const form = useForm<UserGroupInputValues, any, UserGroupFormValues>({
+  const form = useForm<UserGroupInputValues, unknown, UserGroupFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',

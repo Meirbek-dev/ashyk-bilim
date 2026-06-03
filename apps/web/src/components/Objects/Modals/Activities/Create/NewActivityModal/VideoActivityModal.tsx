@@ -61,7 +61,7 @@ interface ExternalVideoObject {
   details: VideoDetails
 }
 
-const getLocalizedLanguageOptions = (t: any) => [
+const getLocalizedLanguageOptions = (t: AppTranslator) => [
   { code: 'en', label: t('languageEnglish'), flag: '🇺🇸' },
   { code: 'ru', label: t('languageRussian'), flag: '🇷🇺' },
   { code: 'kz', label: t('languageKazakh'), flag: '🇰🇿' },
@@ -95,7 +95,7 @@ const TimeInput = ({
   onSecondsChange: (seconds: number) => void
   placeholder: string
   disabled?: boolean
-  t: any
+  t: AppTranslator
 }) => (
   <div className="space-y-2">
     <Label className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-400 uppercase">
@@ -141,7 +141,7 @@ const SubtitleManager = ({
 }: {
   subtitles: SubtitleFile[]
   setSubtitles: (subtitles: SubtitleFile[]) => void
-  t: any
+  t: AppTranslator
 }) => {
   const [dragOver, setDragOver] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
@@ -430,7 +430,7 @@ const VideoSettingsForm = ({
 }: {
   videoDetails: VideoDetails
   setVideoDetails: (details: VideoDetails) => void
-  t: any
+  t: AppTranslator
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const subtitles = videoDetails.subtitles || []
@@ -607,7 +607,7 @@ const VideoSettingsForm = ({
   )
 }
 
-const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course }: any) => {
+const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) => {
   const t = useTranslations('Components.VideoModal')
   const platform = usePlatform()
   const [video, setVideo] = useState<File | null>(null)

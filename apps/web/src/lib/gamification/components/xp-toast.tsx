@@ -136,7 +136,7 @@ export function useXPToast() {
     })
   }
 
-  const renderNotification = (notification: any) => (
+  const renderNotification = (notification: unknown) => (
     <XPToast notification={notification} onDismiss={() => dismissNotification(notification.id)} />
   )
 

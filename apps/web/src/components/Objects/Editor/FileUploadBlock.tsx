@@ -50,7 +50,7 @@ type UploadBlockComponentProps = {
   isLoading: boolean
   isEditable: boolean
   isEmpty: boolean
-  Icon: any
+  Icon: AppIcon
   children: ReactNode
 } & HTMLAttributes<HTMLDivElement>
 

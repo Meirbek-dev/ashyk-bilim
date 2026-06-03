@@ -36,14 +36,14 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     setNewActivityModal(false)
   }
 
-  const submitActivity = async (activity: any) => {
+  const submitActivity = async (activity: AppActivity) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
       const response = await activityMutations.createActivity(activity, props.chapterId)
       toast.success(tNotify('activityCreatedSuccess'))
       setNewActivityModal(false)
       return response
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error?.message || tNotify('uploadFailed'))
       throw error
     } finally {
@@ -57,9 +57,9 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     activity,
     chapterId,
   }: {
-    file: any
-    type: any
-    activity: any
+    file: File
+    type: string
+    activity: AppActivity
     chapterId: number
   }) => {
     const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
@@ -77,19 +77,19 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
       toast.dismiss(toast_loading)
       toast.success(tNotify('fileUploadSuccess'))
       toast.success(tNotify('activityCreatedSuccess'))
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toast_loading)
       toast.error(error?.message || tNotify('uploadFailed'))
     }
   }
 
-  const submitExternalVideo = async (external_video_data: any, activity: any) => {
+  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppActivity) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
       await activityMutations.createExternalVideo(external_video_data, activity, props.chapterId)
       setNewActivityModal(false)
       toast.success(tNotify('activityCreatedSuccess'))
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error?.message || tNotify('uploadFailed'))
     } finally {
       toast.dismiss(toast_loading)
@@ -133,7 +133,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
 
         toast.success(tNotify('activityCreatedSuccess'))
         setNewActivityModal(false)
-      } catch (error: any) {
+      } catch (error: unknown) {
         toast.error(error?.message || tNotify('uploadFailed'))
         throw error
       } finally {

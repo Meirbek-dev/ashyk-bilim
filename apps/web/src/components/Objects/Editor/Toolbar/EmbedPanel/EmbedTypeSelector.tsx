@@ -87,10 +87,10 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
             aria-label={t('serviceLabel')}
             className="grid max-h-[360px] grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-2"
           >
-            {filteredProviders.map(p => {
-              const provider = p as unknown as EmbedProvider
+            {filteredProviders.map((provider: EmbedProvider) => {
               const isSelected = selectedType === provider.type
-              const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null
+              const iconCandidate = provider.iconName ? (Si as Record<string, unknown>)[provider.iconName] : null
+              const Icon = typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
 
               return (
                 <button

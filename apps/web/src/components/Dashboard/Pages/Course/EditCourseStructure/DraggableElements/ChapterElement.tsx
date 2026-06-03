@@ -44,7 +44,7 @@ interface Activity {
   is_owner?: boolean
   is_creator?: boolean
   available_actions?: string[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface Chapter {
@@ -159,7 +159,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     try {
       await updateChapter(chapter.chapter_uuid, { name: trimmedName })
       setIsEditing(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error?.message || t('chapterUpdateFailed'))
       setEditedName(chapter.name)
     } finally {
@@ -173,7 +173,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     try {
       await deleteChapter(chapter.chapter_uuid)
       setIsDeleteDialogOpen(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error?.message || t('chapterDeleteFailed'))
       setIsDeleteDialogOpen(false)
     } finally {

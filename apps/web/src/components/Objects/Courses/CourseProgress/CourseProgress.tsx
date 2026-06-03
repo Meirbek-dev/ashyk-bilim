@@ -11,10 +11,10 @@ import { useMemo, useState } from 'react'
 import type { FC } from 'react'
 
 interface CourseProgressProps {
-  course: any
+  course: AppCourse
   isOpen: boolean
   onClose: () => void
-  trailData: any
+  trailData: AppTrailData
 }
 
 const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trailData }) => {
@@ -23,15 +23,15 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   const completedActivityIds = useMemo(() => {
-    const run = trailData?.runs?.find((candidateRun: any) => {
+    const run = trailData?.runs?.find((candidateRun: AppTrailRun) => {
       const runCourseUuid = candidateRun.course?.course_uuid ?? candidateRun.course_uuid
       return runCourseUuid?.replace('course_', '') === cleanCourseUuid
     })
 
     return new Set(
       (run?.steps ?? [])
-        .filter((step: any) => step.complete === true && typeof step.activity_id === 'number')
-        .map((step: any) => step.activity_id),
+        .filter((step: AppTrailStep) => step.complete === true && typeof step.activity_id === 'number')
+        .map((step: AppTrailStep) => step.activity_id),
     )
   }, [cleanCourseUuid, trailData])
 
@@ -40,12 +40,12 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
     let nextCompletedActivities = 0
     const nextChapterProgress: Record<string, { completed: number; total: number }> = {}
 
-    course.chapters.forEach((chapter: any) => {
+    course.chapters.forEach((chapter: AppChapter) => {
       const chapterActivities = chapter.activities ?? []
       const chapterTotal = chapterActivities.length
       let chapterCompleted = 0
 
-      chapterActivities.forEach((activity: any) => {
+      chapterActivities.forEach((activity: AppActivity) => {
         if (completedActivityIds.has(activity.id)) {
           chapterCompleted += 1
         }
@@ -66,7 +66,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
     }
   }, [completedActivityIds, course.chapters])
 
-  function isActivityDone(activity: any) {
+  function isActivityDone(activity: AppActivity) {
     return completedActivityIds.has(activity.id)
   }
 
@@ -175,7 +175,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       {/* Chapters List */}
       <ScrollArea className="max-h-[400px]">
         <div className="mb-4 flex flex-col gap-3 p-0.5">
-          {course.chapters.map((chapter: any, chapterIndex: number) => {
+          {course.chapters.map((chapter: AppChapter, chapterIndex: number) => {
             const chapterStats = chapterProgress[chapter.chapter_uuid]
             const isChapterComplete = chapterStats?.completed === chapterStats?.total
             const isExpanded = expandedChapters.has(chapter.chapter_uuid)
@@ -250,7 +250,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                 {/* Activities List */}
                 {isExpanded && (
                   <div className="border-t border-neutral-100 bg-neutral-50/50">
-                    {chapter.activities.map((activity: any, activityIndex: number) => {
+                    {chapter.activities.map((activity: AppActivity, activityIndex: number) => {
                       const activityId = activity.activity_uuid.replace('activity_', '')
                       const courseId = course.course_uuid.replace('course_', '')
                       const isDone = isActivityDone(activity)

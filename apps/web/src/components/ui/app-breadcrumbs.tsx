@@ -79,7 +79,7 @@ export function DashBreadcrumbs({ type, last_breadcrumb }: DashBreadcrumbsProps)
           <BreadcrumbItem>
             <BreadcrumbLink render={<AppLink href={config.href} />} className="flex items-center space-x-2">
               <Icon className="text-muted-foreground" size={14} />
-              <span>{t(config.titleKey as any)}</span>
+              <span>{t(config.titleKey as unknown)}</span>
             </BreadcrumbLink>
           </BreadcrumbItem>
           {last_breadcrumb ? (

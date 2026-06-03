@@ -85,7 +85,7 @@ export interface KindModule {
 }
 
 function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
-  const f = getRegistry as any
+  const f = getRegistry as unknown
   if (!f._map) {
     f._map = new Map()
     f._map.set('TYPE_EXAM', examModuleFactory)
@@ -114,7 +114,7 @@ async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
  * Returns undefined if the kind module has not been loaded yet.
  */
 function getLoadedModules(): Map<AssessmentKind, KindModule> {
-  const f = getLoadedModules as any
+  const f = getLoadedModules as unknown
   if (!f._map) f._map = new Map()
   return f._map
 }

@@ -23,8 +23,8 @@ interface CourseEndViewProps {
   courseName: string
   courseUuid: string
   thumbnailImage: string
-  course: any
-  trailData: any
+  course: AppCourse
+  trailData: AppTrailData
 }
 
 const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
@@ -44,29 +44,29 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     if (!(trailData && course)) return false
 
     // Flatten all activities
-    const allActivities = course.chapters.flatMap((chapter: any) =>
-      chapter.activities.map((activity: any) => ({
+    const allActivities = course.chapters.flatMap((chapter: AppChapter) =>
+      chapter.activities.map((activity: AppActivity) => ({
         ...activity,
         chapterId: chapter.id,
       })),
     )
 
     // Check if all activities are completed
-    const isActivityDone = (activity: any) => {
+    const isActivityDone = (activity: AppActivity) => {
       const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: any) => {
+      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
         const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
 
       if (run) {
-        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
+        return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
 
     const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
+    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
     return totalActivities > 0 && completedActivities === totalActivities
   })()
   const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
@@ -263,28 +263,28 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
   const progressInfo = (() => {
     if (!(trailData && course) || isCourseCompleted) return null
 
-    const allActivities = course.chapters.flatMap((chapter: any) =>
-      chapter.activities.map((activity: any) => ({
+    const allActivities = course.chapters.flatMap((chapter: AppChapter) =>
+      chapter.activities.map((activity: AppActivity) => ({
         ...activity,
         chapterId: chapter.id,
       })),
     )
 
-    const isActivityDone = (activity: any) => {
+    const isActivityDone = (activity: AppActivity) => {
       const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-      const run = trailData?.runs?.find((activeRun: any) => {
+      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
         const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
 
       if (run) {
-        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
+        return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
 
     const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
+    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
     const progressPercentage = Math.round((completedActivities / totalActivities) * 100)
 
     return {

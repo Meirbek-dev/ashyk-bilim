@@ -9,9 +9,9 @@ export interface CourseEditorResource<T> {
 }
 
 export interface CourseEditorBundle {
-  contributors: CourseEditorResource<any[]>
-  linkedUserGroups: CourseEditorResource<any[]>
-  certifications: CourseEditorResource<any[]>
+  contributors: CourseEditorResource<unknown[]>
+  linkedUserGroups: CourseEditorResource<unknown[]>
+  certifications: CourseEditorResource<unknown[]>
 }
 
 const createResource = <T>(
@@ -27,24 +27,24 @@ const createResource = <T>(
 })
 
 export const createEmptyCourseEditorBundle = (): CourseEditorBundle => ({
-  contributors: createResource<any[]>(null, 0, null, false),
-  linkedUserGroups: createResource<any[]>(null, 0, null, false),
-  certifications: createResource<any[]>(null, 0, null, false),
+  contributors: createResource<unknown[]>(null, 0, null, false),
+  linkedUserGroups: createResource<unknown[]>(null, 0, null, false),
+  certifications: createResource<unknown[]>(null, 0, null, false),
 })
 
 const toArrayResource = (response: {
   success: boolean
-  data: any
+  data: AppPayload
   status: number
   HTTPmessage: string
-}): CourseEditorResource<any[]> => {
+}): CourseEditorResource<unknown[]> => {
   if (response.status === 401 || response.status === 403) {
-    return createResource<any[]>(null, response.status, null, false)
+    return createResource<unknown[]>(null, response.status, null, false)
   }
 
   if (!response.success) {
     const detail = getApiErrorMessage(response.data, response.HTTPmessage || 'Request failed')
-    return createResource<any[]>([], response.status, detail, true)
+    return createResource<unknown[]>([], response.status, detail, true)
   }
 
   return createResource(Array.isArray(response.data) ? response.data : [], response.status, null, true)

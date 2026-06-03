@@ -34,7 +34,7 @@ const EditUserGroup = (props: EditUserGroupProps) => {
   const t = useTranslations('Components.EditUserGroup')
   const validationSchema = createValidationSchema(t)
 
-  const form = useForm<UserGroupInputValues, any, UserGroupFormValues>({
+  const form = useForm<UserGroupInputValues, unknown, UserGroupFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: props.usergroup.name,

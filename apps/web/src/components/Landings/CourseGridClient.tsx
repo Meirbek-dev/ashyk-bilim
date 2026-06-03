@@ -16,9 +16,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 const COURSES_PER_PAGE = 20
 
 interface CourseGridClientProps {
-  initialCourses: any[]
+  initialCourses: unknown[]
   initialTotal: number
-  trailData: any
+  trailData: AppTrailData
   currentPage: number
   isAuthenticated: boolean
 }
@@ -77,7 +77,7 @@ export default function CourseGridClient({
   return (
     <div className="space-y-8">
       <div className="grid w-full grid-cols-1 justify-items-center gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {initialCourses.map((course: any, index: number) => (
+        {initialCourses.map((course: AppCourse, index: number) => (
           <div key={course.course_uuid} className="flex w-full max-w-sm justify-center">
             <CourseThumbnail
               course={course}

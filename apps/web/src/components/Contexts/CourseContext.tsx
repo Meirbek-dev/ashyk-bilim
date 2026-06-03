@@ -25,7 +25,7 @@ export interface Activity {
   is_owner?: boolean
   is_creator?: boolean
   available_actions?: string[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface Chapter {
@@ -33,7 +33,7 @@ export interface Chapter {
   chapter_uuid: string
   name?: string
   activities?: Activity[]
-  [key: string]: any
+  [key: string]: unknown
 }
 
 type Learnings = string | object | null
@@ -51,8 +51,8 @@ export interface CourseStructure {
   thumbnail_image?: string
   thumbnail_type?: 'image' | 'video' | 'both'
   chapters: Chapter[]
-  _certificationData?: any
-  [key: string]: any
+  _certificationData?: unknown
+  [key: string]: unknown
 }
 
 // Course state interface

@@ -46,7 +46,7 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
 
   const completedIds = new Set(checklist.filter(c => c.complete).map(c => c.id))
 
-  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id as any))
+  const firstIncompleteTask = taskConfig.find(task => !completedIds.has(task.id as unknown))
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -56,7 +56,7 @@ export default function CourseOverview({ courseuuid }: { courseuuid: string }) {
 
         <div className="mt-4 flex flex-col gap-2">
           {taskConfig.map(task => {
-            const complete = completedIds.has(task.id as any)
+            const complete = completedIds.has(task.id as unknown)
             const Icon = task.icon
             return (
               <AppLink

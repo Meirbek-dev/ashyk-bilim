@@ -11,14 +11,14 @@ interface SubtitleEntry {
 }
 
 interface PlayerProps {
-  option: any
+  option: Record<string, unknown>
   getInstance?: (art: Artplayer) => void
-  subtitle?: any
+  subtitle?: unknown
   subtitleEntries?: SubtitleEntry[]
   startTime?: number
   endTime?: number | null
   onPlayerReady?: (art: Artplayer) => void
-  [key: string]: any
+  [key: string]: unknown
 }
 const captionsSVGString = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-captions-icon lucide-captions"><rect width="18" height="14" x="3" y="5" rx="2" ry="2" /><path d="M7 15h4M15 15h2M7 11h2M13 11h4" /></svg>`
 
@@ -32,7 +32,7 @@ const getArtplayerSection = (messages: unknown): Record<string, string> | undefi
 
 function getArtplayerLocale(locale: string) {
   // Map incoming locale to the messages JSON we ship
-  const map: Record<string, any> = {
+  const map: Record<string, unknown> = {
     en: getArtplayerSection(enUSMessages),
     'en-US': getArtplayerSection(enUSMessages),
     kk: getArtplayerSection(kkKZMessages),

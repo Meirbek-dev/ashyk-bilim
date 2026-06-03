@@ -71,7 +71,7 @@ export interface Course {
   update_date: string
   authors?: CourseAuthor[]
   chapters?: {
-    activities: any[]
+    activities: unknown[]
   }[]
   can_update?: boolean
   can_delete?: boolean
@@ -83,7 +83,7 @@ export interface CourseThumbnailProps {
   course: Course
   customLink?: string
   actionLink?: string
-  trailData?: any
+  trailData?: AppTrailData
   trailLoading?: boolean
   /** Set to true for above-the-fold cards to eager-load the thumbnail (fixes LCP) */
   priority?: boolean
@@ -120,7 +120,7 @@ interface CourseImageProps {
   updateDate: string
   locale: string
   courseUrl: string
-  t: any
+  t: AppTranslator
   isOwner?: boolean
   priority?: boolean
 }
@@ -182,7 +182,7 @@ const CourseImage: FC<CourseImageProps> = ({
 
 interface AuthorsDisplayProps {
   authors: CourseAuthor[]
-  t: any
+  t: AppTranslator
 }
 
 const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
@@ -284,7 +284,7 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
 interface ProgressBarProps {
   percentage: number
   courseName: string
-  t: any
+  t: AppTranslator
 }
 
 const ProgressBar: FC<ProgressBarProps> = ({ percentage, courseName, t }) => (
@@ -312,7 +312,7 @@ interface CourseActionsProps {
   progressPercentage: number
   courseUrl: string
   courseName: string
-  t: any
+  t: AppTranslator
 }
 
 const CourseActions: FC<CourseActionsProps> = ({
@@ -520,7 +520,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid])
 
   const courseRun = useMemo(() => {
-    return trailData?.runs?.find((run: any) => {
+    return trailData?.runs?.find((run: AppTrailRun) => {
       const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
@@ -531,7 +531,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
       courseRun?.course_total_steps ||
       course.chapters?.reduce((acc, chapter) => acc + chapter.activities.length, 0) ||
       0
-    const completed = courseRun?.steps?.filter((step: any) => step.complete === true)?.length || 0
+    const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
     return { progressPercentage: percentage }

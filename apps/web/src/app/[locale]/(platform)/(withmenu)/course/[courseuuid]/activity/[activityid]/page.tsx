@@ -52,7 +52,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         tags: course_meta.learnings,
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.status === 401 || error.status === 403) {
       return {
         title: `Access Denied`,
@@ -77,7 +77,7 @@ export default async function PlatformActivityPage(props: {
       isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
       isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
     ])
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.status === 401) {
       const locale = await getLocale()
       redirect({

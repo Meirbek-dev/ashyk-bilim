@@ -37,7 +37,7 @@ export default function CourseReviewPublish({
   const contributors = course.editorData.contributors.data ?? []
   const contributorNameItems = contributors
     .slice(0, 3)
-    .map((contributor: any, index: number) => {
+    .map((contributor: AppCourseAuthor, index: number) => {
       const parts = [contributor?.user?.first_name, contributor?.user?.last_name].filter(Boolean)
       const label = parts.join(' ') || contributor?.user?.username || contributor?.user?.email
       return {
@@ -71,7 +71,7 @@ export default function CourseReviewPublish({
             },
           )
           toast.success(wasPublic ? t('toasts.movedPrivate') : t('toasts.published'))
-        } catch (error: any) {
+        } catch (error: unknown) {
           if (error?.status === 409) {
             setConflict({
               serverVersion: course.courseStructure,

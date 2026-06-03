@@ -50,7 +50,7 @@ const CurriculumEditor = () => {
   const [activeDragType, setActiveDragType] = useState<DndItemType | null>(null)
 
   const chapterIds = useMemo(
-    () => course_structure.chapters.map((chapter: any) => chapter.chapter_uuid),
+    () => course_structure.chapters.map((chapter: AppChapter) => chapter.chapter_uuid),
     [course_structure.chapters],
   )
 
@@ -124,23 +124,23 @@ const CurriculumEditor = () => {
     }
   }
 
-  const buildPayload = (newCourseStructure: any): CourseOrderPayload => ({
-    chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: any) => ({
+  const buildPayload = (newCourseStructure: AppCourse): CourseOrderPayload => ({
+    chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: AppChapter) => ({
       chapter_uuid: chapter.chapter_uuid,
-      activities_order_by_uuids: (chapter.activities ?? []).map((activity: any) => activity.activity_uuid),
+      activities_order_by_uuids: (chapter.activities ?? []).map((activity: AppActivity) => activity.activity_uuid),
     })),
   })
 
   const findChapterByActivityUuid = (activityUuid: string) => {
-    return course_structure.chapters.find((chapter: any) =>
-      (chapter.activities ?? []).some((activity: any) => activity.activity_uuid === activityUuid),
+    return course_structure.chapters.find((chapter: AppChapter) =>
+      (chapter.activities ?? []).some((activity: AppActivity) => activity.activity_uuid === activityUuid),
     )
   }
 
   const findActivityLocation = (activityUuid: string) => {
     for (const chapter of course_structure.chapters) {
       const activityIndex = (chapter.activities ?? []).findIndex(
-        (activity: any) => activity.activity_uuid === activityUuid,
+        (activity: AppActivity) => activity.activity_uuid === activityUuid,
       )
 
       if (activityIndex !== -1) {
@@ -154,14 +154,14 @@ const CurriculumEditor = () => {
     return null
   }
 
-  const saveStructure = async (newCourseStructure: any) => {
+  const saveStructure = async (newCourseStructure: AppCourse) => {
     const payload = buildPayload(newCourseStructure)
 
     try {
       setStructureStatus('saving')
       await reorderStructure(newCourseStructure, payload)
       setStructureStatus('saved')
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStructureStatus('error')
       toast.error(error?.message || t('saveOrderError'))
     }
@@ -194,8 +194,8 @@ const CurriculumEditor = () => {
     const newCourseStructure = structuredClone(course_structure)
 
     if (activeData?.type === 'chapter') {
-      const oldIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === activeId)
-      const newIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === overId)
+      const oldIndex = newCourseStructure.chapters.findIndex((chapter: AppChapter) => chapter.chapter_uuid === activeId)
+      const newIndex = newCourseStructure.chapters.findIndex((chapter: AppChapter) => chapter.chapter_uuid === overId)
 
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
 
@@ -214,11 +214,11 @@ const CurriculumEditor = () => {
           : (overData?.chapterUuid ?? findChapterByActivityUuid(overId)?.chapter_uuid ?? sourceLocation.chapterUuid)
 
       const sourceChapter = newCourseStructure.chapters.find(
-        (chapter: any) => chapter.chapter_uuid === sourceLocation.chapterUuid,
+        (chapter: AppChapter) => chapter.chapter_uuid === sourceLocation.chapterUuid,
       )
 
       const destinationChapter = newCourseStructure.chapters.find(
-        (chapter: any) => chapter.chapter_uuid === destinationChapterUuid,
+        (chapter: AppChapter) => chapter.chapter_uuid === destinationChapterUuid,
       )
 
       if (!sourceChapter || !destinationChapter) return
@@ -226,7 +226,7 @@ const CurriculumEditor = () => {
       sourceChapter.activities ??= []
       destinationChapter.activities ??= []
 
-      const sourceIndex = sourceChapter.activities.findIndex((activity: any) => activity.activity_uuid === activeId)
+      const sourceIndex = sourceChapter.activities.findIndex((activity: AppActivity) => activity.activity_uuid === activeId)
       if (sourceIndex === -1) return
 
       const [movedActivity] = sourceChapter.activities.splice(sourceIndex, 1)
@@ -236,7 +236,7 @@ const CurriculumEditor = () => {
 
       if (overData?.type === 'activity') {
         const overActivityIndex = destinationChapter.activities.findIndex(
-          (activity: any) => activity.activity_uuid === overId,
+          (activity: AppActivity) => activity.activity_uuid === overId,
         )
 
         if (overActivityIndex !== -1) {
@@ -305,7 +305,7 @@ const CurriculumEditor = () => {
         >
           <SortableContext items={chapterIds} strategy={verticalListSortingStrategy}>
             <div className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}>
-              {course_structure.chapters.map((chapter: any, index: number) => (
+              {course_structure.chapters.map((chapter: AppChapter, index: number) => (
                 <ChapterElement
                   key={chapter.chapter_uuid}
                   chapterIndex={index}

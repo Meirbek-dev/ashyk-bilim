@@ -20,9 +20,9 @@ export type TypedNodeViewProps<TAttrs, TExtensionOptions = Record<string, unknow
  * so extension files stay clean.
  */
 export function nodeView<T>(
-  component: FC<TypedNodeViewProps<T, any>>,
+  component: FC<TypedNodeViewProps<T>>,
   options?: Partial<ReactNodeViewRendererOptions>,
 ) {
   // TypedNodeViewProps only narrows NodeViewProps, so this is safe at runtime.
-  return ReactNodeViewRenderer(component as any, options)
+  return ReactNodeViewRenderer(component as FC<NodeViewProps>, options)
 }

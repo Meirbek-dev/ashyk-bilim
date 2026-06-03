@@ -50,7 +50,7 @@ interface ScriptEmbedConfig {
 
 interface SupportedProduct {
   name: string
-  icon: any
+  icon: AppIcon
   color: string
   guide: string
 }
@@ -295,7 +295,7 @@ const EmbedToolbar = ({
   onCenter: () => void
   onRemove: () => void
   alignment: Alignment
-  t: any
+  t: AppTranslator
 }) => (
   <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100">
     <button
@@ -343,7 +343,7 @@ const InputModal = ({
   onCodeChange: (e: ChangeEvent<HTMLTextAreaElement>) => void
   onSubmit: (formData: FormData) => void
   onOpenDocs: () => void
-  t: any
+  t: AppTranslator
 }) => {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const codeInputRef = useRef<HTMLTextAreaElement>(null)
@@ -482,7 +482,7 @@ const EmptyState = ({
   onUrlClick: () => void
   onCodeClick: () => void
   isEditable: boolean
-  t: any
+  t: AppTranslator
 }) => (
   <div className="flex h-full w-full flex-col items-center justify-center p-6">
     <p className="mb-5 text-center text-lg font-medium text-gray-700">{t('addEmbedFrom')}</p>
@@ -803,7 +803,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'horizontal')}
               onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'horizontal')
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as unknown, 'horizontal')
               }}
             >
               <GripVertical size={16} className="text-gray-600" />
@@ -814,7 +814,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'vertical')}
               onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'vertical')
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as unknown, 'vertical')
               }}
             >
               <GripHorizontal size={16} className="text-gray-600" />

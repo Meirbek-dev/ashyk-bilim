@@ -22,12 +22,12 @@ interface FormValues {
 
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
-const DynamicCanvaModal = ({ submitActivity, chapterId }: any) => {
+const DynamicCanvaModal = ({ submitActivity, chapterId }: AppActivityModalProps) => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.DynamicCanvaModal')
   const validationSchema = createValidationSchema(validationT)
 
-  const form = useForm<FormValues, any, SubmitValues>({
+  const form = useForm<FormValues, unknown, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
@@ -36,6 +36,7 @@ const DynamicCanvaModal = ({ submitActivity, chapterId }: any) => {
   })
 
   const onSubmit = async (values: SubmitValues) => {
+    if (!submitActivity) return
     await submitActivity({
       name: values.name,
       chapter_id: chapterId,

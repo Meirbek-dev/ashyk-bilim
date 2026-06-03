@@ -161,7 +161,7 @@ const EditCourseCertification = () => {
   const [existingCertification] = certifications
   const hasExistingCertification = Boolean(existingCertification)
 
-  const form = useForm<FormInputValues, any, FormValues>({
+  const form = useForm<FormInputValues, unknown, FormValues>({
     resolver: valibotResolver(formSchema),
     defaultValues: {
       enable_certification: false,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-type AnyFunction = (...args: any[]) => unknown
+type AnyFunction = (...args: unknown[]) => unknown
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)

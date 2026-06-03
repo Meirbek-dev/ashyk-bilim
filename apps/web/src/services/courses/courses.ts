@@ -3,6 +3,7 @@
 import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
+import type { ApiErrorLike } from '@/types/shared'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 
@@ -95,7 +96,7 @@ interface EditableCoursesSummary {
 }
 
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata(response)
+  return await getResponseMetadata<T | null>(response)
 }
 
 function normalizeTags(rawTags: string | null | undefined): string[] {
@@ -242,7 +243,7 @@ async function fetchCourses(
   })
 
   if (!result.ok) {
-    const error: any = new Error(result.statusText || 'Request failed')
+    const error: ApiErrorLike = new Error(result.statusText || 'Request failed')
     error.status = result.status
     throw error
   }
@@ -255,7 +256,7 @@ async function fetchCourses(
   return { courses, total }
 }
 
-export async function getCourses(_next?: any, page = 1, limit = 20) {
+export async function getCourses(_next?: unknown, page = 1, limit = 20) {
   return fetchCourses(page, limit)
 }
 
@@ -303,7 +304,7 @@ async function fetchEditableCourses(
   }
 
   if (!result.ok) {
-    const error: any = new Error(result.statusText || 'Request failed')
+    const error: ApiErrorLike = new Error(result.statusText || 'Request failed')
     error.status = result.status
     throw error
   }
@@ -331,7 +332,7 @@ export async function getCourseUserRights(course_uuid: string) {
   return await errorHandling(result)
 }
 
-export async function searchCourses(query: string, page = 1, limit = 20, _next: any) {
+export async function searchCourses(query: string, page = 1, limit = 20, _next: AppTranslator) {
   const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
   const courses: CourseRead[] = await errorHandling(result)
   return courses.map(course => normalizeCourse(course))
@@ -357,7 +358,7 @@ async function fetchCourseMetadata(
   return normalizeFullCourse(await errorHandling(result))
 }
 
-export async function getCourseMetadata(course_uuid: string, _next?: any, withUnpublishedActivities = false) {
+export async function getCourseMetadata(course_uuid: string, _next?: unknown, withUnpublishedActivities = false) {
   return fetchCourseMetadata(course_uuid, withUnpublishedActivities)
 }
 
@@ -367,7 +368,7 @@ interface CourseWriteOptions {
   includePublicList?: boolean
 }
 
-const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
+const toCourseMetadataPayload = (data: AppPayload, options?: CourseWriteOptions) => ({
   name: data.name,
   description: data.description ?? '',
   about: data.about ?? '',
@@ -377,7 +378,7 @@ const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
   last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
 })
 
-export async function updateCourseMetadata(course_uuid: string, data: any, options?: CourseWriteOptions) {
+export async function updateCourseMetadata(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/metadata`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -396,7 +397,7 @@ export async function updateCourseMetadata(course_uuid: string, data: any, optio
   return metadata
 }
 
-export async function updateCourseAccess(course_uuid: string, data: any, options?: CourseWriteOptions) {
+export async function updateCourseAccess(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/access`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -432,7 +433,7 @@ async function fetchCourse(course_uuid: string): Promise<NormalizedCourse> {
   return normalizeCourse(await errorHandling(result))
 }
 
-export async function getCourse(course_uuid: string, _next?: any) {
+export async function getCourse(course_uuid: string, _next?: unknown) {
   return fetchCourse(course_uuid)
 }
 
@@ -459,8 +460,8 @@ export async function updateCourseThumbnail(course_uuid: string, formData: FormD
 }
 
 export async function createNewCourse(
-  course_body: any,
-  thumbnail: any,
+  course_body: AppPayload,
+  thumbnail: Blob | File | null | undefined,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   // Send file thumbnail as form data
@@ -534,8 +535,8 @@ export async function deleteCourseFromBackend(
 export async function editContributor(
   course_uuid: string,
   contributor_id: number,
-  authorship: any,
-  authorship_status: any,
+  authorship: string | undefined,
+  authorship_status: string | undefined,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(
@@ -553,7 +554,7 @@ export async function editContributor(
   return metadata
 }
 
-export async function applyForContributor(course_uuid: string, data: any) {
+export async function applyForContributor(course_uuid: string, data: AppPayload) {
   const result = await apiFetch(`courses/${course_uuid}/apply-contributor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -572,7 +573,7 @@ export async function applyForContributor(course_uuid: string, data: any) {
 
 export async function bulkAddContributors(
   course_uuid: string,
-  data: any,
+  data: AppPayload,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
@@ -593,7 +594,7 @@ export async function bulkAddContributors(
 
 export async function bulkRemoveContributors(
   course_uuid: string,
-  data: any,
+  data: AppPayload,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {

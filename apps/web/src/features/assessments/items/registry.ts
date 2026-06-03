@@ -33,7 +33,7 @@ export interface ItemReviewDetailProps<TItem = unknown, TAnswer = unknown> {
   answer: TAnswer
 }
 
-export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttemptAnswer = any> {
+export interface ItemKindModule<TAuthorValue = unknown, TAttemptItem = unknown, TAttemptAnswer = unknown> {
   kind: ItemKind
   label: string
   Author: ComponentType<ItemAuthorProps<TAuthorValue>>
@@ -42,7 +42,7 @@ export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttempt
 }
 
 function getRegistry(): Map<ItemKind, ItemKindModule> {
-  const f = getRegistry as any
+  const f = getRegistry as unknown
   if (!f.map) {
     f.map = new Map<ItemKind, ItemKindModule>()
     for (const m of choiceModules) {

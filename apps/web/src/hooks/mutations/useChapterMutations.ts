@@ -22,7 +22,7 @@ export function useChapterMutations(courseUuid: string, withUnpublishedActivitie
   return {
     createChapter: async (payload: ChapterCreateValues) => createChapterMutation.mutateAsync({ payload }),
     deleteChapter: async (chapterUuid: string) => deleteChapterMutation.mutateAsync(chapterUuid),
-    reorderStructure: async (nextStructure: any, payload: CourseOrderPayload) =>
+    reorderStructure: async (nextStructure: AppCourse, payload: CourseOrderPayload) =>
       reorderStructureMutation.mutateAsync({ nextStructure, payload }),
     updateChapter: async (chapterUuid: string, payload: ChapterUpdateValues) =>
       updateChapterMutation.mutateAsync({ chapterUuid, payload }),

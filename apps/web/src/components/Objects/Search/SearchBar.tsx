@@ -32,8 +32,8 @@ interface User {
   email: string
   avatar_image: string
   bio: string
-  details: Record<string, any>
-  profile: Record<string, any>
+  details: Record<string, unknown>
+  profile: Record<string, unknown>
   id: number
   user_uuid: string
 }

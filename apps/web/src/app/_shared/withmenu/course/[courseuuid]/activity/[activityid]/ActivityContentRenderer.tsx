@@ -75,7 +75,7 @@ export function ActivityContentRenderer({
     case 'TYPE_VIDEO': {
       return (
         <section className="w-full">
-          <VideoActivity course={course} activity={activity as any} />
+          <VideoActivity course={course} activity={activity as unknown} />
         </section>
       )
     }

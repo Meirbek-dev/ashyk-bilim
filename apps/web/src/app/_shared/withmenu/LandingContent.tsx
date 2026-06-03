@@ -17,7 +17,7 @@ function isExpectedPrerenderCancellation(error: unknown): boolean {
     message.includes('prerender') ||
     message.includes('cookies()') ||
     message.includes('dynamic server usage') ||
-    (error as any).digest?.startsWith('NEXT_')
+    (error as unknown).digest?.startsWith('NEXT_')
 
   return (
     error.name === 'AbortError' ||
@@ -40,23 +40,23 @@ function logLandingFetchError(scope: string, error: unknown) {
   })
 }
 
-function sortCoursesByProgress(courses: any[], trailData: any) {
+function sortCoursesByProgress(courses: unknown[], trailData: AppTrailData) {
   if (!trailData?.runs) return courses
 
   return [...courses].toSorted((a, b) => {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
-    const aRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
-    const bRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
+    const aRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
+    const bRun = trailData.runs.find((r: AppRoleSummary) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
 
-    const getProgress = (run: any, course: any) => {
+    const getProgress = (run: AppTrailRun, course: AppCourse) => {
       if (!run) return 0
       const total =
         run.course_total_steps ||
-        course.chapters?.reduce((acc: number, chap: any) => acc + (chap.activities?.length || 0), 0) ||
+        course.chapters?.reduce((acc: number, chap: AppChapter) => acc + (chap.activities?.length || 0), 0) ||
         0
-      const completed = run.steps?.filter((s: any) => s.complete === true)?.length || 0
+      const completed = run.steps?.filter((s: AppTrailStep) => s.complete === true)?.length || 0
       return total > 0 ? Math.round((completed / total) * 100) : 0
     }
 
@@ -111,7 +111,7 @@ export async function LandingContent() {
 
       return (
         <LandingCustom
-          landing={platform.landing as { sections: any[]; enabled: boolean }}
+          landing={platform.landing as { sections: unknown[]; enabled: boolean }}
           gamificationData={gamificationData}
         />
       )

@@ -36,7 +36,7 @@ export interface UseAssessmentAttemptOptions<T = unknown> {
    */
   storageKeyPrefix?: string
   /** Optional function to validate draft schema before recovery. */
-  validate?: (answers: any) => boolean
+  validate?: (answers: unknown) => boolean
 }
 
 // ── Return type ───────────────────────────────────────────────────────────────
@@ -56,11 +56,11 @@ const SCHEMA_VERSION = 1
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 /**
- * Generalised localStorage draft-answer persistence for any assessment kind.
+ * Generalised localStorage draft-answer persistence for each assessment kind.
  *
  * Replaces the exam-specific `useExamPersistence` hook.  Drop-in compatible:
  * same `saveAnswers` / `clearSavedAnswers` / `getRecoverableData` API, but
- * works with any serialisable answer type `T` and any `storageKeyPrefix`.
+ * works with each serialisable answer type `T` and any `storageKeyPrefix`.
  */
 export function useAssessmentAttempt<T = unknown>({
   attemptUuid,

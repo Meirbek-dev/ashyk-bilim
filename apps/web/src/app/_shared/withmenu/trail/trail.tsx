@@ -12,7 +12,7 @@ import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/use
 import { useTranslations } from 'next-intl'
 import { BookOpen } from 'lucide-react'
 
-const EMPTY_RECENT_TRANSACTIONS: any[] = []
+const EMPTY_RECENT_TRANSACTIONS: unknown[] = []
 
 function TrailCourseSkeletons() {
   return (
@@ -91,7 +91,7 @@ const Trail = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {trail.runs.map((run: any) => (
+              {trail.runs.map((run: AppTrailRun) => (
                 <TrailCourseElement key={run.course.course_uuid} run={run} course={run.course} />
               ))}
             </div>

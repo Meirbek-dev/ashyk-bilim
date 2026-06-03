@@ -63,11 +63,11 @@ export async function unmarkActivityAsComplete(activity_uuid: string) {
   return data_result
 }
 
-export async function getCurrentTrail(): Promise<{ runs: any[] } | null> {
+export async function getCurrentTrail(): Promise<{ runs: unknown[] } | null> {
   const result = await apiFetch('trail', { method: 'GET' })
   if (!result.ok) return null
   try {
-    return (await result.json()) as { runs: any[] }
+    return (await result.json()) as { runs: unknown[] }
   } catch {
     return null
   }

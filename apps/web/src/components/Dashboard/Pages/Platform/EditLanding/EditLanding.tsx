@@ -48,7 +48,16 @@ function SortableLandingSection({
   setSelectedSection,
   deleteSection,
   getSectionDisplayName,
-}: any) {
+}: {
+  SECTION_TYPES: ReturnType<typeof getSectionTypes>
+  deleteSection: (index: number) => void
+  getSectionDisplayName: (t: AppTranslator, section: LandingSection) => string
+  index: number
+  section: LandingSection
+  selectedSection: number | null
+  setSelectedSection: (index: number) => void
+  t: AppTranslator
+}) {
   const id = section._id || `section-${index}`
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -146,6 +155,7 @@ import type {
   LandingLogos,
   LandingObject,
   LandingPeople,
+  LandingUsers,
   LandingSection,
   LandingTextAndImageSection,
 } from './landing_types'
@@ -250,8 +260,8 @@ const SECTION_TYPE_KEYS: Record<LandingSection['type'], string> = {
   'featured-courses': 'featuredCourses',
 }
 
-// Function to get translated section types
-const getSectionTypes = (t: Function) => ({
+// AppTranslator to get translated section types
+const getSectionTypes = (t: AppTranslator) => ({
   hero: {
     icon: LayoutTemplate,
     label: t('SectionTypes.hero.label'),
@@ -291,27 +301,27 @@ const GRADIENT_DIRECTION_KEYS: Record<string, string> = {
   '0deg': 'right',
 }
 
-// Function to get translated gradient directions
-const getGradientDirections = (t: Function) => {
+// AppTranslator to get translated gradient directions
+const getGradientDirections = (t: AppTranslator) => {
   return Object.entries(GRADIENT_DIRECTION_KEYS).reduce<Record<string, string>>((acc, [key, tKey]) => {
     acc[key] = t(`GradientDirections.${tKey}`)
     return acc
   }, {})
 }
 
-// Function to get translated gradient preset names
-const getGradientPresetName = (t: Function, name: string) => {
+// AppTranslator to get translated gradient preset names
+const getGradientPresetName = (t: AppTranslator, name: string) => {
   // Assumes keys like GradientPresets.sunrise, GradientPresets.mintBreeze etc.
   return t(`GradientPresets.${name.replace('-', '_')}`)
 }
 
-// Function to get translated section display name
-const getSectionDisplayName = (t: Function, section: LandingSection) => {
+// AppTranslator to get translated section display name
+const getSectionDisplayName = (t: AppTranslator, section: LandingSection) => {
   const sectionTypeKey = SECTION_TYPE_KEYS[section.type]
   return t(`SectionTypes.${sectionTypeKey}.label`)
 }
 
-const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): LandingSection => {
+const createEmptySection = (t: AppTranslator, type: keyof typeof SECTION_TYPE_KEYS): LandingSection => {
   switch (type) {
     case 'hero': {
       return {
@@ -376,34 +386,34 @@ const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): 
 }
 
 // Helper factories that produce item lists (use t at call site)
-const makeBackgroundTypeItems = (t: Function) => [
+const makeBackgroundTypeItems = (t: AppTranslator) => [
   { value: 'solid', label: t('HeroEditor.Background.solid') },
   { value: 'gradient', label: t('HeroEditor.Background.gradient') },
   { value: 'image', label: t('HeroEditor.Background.image') },
 ]
 
-const makeGradientTypeItems = (t: Function) => [
+const makeGradientTypeItems = (t: AppTranslator) => [
   { value: 'preset', label: t('HeroEditor.Background.presetGradients') },
   { value: 'custom', label: t('HeroEditor.Background.customGradient') },
 ]
 
-const makeIllustrationPositionItems = (t: Function) => [
+const makeIllustrationPositionItems = (t: AppTranslator) => [
   { value: 'left', label: t('HeroEditor.Illustration.positionLeft') },
   { value: 'right', label: t('HeroEditor.Illustration.positionRight') },
 ]
 
-const makeIllustrationSizeItems = (t: Function) => [
+const makeIllustrationSizeItems = (t: AppTranslator) => [
   { value: 'small', label: t('HeroEditor.Illustration.sizeSmall') },
   { value: 'medium', label: t('HeroEditor.Illustration.sizeMedium') },
   { value: 'large', label: t('HeroEditor.Illustration.sizeLarge') },
 ]
 
-const makeFlowItems = (t: Function) => [
+const makeFlowItems = (t: AppTranslator) => [
   { value: 'left', label: t('TextAndImageEditor.positionLeft') },
   { value: 'right', label: t('TextAndImageEditor.positionRight') },
 ]
 
-const makeSectionTypeItems = (t: Function) =>
+const makeSectionTypeItems = (t: AppTranslator) =>
   Object.entries(getSectionTypes(t)).map(([type, conf]) => ({
     value: type,
     label: createElement(
@@ -412,7 +422,7 @@ const makeSectionTypeItems = (t: Function) =>
       createElement(
         'div',
         { className: 'rounded-md bg-muted p-1.5' },
-        createElement(conf.icon as any, {
+        createElement(conf.icon as unknown, {
           size: 16,
           className: 'text-muted-foreground',
         }),
@@ -423,10 +433,10 @@ const makeSectionTypeItems = (t: Function) =>
         createElement('div', { className: 'text-sm font-medium text-foreground' }, conf.label),
         createElement('div', { className: 'text-xs text-muted-foreground' }, conf.description),
       ),
-    ) as any,
+    ) as unknown,
   }))
 
-const makeGradientPresetItems = (t: Function) =>
+const makeGradientPresetItems = (t: AppTranslator) =>
   Object.entries(PREDEFINED_GRADIENTS).map(([name]) => ({
     value: name,
     label: (
@@ -439,17 +449,17 @@ const makeGradientPresetItems = (t: Function) =>
         />
         <span className="capitalize">{getGradientPresetName(t, name)}</span>
       </div>
-    ) as any,
+    ) as unknown,
   }))
 
-const makeGradientDirectionItems = (t: Function) =>
+const makeGradientDirectionItems = (t: AppTranslator) =>
   Object.entries(getGradientDirections(t)).map(([value, label]) => ({
     value,
     label,
   }))
 
 const EditLanding = () => {
-  const platform = usePlatform() as any
+  const platform = usePlatform() as unknown
   const [isLandingEnabled, setIsLandingEnabled] = useState(false)
   const tNotify = useTranslations('DashPage.Notifications')
   const t = useTranslations('DashPage.PlatformSettings.Landing')
@@ -475,7 +485,7 @@ const EditLanding = () => {
   )
 
   const sectionIds = useMemo(
-    () => landingData.sections.map((s: any, i: number) => s._id ?? `section-${i}`),
+    () => landingData.sections.map((s: AppPayload, i: number) => s._id ?? `section-${i}`),
     [landingData.sections],
   )
   const announcements = useDndAnnouncements(sectionIds)
@@ -528,8 +538,8 @@ const EditLanding = () => {
     }
 
     const items = [...landingData.sections]
-    const oldIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === active.id)
-    const newIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === over.id)
+    const oldIndex = items.findIndex((item: unknown, index: number) => (item._id || `section-${index}`) === active.id)
+    const newIndex = items.findIndex((item: unknown, index: number) => (item._id || `section-${index}`) === over.id)
 
     const reorderedItems = arrayMove(items, oldIndex, newIndex)
 
@@ -602,13 +612,13 @@ const EditLanding = () => {
                   <div className="space-y-2">
                     <SortableContext
                       items={landingData.sections.map(
-                        (section: any, index: number) => section._id || `section-${index}`,
+                        (section: AppPayload, index: number) => section._id || `section-${index}`,
                       )}
                       strategy={verticalListSortingStrategy}
                     >
                       {landingData.sections.map((section: LandingSection, index: number) => (
                         <SortableLandingSection
-                          key={(section as any)._id || `section-${index}`}
+                          key={(section as unknown)._id || `section-${index}`}
                           section={section}
                           index={index}
                           t={t}
@@ -676,7 +686,7 @@ const EditLanding = () => {
 }
 
 interface SectionEditorProps {
-  t: Function
+  t: AppTranslator
   section: LandingSection
   onChange: (section: LandingSection) => void
 }
@@ -705,7 +715,7 @@ const SectionEditor: FC<SectionEditorProps> = ({ t, section, onChange }) => {
 }
 
 const HeroSectionEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LandingHeroSection
   onChange: (section: LandingHeroSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1473,7 +1483,7 @@ const HeroSectionEditor: FC<{
 }
 
 interface ImageUploaderProps {
-  t: Function
+  t: AppTranslator
   onImageUploaded: (imageUrl: string) => void
   className?: string
   buttonText?: string
@@ -1548,7 +1558,7 @@ const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, 
 }
 
 const TextAndImageSectionEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LandingTextAndImageSection
   onChange: (section: LandingTextAndImageSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1666,7 +1676,7 @@ const TextAndImageSectionEditor: FC<{
 }
 
 const LogosSectionEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LandingLogos
   onChange: (section: LandingLogos) => void
 }> = ({ t, section, onChange }) => {
@@ -1777,7 +1787,7 @@ const LogosSectionEditor: FC<{
 }
 
 const PeopleSectionEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LandingPeople
   onChange: (section: LandingPeople) => void
 }> = ({ t, section, onChange }) => {
@@ -1808,7 +1818,7 @@ const PeopleSectionEditor: FC<{
         <div>
           <Label>{t('PeopleEditor.peopleLabel')}</Label>
           <div className="mt-2 space-y-4">
-            {section.people.map((person: any, index: number) => (
+            {section.people.map((person: LandingUsers, index: number) => (
               <div key={index} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 rounded-lg border p-4">
                 <div className="space-y-2">
                   <Label>{t('PeopleEditor.nameLabel')}</Label>
@@ -1908,7 +1918,7 @@ const PeopleSectionEditor: FC<{
                     size="icon"
                     onClick={e => {
                       e.stopPropagation()
-                      const newPeople = section.people.filter((_: any, i: number) => i !== index)
+                      const newPeople = section.people.filter((_: unknown, i: number) => i !== index)
                       onChange({ ...section, people: newPeople })
                     }}
                     className="text-red-500 hover:bg-red-50 hover:text-red-600"
@@ -1946,7 +1956,7 @@ const PeopleSectionEditor: FC<{
 }
 
 const FeaturedCoursesEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LandingFeaturedCourses
   onChange: (section: LandingFeaturedCourses) => void
 }> = ({ t, section, onChange }) => {
@@ -1982,7 +1992,7 @@ const FeaturedCoursesEditor: FC<{
           <div className="mt-2 space-y-4">
             {courses ? (
               <div className="grid gap-4">
-                {courses.map((course: any) => (
+                {courses.map((course: AppCourse) => (
                   <div key={course.course_uuid} className="flex items-center justify-between rounded-lg border p-4">
                     <div className="flex items-center space-x-3">
                       <div className="bg-muted relative h-12 w-12 overflow-hidden rounded-md">

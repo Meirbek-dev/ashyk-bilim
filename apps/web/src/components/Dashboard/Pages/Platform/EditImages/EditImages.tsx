@@ -44,10 +44,38 @@ interface Preview {
   order: number
 }
 
-// Update the height constant
-const PREVIEW_HEIGHT = 'h-28' // Reduced height
+interface PlatformPreviewImage {
+  filename?: string
+  order?: number
+}
 
-function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory: resolvePreviewMediaDirectory }: any) {
+interface PlatformPreviewVideo {
+  id?: string
+  order?: number
+  type?: 'youtube' | 'loom'
+  url?: string
+}
+
+interface PlatformImagesData {
+  logo_image?: string
+  previews?: {
+    images?: PlatformPreviewImage[]
+    videos?: PlatformPreviewVideo[]
+  }
+  thumbnail_image?: string
+}
+
+const PREVIEW_HEIGHT = 'h-28'
+
+function SortablePreviewItem({
+  preview,
+  removePreview,
+  getPreviewMediaDirectory: resolvePreviewMediaDirectory,
+}: {
+  getPreviewMediaDirectory: (id: string) => string
+  preview: Preview
+  removePreview: (id: string) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: preview.id,
   })
@@ -133,8 +161,12 @@ type VideoService = 'youtube' | 'loom' | null
 // Add this constant for consistent sizing
 const DIALOG_ICON_SIZE = 'w-16 h-16'
 
-// Function to get translated preview options
-const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelectedService: Function) => [
+// Helper to get translated preview options
+const getAddPreviewOptions = (
+  t: AppTranslator,
+  isPreviewUploading: boolean,
+  setSelectedService: (service: VideoService) => void,
+) => [
   {
     id: 'image',
     title: t('Dialog.AddPreview.imageTitle'),
@@ -166,7 +198,7 @@ const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelec
 
 export default function EditImages() {
   const router = useRouter()
-  const platform = usePlatform() as any
+  const platform = usePlatform() as PlatformImagesData | null
   const tNotify = useTranslations('DashPage.Notifications')
   const t = useTranslations('DashPage.PlatformSettings.Images')
   const [localLogo, setLocalLogo] = useState<string | null>(null)
@@ -177,8 +209,8 @@ export default function EditImages() {
   const [previews, setPreviews] = useState<Preview[]>(() => {
     // Initialize with image previews
     const imagePreviews = (platform?.previews?.images || [])
-      .filter((item: any) => item?.filename) // Filter out empty filenames
-      .map((item: any, index: number) => ({
+      .filter((item): item is PlatformPreviewImage & { filename: string } => Boolean(item?.filename))
+      .map((item, index: number) => ({
         id: item.filename,
         url: getThumbnailMediaDirectory(item.filename),
         filename: item.filename,
@@ -188,11 +220,13 @@ export default function EditImages() {
 
     // Initialize with video previews
     const videoPreviews = (platform?.previews?.videos || [])
-      .filter((video: any) => video?.id)
-      .map((video: any, index: number) => ({
+      .filter((video): video is PlatformPreviewVideo & { id: string; type: 'youtube' | 'loom'; url: string } =>
+        Boolean(video?.id && video.type && video.url),
+      )
+      .map((video, index: number) => ({
         id: video.id,
         url: video.url,
-        type: video.type as 'youtube' | 'loom',
+        type: video.type,
         thumbnailUrl: video.type === 'youtube' ? `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg` : '',
         filename: '',
         order: video.order ?? imagePreviews.length + index, // Use existing order or fallback to index after images

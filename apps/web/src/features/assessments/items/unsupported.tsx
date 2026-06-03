@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 
-export function UnsupportedItemAuthor({ value }: { value: any }): ReactNode {
+export function UnsupportedItemAuthor({ value }: { value: unknown }): ReactNode {
   return createElement(
     'pre',
     { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },
@@ -9,7 +9,7 @@ export function UnsupportedItemAuthor({ value }: { value: any }): ReactNode {
   )
 }
 
-export function UnsupportedItemAttempt({ item }: { item: any }): ReactNode {
+export function UnsupportedItemAttempt({ item }: { item: unknown }): ReactNode {
   return createElement(
     'div',
     {
@@ -19,7 +19,7 @@ export function UnsupportedItemAttempt({ item }: { item: any }): ReactNode {
   )
 }
 
-export function UnsupportedItemReview({ answer }: { answer: any }): ReactNode {
+export function UnsupportedItemReview({ answer }: { answer: unknown }): ReactNode {
   return createElement(
     'pre',
     { className: 'bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs' },

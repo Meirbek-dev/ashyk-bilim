@@ -138,7 +138,7 @@ function LeaderboardEntryRow({
   entry: LeaderboardEntry
   isCurrentUser: boolean
   isTop3: boolean
-  t: any
+  t: AppTranslator
 }) {
   return (
     <div

@@ -94,8 +94,8 @@ const RoleDropdown = ({
   t,
 }: {
   contributor: Contributor
-  updateContributor: any
-  t: any
+  updateContributor: (payload: unknown) => void
+  t: AppTranslator
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger
@@ -132,8 +132,8 @@ const StatusDropdown = ({
   getStatusStyle,
 }: {
   contributor: Contributor
-  updateContributor: any
-  t: any
+  updateContributor: (payload: unknown) => void
+  t: AppTranslator
   getStatusStyle: (s: ContributorStatus) => string
 }) => (
   <DropdownMenu>
@@ -290,7 +290,7 @@ const EditCourseContributors = () => {
       setSearchQuery(result.failed.length > 0 ? searchQuery : '')
       setSearchOpen(result.failed.length > 0)
       setSearchResultsOverride(searchResults.filter(user => failedUsernames.has(user.username)))
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
           await addContributors(selectedUsers, selectedUserObjects, {
@@ -327,7 +327,7 @@ const EditCourseContributors = () => {
       } else {
         toast.error(res.data?.detail || t('failedToUpdateContributor'))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
           const retryContributor = contributors.find(contributor => contributor.user_id === contributorId)
@@ -401,7 +401,7 @@ const EditCourseContributors = () => {
           .filter(contributor => failedUsernames.has(contributor.user.username))
           .map(contributor => contributor.user_id),
       )
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
           const retryRows = contributors.filter(contributor => selectedContributors.includes(contributor.user_id))

@@ -52,7 +52,7 @@ interface Course {
 interface CourseActionsMobileProps {
   courseuuid: string
   course: Course
-  trailData?: any
+  trailData?: AppTrailData
 }
 
 // Component for displaying multiple authors
@@ -142,7 +142,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   const isStarted =
-    trailData?.runs?.find((run: any) => {
+    trailData?.runs?.find((run: AppTrailRun) => {
       const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     }) ?? false
@@ -155,7 +155,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
-      const run = trailData?.runs?.find((r: any) => {
+      const run = trailData?.runs?.find((r: AppRoleSummary) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
@@ -166,7 +166,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       if (course.chapters) {
         for (const chapter of course.chapters) {
           for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some((step: any) => step.activity_id === activity.id && step.complete)
+            const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
             if (!isCompleted) {
               firstUnfinishedActivity = activity
               break

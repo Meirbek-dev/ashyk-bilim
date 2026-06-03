@@ -239,7 +239,7 @@ function StatCard({
   value,
   iconColor,
 }: {
-  icon: any
+  icon: AppIcon
   label: string
   value: string
   iconColor?: string

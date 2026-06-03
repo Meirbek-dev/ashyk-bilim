@@ -372,7 +372,7 @@ export function useContextualPosition(
     scheduleCompute()
 
     // Use a single shared options object so add/removeEventListener use the exact same reference
-    const listenerOptions = { passive: true } as any
+    const listenerOptions = { passive: true } as unknown
 
     // Listen to viewport changes
     window.addEventListener('resize', scheduleCompute, listenerOptions)

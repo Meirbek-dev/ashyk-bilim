@@ -3,7 +3,7 @@
 import { apiFetch, getResponseMetadata } from '@/lib/api-client'
 import { tags } from '@/lib/cacheTags'
 
-export async function createCourseUpdate(body: any) {
+export async function createCourseUpdate(body: AppPayload) {
   const result = await apiFetch(`courses/${body.course_uuid}/updates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

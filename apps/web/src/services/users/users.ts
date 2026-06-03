@@ -9,7 +9,7 @@ export async function getUser(user_id: number) {
 
 export async function getUserByUsername(username: string) {
   const result = await apiFetch(`users/username/${username}`)
-  return await errorHandling<any>(result)
+  return await errorHandling(result)
 }
 
 export async function getCoursesByUser(user_id: number) {
@@ -17,7 +17,7 @@ export async function getCoursesByUser(user_id: number) {
   return await getResponseMetadata(result)
 }
 
-export async function updateUserAvatar(user_id: number, avatar_file: any) {
+export async function updateUserAvatar(user_id: number, avatar_file: File) {
   const formData = new FormData()
   formData.append('avatar_file', avatar_file)
   const result = await apiFetch(`users/update_avatar/${user_id}`, {

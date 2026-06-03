@@ -13,8 +13,8 @@ import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 
 interface TrailCourseElementProps {
-  course: any
-  run: any
+  course: AppCourse
+  run: AppTrailRun
 }
 
 const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {

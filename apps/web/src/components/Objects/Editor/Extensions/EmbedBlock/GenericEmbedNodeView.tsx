@@ -94,7 +94,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     )
   }
 
-  const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null
+  const Icon = provider.iconName ? (Si as Record<string, unknown>)[provider.iconName] : null
 
   return (
     <NodeViewWrapper className="embed-block-node-view my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>

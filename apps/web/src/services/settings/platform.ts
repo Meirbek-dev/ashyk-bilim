@@ -7,7 +7,7 @@ import { tags } from '@/lib/cacheTags'
  This file includes only POST, PUT, DELETE requests
 */
 
-export async function updatePlatform(data: any) {
+export async function updatePlatform(data: AppPayload) {
   const result = await apiFetch('platform', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -19,7 +19,7 @@ export async function updatePlatform(data: any) {
   return response
 }
 
-export async function uploadPlatformLogo(logo_file: any) {
+export async function uploadPlatformLogo(logo_file: File) {
   const formData = new FormData()
   formData.append('logo_file', logo_file)
   const result = await apiFetch('logo', { method: 'PUT', body: formData })
@@ -29,7 +29,7 @@ export async function uploadPlatformLogo(logo_file: any) {
   return response
 }
 
-export async function uploadPlatformThumbnail(thumbnail_file: any) {
+export async function uploadPlatformThumbnail(thumbnail_file: File) {
   const formData = new FormData()
   formData.append('thumbnail_file', thumbnail_file)
   const result = await apiFetch('thumbnail', { method: 'PUT', body: formData })

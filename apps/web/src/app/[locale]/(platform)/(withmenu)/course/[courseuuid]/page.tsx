@@ -56,7 +56,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         tags: course_meta.learnings || [],
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.status === 401 || error.status === 403) {
       return {
         title: `Access Denied - ${APP_NAME}`,
@@ -73,7 +73,7 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
   let session
   try {
     ;[course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()])
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.status === 401) {
       const locale = await getLocale()
       redirect({

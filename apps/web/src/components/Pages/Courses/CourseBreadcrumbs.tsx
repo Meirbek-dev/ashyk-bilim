@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl'
 import { Book } from 'lucide-react'
 
 interface CourseBreadcrumbsProps {
-  course: any
+  course: AppCourse
 }
 
 export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {

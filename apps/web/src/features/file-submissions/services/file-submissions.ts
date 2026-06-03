@@ -279,7 +279,7 @@ export async function gradeFileSubmissionAttempt(
   payload: {
     final_score?: number | null
     feedback?: string
-    rubric?: Record<string, any>
+    rubric?: Record<string, unknown>
     status: 'GRADED' | 'PUBLISHED' | 'RETURNED'
   },
   version?: number | null,

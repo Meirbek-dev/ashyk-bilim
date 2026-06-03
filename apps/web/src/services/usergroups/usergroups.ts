@@ -3,7 +3,7 @@
 import { apiFetch, getResponseMetadata } from '@/lib/api-client'
 import { courseTag, tags } from '@/lib/cacheTags'
 
-export async function createUserGroup(body: any) {
+export async function createUserGroup(body: AppPayload) {
   const result = await apiFetch('usergroups/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ export async function unLinkUserToUserGroup(usergroup_id: number, user_id: numbe
   return metadata
 }
 
-export async function updateUserGroup(usergroup_id: number, data: any) {
+export async function updateUserGroup(usergroup_id: number, data: AppPayload) {
   const result = await apiFetch(`usergroups/${usergroup_id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -101,7 +101,7 @@ async function revalidateUserGroupCourseTags(options?: UserGroupCourseInvalidati
 
 export async function linkResourcesToUserGroup(
   usergroup_id: number,
-  resource_uuids: any,
+  resource_uuids: string[],
   options?: UserGroupCourseInvalidationOptions,
 ) {
   const result = await apiFetch(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
@@ -118,7 +118,7 @@ export async function linkResourcesToUserGroup(
 
 export async function unLinkResourcesToUserGroup(
   usergroup_id: number,
-  resource_uuids: any,
+  resource_uuids: string[],
   options?: UserGroupCourseInvalidationOptions,
 ) {
   const result = await apiFetch(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {

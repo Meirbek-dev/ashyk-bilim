@@ -40,9 +40,18 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 
-const CourseClient = (props: any) => {
+interface CourseClientProps {
+  course: AppCourse
+  courseuuid: string
+  initialDiscussions?: AppDiscussionPost[]
+  trailData?: AppTrailData
+}
+
+type LearningItem = string | { text: string }
+
+const CourseClient = (props: CourseClientProps) => {
   const t = useTranslations('CoursePage')
-  const [learnings, setLearnings] = useState<any>([])
+  const [learnings, setLearnings] = useState<LearningItem[]>([])
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
@@ -57,7 +66,7 @@ const CourseClient = (props: any) => {
 
   // Normalizes various formats of `course.learnings` into an array that the UI can render
   const normalizedLearnings = useMemo(() => {
-    const normalize = (input: unknown): any[] => {
+    const normalize = (input: unknown): LearningItem[] => {
       if (!input) return []
 
       // Already an array
@@ -70,12 +79,13 @@ const CourseClient = (props: any) => {
               return s
             }
             if (item && typeof item === 'object') {
+              const record = item as Record<string, unknown>
               // Keep shape but ensure text field exists if possible
-              const text = item.text ?? item.name ?? item.title
+              const text = record.text ?? record.name ?? record.title
               const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
               if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
                 return null
-              return { ...item, text: learningText }
+              return { text: learningText }
             }
             return null
           })
@@ -84,7 +94,7 @@ const CourseClient = (props: any) => {
 
       // Object: maybe { learnings: [...] } or similar
       if (input && typeof input === 'object') {
-        const obj = input as any
+        const obj = input as unknown
         if (Array.isArray(obj.learnings)) return normalize(obj.learnings)
         if (Array.isArray(obj.items)) return normalize(obj.items)
         if (Array.isArray(obj.data)) return normalize(obj.data)
@@ -132,7 +142,7 @@ const CourseClient = (props: any) => {
     // Collapse chapters by default if more than 5 activities in total
     if (course?.chapters) {
       const totalActivities = course.chapters.reduce(
-        (sum: number, chapter: any) => sum + (chapter.activities?.length || 0),
+        (sum: number, chapter: AppChapter) => sum + (chapter.activities?.length || 0),
         0,
       )
       const defaultExpanded: Record<string, boolean> = {}
@@ -167,19 +177,19 @@ const CourseClient = (props: any) => {
     }
   }
 
-  const isActivityDone = (activity: any) => {
+  const isActivityDone = (activity: AppActivity) => {
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((activeRun: any) => {
+    const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
     if (run) {
-      return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
+      return run.steps.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
     }
     return false
   }
 
-  const isActivityCurrent = (activity: any) => {
+  const isActivityCurrent = (activity: AppActivity) => {
     const activity_uuid = activity.activity_uuid.replace('activity_', '')
     return props.current_activity && props.current_activity === activity_uuid
   }
@@ -298,7 +308,7 @@ const CourseClient = (props: any) => {
                 {/* Progress indicators */}
                 {(() => {
                   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-                  return trailData?.runs?.find((activeRun: any) => {
+                  return trailData?.runs?.find((activeRun: AppTrailRun) => {
                     const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
                     return cleanRunCourseUuid === cleanCourseUuid
                   })
@@ -323,7 +333,7 @@ const CourseClient = (props: any) => {
                       <ul
                         className={cn('grid gap-x-8 gap-y-3', learnings.length > 4 ? 'sm:grid-cols-2' : 'grid-cols-1')}
                       >
-                        {learnings.map((learning: any) => {
+                        {learnings.map((learning: LearningItem) => {
                           const learningText = typeof learning === 'string' ? learning : learning.text
                           const learningEmoji = typeof learning === 'string' ? null : learning.emoji
                           const learningId = typeof learning === 'string' ? learning : learning.id || learning.text
@@ -364,7 +374,7 @@ const CourseClient = (props: any) => {
                 <div>
                   <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
                   <div className="border-border overflow-hidden rounded-xl border">
-                    {course.chapters.map((chapter: any, idx: number) => {
+                    {course.chapters.map((chapter: AppChapter, idx: number) => {
                       const isExpanded = expandedChapters[chapter.chapter_uuid] ?? idx === 0
                       return (
                         <Collapsible
@@ -410,7 +420,7 @@ const CourseClient = (props: any) => {
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <div className="border-border border-t">
-                              {chapter.activities.map((activity: any, actIdx: number) => {
+                              {chapter.activities.map((activity: AppActivity, actIdx: number) => {
                                 const done = isActivityDone(activity)
                                 const current = isActivityCurrent(activity)
                                 return (

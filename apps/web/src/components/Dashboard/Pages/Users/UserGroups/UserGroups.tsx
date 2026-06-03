@@ -88,7 +88,7 @@ const UserGroups = () => {
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false)
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false)
   const [editUserGroupModal, setEditUserGroupModal] = useState(false)
-  const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null)
+  const [selectedUserGroup, setSelectedUserGroup] = useState<AppUserGroup | null>(null)
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
   const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null)
   const queryClient = useQueryClient()
@@ -112,7 +112,7 @@ const UserGroups = () => {
     }
   }
 
-  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: any) => {
+  const handleOpenModal = (modalType: 'manage' | 'edit', userGroup: AppUserGroup) => {
     setSelectedUserGroup(userGroup)
     if (modalType === 'manage') {
       setSelectedUserGroupIdForManage(userGroup.id)

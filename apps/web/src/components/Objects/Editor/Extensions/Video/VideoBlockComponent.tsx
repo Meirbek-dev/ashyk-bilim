@@ -204,7 +204,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
       uploadResetTimeoutRef.current = globalThis.setTimeout(() => {
         setUploadProgress(0)
       }, 1000)
-    } catch (uploadError: any) {
+    } catch (uploadError: unknown) {
       console.error(t('errorUpload'), uploadError)
       setError(uploadError?.message || t('errorUpload'))
     } finally {
@@ -227,7 +227,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   const handleSizeChange = (size: VideoSize) => {
     setSelectedSize(size)
   }
-  // Clear any pending timeouts or intervals on unmount
+  // Clear pending timeouts or intervals on unmount
   useEffect(() => {
     return () => {
       if (uploadResetTimeoutRef.current) {

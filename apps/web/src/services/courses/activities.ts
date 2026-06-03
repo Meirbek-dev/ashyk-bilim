@@ -38,7 +38,7 @@ async function invalidateActivityCache(courseUuid?: string) {
   if (courseUuid) revalidateTag(courseTag.detail(courseUuid), 'max')
 }
 
-export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
+export async function createActivity(data: AppPayload, chapter_id: number, options?: ActivityInvalidationOptions) {
   if (!data || typeof data !== 'object') {
     throw new Error('Activity payload is required')
   }
@@ -119,7 +119,7 @@ async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPer
   return await errorHandling(result)
 }
 
-export async function getActivity(activity_uuid: string, _next?: any) {
+export async function getActivity(activity_uuid: string, _next?: unknown) {
   return fetchActivity(activity_uuid)
 }
 

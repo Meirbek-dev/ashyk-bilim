@@ -1,7 +1,7 @@
 import { getActivityMediaDirectory } from '@services/media/media'
 import { useTranslations } from 'next-intl'
 
-const DocumentPdfActivity = ({ activity, course }: { activity: any; course: any }) => {
+const DocumentPdfActivity = ({ activity, course }: { activity: AppActivity; course: AppCourse }) => {
   const t = useTranslations('Activities.DocumentPdf')
 
   return (

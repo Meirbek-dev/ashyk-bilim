@@ -51,7 +51,15 @@ function SortableProfileSection({
   selectedSection,
   setSelectedSection,
   deleteSection,
-}: any) {
+}: {
+  deleteSection: (index: number) => void
+  getSectionTypesConfig: typeof getSectionTypesConfig
+  index: number
+  section: ProfileSection
+  selectedSection: number | null
+  setSelectedSection: (index: number) => void
+  t: AppTranslator
+}) {
   const { id } = section
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -146,8 +154,8 @@ const SECTION_TYPE_KEYS = {
   gamification: 'gamification',
 } as const
 
-// Function to get translated section types configuration
-const getSectionTypesConfig = (t: Function) => ({
+// Helper to get translated section types configuration
+const getSectionTypesConfig = (t: AppTranslator) => ({
   'image-gallery': {
     icon: ImageIcon,
     label: t('SectionTypes.imageGallery.label'),
@@ -196,7 +204,7 @@ const getSectionTypesConfig = (t: Function) => ({
 })
 
 // Skill level items helper
-const skillLevelItems = (t: Function) => [
+const skillLevelItems = (t: AppTranslator) => [
   { value: 'beginner', label: t('SkillsEditor.levelBeginner') },
   { value: 'intermediate', label: t('SkillsEditor.levelIntermediate') },
   { value: 'advanced', label: t('SkillsEditor.levelAdvanced') },
@@ -378,7 +386,7 @@ const UserProfileBuilder = () => {
     fetchUserDataEvent()
   }, [me])
 
-  const createEmptySection = (translateFn: Function, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
+  const createEmptySection = (translateFn: AppTranslator, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
     const sectionTypesConfig = getSectionTypesConfig(translateFn)
     const baseSection = {
       id: `section-${Date.now()}`,
@@ -718,7 +726,7 @@ const DatePicker: FC<{
 }
 
 interface SectionEditorProps {
-  t: Function
+  t: AppTranslator
   section: ProfileSection
   onChange: (section: ProfileSection) => void
 }
@@ -756,7 +764,7 @@ const SectionEditor: FC<SectionEditorProps> = ({ t, section, onChange }) => {
 }
 
 const ImageGalleryEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: ImageGallerySection
   onChange: (section: ImageGallerySection) => void
 }> = ({ t, section, onChange }) => {
@@ -863,7 +871,7 @@ const ImageGalleryEditor: FC<{
 }
 
 const TextEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: TextSection
   onChange: (section: TextSection) => void
 }> = ({ t, section, onChange }) => {
@@ -907,7 +915,7 @@ const TextEditor: FC<{
 }
 
 const LinksEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: LinksSection
   onChange: (section: LinksSection) => void
 }> = ({ t, section, onChange }) => {
@@ -994,7 +1002,7 @@ const LinksEditor: FC<{
 }
 
 const SkillsEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: SkillsSection
   onChange: (section: SkillsSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1106,7 +1114,7 @@ const SkillsEditor: FC<{
 }
 
 const ExperienceEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: ExperienceSection
   onChange: (section: ExperienceSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1304,7 +1312,7 @@ const ExperienceEditor: FC<{
 }
 
 const EducationEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: EducationSection
   onChange: (section: EducationSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1515,7 +1523,7 @@ const EducationEditor: FC<{
 }
 
 const AffiliationEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: AffiliationSection
   onChange: (section: AffiliationSection) => void
 }> = ({ t, section, onChange }) => {
@@ -1637,7 +1645,7 @@ const AffiliationEditor: FC<{
 }
 
 const CoursesEditor: FC<{
-  t: Function
+  t: AppTranslator
   section: CoursesSection
   onChange: (section: CoursesSection) => void
 }> = ({ t, section, onChange }) => {

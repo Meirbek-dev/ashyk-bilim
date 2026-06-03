@@ -3,8 +3,8 @@
 import DiscussionList from './discussion-list'
 
 interface CourseDiscussionsProps {
-  initialPosts: any[]
-  currentUser: any
+  initialPosts: unknown[]
+  currentUser: AppUserSummary
   courseUuid: string
   onMutate?: () => void
 }

@@ -138,7 +138,7 @@ const EditCourseAccess = () => {
   )
 }
 
-const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoading: boolean }) => {
+const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: unknown[]; isLoading: boolean }) => {
   const course = useCourse()
   const [userGroupModal, setUserGroupModal] = useState(false)
   const t = useTranslations('DashPage.Courses.Access')
@@ -170,7 +170,7 @@ const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoa
                   <TableCell colSpan={2}>{t('loadingUserGroups')}</TableCell>
                 </TableRow>
               ) : null}
-              {usergroups?.map((usergroup: any) => (
+              {usergroups?.map((usergroup: AppUserGroup) => (
                 <UnlinkUserGroupRow
                   key={usergroup.id}
                   usergroup={usergroup}
@@ -202,7 +202,7 @@ const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoa
 }
 
 // Separate component for unlink row with its own dialog state
-const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: any; courseUuid: string }) => {
+const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: AppUserGroup; courseUuid: string }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const course = useCourse()

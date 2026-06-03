@@ -12,7 +12,7 @@ const TypeOfContentTitle = ({ title, type }: { title: string; type: string }) =>
   else if (type === 'tra') logoAltType = 'trail'
   const logoAlt = t('logoAlt', { type: logoAltType })
 
-  const icons: Record<string, any> = {
+  const icons: Record<string, unknown> = {
     col: Layers,
     cou: BookOpen,
     tra: Map,

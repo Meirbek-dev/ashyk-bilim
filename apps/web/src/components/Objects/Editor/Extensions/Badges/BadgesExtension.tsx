@@ -47,7 +47,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
     }
   }, [])
 
-  const handleEmojiSelect = (selectedEmoji: any) => {
+  const handleEmojiSelect = (selectedEmoji: { emoji?: string; unified?: string; names?: string[] }) => {
     setEmoji(selectedEmoji.emoji)
     setShowEmojiPicker(false)
     props.updateAttributes({
@@ -260,7 +260,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
             onEmojiClick={handleEmojiSelect}
             height="30rem"
             width="25rem"
-            theme={'light' as any}
+            theme={'light' as unknown}
             previewConfig={{ showPreview: false }}
             searchPlaceHolder={t('searchEmojis')}
             autoFocusSearch

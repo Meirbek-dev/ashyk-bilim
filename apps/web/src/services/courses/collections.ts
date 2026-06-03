@@ -23,7 +23,7 @@ export async function deleteCollection(collection_uuid: string) {
   return data_result
 }
 
-export async function createCollection(collection: any) {
+export async function createCollection(collection: AppCollection) {
   const result = await apiFetch('collections/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,10 +46,10 @@ async function fetchCollectionById(collection_uuid: string) {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling<any>(result)
+  return await errorHandling(result)
 }
 
-export async function getCollectionById(collection_uuid: string, _next?: any) {
+export async function getCollectionById(collection_uuid: string, _next?: unknown) {
   return fetchCollectionById(collection_uuid)
 }
 
@@ -63,9 +63,9 @@ async function fetchCollections() {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling<any>(result)
+  return await errorHandling(result)
 }
 
-export async function getCollections(_next?: any) {
+export async function getCollections(_next?: unknown) {
   return fetchCollections()
 }

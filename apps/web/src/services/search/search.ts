@@ -4,7 +4,7 @@ export interface SearchContentParams {
   query: string
   page?: number
   limit?: number
-  next?: any
+  next?: unknown
 }
 
 export async function searchContent({ query, page = 1, limit = 20 }: SearchContentParams) {

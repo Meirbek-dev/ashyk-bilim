@@ -77,7 +77,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py315"
 preview = true
 line-length = 120
 
@@ -209,7 +209,7 @@ missing-attribute = "ignore"
 bad-argument-type = "ignore"
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.15"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = "migrations/"
@@ -251,7 +251,7 @@ module = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
 ignore_missing_imports = true
 
 [tool.basedpyright]
-pythonVersion = "3.14"
+pythonVersion = "3.15"
 typeCheckingMode = "strict"
 
 exclude = ["**/__pycache__", "**/alembic", "**/node_modules", "**/tests", "**/venv", ".venv", "**/migrations"]

@@ -105,7 +105,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
 
 // ── Context-aware suggestions ─────────────────────────────────────────────────
 
-function getSuggestions(activityType: string, t: any): string[] {
+function getSuggestions(activityType: string, t: AppTranslator): string[] {
   switch (activityType) {
     case 'TYPE_DYNAMIC': {
       return [

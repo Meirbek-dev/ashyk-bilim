@@ -26,12 +26,12 @@ interface FormValues {
 
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
-const DocumentPdfModal = ({ submitFileActivity, chapterId }: any) => {
+const DocumentPdfModal = ({ submitFileActivity, chapterId }: AppActivityModalProps) => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.DocumentPdfModal')
   const validationSchema = createValidationSchema(validationT)
 
-  const form = useForm<FormValues, any, SubmitValues>({
+  const form = useForm<FormValues, unknown, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
@@ -40,6 +40,7 @@ const DocumentPdfModal = ({ submitFileActivity, chapterId }: any) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const onSubmit = async (values: SubmitValues) => {
+    if (!submitFileActivity) return
     await submitFileActivity({
       file: values.file,
       type: 'documentpdf',

@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import * as v from 'valibot'
 
-const createValidationSchema = (t: (key: string, values?: any) => string) =>
+const createValidationSchema = (t: (key: string, values?: AppTranslationValues) => string) =>
   v.object({
     old_password: v.pipe(
       v.string(),
@@ -46,7 +46,7 @@ const UserEditPassword = () => {
   const tPassword = useTranslations('DashPage.UserAccountSettings.UserAccount.EditPassword')
   const validationSchema = createValidationSchema(t)
 
-  const form = useForm<PasswordFormValues, any, PasswordFormData>({
+  const form = useForm<PasswordFormValues, unknown, PasswordFormData>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       old_password: '',
@@ -87,7 +87,7 @@ const UserEditPassword = () => {
           id: loadingToast,
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(t('passwordUpdateError'), { id: loadingToast })
       console.error('Password update error:', error)
     }

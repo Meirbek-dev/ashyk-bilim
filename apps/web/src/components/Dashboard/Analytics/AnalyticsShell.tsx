@@ -28,6 +28,11 @@ interface AnalyticsShellProps {
 }
 
 const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
+interface AnalyticsTab {
+  icon: AppIcon
+  id: AnalyticsShellProps['activeTab']
+  labelKey: string
+}
 
 export default function AnalyticsShell({
   query,
@@ -50,7 +55,7 @@ export default function AnalyticsShell({
     return `/dash/analytics/${tabId}${serialized ? `?${serialized}` : ''}`
   }
 
-  const tabs = [
+  const tabs: AnalyticsTab[] = [
     { id: 'overview', labelKey: 'tabs.overview', icon: LayoutDashboard },
     { id: 'watchlist', labelKey: 'tabs.watchlist', icon: Users },
     { id: 'performance', labelKey: 'tabs.performance', icon: Award },
@@ -58,7 +63,7 @@ export default function AnalyticsShell({
     ...(adminData ? [{ id: 'admin', labelKey: 'tabs.admin', icon: ShieldCheck }] : []),
   ]
 
-  const renderAnalyticsTab = (tab: any, isActive: boolean) => {
+  const renderAnalyticsTab = (tab: AnalyticsTab, isActive: boolean) => {
     const Icon = tab.icon
     return (
       <div

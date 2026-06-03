@@ -9,7 +9,7 @@ import type { PlatformLeaderboard } from './leaderboard'
 // Main dashboard data
 export interface DashboardData {
   profile: UserGamificationProfile
-  recent_transactions: any[]
+  recent_transactions: unknown[]
   leaderboard: PlatformLeaderboard
   user_rank: number | null
   streak_info: StreakInfo

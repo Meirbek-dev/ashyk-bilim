@@ -3,17 +3,26 @@ import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrappe
 import CreateCourseTrigger from '@/components/Landings/CreateCourseTrigger'
 import CourseGridClient from '@components/Landings/CourseGridClient'
 import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
 interface CourseProps {
-  courses: any[]
+  courses: AppCourse[]
   totalCourses: number
-  trailData: any
+  trailData: AppTrailData
   currentPage: number
   isAuthenticated: boolean
   canManagePlatform: boolean
 }
 
-const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) => (
+const EmptyStateMessage = ({
+  canManagePlatform,
+  createCourseTrigger,
+  t,
+}: {
+  canManagePlatform: boolean
+  createCourseTrigger: ReactNode
+  t: AppTranslator
+}) => (
   <div className="col-span-full flex items-center justify-center py-12">
     <div className="max-w-md text-center">
       <div className="mb-6">

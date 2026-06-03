@@ -46,7 +46,7 @@ async function readJsonOrThrow(response: Response) {
         : typeof payload?.detail?.message === 'string'
           ? payload.detail.message
           : response.statusText || 'Request failed'
-    const error = new Error(message) as Error & { status?: number; payload?: any }
+    const error = new Error(message) as Error & { status?: number; payload?: unknown }
     error.status = response.status
     error.payload = payload
     throw error
@@ -209,7 +209,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       setSaveState('saved')
       await invalidateAssessmentState()
     },
-    onError: (error: Error & { status?: number; payload?: any }) => {
+    onError: (error: Error & { status?: number; payload?: unknown }) => {
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined
         if (latest) {
@@ -292,7 +292,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         await invalidateAssessmentState()
       }
     },
-    onError: (error: Error & { status?: number; payload?: any }) => {
+    onError: (error: Error & { status?: number; payload?: unknown }) => {
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined
         if (latest) {
@@ -319,7 +319,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     const loadError = draftQuery.error ?? submissionsQuery.error
     if (!loadError) return
-    const errorStatus = (loadError as any)?.status
+    const errorStatus = (loadError as unknown)?.status
     if (errorStatus === 429) return
     const { message } = loadError
     const key = `${assessmentUuid ?? 'missing'}:${message}`
@@ -412,7 +412,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           save()
         }
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         if (error.status === 429) {
           lastSaveTimeRef.current = 0
           setSaveState('dirty')

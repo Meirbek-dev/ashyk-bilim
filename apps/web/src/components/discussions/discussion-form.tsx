@@ -20,7 +20,7 @@ const RichTextEditor = dynamic(
 )
 
 interface DiscussionFormProps {
-  currentUser: any
+  currentUser: AppUserSummary
   onSubmit: (content: string) => void
 }
 

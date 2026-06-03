@@ -13,12 +13,17 @@ import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
 import { isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
 import { getApiErrorMessage, parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
+import type { ApiErrorLike } from '@/types/shared'
 
 type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   /** Override which base URL to use (defaults to environment-aware selection). */
   baseUrl?: string
   /** Override the default request timeout. Use false for no client-side timeout. */
   timeoutMs?: number | false
+  next?: {
+    tags?: string[] | undefined
+    revalidate?: number | false | undefined
+  } | undefined
 }
 
 function apiBase(isServer: boolean, baseUrl?: string): string {
@@ -121,8 +126,7 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   // When cache tags are provided (server-side Next.js Data Cache), opt-in to
   // force-cache so revalidateTag() actually works. Without this the default
   // 'no-store' would silently override the tags and disable caching entirely.
-  const hasCacheTags =
-    isServer && Array.isArray((fetchInit as any).next?.tags) && (fetchInit as any).next?.tags?.length > 0
+  const hasCacheTags = isServer && Array.isArray(fetchInit.next?.tags) && fetchInit.next.tags.length > 0
   const defaultCache: RequestCache = hasCacheTags ? 'force-cache' : 'no-store'
   const options: RequestInit = {
     ...fetchInit,
@@ -190,16 +194,18 @@ export const fetchResponseMetadata = async (url: string): Promise<CustomResponse
   return getResponseMetadata(response)
 }
 
-export const apiFetcherWithHeaders = async (url: string): Promise<{ data: any; headers: Record<string, string> }> => {
+export const apiFetcherWithHeaders = async (
+  url: string,
+): Promise<{ data: unknown; headers: Record<string, string> }> => {
   const response = await apiFetch(url, {
     method: 'GET',
   })
   if (!response.ok) {
-    const error: any = new Error(response.statusText || 'Request failed')
+    const error: ApiErrorLike = new Error(response.statusText || 'Request failed')
     error.status = response.status
     throw error
   }
-  const data = await response.json()
+  const data = (await response.json()) as unknown
   const resHeaders: Record<string, string> = {}
   for (const [key, value] of response.headers.entries()) {
     resHeaders[key.toLowerCase()] = value
@@ -218,13 +224,7 @@ export async function errorHandling<T = unknown>(res: Response): Promise<T> {
 
     const envelope = parseApiErrorEnvelope(data)
     const dataRecord = data && typeof data === 'object' ? (data as Record<string, unknown>) : null
-    const error = new Error(getApiErrorMessage(data, res.statusText || 'Request failed')) as Error & {
-      code?: string
-      data?: unknown
-      detail?: unknown
-      requestId?: string | null
-      status?: number
-    }
+    const error: ApiErrorLike = new Error(getApiErrorMessage(data, res.statusText || 'Request failed'))
     error.status = res.status
     error.data = data
     if (envelope) {
@@ -237,15 +237,15 @@ export async function errorHandling<T = unknown>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export interface CustomResponseTyping {
+export interface CustomResponseTyping<T = unknown> {
   success: boolean
-  data: any
+  data: T
   status: number
   HTTPmessage: string
 }
 
-export const getResponseMetadata = async (response: Response): Promise<CustomResponseTyping> => {
-  let data: any = null
+export const getResponseMetadata = async <T = unknown>(response: Response): Promise<CustomResponseTyping<T>> => {
+  let data: unknown = null
   try {
     data = await response.json()
   } catch (error) {
@@ -258,7 +258,7 @@ export const getResponseMetadata = async (response: Response): Promise<CustomRes
 
   return {
     success: response.ok,
-    data,
+    data: data as T,
     status: response.status,
     HTTPmessage: response.statusText,
   }

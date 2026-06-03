@@ -48,7 +48,7 @@ interface Course {
 interface CourseActionsProps {
   courseuuid: string
   course: Course
-  trailData?: any
+  trailData?: AppTrailData
 }
 
 const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) => {
@@ -65,7 +65,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   const isStarted =
-    trailData?.runs?.find((activeRun: any) => {
+    trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     }) ?? false
@@ -78,7 +78,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
     // If already started, navigate to first unfinished activity
     if (isStarted) {
-      const run = trailData?.runs?.find((r: any) => {
+      const run = trailData?.runs?.find((r: AppRoleSummary) => {
         const cleanRunCourseUuid = r.course?.course_uuid?.replace('course_', '')
         return cleanRunCourseUuid === cleanCourseUuid
       })
@@ -89,7 +89,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       if (course.chapters) {
         for (const chapter of course.chapters) {
           for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some((step: any) => step.activity_id === activity.id && step.complete)
+            const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
             if (!isCompleted) {
               firstUnfinishedActivity = activity
               break
@@ -246,14 +246,14 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
   const renderProgressSection = () => {
     const totalActivities =
-      course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0
+      course.chapters?.reduce((acc: number, chapter: AppChapter) => acc + chapter.activities.length, 0) || 0
 
-    const run = trailData?.runs?.find((activeRun: any) => {
+    const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
 
-    const completedActivities = run?.steps?.filter((step: any) => step.complete)?.length || 0
+    const completedActivities = run?.steps?.filter((step: AppTrailStep) => step.complete)?.length || 0
     const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
     const isCompleted = progressPercentage === 100
 

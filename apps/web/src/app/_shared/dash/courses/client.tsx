@@ -257,7 +257,7 @@ const CoursesHome = ({
         )
 
         const successCount = results.filter(
-          (result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value?.success,
+          (result): result is PromiseFulfilledResult<unknown> => result.status === 'fulfilled' && result.value?.success,
         ).length
         const failedCount = targetCourses.length - successCount
 

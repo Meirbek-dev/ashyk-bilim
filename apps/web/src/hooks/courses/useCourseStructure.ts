@@ -29,7 +29,7 @@ function courseStructureHookOptions<TCourseStructure = unknown>(
   })
 }
 
-export function useCourseStructure<TCourseStructure = any>(
+export function useCourseStructure<TCourseStructure = AppCourse>(
   courseUuid: string,
   options?: UseCourseStructureOptions<TCourseStructure>,
 ) {
@@ -66,7 +66,7 @@ export function useCourseChapters(courseUuid: string, withUnpublishedActivities 
   }
 }
 
-export function useChapter<TChapter = any>(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
+export function useChapter<TChapter = AppChapter>(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
   const { courseStructure, ...rest } = useCourseStructure<{
     chapters?: TChapter[]
   }>(courseUuid, {
@@ -74,7 +74,7 @@ export function useChapter<TChapter = any>(courseUuid: string, chapterUuid: stri
   })
 
   const chapter =
-    courseStructure?.chapters?.find((currentChapter: any) => currentChapter.chapter_uuid === chapterUuid) ?? null
+    courseStructure?.chapters?.find((currentChapter: AppChapter) => currentChapter.chapter_uuid === chapterUuid) ?? null
 
   return { ...rest, chapter }
 }

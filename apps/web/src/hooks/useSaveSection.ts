@@ -7,7 +7,7 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
-type SaveResponse = { success?: boolean; status?: number; data?: any } | void
+type SaveResponse = { success?: boolean; status?: number; data?: unknown } | void
 
 interface SaveSectionOptions {
   onSuccess?: () => void
@@ -88,7 +88,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
         invocationOptions?.onSuccess?.()
         options?.onSuccess?.()
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error?.status === 409) {
           setConflict({
             serverVersion: error?.data,

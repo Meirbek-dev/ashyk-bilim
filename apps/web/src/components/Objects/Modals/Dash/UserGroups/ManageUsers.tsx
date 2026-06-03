@@ -34,7 +34,7 @@ const ManageUsers = (props: ManageUsersProps) => {
   const { data: UGusers } = useUserGroupUsers(props.usergroup_id)
 
   // Normalize Users response which may be either an array or a paginated object { users: [], total, ... }
-  const platformUsersList = (data: any) => {
+  const platformUsersList = (data: AppPayload) => {
     if (!data) return []
     if (Array.isArray(data)) return data
     if (Array.isArray(data.users)) return data.users
@@ -43,7 +43,7 @@ const ManageUsers = (props: ManageUsersProps) => {
 
   const isUserPartOfGroup = (user_id: number) => {
     if (UGusers) {
-      return UGusers.some((user: any) => user.id === user_id)
+      return UGusers.some((user: AppUserSummary) => user.id === user_id)
     }
     return false
   }

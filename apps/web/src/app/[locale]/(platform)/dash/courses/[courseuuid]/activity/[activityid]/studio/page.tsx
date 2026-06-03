@@ -23,7 +23,7 @@ export default async function PlatformAssessmentStudioPage(props: {
   try {
     ;[activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)])
     assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.status === 401) {
       const locale = await getLocale()
       redirect({

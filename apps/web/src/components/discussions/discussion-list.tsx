@@ -7,6 +7,7 @@ import {
   toggleDiscussionLike,
   updateDiscussion,
 } from '@services/courses/discussions'
+import type { Discussion } from '@services/courses/discussions'
 import { Card, CardContent } from '@/components/ui/card'
 import { useEffect, useRef, useState } from 'react'
 import DiscussionPost from './discussion-post'
@@ -16,14 +17,14 @@ import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface DiscussionListProps {
-  initialPosts: any[]
-  currentUser: any
+  initialPosts: Discussion[]
+  currentUser: AppUserSummary
   courseUuid: string
-  onMutate?: () => void // Function to refresh discussions data
+  onMutate?: () => void
 }
 
-// Helper function to transform API response to UI format
-const transformDiscussionToPost = (discussion: any, anonymousLabel: string) => {
+// Helper to transform API response to UI format
+const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string) => {
   // Handle date formatting properly
   const formatDate = (dateStr: string) => {
     if (!dateStr) return new Date().toISOString()
@@ -55,7 +56,7 @@ const transformDiscussionToPost = (discussion: any, anonymousLabel: string) => {
     is_liked: discussion.is_liked,
     is_disliked: discussion.is_disliked,
     replies:
-      discussion.replies?.map((reply: any) => ({
+      discussion.replies?.map((reply: Discussion) => ({
         id: reply.id?.toString() || '',
         discussion_uuid: reply.discussion_uuid || '',
         username: reply.user?.username || anonymousLabel,
@@ -77,7 +78,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   const t = useTranslations('CoursePage')
   const anonymousLabel = t('anonymous')
   // Use lazy initialization to transform initial posts
-  const [posts, setPosts] = useState<any[]>(() => {
+  const [posts, setPosts] = useState<unknown[]>(() => {
     if (Array.isArray(initialPosts)) {
       return initialPosts.map(discussion => transformDiscussionToPost(discussion, anonymousLabel))
     }
@@ -136,7 +137,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create discussion:', error)
       console.error('Error details:', {
         message: error.message,
@@ -203,7 +204,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create reply:', error)
       console.error('Error details:', {
         message: error.message,
@@ -247,7 +248,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       if (onMutate) {
         onMutate()
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to toggle vote on post:', error)
       // You could show a toast notification here
     }
@@ -260,7 +261,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: any) => r.id === replyId)
+    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -281,7 +282,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           if (currentPost.id === postId) {
             return {
               ...currentPost,
-              replies: currentPost.replies?.map((r: any) => {
+              replies: currentPost.replies?.map((r: AppRoleSummary) => {
                 if (r.id === replyId) {
                   return {
                     ...r,
@@ -333,7 +334,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: any) => r.id === replyId)
+    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -348,7 +349,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           currentPost.id === postId
             ? {
                 ...currentPost,
-                replies: currentPost.replies?.filter((currentReply: any) => currentReply.id !== replyId),
+                replies: currentPost.replies?.filter((currentReply: AppDiscussionReply) => currentReply.id !== replyId),
               }
             : currentPost,
         ),
@@ -399,7 +400,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       return
     }
 
-    const reply = post.replies?.find((r: any) => r.id === replyId)
+    const reply = post.replies?.find((r: AppRoleSummary) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
       return
@@ -416,7 +417,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           currentPost.id === postId
             ? {
                 ...currentPost,
-                replies: currentPost.replies?.map((currentReply: any) =>
+                replies: currentPost.replies?.map((currentReply: AppDiscussionReply) =>
                   currentReply.id === replyId
                     ? {
                         ...currentReply,

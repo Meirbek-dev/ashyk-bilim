@@ -230,7 +230,7 @@ const NewUpdateForm = ({
   const t = useTranslations('Courses.CourseAuthors')
   const validationSchema = createUpdateFormSchema(t)
 
-  const form = useForm<UpdateFormInputValues, any, UpdateFormValues>({
+  const form = useForm<UpdateFormInputValues, unknown, UpdateFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: '',
@@ -341,7 +341,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
 
   return (
     <div className="space-y-4">
-      {updates.map((update: any) => (
+      {updates.map((update: AppPayload) => (
         <motion.div
           key={update.id}
           initial={{ opacity: 0 }}
@@ -377,7 +377,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   )
 }
 
-const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: any }) => {
+const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: AppPayload }) => {
   const queryClient = useQueryClient()
   const t = useTranslations('Courses.CourseAuthors')
   const [isOpen, setIsOpen] = useState(false)

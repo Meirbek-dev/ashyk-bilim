@@ -45,7 +45,7 @@ export default function UserGamificationSettings() {
   // Load preferences from profile
   useEffect(() => {
     if (profile?.preferences) {
-      const prefs = profile.preferences as any
+      const prefs = profile.preferences as unknown
       setPreferences({
         showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
         xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,

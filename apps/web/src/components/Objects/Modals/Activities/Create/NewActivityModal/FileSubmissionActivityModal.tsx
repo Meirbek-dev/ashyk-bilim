@@ -78,7 +78,7 @@ const MIME_PRESETS = [
   },
 ]
 
-export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: any) {
+export default function FileSubmissionActivityModal({ chapterId, course, closeModal }: AppActivityModalProps) {
   const t = useTranslations('Components.NewFileSubmissionModal')
   const queryClient = useQueryClient()
   const [title, setTitle] = useState('')

@@ -66,8 +66,8 @@ export interface Discussion {
     email: string
     avatar_image?: string
     bio?: string
-    details?: any
-    profile?: any
+    details?: unknown
+    profile?: unknown
   }
   replies?: Discussion[]
   is_liked: boolean

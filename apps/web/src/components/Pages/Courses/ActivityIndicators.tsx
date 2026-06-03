@@ -21,11 +21,11 @@ import { Fragment, useMemo } from 'react'
 import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index'
 
 interface Props {
-  course: any
+  course: AppCourse
   course_uuid: string
   current_activity?: string
   enableNavigation?: boolean
-  trailData?: any
+  trailData?: AppTrailData
 }
 
 // Helper functions
@@ -113,7 +113,7 @@ const ActivityTooltipContent = ({
   isDone,
   isCurrent,
 }: {
-  activity: any
+  activity: AppActivity
   isDone: boolean
   isCurrent: boolean
 }) => {
@@ -149,7 +149,7 @@ const ChapterTooltipContent = ({
   totalActivities,
   completedActivities,
 }: {
-  chapter: any
+  chapter: AppChapter
   chapterNumber: number
   totalActivities: number
   completedActivities: number
@@ -260,20 +260,20 @@ const ActivityIndicators = (props: Props) => {
   // Memoized set of completed activity IDs for fast lookup
   const completedActivityIds = useMemo(() => {
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = props.trailData?.runs?.find((activeRun: any) => {
+    const run = props.trailData?.runs?.find((activeRun: AppTrailRun) => {
       const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
       return cleanRunCourseUuid === cleanCourseUuid
     })
     return new Set(
-      (run?.steps ?? []).filter((step: any) => step.complete === true).map((step: any) => Number(step.activity_id)),
+      (run?.steps ?? []).filter((step: AppTrailStep) => step.complete === true).map((step: AppTrailStep) => Number(step.activity_id)),
     )
   }, [props.trailData, course.course_uuid])
 
-  function isActivityDone(activity: any) {
+  function isActivityDone(activity: AppActivity) {
     return completedActivityIds.has(Number(activity.id))
   }
 
-  function isActivityCurrent(activity: any) {
+  function isActivityCurrent(activity: AppActivity) {
     return activity.cleanUuid === cleanCurrentActivityId
   }
 
@@ -297,7 +297,7 @@ const ActivityIndicators = (props: Props) => {
 
   // Check if all activities are completed
   const totalActivitiesCount = allActivities.length
-  const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
+  const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount
 
   return (
@@ -314,7 +314,7 @@ const ActivityIndicators = (props: Props) => {
       ) : null}
 
       <div className="flex flex-1 items-center gap-1 overflow-hidden">
-        {(course.chapters ?? []).map((chapter: any, chapterIndex: number) => {
+        {(course.chapters ?? []).map((chapter: AppChapter, chapterIndex: number) => {
           // Get activities for this chapter from the index
           const chapterActivities = allActivities.filter(a => a.chapterIndex === chapterIndex)
           const completedCount = chapterActivities.reduce(

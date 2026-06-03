@@ -79,7 +79,7 @@ const UserCertificates: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {certificatesData.map((certificate: any) => {
+        {certificatesData.map((certificate: AppCertification) => {
           const verificationLink = getAbsoluteUrl(
             `/certificates/${certificate.certificate_user.user_certification_uuid}/verify`,
           )

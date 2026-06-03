@@ -50,12 +50,12 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
 }
 
 function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime {
-  const outline = (course.chapters ?? []).map((chapter: any, chapterIndex: number) => ({
-    id: Number(chapter.id ?? chapterIndex),
+  const outline = (course.chapters ?? []).map((chapter: AppChapter, chapterIndex: number) => ({
+    id: (chapter.id ?? chapterIndex),
     title: chapter.name ?? `Chapter ${chapterIndex + 1}`,
     index: chapterIndex,
-    activities: (chapter.activities ?? []).map((activity: any) => ({
-      id: Number(activity.id ?? 0),
+    activities: (chapter.activities ?? []).map((activity: AppActivity) => ({
+      id: (activity.id ?? 0),
       uuid: activity.activity_uuid ?? '',
       title: activity.name ?? '',
       type: activity.activity_type ?? '',
@@ -67,10 +67,10 @@ function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime 
 
   return {
     course: {
-      id: Number((course as any).id ?? 0),
+      id: Number((course as unknown).id ?? 0),
       uuid: course.course_uuid,
       title: course.name ?? '',
-      public: Boolean((course as any).public),
+      public: Boolean((course as unknown).public),
     },
     activity: null,
     content: null,

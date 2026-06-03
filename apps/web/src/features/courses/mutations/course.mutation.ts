@@ -72,13 +72,13 @@ export function updateCourseMetadataMutationOptions(
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData(structureKey)
-      queryClient.setQueryData(structureKey, (current: any) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(structureKey, (current: AppTranslator) => (current ? { ...current, ...payload } : current))
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
-    onSuccess: async (response: any) => {
+    onSuccess: async (response: { data?: { update_date?: string } }) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -106,13 +106,13 @@ export function updateCourseAccessMutationOptions(
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData(structureKey)
-      queryClient.setQueryData(structureKey, (current: any) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(structureKey, (current: AppTranslator) => (current ? { ...current, ...payload } : current))
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
-    onSuccess: async (response: any) => {
+    onSuccess: async (response: { data?: { update_date?: string } }) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -133,7 +133,7 @@ export function updateCourseThumbnailMutationOptions(
       assertSuccess(
         await updateCourseThumbnail(courseUuid, formData, buildMutationOptions(options.lastKnownUpdateDate)),
       ),
-    onSuccess: async (response: any) => {
+    onSuccess: async (response: { data?: { update_date?: string } }) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
@@ -165,7 +165,7 @@ export function addCourseContributorsMutationOptions(courseUuid: string, queryCl
         queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
           if (!current) return current
           const existingContributors = current.contributors.data ?? []
-          const existingUsernames = new Set(existingContributors.map((contributor: any) => contributor.user?.username))
+          const existingUsernames = new Set(existingContributors.map((contributor: AppCourseAuthor) => contributor.user?.username))
           const optimisticContributors = users
             .filter(user => !existingUsernames.has(user.username))
             .map(user => buildOptimisticContributor(user))
@@ -184,7 +184,7 @@ export function addCourseContributorsMutationOptions(courseUuid: string, queryCl
 
       return { editorBundleKey, previousEditorBundle }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       if (context?.editorBundleKey) {
         queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
       }
@@ -235,7 +235,7 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
           ...current,
           contributors: {
             ...current.contributors,
-            data: (current.contributors.data ?? []).map((contributor: any) =>
+            data: (current.contributors.data ?? []).map((contributor: AppCourseAuthor) =>
               contributor.user_id === contributorUserId ? Object.assign(contributor, payload) : contributor,
             ),
           },
@@ -244,7 +244,7 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
 
       return { editorBundleKey, previousEditorBundle }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       if (context?.editorBundleKey) {
         queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
       }
@@ -282,7 +282,7 @@ export function removeCourseContributorsMutationOptions(courseUuid: string, quer
           contributors: {
             ...current.contributors,
             data: (current.contributors.data ?? []).filter(
-              (contributor: any) => !userIdSet.has(contributor.user_id) && !usernameSet.has(contributor.user?.username),
+              (contributor: AppCourseAuthor) => !userIdSet.has(contributor.user_id) && !usernameSet.has(contributor.user?.username),
             ),
           },
         }
@@ -290,7 +290,7 @@ export function removeCourseContributorsMutationOptions(courseUuid: string, quer
 
       return { editorBundleKey, previousEditorBundle }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       if (context?.editorBundleKey) {
         queryClient.setQueryData(context.editorBundleKey, context.previousEditorBundle)
       }

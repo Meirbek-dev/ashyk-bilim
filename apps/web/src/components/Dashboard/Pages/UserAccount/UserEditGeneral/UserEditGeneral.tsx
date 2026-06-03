@@ -83,7 +83,7 @@ interface DetailItem {
   text: string
 }
 
-const createValidationSchema = (t: (key: string, values?: any) => string) =>
+const createValidationSchema = (t: (key: string, values?: AppTranslationValues) => string) =>
   v.object({
     email: v.pipe(
       v.string(),
@@ -711,7 +711,7 @@ const UserEditGeneral = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [success, setSuccess] = useState('')
-  const [userData, setUserData] = useState<any>(null)
+  const [userData, setUserData] = useState<unknown>(null)
   const [currentLocale, setCurrentLocale] = useState<Locale | null>(null)
   const [initialLoading, setInitialLoading] = useState(true)
   const t = useTranslations('DashPage.Notifications')
@@ -719,7 +719,7 @@ const UserEditGeneral = () => {
 
   type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>
 
-  const form = useForm<UserEditFormInput, any, FormValues>({
+  const form = useForm<UserEditFormInput, unknown, FormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       username: '',
@@ -855,7 +855,7 @@ const UserEditGeneral = () => {
 
     try {
       await updateProfile(values, userData.id)
-      setUserData((current: any) => ({ ...current, ...values }))
+      setUserData((current: AppTranslator) => ({ ...current, ...values }))
 
       toast.dismiss(loadingToast)
       if (isEmailChanged) {

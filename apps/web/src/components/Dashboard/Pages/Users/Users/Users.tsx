@@ -116,7 +116,7 @@ const Users = () => {
   const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP)
   const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP)
 
-  const getRolePriority = (roleObj: any) => {
+  const getRolePriority = (roleObj: AppRoleSummary) => {
     if (!roleObj) return 0
     // roleObj may be the role itself or wrapped under `role`
     const role = roleObj.role || roleObj
@@ -128,7 +128,7 @@ const Users = () => {
       if (!userRoles || userRoles.length === 0) return 0
       if (userRoles.length === 0) return 0
       // return highest priority among user's roles
-      return Math.max(...userRoles.map((r: any) => getRolePriority(r.role || r)))
+      return Math.max(...userRoles.map((r: AppRoleSummary) => getRolePriority(r.role || r)))
     } catch {
       return 0
     }
@@ -148,9 +148,9 @@ const Users = () => {
   const totalPages = usersData?.total_pages ?? 1
 
   const [rolesModal, setRolesModal] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<any | null>(null)
+  const [selectedUser, setSelectedUser] = useState<AppUserSummary | null>(null)
 
-  const handleRolesModal = (user: any) => {
+  const handleRolesModal = (user: AppUserSummary) => {
     setSelectedUser(user)
     setRolesModal(true)
   }

@@ -28,13 +28,13 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
       const previousStructure = queryClient.getQueryData(structureKey)
       const previousActivity = queryClient.getQueryData(activityKey)
 
-      queryClient.setQueryData(structureKey, (current: any) =>
+      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: any) =>
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
                 Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).map((activity: any) =>
+                  activities: (chapter.activities ?? []).map((activity: AppActivity) =>
                     activity.activity_uuid === activityUuid ? Object.assign(activity, payload) : activity,
                   ),
                 }),
@@ -43,11 +43,11 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
           : current,
       )
 
-      queryClient.setQueryData(activityKey, (current: any) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(activityKey, (current: AppTranslator) => (current ? { ...current, ...payload } : current))
 
       return { activityKey, previousActivity, previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       if (!context) return
       queryClient.setQueryData(structureKey, context.previousStructure)
       queryClient.setQueryData(context.activityKey, context.previousActivity)
@@ -74,14 +74,14 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData(structureKey)
 
-      queryClient.setQueryData(structureKey, (current: any) =>
+      queryClient.setQueryData(structureKey, (current: AppTranslator) =>
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: any) =>
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
                 Object.assign(chapter, {
                   activities: (chapter.activities ?? []).filter(
-                    (activity: any) => activity.activity_uuid !== activityUuid,
+                    (activity: AppActivity) => activity.activity_uuid !== activityUuid,
                   ),
                 }),
               ),
@@ -91,7 +91,7 @@ export function deleteActivityMutationOptions(queryClient: QueryClient, structur
 
       return { previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
+    onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
       queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {

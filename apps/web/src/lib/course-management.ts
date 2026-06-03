@@ -46,14 +46,14 @@ export function buildCourseCreationPath(sourceCourseUuid?: string): string {
   return `/dash/courses/new${query}`
 }
 
-export function getCourseContentStats(course: any): {
+export function getCourseContentStats(course: AppCourse): {
   chapters: number
   activities: number
 } {
   const chapters = Array.isArray(course?.chapters) ? course.chapters.length : 0
   const activities = Array.isArray(course?.chapters)
     ? course.chapters.reduce(
-        (total: number, chapter: any) => total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
+        (total: number, chapter: AppChapter) => total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
         0,
       )
     : 0
@@ -61,23 +61,23 @@ export function getCourseContentStats(course: any): {
   return { chapters, activities }
 }
 
-const isCourseDetailsComplete = (course: any): boolean => Boolean(course?.name?.trim() && course?.description?.trim())
+const isCourseDetailsComplete = (course: AppCourse): boolean => Boolean(course?.name?.trim() && course?.description?.trim())
 
-const isCourseMediaComplete = (course: any): boolean => Boolean(course?.thumbnail_image)
+const isCourseMediaComplete = (course: AppCourse): boolean => Boolean(course?.thumbnail_image)
 
 const isCourseCurriculumComplete = (stats: { chapters: number; activities: number }): boolean =>
   stats.chapters > 0 && stats.activities > 0
 
-const isCourseCollaborationComplete = (contributors: any[]): boolean =>
+const isCourseCollaborationComplete = (contributors: unknown[]): boolean =>
   Array.isArray(contributors) && contributors.length > 0
 
-const isCourseAccessComplete = (course: any, linkedUserGroups: any[]): boolean =>
+const isCourseAccessComplete = (course: AppCourse, linkedUserGroups: unknown[]): boolean =>
   course?.public === true || (course?.public === false && linkedUserGroups.length > 0)
 
-const isCourseCertificateComplete = (certifications: any[]): boolean => certifications.length > 0
+const isCourseCertificateComplete = (certifications: unknown[]): boolean => certifications.length > 0
 
 export function getCourseReadinessChecklist(
-  course: any,
+  course: AppCourse,
   editorData?: CourseEditorBundle | null,
 ): CourseChecklistItem[] {
   const stats = getCourseContentStats(course)
@@ -119,7 +119,7 @@ export function getCourseReadinessChecklist(
   ]
 }
 
-export function getCourseReadinessSummary(course: any, editorData?: CourseEditorBundle | null) {
+export function getCourseReadinessSummary(course: AppCourse, editorData?: CourseEditorBundle | null) {
   const checklist = getCourseReadinessChecklist(course, editorData)
   const completed = checklist.filter(item => item.complete).length
   const issues = checklist.filter(item => !item.complete)
@@ -134,7 +134,7 @@ export function getCourseReadinessSummary(course: any, editorData?: CourseEditor
 }
 
 export function getCourseManagementBadges(
-  course: any,
+  course: AppCourse,
   editorData?: CourseEditorBundle | null,
 ): CourseManagementBadgeId[] {
   const summary = getCourseReadinessSummary(course, editorData)
@@ -156,7 +156,7 @@ export function getCourseManagementBadges(
   return badges
 }
 
-export function courseNeedsAttention(course: any): boolean {
+export function courseNeedsAttention(course: AppCourse): boolean {
   const stats = getCourseContentStats(course)
   return !course.thumbnail_image || !course.description?.trim() || stats.activities === 0
 }

@@ -31,6 +31,8 @@ import {
 import { CourseWorkflowBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
+import type { DraggableAttributes } from '@dnd-kit/core'
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
@@ -69,8 +71,8 @@ interface ActivityElementProps {
   activityIndex: number
   course_uuid: string
   isDragging?: boolean
-  attributes?: any
-  listeners?: any
+  attributes?: DraggableAttributes
+  listeners?: SyntheticListenerMap
 }
 
 const ACTIVITY_CONFIG = {
@@ -154,8 +156,8 @@ const ActivityElement = ({
       await updateActivity(activity.activity_uuid, { name: trimmedName })
       toast.success(t('activityNameUpdatedSuccess'))
       setIsEditing(false)
-    } catch (error: any) {
-      toast.error(error?.message || t('failedToUpdateActivityName'))
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('failedToUpdateActivityName'))
       setEditedName(activity.name)
     } finally {
       setIsSavingEdit(false)
@@ -170,8 +172,8 @@ const ActivityElement = ({
         published: !activity.published,
       })
       toast.success(t('activityUpdateSuccess'))
-    } catch (error: any) {
-      toast.error(error?.message || t('updateFailed'))
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('updateFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsUpdatingPublish(false)
@@ -185,8 +187,8 @@ const ActivityElement = ({
       await deleteActivity(activity.activity_uuid)
       toast.success(t('activityDeletedSuccess'))
       setIsDeleteDialogOpen(false)
-    } catch (error: any) {
-      toast.error(error?.message || t('deleteFailed'))
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('deleteFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsDeletingActivity(false)
@@ -394,7 +396,7 @@ const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => 
 
 const ActivityEditButton = ({ activity, course_uuid }: { activity: Activity; course_uuid: string }) => {
   const t = useTranslations('CourseEdit.ActivityElement')
-  const course = useCourse() as any
+  const course = useCourse()
 
   if (activity.activity_type === 'TYPE_DYNAMIC') {
     const editUrl = `${getAbsoluteUrl('')}/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`
