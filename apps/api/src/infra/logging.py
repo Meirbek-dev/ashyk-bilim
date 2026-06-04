@@ -1,7 +1,7 @@
 import logging.config
 import os
 from pathlib import Path
-from typing import Any, override
+from typing import override
 
 from src.infra.settings import AppSettings
 
@@ -18,7 +18,7 @@ _RESET = "\x1b[0m"
 
 
 class ColorFormatter(logging.Formatter):
-    def __init__(self, *args: Any, colorize: bool = True, **kwargs: Any) -> None:
+    def __init__(self, *args: object, colorize: bool = True, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.colorize = colorize and "NO_COLOR" not in os.environ
 
@@ -39,7 +39,7 @@ class ColorFormatter(logging.Formatter):
             record.levelname = levelname
 
 
-def build_logging_config(settings: AppSettings) -> dict[str, Any]:
+def build_logging_config(settings: AppSettings) -> dict[str, object]:
     level = "DEBUG" if settings.general_config.development_mode else "INFO"
     colorize = settings.general_config.color_logs
 

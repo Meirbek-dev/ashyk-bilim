@@ -1,6 +1,5 @@
 import logging
 import uuid
-from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -16,13 +15,13 @@ class ApiFieldError(PydanticStrictBaseModel):
     field: str | None = None
     message: str
     code: str = "invalid"
-    details: dict[str, Any] | None = None
+    details: dict[str, object] | None = None
 
 
 class ApiErrorEnvelope(PydanticStrictBaseModel):
     code: str
     message: str
-    details: dict[str, Any] | list[dict[str, Any]] | None
+    details: dict[str, object] | list[dict[str, object]] | None
     field_errors: list[ApiFieldError]
     request_id: str
 
@@ -51,7 +50,7 @@ def api_error_response(
     status_code: int,
     code: str,
     message: str,
-    details: dict[str, Any] | list[dict[str, Any]] | None = None,
+    details: dict[str, object] | list[dict[str, object]] | None = None,
     field_errors: list[ApiFieldError] | None = None,
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
@@ -70,11 +69,11 @@ def api_error_response(
     )
 
 
-def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, Any]]:
-    sanitized_errors: list[dict[str, Any]] = []
+def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
+    sanitized_errors: list[dict[str, object]] = []
     for error in exc.errors():
         if isinstance(error, dict):
-            sanitized_errors.append({k: v for k, v in error.items() if k != "url"})
+            sanitized_errors.append({str(k): v for k, v in error.items() if k != "url"})
         else:
             sanitized_errors.append({"msg": str(error)})
     return sanitized_errors
@@ -103,7 +102,7 @@ def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]
     return field_errors
 
 
-def _normalize_http_detail(detail: Any) -> tuple[str, str, dict[str, Any] | list[dict[str, Any]] | None]:
+def _normalize_http_detail(detail: object) -> tuple[str, str, dict[str, object] | list[dict[str, object]] | None]:
     if isinstance(detail, dict):
         raw_code = detail.get("code") or detail.get("error_code")
         raw_message = detail.get("message")
@@ -114,9 +113,9 @@ def _normalize_http_detail(detail: Any) -> tuple[str, str, dict[str, Any] | list
         if raw_details is None:
             raw_details = detail.get("detail")
         if isinstance(raw_details, dict):
-            details: dict[str, Any] | list[dict[str, Any]] | None = raw_details
+            details: dict[str, object] | list[dict[str, object]] | None = {str(k): v for k, v in raw_details.items()}
         elif isinstance(raw_details, list) and all(isinstance(item, dict) for item in raw_details):
-            details = raw_details
+            details = [{str(k): v for k, v in item.items()} for item in raw_details]
         else:
             details = None
 
@@ -126,12 +125,12 @@ def _normalize_http_detail(detail: Any) -> tuple[str, str, dict[str, Any] | list
         return "HTTP_ERROR", detail, None
 
     if isinstance(detail, list) and all(isinstance(item, dict) for item in detail):
-        return "HTTP_ERROR", "Request failed", detail
+        return "HTTP_ERROR", "Request failed", [{str(k): v for k, v in item.items()} for item in detail]
 
     return "HTTP_ERROR", str(detail), None
 
 
-def _standard_error_response(description: str = "Error response") -> dict[str, Any]:
+def _standard_error_response(description: str = "Error response") -> dict[str, object]:
     return {
         "description": description,
         "content": {
@@ -143,7 +142,7 @@ def _standard_error_response(description: str = "Error response") -> dict[str, A
 
 
 def _install_openapi_error_schema(app: FastAPI) -> None:
-    def custom_openapi() -> dict[str, Any]:
+    def custom_openapi() -> dict[str, object]:
         if app.openapi_schema:
             return app.openapi_schema
 
@@ -193,7 +192,7 @@ def _install_openapi_error_schema(app: FastAPI) -> None:
 
 def register_exception_handlers(app: FastAPI) -> None:
     # Maps fastapi-users string error codes to structured client-facing errors.
-    fastapi_users_error_map: dict[str, tuple[str, str, dict[str, Any] | None]] = {
+    fastapi_users_error_map: dict[str, tuple[str, str, dict[str, object] | None]] = {
         "REGISTER_USER_ALREADY_EXISTS": (
             "email_taken",
             "\u042d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u0430\u044f \u043f\u043e\u0447\u0442\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442",
@@ -203,7 +202,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(HTTPException)
     def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
-        detail: Any = exc.detail
+        detail: object = exc.detail
         if isinstance(detail, str) and detail in fastapi_users_error_map:
             code, message, details = fastapi_users_error_map[detail]
             return api_error_response(

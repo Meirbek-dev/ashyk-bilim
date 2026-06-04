@@ -2,7 +2,7 @@ import os
 import warnings
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import Any, TypeGuard
+from typing import TypeGuard
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
@@ -25,7 +25,7 @@ def is_mapping(value: object) -> TypeGuard[Mapping[str, object]]:
     return isinstance(value, Mapping)
 
 
-def coerce_date_to_end_of_day(value: Any) -> Any:
+def coerce_date_to_end_of_day(value: object) -> object:
     """Coerce date strings (YYYY-MM-DD) to end-of-day datetimes (UTC)."""
     if isinstance(value, str):
         if len(value) == 10:

@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any
 
-from taskiq import InMemoryBroker, SimpleRetryMiddleware
+from taskiq import AsyncBroker, AsyncResultBackend, InMemoryBroker, SimpleRetryMiddleware
 
 _ENV = os.getenv("ENVIRONMENT", "production")
 _IS_TEST = _ENV == "pytest" or "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
 
 
-def _with_common_middlewares(broker: Any) -> Any:
+def _with_common_middlewares(broker: AsyncBroker) -> AsyncBroker:
     return broker.with_middlewares(
         SimpleRetryMiddleware(
             default_retry_count=3,
@@ -21,7 +20,7 @@ def _with_common_middlewares(broker: Any) -> Any:
     )
 
 
-def _build_broker() -> Any:
+def _build_broker() -> AsyncBroker:
     if _IS_TEST:
         return _with_common_middlewares(InMemoryBroker(await_inplace=True))
 
@@ -34,7 +33,7 @@ def _build_broker() -> Any:
     from src.infra.settings import get_settings
 
     broker_url = get_settings().redis_config.taskiq_broker_url
-    result_backend: Any = RedisAsyncResultBackend(broker_url)
+    result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(broker_url)
 
     return _with_common_middlewares(
         ListQueueBroker(broker_url).with_result_backend(result_backend),

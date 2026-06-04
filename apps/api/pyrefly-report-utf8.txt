@@ -1,0 +1,1537 @@
+ERROR Class member `_ConfiguredJudge0Client.retry_strategy` overrides a member in a parent class but is missing an `@override` decorator [missing-override-decorator]
+   --> src\services\code_execution\service.py:288:9
+    |
+288 |     def retry_strategy(self) -> _BoundedIntervalRetry:
+    |         ^^^^^^^^^^^^^^
+    |
+ERROR `test_chunk_documents_handles_multilingual_text` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+  --> src\tests\test_ai_chunking.py:15:52
+   |
+15 | def test_chunk_documents_handles_multilingual_text(monkeypatch) -> None:
+   |                                                    ^^^^^^^^^^^
+   |
+ERROR `test_embed_texts_caches_by_text_model_and_dimensions` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+ --> src\tests\test_ai_embeddings.py:9:64
+  |
+9 | async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch) -> None:
+  |                                                                ^^^^^^^^^^^
+  |
+ERROR `create` is missing an annotation for parameter `model` [implicit-any-parameter]
+  --> src\tests\test_ai_embeddings.py:13:35
+   |
+13 |         async def create(self, *, model, input, dimensions):  # noqa: A002
+   |                                   ^^^^^
+   |
+ERROR `create` is missing an annotation for parameter `input` [implicit-any-parameter]
+  --> src\tests\test_ai_embeddings.py:13:42
+   |
+13 |         async def create(self, *, model, input, dimensions):  # noqa: A002
+   |                                          ^^^^^
+   |
+ERROR `create` is missing an annotation for parameter `dimensions` [implicit-any-parameter]
+  --> src\tests\test_ai_embeddings.py:13:49
+   |
+13 |         async def create(self, *, model, input, dimensions):  # noqa: A002
+   |                                                 ^^^^^^^^^^
+   |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:123:24
+    |
+123 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:123:44
+    |
+123 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `fake_scope_for` is missing an annotation for parameter `_args` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:137:31
+    |
+137 |     async def fake_scope_for(*_args, **_kwargs):
+    |                               ^^^^^
+    |
+ERROR `fake_scope_for` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:137:40
+    |
+137 |     async def fake_scope_for(*_args, **_kwargs):
+    |                                        ^^^^^^^
+    |
+ERROR `_seed_users` is missing an annotation for parameter `session` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:149:17
+    |
+149 | def _seed_users(session) -> dict[str, User]:
+    |                 ^^^^^^^
+    |
+ERROR `_seed_course_stack` is missing an annotation for parameter `session` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:223:5
+    |
+223 |     session,
+    |     ^^^^^^^
+    |
+ERROR `_make_context_for_manual_assessment` is missing an annotation for parameter `session` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:301:41
+    |
+301 | def _make_context_for_manual_assessment(session, assessment_id: int) -> AnalyticsContext:
+    |                                         ^^^^^^^
+    |
+ERROR `_make_context_for_quiz` is missing an annotation for parameter `session` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:342:28
+    |
+342 | def _make_context_for_quiz(session) -> AnalyticsContext:
+    |                            ^^^^^^^
+    |
+ERROR `test_manual_assessment_detail_endpoint_returns_operational_fields` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:472:5
+    |
+472 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_quiz_detail_endpoint_uses_canonical_submission_rows` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_analytics_assessment_detail_api.py:659:5
+    |
+659 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+  --> src\tests\test_analytics_saved_views_api.py:80:24
+   |
+80 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                        ^^^^^^^^^^^^^^^^^^
+   |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+  --> src\tests\test_analytics_saved_views_api.py:80:44
+   |
+80 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                                            ^^^^^^^^^^^^
+   |
+ERROR `fake_scope_for` is missing an annotation for parameter `_args` [implicit-any-parameter]
+  --> src\tests\test_analytics_saved_views_api.py:94:31
+   |
+94 |     async def fake_scope_for(*_args, **_kwargs):
+   |                               ^^^^^
+   |
+ERROR `fake_scope_for` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+  --> src\tests\test_analytics_saved_views_api.py:94:40
+   |
+94 |     async def fake_scope_for(*_args, **_kwargs):
+   |                                        ^^^^^^^
+   |
+ERROR `test_teacher_saved_views_lifecycle` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_analytics_saved_views_api.py:106:64
+    |
+106 | def test_teacher_saved_views_lifecycle(api_client: TestClient, db_session_factory) -> None:
+    |                                                                ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_teacher_interventions_lifecycle` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_analytics_saved_views_api.py:149:66
+    |
+149 | def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_factory) -> None:
+    |                                                                  ^^^^^^^^^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_analytics_saved_views_api.py:184:20
+    |
+184 |         "payload": {},
+    |                    ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+  --> src\tests\test_assessment_access_api.py:96:24
+   |
+96 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                        ^^^^^^^^^^^^^^^^^^
+   |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+  --> src\tests\test_assessment_access_api.py:96:44
+   |
+96 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                                            ^^^^^^^^^^^^
+   |
+ERROR `test_restricted_access_narrows_course_learners` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_access_api.py:115:52
+    |
+115 | def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch) -> None:
+    |                                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_restricted_access_narrows_course_learners` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_access_api.py:115:72
+    |
+115 | def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch) -> None:
+    |                                                                        ^^^^^^^^^^
+    |
+ERROR `test_restricted_access_narrows_course_learners` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_access_api.py:115:84
+    |
+115 | def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch) -> None:
+    |                                                                                    ^^^^^^^^^^^
+    |
+ERROR `test_course_author_can_test_after_previous_attempt_when_access_restricted` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_access_api.py:144:5
+    |
+144 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `_seed_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_access_api.py:205:22
+    |
+205 | def _seed_assessment(db_session_factory) -> tuple[str, int]:
+    |                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:144:24
+    |
+144 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:144:44
+    |
+144 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `_seed_course_and_chapter` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:175:30
+    |
+175 | def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
+    |                              ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `_seed_published_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:229:32
+    |
+229 | def _seed_published_assessment(db_session_factory) -> str:
+    |                                ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_assessment_returns_items` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:317:39
+    |
+317 | def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
+    |                                       ^^^^^^^^^^
+    |
+ERROR `test_get_assessment_returns_items` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:317:51
+    |
+317 | def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
+    |                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_assessment_404_for_unknown` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:331:41
+    |
+331 | def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
+    |                                         ^^^^^^^^^^
+    |
+ERROR `test_get_assessment_404_for_unknown` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:331:53
+    |
+331 | def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
+    |                                                     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_create_assessment_seeds_draft_and_policy` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:345:51
+    |
+345 | def test_create_assessment_seeds_draft_and_policy(api_client, db_session_factory) -> None:
+    |                                                   ^^^^^^^^^^
+    |
+ERROR `test_create_assessment_seeds_draft_and_policy` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:345:63
+    |
+345 | def test_create_assessment_seeds_draft_and_policy(api_client, db_session_factory) -> None:
+    |                                                               ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_create_assessment_unknown_course_returns_404` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:368:55
+    |
+368 | def test_create_assessment_unknown_course_returns_404(api_client, db_session_factory) -> None:
+    |                                                       ^^^^^^^^^^
+    |
+ERROR `test_create_assessment_unknown_course_returns_404` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:368:67
+    |
+368 | def test_create_assessment_unknown_course_returns_404(api_client, db_session_factory) -> None:
+    |                                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_create_file_submission_activity_is_first_class` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:390:57
+    |
+390 | def test_create_file_submission_activity_is_first_class(api_client, db_session_factory) -> None:
+    |                                                         ^^^^^^^^^^
+    |
+ERROR `test_create_file_submission_activity_is_first_class` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:390:69
+    |
+390 | def test_create_file_submission_activity_is_first_class(api_client, db_session_factory) -> None:
+    |                                                                     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_update_assessment_metadata` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:430:37
+    |
+430 | def test_update_assessment_metadata(api_client, db_session_factory) -> None:
+    |                                     ^^^^^^^^^^
+    |
+ERROR `test_update_assessment_metadata` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:430:49
+    |
+430 | def test_update_assessment_metadata(api_client, db_session_factory) -> None:
+    |                                                 ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_update_assessment_policy_max_attempts` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:448:48
+    |
+448 | def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -> None:
+    |                                                ^^^^^^^^^^
+    |
+ERROR `test_update_assessment_policy_max_attempts` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:448:60
+    |
+448 | def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -> None:
+    |                                                            ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_add_item_to_assessment` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:468:33
+    |
+468 | def test_add_item_to_assessment(api_client, db_session_factory) -> None:
+    |                                 ^^^^^^^^^^
+    |
+ERROR `test_add_item_to_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:468:45
+    |
+468 | def test_add_item_to_assessment(api_client, db_session_factory) -> None:
+    |                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_unknown_item_kinds_are_rejected_for_assessments` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:498:58
+    |
+498 | def test_unknown_item_kinds_are_rejected_for_assessments(api_client, db_session_factory) -> None:
+    |                                                          ^^^^^^^^^^
+    |
+ERROR `test_unknown_item_kinds_are_rejected_for_assessments` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:498:70
+    |
+498 | def test_unknown_item_kinds_are_rejected_for_assessments(api_client, db_session_factory) -> None:
+    |                                                                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_update_item_title` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:521:28
+    |
+521 | def test_update_item_title(api_client, db_session_factory) -> None:
+    |                            ^^^^^^^^^^
+    |
+ERROR `test_update_item_title` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:521:40
+    |
+521 | def test_update_item_title(api_client, db_session_factory) -> None:
+    |                                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_delete_item_removes_from_assessment` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:537:46
+    |
+537 | def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> None:
+    |                                              ^^^^^^^^^^
+    |
+ERROR `test_delete_item_removes_from_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:537:58
+    |
+537 | def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> None:
+    |                                                          ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_add_multiple_items_preserves_order` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:552:45
+    |
+552 | def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> None:
+    |                                             ^^^^^^^^^^
+    |
+ERROR `test_add_multiple_items_preserves_order` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:552:57
+    |
+552 | def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> None:
+    |                                                         ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_reorder_items_changes_order` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:603:38
+    |
+603 | def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
+    |                                      ^^^^^^^^^^
+    |
+ERROR `test_reorder_items_changes_order` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:603:50
+    |
+603 | def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
+    |                                                  ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_draft_to_published` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:651:50
+    |
+651 | def test_lifecycle_transition_draft_to_published(api_client, db_session_factory) -> None:
+    |                                                  ^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_draft_to_published` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:651:62
+    |
+651 | def test_lifecycle_transition_draft_to_published(api_client, db_session_factory) -> None:
+    |                                                              ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_published_to_archived` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:697:53
+    |
+697 | def test_lifecycle_transition_published_to_archived(api_client, db_session_factory) -> None:
+    |                                                     ^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_published_to_archived` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:697:65
+    |
+697 | def test_lifecycle_transition_published_to_archived(api_client, db_session_factory) -> None:
+    |                                                                 ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_invalid_returns_422` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:711:51
+    |
+711 | def test_lifecycle_transition_invalid_returns_422(api_client, db_session_factory) -> None:
+    |                                                   ^^^^^^^^^^
+    |
+ERROR `test_lifecycle_transition_invalid_returns_422` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:711:63
+    |
+711 | def test_lifecycle_transition_invalid_returns_422(api_client, db_session_factory) -> None:
+    |                                                               ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_readiness_check_passes_for_complete_assessment` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:729:57
+    |
+729 | def test_readiness_check_passes_for_complete_assessment(api_client, db_session_factory) -> None:
+    |                                                         ^^^^^^^^^^
+    |
+ERROR `test_readiness_check_passes_for_complete_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:729:69
+    |
+729 | def test_readiness_check_passes_for_complete_assessment(api_client, db_session_factory) -> None:
+    |                                                                     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_readiness_check_flags_missing_items` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:741:46
+    |
+741 | def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> None:
+    |                                              ^^^^^^^^^^
+    |
+ERROR `test_readiness_check_flags_missing_items` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:741:58
+    |
+741 | def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> None:
+    |                                                          ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_policy_preset_manual_assessment_has_defaults` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:771:55
+    |
+771 | def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+    |                                                       ^^^^^^^^^^
+    |
+ERROR `test_policy_preset_manual_assessment_has_defaults` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_authoring_lifecycle.py:771:67
+    |
+771 | def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+    |                                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `_make_api_client` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:148:22
+    |
+148 | def _make_api_client(db_session_factory, user: PublicUser, monkeypatch) -> TestClient:
+    |                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `_make_api_client` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:148:60
+    |
+148 | def _make_api_client(db_session_factory, user: PublicUser, monkeypatch) -> TestClient:
+    |                                                            ^^^^^^^^^^^
+    |
+ERROR `_seed_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:172:22
+    |
+172 | def _seed_assessment(db_session_factory) -> tuple[str, int]:
+    |                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_returns_attempt_state` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:299:42
+    |
+299 |     def test_returns_attempt_state(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                          ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_returns_attempt_state` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:299:62
+    |
+299 |     def test_returns_attempt_state(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                                              ^^^^^^^^^^^^
+    |
+ERROR `test_returns_attempt_state` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:299:76
+    |
+299 |     def test_returns_attempt_state(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                            ^^^^^^^^^^^
+    |
+ERROR `test_404_for_unknown_uuid` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:313:41
+    |
+313 |     def test_404_for_unknown_uuid(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                         ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_404_for_unknown_uuid` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:313:61
+    |
+313 |     def test_404_for_unknown_uuid(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                                             ^^^^^^^^^^^^
+    |
+ERROR `test_404_for_unknown_uuid` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:313:75
+    |
+313 |     def test_404_for_unknown_uuid(self, db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                           ^^^^^^^^^^^
+    |
+ERROR `test_returns_preset_for_kind` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:326:44
+    |
+326 |     def test_returns_preset_for_kind(self, db_session_factory, teacher_user, monkeypatch, kind) -> None:
+    |                                            ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_returns_preset_for_kind` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:326:64
+    |
+326 |     def test_returns_preset_for_kind(self, db_session_factory, teacher_user, monkeypatch, kind) -> None:
+    |                                                                ^^^^^^^^^^^^
+    |
+ERROR `test_returns_preset_for_kind` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:326:78
+    |
+326 |     def test_returns_preset_for_kind(self, db_session_factory, teacher_user, monkeypatch, kind) -> None:
+    |                                                                              ^^^^^^^^^^^
+    |
+ERROR `test_returns_preset_for_kind` is missing an annotation for parameter `kind` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:326:91
+    |
+326 |     def test_returns_preset_for_kind(self, db_session_factory, teacher_user, monkeypatch, kind) -> None:
+    |                                                                                           ^^^^
+    |
+ERROR `test_404_for_unknown_kind` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:335:41
+    |
+335 |     def test_404_for_unknown_kind(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                         ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_404_for_unknown_kind` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:335:61
+    |
+335 |     def test_404_for_unknown_kind(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                             ^^^^^^^^^^^^
+    |
+ERROR `test_404_for_unknown_kind` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:335:75
+    |
+335 |     def test_404_for_unknown_kind(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                           ^^^^^^^^^^^
+    |
+ERROR `test_list_empty` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:345:31
+    |
+345 |     def test_list_empty(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                               ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_list_empty` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:345:51
+    |
+345 |     def test_list_empty(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                   ^^^^^^^^^^^^
+    |
+ERROR `test_list_empty` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:345:65
+    |
+345 |     def test_list_empty(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                 ^^^^^^^^^^^
+    |
+ERROR `test_create_override` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:353:36
+    |
+353 |     def test_create_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_create_override` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:353:56
+    |
+353 |     def test_create_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                        ^^^^^^^^^^^^
+    |
+ERROR `test_create_override` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:353:70
+    |
+353 |     def test_create_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                      ^^^^^^^^^^^
+    |
+ERROR `test_list_after_create` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:369:38
+    |
+369 |     def test_list_after_create(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_list_after_create` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:369:58
+    |
+369 |     def test_list_after_create(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                          ^^^^^^^^^^^^
+    |
+ERROR `test_list_after_create` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:369:72
+    |
+369 |     def test_list_after_create(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                        ^^^^^^^^^^^
+    |
+ERROR `test_update_override` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:381:36
+    |
+381 |     def test_update_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_update_override` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:381:56
+    |
+381 |     def test_update_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                        ^^^^^^^^^^^^
+    |
+ERROR `test_update_override` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:381:70
+    |
+381 |     def test_update_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                      ^^^^^^^^^^^
+    |
+ERROR `test_delete_override` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:396:36
+    |
+396 |     def test_delete_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_delete_override` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:396:56
+    |
+396 |     def test_delete_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                        ^^^^^^^^^^^^
+    |
+ERROR `test_delete_override` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:396:70
+    |
+396 |     def test_delete_override(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                      ^^^^^^^^^^^
+    |
+ERROR `test_404_assessment_not_found` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:407:45
+    |
+407 |     def test_404_assessment_not_found(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_404_assessment_not_found` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:407:65
+    |
+407 |     def test_404_assessment_not_found(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                 ^^^^^^^^^^^^
+    |
+ERROR `test_404_assessment_not_found` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_new_endpoints_api.py:407:79
+    |
+407 |     def test_404_assessment_not_found(self, db_session_factory, teacher_user, monkeypatch) -> None:
+    |                                                                               ^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:114:24
+    |
+114 | def api_client_fixture(db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:114:44
+    |
+114 | def api_client_fixture(db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `_seed_base` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:135:16
+    |
+135 | def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
+    |                ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_canonical_student_me_masks_unpublished_batch_grade` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:266:5
+    |
+266 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_is_blocked_when_assessment_is_not_published` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:324:5
+    |
+324 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_activity_lookup_does_not_create_canonical_assessment_rows` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:336:5
+    |
+336 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_published_assessment_with_submissions_rejects_item_edits` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_phase0_contract_api.py:409:5
+    |
+409 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:101:24
+    |
+101 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:101:44
+    |
+101 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `_seed_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:120:5
+    |
+120 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR Cannot determine the type parameter `_KT` for generic class `dict` [implicit-any-type-argument]
+   --> src\tests\test_assessment_readiness_api.py:125:20
+    |
+125 |     policy_kwargs: dict | None = None,
+    |                    ^^^^
+    |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_VT` for generic class `dict` [implicit-any-type-argument]
+   --> src\tests\test_assessment_readiness_api.py:125:20
+    |
+125 |     policy_kwargs: dict | None = None,
+    |                    ^^^^
+    |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_KT` for generic class `dict` [implicit-any-type-argument]
+   --> src\tests\test_assessment_readiness_api.py:126:17
+    |
+126 |     items: list[dict] | None = None,
+    |                 ^^^^
+    |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_VT` for generic class `dict` [implicit-any-type-argument]
+   --> src\tests\test_assessment_readiness_api.py:126:17
+    |
+126 |     items: list[dict] | None = None,
+    |                 ^^^^
+    |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_assessment_readiness_api.py:243:47
+    |
+243 |         for index, item in enumerate(items or [], start=1):
+    |                                               ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `test_readiness_endpoint_returns_new_policy_and_item_codes` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:263:5
+    |
+263 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:342:5
+    |
+342 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:385:5
+    |
+385 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_exam_item_create_rejects_unsupported_runtime_kind` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:430:5
+    |
+430 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_item_metadata_is_persisted_on_create_and_patch` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:460:5
+    |
+460 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_validate_code_challenge_endpoint` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:524:5
+    |
+524 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_validate_code_challenge_endpoint` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:525:5
+    |
+525 |     monkeypatch,
+    |     ^^^^^^^^^^^
+    |
+ERROR This expression is implicitly inferred to be `Any | None`. Please provide an explicit type annotation. [implicit-any-attribute]
+   --> src\tests\test_assessment_readiness_api.py:569:34
+    |
+569 |             self.error_message = None
+    |                                  ^^^^
+    |
+ERROR `mock_run` is missing an annotation for parameter `args` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:592:25
+    |
+592 |     async def mock_run(*args, **kwargs):
+    |                         ^^^^
+    |
+ERROR `mock_run` is missing an annotation for parameter `kwargs` [implicit-any-parameter]
+   --> src\tests\test_assessment_readiness_api.py:592:33
+    |
+592 |     async def mock_run(*args, **kwargs):
+    |                                 ^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:107:24
+    |
+107 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:107:44
+    |
+107 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `seeded_review_data_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:141:32
+    |
+141 | def seeded_review_data_fixture(db_session_factory):
+    |                                ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_review_projection_exposes_native_queue_defaults` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:485:5
+    |
+485 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_queue_supports_review_filters_and_sorting` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:506:5
+    |
+506 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_stats_aggregate_non_draft_review_counts` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:548:5
+    |
+548 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_detail_is_scoped_and_hydrates_breakdown` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:566:5
+    |
+566 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_grade_save_honors_if_match` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:598:5
+    |
+598 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_publish_transition_updates_state_and_ledger` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:623:5
+    |
+623 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_publish_transition_updates_state_and_ledger` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:624:5
+    |
+624 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_return_flow_supports_pending_and_graded_states` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:674:5
+    |
+674 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_assessment_submission_return_flow_supports_pending_and_graded_states` is missing an annotation for parameter `seeded_review_data` [implicit-any-parameter]
+   --> src\tests\test_assessment_review_api.py:675:5
+    |
+675 |     seeded_review_data,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_code_execution_persists_visible_and_masks_hidden_results` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:45:73
+   |
+45 | async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch, db_session) -> None:
+   |                                                                         ^^^^^^^^^^^
+   |
+ERROR `test_code_execution_persists_visible_and_masks_hidden_results` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:45:86
+   |
+45 | async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch, db_session) -> None:
+   |                                                                                      ^^^^^^^^^^
+   |
+ERROR `fake_run` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:46:20
+   |
+46 |     def fake_run(**_kwargs) -> list[SimpleNamespace]:
+   |                    ^^^^^^^
+   |
+ERROR `test_code_execution_reuses_idempotent_run` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:96:53
+   |
+96 | async def test_code_execution_reuses_idempotent_run(monkeypatch, db_session) -> None:
+   |                                                     ^^^^^^^^^^^
+   |
+ERROR `test_code_execution_reuses_idempotent_run` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:96:66
+   |
+96 | async def test_code_execution_reuses_idempotent_run(monkeypatch, db_session) -> None:
+   |                                                                  ^^^^^^^^^^
+   |
+ERROR `fake_run` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+  --> src\tests\test_code_execution_service.py:99:20
+   |
+99 |     def fake_run(**_kwargs) -> list[SimpleNamespace]:
+   |                    ^^^^^^^
+   |
+ERROR `test_code_execution_retries_failed_idempotent_run` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:138:61
+    |
+138 | async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_session) -> None:
+    |                                                             ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_retries_failed_idempotent_run` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:138:74
+    |
+138 | async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_session) -> None:
+    |                                                                          ^^^^^^^^^^
+    |
+ERROR `fake_run` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:141:20
+    |
+141 |     def fake_run(**_kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^^
+    |
+ERROR `test_code_execution_truncates_output_and_passes_sandbox_policy` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:193:74
+    |
+193 | async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeypatch, db_session) -> None:
+    |                                                                          ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_truncates_output_and_passes_sandbox_policy` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:193:87
+    |
+193 | async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeypatch, db_session) -> None:
+    |                                                                                       ^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_code_execution_service.py:194:23
+    |
+194 |     captured_kwargs = {}
+    |                       ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `fake_run` is missing an annotation for parameter `kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:197:20
+    |
+197 |     def fake_run(**kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^
+    |
+ERROR `test_code_execution_raises_jvm_sandbox_limits` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:250:57
+    |
+250 | async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch, db_session) -> None:
+    |                                                         ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_raises_jvm_sandbox_limits` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:250:70
+    |
+250 | async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch, db_session) -> None:
+    |                                                                      ^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_code_execution_service.py:251:23
+    |
+251 |     captured_kwargs = {}
+    |                       ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `fake_run` is missing an annotation for parameter `kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:253:20
+    |
+253 |     def fake_run(**kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^
+    |
+ERROR `test_code_execution_raises_go_sandbox_limits` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:287:56
+    |
+287 | async def test_code_execution_raises_go_sandbox_limits(monkeypatch, db_session) -> None:
+    |                                                        ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_raises_go_sandbox_limits` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:287:69
+    |
+287 | async def test_code_execution_raises_go_sandbox_limits(monkeypatch, db_session) -> None:
+    |                                                                     ^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_code_execution_service.py:288:23
+    |
+288 |     captured_kwargs = {}
+    |                       ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `fake_run` is missing an annotation for parameter `kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:290:20
+    |
+290 |     def fake_run(**kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^
+    |
+ERROR `test_code_execution_sets_kotlin_compiler_jvm_options` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:323:64
+    |
+323 | async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch, db_session) -> None:
+    |                                                                ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_sets_kotlin_compiler_jvm_options` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:323:77
+    |
+323 | async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch, db_session) -> None:
+    |                                                                             ^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_code_execution_service.py:324:23
+    |
+324 |     captured_kwargs = {}
+    |                       ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `fake_run` is missing an annotation for parameter `kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:326:20
+    |
+326 |     def fake_run(**kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^
+    |
+ERROR `test_code_execution_with_different_source_code_and_hash_in_key` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:459:74
+    |
+459 | async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session) -> None:
+    |                                                                          ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_with_different_source_code_and_hash_in_key` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:459:87
+    |
+459 | async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session) -> None:
+    |                                                                                       ^^^^^^^^^^
+    |
+ERROR `fake_run` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:462:20
+    |
+462 |     def fake_run(**_kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^^
+    |
+ERROR `test_code_execution_match_modes` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:537:43
+    |
+537 | async def test_code_execution_match_modes(monkeypatch, db_session) -> None:
+    |                                           ^^^^^^^^^^^
+    |
+ERROR `test_code_execution_match_modes` is missing an annotation for parameter `db_session` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:537:56
+    |
+537 | async def test_code_execution_match_modes(monkeypatch, db_session) -> None:
+    |                                                        ^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\tests\test_code_execution_service.py:538:15
+    |
+538 |     outputs = []
+    |               ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR `fake_run` is missing an annotation for parameter `_kwargs` [implicit-any-parameter]
+   --> src\tests\test_code_execution_service.py:540:20
+    |
+540 |     def fake_run(**_kwargs) -> list[SimpleNamespace]:
+    |                    ^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+  --> src\tests\test_collections_api.py:71:24
+   |
+71 | def api_client_fixture(db_session_factory, test_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                        ^^^^^^^^^^^^^^^^^^
+   |
+ERROR `api_client_fixture` is missing an annotation for parameter `test_user` [implicit-any-parameter]
+  --> src\tests\test_collections_api.py:71:44
+   |
+71 | def api_client_fixture(db_session_factory, test_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+   |                                            ^^^^^^^^^
+   |
+ERROR `test_collections_list_returns_full_course_objects` is missing an annotation for parameter `api_client` [implicit-any-parameter]
+  --> src\tests\test_collections_api.py:92:55
+   |
+92 | def test_collections_list_returns_full_course_objects(api_client, db_session_factory) -> None:
+   |                                                       ^^^^^^^^^^
+   |
+ERROR `test_collections_list_returns_full_course_objects` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+  --> src\tests\test_collections_api.py:92:67
+   |
+92 | def test_collections_list_returns_full_course_objects(api_client, db_session_factory) -> None:
+   |                                                                   ^^^^^^^^^^^^^^^^^^
+   |
+ERROR `_make_app` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+  --> src\tests\test_file_submissions.py:86:15
+   |
+86 | def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+   |               ^^^^^^^^^^^^^^^^^^
+   |
+ERROR `_make_app` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+  --> src\tests\test_file_submissions.py:86:61
+   |
+86 | def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+   |                                                             ^^^^^^^^^^^
+   |
+ERROR `_seed_file_submission` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:110:5
+    |
+110 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:205:61
+    |
+205 | def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:205:81
+    |
+205 | def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                 ^^^^^^^^^^^^
+    |
+ERROR `test_start_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:205:95
+    |
+205 | def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                               ^^^^^^^^^^^
+    |
+ERROR `test_save_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:245:60
+    |
+245 | def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                            ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_save_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:245:80
+    |
+245 | def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                ^^^^^^^^^^^^
+    |
+ERROR `test_save_draft_when_returned_and_max_attempts_reached` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:245:94
+    |
+245 | def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                              ^^^^^^^^^^^
+    |
+ERROR `test_submit_when_returned_and_max_attempts_reached` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:283:56
+    |
+283 | def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_submit_when_returned_and_max_attempts_reached` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:283:76
+    |
+283 | def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                            ^^^^^^^^^^^^
+    |
+ERROR `test_submit_when_returned_and_max_attempts_reached` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:283:90
+    |
+283 | def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                          ^^^^^^^^^^^
+    |
+ERROR `emit` is missing an annotation for parameter `event` [implicit-any-parameter]
+   --> src\tests\test_file_submissions.py:349:30
+    |
+349 |         async def emit(self, event) -> None:
+    |                              ^^^^^
+    |
+ERROR `__init__` is missing an annotation for parameter `server_addr` [implicit-any-parameter]
+  --> src\tests\test_link_preview.py:21:24
+   |
+21 |     def __init__(self, server_addr) -> None:
+   |                        ^^^^^^^^^^^
+   |
+ERROR `test_link_preview_memory_cache_avoids_repeated_work` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_link_preview.py:117:63
+    |
+117 | async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch) -> None:
+    |                                                               ^^^^^^^^^^^
+    |
+ERROR `test_settings_parse_security_and_cors` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+ --> src\tests\test_settings_config.py:6:43
+  |
+6 | def test_settings_parse_security_and_cors(monkeypatch) -> None:
+  |                                           ^^^^^^^^^^^
+  |
+ERROR `test_secret_values_are_masked_in_model_dump` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+  --> src\tests\test_settings_config.py:30:49
+   |
+30 | def test_secret_values_are_masked_in_model_dump(monkeypatch) -> None:
+   |                                                 ^^^^^^^^^^^
+   |
+ERROR `_make_app` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:163:15
+    |
+163 | def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+    |               ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `_make_app` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:163:61
+    |
+163 | def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+    |                                                             ^^^^^^^^^^^
+    |
+ERROR `_seed_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:198:5
+    |
+198 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_submission_creates_draft` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:342:41
+    |
+342 | def test_start_submission_creates_draft(db_session_factory, student_user, monkeypatch) -> None:
+    |                                         ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_submission_creates_draft` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:342:61
+    |
+342 | def test_start_submission_creates_draft(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                             ^^^^^^^^^^^^
+    |
+ERROR `test_start_submission_creates_draft` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:342:75
+    |
+342 | def test_start_submission_creates_draft(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                           ^^^^^^^^^^^
+    |
+ERROR `test_start_submission_is_idempotent` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:359:41
+    |
+359 | def test_start_submission_is_idempotent(db_session_factory, student_user, monkeypatch) -> None:
+    |                                         ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_submission_is_idempotent` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:359:61
+    |
+359 | def test_start_submission_is_idempotent(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                             ^^^^^^^^^^^^
+    |
+ERROR `test_start_submission_is_idempotent` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:359:75
+    |
+359 | def test_start_submission_is_idempotent(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                           ^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_assessment_not_published` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:384:54
+    |
+384 | def test_start_blocked_when_assessment_not_published(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_assessment_not_published` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:384:74
+    |
+384 | def test_start_blocked_when_assessment_not_published(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                          ^^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_assessment_not_published` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:384:88
+    |
+384 | def test_start_blocked_when_assessment_not_published(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                        ^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_max_attempts_exhausted` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:396:52
+    |
+396 | def test_start_blocked_when_max_attempts_exhausted(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_max_attempts_exhausted` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:396:72
+    |
+396 | def test_start_blocked_when_max_attempts_exhausted(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                        ^^^^^^^^^^^^
+    |
+ERROR `test_start_blocked_when_max_attempts_exhausted` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:396:86
+    |
+396 | def test_start_blocked_when_max_attempts_exhausted(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                      ^^^^^^^^^^^
+    |
+ERROR `test_snapshot_submission_stores_items_as_dict` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:429:51
+    |
+429 | def test_snapshot_submission_stores_items_as_dict(db_session_factory, student_user) -> None:
+    |                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_snapshot_submission_stores_items_as_dict` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:429:71
+    |
+429 | def test_snapshot_submission_stores_items_as_dict(db_session_factory, student_user) -> None:
+    |                                                                       ^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_returns_own_submissions` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:465:53
+    |
+465 | def test_get_my_submissions_returns_own_submissions(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_returns_own_submissions` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:465:73
+    |
+465 | def test_get_my_submissions_returns_own_submissions(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                         ^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_returns_own_submissions` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:465:87
+    |
+465 | def test_get_my_submissions_returns_own_submissions(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                       ^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_masks_score_when_batch_mode_unpublished` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:523:5
+    |
+523 |     db_session_factory, student_user, monkeypatch
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_masks_score_when_batch_mode_unpublished` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:523:25
+    |
+523 |     db_session_factory, student_user, monkeypatch
+    |                         ^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_masks_score_when_batch_mode_unpublished` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:523:39
+    |
+523 |     db_session_factory, student_user, monkeypatch
+    |                                       ^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_shows_score_after_immediate_publish` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:583:65
+    |
+583 | def test_get_my_submissions_shows_score_after_immediate_publish(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                 ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_shows_score_after_immediate_publish` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:583:85
+    |
+583 | def test_get_my_submissions_shows_score_after_immediate_publish(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                     ^^^^^^^^^^^^
+    |
+ERROR `test_get_my_submissions_shows_score_after_immediate_publish` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:583:99
+    |
+583 | def test_get_my_submissions_shows_score_after_immediate_publish(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                                   ^^^^^^^^^^^
+    |
+ERROR `test_get_assessment_returns_404_for_unknown_uuid` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:643:54
+    |
+643 | def test_get_assessment_returns_404_for_unknown_uuid(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                      ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_assessment_returns_404_for_unknown_uuid` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:643:74
+    |
+643 | def test_get_assessment_returns_404_for_unknown_uuid(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                          ^^^^^^^^^^^^
+    |
+ERROR `test_get_assessment_returns_404_for_unknown_uuid` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:643:88
+    |
+643 | def test_get_assessment_returns_404_for_unknown_uuid(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                        ^^^^^^^^^^^
+    |
+ERROR `test_resubmission_draft_created_from_returned` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:659:51
+    |
+659 | def test_resubmission_draft_created_from_returned(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_resubmission_draft_created_from_returned` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:659:71
+    |
+659 | def test_resubmission_draft_created_from_returned(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                       ^^^^^^^^^^^^
+    |
+ERROR `test_resubmission_draft_created_from_returned` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:659:85
+    |
+659 | def test_resubmission_draft_created_from_returned(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                     ^^^^^^^^^^^
+    |
+ERROR `test_attempt_limit_prevents_resubmission` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:692:46
+    |
+692 | def test_attempt_limit_prevents_resubmission(db_session_factory, student_user, monkeypatch) -> None:
+    |                                              ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_attempt_limit_prevents_resubmission` is missing an annotation for parameter `student_user` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:692:66
+    |
+692 | def test_attempt_limit_prevents_resubmission(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                  ^^^^^^^^^^^^
+    |
+ERROR `test_attempt_limit_prevents_resubmission` is missing an annotation for parameter `monkeypatch` [implicit-any-parameter]
+   --> src\tests\test_student_submission_workflow.py:692:80
+    |
+692 | def test_attempt_limit_prevents_resubmission(db_session_factory, student_user, monkeypatch) -> None:
+    |                                                                                ^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:117:24
+    |
+117 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `api_client_fixture` is missing an annotation for parameter `teacher_user` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:117:44
+    |
+117 | def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    |                                            ^^^^^^^^^^^^
+    |
+ERROR `_seed_course_and_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:149:5
+    |
+149 |     db_session_factory,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_returns_all_for_assessment` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:338:77
+    |
+338 | def test_get_submissions_returns_all_for_assessment(api_client: TestClient, db_session_factory) -> None:
+    |                                                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_filters_by_status` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:352:68
+    |
+352 | def test_get_submissions_filters_by_status(api_client: TestClient, db_session_factory) -> None:
+    |                                                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_needs_grading_virtual_filter` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:365:79
+    |
+365 | def test_get_submissions_needs_grading_virtual_filter(api_client: TestClient, db_session_factory) -> None:
+    |                                                                               ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_search_by_name` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:379:65
+    |
+379 | def test_get_submissions_search_by_name(api_client: TestClient, db_session_factory) -> None:
+    |                                                                 ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_invalid_status_returns_400` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:391:77
+    |
+391 | def test_get_submissions_invalid_status_returns_400(api_client: TestClient, db_session_factory) -> None:
+    |                                                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submissions_pagination` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:403:61
+    |
+403 | def test_get_submissions_pagination(api_client: TestClient, db_session_factory) -> None:
+    |                                                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submission_stats_reflects_seeded_data` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:433:76
+    |
+433 | def test_get_submission_stats_reflects_seeded_data(api_client: TestClient, db_session_factory) -> None:
+    |                                                                            ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submission_stats_includes_avg_score` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:446:74
+    |
+446 | def test_get_submission_stats_includes_avg_score(api_client: TestClient, db_session_factory) -> None:
+    |                                                                          ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submission_detail_returns_answers` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:463:72
+    |
+463 | def test_get_submission_detail_returns_answers(api_client: TestClient, db_session_factory) -> None:
+    |                                                                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_get_submission_detail_404_for_unknown` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:476:72
+    |
+476 | def test_get_submission_detail_404_for_unknown(api_client: TestClient, db_session_factory) -> None:
+    |                                                                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_save_grade_transitions_to_graded` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:490:67
+    |
+490 | def test_save_grade_transitions_to_graded(api_client: TestClient, db_session_factory) -> None:
+    |                                                                   ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_save_grade_and_publish_immediately` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:505:69
+    |
+505 | def test_save_grade_and_publish_immediately(api_client: TestClient, db_session_factory) -> None:
+    |                                                                     ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_published_grade_correction_stays_published_and_adds_audit_revision` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:521:29
+    |
+521 |     api_client: TestClient, db_session_factory
+    |                             ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_published_grade_cannot_be_returned_for_hidden_correction` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:559:91
+    |
+559 | def test_published_grade_cannot_be_returned_for_hidden_correction(api_client: TestClient, db_session_factory) -> None:
+    |                                                                                           ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_save_grade_return_for_revision` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:577:65
+    |
+577 | def test_save_grade_return_for_revision(api_client: TestClient, db_session_factory) -> None:
+    |                                                                 ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_save_grade_404_for_unknown_submission` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:594:72
+    |
+594 | def test_save_grade_404_for_unknown_submission(api_client: TestClient, db_session_factory) -> None:
+    |                                                                        ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_bulk_publish_grades_stamps_published_at` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:611:74
+    |
+611 | def test_bulk_publish_grades_stamps_published_at(api_client: TestClient, db_session_factory) -> None:
+    |                                                                          ^^^^^^^^^^^^^^^^^^
+    |
+ERROR `test_bulk_publish_returns_zero_when_nothing_to_publish` is missing an annotation for parameter `db_session_factory` [implicit-any-parameter]
+   --> src\tests\test_teacher_grading_workflow.py:655:84
+    |
+655 | def test_bulk_publish_returns_zero_when_nothing_to_publish(api_client: TestClient, db_session_factory) -> None:
+    |                                                                                    ^^^^^^^^^^^^^^^^^^
+    |
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+  --> src\tests\test_upload_validation_fix.py:38:25
+   |
+38 |         "finalized_at": None,
+   |                         ^^^^
+   |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+  --> src\tests\test_upload_validation_fix.py:61:25
+   |
+61 |         "finalized_at": None,
+   |                         ^^^^
+   |
+  Consider adding a type annotation or initializing with a non-empty value

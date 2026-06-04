@@ -1,12 +1,131 @@
-error[ANN201]: Missing return type annotation for public function `get_user_manager`
-  --> src\auth\manager.py:75:11
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_literal_assignment`
+  --> scripts\check_migration_graph.py:19:59
    |
-75 | async def get_user_manager(user_db: Annotated[Any | None, Depends(get_user_db)] = None):
-   |           ^^^^^^^^^^^^^^^^
-76 |     assert user_db is not None
-77 |     yield UserManager(user_db)
+19 | def _literal_assignment(module: ast.Module, name: str) -> Any | None:
+   |                                                           ^^^^^^^^^^
+20 |     for node in module.body:
+21 |         value: ast.expr | None = None
    |
-help: Add return type annotation
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\assessments.py:452:33
+    |
+450 |     @field_validator("due_at", mode="before")
+451 |     @classmethod
+452 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                 ^^^
+453 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_due_at`
+   --> src\db\assessments.py:452:41
+    |
+450 |     @field_validator("due_at", mode="before")
+451 |     @classmethod
+452 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                         ^^^
+453 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\assessments.py:531:39
+    |
+529 |     @field_validator("scheduled_at", mode="before")
+530 |     @classmethod
+531 |     def validate_scheduled_at(cls, v: Any) -> Any:
+    |                                       ^^^
+532 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_scheduled_at`
+   --> src\db\assessments.py:531:47
+    |
+529 |     @field_validator("scheduled_at", mode="before")
+530 |     @classmethod
+531 |     def validate_scheduled_at(cls, v: Any) -> Any:
+    |                                               ^^^
+532 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\assessments.py:889:42
+    |
+887 |     @field_validator("due_at_override", "expires_at", mode="before")
+888 |     @classmethod
+889 |     def validate_due_at_override(cls, v: Any) -> Any:
+    |                                          ^^^
+890 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_due_at_override`
+   --> src\db\assessments.py:889:50
+    |
+887 |     @field_validator("due_at_override", "expires_at", mode="before")
+888 |     @classmethod
+889 |     def validate_due_at_override(cls, v: Any) -> Any:
+    |                                                  ^^^
+890 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\assessments.py:903:42
+    |
+901 |     @field_validator("due_at_override", "expires_at", mode="before")
+902 |     @classmethod
+903 |     def validate_due_at_override(cls, v: Any) -> Any:
+    |                                          ^^^
+904 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_due_at_override`
+   --> src\db\assessments.py:903:50
+    |
+901 |     @field_validator("due_at_override", "expires_at", mode="before")
+902 |     @classmethod
+903 |     def validate_due_at_override(cls, v: Any) -> Any:
+    |                                                  ^^^
+904 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\file_submissions.py:248:33
+    |
+246 |     @field_validator("due_at", mode="before")
+247 |     @classmethod
+248 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                 ^^^
+249 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_due_at`
+   --> src\db\file_submissions.py:248:41
+    |
+246 |     @field_validator("due_at", mode="before")
+247 |     @classmethod
+248 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                         ^^^
+249 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+   --> src\db\file_submissions.py:274:33
+    |
+272 |     @field_validator("due_at", mode="before")
+273 |     @classmethod
+274 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                 ^^^
+275 |         return coerce_date_to_end_of_day(v)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_due_at`
+   --> src\db\file_submissions.py:274:41
+    |
+272 |     @field_validator("due_at", mode="before")
+273 |     @classmethod
+274 |     def validate_due_at(cls, v: Any) -> Any:
+    |                                         ^^^
+275 |         return coerce_date_to_end_of_day(v)
+    |
 
 error[ARG002]: Unused method argument: `submitted_at`
   --> src\db\grading\progress.py:34:21
@@ -39,6 +158,103 @@ error[ARG002]: Unused method argument: `due_at`
    |                                             ^^^^^^
 64 |         """Return 100% penalty if past cutoff, 0% otherwise."""
 65 |         return 100.0 if submitted_at > self.cutoff_at else 0.0
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+  --> src\db\grading\schemas.py:65:37
+   |
+63 |     @field_validator("new_due_at", mode="before")
+64 |     @classmethod
+65 |     def validate_new_due_at(cls, v: Any) -> Any:
+   |                                     ^^^
+66 |         return coerce_date_to_end_of_day(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_new_due_at`
+  --> src\db\grading\schemas.py:65:45
+   |
+63 |     @field_validator("new_due_at", mode="before")
+64 |     @classmethod
+65 |     def validate_new_due_at(cls, v: Any) -> Any:
+   |                                             ^^^
+66 |         return coerce_date_to_end_of_day(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+  --> src\db\trail_runs.py:40:33
+   |
+38 |     @field_validator("status", mode="before")
+39 |     @classmethod
+40 |     def validate_status(cls, v: Any) -> Any:
+   |                                 ^^^
+41 |         if isinstance(v, str):
+42 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_status`
+  --> src\db\trail_runs.py:40:41
+   |
+38 |     @field_validator("status", mode="before")
+39 |     @classmethod
+40 |     def validate_status(cls, v: Any) -> Any:
+   |                                         ^^^
+41 |         if isinstance(v, str):
+42 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+  --> src\db\trail_runs.py:61:33
+   |
+59 |     @field_validator("status", mode="before")
+60 |     @classmethod
+61 |     def validate_status(cls, v: Any) -> Any:
+   |                                 ^^^
+62 |         if isinstance(v, str):
+63 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_status`
+  --> src\db\trail_runs.py:61:41
+   |
+59 |     @field_validator("status", mode="before")
+60 |     @classmethod
+61 |     def validate_status(cls, v: Any) -> Any:
+   |                                         ^^^
+62 |         if isinstance(v, str):
+63 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+  --> src\db\trail_runs.py:89:33
+   |
+87 |     @field_validator("status", mode="before")
+88 |     @classmethod
+89 |     def validate_status(cls, v: Any) -> Any:
+   |                                 ^^^
+90 |         if isinstance(v, str):
+91 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `validate_status`
+  --> src\db\trail_runs.py:89:41
+   |
+87 |     @field_validator("status", mode="before")
+88 |     @classmethod
+89 |     def validate_status(cls, v: Any) -> Any:
+   |                                         ^^^
+90 |         if isinstance(v, str):
+91 |             return StatusEnum(v)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `v`
+  --> src\db\trail_steps.py:75:33
+   |
+73 |     @field_validator("grade", mode="before")
+74 |     @classmethod
+75 |     def _validate_grade(cls, v: Any) -> int:
+   |                                 ^^^
+76 |         # Normalize empty strings and non-int strings to 0, preserve ints
+77 |         if v is None:
    |
 
 error[ANN202]: Missing return type annotation for private function `event_generator`
@@ -392,6 +608,80 @@ error[ANN201]: Missing return type annotation for public function `api_delete_co
    |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_delete_course`
+   --> src\routers\courses\courses.py:496:6
+    |
+494 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+495 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+496 | ) -> Any:
+    |      ^^^
+497 |     """Delete Course by ID.
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_apply_course_contributor`
+   --> src\routers\courses\courses.py:512:6
+    |
+510 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+511 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+512 | ) -> Any:
+    |      ^^^
+513 |     """Apply to be a contributor for a course."""
+514 |     assert db_session is not None
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_delete_course_update`
+   --> src\routers\courses\courses.py:568:6
+    |
+566 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+567 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+568 | ) -> Any:
+    |      ^^^
+569 |     """Delete Course Update by courseupdate_uuid."""
+570 |     assert db_session is not None
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_get_course_contributors`
+   --> src\routers\courses\courses.py:581:6
+    |
+579 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+580 |     current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
+581 | ) -> Any:
+    |      ^^^
+582 |     """Get all contributors for a specific course."""
+583 |     assert db_session is not None
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_update_course_contributor`
+   --> src\routers\courses\courses.py:597:6
+    |
+595 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+596 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+597 | ) -> Any:
+    |      ^^^
+598 |     """Update a course contributor's role and status.
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_add_bulk_course_contributors`
+   --> src\routers\courses\courses.py:622:6
+    |
+620 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+621 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+622 | ) -> Any:
+    |      ^^^
+623 |     """Add multiple contributors to a course by their usernames.
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `api_remove_bulk_course_contributors`
+   --> src\routers\courses\courses.py:639:6
+    |
+637 |     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+638 |     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+639 | ) -> Any:
+    |      ^^^
+640 |     """Remove multiple contributors from a course by their usernames."""
+641 |     assert db_session is not None
+    |
+
 error[ANN201]: Missing return type annotation for public function `api_delete_course_discussion`
   --> src\routers\courses\discussions.py:86:11
    |
@@ -689,6 +979,28 @@ error[ANN201]: Missing return type annotation for public function `api_delete_us
     |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `get`
+  --> src\services\ai\cache_manager.py:28:32
+   |
+26 |         self._lock = Lock()
+27 |
+28 |     def get(self, key: str) -> Any | None:
+   |                                ^^^^^^^^^^
+29 |         with self._lock:
+30 |             return self._cache.get(key)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+  --> src\services\ai\cache_manager.py:32:36
+   |
+30 |             return self._cache.get(key)
+31 |
+32 |     def set(self, key: str, value: Any) -> None:
+   |                                    ^^^
+33 |         with self._lock:
+34 |             self._cache[key] = value
+   |
+
 error[ANN202]: Missing return type annotation for private function `_call`
   --> src\services\ai\embeddings.py:84:27
    |
@@ -701,6 +1013,80 @@ error[ANN202]: Missing return type annotation for private function `_call`
    |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+  --> src\services\ai\moderation.py:14:24
+   |
+14 | def _model_dump(value: Any) -> dict[str, Any]:
+   |                        ^^^
+15 |     if hasattr(value, "model_dump"):
+16 |         return value.model_dump(mode="json", by_alias=True)
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `result`
+  --> src\services\ai\moderation.py:22:33
+   |
+22 | def _flagged_categories(result: Any) -> list[str]:
+   |                                 ^^^
+23 |     categories = _model_dump(getattr(result, "categories", None))
+24 |     return [category for category, flagged in categories.items() if flagged is True]
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `result`
+  --> src\services\ai\moderation.py:27:30
+   |
+27 | def _category_scores(result: Any, categories: list[str]) -> dict[str, float]:
+   |                              ^^^
+28 |     scores = _model_dump(getattr(result, "category_scores", None))
+29 |     return {category: score for category in categories if isinstance((score := scores.get(category)), (int, float))}
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_call`
+  --> src\services\ai\moderation.py:43:30
+   |
+41 |     try:
+42 |
+43 |         async def _call() -> Any:
+   |                              ^^^
+44 |             return await asyncio.wait_for(
+45 |                 get_openai_client().moderations.create(
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+  --> src\services\analytics\queries.py:94:34
+   |
+94 | def _unwrap_model[ModelT](value: Any, model_type: type[ModelT]) -> ModelT:
+   |                                  ^^^
+95 |     if isinstance(value, model_type):
+96 |         return value
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+   --> src\services\analytics\queries.py:109:40
+    |
+109 | def _unwrap_pair[LeftT, RightT](value: Any, left_type: type[LeftT], right_type: type[RightT]) -> tuple[LeftT, RightT]:
+    |                                        ^^^
+110 |     if isinstance(value, (tuple, list)):
+111 |         left = next((candidate for candidate in value if isinstance(candidate, left_type)), None)
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+  --> src\services\analytics\rollups.py:53:32
+   |
+53 | def _unwrap_scalar_date(value: Any) -> date | None:
+   |                                ^^^
+54 |     if value is None or isinstance(value, date):
+55 |         return value
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `value`
+  --> src\services\analytics\scope.py:31:30
+   |
+31 | def _coerce_course_id(value: Any) -> int | None:
+   |                              ^^^
+32 |     if value is None:
+33 |         return None
+   |
+
 error[ANN202]: Missing return type annotation for private function `_submission_user`
     --> src\services\assessments\_shared.py:1658:5
      |
@@ -709,6 +1095,17 @@ error[ANN202]: Missing return type annotation for private function `_submission_
 1659 |     from src.db.grading.submissions import SubmissionUser
      |
 help: Add return type annotation
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `current_user`
+  --> src\services\auth\utils.py:16:19
+   |
+14 |     request: Request,
+15 |     google_user_data: dict[str, Any],
+16 |     current_user: Any,
+   |                   ^^^
+17 |     db_session: Session,
+18 | ) -> User:
+   |
 
 error[ANN201]: Missing return type annotation for public function `create_image_block`
   --> src\services\blocks\block_types\imageBlock\imageBlock.py:15:11
@@ -962,6 +1359,49 @@ error[ANN202]: Missing return type annotation for private function `_course_sear
    |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `query`
+   --> src\services\courses\courses.py:128:31
+    |
+128 | def _apply_course_sort(query: Any, sort_by: str | None) -> Any:
+    |                               ^^^
+129 |     if sort_by == "name":
+130 |         return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_apply_course_sort`
+   --> src\services\courses\courses.py:128:60
+    |
+128 | def _apply_course_sort(query: Any, sort_by: str | None) -> Any:
+    |                                                            ^^^
+129 |     if sort_by == "name":
+130 |         return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `query`
+   --> src\services\courses\courses.py:134:28
+    |
+134 | def _apply_lms_sort(query: Any, current_user: PublicUser | AnonymousUser) -> Any:
+    |                            ^^^
+135 |     from sqlalchemy import case, func, select
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_apply_lms_sort`
+   --> src\services\courses\courses.py:134:78
+    |
+134 | def _apply_lms_sort(query: Any, current_user: PublicUser | AnonymousUser) -> Any:
+    |                                                                              ^^^
+135 |     from sqlalchemy import case, func, select
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_preset_sql_filter`
+   --> src\services\courses\courses.py:372:47
+    |
+372 | def _preset_sql_filter(preset: str | None) -> Any:
+    |                                               ^^^
+373 |     """Return an additional SQL WHERE clause for the given preset, or None."""
+374 |     from datetime import timedelta
+    |
+
 error[ANN201]: Missing return type annotation for public function `create_course`
    --> src\services\courses\courses.py:977:11
     |
@@ -1103,6 +1543,33 @@ error[ANN201]: Missing return type annotation for public function `on_course_com
     |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `raw_answer`
+   --> src\services\grading\code_grader.py:135:37
+    |
+135 | def _extract_latest_run(raw_answer: Any) -> dict[str, Any] | None:
+    |                                     ^^^
+136 |     if isinstance(raw_answer, CodeItemAnswer):
+137 |         latest_run = raw_answer.latest_run
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `raw_answer`
+   --> src\services\grading\code_grader.py:146:40
+    |
+146 | def _serialize_code_answer(raw_answer: Any) -> Any:
+    |                                        ^^^
+147 |     if isinstance(raw_answer, CodeItemAnswer):
+148 |         return raw_answer.model_dump(mode="json")
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `_serialize_code_answer`
+   --> src\services\grading\code_grader.py:146:48
+    |
+146 | def _serialize_code_answer(raw_answer: Any) -> Any:
+    |                                                ^^^
+147 |     if isinstance(raw_answer, CodeItemAnswer):
+148 |         return raw_answer.model_dump(mode="json")
+    |
+
 error[ANN202]: Missing return type annotation for private function `_persist_and_update`
    --> src\services\grading\pipeline\orchestrator.py:234:15
     |
@@ -1113,6 +1580,37 @@ error[ANN202]: Missing return type annotation for private function `_persist_and
 236 |             db_session=db_session,
     |
 help: Add return type annotation
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `raw_answer`
+   --> src\services\grading\pipeline\orchestrator.py:468:37
+    |
+468 | def _coerce_code_answer(raw_answer: Any) -> CodeItemAnswer | None:
+    |                                     ^^^
+469 |     if isinstance(raw_answer, CodeItemAnswer):
+470 |         return raw_answer
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `raw_answer`
+  --> src\services\grading\quiz_grader.py:65:17
+   |
+63 | def _grade_canonical_choice(
+64 |     item: CanonicalAssessmentItem,
+65 |     raw_answer: Any,
+   |                 ^^^
+66 |     points: float,
+67 |     negative_marking_percent: float = 0.0,
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `raw_answer`
+   --> src\services\grading\quiz_grader.py:127:17
+    |
+125 | def _grade_canonical_matching(
+126 |     item: CanonicalAssessmentItem,
+127 |     raw_answer: Any,
+    |                 ^^^
+128 |     points: float,
+129 | ) -> GradedItem:
+    |
 
 error[ANN206]: Missing return type annotation for classmethod `register`
   --> src\services\grading\registry.py:36:9
@@ -1197,6 +1695,28 @@ error[ANN202]: Missing return type annotation for private function `override_get
     |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `*_args`
+   --> src\tests\test_analytics_assessment_detail_api.py:139:38
+    |
+137 |     app.dependency_overrides[get_public_user] = lambda: teacher_user
+138 |
+139 |     async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
+    |                                      ^^^
+140 |         return TeacherAnalyticsScope(
+141 |             teacher_user_id=teacher_user.id,
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_analytics_assessment_detail_api.py:139:54
+    |
+137 |     app.dependency_overrides[get_public_user] = lambda: teacher_user
+138 |
+139 |     async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
+    |                                                      ^^^
+140 |         return TeacherAnalyticsScope(
+141 |             teacher_user_id=teacher_user.id,
+    |
+
 error[ANN202]: Missing return type annotation for private function `_seed_course_stack`
    --> src\tests\test_analytics_assessment_detail_api.py:224:5
     |
@@ -1230,6 +1750,28 @@ error[ANN202]: Missing return type annotation for private function `override_get
    |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `*_args`
+  --> src\tests\test_analytics_saved_views_api.py:96:38
+   |
+94 |     app.dependency_overrides[get_public_user] = lambda: teacher_user
+95 |
+96 |     async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
+   |                                      ^^^
+97 |         return TeacherAnalyticsScope(
+98 |             teacher_user_id=teacher_user.id,
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+  --> src\tests\test_analytics_saved_views_api.py:96:54
+   |
+94 |     app.dependency_overrides[get_public_user] = lambda: teacher_user
+95 |
+96 |     async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
+   |                                                      ^^^
+97 |         return TeacherAnalyticsScope(
+98 |             teacher_user_id=teacher_user.id,
+   |
+
 error[ANN201]: Missing return type annotation for public function `db_session_factory_fixture`
   --> src\tests\test_assessment_access_api.py:63:5
    |
@@ -1252,6 +1794,46 @@ error[ANN202]: Missing return type annotation for private function `override_get
 104 |         try:
     |
 help: Add return type annotation
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `*_args`
+   --> src\tests\test_assessment_access_api.py:113:28
+    |
+111 |     app.dependency_overrides[get_optional_public_user] = lambda: teacher_user
+112 |
+113 |     def fake_check(*_args: Any, **_kwargs: Any) -> bool:
+    |                            ^^^
+114 |         return True
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_assessment_access_api.py:113:44
+    |
+111 |     app.dependency_overrides[get_optional_public_user] = lambda: teacher_user
+112 |
+113 |     def fake_check(*_args: Any, **_kwargs: Any) -> bool:
+    |                                            ^^^
+114 |         return True
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `*_args`
+   --> src\tests\test_assessment_access_api.py:116:30
+    |
+114 |         return True
+115 |
+116 |     def fake_require(*_args: Any, **_kwargs: Any) -> None:
+    |                              ^^^
+117 |         return None
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_assessment_access_api.py:116:46
+    |
+114 |         return True
+115 |
+116 |     def fake_require(*_args: Any, **_kwargs: Any) -> None:
+    |                                              ^^^
+117 |         return None
+    |
 
 error[ANN201]: Missing return type annotation for public function `db_session_factory_fixture`
    --> src\tests\test_assessment_authoring_lifecycle.py:110:5
@@ -1345,6 +1927,26 @@ error[ANN202]: Missing return type annotation for private function `override_get
     |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `*args`
+   --> src\tests\test_assessment_readiness_api.py:595:31
+    |
+593 |             ]
+594 |
+595 |     async def mock_run(*args: Any, **kwargs: Any) -> FakeResult:
+    |                               ^^^
+596 |         return FakeResult()
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+   --> src\tests\test_assessment_readiness_api.py:595:46
+    |
+593 |             ]
+594 |
+595 |     async def mock_run(*args: Any, **kwargs: Any) -> FakeResult:
+    |                                              ^^^
+596 |         return FakeResult()
+    |
+
 error[ANN201]: Missing return type annotation for public function `db_session_factory_fixture`
   --> src\tests\test_assessment_review_api.py:47:5
    |
@@ -1368,6 +1970,83 @@ error[ANN202]: Missing return type annotation for private function `override_get
     |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+  --> src\tests\test_code_execution_service.py:47:29
+   |
+45 | @pytest.mark.asyncio
+46 | async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+47 |     def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+   |                             ^^^
+48 |         return [
+49 |             SimpleNamespace(
+   |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_code_execution_service.py:100:29
+    |
+ 98 |     calls = 0
+ 99 |
+100 |     def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    |                             ^^^
+101 |         nonlocal calls
+102 |         calls += 1
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_code_execution_service.py:142:29
+    |
+140 |     calls = 0
+141 |
+142 |     def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    |                             ^^^
+143 |         nonlocal calls
+144 |         calls += 1
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+   --> src\tests\test_code_execution_service.py:198:28
+    |
+196 |     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+197 |
+198 |     def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    |                            ^^^
+199 |         captured_kwargs.update(kwargs)
+200 |         return [
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+   --> src\tests\test_code_execution_service.py:254:28
+    |
+252 |     captured_kwargs: dict[str, Any] = {}
+253 |
+254 |     def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    |                            ^^^
+255 |         captured_kwargs.update(kwargs)
+256 |         return [
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+   --> src\tests\test_code_execution_service.py:291:28
+    |
+289 |     captured_kwargs: dict[str, Any] = {}
+290 |
+291 |     def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    |                            ^^^
+292 |         captured_kwargs.update(kwargs)
+293 |         return [
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+   --> src\tests\test_code_execution_service.py:327:28
+    |
+325 |     captured_kwargs: dict[str, Any] = {}
+326 |
+327 |     def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    |                            ^^^
+328 |         captured_kwargs.update(kwargs)
+329 |         return [
+    |
+
 error[ANN201]: Missing return type annotation for public function `async_run_service`
    --> src\tests\test_code_execution_service.py:423:11
     |
@@ -1377,6 +2056,28 @@ error[ANN201]: Missing return type annotation for public function `async_run_ser
 425 |     db_session: Session,
     |
 help: Add return type annotation
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_code_execution_service.py:463:29
+    |
+461 |     calls = 0
+462 |
+463 |     def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    |                             ^^^
+464 |         nonlocal calls
+465 |         calls += 1
+    |
+
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `**_kwargs`
+   --> src\tests\test_code_execution_service.py:541:29
+    |
+539 |     outputs: list[str] = []
+540 |
+541 |     def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    |                             ^^^
+542 |         return [
+543 |             SimpleNamespace(
+    |
 
 error[ANN201]: Missing return type annotation for public function `db_session_factory_fixture`
   --> src\tests\test_collections_api.py:37:5
@@ -1472,6 +2173,15 @@ error[ANN202]: Missing return type annotation for private function `override_get
    |
 help: Add return type annotation
 
+error[ANN401]: Dynamically typed expressions (typing.Any) are disallowed in `event`
+   --> src\tests\test_file_submissions.py:351:37
+    |
+350 |     class MockBus:
+351 |         async def emit(self, event: Any) -> None:
+    |                                     ^^^
+352 |             pass
+    |
+
 error[ANN201]: Missing return type annotation for public function `db_session_factory_fixture`
    --> src\tests\test_student_submission_workflow.py:107:5
     |
@@ -1518,4 +2228,4 @@ error[ANN202]: Missing return type annotation for private function `override_get
     |
 help: Add return type annotation
 
-Found 140 errors.
+Found 211 errors (1 fixed, 210 remaining).

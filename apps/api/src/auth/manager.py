@@ -2,13 +2,15 @@
 
 import asyncio
 import logging
-from typing import Annotated, Any, override
+from collections.abc import AsyncIterator
+from typing import Annotated, override
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin
 from fastapi_users.exceptions import InvalidPasswordException
+from fastapi_users.schemas import BaseUserCreate
 
-from src.auth.db import get_user_db
+from src.auth.db import SQLModelUserDatabase, get_user_db
 from src.db.users import User
 from src.security.keys import get_jwt_secret
 from src.security.security import password_helper
@@ -23,11 +25,11 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     def reset_password_token_secret(self) -> str:  # type: ignore[override]
         return get_jwt_secret()
 
-    def __init__(self, user_db: Any) -> None:
+    def __init__(self, user_db: SQLModelUserDatabase) -> None:
         super().__init__(user_db, password_helper=password_helper)
 
     @override
-    async def validate_password(self, password: str, user: Any) -> None:
+    async def validate_password(self, password: str, user: User | BaseUserCreate) -> None:
         if len(password) < MIN_PASSWORD_LENGTH:
             raise InvalidPasswordException(reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
 
@@ -72,6 +74,8 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         await asyncio.to_thread(_assign_default_role)
 
 
-async def get_user_manager(user_db: Annotated[Any | None, Depends(get_user_db)] = None):
+async def get_user_manager(
+    user_db: Annotated[SQLModelUserDatabase | None, Depends(get_user_db)] = None,
+) -> AsyncIterator[UserManager]:
     assert user_db is not None
     yield UserManager(user_db)

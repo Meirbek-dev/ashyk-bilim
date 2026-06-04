@@ -109,7 +109,6 @@ unfixable = [
 
 ignore = [
   # --- Annotations (flake8-annotations) ---
-  "ANN401", # any-type: Disallow Any (handled by mypy and basedpyright)
   "PLC0415", # `import` should be at the top-level of a file
 
   # --- General & Style ---
