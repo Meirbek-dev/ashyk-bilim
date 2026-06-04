@@ -22,15 +22,12 @@ export default async function PlatformAdminPage() {
       description: t('rolesDescription'),
       href: '/dash/admin/roles',
       icon: Shield,
-      iconBg: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white',
     },
     {
       title: t('userRolesTitle'),
       description: t('userRolesDescription'),
       href: '/dash/admin/users',
       icon: Users,
-      iconBg:
-        'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white',
     },
   ]
 
@@ -43,28 +40,24 @@ export default async function PlatformAdminPage() {
         {/* Core Administrative Sections */}
         <div className="space-y-4">
           <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('panelsTitle')}</h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {adminSections.map(section => (
               <Link key={section.href} href={section.href} className="group block">
-                <Card className="bg-card hover:bg-accent/30 border-border/80 hover:border-border/100 relative flex h-full flex-col justify-between overflow-hidden rounded-2xl transition-all duration-300 select-none hover:shadow-sm">
+                <Card className="bg-card hover:bg-muted/30 border-border relative flex h-full flex-col justify-between transition-colors select-none">
                   <CardHeader className="px-5 pt-5 pb-3">
                     <div className="flex items-start justify-between">
-                      <div
-                        className={`flex items-center justify-center rounded-xl border p-2.5 transition-all duration-300 ${section.iconBg}`}
-                      >
-                        <section.icon className="h-5 w-5" />
-                      </div>
+                      <section.icon className="text-muted-foreground h-5 w-5" />
                       <ChevronRight
                         size={16}
-                        className="text-muted-foreground/60 group-hover:text-foreground translate-x-[-4px] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                        className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                       />
                     </div>
                   </CardHeader>
                   <CardContent className="flex flex-1 flex-col justify-end px-5 pb-5">
-                    <CardTitle className="text-foreground group-hover:text-primary mb-1.5 text-base font-bold tracking-tight transition-colors duration-300">
+                    <CardTitle className="text-foreground group-hover:text-primary mb-1.5 text-sm font-semibold tracking-tight transition-colors">
                       {section.title}
                     </CardTitle>
-                    <CardDescription className="text-muted-foreground/80 text-xs leading-relaxed font-medium">
+                    <CardDescription className="text-muted-foreground text-xs leading-relaxed">
                       {section.description}
                     </CardDescription>
                   </CardContent>

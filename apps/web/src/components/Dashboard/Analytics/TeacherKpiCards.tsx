@@ -89,7 +89,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 : deltaLabel
 
         return (
-          <Card key={metric.label} className="shadow-sm">
+          <Card key={metric.label}>
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">

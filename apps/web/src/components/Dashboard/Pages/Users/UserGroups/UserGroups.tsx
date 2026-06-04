@@ -36,7 +36,6 @@ interface DeleteUserGroupButtonProps {
   t: (key: string) => string
 }
 
-
 function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()

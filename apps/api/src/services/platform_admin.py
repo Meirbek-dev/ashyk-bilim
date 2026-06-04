@@ -91,7 +91,3 @@ async def update_platform_thumbnail(
     db_session.refresh(platform_record)
 
     return {"detail": "Thumbnail updated"}
-
-
-
-

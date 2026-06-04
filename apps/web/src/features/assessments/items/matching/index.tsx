@@ -214,11 +214,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
 
 // ── Registration ──────────────────────────────────────────────────────────────
 
-export const matchingModule: ItemKindModule<
-  MatchingBody,
-  MatchingBody,
-  MatchingAnswer | null
-> = {
+export const matchingModule: ItemKindModule<MatchingBody, MatchingBody, MatchingAnswer | null> = {
   kind: 'MATCHING',
   label: 'Matching',
   Author: MatchingItemAuthor,

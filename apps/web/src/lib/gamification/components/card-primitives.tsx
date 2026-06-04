@@ -125,18 +125,14 @@ function CardStat({ label, value, icon: Icon, trend, trendLabel, color, classNam
   const StatWrapper = animated ? motion.div : 'div'
   const animationProps = animated
     ? {
-        initial: { scale: 0.8, opacity: 0 },
-        animate: { scale: 1, opacity: 1 },
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
         transition: { duration: animations.duration.fast / 1000 },
-        whileHover: { scale: 1.02 },
       }
     : {}
 
   return (
-    <StatWrapper
-      {...animationProps}
-      className={cn('group rounded-lg border bg-card p-4 transition-shadow hover:shadow-md', className)}
-    >
+    <StatWrapper {...animationProps} className={cn('group rounded-lg border bg-card p-4 transition-colors', className)}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-muted-foreground text-sm font-medium">{label}</p>
@@ -176,9 +172,7 @@ function CardMetricRow({ label, value, icon: Icon, sublabel, trend, color, class
   const trendInfo = getTrendInfo(trend)
 
   return (
-    <div
-      className={cn('flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted/70', className)}
-    >
+    <div className={cn('flex items-center justify-between rounded-lg p-3', className)}>
       <div className="flex items-center gap-3">
         {Icon && (
           <div className={cn('rounded-lg bg-muted p-2', color)}>

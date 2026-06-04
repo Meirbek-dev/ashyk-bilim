@@ -228,7 +228,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <Card className="border-slate-200 bg-white/90 shadow-sm xl:col-span-2">
+      <Card className="xl:col-span-2">
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={detail.diagnostics.manual_grading_required ? 'warning' : 'outline'}>
@@ -242,61 +242,76 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
             </Badge>
           </div>
           <CardTitle>{t('pages.assessmentOpsTitle')}</CardTitle>
-          <p className="text-sm text-slate-500">{t('pages.assessmentOpsDescription')}</p>
+          <p className="text-muted-foreground text-sm">{t('pages.assessmentOpsDescription')}</p>
         </CardHeader>
       </Card>
 
-      <Card className="border-slate-200 bg-white/90 shadow-sm">
+      <Card>
         <CardHeader>
           <CardTitle>{t('pages.assessmentOpsDiagnosticsTitle')}</CardTitle>
-          {detail.diagnostics.note ? <p className="text-sm text-slate-500">{detail.diagnostics.note}</p> : null}
+          {detail.diagnostics.note ? <p className="text-muted-foreground text-sm">{detail.diagnostics.note}</p> : null}
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          {diagnosticMetrics.map(metric => (
-            <div key={metric.label} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <div className="text-xs font-medium tracking-wide text-slate-500 uppercase">{metric.label}</div>
-              <div className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</div>
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div className="divide-border divide-y">
+            {diagnosticMetrics.map((metric, idx) => (
+              <div
+                key={metric.label}
+                className={`grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-2.5 ${idx % 2 === 1 ? 'bg-muted/20' : ''}`}
+              >
+                <div className="text-muted-foreground text-xs">{metric.label}</div>
+                <div className="text-foreground text-sm font-semibold tabular-nums">{metric.value}</div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-6">
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card>
           <CardHeader>
             <CardTitle>{t('pages.assessmentSupportTitle')}</CardTitle>
-            <p className="text-sm text-slate-500">{detail.support.note}</p>
+            <p className="text-muted-foreground text-sm">{detail.support.note}</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs tracking-wide text-slate-500 uppercase">
-                  {t('pages.assessmentSupportEligible')}
+            <div className="divide-border divide-y">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="px-4 py-2.5">
+                  <div className="text-muted-foreground text-[10px] uppercase">
+                    {t('pages.assessmentSupportEligible')}
+                  </div>
+                  <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                    {detail.support.scoped_eligible_learners}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-semibold">{detail.support.scoped_eligible_learners}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs tracking-wide text-slate-500 uppercase">
-                  {t('pages.assessmentSupportVisible')}
+                <div className="px-4 py-2.5">
+                  <div className="text-muted-foreground text-[10px] uppercase">
+                    {t('pages.assessmentSupportVisible')}
+                  </div>
+                  <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                    {detail.support.scoped_visible_learners}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-semibold">{detail.support.scoped_visible_learners}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs tracking-wide text-slate-500 uppercase">
-                  {t('pages.assessmentSupportCohorts')}
+                <div className="border-border border-t px-4 py-2.5">
+                  <div className="text-muted-foreground text-[10px] uppercase">
+                    {t('pages.assessmentSupportCohorts')}
+                  </div>
+                  <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                    {detail.support.scoped_cohort_count}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-semibold">{detail.support.scoped_cohort_count}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs tracking-wide text-slate-500 uppercase">
-                  {t('pages.assessmentSupportAuditEvents')}
+                <div className="border-border border-t px-4 py-2.5">
+                  <div className="text-muted-foreground text-[10px] uppercase">
+                    {t('pages.assessmentSupportAuditEvents')}
+                  </div>
+                  <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                    {detail.support.audit_event_count}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-semibold">{detail.support.audit_event_count}</div>
               </div>
             </div>
 
             <div>
-              <div className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+              <div className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('pages.assessmentSupportAlerts')}
               </div>
               {detail.support.alerts.length ? (
@@ -308,65 +323,71 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                   ))}
                 </div>
               ) : (
-                <div className="mt-2 text-sm text-slate-500">{t('pages.assessmentSupportAlertsEmpty')}</div>
+                <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportAlertsEmpty')}</div>
               )}
             </div>
 
             <div>
-              <div className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+              <div className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 {t('pages.assessmentSupportBlockers')}
               </div>
               {detail.support.cutover_blockers.length ? (
                 <div className="mt-2 space-y-2">
                   {detail.support.cutover_blockers.map(blocker => (
-                    <div key={blocker} className="rounded-2xl border border-slate-200 p-3 text-sm text-slate-700">
+                    <div key={blocker} className="rounded-lg border p-3 text-sm">
                       {blocker}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="mt-2 text-sm text-slate-500">{t('pages.assessmentSupportBlockersEmpty')}</div>
+                <div className="text-muted-foreground mt-2 text-sm">{t('pages.assessmentSupportBlockersEmpty')}</div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={getSloBadgeVariant(detail.slo.status)}>{sloLabels[detail.slo.status]}</Badge>
             </div>
             <CardTitle>{t('pages.assessmentOpsSloTitle')}</CardTitle>
-            <p className="text-sm text-slate-500">{detail.slo.note}</p>
+            <p className="text-muted-foreground text-sm">{detail.slo.note}</p>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentOpsSloTarget')}</div>
-              <div className="mt-2 text-2xl font-semibold">{formatHours(detail.slo.target_hours, t('atRisk.na'))}</div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentOpsSloP50')}</div>
-              <div className="mt-2 text-2xl font-semibold">
-                {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'))}
+          <div className="divide-border divide-y">
+            <div className="grid grid-cols-2">
+              <div className="px-4 py-2.5">
+                <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloTarget')}</div>
+                <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                  {formatHours(detail.slo.target_hours, t('atRisk.na'))}
+                </div>
+              </div>
+              <div className="px-4 py-2.5">
+                <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP50')}</div>
+                <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                  {formatHours(detail.slo.observed_p50_hours, t('atRisk.na'))}
+                </div>
+              </div>
+              <div className="border-border border-t px-4 py-2.5">
+                <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloP90')}</div>
+                <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                  {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'))}
+                </div>
+              </div>
+              <div className="border-border border-t px-4 py-2.5">
+                <div className="text-muted-foreground text-[10px] uppercase">{t('pages.assessmentOpsSloBacklog')}</div>
+                <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                  {detail.slo.backlog_count}
+                  <span className="text-muted-foreground ml-2 text-xs font-normal">
+                    {t('pages.assessmentOpsSloOverdue')}: {detail.slo.overdue_backlog_count}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentOpsSloP90')}</div>
-              <div className="mt-2 text-2xl font-semibold">
-                {formatHours(detail.slo.observed_p90_hours, t('atRisk.na'))}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentOpsSloBacklog')}</div>
-              <div className="mt-2 text-2xl font-semibold">{detail.slo.backlog_count}</div>
-              <div className="mt-1 text-xs text-slate-500">
-                {t('pages.assessmentOpsSloOverdue')}: {detail.slo.overdue_backlog_count}
-              </div>
-            </div>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={getMigrationBadgeVariant(detail.migration.compatibility_mode)}>
@@ -379,36 +400,36 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               </Badge>
             </div>
             <CardTitle>{t('pages.assessmentOpsMigrationTitle')}</CardTitle>
-            <p className="text-sm text-slate-500">{detail.migration.note}</p>
+            <p className="text-muted-foreground text-sm">{detail.migration.note}</p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3">
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <div className="text-xs tracking-wide text-slate-500 uppercase">
-                  {t('pages.assessmentOpsMigrationCanonicalRows')}
-                </div>
-                <div className="mt-2 text-2xl font-semibold">{detail.migration.canonical_row_count}</div>
+          <div className="divide-border divide-y">
+            <div className="px-4 py-2.5">
+              <div className="text-muted-foreground text-[10px] uppercase">
+                {t('pages.assessmentOpsMigrationCanonicalRows')}
+              </div>
+              <div className="text-foreground mt-0.5 text-lg font-semibold tabular-nums">
+                {detail.migration.canonical_row_count}
               </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
-      <Card className="border-slate-200 bg-white/90 shadow-sm">
+      <Card>
         <CardHeader>
           <CardTitle>{t('pages.assessmentItemTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {detail.item_analytics.length ? (
-            <div className="space-y-3">
+            <div className="divide-border divide-y">
               {detail.item_analytics.map(item => (
-                <div key={`${item.item_type}-${item.item_key}`} className="rounded-2xl border border-slate-200 p-4">
+                <div key={`${item.item_type}-${item.item_key}`} className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{itemTypeLabels[item.item_type]}</Badge>
                     <Badge variant={getItemSignalBadgeVariant(item.signal)}>{signalLabels[item.signal]}</Badge>
                   </div>
-                  <div className="mt-3 text-sm font-medium text-slate-900">{item.item_label}</div>
-                  <div className="mt-2 grid gap-3 text-sm text-slate-500 sm:grid-cols-3">
+                  <div className="text-foreground mt-2 text-sm font-medium">{item.item_label}</div>
+                  <div className="text-muted-foreground mt-1.5 grid gap-3 text-sm sm:grid-cols-3">
                     <span>
                       {t('pages.assessmentItemPopulation')}: {item.population_count}
                     </span>
@@ -419,27 +440,27 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                       {t('pages.assessmentItemRate')}: {formatRate(item.impact_rate, t('atRisk.na'))}
                     </span>
                   </div>
-                  <div className="mt-2 text-sm text-slate-600">{item.note}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">{item.note}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-slate-500">{t('pages.assessmentItemEmpty')}</div>
+            <div className="text-muted-foreground text-sm">{t('pages.assessmentItemEmpty')}</div>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 bg-white/90 shadow-sm">
+      <Card>
         <CardHeader>
           <CardTitle>{t('pages.assessmentCohortTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {detail.cohort_analytics.length ? (
-            <div className="space-y-3">
+            <div className="divide-border divide-y">
               {detail.cohort_analytics.map(cohort => (
-                <div key={cohort.cohort_id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="text-sm font-medium text-slate-900">{cohort.cohort_name}</div>
-                  <div className="mt-3 grid gap-3 text-sm text-slate-500 sm:grid-cols-3">
+                <div key={cohort.cohort_id} className="px-4 py-3">
+                  <div className="text-foreground text-sm font-medium">{cohort.cohort_name}</div>
+                  <div className="text-muted-foreground mt-2 grid gap-2 text-xs sm:grid-cols-3">
                     <span>
                       {t('pages.assessmentCohortEligible')}: {cohort.eligible_learners}
                     </span>
@@ -463,17 +484,17 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               ))}
             </div>
           ) : (
-            <div className="text-sm text-slate-500">{t('pages.assessmentCohortEmpty')}</div>
+            <div className="text-muted-foreground text-sm">{t('pages.assessmentCohortEmpty')}</div>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 bg-white/90 shadow-sm xl:col-span-2">
+      <Card className="xl:col-span-2">
         <CardHeader>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <CardTitle>{t('pages.assessmentOpsAuditTitle')}</CardTitle>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="text-muted-foreground mt-1.5 text-sm">
                 {t('pages.assessmentOpsAuditRowCount', {
                   shown: filteredAuditHistory.length,
                   total: detail.audit_history.length,
@@ -499,7 +520,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
             <>
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_auto_auto]">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <Input
                     value={auditSearch}
                     onChange={event => setAuditSearch(event.target.value)}
@@ -544,15 +565,15 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               </div>
 
               {filteredAuditHistory.length ? (
-                <div className="space-y-3">
+                <div className="divide-border divide-y">
                   {filteredAuditHistory.map(event => (
-                    <div key={event.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div key={event.id} className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{event.source}</Badge>
                         {event.status ? <Badge variant="secondary">{event.status}</Badge> : null}
                       </div>
-                      <div className="mt-3 text-sm font-medium text-slate-900">{event.summary}</div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                      <div className="text-foreground mt-2 text-sm font-medium">{event.summary}</div>
+                      <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                         <span>{event.actor_display_name || t('pages.assessmentOpsAuditSystem')}</span>
                         <span>{new Date(event.occurred_at).toLocaleString(locale)}</span>
                         {event.affected_count !== null && event.affected_count !== undefined ? (
@@ -565,13 +586,13 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
+                <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
                   {t('pages.assessmentOpsAuditFilteredEmpty')}
                 </div>
               )}
             </>
           ) : (
-            <div className="text-sm text-slate-500">{t('pages.assessmentOpsAuditEmpty')}</div>
+            <div className="text-muted-foreground text-sm">{t('pages.assessmentOpsAuditEmpty')}</div>
           )}
         </CardContent>
       </Card>

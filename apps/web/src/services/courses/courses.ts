@@ -464,22 +464,15 @@ export async function createNewCourse(
   thumbnail: Blob | File | null | undefined,
   _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const {
-    name = '',
-    description = '',
-    learnings = '',
-    tags: courseTags = '',
-    template,
-    visibility,
-  } = course_body
+  const { name = '', description = '', learnings = '', tags: courseTags = '', template, visibility } = course_body
 
   // Send file thumbnail as form data
   const formData = new FormData()
   formData.append('name', name)
   formData.append('description', description)
   formData.append('public', String(visibility ?? false))
-  formData.append('learnings', Array.isArray(learnings) ? JSON.stringify(learnings) : (learnings || ''))
-  formData.append('tags', Array.isArray(courseTags) ? JSON.stringify(courseTags) : (courseTags || ''))
+  formData.append('learnings', Array.isArray(learnings) ? JSON.stringify(learnings) : learnings || '')
+  formData.append('tags', Array.isArray(courseTags) ? JSON.stringify(courseTags) : courseTags || '')
   formData.append('about', description)
 
   // Pass template so the backend can seed starter chapters atomically

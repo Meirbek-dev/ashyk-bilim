@@ -90,7 +90,7 @@ export default function AtRiskLearnersTable({
               {t('atRisk.userNumber', { userId: row.original.user_id })}
             </div>
             {courseHref && (
-              <Link href={courseHref} className="mt-0.5 block text-xs text-emerald-700 hover:underline">
+              <Link href={courseHref} className="text-primary mt-0.5 block text-xs hover:underline">
                 {row.original.course_name}
               </Link>
             )}
@@ -180,7 +180,7 @@ export default function AtRiskLearnersTable({
                 : t('atRisk.noInterventions')}
             </div>
             {hasGradingBlock && gradingHref && (
-              <Link href={gradingHref} className="block text-xs text-emerald-700 hover:underline">
+              <Link href={gradingHref} className="text-primary block text-xs hover:underline">
                 {t('atRisk.gradeSubmissions', {
                   count: riskRow.open_grading_blocks,
                 })}{' '}

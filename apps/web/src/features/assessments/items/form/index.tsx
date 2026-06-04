@@ -311,11 +311,7 @@ export function FormItemReviewDetail({
   )
 }
 
-export const formModule: ItemKindModule<
-  FormItemValue,
-  FormItemValue & { taskUuid?: string },
-  FormAnswer | null
-> = {
+export const formModule: ItemKindModule<FormItemValue, FormItemValue & { taskUuid?: string }, FormAnswer | null> = {
   kind: 'FORM',
   label: 'Form',
   Author: FormItemAuthor,

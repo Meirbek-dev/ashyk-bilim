@@ -264,7 +264,7 @@ const Users = () => {
                           ...(selectedUser.user.first_name ? { first_name: selectedUser.user.first_name } : {}),
                           ...(selectedUser.user.middle_name ? { middle_name: selectedUser.user.middle_name } : {}),
                           ...(selectedUser.user.last_name ? { last_name: selectedUser.user.last_name } : {}),
-                        }
+                        },
                       }}
                     />
                   ) : null

@@ -189,7 +189,7 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
     const names = displayedAuthors.map(a => {
       const u = a.user
       const fullName = getAuthorFullName(u)
-      return fullName.trim() !== '' ? fullName : (u?.username || '')
+      return fullName.trim() !== '' ? fullName : u?.username || ''
     })
 
     const joinedNames = names.join(', ')
@@ -210,7 +210,9 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
           const u = author.user
           const authorName = getAuthorFullName(u).trim() || (u?.username ?? '')
           // Format role for tooltip (e.g., "CREATOR" -> "Creator")
-          const roleLabel = author.authorship ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase() : ''
+          const roleLabel = author.authorship
+            ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase()
+            : ''
           const isCreator = author.authorship === 'CREATOR'
 
           return (
@@ -226,9 +228,7 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
                 size="sm"
                 variant="outline"
                 avatar_url={
-                  u?.avatar_image && u?.user_uuid
-                    ? getUserAvatarMediaDirectory(u.user_uuid, u.avatar_image)
-                    : ''
+                  u?.avatar_image && u?.user_uuid ? getUserAvatarMediaDirectory(u.user_uuid, u.avatar_image) : ''
                 }
                 {...(!u?.avatar_image ? { predefined_avatar: 'empty' } : {})}
                 showProfilePopup

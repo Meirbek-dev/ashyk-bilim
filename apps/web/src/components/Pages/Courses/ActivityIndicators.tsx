@@ -265,7 +265,9 @@ const ActivityIndicators = (props: Props) => {
       return cleanRunCourseUuid === cleanCourseUuid
     })
     return new Set(
-      (run?.steps ?? []).filter((step: AppTrailStep) => step.complete === true).map((step: AppTrailStep) => Number(step.activity_id)),
+      (run?.steps ?? [])
+        .filter((step: AppTrailStep) => step.complete === true)
+        .map((step: AppTrailStep) => Number(step.activity_id)),
     )
   }, [props.trailData, course.course_uuid])
 
@@ -380,7 +382,9 @@ const ActivityIndicators = (props: Props) => {
                     <ToolTip
                       sideOffset={10}
                       unstyled
-	                      content={<ActivityTooltipContent activity={activity as never} isDone={isDone} isCurrent={isCurrent} />}
+                      content={
+                        <ActivityTooltipContent activity={activity as never} isDone={isDone} isCurrent={isCurrent} />
+                      }
                       key={activity.activity_uuid}
                     >
                       <Link

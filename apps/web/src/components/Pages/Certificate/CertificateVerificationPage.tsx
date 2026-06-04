@@ -267,9 +267,7 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                               const user = author.user!
                               return (
                                 <span key={user.user_uuid} className="text-foreground">
-                                  {[user.first_name, user.middle_name, user.last_name]
-                                    .filter(Boolean)
-                                    .join(' ')}
+                                  {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                                   {index < Math.min(2, activeAuthors.length - 1) && ', '}
                                 </span>
                               )

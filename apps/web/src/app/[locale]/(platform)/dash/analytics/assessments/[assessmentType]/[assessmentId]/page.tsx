@@ -37,43 +37,51 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
     })
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
               <Badge variant="outline">{t('pages.assessmentDetailBadge', { id: detail.assessment_id })}</Badge>
             </div>
-            <CardTitle className="mt-3 text-3xl">{detail.title}</CardTitle>
+            <CardTitle className="mt-3 text-2xl">{detail.title}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.assessmentStatSubmissionRate')}
+          <CardContent className="p-0">
+            <div className="divide-border grid divide-x border-t md:grid-cols-4">
+              <div className="px-4 py-3">
+                <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                  {t('pages.assessmentStatSubmissionRate')}
+                </div>
+                <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
+                  {detail.summary.submission_rate ?? t('atRisk.na')}
+                  {detail.summary.submission_rate !== null ? '%' : ''}
+                </div>
               </div>
-              <div className="mt-2 text-3xl font-semibold">
-                {detail.summary.submission_rate ?? t('atRisk.na')}
-                {detail.summary.submission_rate !== null ? '%' : ''}
+              <div className="px-4 py-3">
+                <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                  {t('pages.assessmentStatPassRate')}
+                </div>
+                <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
+                  {detail.summary.pass_rate ?? t('atRisk.na')}
+                  {detail.summary.pass_rate !== null ? '%' : ''}
+                </div>
               </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatPassRate')}</div>
-              <div className="mt-2 text-3xl font-semibold">
-                {detail.summary.pass_rate ?? t('atRisk.na')}
-                {detail.summary.pass_rate !== null ? '%' : ''}
+              <div className="px-4 py-3">
+                <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                  {t('pages.assessmentStatMedianScore')}
+                </div>
+                <div className="text-foreground mt-1 text-2xl font-semibold tabular-nums">
+                  {detail.summary.median_score ?? t('atRisk.na')}
+                  {detail.summary.median_score !== null ? '%' : ''}
+                </div>
               </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.assessmentStatMedianScore')}
+              <div className="px-4 py-3">
+                <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
+                  {t('pages.assessmentStatGenerated')}
+                </div>
+                <div className="text-foreground mt-1 text-sm font-semibold">
+                  {new Date(detail.generated_at).toLocaleString(locale)}
+                </div>
               </div>
-              <div className="mt-2 text-3xl font-semibold">
-                {detail.summary.median_score ?? t('atRisk.na')}
-                {detail.summary.median_score !== null ? '%' : ''}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatGenerated')}</div>
-              <div className="mt-2 text-lg font-semibold">{new Date(detail.generated_at).toLocaleString(locale)}</div>
             </div>
           </CardContent>
         </Card>
@@ -107,7 +115,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           />
         ) : null}
 
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card>
           <CardHeader>
             <CardTitle>{t('pages.assessmentCommonFailuresTitle')}</CardTitle>
           </CardHeader>
@@ -119,7 +127,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 </Badge>
               ))
             ) : (
-              <div className="text-sm text-slate-500">{t('pages.assessmentNoCommonFailures')}</div>
+              <div className="text-muted-foreground text-sm">{t('pages.assessmentNoCommonFailures')}</div>
             )}
           </CardContent>
         </Card>

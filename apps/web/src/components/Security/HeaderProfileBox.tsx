@@ -173,7 +173,7 @@ export const HeaderProfileBox = () => {
                           render={
                             <Badge
                               variant="secondary"
-                              className="flex w-fit items-center gap-0.5 bg-slate-500 px-1 py-0.5 text-[8px] font-medium text-white"
+                              className="flex w-fit items-center gap-0.5 px-1 py-0.5 text-[8px] font-medium"
                             >
                               <Shield size={10} />
                               {customRole.name}

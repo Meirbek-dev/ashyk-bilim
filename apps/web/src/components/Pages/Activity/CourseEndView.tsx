@@ -45,7 +45,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
     // Flatten all activities
     const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => (Object.assign(activity, { chapterId: chapter.id }))),
+      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
     )
 
     // Check if all activities are completed
@@ -57,7 +57,9 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       })
 
       if (run) {
-        return (run.steps ?? []).find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+        return (run.steps ?? []).find(
+          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
+        )
       }
       return false
     }
@@ -261,7 +263,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     if (!(trailData && course) || isCourseCompleted) return null
 
     const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
-      (chapter.activities ?? []).map((activity: AppActivity) => (Object.assign(activity, { chapterId: chapter.id }))),
+      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
     )
 
     const isActivityDone = (activity: AppActivity) => {
@@ -272,7 +274,9 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       })
 
       if (run) {
-        return (run.steps ?? []).find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+        return (run.steps ?? []).find(
+          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
+        )
       }
       return false
     }

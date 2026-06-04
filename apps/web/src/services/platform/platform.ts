@@ -40,7 +40,6 @@ export async function getPlatform() {
   return fetchPlatform()
 }
 
-
 export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
   await requireSession()
   const result = await apiFetch(`members/${user_id}`, { method: 'DELETE' })

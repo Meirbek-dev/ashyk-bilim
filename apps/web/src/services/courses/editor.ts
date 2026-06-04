@@ -47,12 +47,7 @@ const toArrayResource = <T>(response: {
     return createResource<T[]>([], response.status, detail, true)
   }
 
-  return createResource(
-    (Array.isArray(response.data) ? response.data : []) as T[],
-    response.status,
-    null,
-    true,
-  )
+  return createResource((Array.isArray(response.data) ? response.data : []) as T[], response.status, null, true)
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {

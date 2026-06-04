@@ -167,7 +167,12 @@ export default function NewActivityModal({
         />
       )}
       {selectedView === 'documentpdf' && (
-        <DocumentPdfModal submitFileActivity={submitFileActivity} chapterId={chapterId} course={course} closeModal={closeModal} />
+        <DocumentPdfModal
+          submitFileActivity={submitFileActivity}
+          chapterId={chapterId}
+          course={course}
+          closeModal={closeModal}
+        />
       )}
       {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
       {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}

@@ -531,7 +531,6 @@ class AssessmentLifecycleTransition(PydanticStrictBaseModel):
         return coerce_date_to_end_of_day(v)
 
 
-
 class AssessmentReadItem(PydanticStrictBaseModel):
     id: int
     item_uuid: str
@@ -902,7 +901,6 @@ class StudentPolicyOverrideUpdate(PydanticStrictBaseModel):
     @classmethod
     def validate_due_at_override(cls, v: Any) -> Any:
         return coerce_date_to_end_of_day(v)
-
 
 
 class StudentPolicyOverrideRead(PydanticStrictBaseModel):

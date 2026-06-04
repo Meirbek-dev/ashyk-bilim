@@ -193,7 +193,9 @@ const CollectionDeleteAction = ({
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}
+            </AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

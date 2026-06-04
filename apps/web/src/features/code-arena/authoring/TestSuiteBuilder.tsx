@@ -331,7 +331,12 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                             value={test.match_mode ?? 'EXACT'}
                             onChange={e =>
                               updateTest(test.id, {
-                                match_mode: e.target.value as 'CUSTOM_CHECKER' | 'EXACT' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'TRIMMED',
+                                match_mode: e.target.value as
+                                  | 'CUSTOM_CHECKER'
+                                  | 'EXACT'
+                                  | 'IGNORE_WHITESPACE'
+                                  | 'NUMERIC_TOLERANCE'
+                                  | 'TRIMMED',
                               })
                             }
                             className="select-xs h-8 py-0"

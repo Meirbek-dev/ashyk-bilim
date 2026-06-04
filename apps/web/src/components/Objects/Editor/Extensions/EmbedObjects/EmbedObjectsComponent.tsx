@@ -621,7 +621,10 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
   }, [selectedProduct])
 
   const handleResizeStart = useCallback(
-    (e: Pick<ReactMouseEvent<HTMLDivElement>, 'clientX' | 'clientY' | 'preventDefault'>, direction: 'horizontal' | 'vertical') => {
+    (
+      e: Pick<ReactMouseEvent<HTMLDivElement>, 'clientX' | 'clientY' | 'preventDefault'>,
+      direction: 'horizontal' | 'vertical',
+    ) => {
       e.preventDefault()
       setIsResizing(true)
       const startX = e.clientX

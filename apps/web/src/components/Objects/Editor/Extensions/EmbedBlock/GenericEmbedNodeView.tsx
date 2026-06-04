@@ -22,7 +22,7 @@ function clampHeight(value: number): number {
 function getSimpleIcon(iconName?: string): AppIcon | null {
   if (!iconName) return null
   const iconCandidate = (Si as Record<string, unknown>)[iconName]
-  return typeof iconCandidate === 'function' ? iconCandidate as AppIcon : null
+  return typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
 }
 
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {

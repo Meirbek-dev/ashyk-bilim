@@ -47,12 +47,10 @@ const EmptyState = ({
   className?: string
 }) => (
   <div className={cn('col-span-full flex items-center justify-center py-16', className)}>
-    <div className="max-w-md space-y-4 text-center">
-      <div className="bg-muted mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-sm">
-        <Icon className="text-muted-foreground h-10 w-10" />
-      </div>
-      <div className="space-y-2">
-        <h3 className="text-foreground text-xl font-semibold">{title}</h3>
+    <div className="max-w-md space-y-3 text-center">
+      <Icon className="text-muted-foreground mx-auto h-8 w-8" strokeWidth={1.5} />
+      <div className="space-y-1.5">
+        <h3 className="text-foreground text-base font-semibold">{title}</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
       </div>
     </div>
@@ -75,12 +73,7 @@ const EmptyCoursesState = ({ t }: EmptyStateProps) => (
 const CollectionGrid = ({ collections }: GridProps) => (
   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {collections.map((collection: AppCollection) => (
-      <div
-        key={collection.collection_uuid}
-        className="transition-transform duration-200 focus-within:scale-[1.02] hover:scale-[1.02]"
-      >
-        <CollectionThumbnail collection={collection} />
-      </div>
+      <CollectionThumbnail key={collection.collection_uuid} collection={collection} />
     ))}
   </div>
 )
@@ -115,9 +108,8 @@ const LandingClassic = async ({
       <div className="min-h-screen w-full">
         <GeneralWrapper>
           <div className="space-y-12">
-            {/* Gamification Hero Section */}
             {gamificationProfile && (
-              <section className="animate-in fade-in slide-in-from-top-4 duration-500">
+              <section>
                 <HeroSection profile={gamificationProfile} {...(userRank === undefined ? {} : { userRank })} />
               </section>
             )}
@@ -150,7 +142,7 @@ const LandingClassic = async ({
                   <PermissionGuard action={Actions.CREATE} resource={Resources.COLLECTION} scope={Scopes.APP}>
                     <Link
                       href={getAbsoluteUrl('/collections/new')}
-                      className="focus:ring-primary inline-block rounded transition-transform duration-200 hover:scale-105 focus:scale-105 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                      className="focus:ring-primary inline-block rounded focus:ring-2 focus:ring-offset-2 focus:outline-none"
                     >
                       <NewCollectionButton />
                     </Link>

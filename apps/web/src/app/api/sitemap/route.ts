@@ -48,11 +48,15 @@ export async function GET(_request: NextRequest) {
       changefreq: 'weekly',
     })),
     // Collections
-    ...collections.filter((collection): collection is AppCollection & { collection_uuid: string } => Boolean(collection.collection_uuid)).map(collection => ({
-      loc: `${baseUrl}collections/${collection.collection_uuid.replace('collection_', '')}`,
-      priority: 0.6,
-      changefreq: 'weekly',
-    })),
+    ...collections
+      .filter((collection): collection is AppCollection & { collection_uuid: string } =>
+        Boolean(collection.collection_uuid),
+      )
+      .map(collection => ({
+        loc: `${baseUrl}collections/${collection.collection_uuid.replace('collection_', '')}`,
+        priority: 0.6,
+        changefreq: 'weekly',
+      })),
   ]
 
   const sitemap = generateSitemap(baseUrl, sitemapUrls)

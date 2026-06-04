@@ -71,8 +71,7 @@ export function useChapter(courseUuid: string, chapterUuid: string, withUnpublis
     withUnpublishedActivities,
   })
 
-  const chapter =
-    courseStructure?.chapters?.find((currentChapter) => currentChapter.chapter_uuid === chapterUuid) ?? null
+  const chapter = courseStructure?.chapters?.find(currentChapter => currentChapter.chapter_uuid === chapterUuid) ?? null
 
   return { ...rest, chapter }
 }
@@ -83,11 +82,7 @@ export function useChapterActivities(
   enabled: boolean,
   withUnpublishedActivities = false,
 ) {
-  const { chapter, ...rest } = useChapter(
-    courseUuid,
-    chapterUuid,
-    withUnpublishedActivities,
-  )
+  const { chapter, ...rest } = useChapter(courseUuid, chapterUuid, withUnpublishedActivities)
 
   return {
     ...rest,

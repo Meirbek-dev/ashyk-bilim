@@ -161,26 +161,24 @@ export function GamificationProfileSection({
               <Target className="h-4 w-4" />
               {t('dashboard.nextMilestone')}
             </h4>
-            <Card className="bg-muted/30">
-              <CardContent className="">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <nextMilestone.icon className={cn('h-5 w-5', nextMilestone.color)} />
-                    <div>
-                      <p className="font-medium">
-                        {t('levelIndicators.level')} {nextMilestone.level}
-                      </p>
-                      <p className="text-muted-foreground text-sm">{localizeLevelTitle(nextMilestone.title)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-muted-foreground text-sm">
-                      {nextMilestone.minXP - profile.total_xp} {t('levelIndicators.xpToNext')}
+            <div className="bg-muted/30 border-border rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <nextMilestone.icon className={cn('h-5 w-5', nextMilestone.color)} />
+                  <div>
+                    <p className="text-sm leading-none font-semibold">
+                      {t('levelIndicators.level')} {nextMilestone.level}
                     </p>
+                    <p className="text-muted-foreground mt-1 text-xs">{localizeLevelTitle(nextMilestone.title)}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {nextMilestone.minXP - profile.total_xp} {t('levelIndicators.xpToNext')}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

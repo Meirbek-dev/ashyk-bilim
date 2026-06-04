@@ -2,20 +2,19 @@
 
 import pathlib
 import sys
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, Session
+from sqlmodel import SQLModel
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_public_user
-from src.db.users import PublicUser, User
+from src.db.analytics import AnalyticsSavedView, LearnerRiskSnapshot, TeacherIntervention
 from src.db.courses.courses import Course, ThumbnailType
-from src.db.analytics import AnalyticsSavedView, TeacherIntervention, LearnerRiskSnapshot
+from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
@@ -116,7 +115,7 @@ def test_teacher_saved_views_lifecycle(api_client: TestClient, db_session_factor
     view_data = {
         "name": "My Custom View",
         "view_type": "overview",
-        "query": {"window": "28d", "compare": "previous_period"}
+        "query": {"window": "28d", "compare": "previous_period"},
     }
     response = api_client.post("/analytics/teacher/saved-views", json=view_data)
     assert response.status_code == 200
@@ -182,7 +181,7 @@ def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_fact
         "intervention_type": "message_sent",
         "status": "completed",
         "notes": "Sent a welcome message.",
-        "payload": {}
+        "payload": {},
     }
     response = api_client.post("/analytics/teacher/interventions", json=intervention_data)
     assert response.status_code == 200

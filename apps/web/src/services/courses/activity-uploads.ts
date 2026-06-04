@@ -22,7 +22,14 @@ interface VideoActivityDetails {
   endTime?: number | null | undefined
   muted?: boolean | undefined
   startTime?: number | undefined
-  subtitles?: { file?: File | undefined; id?: string | number | undefined; label?: string | undefined; language?: string | undefined }[] | undefined
+  subtitles?:
+    | {
+        file?: File | undefined
+        id?: string | number | undefined
+        label?: string | undefined
+        language?: string | undefined
+      }[]
+    | undefined
 }
 
 function buildVideoDetails(details: VideoActivityDetails): string {
@@ -31,7 +38,9 @@ function buildVideoDetails(details: VideoActivityDetails): string {
     endTime: number | null
     muted?: boolean | undefined
     startTime: number
-    subtitles?: { id?: string | number | undefined; language?: string | undefined; label?: string | undefined }[] | undefined
+    subtitles?:
+      | { id?: string | number | undefined; language?: string | undefined; label?: string | undefined }[]
+      | undefined
   } = {
     startTime: details.startTime ?? 0,
     endTime: details.endTime ?? null,

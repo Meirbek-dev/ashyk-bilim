@@ -14,9 +14,18 @@ declare global {
     data?: AppPayload | undefined
     description?: string | undefined
     detail?: string | undefined
-    details?: (AppPayload & {
-      subtitles?: { file?: File | undefined; id?: number | string | undefined; label?: string | undefined; language?: string | undefined }[] | undefined
-    }) | undefined
+    details?:
+      | (AppPayload & {
+          subtitles?:
+            | {
+                file?: File | undefined
+                id?: number | string | undefined
+                label?: string | undefined
+                language?: string | undefined
+              }[]
+            | undefined
+        })
+      | undefined
     filename?: string | undefined
     id?: number | string | undefined
     message?: string | undefined
@@ -36,14 +45,12 @@ declare global {
   }
   type AppTranslationValues = Record<string, string | number | Date>
   type AppTranslator = (key: string, values?: AppTranslationValues) => string
-  type AppIcon = ComponentType<
-    {
-      className?: string
-      size?: number
-      strokeWidth?: number
-      [key: string]: unknown
-    }
-  >
+  type AppIcon = ComponentType<{
+    className?: string
+    size?: number
+    strokeWidth?: number
+    [key: string]: unknown
+  }>
 
   interface AppApiError extends Error {
     code?: string

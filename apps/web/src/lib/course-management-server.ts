@@ -38,7 +38,10 @@ interface CourseRightsResponse {
   }
 }
 
-function mapCourseRightsToCapabilities(session: AuthSession, rights: CourseRightsResponse): CourseWorkspaceCapabilities {
+function mapCourseRightsToCapabilities(
+  session: AuthSession,
+  rights: CourseRightsResponse,
+): CourseWorkspaceCapabilities {
   const canEditDetails = Boolean(rights.permissions?.update)
   const canEditCurriculum = Boolean(rights.permissions?.update_content ?? rights.permissions?.update)
   const canManageAccess = Boolean(rights.permissions?.manage_access)

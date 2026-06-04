@@ -53,7 +53,8 @@ export function getCourseContentStats(course: AppCourse): {
   const chapters = Array.isArray(course?.chapters) ? course.chapters.length : 0
   const activities = Array.isArray(course?.chapters)
     ? course.chapters.reduce(
-        (total: number, chapter: AppChapter) => total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
+        (total: number, chapter: AppChapter) =>
+          total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
         0,
       )
     : 0
@@ -61,7 +62,8 @@ export function getCourseContentStats(course: AppCourse): {
   return { chapters, activities }
 }
 
-const isCourseDetailsComplete = (course: AppCourse): boolean => Boolean(course?.name?.trim() && course?.description?.trim())
+const isCourseDetailsComplete = (course: AppCourse): boolean =>
+  Boolean(course?.name?.trim() && course?.description?.trim())
 
 const isCourseMediaComplete = (course: AppCourse): boolean => Boolean(course?.thumbnail_image)
 

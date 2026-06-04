@@ -63,7 +63,9 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         for (const chapter of course.chapters) {
           if (chapter.activities) {
             for (const activity of chapter.activities) {
-              const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
+              const isCompleted = run?.steps?.some(
+                (step: AppTrailStep) => step.activity_id === activity.id && step.complete,
+              )
               if (!isCompleted) {
                 firstUnfinishedActivity = activity
                 break
@@ -82,7 +84,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${targetActivity.activity_uuid.replace('activity_', '')}`,
         )
       }
-      return;
+      return
     }
 
     setIsActionLoading(true)
@@ -238,15 +240,15 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           type="button"
           onClick={() => setIsProgressOpen(true)}
           variant="ghost"
-          className="group flex h-auto w-full items-center gap-4 rounded-xl border border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-white p-4 text-left transition-all hover:border-neutral-300 hover:shadow-sm"
+          className="group border-border/60 bg-muted/20 hover:border-border/80 hover:bg-muted/40 flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-xs"
         >
-          <div className="relative flex size-14 shrink-0 items-center justify-center rounded-full bg-neutral-100 transition-colors group-hover:bg-neutral-200/70">
-            <BookOpen className="size-6 text-neutral-500" />
+          <div className="bg-muted group-hover:bg-muted/80 relative flex size-14 shrink-0 items-center justify-center rounded-full transition-colors">
+            <BookOpen className="text-muted-foreground size-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-neutral-900">{t('readyToBegin')}</p>
+            <p className="text-foreground text-sm font-medium">{t('readyToBegin')}</p>
             {totalActivities > 0 && (
-              <p className="mt-0.5 text-sm text-neutral-500">{t('startLearningJourney', { totalActivities })}</p>
+              <p className="text-muted-foreground mt-0.5 text-sm">{t('startLearningJourney', { totalActivities })}</p>
             )}
           </div>
           <ArrowRight className="text-primary size-5 transition-transform group-hover:translate-x-0.5" />
@@ -260,24 +262,16 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         onClick={() => setIsProgressOpen(true)}
         variant="ghost"
         className={cn(
-          'group flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-sm',
+          'group flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-xs',
           isCompleted
-            ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/50 hover:border-green-300'
-            : 'border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-white hover:border-neutral-300',
+            ? 'border-green-500/20 bg-green-500/5 hover:border-green-500/30 hover:bg-green-500/10'
+            : 'border-border/60 bg-muted/20 hover:border-border/80 hover:bg-muted/40',
         )}
       >
         {/* Circular progress indicator */}
         <div className="relative size-14 shrink-0">
           <svg className="size-full -rotate-90" viewBox="0 0 64 64">
-            <circle
-              cx="32"
-              cy="32"
-              r="26"
-              stroke="currentColor"
-              strokeWidth="5"
-              fill="none"
-              className="text-neutral-200"
-            />
+            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="5" fill="none" className="text-muted" />
             <circle
               cx="32"
               cy="32"
@@ -297,14 +291,14 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
             {isCompleted ? (
               <Trophy className="size-5 text-green-600" />
             ) : (
-              <span className="text-sm font-bold text-neutral-800">{progressPercentage}%</span>
+              <span className="text-foreground text-sm font-bold">{progressPercentage}%</span>
             )}
           </div>
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className={cn('text-sm font-medium', isCompleted ? 'text-green-800' : 'text-neutral-900')}>
+            <p className={cn('text-sm font-medium', isCompleted ? 'text-green-800' : 'text-foreground')}>
               {isCompleted ? t('courseCompleted') : t('courseProgress')}
             </p>
             {isCompleted && (
@@ -314,7 +308,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
               </Badge>
             )}
           </div>
-          <p className={cn('mt-0.5 text-sm', isCompleted ? 'text-green-600' : 'text-neutral-500')}>
+          <p className={cn('mt-0.5 text-sm', isCompleted ? 'text-green-600' : 'text-muted-foreground')}>
             {t('completedActivities', { completedActivities, totalActivities })}
           </p>
         </div>
@@ -322,7 +316,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         <ArrowRight
           className={cn(
             'size-5 transition-transform group-hover:translate-x-0.5',
-            isCompleted ? 'text-green-500' : 'text-neutral-400',
+            isCompleted ? 'text-green-500' : 'text-muted-foreground',
           )}
         />
       </Button>

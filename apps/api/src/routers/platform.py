@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, UploadFile
 from sqlmodel import Session
@@ -167,5 +167,3 @@ def api_update_platform(
     """
     checker.require(current_user.id, "platform:update")
     return update_platform(request, platform_object, current_user, db_session)
-
-

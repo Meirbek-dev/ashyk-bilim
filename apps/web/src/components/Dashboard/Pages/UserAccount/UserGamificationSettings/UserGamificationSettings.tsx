@@ -45,11 +45,14 @@ export default function UserGamificationSettings() {
   // Load preferences from profile
   useEffect(() => {
     if (profile?.preferences) {
-      const prefs = profile.preferences as {
-        privacy?: { showOnLeaderboard?: boolean }
-        notifications?: { xpGain?: boolean }
-        display?: { animatedEffects?: boolean }
-      } | null | undefined
+      const prefs = profile.preferences as
+        | {
+            privacy?: { showOnLeaderboard?: boolean }
+            notifications?: { xpGain?: boolean }
+            display?: { animatedEffects?: boolean }
+          }
+        | null
+        | undefined
       setPreferences({
         showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
         xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,

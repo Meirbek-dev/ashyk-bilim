@@ -52,22 +52,23 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     }
   }
 
-  const submitFileActivity = async ({
-    file,
-    type,
-    activity,
-    chapterId,
-  }: AppFileActivityInput) => {
+  const submitFileActivity = async ({ file, type, activity, chapterId }: AppFileActivityInput) => {
     const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
     const courseUuid = course.courseStructure.course_uuid
     const activityPayload = courseUuid ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid } : activity
 
     try {
-      await activityMutations.createFileActivity(file, type, activityPayload as Partial<ActivityCreateValues>, chapterId, progress => {
-        toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
-          id: toast_loading,
-        })
-      })
+      await activityMutations.createFileActivity(
+        file,
+        type,
+        activityPayload as Partial<ActivityCreateValues>,
+        chapterId,
+        progress => {
+          toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
+            id: toast_loading,
+          })
+        },
+      )
 
       setNewActivityModal(false)
       toast.dismiss(toast_loading)
@@ -80,11 +81,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
     }
   }
 
-  const submitExternalVideo = async (
-    external_video_data: AppPayload,
-    activity: AppPayload,
-    chapterId: number,
-  ) => {
+  const submitExternalVideo = async (external_video_data: AppPayload, activity: AppPayload, chapterId: number) => {
     const toast_loading = toast.loading(tNotify('creatingActivity'))
     try {
       await activityMutations.createExternalVideo(

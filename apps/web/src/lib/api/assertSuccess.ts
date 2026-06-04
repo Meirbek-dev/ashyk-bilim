@@ -100,7 +100,10 @@ export class APIError extends Error {
   public constructor(response: unknown) {
     const responseRecord = asRecord(response)
     const responseLike: ResponseLike = responseRecord ?? {}
-    const data = responseRecord && typeof responseRecord.data === 'object' && responseRecord.data !== null ? responseRecord.data : null
+    const data =
+      responseRecord && typeof responseRecord.data === 'object' && responseRecord.data !== null
+        ? responseRecord.data
+        : null
     const dataRecord = asRecord(data)
     const envelope = parseApiErrorEnvelope(data)
     const message = envelope?.message ?? legacyMessage(dataRecord, responseLike)

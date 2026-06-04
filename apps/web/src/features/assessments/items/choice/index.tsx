@@ -553,10 +553,13 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
 
 export const choiceModules: ItemKindModule[] = (
   ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const
-).map(kind => ({
-  kind,
-  label: kind.replaceAll('_', ' ').toLowerCase(),
-  Author: ChoiceItemAuthor,
-  Attempt: ChoiceItemAttempt,
-  ReviewDetail: ChoiceItemReviewDetail,
-} as ItemKindModule))
+).map(
+  kind =>
+    ({
+      kind,
+      label: kind.replaceAll('_', ' ').toLowerCase(),
+      Author: ChoiceItemAuthor,
+      Attempt: ChoiceItemAttempt,
+      ReviewDetail: ChoiceItemReviewDetail,
+    }) as ItemKindModule,
+)

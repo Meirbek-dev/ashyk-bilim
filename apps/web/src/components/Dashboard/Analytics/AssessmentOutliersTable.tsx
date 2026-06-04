@@ -32,7 +32,7 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
         <div>
           <Link
             href={`/dash/analytics/assessments/${row.original.assessment_type}/${row.original.assessment_id}`}
-            className="text-foreground focus-visible:ring-offset-background font-medium hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-900"
+            className="text-foreground focus-visible:ring-offset-background hover:text-primary focus-visible:ring-ring font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             aria-label={t('assessmentOutliers.viewAssessment', {
               title: row.original.title,
             })}

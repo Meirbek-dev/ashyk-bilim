@@ -20,10 +20,12 @@ type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   baseUrl?: string
   /** Override the default request timeout. Use false for no client-side timeout. */
   timeoutMs?: number | false
-  next?: {
-    tags?: string[] | undefined
-    revalidate?: number | false | undefined
-  } | undefined
+  next?:
+    | {
+        tags?: string[] | undefined
+        revalidate?: number | false | undefined
+      }
+    | undefined
 }
 
 function apiBase(isServer: boolean, baseUrl?: string): string {

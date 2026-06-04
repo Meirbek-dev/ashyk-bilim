@@ -225,11 +225,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
         >
           <GripVertical className="h-5 w-5" />
         </button>
- 
+
         <div className="bg-muted shrink-0 rounded-lg p-2">
           <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
         </div>
- 
+
         <div className="min-w-0 flex-1">
           {isEditing ? (
             <div className="flex items-center gap-1.5">
@@ -242,7 +242,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                 className="h-8 text-sm"
                 disabled={isSavingEdit}
               />
- 
+
               <ToolTip content={t('save')} side="top">
                 <Button
                   size="sm"
@@ -254,7 +254,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
               </ToolTip>
- 
+
               <ToolTip content={t('cancel')} side="top">
                 <Button
                   size="sm"
@@ -273,7 +273,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
               <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
                 {activities.length}
               </span>
- 
+
               <ToolTip content={t('edit')} side="top">
                 <Button
                   size="sm"
@@ -287,7 +287,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </div>
           )}
         </div>
- 
+
         {!isEditing && (
           <ToolTip content={t('deleteChapterButton')} side="top">
             <Button
@@ -300,7 +300,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </Button>
           </ToolTip>
         )}
- 
+
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -334,7 +334,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
           </AlertDialogContent>
         </AlertDialog>
       </div>
- 
+
       <SortableContext items={activityIds} strategy={verticalListSortingStrategy}>
         <div
           ref={setActivitiesDroppableRef}
@@ -358,7 +358,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
           )}
         </div>
       </SortableContext>
- 
+
       <div className="px-4 pb-4">
         <NewActivityButton chapterId={chapterId} />
       </div>

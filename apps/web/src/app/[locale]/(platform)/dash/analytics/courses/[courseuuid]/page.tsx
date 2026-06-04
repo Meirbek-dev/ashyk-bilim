@@ -32,25 +32,31 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
     const detail = await getTeacherCourseDetailByUuid(courseuuid, query)
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card className="border-border bg-card shadow-xs">
           <CardHeader>
-            <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] text-slate-500 uppercase">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] uppercase">
               <Badge variant="outline">{t('pages.courseDetailBadge')}</Badge>
               <Badge variant="outline">{detail.course.course_uuid}</Badge>
             </div>
             <CardTitle className="mt-3 text-3xl">{detail.course.name}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatCompletion')}</div>
+            <div className="border-border/60 bg-muted/20 rounded-xl border p-4">
+              <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                {t('pages.courseStatCompletion')}
+              </div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.completion_rate}%</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatAvgProgress')}</div>
+            <div className="border-border/60 bg-muted/20 rounded-xl border p-4">
+              <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                {t('pages.courseStatAvgProgress')}
+              </div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.avg_progress_pct}%</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatUngraded')}</div>
+            <div className="border-border/60 bg-muted/20 rounded-xl border p-4">
+              <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                {t('pages.courseStatUngraded')}
+              </div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.ungraded_submissions}</div>
             </div>
           </CardContent>
@@ -75,13 +81,13 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           data={detail.funnels.chapter_dropoff ?? []}
         />
 
-        <Card className="border-slate-200 bg-white/90 shadow-sm">
+        <Card className="border-border bg-card shadow-xs">
           <CardHeader>
             <CardTitle>{t('pages.courseContentHealthTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             {detail.content_health.map(item => (
-              <div key={item.signal} className="rounded-2xl border border-slate-200 p-4">
+              <div key={item.signal} className="border-border/60 bg-muted/20 rounded-xl border p-4">
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={
@@ -90,11 +96,11 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
                   >
                     {getAnalyticsSeverityLabel(t, item.severity)}
                   </Badge>
-                  <span className="text-sm font-medium text-slate-800">{getAnalyticsSignalLabel(t, item.signal)}</span>
+                  <span className="text-foreground text-sm font-medium">{getAnalyticsSignalLabel(t, item.signal)}</span>
                 </div>
-                <div className="mt-3 text-sm leading-6 text-slate-600">{item.note}</div>
+                <div className="text-muted-foreground mt-3 text-sm leading-6">{item.note}</div>
                 {item.value !== null ? (
-                  <div className="mt-3 text-2xl font-semibold text-slate-900">{item.value}</div>
+                  <div className="text-foreground mt-3 text-2xl font-semibold">{item.value}</div>
                 ) : null}
               </div>
             ))}

@@ -99,7 +99,7 @@ export const CodeBlockShiki = CodeBlock.extend({
               return getDecorations(tr.doc as any, highlighter)
             }
             const mapDecorations = set.map.bind(set)
-            return mapDecorations(tr.mapping, tr.doc as any)
+            return mapDecorations(tr.mapping, tr.doc)
           },
         },
         props: {

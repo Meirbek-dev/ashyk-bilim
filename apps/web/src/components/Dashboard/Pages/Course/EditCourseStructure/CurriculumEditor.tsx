@@ -234,7 +234,9 @@ const CurriculumEditor = () => {
       sourceChapter.activities ??= []
       destinationChapter.activities ??= []
 
-      const sourceIndex = sourceChapter.activities.findIndex((activity: AppActivity) => activity.activity_uuid === activeId)
+      const sourceIndex = sourceChapter.activities.findIndex(
+        (activity: AppActivity) => activity.activity_uuid === activeId,
+      )
       if (sourceIndex === -1) return
 
       const [movedActivity] = sourceChapter.activities.splice(sourceIndex, 1)

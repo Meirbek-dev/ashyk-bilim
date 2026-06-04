@@ -95,12 +95,14 @@ const FilterButton = ({
       onTypeChange(type)
     }}
     className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors ${
-      selectedType === type ? 'bg-black/10 font-medium text-black/80' : 'text-black/60 hover:bg-black/5'
+      selectedType === type
+        ? 'bg-primary/10 text-primary font-medium'
+        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
     }`}
   >
     <Icon size={16} />
     <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
-    <span className="text-black/40">({count})</span>
+    <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
   </button>
 )
 

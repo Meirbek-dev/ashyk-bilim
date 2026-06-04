@@ -24,7 +24,9 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
 
   const completedActivityIds = useMemo(() => {
     const run = trailData?.runs?.find((candidateRun: AppTrailRun) => {
-      const runCourseUuid = candidateRun.course?.course_uuid ?? (typeof candidateRun.course_uuid === 'string' ? candidateRun.course_uuid : undefined)
+      const runCourseUuid =
+        candidateRun.course?.course_uuid ??
+        (typeof candidateRun.course_uuid === 'string' ? candidateRun.course_uuid : undefined)
       return runCourseUuid?.replace('course_', '') === cleanCourseUuid
     })
 

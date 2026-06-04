@@ -277,7 +277,9 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               </Alert>
             ) : null}
             {latestCompletedSubmission ? (
-              <ExamSubmissionStatePanel submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']} />
+              <ExamSubmissionStatePanel
+                submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+              />
             ) : null}
           </div>
         }
@@ -647,7 +649,11 @@ function ExamTakingContent({
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']} /> : null}
+      {latestCompletedSubmission ? (
+        <ExamSubmissionStatePanel
+          submission={latestCompletedSubmission as Parameters<typeof ExamSubmissionStatePanel>[0]['submission']}
+        />
+      ) : null}
 
       {/* Progress bar + view mode toggle */}
       <div className="flex items-center gap-3">

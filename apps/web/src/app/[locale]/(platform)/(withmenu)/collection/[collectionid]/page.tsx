@@ -44,7 +44,9 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
   const col = await getCollectionById(collectionid)
-  const courses = (col.courses ?? []).filter((course): course is AppCourse => typeof course === 'object' && course !== null)
+  const courses = (col.courses ?? []).filter(
+    (course): course is AppCourse => typeof course === 'object' && course !== null,
+  )
 
   return (
     <GeneralWrapper>
@@ -73,22 +75,21 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
           <Link
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}
             key={course.course_uuid}
-            className="group border-border bg-card text-card-foreground hover:border-primary/20 flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md"
+            className="group border-border bg-card text-card-foreground hover:border-foreground/20 flex flex-col overflow-hidden rounded-lg border shadow-xs transition-colors"
           >
             <div className="border-border/50 bg-muted relative aspect-[16/9] w-full overflow-hidden border-b">
               <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage: course.thumbnail_image
                     ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
                     : `url('/empty_thumbnail.avif')`,
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
 
             <div className="flex flex-1 flex-col p-4">
-              <h3 className="group-hover:text-primary line-clamp-2 text-lg font-semibold transition-colors">
+              <h3 className="group-hover:text-primary line-clamp-2 text-base font-semibold transition-colors">
                 {course.name}
               </h3>
             </div>

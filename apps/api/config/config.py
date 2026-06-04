@@ -581,9 +581,7 @@ class PlatformConfig(PydanticStrictBaseModel):
                     "Secure cookies are required when SSL is enabled. "
                     "Set PLATFORM_COOKIE_SECURE=true or remove PLATFORM_SSL."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             broad_cors = {".*", r"\b((?:https?://)[^\s/$.?#].[^\s]*)\b", ""}
             if self.hosting_config.allowed_regexp in broad_cors:
                 msg = (
@@ -591,9 +589,7 @@ class PlatformConfig(PydanticStrictBaseModel):
                     "Set PLATFORM_ALLOWED_REGEXP to a specific pattern or "
                     "use PLATFORM_ALLOWED_ORIGINS instead."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         return self
 
 

@@ -200,9 +200,7 @@ const EditCourseContributors = () => {
 
   const initialOpenToContributors =
     typeof courseStructure?.open_to_contributors === 'boolean' ? courseStructure.open_to_contributors : undefined
-  const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(
-    () => initialOpenToContributors,
-  )
+  const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(() => initialOpenToContributors)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchResultsOverride, setSearchResultsOverride] = useState<SearchUser[] | null>(null)
@@ -217,7 +215,8 @@ const EditCourseContributors = () => {
     enabled: hasSearchQuery,
   })
   const fetchedSearchResults: SearchUser[] =
-    contributorSearchResponse?.success && (contributorSearchResponse.data as ContributorSearchResponse | undefined)?.users
+    contributorSearchResponse?.success &&
+    (contributorSearchResponse.data as ContributorSearchResponse | undefined)?.users
       ? ((contributorSearchResponse.data as ContributorSearchResponse).users ?? []).map((user: SearchUser) =>
           Object.assign(user, {
             avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ``,

@@ -855,7 +855,7 @@ const UserEditGeneral = () => {
 
     try {
       await updateProfile(values, userData.id)
-      setUserData(current => current ? ({ ...current, ...values, middle_name: values.middle_name ?? null }) : null)
+      setUserData(current => (current ? { ...current, ...values, middle_name: values.middle_name ?? null } : null))
 
       toast.dismiss(loadingToast)
       if (isEmailChanged) {

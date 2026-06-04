@@ -43,14 +43,22 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
           : current,
       )
 
-      queryClient.setQueryData(activityKey, (current: AppActivity | undefined) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(activityKey, (current: AppActivity | undefined) =>
+        current ? { ...current, ...payload } : current,
+      )
 
       return { activityKey, previousActivity, previousStructure }
     },
     onError: (
       _error: unknown,
       _variables: unknown,
-      context: { activityKey?: readonly unknown[]; previousActivity: AppActivity | undefined; previousStructure: AppCourse | undefined } | undefined,
+      context:
+        | {
+            activityKey?: readonly unknown[]
+            previousActivity: AppActivity | undefined
+            previousStructure: AppCourse | undefined
+          }
+        | undefined,
     ) => {
       if (!context) return
       queryClient.setQueryData(structureKey, context.previousStructure)

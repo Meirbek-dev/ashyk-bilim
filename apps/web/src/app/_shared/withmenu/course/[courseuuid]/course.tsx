@@ -29,7 +29,6 @@ import CourseDiscussions from '@/components/discussions'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 // Import UI components
-import { Card, CardContent } from '@/components/ui/card'
 import { useEffect, useMemo, useState } from 'react'
 // Import existing components and utilities
 import NextImage from '@components/ui/NextImage'
@@ -508,11 +507,7 @@ const CourseClient = (props: CourseClientProps) => {
               {/* Sidebar */}
               <div className="hidden w-full shrink-0 space-y-4 md:block md:w-1/4">
                 <CoursesActions courseuuid={courseuuid} course={course} trailData={trailData} />
-                <Card className="p-0">
-                  <CardContent className="p-4">
-                    <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
-                  </CardContent>
-                </Card>
+                <CourseAuthors authors={(course.authors ?? []) as never} courseUuid={course.course_uuid} />
               </div>
             </div>
           </GeneralWrapper>

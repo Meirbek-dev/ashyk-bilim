@@ -346,7 +346,9 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
           currentPost.id === postId
             ? {
                 ...currentPost,
-                replies: currentPost.replies?.filter((currentReply: DiscussionReplyData) => currentReply.id !== replyId),
+                replies: currentPost.replies?.filter(
+                  (currentReply: DiscussionReplyData) => currentReply.id !== replyId,
+                ),
               }
             : currentPost,
         ),

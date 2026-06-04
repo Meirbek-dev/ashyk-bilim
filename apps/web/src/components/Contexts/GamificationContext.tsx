@@ -22,11 +22,13 @@ const LevelUpCelebration = lazy(() =>
 
 interface GamificationProviderProps {
   children: React.ReactNode
-  initialData?: {
-    profile?: UserGamificationProfile | null | undefined
-    dashboard?: DashboardData | null | undefined
-    leaderboard?: PlatformLeaderboard | null | undefined
-  } | undefined
+  initialData?:
+    | {
+        profile?: UserGamificationProfile | null | undefined
+        dashboard?: DashboardData | null | undefined
+        leaderboard?: PlatformLeaderboard | null | undefined
+      }
+    | undefined
 }
 
 function getCompactMode(preferences: UserGamificationProfile['preferences'] | undefined): boolean {

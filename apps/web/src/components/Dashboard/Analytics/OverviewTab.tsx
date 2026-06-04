@@ -155,7 +155,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
       {/* Alerts and Provenance */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Modern Alerts Card */}
-        <Card className="border-border bg-card/65 flex flex-col justify-between shadow-sm backdrop-blur-xs">
+        <Card className="border-border bg-card flex flex-col justify-between">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="text-destructive h-5 w-5" />
@@ -194,7 +194,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                       <Link
                         key={alert.id}
                         href={alertHref}
-                        className="bg-muted/40 hover:bg-muted/70 border-border/50 rounded-xl border p-4 transition-all hover:translate-x-0.5"
+                        className="bg-muted/30 hover:bg-muted/60 border-border/50 block rounded-md border px-4 py-3 transition-colors"
                       >
                         {alertCardContent}
                       </Link>
@@ -202,7 +202,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                   }
 
                   return (
-                    <div key={alert.id} className="bg-muted/40 border-border/50 rounded-xl border p-4">
+                    <div key={alert.id} className="bg-muted/30 border-border/50 rounded-md border px-4 py-3">
                       {alertCardContent}
                     </div>
                   )
@@ -215,7 +215,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
         </Card>
 
         {/* Data Provenance & Scope Card */}
-        <Card className="border-border bg-card/65 flex flex-col shadow-sm backdrop-blur-xs">
+        <Card className="border-border bg-card flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Activity className="text-primary h-5 w-5" />
@@ -224,7 +224,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
             <CardDescription>{t('overview.freshnessDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="grid flex-1 gap-3 sm:grid-cols-2">
-            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
+            <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelGenerated')}
               </div>
@@ -232,7 +232,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                 {new Date(data.generated_at).toLocaleString(locale)}
               </div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
+            <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelFreshness')}
               </div>
@@ -240,13 +240,13 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
                 {formatFreshness(data.freshness_seconds)}
               </div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
+            <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelScopedCourses')}
               </div>
               <div className="text-foreground mt-2 text-lg font-bold">{data.scope.course_ids.length}</div>
             </div>
-            <div className="bg-muted/40 hover:bg-muted/65 border-border/50 flex flex-col justify-between rounded-xl border p-4 transition-colors">
+            <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between rounded-md border px-4 py-3 transition-colors">
               <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('overview.labelCohorts')}
               </div>

@@ -37,9 +37,7 @@ const getDefaultTimeLimit = (limits?: { time_limit?: { min?: number; max?: numbe
 type ExamCourseInput = AppActivityModalProps['course']
 
 const getCourseUuid = (course?: ExamCourseInput | null): string | null =>
-  course?.courseStructure?.course_uuid ??
-  course?.course_uuid ??
-  null
+  course?.courseStructure?.course_uuid ?? course?.course_uuid ?? null
 
 const getCreatedActivityUuid = (data: AppPayload): string | null =>
   data?.activity_uuid ??

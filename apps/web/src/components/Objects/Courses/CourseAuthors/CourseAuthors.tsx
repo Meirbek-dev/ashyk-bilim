@@ -67,13 +67,13 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
 
   return (
     <div className="flex flex-col items-center space-y-4 px-2 pb-2">
-      <div className="self-start text-[12px] font-semibold text-neutral-400">{t('authorsAndUpdates')}</div>
+      <div className="text-muted-foreground self-start text-[12px] font-semibold">{t('authorsAndUpdates')}</div>
 
       {/* Avatars row */}
       <div className="relative flex justify-center -space-x-6">
         {displayedAvatars.map((author, index) => (
           <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
-            <div className="ring-white">
+            <div className="ring-background">
               <UserAvatar
                 size={isMobile ? 'xl' : '2xl'}
                 variant="outline"
@@ -92,7 +92,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
         {remainingCount > 0 && (
           <div className="relative z-0">
             <div
-              className="flex items-center justify-center rounded-full border-4 border-white bg-neutral-100 font-medium text-neutral-600 shadow-sm"
+              className="border-background bg-muted text-muted-foreground flex items-center justify-center rounded-full border-4 font-medium shadow-sm"
               style={{
                 width: `${avatarSize}px`,
                 height: `${avatarSize}px`,
@@ -107,7 +107,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
 
       {/* Names row - improved display logic */}
       <div className="mt-2 text-center">
-        <div className="text-sm font-medium text-neutral-800">
+        <div className="text-foreground text-sm font-medium">
           {authors.length === 1 ? (
             <span>
               {authors[0]?.user?.first_name && authors[0]?.user?.last_name
@@ -127,12 +127,12 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
                 </span>
               ))}
               {authors.length > 2 && (
-                <span className="ml-1 text-neutral-500">{t('andMoreAuthors', { count: authors.length - 2 })}</span>
+                <span className="text-muted-foreground ml-1">{t('andMoreAuthors', { count: authors.length - 2 })}</span>
               )}
             </>
           )}
         </div>
-        <div className="mt-0.5 text-xs text-neutral-500">
+        <div className="text-muted-foreground mt-0.5 text-xs">
           {authors.length === 1 ? (
             <span>@{authors[0]?.user?.username || t('unknownAuthor')}</span>
           ) : (
@@ -164,11 +164,11 @@ const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            <Rss size={14} className="text-neutral-400" />
-            <span className="text-sm font-semibold text-neutral-600">{t('courseUpdates')}</span>
+            <Rss size={14} className="text-muted-foreground" />
+            <span className="text-foreground text-sm font-semibold">{t('courseUpdates')}</span>
           </div>
           {updates && updates.length > 0 ? (
-            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-nowrap text-neutral-500">
+            <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[11px] font-medium text-nowrap">
               {updates.length} {updates.length === 1 ? t('update') : t('updates')}
             </span>
           ) : null}
@@ -182,8 +182,8 @@ const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
             variant="ghost"
             className={`ml-2 inline-flex h-auto items-center space-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
               selectedView === 'new'
-                ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
             } `}
           >
             <PencilLine size={12} />
@@ -271,7 +271,7 @@ const NewUpdateForm = ({
                   type="text"
                   id={field.name}
                   placeholder={t('updateTitlePlaceholder')}
-                  className="border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
+                  className="w-full"
                   {...field}
                 />
               </FieldContent>
@@ -289,7 +289,7 @@ const NewUpdateForm = ({
                 <Textarea
                   placeholder={t('updateContentPlaceholder')}
                   id={field.name}
-                  className="h-[120px] resize-none border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
+                  className="h-[120px] w-full resize-none"
                   {...field}
                 />
               </FieldContent>
@@ -300,7 +300,7 @@ const NewUpdateForm = ({
         <div className="flex justify-end space-x-2 pt-2">
           <Button
             type="submit"
-            className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors duration-150"
+            className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-4 py-1.5 text-xs font-medium transition-colors duration-150"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? t('publishing') : t('publishUpdate')}
@@ -337,10 +337,10 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   if (!mounted || !updates || updates.length === 0) {
     if (mounted && (!updates || updates.length === 0)) {
       return (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-200 bg-neutral-50/50 px-4 py-8 text-center">
-          <TentTree size={28} className="mb-2 text-neutral-400" />
-          <p className="text-sm font-medium text-neutral-600">{t('noUpdatesYet')}</p>
-          <p className="mt-1 text-xs text-neutral-400">{t('updatesAppearHere')}</p>
+        <div className="border-border bg-muted/20 flex flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center">
+          <TentTree size={28} className="text-muted-foreground mb-2" />
+          <p className="text-foreground text-sm font-medium">{t('noUpdatesYet')}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{t('updatesAppearHere')}</p>
         </div>
       )
     }
@@ -355,15 +355,15 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="group rounded-lg bg-neutral-50/50 p-3 transition-colors duration-150 hover:bg-neutral-100/80"
+          className="group bg-muted/30 hover:bg-muted/65 rounded-lg p-3 transition-colors duration-150"
         >
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-baseline space-x-2">
-                <h4 className="truncate text-sm font-medium text-neutral-800">{update.title}</h4>
+                <h4 className="text-foreground truncate text-sm font-medium">{update.title}</h4>
                 <span
                   title={format(new Date(update.creation_date), 'MMMM d, yyyy', { locale })}
-                  className="text-[11px] font-medium whitespace-nowrap text-neutral-400"
+                  className="text-muted-foreground text-[11px] font-medium whitespace-nowrap"
                 >
                   {formatDistanceToNow(new Date(update.creation_date), {
                     addSuffix: true,
@@ -371,7 +371,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
                   })}
                 </span>
               </div>
-              <p className="line-clamp-3 text-sm text-neutral-600">{update.content}</p>
+              <p className="text-muted-foreground line-clamp-3 text-sm">{update.content}</p>
             </div>
             {canManageCourse ? (
               <div className="ml-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -419,7 +419,7 @@ const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update
             id="delete-update-button"
             variant="ghost"
             size="icon"
-            className="rounded-full text-neutral-400 transition-all duration-150 hover:bg-rose-50 hover:text-rose-500"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-150"
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

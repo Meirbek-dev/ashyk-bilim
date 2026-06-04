@@ -28,21 +28,17 @@ export default function AccessDenied({ session }: AccessDeniedProps) {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center p-6 text-center">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-8 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-500">
-          <ShieldAlert className="h-8 w-8" />
-        </div>
+      <div className="bg-card w-full max-w-md rounded-md border p-8">
+        <ShieldAlert className="text-destructive mx-auto mb-5 h-8 w-8" strokeWidth={1.5} />
 
-        <h1 className="mb-3 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {tErrors('accessDenied')}
-        </h1>
+        <h1 className="mb-2 text-lg font-semibold tracking-tight">{tErrors('accessDenied')}</h1>
 
-        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">{tErrors('accessDeniedMessage')}</p>
+        <p className="text-muted-foreground mb-7 text-sm">{tErrors('accessDeniedMessage')}</p>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-center">
           <Button
             variant="outline"
-            className="flex items-center gap-2 rounded-xl"
+            className="flex items-center gap-2"
             onClick={() => router.push(session ? '/dash' : '/')}
           >
             <Home className="h-4 w-4" />
@@ -52,7 +48,7 @@ export default function AccessDenied({ session }: AccessDeniedProps) {
           {!!session && (
             <Button
               variant="destructive"
-              className="flex items-center gap-2 rounded-xl"
+              className="flex items-center gap-2"
               onClick={handleLogout}
               disabled={isPending}
             >

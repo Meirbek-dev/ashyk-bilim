@@ -72,7 +72,9 @@ export function updateCourseMetadataMutationOptions(
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
-      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
+        current ? { ...current, ...payload } : current,
+      )
       return { previousStructure }
     },
     onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
@@ -106,7 +108,9 @@ export function updateCourseAccessMutationOptions(
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
-      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) => (current ? { ...current, ...payload } : current))
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
+        current ? { ...current, ...payload } : current,
+      )
       return { previousStructure }
     },
     onError: (_error: unknown, _variables: unknown, context: AppMutationContext | undefined) => {
@@ -165,7 +169,9 @@ export function addCourseContributorsMutationOptions(courseUuid: string, queryCl
         queryClient.setQueryData(editorBundleKey, (current: CourseEditorBundle | undefined) => {
           if (!current) return current
           const existingContributors = current.contributors.data ?? []
-          const existingUsernames = new Set(existingContributors.map((contributor: AppCourseAuthor) => contributor.user?.username))
+          const existingUsernames = new Set(
+            existingContributors.map((contributor: AppCourseAuthor) => contributor.user?.username),
+          )
           const optimisticContributors = users
             .filter(user => !existingUsernames.has(user.username))
             .map(user => buildOptimisticContributor(user))
@@ -281,13 +287,11 @@ export function removeCourseContributorsMutationOptions(courseUuid: string, quer
           ...current,
           contributors: {
             ...current.contributors,
-            data: (current.contributors.data ?? []).filter(
-              (contributor: AppCourseAuthor) => {
-                const hasUserId = contributor.user_id !== undefined && userIdSet.has(contributor.user_id)
-                const hasUsername = contributor.user?.username !== undefined && usernameSet.has(contributor.user.username)
-                return !hasUserId && !hasUsername
-              },
-            ),
+            data: (current.contributors.data ?? []).filter((contributor: AppCourseAuthor) => {
+              const hasUserId = contributor.user_id !== undefined && userIdSet.has(contributor.user_id)
+              const hasUsername = contributor.user?.username !== undefined && usernameSet.has(contributor.user.username)
+              return !hasUserId && !hasUsername
+            }),
           },
         }
       })

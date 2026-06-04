@@ -94,7 +94,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
         {remainingCount > 0 && (
           <div className="relative z-0">
             <div
-              className="flex items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-xs font-medium text-neutral-600 shadow-sm"
+              className="border-card bg-muted text-muted-foreground flex items-center justify-center rounded-full border-2 text-xs font-medium shadow-sm"
               style={{
                 width: `${avatarSize}px`,
                 height: `${avatarSize}px`,
@@ -107,9 +107,11 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
       </div>
 
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-neutral-400">{authors.length > 1 ? t('authors') : t('author')}</span>
+        <span className="text-muted-foreground text-xs font-medium">
+          {authors.length > 1 ? t('authors') : t('author')}
+        </span>
         {authors.length === 1 ? (
-          <span className="text-sm font-semibold text-neutral-800">
+          <span className="text-foreground text-sm font-semibold">
             {authors[0]?.user?.first_name && authors[0]?.user?.last_name
               ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                   .filter(Boolean)
@@ -117,7 +119,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
               : `@${authors[0]?.user?.username || t('unknownAuthor')}`}
           </span>
         ) : (
-          <span className="text-sm font-semibold text-neutral-800">
+          <span className="text-foreground text-sm font-semibold">
             {authors[0]?.user?.first_name && authors[0]?.user?.last_name
               ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                   .filter(Boolean)
@@ -166,7 +168,9 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       if (course.chapters) {
         for (const chapter of course.chapters) {
           for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some((step: AppTrailStep) => step.activity_id === activity.id && step.complete)
+            const isCompleted = run?.steps?.some(
+              (step: AppTrailStep) => step.activity_id === activity.id && step.complete,
+            )
             if (!isCompleted) {
               firstUnfinishedActivity = activity
               break
@@ -229,7 +233,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
     })
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white/90 p-4 shadow-sm shadow-gray-300/20 backdrop-blur-sm">
+    <div className="border-border/80 bg-card overflow-hidden rounded-xl border p-4 shadow-xs">
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
 

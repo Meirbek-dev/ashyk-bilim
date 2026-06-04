@@ -8,14 +8,12 @@ export type UnknownRecord = Record<string, unknown>
 export type TranslationValues = Record<string, string | number | Date>
 export type TranslationFunction = (key: string, values?: TranslationValues) => string
 
-export type IconComponent = ComponentType<
-  {
-    className?: string
-    size?: number | string
-    strokeWidth?: number | string
-    [key: string]: unknown
-  }
->
+export type IconComponent = ComponentType<{
+  className?: string
+  size?: number | string
+  strokeWidth?: number | string
+  [key: string]: unknown
+}>
 
 export interface ApiErrorLike extends Error {
   code?: string

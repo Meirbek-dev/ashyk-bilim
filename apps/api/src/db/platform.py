@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from pydantic import ConfigDict
-from sqlalchemy import JSON, Column, DateTime, func
+from sqlalchemy import Column, DateTime, func
 from sqlmodel import Field
 from sqlmodel._compat import SQLModelConfig
 

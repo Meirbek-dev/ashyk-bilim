@@ -15,9 +15,9 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
   const t = useTranslations('TeacherAnalytics')
   const gradingAlerts = alerts.filter(alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo')
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardHeader>
-        <div className="flex items-center gap-2 text-amber-700">
+        <div className="text-muted-foreground flex items-center gap-2">
           <Clock4 className="h-5 w-5" />
           <CardTitle>{t('gradingBacklog.title')}</CardTitle>
         </div>
@@ -33,7 +33,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
               </Badge>
             ))
           ) : (
-            <Badge variant="outline">{t('gradingBacklog.noAlert')}</Badge>
+            <span className="text-muted-foreground text-xs">{t('gradingBacklog.noAlert')}</span>
           )}
         </div>
       </CardContent>
