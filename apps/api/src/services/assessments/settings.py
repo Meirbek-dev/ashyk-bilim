@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import HTTPException, status
 from pydantic import Field as PydanticField, TypeAdapter, field_validator
@@ -223,7 +223,7 @@ def _quiz_settings_payload(
     policy: AssessmentPolicy | None,
     db_session: Session,
 ) -> dict[str, object]:
-    questions = []
+    questions: list[Any] = []
     if assessment.id is not None:
         questions = [
             item.body_json

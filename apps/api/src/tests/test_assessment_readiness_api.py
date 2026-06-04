@@ -2,12 +2,14 @@
 
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -98,7 +100,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -117,13 +119,13 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
 
 
 def _seed_assessment(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     *,
     kind: AssessmentType,
     title: str,
     scheduled_at: datetime | None,
-    policy_kwargs: dict | None = None,
-    items: list[dict] | None = None,
+    policy_kwargs: dict[str, Any] | None = None,
+    items: list[dict[str, Any]] | None = None,
 ) -> Assessment:
     with db_session_factory() as session:
         user = User(
@@ -240,7 +242,8 @@ def _seed_assessment(
         session.add(assessment)
         session.flush()
 
-        for index, item in enumerate(items or [], start=1):
+        items_list: list[dict[str, Any]] = items or []
+        for index, item in enumerate(items_list, start=1):
             session.add(
                 AssessmentItem(
                     item_uuid=f"item_{index}",
@@ -260,7 +263,7 @@ def _seed_assessment(
 
 def test_readiness_endpoint_returns_new_policy_and_item_codes(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -339,7 +342,7 @@ def test_readiness_endpoint_returns_new_policy_and_item_codes(
 
 def test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -382,7 +385,7 @@ def test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback(
 
 def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -427,7 +430,7 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
 
 def test_exam_item_create_rejects_unsupported_runtime_kind(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -457,7 +460,7 @@ def test_exam_item_create_rejects_unsupported_runtime_kind(
 
 def test_item_metadata_is_persisted_on_create_and_patch(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -521,8 +524,8 @@ def test_item_metadata_is_persisted_on_create_and_patch(
 
 def test_validate_code_challenge_endpoint(
     api_client: TestClient,
-    db_session_factory,
-    monkeypatch,
+    db_session_factory: Callable[[], Session],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from src.db.code_execution import CodeRunStatus
     from src.services.code_execution.service import CodeExecutionCaseResult
@@ -566,7 +569,7 @@ def test_validate_code_challenge_endpoint(
             self.total = 1
             self.score = 100.0
             self.compile_output = "compiled ok"
-            self.error_message = None
+            self.error_message: str | None = None
             self.details = [
                 CodeExecutionCaseResult(
                     test_id="t1",
@@ -589,7 +592,7 @@ def test_validate_code_challenge_endpoint(
                 )
             ]
 
-    async def mock_run(*args, **kwargs):
+    async def mock_run(*args: Any, **kwargs: Any) -> FakeResult:
         return FakeResult()
 
     from src.services.code_execution.service import CodeExecutionService

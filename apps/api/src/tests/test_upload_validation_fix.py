@@ -7,6 +7,8 @@ import pytest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
+from typing import Any
+
 from pydantic import ValidationError
 
 from src.db.uploads import UploadRead, UploadStatus
@@ -26,7 +28,7 @@ def test_upload_read_status_coercion() -> None:
     This simulates reading from a database column defined as String.
     """
     now = datetime.now(UTC)
-    data = {
+    data: dict[str, Any] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",
@@ -49,7 +51,7 @@ def test_upload_read_status_coercion() -> None:
 def test_upload_read_other_fields_remain_strict() -> None:
     """Verify that other fields (like size_bytes) still enforce strict types."""
     now = datetime.now(UTC)
-    data = {
+    data: dict[str, Any] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",

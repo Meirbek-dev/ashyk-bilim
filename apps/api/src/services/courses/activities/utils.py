@@ -1,8 +1,10 @@
+from typing import Any
+
 from src.db.courses.activities import ActivityRead
 from src.db.courses.courses import CourseRead
 
 
-def _extract_inline_text(nodes: list) -> str:
+def _extract_inline_text(nodes: list[Any]) -> str:
     """Recursively extract text from inline content nodes."""
     if not nodes:
         return ""
@@ -20,7 +22,7 @@ def _extract_inline_text(nodes: list) -> str:
     return "".join(parts)
 
 
-def _extract_block_text(node: dict) -> str:
+def _extract_block_text(node: dict[str, Any]) -> str:
     """Extract text from a block-level content node, handling all common types."""
     node_type = node.get("type", "")
     content = node.get("content", [])
@@ -45,7 +47,7 @@ def _extract_block_text(node: dict) -> str:
         return f"```{lang}\n{text}\n```" if text else ""
 
     if node_type == "blockquote":
-        lines = []
+        lines: list[str] = []
         for child in content:
             if isinstance(child, dict):
                 child_text = _extract_block_text(child)
@@ -57,7 +59,7 @@ def _extract_block_text(node: dict) -> str:
         items = []
         for i, child in enumerate(content):
             if isinstance(child, dict) and child.get("type") == "listItem":
-                item_parts = []
+                item_parts: list[str] = []
                 for sub in child.get("content", []):
                     if isinstance(sub, dict):
                         sub_text = _extract_block_text(sub)
@@ -92,7 +94,7 @@ def _extract_block_text(node: dict) -> str:
 
     # Fallback: try to extract content from unknown node types
     if content:
-        parts = []
+        parts: list[str] = []
         for child in content:
             if isinstance(child, dict):
                 child_text = _extract_block_text(child)
@@ -104,7 +106,7 @@ def _extract_block_text(node: dict) -> str:
     return ""
 
 
-def structure_activity_content_by_type(activity: ActivityRead | dict) -> list[str]:
+def structure_activity_content_by_type(activity: ActivityRead | dict[str, Any]) -> list[str]:
     """Extract structured sections from activity content.
 
     Returns a list of text sections preserving document order and structure.

@@ -1,6 +1,7 @@
 """Bulk grading operations with persisted audit state."""
 
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc
@@ -27,7 +28,7 @@ def create_bulk_action(
     action_type: BulkActionType,
     activity_id: int,
     performed_by: int,
-    params: dict,
+    params: dict[str, Any],
     target_user_ids: list[int],
     db_session: Session,
 ) -> BulkAction:
@@ -314,7 +315,7 @@ async def execute_deadline_extension(
 async def _publish_event_durable(
     event_type: str,
     submission_uuid: str,
-    payload: dict,
+    payload: dict[str, Any],
 ) -> None:
     """Durably enqueue a grading SSE event via taskiq.
 

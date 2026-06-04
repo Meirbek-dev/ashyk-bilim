@@ -231,7 +231,8 @@ class AssessmentItemMetadata(PydanticStrictBaseModel):
     @classmethod
     def normalize_string_list(cls, value: object) -> object:
         if value is None:
-            return []
+            empty_list: list[str] = []
+            return empty_list
         if not isinstance(value, list):
             return value
         normalized: list[str] = []

@@ -18,12 +18,13 @@ Covers (all teacher-side):
 
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -141,7 +142,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
     app.include_router(file_submissions_router, prefix="/file-submissions")
@@ -172,7 +173,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
 # ---------------------------------------------------------------------------
 
 
-def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
+def _seed_course_and_chapter(db_session_factory: Callable[[], Session]) -> tuple[int, int]:
     """Insert a minimal Course + Chapter.  Returns (course_id, chapter_id)."""
     with db_session_factory() as session:
         teacher = User(
@@ -226,7 +227,7 @@ def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
         return course.id, chapter.id
 
 
-def _seed_published_assessment(db_session_factory) -> str:
+def _seed_published_assessment(db_session_factory: Callable[[], Session]) -> str:
     """Create a published assessment with one item.
 
     Returns assessment_uuid.
@@ -314,7 +315,7 @@ def _seed_published_assessment(db_session_factory) -> str:
 # ---------------------------------------------------------------------------
 
 
-def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
+def test_get_assessment_returns_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /assessments/{uuid} returns assessment with its items list."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -328,7 +329,7 @@ def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
     assert data["items"][0]["kind"] == "CHOICE"
 
 
-def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
+def test_get_assessment_404_for_unknown(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /assessments/unknown-uuid returns 404."""
     _seed_course_and_chapter(db_session_factory)
 
@@ -342,7 +343,7 @@ def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_create_assessment_seeds_draft_and_policy(api_client, db_session_factory) -> None:
+def test_create_assessment_seeds_draft_and_policy(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments creates an assessment in DRAFT lifecycle with an AssessmentPolicy."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -365,7 +366,7 @@ def test_create_assessment_seeds_draft_and_policy(api_client, db_session_factory
     assert data["assessment_uuid"] is not None
 
 
-def test_create_assessment_unknown_course_returns_404(api_client, db_session_factory) -> None:
+def test_create_assessment_unknown_course_returns_404(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments with a non-existent course_id returns 404."""
     _, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -387,7 +388,7 @@ def test_create_assessment_unknown_course_returns_404(api_client, db_session_fac
 # ---------------------------------------------------------------------------
 
 
-def test_create_file_submission_activity_is_first_class(api_client, db_session_factory) -> None:
+def test_create_file_submission_activity_is_first_class(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /file-submissions creates a TYPE_FILE_SUBMISSION activity, not an assessment."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -427,7 +428,7 @@ def test_create_file_submission_activity_is_first_class(api_client, db_session_f
 # ---------------------------------------------------------------------------
 
 
-def test_update_assessment_metadata(api_client, db_session_factory) -> None:
+def test_update_assessment_metadata(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid} updates the title and description."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -445,7 +446,7 @@ def test_update_assessment_metadata(api_client, db_session_factory) -> None:
     assert data["description"] == "Updated description"
 
 
-def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -> None:
+def test_update_assessment_policy_max_attempts(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid} with a policy block updates max_attempts."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -465,7 +466,7 @@ def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -
 # ---------------------------------------------------------------------------
 
 
-def test_add_item_to_assessment(api_client, db_session_factory) -> None:
+def test_add_item_to_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments/{uuid}/items adds a new CHOICE item."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -495,7 +496,7 @@ def test_add_item_to_assessment(api_client, db_session_factory) -> None:
     assert data["item_uuid"] is not None
 
 
-def test_unknown_item_kinds_are_rejected_for_assessments(api_client, db_session_factory) -> None:
+def test_unknown_item_kinds_are_rejected_for_assessments(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """Unknown item kinds cannot be authored inside assessments."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -518,7 +519,7 @@ def test_unknown_item_kinds_are_rejected_for_assessments(api_client, db_session_
     assert response.status_code == 422
 
 
-def test_update_item_title(api_client, db_session_factory) -> None:
+def test_update_item_title(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid}/items/{item_uuid} updates the item title."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -534,7 +535,7 @@ def test_update_item_title(api_client, db_session_factory) -> None:
     assert data["title"] == "Updated question title"
 
 
-def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> None:
+def test_delete_item_removes_from_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """DELETE /assessments/{uuid}/items/{item_uuid} removes the item."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -549,7 +550,7 @@ def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> 
     assert "item_published_authoring_1" not in item_uuids
 
 
-def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> None:
+def test_add_multiple_items_preserves_order(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """Items are returned in insertion order when fetched via GET."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -600,7 +601,7 @@ def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> N
     assert data["items"][0]["item_uuid"] == "item_published_authoring_1"
 
 
-def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
+def test_reorder_items_changes_order(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments/{uuid}/items:reorder changes the item sequence."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -648,7 +649,7 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_lifecycle_transition_draft_to_published(api_client, db_session_factory) -> None:
+def test_lifecycle_transition_draft_to_published(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments/{uuid}/lifecycle/transition moves DRAFT → PUBLISHED."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -694,7 +695,7 @@ def test_lifecycle_transition_draft_to_published(api_client, db_session_factory)
     assert response.json()["published_at"] is not None
 
 
-def test_lifecycle_transition_published_to_archived(api_client, db_session_factory) -> None:
+def test_lifecycle_transition_published_to_archived(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """Transition PUBLISHED → ARCHIVED is allowed."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -708,7 +709,7 @@ def test_lifecycle_transition_published_to_archived(api_client, db_session_facto
     assert response.json()["archived_at"] is not None
 
 
-def test_lifecycle_transition_invalid_returns_422(api_client, db_session_factory) -> None:
+def test_lifecycle_transition_invalid_returns_422(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """Transitioning to an invalid state (e.g. PUBLISHED → SCHEDULED) returns 422."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -726,7 +727,7 @@ def test_lifecycle_transition_invalid_returns_422(api_client, db_session_factory
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_check_passes_for_complete_assessment(api_client, db_session_factory) -> None:
+def test_readiness_check_passes_for_complete_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """An assessment with items and policy is considered READY."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -738,7 +739,7 @@ def test_readiness_check_passes_for_complete_assessment(api_client, db_session_f
     assert data["issues"] == []
 
 
-def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> None:
+def test_readiness_check_flags_missing_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """An assessment with zero items is NOT ready."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -768,7 +769,7 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+def test_policy_preset_manual_assessment_has_defaults(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 

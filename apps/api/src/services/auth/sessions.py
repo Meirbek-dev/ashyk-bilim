@@ -18,7 +18,7 @@ import secrets
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Any, Literal
 
 import redis.asyncio
 from fastapi import HTTPException, status
@@ -127,7 +127,7 @@ async def _ensure_user_sessions_index(r: redis.asyncio.Redis, user_id: int) -> s
     return user_key
 
 
-def _session_data_to_dict(data: SessionData) -> dict:
+def _session_data_to_dict(data: SessionData) -> dict[str, Any]:
     return {
         "session_id": data.session_id,
         "token_family_id": data.token_family_id,
@@ -234,7 +234,7 @@ async def _get_active_session_ids(user_id: int) -> list[str]:
 # ── Background audit helpers (own DB session, non-blocking) ──────────────────
 
 
-def audit_create_sync(session_data_dict: dict) -> None:
+def audit_create_sync(session_data_dict: dict[str, Any]) -> None:
     """Write a session-created audit record using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -283,7 +283,7 @@ def audit_revoke_sync(session_id: str) -> None:
         raise
 
 
-def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict) -> None:
+def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict[str, Any]) -> None:
     """Mark old session as rotated and create new session record, in one DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -576,7 +576,7 @@ async def revoke_all_user_sessions(user_id: int) -> int:
     return len(active_ids)
 
 
-async def get_user_active_sessions(user_id: int) -> list[dict]:
+async def get_user_active_sessions(user_id: int) -> list[dict[str, Any]]:
     """Return metadata for all active sessions of a user."""
     active_ids = await _get_active_session_ids(user_id)
     result = []

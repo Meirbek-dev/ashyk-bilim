@@ -10,7 +10,7 @@ async def upload_file_and_return_file_object(
     file: UploadFile,
     activity_uuid: str,
     block_id: str,
-    list_of_allowed_file_formats: list,
+    list_of_allowed_file_formats: list[str],
     type_of_block: str,
     course_uuid: str,
 ):
@@ -18,7 +18,7 @@ async def upload_file_and_return_file_object(
     file_id = str(ULID())
 
     # Map legacy format list to type system
-    allowed_types = []
+    allowed_types: list[str] = []
     if any(fmt in {"jpg", "jpeg", "png", "gif", "webp", "avif"} for fmt in list_of_allowed_file_formats):
         allowed_types.append("image")
     if any(fmt in {"mp4", "webm", "mkv", "mov", "avi", "flv"} for fmt in list_of_allowed_file_formats):

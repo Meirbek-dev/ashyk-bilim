@@ -5,7 +5,7 @@ All private helpers used across multiple assessment service modules live here.
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import assert_never
+from typing import Any, assert_never
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -437,7 +437,7 @@ def _assert_attempt_action_allowed(
         "submit": "can_submit",
     }[action]
     if not state[allowed_key]:
-        reasons = list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
+        reasons: list[Any] = list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
         reason = reasons[0] if reasons else "ACTION_NOT_ALLOWED"
         logger.warning(
             "ASSESSMENT_ATTEMPT_BLOCKED action=%s reason=%s assessment_uuid=%s activity_uuid=%s user_id=%s",
@@ -1729,7 +1729,7 @@ def build_readiness(
                     message="Ограничение по времени должно быть больше нуля.",
                 )
             )
-        anti_cheat = policy.anti_cheat_json if isinstance(policy.anti_cheat_json, dict) else {}
+        anti_cheat: dict[str, Any] = policy.anti_cheat_json if isinstance(policy.anti_cheat_json, dict) else {}
         if isinstance(anti_cheat.get("violation_threshold"), int) and anti_cheat["violation_threshold"] < 1:
             issues.append(
                 ReadinessIssue(

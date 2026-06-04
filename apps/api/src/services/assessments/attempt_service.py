@@ -199,12 +199,11 @@ async def save_assessment_draft(
         _enforce_draft_version(draft, if_match)
 
         answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
-        current_payload = draft.answers_json if isinstance(draft.answers_json, dict) else {}
-        current_answers = current_payload.get("answers", {})
-        if not isinstance(current_answers, dict):
-            current_answers = {}
+        current_payload: dict[str, Any] = draft.answers_json if isinstance(draft.answers_json, dict) else {}
+        raw_answers = current_payload.get("answers")
+        current_answers: dict[str, Any] = raw_answers if isinstance(raw_answers, dict) else {}
 
-        merged_answers: dict = {**current_answers, **answers}
+        merged_answers: dict[str, Any] = {**current_answers, **answers}
         draft.answers_json = {
             **current_payload,
             "answers": merged_answers,

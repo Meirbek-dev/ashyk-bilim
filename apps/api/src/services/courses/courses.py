@@ -10,7 +10,7 @@ from ulid import ULID
 
 from src.db.courses.activities import Activity
 from src.db.courses.certifications import Certifications
-from src.db.courses.chapters import Chapter
+from src.db.courses.chapters import Chapter, ChapterReadWithPermissions
 from src.db.courses.courses import (
     AuthorWithRole,
     Course,
@@ -635,7 +635,7 @@ async def get_course_meta(
         )
 
     # Get course chapters
-    chapters = []
+    chapters: list[ChapterReadWithPermissions] = []
     if course.id is not None:
         chapters = await get_course_chapters(
             request,
@@ -911,7 +911,7 @@ async def search_courses(
         .where(col(ResourceAuthor.resource_uuid).in_(course_uuids))
         .order_by(col(ResourceAuthor.id).asc())
     )
-    authors_by_course: dict[str, list] = {}
+    authors_by_course: dict[str, list[AuthorWithRole]] = {}
     for resource_author, user in db_session.exec(all_authors_statement).all():
         authors_by_course.setdefault(resource_author.resource_uuid, []).append(
             AuthorWithRole(
@@ -1185,7 +1185,7 @@ async def update_course(
     )
 
     # SECURITY: Additional checks for sensitive access control fields
-    sensitive_fields_updated = []
+    sensitive_fields_updated: list[str] = []
 
     # Check if sensitive fields are being updated
     if course_object.public is not None:
@@ -1395,7 +1395,7 @@ async def get_user_courses(
         .join(User, col(ResourceAuthor.user_id) == User.id)
         .where(col(ResourceAuthor.resource_uuid).in_(course_uuids))
     )
-    authors_by_course: dict[str, list] = {}
+    authors_by_course: dict[str, list[AuthorWithRole]] = {}
     for resource_author, user in db_session.exec(all_authors_statement).all():
         authors_by_course.setdefault(resource_author.resource_uuid, []).append(
             AuthorWithRole(
@@ -1654,7 +1654,7 @@ async def get_course_user_rights(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Get detailed user rights for a specific course.
 
     This function returns comprehensive rights information that can be used

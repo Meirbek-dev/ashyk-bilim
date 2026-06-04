@@ -1,11 +1,12 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import datetime
 
 import pytest
 from fastapi import FastAPI
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -68,7 +69,7 @@ def test_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, test_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], test_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/collections")
 
@@ -89,7 +90,7 @@ def api_client_fixture(db_session_factory, test_user, monkeypatch: pytest.Monkey
     return TestClient(app)
 
 
-def test_collections_list_returns_full_course_objects(api_client, db_session_factory) -> None:
+def test_collections_list_returns_full_course_objects(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /collections/page/1/limit/20 returns collections with list of CourseRead objects instead of integers."""
     with db_session_factory() as session:
         user = User(

@@ -314,7 +314,7 @@ def get_recent_transactions(db: Session, user_id: int, limit: int = 10) -> list[
     return list(db.exec(stmt).all())
 
 
-def get_dashboard_data(db: Session, user_id: int, *, include_leaderboard: bool = False) -> dict:
+def get_dashboard_data(db: Session, user_id: int, *, include_leaderboard: bool = False) -> dict[str, Any]:
     profile = get_profile(db, user_id)
     transactions = get_recent_transactions(db, user_id, limit=10)
     user_xp = profile.total_xp

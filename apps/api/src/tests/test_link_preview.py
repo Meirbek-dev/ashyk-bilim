@@ -18,10 +18,10 @@ from src.services.utils.link_preview import (
 
 
 class _FakeStream:
-    def __init__(self, server_addr) -> None:
+    def __init__(self, server_addr: tuple[str, int]) -> None:
         self._server_addr = server_addr
 
-    def get_extra_info(self, info: str):
+    def get_extra_info(self, info: str) -> tuple[str, int] | None:
         if info == "server_addr":
             return self._server_addr
         return None
@@ -114,7 +114,7 @@ async def test_link_preview_omits_unsafe_asset_urls() -> None:
 
 
 @pytest.mark.asyncio
-async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch) -> None:
+async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(link_preview, "get_async_redis_client", lambda: None)
     settings = LinkPreviewConfig(cache_ttl_seconds=60)
     url = "https://example.com/"

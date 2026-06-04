@@ -7,6 +7,7 @@ in a single transaction — if any step fails, everything rolls back.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlmodel import Session
 from ulid import ULID
@@ -28,7 +29,7 @@ def persist_submission(
     result: GradingResult,
     penalty: PenaltyResult,
     effective: EffectivePolicy,
-    answers_payload: dict,
+    answers_payload: dict[str, Any],
     now: datetime,
     policy: AssessmentPolicy | None = None,
     assessment_type: AssessmentType | None = None,

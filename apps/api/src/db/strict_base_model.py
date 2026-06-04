@@ -1,11 +1,28 @@
 import os
 import warnings
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, TypeGuard
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
 from sqlmodel._compat import SQLModelConfig
+
+JsonPrimitive = str | int | float | bool | None
+JsonValue = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
+JsonObject = dict[str, JsonValue]
+
+
+def is_json_object(val: object) -> TypeGuard[JsonObject]:
+    return isinstance(val, dict)
+
+
+def is_str_list(value: object) -> TypeGuard[list[str]]:
+    return isinstance(value, list) and all(isinstance(x, str) for x in value)
+
+
+def is_mapping(value: object) -> TypeGuard[Mapping[str, object]]:
+    return isinstance(value, Mapping)
 
 
 def coerce_date_to_end_of_day(value: Any) -> Any:
@@ -54,6 +71,7 @@ _PYDANTIC_CONFIG: ConfigDict = ConfigDict(
     defer_build=False,
 )
 
+
 _SQLMODEL_CONFIG: SQLModelConfig = SQLModelConfig(
     str_strip_whitespace=True,
     # slots=True is intentionally omitted: SQLModel table models rely on
@@ -76,9 +94,15 @@ class SQLModelStrictBaseModel(SQLModel):
 SQLModelDefaultBase = SQLModelStrictBaseModel
 
 __all__: list[str] = [
+    "JsonObject",
+    "JsonPrimitive",
+    "JsonValue",
     "PydanticStrictBaseModel",
     "SQLModelDefaultBase",
     "SQLModelStrictBaseModel",
     "coerce_date_to_end_of_day",
     "is_dev_mode",
+    "is_json_object",
+    "is_mapping",
+    "is_str_list",
 ]

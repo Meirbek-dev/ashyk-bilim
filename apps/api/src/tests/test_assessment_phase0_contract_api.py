@@ -2,12 +2,13 @@
 
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -111,7 +112,7 @@ def student_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -132,7 +133,7 @@ def api_client_fixture(db_session_factory, student_user, monkeypatch: pytest.Mon
     return TestClient(app)
 
 
-def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
+def _seed_base(db_session_factory: Callable[[], Session], *, lifecycle: AssessmentLifecycle) -> tuple[str, str]:
     with db_session_factory() as session:
         teacher = User(
             id=1,
@@ -263,7 +264,7 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
 
 def test_canonical_student_me_masks_unpublished_batch_grade(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:
@@ -321,7 +322,7 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
 
 def test_start_is_blocked_when_assessment_is_not_published(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.DRAFT)
 
@@ -333,7 +334,7 @@ def test_start_is_blocked_when_assessment_is_not_published(
 
 def test_activity_lookup_does_not_create_canonical_assessment_rows(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     with db_session_factory() as session:
         teacher = User(
@@ -406,7 +407,7 @@ def test_activity_lookup_does_not_create_canonical_assessment_rows(
 
 def test_published_assessment_with_submissions_rejects_item_edits(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:

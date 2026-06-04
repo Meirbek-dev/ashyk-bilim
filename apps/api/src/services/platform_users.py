@@ -35,7 +35,7 @@ def get_platform_users(
     platform_users_list = []
 
     user_ids = [u.id for u in users]
-    roles_by_user: dict[int, list] = defaultdict(list)
+    roles_by_user: dict[int, list[Role]] = defaultdict(list)
     if user_ids:
         all_role_rows = db_session.exec(
             select(Role, UserRole)

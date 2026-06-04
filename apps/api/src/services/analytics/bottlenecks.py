@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from src.db.grading.progress import ActivityProgressState
+from src.db.strict_base_model import JsonObject
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -15,7 +16,7 @@ from src.services.analytics.queries import (
 from src.services.analytics.schemas import ContentBottleneckRow
 
 
-def _time_spent_seconds(data: dict | None, created: object, updated: object) -> float | None:
+def _time_spent_seconds(data: JsonObject | None, created: object, updated: object) -> float | None:
     payload = data or {}
     for key in (
         "time_spent_seconds",

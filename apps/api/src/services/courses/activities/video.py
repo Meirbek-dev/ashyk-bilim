@@ -2,7 +2,7 @@ import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, col, select
@@ -140,8 +140,8 @@ async def create_video_activity(
         await asyncio.to_thread(_move_temp_video_files, temp_path, final_path)
 
     if subtitle_files:
-        subtitle_info = []
-        valid_subtitles: list[tuple] = []
+        subtitle_info: list[dict[str, Any]] = []
+        valid_subtitles: list[tuple[UploadFile, str]] = []
         for subtitle_file in subtitle_files:
             if subtitle_file.filename and subtitle_file.size is not None and subtitle_file.size > 0:
                 if not subtitle_file.filename.endswith((".srt", ".vtt")):

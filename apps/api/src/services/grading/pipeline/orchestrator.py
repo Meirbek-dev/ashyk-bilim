@@ -184,7 +184,7 @@ async def _submit_assessment_inner(
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
         raw_violations = current_meta.get("violations", [])
-        existing_violations = raw_violations if isinstance(raw_violations, list) else []
+        existing_violations: list[Any] = raw_violations if isinstance(raw_violations, list) else []
         if len(existing_violations) > MAX_VIOLATIONS_STORED:
             current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True

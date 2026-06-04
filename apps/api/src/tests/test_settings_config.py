@@ -1,9 +1,10 @@
+import pytest
 from pydantic import SecretStr
 
 from config.config import get_settings, reload_platform_config_cache, secret_value
 
 
-def test_settings_parse_security_and_cors(monkeypatch) -> None:
+def test_settings_parse_security_and_cors(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PLATFORM_DOMAIN", "example.test")
     monkeypatch.setenv("PLATFORM_ALLOWED_REGEXP", r"^https://.*\.example\.test$")
     monkeypatch.setenv(
@@ -27,7 +28,7 @@ def test_settings_parse_security_and_cors(monkeypatch) -> None:
     assert settings.hosting_config.cookie_config.domain == "example.test"
 
 
-def test_secret_values_are_masked_in_model_dump(monkeypatch) -> None:
+def test_secret_values_are_masked_in_model_dump(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PLATFORM_DOMAIN", "example.test")
     monkeypatch.setenv("PLATFORM_ALLOWED_REGEXP", r"^https://example\.test$")
     monkeypatch.setenv("PLATFORM_SQL_CONNECTION_STRING", "sqlite://")

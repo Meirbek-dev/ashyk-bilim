@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
@@ -152,7 +153,7 @@ async def get_discussions_by_course_uuid(
         all_replies = db_session.exec(all_replies_query).all()
 
         # Group replies by parent discussion id
-        replies_by_discussion_id: dict[int, list] = {}
+        replies_by_discussion_id: dict[int, list[CourseDiscussion]] = {}
         for reply in all_replies:
             if reply.parent_discussion_id is not None:
                 replies_by_discussion_id.setdefault(reply.parent_discussion_id, []).append(reply)
@@ -429,7 +430,7 @@ async def toggle_discussion_like(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> dict:
+) -> dict[str, Any]:
     """Toggle like status for a discussion - like if not liked, unlike if liked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
@@ -502,7 +503,7 @@ async def toggle_discussion_dislike(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> dict:
+) -> dict[str, Any]:
     """Toggle dislike status for a discussion - dislike if not disliked, undislike if disliked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(

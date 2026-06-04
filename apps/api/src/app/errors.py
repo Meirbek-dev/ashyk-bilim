@@ -88,7 +88,7 @@ def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]
             continue
 
         loc = error.get("loc")
-        field = ".".join(str(part) for part in loc) if isinstance(loc, list | tuple) else None
+        field = ".".join(str(part) for part in loc) if isinstance(loc, (list, tuple)) else None
         message = error.get("msg")
         code = error.get("type")
         ctx = error.get("ctx")

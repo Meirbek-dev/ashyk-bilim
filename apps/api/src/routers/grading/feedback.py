@@ -20,6 +20,7 @@ from src.db.grading.item_feedback import (
     ItemFeedbackUpdate,
 )
 from src.db.grading.submissions import Submission
+from src.db.strict_base_model import JsonObject
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionChecker
@@ -97,8 +98,8 @@ def _latest_or_create_grading_entry(
         return entry
 
     now = datetime.now(UTC)
-    grading_dict = submission.grading_json if isinstance(submission.grading_json, dict) else {}
-    raw_dict = submission.raw_grading_json if isinstance(submission.raw_grading_json, dict) else {}
+    grading_dict: JsonObject = submission.grading_json if isinstance(submission.grading_json, dict) else {}
+    raw_dict: JsonObject = submission.raw_grading_json if isinstance(submission.raw_grading_json, dict) else {}
     entry = GradingEntry(
         entry_uuid=f"entry_{ULID()}",
         submission_id=submission.id,

@@ -520,7 +520,7 @@ def load_analytics_context(
     creator_ids = {course.creator_id for course in courses if course.creator_id is not None}
     user_ids.update(creator_ids)
 
-    users = []
+    users: list[User] = []
     if user_ids:
         users = [
             _unwrap_model(user, User)

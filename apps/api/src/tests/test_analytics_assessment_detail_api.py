@@ -2,13 +2,15 @@
 
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import select
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -120,7 +122,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/analytics")
 
@@ -134,7 +136,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_public_user] = lambda: teacher_user
 
-    async def fake_scope_for(*_args, **_kwargs):
+    async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
         return TeacherAnalyticsScope(
             teacher_user_id=teacher_user.id,
             course_ids=[1],
@@ -146,7 +148,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     return TestClient(app)
 
 
-def _seed_users(session) -> dict[str, User]:
+def _seed_users(session: Session) -> dict[str, User]:
     users = {
         "teacher": User(
             id=1,
@@ -220,7 +222,7 @@ def _seed_users(session) -> dict[str, User]:
 
 
 def _seed_course_stack(
-    session,
+    session: Session,
     *,
     name: str,
     activity_type: ActivityTypeEnum,
@@ -298,12 +300,12 @@ def _seed_course_stack(
     return course, chapter, activity, policy
 
 
-def _make_context_for_manual_assessment(session, assessment_id: int) -> AnalyticsContext:
+def _make_context_for_manual_assessment(session: Session, assessment_id: int) -> AnalyticsContext:
     course = session.get(Course, 1)
     activity = session.get(Activity, 1)
     assessment = session.get(Assessment, assessment_id)
     submissions = [session.get(Submission, submission_id) for submission_id in [1, 2, 3, 4]]
-    users = session.exec(select(User)).scalars().all()
+    users = session.execute(select(User)).scalars().all()
     users_by_id = {user.id: user for user in users if user.id is not None}
     manual_assessment_row = AssessmentAnalyticsRow(
         id=assessment.id,
@@ -339,11 +341,11 @@ def _make_context_for_manual_assessment(session, assessment_id: int) -> Analytic
     )
 
 
-def _make_context_for_quiz(session) -> AnalyticsContext:
+def _make_context_for_quiz(session: Session) -> AnalyticsContext:
     course = session.get(Course, 1)
     activity = session.get(Activity, 1)
     quiz_submission = session.get(Submission, 1)
-    users = session.exec(select(User)).scalars().all()
+    users = session.execute(select(User)).scalars().all()
     users_by_id = {user.id: user for user in users if user.id is not None}
     return AnalyticsContext(
         generated_at=datetime(2026, 5, 5, 12, 0, tzinfo=UTC),
@@ -469,7 +471,7 @@ def test_assessment_rows_accept_progress_snapshot_mapping(
 
 def test_manual_assessment_detail_endpoint_returns_operational_fields(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with db_session_factory() as session:
@@ -656,7 +658,7 @@ def test_manual_assessment_detail_endpoint_returns_operational_fields(
 
 def test_quiz_detail_endpoint_uses_canonical_submission_rows(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with db_session_factory() as session:

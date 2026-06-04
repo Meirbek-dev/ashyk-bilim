@@ -1,12 +1,14 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -83,7 +85,7 @@ def student_user_fixture() -> PublicUser:
     )
 
 
-def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+def _make_app(db_session_factory: Callable[[], Session], current_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> FastAPI:
     app = FastAPI()
     app.include_router(file_submissions_router, prefix="/file-submissions")
 
@@ -107,7 +109,7 @@ def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> Fast
 
 
 def _seed_file_submission(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     *,
     max_attempts: int | None = 1,
     lifecycle: FileSubmissionLifecycle = FileSubmissionLifecycle.PUBLISHED,
@@ -202,7 +204,7 @@ def _seed_file_submission(
         return file_submission.file_submission_uuid
 
 
-def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
     """Reproduce 409 Conflict when a student tries to start a draft
     after an attempt has been RETURNED and max_attempts=1.
     """
@@ -242,7 +244,7 @@ def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, 
     assert response.json()["status"] == "RETURNED"
 
 
-def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure student can save a draft (patch files) on a RETURNED attempt
     even when max_attempts=1.
     """
@@ -280,7 +282,7 @@ def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, s
     assert response.json()["status"] == "RETURNED"
 
 
-def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
+def test_submit_when_returned_and_max_attempts_reached(db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure student can re-submit a RETURNED attempt
     even when max_attempts=1.
     """
@@ -346,7 +348,7 @@ def test_submit_when_returned_and_max_attempts_reached(db_session_factory, stude
     from src.services import events
 
     class MockBus:
-        async def emit(self, event) -> None:
+        async def emit(self, event: Any) -> None:
             pass
 
     monkeypatch.setattr(events, "get_event_bus", MockBus)

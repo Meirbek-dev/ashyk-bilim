@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
@@ -137,7 +137,7 @@ async def api_get_user_certificates_for_course(
     course_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Get all certificates for the current user in a specific course with certification details."""
     return await get_user_certificates_for_course(request, course_uuid, current_user, db_session)
 
@@ -147,7 +147,7 @@ async def api_get_certificate_by_user_certification_uuid(
     request: Request,
     user_certification_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict:
+) -> dict[str, Any]:
     """Get a certificate by user_certification_uuid with certification and course details."""
     return await get_certificate_by_user_certification_uuid(request, user_certification_uuid, None, db_session)
 
@@ -157,6 +157,6 @@ async def api_get_all_user_certificates(
     request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Get all certificates obtained by the current user with complete linked information."""
     return await get_all_user_certificates(request, current_user, db_session)

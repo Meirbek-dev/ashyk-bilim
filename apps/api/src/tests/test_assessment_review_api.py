@@ -2,12 +2,13 @@
 
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -104,7 +105,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -138,7 +139,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
 
 
 @pytest.fixture(name="seeded_review_data")
-def seeded_review_data_fixture(db_session_factory):
+def seeded_review_data_fixture(db_session_factory: Callable[[], Session]) -> dict[str, str]:
     now = datetime.now(UTC)
     with db_session_factory() as session:
         teacher = User(
@@ -482,7 +483,7 @@ def seeded_review_data_fixture(db_session_factory):
 
 def test_assessment_review_projection_exposes_native_queue_defaults(
     api_client: TestClient,
-    seeded_review_data,
+    seeded_review_data: dict[str, str],
 ) -> None:
     response = api_client.get(f"/assessments/{seeded_review_data['assessment_uuid']}")
 
@@ -503,7 +504,7 @@ def test_assessment_review_projection_exposes_native_queue_defaults(
 
 def test_assessment_submission_queue_supports_review_filters_and_sorting(
     api_client: TestClient,
-    seeded_review_data,
+    seeded_review_data: dict[str, str],
 ) -> None:
     filtered = api_client.get(
         f"/assessments/{seeded_review_data['assessment_uuid']}/submissions",
@@ -545,7 +546,7 @@ def test_assessment_submission_queue_supports_review_filters_and_sorting(
 
 def test_assessment_submission_stats_aggregate_non_draft_review_counts(
     api_client: TestClient,
-    seeded_review_data,
+    seeded_review_data: dict[str, str],
 ) -> None:
     response = api_client.get(f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/stats")
 
@@ -563,7 +564,7 @@ def test_assessment_submission_stats_aggregate_non_draft_review_counts(
 
 def test_assessment_submission_detail_is_scoped_and_hydrates_breakdown(
     api_client: TestClient,
-    seeded_review_data,
+    seeded_review_data: dict[str, str],
 ) -> None:
     response = api_client.get(
         f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/{seeded_review_data['alice_submission_uuid']}"
@@ -595,7 +596,7 @@ def test_assessment_submission_detail_is_scoped_and_hydrates_breakdown(
 
 def test_assessment_submission_grade_save_honors_if_match(
     api_client: TestClient,
-    seeded_review_data,
+    seeded_review_data: dict[str, str],
 ) -> None:
     detail = api_client.get(
         f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/{seeded_review_data['alice_submission_uuid']}"
@@ -620,8 +621,8 @@ def test_assessment_submission_grade_save_honors_if_match(
 
 def test_assessment_submission_publish_transition_updates_state_and_ledger(
     api_client: TestClient,
-    db_session_factory,
-    seeded_review_data,
+    db_session_factory: Callable[[], Session],
+    seeded_review_data: dict[str, str],
 ) -> None:
     detail = api_client.get(
         f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/{seeded_review_data['alice_submission_uuid']}"
@@ -671,8 +672,8 @@ def test_assessment_submission_publish_transition_updates_state_and_ledger(
 )
 def test_assessment_submission_return_flow_supports_pending_and_graded_states(
     api_client: TestClient,
-    db_session_factory,
-    seeded_review_data,
+    db_session_factory: Callable[[], Session],
+    seeded_review_data: dict[str, str],
     submission_key: str,
     expected_score: float,
 ) -> None:

@@ -12,7 +12,7 @@ def test_unknown_model_fails_instead_of_falling_back() -> None:
         count_tokens_for_model("Hello", "unknown-local-model")
 
 
-def test_chunk_documents_handles_multilingual_text(monkeypatch) -> None:
+def test_chunk_documents_handles_multilingual_text(monkeypatch: pytest.MonkeyPatch) -> None:
     from config.config import reload_platform_config_cache
 
     monkeypatch.setenv("PLATFORM_DOMAIN", "example.test")

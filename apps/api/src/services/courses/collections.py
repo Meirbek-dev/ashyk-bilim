@@ -304,7 +304,7 @@ async def get_collections(
             .distinct()
         )
 
-    courses_by_collection: dict[int, list] = {}
+    courses_by_collection: dict[int, list[Course]] = {}
     for cc, course in db_session.exec(batch_stmt).all():
         if cc.collection_id is not None:
             courses_by_collection.setdefault(cc.collection_id, []).append(course)

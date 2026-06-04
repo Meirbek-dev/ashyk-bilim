@@ -578,7 +578,7 @@ async def stream_chat_answer(
                     activity_uuid=ctx.activity.activity_uuid,
                     message=_status_message("analyzing", retrieval_enabled=False, locale=ctx.locale),
                 )
-                retrieved_chunks = []
+                retrieved_chunks: list[RetrievedChunk] = []
 
             deps = _build_agent_deps(ctx, policy, retrieved_chunks)
 

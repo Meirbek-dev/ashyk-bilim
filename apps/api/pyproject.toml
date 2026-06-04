@@ -26,7 +26,7 @@ dependencies = [
   "pyjwt>=2.13.0",
 
   # AI
-  "openai>=2.40.0",
+  "openai>=2.41.0",
   "pydantic-ai-slim[logfire,openai]>=1.105.0",
   "tiktoken>=0.13.0",
 
@@ -48,7 +48,7 @@ dependencies = [
   "python-ulid>=3.1.0",
   "resend>=2.30.1",
   "selectolax>=0.4.10",
-  "typer>=0.26.6",
+  "typer>=0.26.7",
 
   # Sandbox / Execution
   "judge0>=0.0.8",
@@ -70,7 +70,7 @@ dev = [
   "pytest-cov>=7.1.0",
 
   # Dev Server
-  "uvicorn[standard]>=0.48.0",
+  "uvicorn[standard]>=0.49.0",
 
   # Fixtures
   "faker>=40.21.0",
@@ -110,6 +110,7 @@ unfixable = [
 ignore = [
   # --- Annotations (flake8-annotations) ---
   "ANN401", # any-type: Disallow Any (handled by mypy and basedpyright)
+  "PLC0415", # `import` should be at the top-level of a file
 
   # --- General & Style ---
   "COM812",  # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
@@ -180,6 +181,7 @@ ignore = [
   "B904",    # raise-without-from-inside-except: Checks for raise within except block without 'from'
   "N806",    # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
   "ERA001",  # commented-out-code: Allow code-like text in comments
+  "S101",
 ]
 
 [tool.ruff.lint.per-file-ignores]

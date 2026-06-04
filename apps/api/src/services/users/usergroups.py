@@ -273,7 +273,7 @@ async def add_users_to_usergroup(
     }
 
     current_time = utcnow()
-    new_entries = []
+    new_entries: list[UserGroupUser] = []
     for user_id in parsed_ids:
         if user_id in existing_user_ids:
             logger.error("Пользователь с id %s уже есть в группе пользователей", user_id)
@@ -396,7 +396,7 @@ async def add_resources_to_usergroup(
     }
 
     current_time = utcnow()
-    new_entries = []
+    new_entries: list[UserGroupResource] = []
     for resource_uuid in resources_uuids_array:
         if resource_uuid in existing_uuids:
             logger.error("Ресурс %s уже есть в группе пользователей", resource_uuid)

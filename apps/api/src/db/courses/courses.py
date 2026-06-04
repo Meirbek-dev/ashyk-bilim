@@ -127,7 +127,7 @@ class CourseBase(SQLModelStrictBaseModel):
         else:
             raw_tags = [str(value).strip()]
 
-        normalized_tags = []
+        normalized_tags: list[str] = []
         for tag in raw_tags:
             if tag and tag not in normalized_tags:
                 normalized_tags.append(tag)

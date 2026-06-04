@@ -2,11 +2,13 @@
 
 import pathlib
 import sys
+from collections.abc import Callable
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -77,7 +79,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/analytics")
 
@@ -91,7 +93,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_public_user] = lambda: teacher_user
 
-    async def fake_scope_for(*_args, **_kwargs):
+    async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
         return TeacherAnalyticsScope(
             teacher_user_id=teacher_user.id,
             course_ids=[1],
@@ -103,7 +105,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     return TestClient(app)
 
 
-def test_teacher_saved_views_lifecycle(api_client: TestClient, db_session_factory) -> None:
+def test_teacher_saved_views_lifecycle(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     # 1. Initially saved-views list should be empty
     response = api_client.get("/analytics/teacher/saved-views")
     assert response.status_code == 200
@@ -146,7 +148,7 @@ def test_teacher_saved_views_lifecycle(api_client: TestClient, db_session_factor
     assert response.json()["total"] == 0
 
 
-def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_factory) -> None:
+def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     # Seed a course
     with db_session_factory() as session:
         course = Course(
@@ -175,7 +177,7 @@ def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_fact
     assert payload["items"] == []
 
     # 2. Create a new intervention
-    intervention_data = {
+    intervention_data: dict[str, Any] = {
         "user_id": 2,
         "course_id": 1,
         "intervention_type": "message_sent",

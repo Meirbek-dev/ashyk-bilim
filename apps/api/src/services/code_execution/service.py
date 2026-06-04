@@ -292,6 +292,7 @@ class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
         )
 
     @retry_strategy.setter
+    @override
     def retry_strategy(self, _value: _BoundedIntervalRetry) -> None:
         return
 

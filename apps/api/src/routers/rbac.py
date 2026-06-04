@@ -8,7 +8,7 @@
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -79,7 +79,7 @@ class RoleRevocationRequest(BaseModel):
 
 
 class UserPermissionsResponse(BaseModel):
-    roles: list[dict]
+    roles: list[dict[str, Any]]
     permissions: list[str]
 
 

@@ -68,7 +68,7 @@ def _grade_canonical_choice(
 ) -> GradedItem:
     body = item.body
     assert isinstance(body, ChoiceItemBody)
-    selected = []
+    selected: list[str] = []
     if isinstance(raw_answer, ChoiceItemAnswer):
         selected = [str(option_id) for option_id in raw_answer.selected]
     elif isinstance(raw_answer, dict):

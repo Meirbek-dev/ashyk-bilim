@@ -65,7 +65,13 @@ def list_roles(
     checker.require(current_user.id, "role:read")
     roles = repo.list_all()
     role_ids = [r.id for r in roles if r.id is not None]
-    perm_map, user_map = repo.bulk_counts(role_ids) if role_ids else ({}, {})
+    perm_map: dict[int, int]
+    user_map: dict[int, int]
+    if role_ids:
+        perm_map, user_map = repo.bulk_counts(role_ids)
+    else:
+        perm_map = {}
+        user_map = {}
     return [
         RoleRead.model_validate(r).model_copy(
             update={

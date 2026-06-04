@@ -9,7 +9,7 @@ from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from src.core.timezone import now as tz_now
-from src.db.strict_base_model import PydanticStrictBaseModel
+from src.db.strict_base_model import JsonObject, PydanticStrictBaseModel
 
 XP_REWARDS = {
     "activity_completion": 25,
@@ -105,7 +105,7 @@ class GamificationProfile(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=tz_now)
 
     # Preferences
-    preferences: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    preferences: JsonObject = Field(default_factory=dict, sa_column=Column(JSON))
 
     # Database constraints
     __table_args__ = (
@@ -189,7 +189,7 @@ class PlatformGamificationConfig(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     # Optional overrides
     daily_xp_limit: int | None = Field(default=None, ge=0)
-    rewards: dict | None = Field(default=None, sa_column=Column(JSON))
+    rewards: JsonObject | None = Field(default=None, sa_column=Column(JSON))
     updated_at: datetime = Field(default_factory=tz_now)
 
 

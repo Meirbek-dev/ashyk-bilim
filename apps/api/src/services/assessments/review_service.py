@@ -1,6 +1,7 @@
 """Assessment service — teacher review queue."""
 
 from collections import defaultdict
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_
@@ -60,7 +61,7 @@ def _validate_policy_override_ceilings(
     time_limit_override_seconds: int | None,
 ) -> None:
     """Raise HTTP 422 if override values exceed hard ceilings."""
-    errors: list[dict] = []
+    errors: list[dict[str, Any]] = []
     if max_attempts is not None and max_attempts > _MAX_ATTEMPTS_CEILING:
         errors.append({
             "field": "max_attempts_override",

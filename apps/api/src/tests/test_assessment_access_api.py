@@ -1,11 +1,13 @@
 import pathlib
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -93,7 +95,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -107,12 +109,19 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_public_user] = lambda: teacher_user
     app.dependency_overrides[get_optional_public_user] = lambda: teacher_user
-    monkeypatch.setattr(PermissionChecker, "check", lambda *_args, **_kwargs: True)
-    monkeypatch.setattr(PermissionChecker, "require", lambda *_args, **_kwargs: None)
+
+    def fake_check(*_args: Any, **_kwargs: Any) -> bool:
+        return True
+
+    def fake_require(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    monkeypatch.setattr(PermissionChecker, "check", fake_check)
+    monkeypatch.setattr(PermissionChecker, "require", fake_require)
     return TestClient(app)
 
 
-def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch) -> None:
+def test_restricted_access_narrows_course_learners(db_session_factory: Callable[[], Session], api_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     response = api_client.get(f"/assessments/{assessment_uuid}/access")
     assert response.status_code == 200
@@ -141,7 +150,7 @@ def test_restricted_access_narrows_course_learners(db_session_factory, api_clien
 
 
 def test_course_author_can_test_after_previous_attempt_when_access_restricted(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     _assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     now = datetime.now(UTC)
@@ -202,7 +211,7 @@ def test_course_author_can_test_after_previous_attempt_when_access_restricted(
         assert "MAX_ATTEMPTS_REACHED" not in disabled_action_reasons
 
 
-def _seed_assessment(db_session_factory) -> tuple[str, int]:
+def _seed_assessment(db_session_factory: Callable[[], Session]) -> tuple[str, int]:
     now = datetime.now(UTC)
     with db_session_factory() as session:
         session.add(_user(TEACHER_ID, "teacher.access"))

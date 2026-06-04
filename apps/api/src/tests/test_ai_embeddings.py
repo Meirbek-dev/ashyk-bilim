@@ -6,11 +6,11 @@ from src.services.ai import embeddings
 
 
 @pytest.mark.asyncio
-async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch) -> None:
+async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 
     class FakeEmbeddings:
-        async def create(self, *, model, input, dimensions):  # noqa: A002
+        async def create(self, *, model: str, input: list[str], dimensions: int) -> SimpleNamespace:  # noqa: A002
             calls.append(list(input))
             return SimpleNamespace(
                 data=[SimpleNamespace(embedding=[float(len(text)), float(dimensions)]) for text in input]
