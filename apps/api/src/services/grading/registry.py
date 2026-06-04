@@ -1,6 +1,7 @@
 """Pluggable grader registry for assessment-type dispatch."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import ClassVar, override
 
 from pydantic import BaseModel
@@ -33,7 +34,7 @@ class GraderRegistry:
     _graders: ClassVar[dict[AssessmentType, type[BaseGrader]]] = {}
 
     @classmethod
-    def register(cls, assessment_type: AssessmentType):
+    def register(cls, assessment_type: AssessmentType) -> Callable[[type[BaseGrader]], type[BaseGrader]]:
         def decorator(grader_cls: type[BaseGrader]) -> type[BaseGrader]:
             cls._graders[assessment_type] = grader_cls
             return grader_cls

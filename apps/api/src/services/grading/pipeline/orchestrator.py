@@ -231,7 +231,7 @@ async def _submit_assessment_inner(
     )
 
     # 10. Persist (atomic, shielded from timeout cancellation)
-    async def _persist_and_update():
+    async def _persist_and_update() -> Submission:
         d = persist_submission(
             db_session=db_session,
             draft=draft,
@@ -372,11 +372,11 @@ async def _run_final_code_answers(
     *,
     db_session: Session,
     settings: AssessmentSettings,
-    answers_by_item_uuid: dict[str, Any],
-    answers_payload: dict[str, Any],
+    answers_by_item_uuid: dict[str, object],
+    answers_payload: dict[str, object],
     current_user: PublicUser,
     draft: Submission,
-) -> tuple[dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, object], dict[str, object]]:
     """Run final Judge0 grading for canonical CODE answers server-side."""
     code_items = [item for item in settings.items if isinstance(item.body, CodeItemBody)]
     if not code_items:
@@ -465,7 +465,7 @@ async def _run_final_code_answers(
     return enriched_answers, next_payload
 
 
-def _coerce_code_answer(raw_answer: Any) -> CodeItemAnswer | None:
+def _coerce_code_answer(raw_answer: object) -> CodeItemAnswer | None:
     if isinstance(raw_answer, CodeItemAnswer):
         return raw_answer
     if isinstance(raw_answer, dict):

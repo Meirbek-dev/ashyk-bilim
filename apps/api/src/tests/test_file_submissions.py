@@ -1,9 +1,8 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -51,7 +50,7 @@ _ALL_TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -89,7 +88,7 @@ def _make_app(db_session_factory: Callable[[], Session], current_user: PublicUse
     app = FastAPI()
     app.include_router(file_submissions_router, prefix="/file-submissions")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -348,7 +347,7 @@ def test_submit_when_returned_and_max_attempts_reached(db_session_factory: Calla
     from src.services import events
 
     class MockBus:
-        async def emit(self, event: Any) -> None:
+        async def emit(self, event: object) -> None:
             pass
 
     monkeypatch.setattr(events, "get_event_bus", MockBus)

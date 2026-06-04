@@ -87,6 +87,6 @@ async def api_delete_collection(
     collection_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-):
+) -> CollectionDetailResponse:
     """Delete collection by ID."""
     return await delete_collection(request, collection_uuid, current_user, db_session)

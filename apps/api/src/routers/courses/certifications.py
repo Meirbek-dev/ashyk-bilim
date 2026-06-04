@@ -120,7 +120,7 @@ async def api_delete_certification(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     last_known_update_date: Annotated[datetime | None, Query()] = None,
-):
+) -> CertificationDetailResponse:
     """Delete certification by certification_id."""
     return await delete_certification(
         request,

@@ -51,6 +51,7 @@ from src.services.analytics.schemas import (
     TeacherOverviewResponse,
 )
 from src.services.analytics.scope import (
+    TeacherAnalyticsScope,
     ensure_assessment_in_scope,
     ensure_course_in_scope,
     resolve_teacher_scope,
@@ -73,7 +74,7 @@ async def _scope_for(
     filters: AnalyticsFilters,
     *,
     action: str,
-):
+) -> TeacherAnalyticsScope:
     checker = PermissionChecker(db_session)
     return resolve_teacher_scope(db_session, checker, current_user, filters, action=action)
 
@@ -83,7 +84,7 @@ async def _course_scope_for(
     current_user: PublicUser | AnonymousUser,
     course_id: int,
     filters: AnalyticsFilters,
-):
+) -> TeacherAnalyticsScope:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     ensure_course_in_scope(scope, course_id)
     return scope
@@ -95,7 +96,7 @@ async def _assessment_scope_for(
     assessment_type: str,
     assessment_id: int,
     filters: AnalyticsFilters,
-):
+) -> TeacherAnalyticsScope:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     ensure_assessment_in_scope(db_session, scope, assessment_type, assessment_id)
     return scope
@@ -106,7 +107,7 @@ async def teacher_overview_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherOverviewResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return get_teacher_overview(db_session, scope, filters)
 
@@ -116,7 +117,7 @@ async def admin_analytics_overview_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AdminAnalyticsResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if not scope.has_platform_scope:
         raise HTTPException(status_code=403, detail="Требуется область платформенной аналитики")
@@ -128,7 +129,7 @@ async def teacher_courses_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherCourseListResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return get_teacher_course_list(db_session, scope, filters)
 
@@ -142,7 +143,7 @@ async def teacher_course_detail_by_uuid_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherCourseDetailResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     course = (
         sa_execute(
@@ -166,7 +167,7 @@ async def teacher_course_detail_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherCourseDetailResponse:
     scope = await _course_scope_for(db_session, current_user, course_id, filters)
     try:
         return get_teacher_course_detail(db_session, scope, course_id, filters)
@@ -179,7 +180,7 @@ async def teacher_assessments_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherAssessmentListResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return get_teacher_assessment_list(db_session, scope, filters)
 
@@ -194,7 +195,7 @@ async def teacher_assessment_detail_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherAssessmentDetailResponse:
     scope = await _assessment_scope_for(
         db_session,
         current_user,
@@ -219,7 +220,7 @@ async def teacher_at_risk_learners_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AtRiskLearnersResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return get_at_risk_learners(db_session, scope, filters)
 
@@ -234,7 +235,7 @@ async def teacher_interventions_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
     user_id: int | None = None,
     course_id: int | None = None,
-):
+) -> TeacherInterventionListResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return list_teacher_interventions(
         db_session,
@@ -253,7 +254,7 @@ async def create_teacher_intervention_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> TeacherInterventionRow:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return create_teacher_intervention(
         db_session,
@@ -270,7 +271,7 @@ async def teacher_saved_views_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> SavedAnalyticsViewListResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return list_saved_analytics_views(db_session, scope)
 
@@ -284,7 +285,7 @@ async def save_teacher_saved_view_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> SavedAnalyticsViewRow:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return save_analytics_view(db_session, scope, payload)
 
@@ -295,7 +296,7 @@ async def delete_teacher_saved_view_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> Response:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     deleted = delete_analytics_view(db_session, scope, view_id)
     if not deleted:
@@ -315,7 +316,7 @@ async def teacher_drillthrough_platform(
     course_id: int | None = None,
     assessment_type: str | None = None,
     assessment_id: int | None = None,
-):
+) -> DrillThroughResponse:
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if course_id is not None:
         ensure_course_in_scope(scope, course_id)
@@ -347,7 +348,7 @@ async def teacher_at_risk_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreamingResponse:
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
         export_at_risk_csv(db_session, scope, filters),
@@ -360,7 +361,7 @@ async def teacher_grading_backlog_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreamingResponse:
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
         export_grading_backlog_csv(db_session, scope, filters),
@@ -373,7 +374,7 @@ async def teacher_course_progress_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreamingResponse:
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
         export_course_progress_csv(db_session, scope, filters),
@@ -386,7 +387,7 @@ async def teacher_assessment_outcomes_export_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreamingResponse:
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
         export_assessment_outcomes_csv(db_session, scope, filters),

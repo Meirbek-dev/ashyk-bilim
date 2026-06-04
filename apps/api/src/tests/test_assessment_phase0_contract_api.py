@@ -2,7 +2,7 @@
 
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -58,7 +58,7 @@ from src.services.assessments import core
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     tables = [
         User.__table__,
@@ -116,7 +116,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], student_user: 
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from sqlalchemy import and_, or_, select
 from sqlmodel import Session, col
@@ -28,7 +27,7 @@ class TeacherAnalyticsScope:
     has_platform_scope: bool
 
 
-def _coerce_course_id(value: Any) -> int | None:
+def _coerce_course_id(value: object) -> int | None:
     if value is None:
         return None
     if isinstance(value, int):

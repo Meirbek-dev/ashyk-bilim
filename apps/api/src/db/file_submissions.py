@@ -245,7 +245,7 @@ class FileSubmissionConfig(PydanticStrictBaseModel):
 
     @field_validator("due_at", mode="before")
     @classmethod
-    def validate_due_at(cls, v: Any) -> Any:
+    def validate_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -271,7 +271,7 @@ class FileSubmissionUpdate(PydanticStrictBaseModel):
 
     @field_validator("due_at", mode="before")
     @classmethod
-    def validate_due_at(cls, v: Any) -> Any:
+    def validate_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 

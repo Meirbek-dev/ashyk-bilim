@@ -49,7 +49,7 @@ def list_all_permissions(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[PermissionRead]:
     """List all permission definitions. Used by the RBAC admin panel."""
     checker.require(current_user.id, "role:read")
     return [PermissionRead.model_validate(p) for p in repo.list_all_permissions()]
@@ -60,7 +60,7 @@ def list_roles(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[RoleRead]:
     """List all roles available in the platform."""
     checker.require(current_user.id, "role:read")
     roles = repo.list_all()
@@ -89,7 +89,7 @@ def get_role_audit_log(
     checker: PermissionCheckerDep,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> RoleAuditListResponse:
     checker.require(current_user.id, "role:read")
     events = list_role_audit_events()
     total = len(events)
@@ -108,7 +108,7 @@ def get_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Get a single role by ID."""
     checker.require(current_user.id, "role:read")
     role = repo.get_or_404(role_id)
@@ -125,7 +125,7 @@ def create_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Create a new custom role."""
     checker.require(current_user.id, "role:create")
     if body.priority > _caller_max_priority(checker, current_user.id):
@@ -154,7 +154,7 @@ def update_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Update a role's name, description, or priority."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)
@@ -223,7 +223,7 @@ def get_role_users_count(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, int]:
     checker.require(current_user.id, "role:read")
     repo.get_or_404(role_id)  # 404 guard
     return {"count": repo.get_user_count(role_id)}
@@ -238,7 +238,7 @@ def get_role_permissions(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[PermissionRead]:
     """Get all permissions assigned to a role."""
     checker.require(current_user.id, "role:read")
     repo.get_or_404(role_id)

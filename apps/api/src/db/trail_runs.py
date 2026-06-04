@@ -37,7 +37,7 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v: Any) -> Any:
+    def validate_status(cls, v: object) -> object:
         if isinstance(v, str):
             return StatusEnum(v)
         return v
@@ -58,7 +58,7 @@ class TrailRunCreate(SQLModelStrictBaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v: Any) -> Any:
+    def validate_status(cls, v: object) -> object:
         if isinstance(v, str):
             return StatusEnum(v)
         return v
@@ -86,7 +86,7 @@ class TrailRunRead(PydanticStrictBaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def validate_status(cls, v: Any) -> Any:
+    def validate_status(cls, v: object) -> object:
         if isinstance(v, str):
             return StatusEnum(v)
         return v

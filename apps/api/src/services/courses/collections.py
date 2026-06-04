@@ -234,7 +234,7 @@ async def delete_collection(
     current_user: PublicUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> dict[str, str]:
     statement = select(Collection).where(Collection.collection_uuid == collection_uuid)
     collection = db_session.exec(statement).first()
 

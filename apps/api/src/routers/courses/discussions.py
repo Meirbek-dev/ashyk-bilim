@@ -89,7 +89,7 @@ async def api_delete_course_discussion(
     discussion_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-):
+) -> DiscussionMessageResponse:
     """Delete Course Discussion by discussion_uuid."""
     return await delete_discussion(request, discussion_uuid, current_user, db_session)
 
@@ -113,7 +113,7 @@ async def api_unlike_course_discussion(
     discussion_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-):
+) -> DiscussionMessageResponse:
     """Unlike a Course Discussion."""
     return await unlike_discussion(request, discussion_uuid, current_user, db_session)
 
@@ -125,7 +125,7 @@ async def api_toggle_course_discussion_like(
     discussion_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-):
+) -> DiscussionToggleResponse:
     """Toggle like status for a Course Discussion (like if not liked, unlike if liked)."""
     return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
 
@@ -137,7 +137,7 @@ async def api_toggle_course_discussion_dislike(
     discussion_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-):
+) -> DiscussionToggleResponse:
     """Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)."""
     return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
 

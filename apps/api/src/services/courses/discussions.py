@@ -299,7 +299,7 @@ async def delete_discussion(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Delete a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
@@ -385,7 +385,7 @@ async def unlike_discussion(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Unlike a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")

@@ -1,4 +1,3 @@
-from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, and_, col, select
@@ -33,7 +32,7 @@ async def apply_course_contributor(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Apply to become a course contributor.
 
     SECURITY NOTES:
@@ -103,7 +102,7 @@ async def update_course_contributor(
     authorship_status: ResourceAuthorshipStatusEnum,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Update a course contributor's role and status.
 
     SECURITY NOTES:
@@ -173,7 +172,7 @@ async def get_course_contributors(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> list[dict[str, Any]]:
+) -> list[dict[str, object]]:
     """Get all contributors for a course with their user information.
 
     SECURITY NOTES:
@@ -222,7 +221,7 @@ async def add_bulk_course_contributors(
     usernames: list[str],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, list[dict[str, object]]]:
     """Add multiple contributors to a course by their usernames.
 
     SECURITY NOTES:
@@ -253,7 +252,7 @@ async def add_bulk_course_contributors(
     _require_contributor_management(checker, current_user.id, course)
 
     # Process results
-    results: dict[str, list[dict[str, Any]]] = {"successful": [], "failed": []}
+    results: dict[str, list[dict[str, object]]] = {"successful": [], "failed": []}
 
     current_time = utcnow()
 
@@ -319,7 +318,7 @@ async def remove_bulk_course_contributors(
     usernames: list[str],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, list[dict[str, object]]]:
     """Remove multiple contributors from a course by their usernames.
 
     SECURITY NOTES:
@@ -351,7 +350,7 @@ async def remove_bulk_course_contributors(
     _require_contributor_management(checker, current_user.id, course)
 
     # Process results
-    results: dict[str, list[dict[str, Any]]] = {"successful": [], "failed": []}
+    results: dict[str, list[dict[str, object]]] = {"successful": [], "failed": []}
 
     # Pre-fetch all users and existing authorships in 2 batch queries
     user_map = {u.username: u for u in db_session.exec(select(User).where(col(User.username).in_(usernames))).all()}

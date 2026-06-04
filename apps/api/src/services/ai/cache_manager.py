@@ -7,7 +7,6 @@ invalidated atomically when content changes.
 
 import logging
 from threading import Lock
-from typing import Any
 
 from cachebox import TTLCache
 
@@ -22,14 +21,14 @@ class _Cache:
     __slots__ = ("_cache", "_lock")
 
     def __init__(self, maxsize: int, ttl: int) -> None:
-        self._cache: TTLCache[str, Any] = TTLCache(maxsize=maxsize, global_ttl=ttl)
+        self._cache: TTLCache[str, object] = TTLCache(maxsize=maxsize, global_ttl=ttl)
         self._lock = Lock()
 
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str) -> object | None:
         with self._lock:
             return self._cache.get(key)
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: str, value: object) -> None:
         with self._lock:
             self._cache[key] = value
 
@@ -101,7 +100,7 @@ class AICacheManager:
             self._agent_key_index.clear()
         logger.info("All AI caches cleared")
 
-    def get_all_stats(self) -> dict[str, Any]:
+    def get_all_stats(self) -> dict[str, object]:
         with self._index_lock:
             retrieval_index_size = sum(len(v) for v in self._retrieval_key_index.values())
             agent_index_size = sum(len(v) for v in self._agent_key_index.values())

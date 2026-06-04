@@ -223,7 +223,7 @@ def api_delete_user(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     user_id: int,
-):
+) -> str:
     """Delete User.
 
     **Required Permission**: `user:delete:platform`

@@ -44,7 +44,7 @@ class FakeFactory:
 
 @pytest.mark.asyncio
 async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
-    def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         return [
             SimpleNamespace(
                 status=Status.ACCEPTED,
@@ -97,7 +97,7 @@ async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypa
 async def test_code_execution_reuses_idempotent_run(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     calls = 0
 
-    def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         return [
@@ -139,7 +139,7 @@ async def test_code_execution_reuses_idempotent_run(monkeypatch: pytest.MonkeyPa
 async def test_code_execution_retries_failed_idempotent_run(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     calls = 0
 
-    def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         if calls == 1:
@@ -195,7 +195,7 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeyp
     captured_kwargs: dict[str, Any] = {}
     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
-    def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -251,7 +251,7 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeyp
 async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     captured_kwargs: dict[str, Any] = {}
 
-    def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -288,7 +288,7 @@ async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch: pytest.Monk
 async def test_code_execution_raises_go_sandbox_limits(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     captured_kwargs: dict[str, Any] = {}
 
-    def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -324,7 +324,7 @@ async def test_code_execution_raises_go_sandbox_limits(monkeypatch: pytest.Monke
 async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     captured_kwargs: dict[str, Any] = {}
 
-    def fake_run(**kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -429,7 +429,7 @@ async def async_run_service(
     time_limit_seconds: int | None = None,
     memory_limit_mb: int | None = None,
     single_case: bool = False,
-):
+) -> CodeRun:
     test_cases = [
         CodeTestCase(
             id="visible",
@@ -460,7 +460,7 @@ async def async_run_service(
 async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     calls = 0
 
-    def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         return [
@@ -538,7 +538,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
 async def test_code_execution_match_modes(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
     outputs: list[str] = []
 
-    def fake_run(**_kwargs: Any) -> list[SimpleNamespace]:
+    def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         return [
             SimpleNamespace(
                 status=Status.ACCEPTED,

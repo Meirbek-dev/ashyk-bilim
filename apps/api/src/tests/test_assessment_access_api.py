@@ -1,8 +1,7 @@
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -60,7 +59,7 @@ TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=TABLES)
     factory = build_session_factory(engine)
@@ -99,7 +98,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -110,10 +109,10 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app.dependency_overrides[get_public_user] = lambda: teacher_user
     app.dependency_overrides[get_optional_public_user] = lambda: teacher_user
 
-    def fake_check(*_args: Any, **_kwargs: Any) -> bool:
+    def fake_check(*_args: object, **_kwargs: object) -> bool:
         return True
 
-    def fake_require(*_args: Any, **_kwargs: Any) -> None:
+    def fake_require(*_args: object, **_kwargs: object) -> None:
         return None
 
     monkeypatch.setattr(PermissionChecker, "check", fake_check)

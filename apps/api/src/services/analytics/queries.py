@@ -91,7 +91,7 @@ class AnalyticsContext:
     cohort_ids_by_user: dict[int, set[int]]
 
 
-def _unwrap_model[ModelT](value: Any, model_type: type[ModelT]) -> ModelT:
+def _unwrap_model[ModelT](value: object, model_type: type[ModelT]) -> ModelT:
     if isinstance(value, model_type):
         return value
     if hasattr(value, "_mapping"):
@@ -106,7 +106,7 @@ def _unwrap_model[ModelT](value: Any, model_type: type[ModelT]) -> ModelT:
     raise TypeError(msg)
 
 
-def _unwrap_pair[LeftT, RightT](value: Any, left_type: type[LeftT], right_type: type[RightT]) -> tuple[LeftT, RightT]:
+def _unwrap_pair[LeftT, RightT](value: object, left_type: type[LeftT], right_type: type[RightT]) -> tuple[LeftT, RightT]:
     if isinstance(value, (tuple, list)):
         left = next((candidate for candidate in value if isinstance(candidate, left_type)), None)
         right = next(

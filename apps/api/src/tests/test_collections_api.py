@@ -1,8 +1,8 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 import pathlib
 import sys
-from collections.abc import Callable
-from datetime import datetime
+from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
@@ -34,7 +34,7 @@ _ALL_TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -73,7 +73,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], test_user: Pub
     app = FastAPI()
     app.include_router(router, prefix="/collections")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -130,8 +130,8 @@ def test_collections_list_returns_full_course_objects(api_client: TestClient, db
             description="Testing CollectionRead courses parsing",
             creator_id=user.id,
             collection_uuid="collection_test_123",
-            creation_date=datetime.now(),
-            update_date=datetime.now(),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         session.add(collection)
         session.flush()
@@ -139,8 +139,8 @@ def test_collections_list_returns_full_course_objects(api_client: TestClient, db
         cc = CollectionCourse(
             collection_id=collection.id,
             course_id=course.id,
-            creation_date=datetime.now(),
-            update_date=datetime.now(),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         session.add(cc)
         session.commit()

@@ -144,7 +144,7 @@ async def delete_chapter(
     chapter_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     chapter = _get_chapter_by_uuid(chapter_uuid, db_session)
 
     course = _get_course_for_chapter(chapter, db_session)
@@ -204,7 +204,7 @@ async def move_activity_to_order(
     target_chapter_uuid: str | None,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Переместить активность на новую позицию, при необходимости в другую главу."""
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
 
@@ -327,7 +327,7 @@ async def reorder_chapters_and_activities(
     chapters_order: ChapterUpdateOrder,
     current_user: PublicUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     """Массово переупорядочить все главы и активности в курсе (для drag-and-drop)."""
     course = db_session.exec(select(Course).where(Course.course_uuid == course_uuid)).first()
     if not course:

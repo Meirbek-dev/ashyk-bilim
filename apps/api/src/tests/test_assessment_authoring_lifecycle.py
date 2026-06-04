@@ -18,7 +18,7 @@ Covers (all teacher-side):
 
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -107,7 +107,7 @@ _ALL_TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -147,7 +147,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app.include_router(router, prefix="/assessments")
     app.include_router(file_submissions_router, prefix="/file-submissions")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session

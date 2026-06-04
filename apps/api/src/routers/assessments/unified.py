@@ -220,7 +220,7 @@ async def api_list_access_eligible_learners(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> list[AssessmentAccessUserRead]:
     return await list_assessment_access_eligible_users(assessment_uuid, current_user, db_session)
 
 
@@ -232,7 +232,7 @@ async def api_list_access_eligible_usergroups(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> list[AssessmentAccessUserGroupRead]:
     return await list_assessment_access_eligible_usergroups(assessment_uuid, current_user, db_session)
 
 
@@ -733,7 +733,7 @@ async def api_duplicate_assessment(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AssessmentRead:
     """Duplicate an assessment.
 
     Creates a full deep-copy of the assessment, its items, and its policy.

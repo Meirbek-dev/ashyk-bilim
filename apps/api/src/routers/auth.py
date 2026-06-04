@@ -318,7 +318,7 @@ async def refresh_token(
     request: Request,
     response: Response,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AuthRefreshResponse:
     """Exchange a valid refresh token cookie for a new access token + rotated refresh token."""
     token = request.cookies.get(REFRESH_COOKIE_KEY)
     if not token:
@@ -374,7 +374,7 @@ async def refresh_token(
 )
 async def google_authorize(
     callback: str,
-):
+) -> RedirectResponse:
     """Redirect to Google OAuth consent screen."""
     _validate_callback_url(callback)
 
@@ -405,7 +405,7 @@ async def google_callback(
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
-):
+) -> Response:
     """Handle Google OAuth callback."""
     # Resolve the frontend callback URL before anything else so that all error
     # redirects land in the right place.  If the state JWT is expired or

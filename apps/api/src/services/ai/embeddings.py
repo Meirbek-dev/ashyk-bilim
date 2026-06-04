@@ -81,7 +81,7 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
         for attempt in range(3):
             try:
 
-                async def _call(batch: list[str] = batch):
+                async def _call(batch: list[str] = batch) -> object:
                     return await asyncio.wait_for(
                         client.embeddings.create(
                             model=model_name,

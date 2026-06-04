@@ -493,7 +493,7 @@ async def api_delete_course(
     course_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseDetailResponse:
     """Delete Course by ID.
 
     **Required Permission**: `course:delete:own` or `course:delete:platform`
@@ -509,7 +509,7 @@ async def api_apply_course_contributor(
     course_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseContributorApplicationResponse:
     """Apply to be a contributor for a course."""
     assert db_session is not None
     assert current_user is not None
@@ -565,7 +565,7 @@ async def api_delete_course_update(
     courseupdate_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseUpdateDeleteResponse:
     """Delete Course Update by courseupdate_uuid."""
     assert db_session is not None
     assert current_user is not None
@@ -578,7 +578,7 @@ async def api_get_course_contributors(
     course_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
-) -> Any:
+) -> list[CourseContributorResponse]:
     """Get all contributors for a specific course."""
     assert db_session is not None
     assert current_user is not None
@@ -594,7 +594,7 @@ async def api_update_course_contributor(
     authorship_status: ResourceAuthorshipStatusEnum,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseContributorMutationResponse:
     """Update a course contributor's role and status.
 
     **Required Permission**: `course:manage:own` or `course:manage:platform`
@@ -619,7 +619,7 @@ async def api_add_bulk_course_contributors(
     usernames: list[str],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseBulkContributorResponse:
     """Add multiple contributors to a course by their usernames.
 
     **Required Permission**: `course:manage:own` or `course:manage:platform`
@@ -636,7 +636,7 @@ async def api_remove_bulk_course_contributors(
     usernames: list[str],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-) -> Any:
+) -> CourseBulkContributorResponse:
     """Remove multiple contributors from a course by their usernames."""
     assert db_session is not None
     assert current_user is not None

@@ -1,6 +1,5 @@
 """Canonical quiz/exam item grading logic."""
 
-from typing import Any
 
 from src.db.assessments import ChoiceItemAnswer, ChoiceItemBody, MatchingItemAnswer, MatchingItemBody
 from src.db.grading.submissions import GradedItem, GradingBreakdown
@@ -24,7 +23,7 @@ def apply_attempt_penalty(
 
 def grade_canonical_choice_items(
     items: list[CanonicalAssessmentItem],
-    answers_by_item_uuid: dict[str, Any],
+    answers_by_item_uuid: dict[str, object],
     max_score: float = 100.0,
     negative_marking_percent: float = 0.0,
 ) -> tuple[float, GradingBreakdown]:
@@ -62,7 +61,7 @@ def grade_canonical_choice_items(
 
 def _grade_canonical_choice(
     item: CanonicalAssessmentItem,
-    raw_answer: Any,
+    raw_answer: object,
     points: float,
     negative_marking_percent: float = 0.0,
 ) -> GradedItem:
@@ -124,7 +123,7 @@ def _grade_canonical_choice(
 
 def _grade_canonical_matching(
     item: CanonicalAssessmentItem,
-    raw_answer: Any,
+    raw_answer: object,
     points: float,
 ) -> GradedItem:
     body = item.body

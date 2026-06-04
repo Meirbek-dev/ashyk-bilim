@@ -50,7 +50,7 @@ async def create_activity(
     activity_object: ActivityCreate,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == activity_object.chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
@@ -84,7 +84,7 @@ async def get_activity(
     activity_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> ActivityReadWithPermissions:
     activity = _get_activity_by_uuid(activity_uuid, db_session)
     course = _get_course_for_activity(activity, db_session)
 
@@ -140,7 +140,7 @@ async def update_activity(
     activity_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> ActivityRead:
     activity = _get_activity_by_uuid(activity_uuid, db_session)
 
     checker = PermissionChecker(db_session)
@@ -285,7 +285,7 @@ async def delete_activity(
     activity_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     activity = _get_activity_by_uuid(activity_uuid, db_session)
 
     checker = PermissionChecker(db_session)

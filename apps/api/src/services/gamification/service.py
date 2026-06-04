@@ -170,7 +170,7 @@ def award_xp(
     amount: int | None = None,
     source_id: str | None = None,
     idempotency_key: str | None = None,
-):
+) -> tuple[GamificationProfile, XPTransaction, bool, bool]:
     """Award XP atomically and idempotently.
 
     Returns (profile, transaction, level_up_occurred, is_new_transaction).
@@ -359,7 +359,7 @@ def update_preferences(db: Session, user_id: int, updates: dict[str, Any]) -> Ga
     return profile
 
 
-def get_leaderboard_read(db: Session, limit: int = 10, offset: int = 0):
+def get_leaderboard_read(db: Session, limit: int = 10, offset: int = 0) -> LeaderboardRead:
     """Return typed LeaderboardRead including total participants and usernames."""
     from src.db.gamification import LeaderboardEntryRead, LeaderboardRead
     from src.db.users import User as DBUser
@@ -419,7 +419,7 @@ def on_activity_completed(
     activity_id: int | None = None,
     source_id: str | None = None,
     idempotency_key: str | None = None,
-):
+) -> GamificationProfile:
     profile, _tx, _level_up, is_new = award_xp(
         db=db,
         user_id=user_id,
@@ -447,7 +447,7 @@ def on_course_completed(
     course_id: int | None = None,
     source_id: str | None = None,
     idempotency_key: str | None = None,
-):
+) -> GamificationProfile:
     profile, _tx, _level_up, is_new = award_xp(
         db=db,
         user_id=user_id,

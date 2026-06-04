@@ -32,6 +32,7 @@ from src.db.uploads import (
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.utils.chunked_upload import (
+    ChunkedUploadSession,
     cleanup_session,
     complete_upload,
     create_upload_session,
@@ -111,7 +112,7 @@ def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload
     return upload
 
 
-def _owned_chunked_session(upload_id: str, user_id: int):
+def _owned_chunked_session(upload_id: str, user_id: int) -> ChunkedUploadSession:
     session = get_upload_session(upload_id)
     if session.owner_user_id != user_id:
         raise HTTPException(status_code=404, detail="Сессия загрузки не найдена")
@@ -314,7 +315,7 @@ async def initiate_chunked_upload(
     file_size: Annotated[int, Form()],
     uuid: Annotated[str | None, Form()] = None,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-):
+) -> ChunkedUploadInitiateResponse:
     """Initiate a chunked upload session.
 
     Args:
@@ -352,7 +353,7 @@ async def upload_chunk(
     chunk_index: Annotated[int, Form()],
     chunk: Annotated[UploadFile, File()],
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-):
+) -> ChunkedUploadChunkResponse:
     """Upload a single chunk.
 
     Args:
@@ -382,7 +383,7 @@ async def upload_chunk(
 async def complete_chunked_upload(
     upload_id: Annotated[str, Form()],
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-):
+) -> ChunkedUploadCompleteResponse:
     """Complete the chunked upload by assembling all chunks.
 
     Args:
@@ -428,7 +429,7 @@ async def complete_chunked_upload(
 async def get_upload_status(
     upload_id: str,
     current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-):
+) -> ChunkedUploadStatusResponse:
     """Get the status of an upload session.
 
     Args:

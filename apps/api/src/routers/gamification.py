@@ -125,7 +125,7 @@ async def award_xp(
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> XPAwardResponse:
     """Award XP with strong typing and idempotency."""
     logger.info(f"Award XP request: user={user.id} payload={payload}")
     try:
@@ -177,7 +177,7 @@ async def update_streak(
     streak_type: DBStreakType,
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreakUpdateRead:
     try:
         profile = service.update_streak(db, user.id, streak_type.value)
         if streak_type == DBStreakType.LOGIN:

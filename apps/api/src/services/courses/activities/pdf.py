@@ -97,7 +97,7 @@ async def create_documentpdf_activity(
     db_session: Session,
     pdf_file: UploadFile | None = None,
     pdf_uploaded_path: str | None = None,
-):
+) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")

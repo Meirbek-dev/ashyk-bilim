@@ -13,7 +13,7 @@ async def upload_file_and_return_file_object(
     list_of_allowed_file_formats: list[str],
     type_of_block: str,
     course_uuid: str,
-):
+) -> BlockFile:
     """Upload file for blocks."""
     file_id = str(ULID())
 

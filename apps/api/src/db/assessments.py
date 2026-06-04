@@ -7,7 +7,7 @@ storage, but new API surfaces should read and write this module.
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
 from sqlalchemy import (
@@ -449,7 +449,7 @@ class AssessmentPolicyPatch(PydanticStrictBaseModel):
 
     @field_validator("due_at", mode="before")
     @classmethod
-    def validate_due_at(cls, v: Any) -> Any:
+    def validate_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
     @field_validator("late_policy", mode="before")
@@ -528,7 +528,7 @@ class AssessmentLifecycleTransition(PydanticStrictBaseModel):
 
     @field_validator("scheduled_at", mode="before")
     @classmethod
-    def validate_scheduled_at(cls, v: Any) -> Any:
+    def validate_scheduled_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -886,7 +886,7 @@ class StudentPolicyOverrideCreate(PydanticStrictBaseModel):
 
     @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
-    def validate_due_at_override(cls, v: Any) -> Any:
+    def validate_due_at_override(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -900,7 +900,7 @@ class StudentPolicyOverrideUpdate(PydanticStrictBaseModel):
 
     @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
-    def validate_due_at_override(cls, v: Any) -> Any:
+    def validate_due_at_override(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 

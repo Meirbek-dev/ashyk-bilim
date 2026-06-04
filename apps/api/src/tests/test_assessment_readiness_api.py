@@ -2,7 +2,7 @@
 
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -43,7 +43,7 @@ from src.services.assessments import core
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(
         engine,
@@ -104,7 +104,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -592,7 +592,7 @@ def test_validate_code_challenge_endpoint(
                 )
             ]
 
-    async def mock_run(*args: Any, **kwargs: Any) -> FakeResult:
+    async def mock_run(*args: object, **kwargs: object) -> FakeResult:
         return FakeResult()
 
     from src.services.code_execution.service import CodeExecutionService

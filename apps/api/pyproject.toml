@@ -131,9 +131,9 @@ ignore = [
   "BLE001",  # blind-except: Do not catch `Exception` directly; use specific exceptions
   "TRY003",  # raise-vanilla-args: Avoid long message strings in exception raises
   "EM101",   # raw-string-in-exception: Exception must not use a string literal directly
-  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
   "TRY300",  # try-consider-else: Move code to else block (noisy)
   "TRY301",  # raise-within-try: Disallow raising within try block (noisy)
+  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
   "D",      # docstring-rules: Disables all docstring-related rules

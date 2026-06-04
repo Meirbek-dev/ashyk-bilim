@@ -19,7 +19,7 @@ def install_default_elements(db_session: Session) -> bool:
 
 
 # Platform creation
-def install_create_platform(platform_object: PlatformCreate, db_session: Session):
+def install_create_platform(platform_object: PlatformCreate, db_session: Session) -> Platform:
     platform_record = Platform.model_validate(platform_object)
 
     # Complete the platform object
@@ -34,7 +34,7 @@ def install_create_platform(platform_object: PlatformCreate, db_session: Session
     return platform_record
 
 
-def install_create_platform_user(user_object: UserCreate, db_session: Session):
+def install_create_platform_user(user_object: UserCreate, db_session: Session) -> UserRead:
     user = User.model_validate(user_object)
 
     # Complete the user object

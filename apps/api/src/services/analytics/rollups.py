@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, func
 from sqlmodel import Session, col, select
@@ -50,7 +50,7 @@ def supports_teacher_rollup_reads(filters: AnalyticsFilters) -> bool:
     return supports_rollup_reads(filters) and not filters.course_ids
 
 
-def _unwrap_scalar_date(value: Any) -> date | None:
+def _unwrap_scalar_date(value: object) -> date | None:
     if value is None or isinstance(value, date):
         return value
     if isinstance(value, (tuple, list)):

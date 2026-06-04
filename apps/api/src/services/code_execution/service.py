@@ -481,7 +481,7 @@ class CodeExecutionService:
         sandbox_policy = _sandbox_policy_for_language(language_id, memory_limit_mb)
         started_at = time.monotonic()
 
-        def _run_judge0():
+        def _run_judge0() -> object:
             return judge0.run(
                 client=client,
                 source_code=source_code,

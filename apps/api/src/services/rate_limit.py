@@ -123,7 +123,7 @@ def rate_limit_dependency(
     max_requests: int,
     window_seconds: int,
     key_func: RateLimitKeyFunc = ip_key,
-):
+) -> Callable[[Request], Awaitable[None]]:
     rule = RateLimitRule(
         namespace=namespace,
         max_requests=max_requests,

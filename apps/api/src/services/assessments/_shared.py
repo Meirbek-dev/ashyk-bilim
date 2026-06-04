@@ -65,6 +65,7 @@ from src.db.grading.submissions import (
     Submission,
     SubmissionRead,
     SubmissionStatus,
+    SubmissionUser,
 )
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.usergroup_user import UserGroupUser
@@ -1655,9 +1656,7 @@ def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, Use
     return {user.id: user for user in rows if user.id is not None}
 
 
-def _submission_user(user: User):
-    from src.db.grading.submissions import SubmissionUser
-
+def _submission_user(user: User) -> SubmissionUser:
     return SubmissionUser(
         id=user.id,
         username=user.username,

@@ -2,7 +2,7 @@ import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, col, select
@@ -84,7 +84,7 @@ async def create_video_activity(
     details: str = "{}",
     subtitle_files: list[UploadFile] | None = None,
     video_uploaded_path: str | None = None,
-):
+) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
@@ -140,7 +140,7 @@ async def create_video_activity(
         await asyncio.to_thread(_move_temp_video_files, temp_path, final_path)
 
     if subtitle_files:
-        subtitle_info: list[dict[str, Any]] = []
+        subtitle_info: list[dict[str, object]] = []
         valid_subtitles: list[tuple[UploadFile, str]] = []
         for subtitle_file in subtitle_files:
             if subtitle_file.filename and subtitle_file.size is not None and subtitle_file.size > 0:
@@ -202,7 +202,7 @@ async def create_external_video_activity(
     current_user: PublicUser | AnonymousUser,
     data: ExternalVideo,
     db_session: Session,
-):
+) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == data.chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")

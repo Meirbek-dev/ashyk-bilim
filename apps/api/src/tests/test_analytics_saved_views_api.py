@@ -2,7 +2,7 @@
 
 import pathlib
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import pytest
@@ -26,7 +26,7 @@ from src.services.analytics.scope import TeacherAnalyticsScope
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(
         engine,
@@ -83,7 +83,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app = FastAPI()
     app.include_router(router, prefix="/analytics")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -93,7 +93,7 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_public_user] = lambda: teacher_user
 
-    async def fake_scope_for(*_args: Any, **_kwargs: Any) -> TeacherAnalyticsScope:
+    async def fake_scope_for(*_args: object, **_kwargs: object) -> TeacherAnalyticsScope:
         return TeacherAnalyticsScope(
             teacher_user_id=teacher_user.id,
             course_ids=[1],

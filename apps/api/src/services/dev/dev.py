@@ -2,7 +2,7 @@ from config.config import get_settings
 from src.security.rbac import FeatureDisabled
 
 
-def is_dev_mode_enabled():
+def is_dev_mode_enabled() -> bool:
     config = get_settings()
     return config.general_config.development_mode
 

@@ -1,5 +1,4 @@
 import secrets
-from typing import Any
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
@@ -12,8 +11,8 @@ from src.services.users.users import ensure_user_has_default_role
 
 async def find_or_create_google_user(
     request: Request,
-    google_user_data: dict[str, Any],
-    current_user: Any,
+    google_user_data: dict[str, object],
+    current_user: object,
     db_session: Session,
 ) -> User:
     """Find an existing user by Google email, or create a new one.

@@ -235,7 +235,7 @@ async def assign_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> RoleMutationResponse:
     """Assign a role to a user.
 
     **Required Permission**: `role:create`
@@ -271,7 +271,7 @@ async def revoke_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> RoleMutationResponse:
     """Revoke a role from a user.
 
     **Required Permission**: `role:delete`

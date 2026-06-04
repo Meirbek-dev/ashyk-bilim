@@ -90,7 +90,7 @@ async def delete_update(
     courseupdate_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     statement = select(CourseUpdate).where(CourseUpdate.courseupdate_uuid == courseupdate_uuid)
     update = db_session.exec(statement).first()
 

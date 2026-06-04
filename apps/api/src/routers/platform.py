@@ -76,7 +76,7 @@ def api_update_platform_user_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> PlatformDetailResponse:
     """Update a user's role in the platform.
 
     **Path Parameter**: `role_id` - numeric role ID
@@ -100,7 +100,7 @@ def api_remove_user_from_platform(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> PlatformDetailResponse:
     """Remove a user from the platform."""
     return remove_platform_user(
         request,
@@ -118,7 +118,7 @@ async def api_update_app_logo(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> PlatformDetailResponse:
     """Update the platform logo.
 
     **Required Permission**: `platform:update`
@@ -139,7 +139,7 @@ async def api_update_platform_thumbnail(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> PlatformDetailResponse:
     """Update the platform thumbnail.
 
     **Required Permission**: `platform:update`

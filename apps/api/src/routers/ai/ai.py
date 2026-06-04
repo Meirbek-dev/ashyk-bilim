@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -175,7 +176,7 @@ async def api_ai_start_activity_chat_session_stream(
             except asyncio.CancelledError:
                 pass
 
-        async def event_generator():
+        async def event_generator() -> AsyncGenerator[str]:
             monitor_task = asyncio.create_task(disconnect_monitor_start())
             try:
                 async for sse_string in ai_start_activity_chat_session_stream(
@@ -214,7 +215,7 @@ async def api_ai_start_activity_chat_session_stream(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Непредвиденная ошибка в AI streaming endpoint")
+        logger.exception("Непредвиденная ошибка in AI streaming endpoint")
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
@@ -249,7 +250,7 @@ async def api_ai_send_activity_chat_message_stream(
     try:
         cancel_event = asyncio.Event()
 
-        async def event_generator():
+        async def event_generator() -> AsyncGenerator[str]:
             monitor_task = asyncio.create_task(_monitor_disconnect(request, cancel_event, "send-message"))
             try:
                 async for sse_string in ai_send_activity_chat_message_stream(

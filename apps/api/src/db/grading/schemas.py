@@ -62,7 +62,7 @@ class DeadlineExtensionRequest(PydanticStrictBaseModel):
 
     @field_validator("new_due_at", mode="before")
     @classmethod
-    def validate_new_due_at(cls, v: Any) -> Any:
+    def validate_new_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 

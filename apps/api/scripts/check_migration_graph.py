@@ -6,7 +6,6 @@ import argparse
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 
 @dataclass(frozen=True)
@@ -16,7 +15,7 @@ class Revision:
     path: Path
 
 
-def _literal_assignment(module: ast.Module, name: str) -> Any | None:
+def _literal_assignment(module: ast.Module, name: str) -> object | None:
     for node in module.body:
         value: ast.expr | None = None
         targets: list[str] = []

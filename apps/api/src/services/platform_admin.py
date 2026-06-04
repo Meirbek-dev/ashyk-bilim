@@ -60,7 +60,7 @@ async def update_app_logo(
     logo_file: UploadFile,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     platform_record = get_platform(db_session)
 
     filename = await upload_app_logo(logo_file)
@@ -79,7 +79,7 @@ async def update_platform_thumbnail(
     thumbnail_file: UploadFile,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     platform_record = get_platform(db_session)
 
     filename = await upload_platform_thumbnail(thumbnail_file)

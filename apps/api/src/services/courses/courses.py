@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException, Request, UploadFile, status
-from sqlalchemy import func
+from sqlalchemy import Select, func
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, and_, col, or_, select
 from ulid import ULID
@@ -42,9 +42,9 @@ logger = logging.getLogger(__name__)
 
 
 def _accessible_courses_filter(
-    query: object,
+    query: Select,
     current_user: PublicUser | AnonymousUser,
-):
+) -> Select:
     """Apply the standard course-access filter to *query*.
 
     Rules:
@@ -92,7 +92,7 @@ def _accessible_courses_filter(
     )
 
 
-def _course_search_filter(search_query: str | None, dialect_name: str | None = None):
+def _course_search_filter(search_query: str | None, dialect_name: str | None = None) -> ColumnElement[bool] | None:
     if not search_query:
         return None
 
@@ -125,13 +125,13 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
     )
 
 
-def _apply_course_sort(query: Any, sort_by: str | None) -> Any:
+def _apply_course_sort(query: Select, sort_by: str | None) -> Select:
     if sort_by == "name":
         return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
     return query.order_by(col(Course.update_date).desc(), col(Course.id).desc())
 
 
-def _apply_lms_sort(query: Any, current_user: PublicUser | AnonymousUser) -> Any:
+def _apply_lms_sort(query: Select, current_user: PublicUser | AnonymousUser) -> Select:
     from sqlalchemy import case, func, select
 
     from src.db.trail_runs import TrailRun
@@ -369,7 +369,7 @@ def _ready_sql_condition() -> ColumnElement[bool]:
     )
 
 
-def _preset_sql_filter(preset: str | None) -> Any:
+def _preset_sql_filter(preset: str | None) -> ColumnElement[bool] | None:
     """Return an additional SQL WHERE clause for the given preset, or None."""
     from datetime import timedelta
 
@@ -982,7 +982,7 @@ async def create_course(
     thumbnail_file: UploadFile | None = None,
     thumbnail_type: ThumbnailType = ThumbnailType.IMAGE,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     """Create a new course.
 
     SECURITY NOTES:
@@ -1077,7 +1077,7 @@ async def update_course_thumbnail(
     thumbnail_type: ThumbnailType = ThumbnailType.IMAGE,
     last_known_update_date: datetime | None = None,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
@@ -1159,7 +1159,7 @@ async def update_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     """Update a course.
 
     SECURITY NOTES:
@@ -1242,7 +1242,7 @@ async def update_course_metadata(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
@@ -1280,7 +1280,7 @@ async def update_course_access(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
@@ -1325,7 +1325,7 @@ async def delete_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> dict[str, str]:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:

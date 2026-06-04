@@ -1,6 +1,5 @@
 """Canonical code-challenge grading logic."""
 
-from typing import Any
 
 from src.db.assessments import CodeItemAnswer
 from src.db.grading.submissions import GradedItem, GradingBreakdown
@@ -8,7 +7,7 @@ from src.services.grading.settings_loader import CanonicalAssessmentItem
 
 
 def grade_code_challenge(
-    run_results: list[dict[str, Any]],
+    run_results: list[dict[str, object]],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
     """Grade a code challenge submission.
@@ -39,11 +38,11 @@ def grade_code_challenge(
     items = [
         GradedItem(
             item_id=str(t.get("test_id", i)),
-            item_text=t.get("description", f"Test {i + 1}"),
+            item_text=str(t.get("description", f"Test {i + 1}")),
             score=float(t.get("weight", 1)) if t.get("passed") else 0.0,
             max_score=float(t.get("weight", 1)),
             correct=bool(t.get("passed", False)),
-            feedback=t.get("message", ""),
+            feedback=str(t.get("message", "")),
             needs_manual_review=False,
         )
         for i, t in enumerate(run_results)
@@ -59,7 +58,7 @@ def grade_code_challenge(
 
 def grade_canonical_code_item(
     items: list[CanonicalAssessmentItem],
-    answers_by_item_uuid: dict[str, Any],
+    answers_by_item_uuid: dict[str, object],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CODE items using answer.latest_run when present."""
@@ -132,7 +131,7 @@ def grade_canonical_code_item(
     return normalized_score, item_breakdown
 
 
-def _extract_latest_run(raw_answer: Any) -> dict[str, Any] | None:
+def _extract_latest_run(raw_answer: object) -> dict[str, object] | None:
     if isinstance(raw_answer, CodeItemAnswer):
         latest_run = raw_answer.latest_run
         return latest_run.model_dump(mode="json") if latest_run is not None else None
@@ -143,7 +142,7 @@ def _extract_latest_run(raw_answer: Any) -> dict[str, Any] | None:
     return None
 
 
-def _serialize_code_answer(raw_answer: Any) -> Any:
+def _serialize_code_answer(raw_answer: object) -> object:
     if isinstance(raw_answer, CodeItemAnswer):
         return raw_answer.model_dump(mode="json")
     return raw_answer

@@ -31,7 +31,7 @@ class LatePolicyNone(PydanticStrictBaseModel):
 
     kind: Literal["NONE"] = "NONE"
 
-    def apply(self, submitted_at: datetime, due_at: datetime) -> float:
+    def apply(self, _submitted_at: datetime, _due_at: datetime) -> float:
         """Always returns 0 — no penalty regardless of lateness."""
         return 0.0
 
@@ -60,7 +60,7 @@ class LatePolicyCutoff(PydanticStrictBaseModel):
     kind: Literal["CUTOFF"] = "CUTOFF"
     cutoff_at: datetime
 
-    def apply(self, submitted_at: datetime, due_at: datetime) -> float:
+    def apply(self, submitted_at: datetime, _due_at: datetime) -> float:
         """Return 100% penalty if past cutoff, 0% otherwise."""
         return 100.0 if submitted_at > self.cutoff_at else 0.0
 

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from collections import defaultdict
-from typing import Annotated
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -24,6 +26,10 @@ from src.services.grading.events import (
     grading_event,
 )
 
+if TYPE_CHECKING:
+    import redis.asyncio
+    import redis.asyncio.client
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -35,6 +41,66 @@ _KEEPALIVE_INTERVAL = 30
 
 # In-process fallback counter used when Redis is unavailable.
 _local_conn_counts: dict[int, int] = defaultdict(int)
+
+
+@contextlib.asynccontextmanager
+async def _sse_connection(
+    redis: redis.asyncio.Redis | None,
+    conn_key: str,
+    user_id: int,
+) -> AsyncGenerator[None]:
+    # Increment connection counter (Redis or in-process fallback)
+    if redis is not None:
+        try:
+            await redis.incr(conn_key)
+            await redis.expire(conn_key, 3600)  # auto-clean stale counter
+        except Exception:
+            logger.warning("Не удалось увеличить счетчик SSE-соединений", exc_info=True)
+    else:
+        _local_conn_counts[user_id] += 1
+
+    try:
+        yield
+    finally:
+        # Decrement connection counter on disconnect
+        if redis is not None:
+            try:
+                remaining = await redis.decr(conn_key)
+                if remaining <= 0:
+                    await redis.delete(conn_key)
+            except Exception:
+                logger.warning("Не удалось уменьшить счетчик SSE-соединений", exc_info=True)
+        else:
+            _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
+            if _local_conn_counts[user_id] == 0:
+                _local_conn_counts.pop(user_id, None)
+
+
+async def _stream_pubsub(
+    pubsub: redis.asyncio.client.PubSub,
+    request: Request,
+    submission_uuid: str,
+) -> AsyncGenerator[str]:
+    while not await request.is_disconnected():
+        message = await pubsub.get_message(
+            ignore_subscribe_messages=True,
+            timeout=float(_KEEPALIVE_INTERVAL),
+        )
+        if message is None:
+            yield ": keepalive\n\n"
+            continue
+        raw = message.get("data")
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        if not isinstance(raw, str):
+            continue
+        try:
+            payload = json.loads(raw)
+        except Exception:
+            logger.warning("Не удалось декодировать SSE-полезную нагрузку: %s", raw)
+            continue
+        event_type = str(payload.get("event", "message"))
+        yield encode_sse(event_type, payload)
 
 
 def _conn_key(user_id: int) -> str:
@@ -126,20 +192,10 @@ async def api_feedback_stream(
             headers={"Retry-After": "60"},
         )
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str]:
         nonlocal redis
 
-        # Increment connection counter (Redis or in-process fallback)
-        if redis is not None:
-            try:
-                await redis.incr(conn_key)
-                await redis.expire(conn_key, 3600)  # auto-clean stale counter
-            except Exception:
-                logger.warning("Не удалось увеличить счетчик SSE-соединений", exc_info=True)
-        else:
-            _local_conn_counts[user_id] += 1
-
-        try:
+        async with _sse_connection(redis, conn_key, user_id):
             # ── Replay missed events ──────────────────────────────────────────
             if last_event_id:
                 try:
@@ -167,42 +223,11 @@ async def api_feedback_stream(
             pubsub = redis.pubsub()
             await pubsub.subscribe(grading_channel(submission_uuid))
             try:
-                while not await request.is_disconnected():
-                    message = await pubsub.get_message(
-                        ignore_subscribe_messages=True,
-                        timeout=float(_KEEPALIVE_INTERVAL),
-                    )
-                    if message is None:
-                        yield ": keepalive\n\n"
-                        continue
-                    raw = message.get("data")
-                    if isinstance(raw, bytes):
-                        raw = raw.decode("utf-8")
-                    if not isinstance(raw, str):
-                        continue
-                    try:
-                        payload = json.loads(raw)
-                    except Exception:
-                        logger.warning("Не удалось декодировать SSE-полезную нагрузку: %s", raw)
-                        continue
-                    event_type = str(payload.get("event", "message"))
-                    yield encode_sse(event_type, payload)
+                async for event in _stream_pubsub(pubsub, request, submission_uuid):
+                    yield event
             finally:
                 await pubsub.unsubscribe(grading_channel(submission_uuid))
                 await pubsub.aclose()
-        finally:
-            # Decrement connection counter on disconnect
-            if redis is not None:
-                try:
-                    remaining = await redis.decr(conn_key)
-                    if remaining <= 0:
-                        await redis.delete(conn_key)
-                except Exception:
-                    logger.warning("Не удалось уменьшить счетчик SSE-соединений", exc_info=True)
-            else:
-                _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
-                if _local_conn_counts[user_id] == 0:
-                    _local_conn_counts.pop(user_id, None)
 
     return StreamingResponse(
         event_generator(),
