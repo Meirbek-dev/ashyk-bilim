@@ -6,7 +6,7 @@ or run as a repair/backfill job to rebuild `activity_progress` and
 """
 
 from datetime import UTC, datetime
-from typing import SupportsInt
+from typing import SupportsInt, cast
 
 from sqlmodel import Session, col, select
 from ulid import ULID
@@ -30,6 +30,7 @@ from src.db.grading.submissions import (
 from src.db.trail_runs import TrailRun
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
+from src.types import JsonObject, require_persisted_id
 
 _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE: dict[str, AssessmentType] = {
     ActivityTypeEnum.TYPE_EXAM.value: AssessmentType.EXAM,
@@ -261,7 +262,7 @@ def recalculate_course_progress(
                 col(Assessment.activity_id).in_(scored_activity_ids)
             )
         ).all()
-        weight_by_activity = {row.activity_id: float(row.weight) for row in assessment_rows}
+        weight_by_activity = {act_id: float(w) for act_id, w in assessment_rows}
 
     weighted_numerator = 0.0
     weighted_denominator = 0.0
@@ -348,7 +349,7 @@ def _ensure_course_activity_progress_rows(
         db_session.add(
             ActivityProgress(
                 course_id=course_id,
-                activity_id=activity.id,
+                activity_id=require_persisted_id(activity.id, model_name="Activity"),
                 user_id=user_id,
                 required=True,
                 due_at=file_due_at or (_coerce_datetime(policy.due_at) if policy else None),
@@ -377,7 +378,7 @@ def backfill_activity_progress(
         _get_or_create_policy(activity, db_session)
         for user_id in user_ids_by_course.get(activity.course_id, set()):
             recalculate_activity_progress(
-                activity.id,
+                require_persisted_id(activity.id, model_name="Activity"),
                 user_id,
                 db_session,
                 commit=False,
@@ -569,13 +570,13 @@ def _get_or_create_policy(
 
     policy = AssessmentPolicy(
         policy_uuid=f"policy_{ULID()}",
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         assessment_type=assessment_type,
         grading_mode=grading_mode,
         completion_rule=completion_rule,
         passing_score=60,
-        anti_cheat_json=anti_cheat_json,
-        settings_json=settings_json,
+        anti_cheat_json=cast("JsonObject", anti_cheat_json),
+        settings_json=cast("JsonObject", settings_json),
     )
     db_session.add(policy)
     db_session.flush()
@@ -613,12 +614,12 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
 
 def _number_setting(settings: dict[str, object], key: str, default: float) -> float:
     value = settings.get(key)
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except TypeError, ValueError:
-        return default
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    return default
 
 
 def _assessment_type_for_activity(
@@ -687,43 +688,43 @@ def _known_user_ids_by_course(
     activity_ids = {activity.id for activity in activities if activity.id is not None}
     result: dict[int, set[int]] = {course_id: set() for course_id in course_ids}
 
-    for row in db_session.exec(select(TrailRun.course_id, TrailRun.user_id)).all():
-        if row.course_id in result:
-            result[row.course_id].add(row.user_id)
+    for c_id, u_id in db_session.exec(select(TrailRun.course_id, TrailRun.user_id)).all():
+        if c_id in result:
+            result[c_id].add(u_id)
 
     activity_course = {activity.id: activity.course_id for activity in activities}
-    for row in db_session.exec(
+    for act_id, u_id in db_session.exec(
         select(Submission.activity_id, Submission.user_id).where(col(Submission.activity_id).in_(activity_ids))
     ).all():
-        course_id = activity_course.get(row.activity_id)
+        course_id = activity_course.get(act_id)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(u_id)
 
     from src.db.file_submissions import FileSubmissionAttempt
 
-    for row in db_session.exec(
+    for act_id, u_id in db_session.exec(
         select(FileSubmissionAttempt.activity_id, FileSubmissionAttempt.user_id).where(
             col(FileSubmissionAttempt.activity_id).in_(activity_ids)
         )
     ).all():
-        course_id = activity_course.get(row.activity_id)
+        course_id = activity_course.get(act_id)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(u_id)
 
     course_uuid_to_id = {
         course.course_uuid: course.id
         for course in db_session.exec(select(Course).where(col(Course.id).in_(course_ids))).all()
         if course.id is not None
     }
-    for group_row in db_session.exec(
+    for res_uuid, u_id in db_session.exec(
         select(UserGroupResource.resource_uuid, UserGroupUser.user_id).join(
             UserGroupUser,
             col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
         )
     ).all():
-        course_id = course_uuid_to_id.get(group_row.resource_uuid)
+        course_id = course_uuid_to_id.get(res_uuid)
         if course_id in result:
-            result[course_id].add(group_row.user_id)
+            result[course_id].add(u_id)
 
     return result
 
@@ -821,8 +822,8 @@ def _recalculate_file_submission_progress(
     ).first()
     if progress is None:
         progress = ActivityProgress(
-            course_id=activity.course_id,
-            activity_id=activity.id,
+            course_id=require_persisted_id(activity.course_id, model_name="Activity"),
+            activity_id=require_persisted_id(activity.id, model_name="Activity"),
             user_id=user_id,
         )
 
@@ -878,7 +879,7 @@ def _recalculate_file_submission_progress(
 
     if update_course_progress:
         recalculate_course_progress(
-            activity.course_id,
+            require_persisted_id(activity.course_id, model_name="Activity"),
             user_id,
             db_session,
             commit=False,

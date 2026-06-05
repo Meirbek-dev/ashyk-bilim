@@ -5,10 +5,9 @@ import io
 import logging
 from collections.abc import Generator
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import asc, desc, func, or_
+from sqlalchemy import ColumnElement, asc, desc, func, or_
 from sqlmodel import Session, col, select
 from ulid import ULID
 
@@ -40,6 +39,7 @@ from src.services.progress.submissions import (
     _attach_policy,
     recalculate_activity_progress,
 )
+from src.types import JsonObject, require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 async def publish_grading_event(
     event_type: str,
     submission_uuid: str,
-    payload: dict[str, Any] | None = None,
+    payload: JsonObject | None = None,
 ) -> None:
     """Надёжно поставить публикацию события оценки в очередь."""
     from src.worker.tasks.sse import publish_grading_event_task
@@ -343,11 +343,12 @@ def export_grades_csv(
     ).first()
     if sample_submission and isinstance(sample_submission.grading_json, dict):
         items = sample_submission.grading_json.get("items", [])
-        for item in items:
-            if isinstance(item, dict):
-                item_id = item.get("item_id", "")
-                item_text = item.get("item_text", item_id)
-                item_headers.append(item_text or item_id)
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    item_id = str(item.get("item_id", ""))
+                    item_text = str(item.get("item_text", item_id))
+                    item_headers.append(item_text or item_id)
 
     header = [
         "Имя студента",
@@ -366,7 +367,7 @@ def export_grades_csv(
     buf.seek(0)
 
     # Build dynamic WHERE conditions for optional filters.
-    base_conditions: list[Any] = [
+    base_conditions: list[ColumnElement[bool] | bool] = [
         Submission.activity_id == activity_id,
         Submission.status != SubmissionStatus.DRAFT,
     ]
@@ -395,13 +396,21 @@ def export_grades_csv(
         item_scores: list[str] = []
         if item_headers and isinstance(s.grading_json, dict):
             items = s.grading_json.get("items", [])
-            scores_by_id = {item.get("item_id", ""): item.get("score", "") for item in items if isinstance(item, dict)}
+            scores_by_id = {}
+            if isinstance(items, list):
+                scores_by_id = {
+                    str(item.get("item_id", "")): str(item.get("score", ""))
+                    for item in items
+                    if isinstance(item, dict)
+                }
             # Match order from header discovery
             if sample_submission and isinstance(sample_submission.grading_json, dict):
-                for item in sample_submission.grading_json.get("items", []):
-                    if isinstance(item, dict):
-                        item_id = item.get("item_id", "")
-                        item_scores.append(str(scores_by_id.get(item_id, "")))
+                sample_items = sample_submission.grading_json.get("items", [])
+                if isinstance(sample_items, list):
+                    for item in sample_items:
+                        if isinstance(item, dict):
+                            item_id = str(item.get("item_id", ""))
+                            item_scores.append(str(scores_by_id.get(item_id, "")))
         elif item_headers:
             item_scores = [""] * len(item_headers)
 
@@ -656,7 +665,7 @@ async def _save_teacher_grade(
 
     for item_fb in grade_input.item_feedback:
         if item_fb.item_id in item_map:
-            update: dict[str, Any] = {}
+            update: dict[str, object] = {}
             if item_fb.score is not None:
                 update["score"] = item_fb.score
                 update["needs_manual_review"] = False
@@ -714,7 +723,6 @@ async def _save_teacher_grade(
                 raw_score=raw_score,
                 penalty_pct=penalty_pct,
                 final_score=final_score,
-                breakdown=effective_breakdown,
                 raw_breakdown=raw_breakdown,
                 effective_breakdown=effective_breakdown,
                 overall_feedback=grade_input.feedback,
@@ -848,8 +856,7 @@ async def bulk_publish_grades(
         )
         latest_rows = db_session.exec(select(GradingEntry).where(col(GradingEntry.id).in_(select(subq.c.max_id)))).all()
         for row in latest_rows:
-            if row.submission_id is not None:
-                latest_entries_by_submission[row.submission_id] = row
+            latest_entries_by_submission[row.submission_id] = row
 
     published_count = 0
     for submission in submissions:
@@ -889,13 +896,12 @@ async def bulk_publish_grades(
                 if latest_entry is not None
                 else submission.final_score or submission.auto_score or 0
             ),
-            breakdown=effective_breakdown,
             raw_breakdown=raw_breakdown,
             effective_breakdown=effective_breakdown,
             overall_feedback=(
                 latest_entry.overall_feedback
-                if latest_entry is not None and latest_entry.overall_feedback is not None
-                else effective_breakdown.get("feedback", "")
+                if latest_entry is not None
+                else str(effective_breakdown.get("feedback") or "")
             ),
             grading_version=submission.grading_version,
             created_at=now,
@@ -978,7 +984,7 @@ def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, Use
 
 def _make_submission_user(u: User) -> SubmissionUser:
     return SubmissionUser(
-        id=u.id,
+        id=require_persisted_id(u.id, model_name="User"),
         username=u.username,
         first_name=u.first_name or None,
         last_name=u.last_name or None,

@@ -1,0 +1,711 @@
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `AuthRefreshResponse` [bad-return]
+   --> src\routers\auth.py:369:12
+    |
+369 |     return {"status": "ok"}
+    |            ^^^^^^^^^^^^^^^^
+    |
+   ::: src\routers\auth.py:323:6
+    |
+323 | ) -> AuthRefreshResponse:
+    |      ------------------- declared return type
+    |
+ERROR Cannot set item in `MutableHeaders` [unsupported-operation]
+   --> src\routers\auth.py:460:40
+    |
+460 |         response.headers["Location"] = frontend_callback
+    |                                        ^^^^^^^^^^^^^^^^^
+    |
+  Argument `bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None` is not assignable to parameter `value` with type `str` in function `starlette.datastructures.MutableHeaders.__setitem__`
+ERROR Returned type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` is not assignable to declared return type `CertificationDetailResponse` [bad-return]
+   --> src\routers\courses\certifications.py:125:12
+    |
+123 |   ) -> CertificationDetailResponse:
+    |        --------------------------- declared return type
+124 |       """Delete certification by certification_id."""
+125 |       return await delete_certification(
+    |  ____________^
+126 | |         request,
+127 | |         certification_uuid,
+128 | |         current_user,
+129 | |         db_session,
+130 | |         last_known_update_date=last_known_update_date,
+131 | |     )
+    | |_____^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` [bad-return]
+  --> src\routers\courses\chapters.py:78:12
+   |
+76 |   ) -> JsonObject:
+   |        ---------- declared return type
+77 |       """Переместить активность на заданную позицию, при необходимости в другую главу (атомарно)."""
+78 |       return await move_activity_to_order(
+   |  ____________^
+79 | |         request,
+80 | |         activity_uuid,
+81 | |         payload.position,
+82 | |         payload.chapter_uuid,
+83 | |         current_user,
+84 | |         db_session,
+85 | |     )
+   | |_____^
+   |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` [bad-return]
+  --> src\routers\courses\chapters.py:97:12
+   |
+95 | ) -> JsonObject:
+   |      ---------- declared return type
+96 |     """Массово переупорядочить все главы и активности (устаревший вариант — предпочтительнее атомарные методы)."""
+97 |     return await reorder_chapters_and_activities(request, course_uuid, order, current_user, db_session)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` [bad-return]
+   --> src\routers\courses\chapters.py:118:12
+    |
+117 | ) -> JsonObject:
+    |      ---------- declared return type
+118 |     return await delete_chapter(request, chapter_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `CollectionDetailResponse` [bad-return]
+  --> src\routers\courses\collections.py:92:12
+   |
+90 | ) -> CollectionDetailResponse:
+   |      ------------------------ declared return type
+91 |     """Delete collection by ID."""
+92 |     return await delete_collection(request, collection_uuid, current_user, db_session)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `CourseDetailResponse` [bad-return]
+   --> src\routers\courses\courses.py:503:12
+    |
+496 | ) -> CourseDetailResponse:
+    |      -------------------- declared return type
+497 |     """Delete Course by ID.
+498 |
+499 |     **Required Permission**: `course:delete:own` or `course:delete:platform`
+500 |     """
+501 |     assert db_session is not None
+502 |     assert current_user is not None
+503 |     return await delete_course(request, course_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `CourseContributorApplicationResponse` [bad-return]
+   --> src\routers\courses\courses.py:516:12
+    |
+512 | ) -> CourseContributorApplicationResponse:
+    |      ------------------------------------ declared return type
+513 |     """Apply to be a contributor for a course."""
+514 |     assert db_session is not None
+515 |     assert current_user is not None
+516 |     return await apply_course_contributor(request, course_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `CourseUpdateDeleteResponse` [bad-return]
+   --> src\routers\courses\courses.py:572:12
+    |
+568 | ) -> CourseUpdateDeleteResponse:
+    |      -------------------------- declared return type
+569 |     """Delete Course Update by courseupdate_uuid."""
+570 |     assert db_session is not None
+571 |     assert current_user is not None
+572 |     return await delete_update(request, courseupdate_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `list[dict[str, object]]` is not assignable to declared return type `list[CourseContributorResponse]` [bad-return]
+   --> src\routers\courses\courses.py:585:12
+    |
+581 | ) -> list[CourseContributorResponse]:
+    |      ------------------------------- declared return type
+582 |     """Get all contributors for a specific course."""
+583 |     assert db_session is not None
+584 |     assert current_user is not None
+585 |     return await get_course_contributors(request, course_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `CourseContributorMutationResponse` [bad-return]
+   --> src\routers\courses\courses.py:604:12
+    |
+604 |       return await update_course_contributor(
+    |  ____________^
+605 | |         request,
+606 | |         course_uuid,
+607 | |         contributor_user_id,
+608 | |         authorship,
+609 | |         authorship_status,
+610 | |         current_user,
+611 | |         db_session,
+612 | |     )
+    | |_____^
+    |
+   ::: src\routers\courses\courses.py:597:6
+    |
+597 |   ) -> CourseContributorMutationResponse:
+    |        --------------------------------- declared return type
+    |
+ERROR Returned type `dict[str, list[dict[str, object]]]` is not assignable to declared return type `CourseBulkContributorResponse` [bad-return]
+   --> src\routers\courses\courses.py:629:12
+    |
+622 | ) -> CourseBulkContributorResponse:
+    |      ----------------------------- declared return type
+623 |     """Add multiple contributors to a course by their usernames.
+624 |
+625 |     **Required Permission**: `course:manage:own` or `course:manage:platform`
+626 |     """
+627 |     assert db_session is not None
+628 |     assert current_user is not None
+629 |     return await add_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, list[dict[str, object]]]` is not assignable to declared return type `CourseBulkContributorResponse` [bad-return]
+   --> src\routers\courses\courses.py:643:12
+    |
+639 | ) -> CourseBulkContributorResponse:
+    |      ----------------------------- declared return type
+640 |     """Remove multiple contributors from a course by their usernames."""
+641 |     assert db_session is not None
+642 |     assert current_user is not None
+643 |     return await remove_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `DiscussionMessageResponse` [bad-return]
+  --> src\routers\courses\discussions.py:94:12
+   |
+92 | ) -> DiscussionMessageResponse:
+   |      ------------------------- declared return type
+93 |     """Delete Course Discussion by discussion_uuid."""
+94 |     return await delete_discussion(request, discussion_uuid, current_user, db_session)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `DiscussionMessageResponse` [bad-return]
+   --> src\routers\courses\discussions.py:118:12
+    |
+116 | ) -> DiscussionMessageResponse:
+    |      ------------------------- declared return type
+117 |     """Unlike a Course Discussion."""
+118 |     return await unlike_discussion(request, discussion_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` is not assignable to declared return type `DiscussionToggleResponse` [bad-return]
+   --> src\routers\courses\discussions.py:130:12
+    |
+128 | ) -> DiscussionToggleResponse:
+    |      ------------------------ declared return type
+129 |     """Toggle like status for a Course Discussion (like if not liked, unlike if liked)."""
+130 |     return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` is not assignable to declared return type `DiscussionToggleResponse` [bad-return]
+   --> src\routers\courses\discussions.py:142:12
+    |
+140 | ) -> DiscussionToggleResponse:
+    |      ------------------------ declared return type
+141 |     """Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)."""
+142 |     return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `PlatformDetailResponse` [bad-return]
+  --> src\routers\platform.py:86:12
+   |
+86 |       return update_platform_user_role(
+   |  ____________^
+87 | |         request,
+88 | |         user_id,
+89 | |         role_id,
+90 | |         db_session,
+91 | |         current_user,
+92 | |         checker,
+93 | |     )
+   | |_____^
+   |
+  ::: src\routers\platform.py:79:6
+   |
+79 |   ) -> PlatformDetailResponse:
+   |        ---------------------- declared return type
+   |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `PlatformDetailResponse` [bad-return]
+   --> src\routers\platform.py:105:12
+    |
+103 |   ) -> PlatformDetailResponse:
+    |        ---------------------- declared return type
+104 |       """Remove a user from the platform."""
+105 |       return remove_platform_user(
+    |  ____________^
+106 | |         request,
+107 | |         user_id,
+108 | |         db_session,
+109 | |         current_user,
+110 | |         checker,
+111 | |     )
+    | |_____^
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `PlatformDetailResponse` [bad-return]
+   --> src\routers\platform.py:127:12
+    |
+127 |       return await update_app_logo(
+    |  ____________^
+128 | |         request=request,
+129 | |         logo_file=logo_file,
+130 | |         current_user=current_user,
+131 | |         db_session=db_session,
+132 | |     )
+    | |_____^
+    |
+   ::: src\routers\platform.py:121:6
+    |
+121 |   ) -> PlatformDetailResponse:
+    |        ---------------------- declared return type
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `PlatformDetailResponse` [bad-return]
+   --> src\routers\platform.py:148:12
+    |
+148 |       return await update_platform_thumbnail(
+    |  ____________^
+149 | |         request=request,
+150 | |         thumbnail_file=thumbnail_file,
+151 | |         current_user=current_user,
+152 | |         db_session=db_session,
+153 | |     )
+    | |_____^
+    |
+   ::: src\routers\platform.py:142:6
+    |
+142 |   ) -> PlatformDetailResponse:
+    |        ---------------------- declared return type
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `RoleMutationResponse` [bad-return]
+   --> src\routers\rbac.py:266:12
+    |
+266 |     return {"message": "Role assigned"}
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\routers\rbac.py:239:6
+    |
+239 | ) -> RoleMutationResponse:
+    |      -------------------- declared return type
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `RoleMutationResponse` [bad-return]
+   --> src\routers\rbac.py:301:12
+    |
+301 |     return {"message": "Role revoked"}
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src\routers\rbac.py:275:6
+    |
+275 | ) -> RoleMutationResponse:
+    |      -------------------- declared return type
+    |
+ERROR Returned type `dict[str, str]` is not assignable to declared return type `ChunkedUploadInitiateResponse` [bad-return]
+   --> src\routers\uploads\chunked_upload.py:344:12
+    |
+344 |       return {
+    |  ____________^
+345 | |         "upload_uuid": upload_id,
+346 | |         "message": "Сессия загрузки начата",
+347 | |     }
+    | |_____^
+    |
+   ::: src\routers\uploads\chunked_upload.py:318:6
+    |
+318 |   ) -> ChunkedUploadInitiateResponse:
+    |        ----------------------------- declared return type
+    |
+ERROR Returned type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` is not assignable to declared return type `ChunkedUploadChunkResponse` [bad-return]
+   --> src\routers\uploads\chunked_upload.py:372:12
+    |
+372 |       return {
+    |  ____________^
+373 | |         "success": True,
+374 | |         "upload_uuid": result["upload_id"],
+375 | |         "chunk_index": result["chunk_index"],
+376 | |         "chunks_received": result["chunks_received"],
+377 | |         "total_chunks": result["total_chunks"],
+378 | |         "is_complete": result["is_complete"],
+379 | |     }
+    | |_____^
+    |
+   ::: src\routers\uploads\chunked_upload.py:356:6
+    |
+356 |   ) -> ChunkedUploadChunkResponse:
+    |        -------------------------- declared return type
+    |
+ERROR Returned type `dict[str, bool | int | str]` is not assignable to declared return type `ChunkedUploadCompleteResponse` [bad-return]
+   --> src\routers\uploads\chunked_upload.py:415:16
+    |
+415 |           return {
+    |  ________________^
+416 | |             "success": True,
+417 | |             "filename": session.filename,
+418 | |             "file_size": session.file_size,
+419 | |             "message": "Загрузка успешно завершена",
+420 | |         }
+    | |_________^
+    |
+   ::: src\routers\uploads\chunked_upload.py:386:6
+    |
+386 |   ) -> ChunkedUploadCompleteResponse:
+    |        ----------------------------- declared return type
+    |
+ERROR Returned type `dict[str, bool | int | str]` is not assignable to declared return type `ChunkedUploadStatusResponse` [bad-return]
+   --> src\routers\uploads\chunked_upload.py:444:12
+    |
+444 |       return {
+    |  ____________^
+445 | |         "upload_uuid": session.upload_id,
+446 | |         "filename": session.filename,
+447 | |         "chunks_received": len(session.chunks_received),
+448 | |         "total_chunks": session.total_chunks,
+449 | |         "is_complete": session.is_complete(),
+450 | |         "file_size": session.file_size,
+451 | |     }
+    | |_____^
+    |
+   ::: src\routers\uploads\chunked_upload.py:432:6
+    |
+432 |   ) -> ChunkedUploadStatusResponse:
+    |        --------------------------- declared return type
+    |
+ERROR Returned type `object` is not assignable to declared return type `list[str]` [bad-return]
+   --> src\services\ai\service.py:359:16
+    |
+353 | ) -> list[str]:
+    |      --------- declared return type
+354 |     cache_manager = get_ai_cache_manager()
+355 |     context_text_key = f"context_text_{activity_uuid}"
+356 |     cached_documents = cache_manager.db_cache.get(context_text_key)
+357 |     if cached_documents:
+358 |         logger.debug("Кэш текста контекста: HIT %s", activity_uuid)
+359 |         return cached_documents
+    |                ^^^^^^^^^^^^^^^^
+    |
+ERROR Type `Literal[True]` is not iterable [not-iterable]
+    --> src\services\analytics\assessments.py:1754:31
+     |
+1754 |                 for failed in failed_tests:
+     |                               ^^^^^^^^^^^^
+     |
+ERROR Type `float` is not iterable [not-iterable]
+    --> src\services\analytics\assessments.py:1754:31
+     |
+1754 |                 for failed in failed_tests:
+     |                               ^^^^^^^^^^^^
+     |
+ERROR Type `int` is not iterable [not-iterable]
+    --> src\services\analytics\assessments.py:1754:31
+     |
+1754 |                 for failed in failed_tests:
+     |                               ^^^^^^^^^^^^
+     |
+ERROR Could not find name `Any` [unknown-name]
+   --> src\services\analytics\queries.py:486:31
+    |
+486 |     quiz_question_stats: list[Any] = []
+    |                               ^^^
+    |
+  Did you mean `any`?
+ERROR Cannot find module `src.types.narrowing` [missing-import]
+  --> src\services\assessments\_shared.py:79:1
+   |
+79 | from src.types.narrowing import require_persisted_id
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  Looked in these locations (from config in `X:\projects\ashyq-bilim\apps\api\pyproject.toml`):
+  Search path (from config file): ["X:\\projects\\ashyq-bilim\\apps\\api"]
+  Import root (inferred from project layout): "X:\\projects\\ashyq-bilim\\apps\\api\\src"
+  Site package path queried from interpreter: ["C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none\\DLLs", "C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv\\Lib\\site-packages"]
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+    --> src\services\assessments\_shared.py:1569:26
+     |
+1569 |         existing_items = []
+     |                          ^^
+     |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR Could not find name `ItemFeedback` [unknown-name]
+   --> src\services\assessments\attempt_service.py:458:13
+    |
+458 |             ItemFeedback(
+    |             ^^^^^^^^^^^^
+    |
+ERROR Returned type `list[dict[str, int | str | None]]` is not assignable to declared return type `list[dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]]` [bad-return]
+   --> src\services\auth\sessions.py:594:12
+    |
+594 |     return result
+    |            ^^^^^^
+    |
+   ::: src\services\auth\sessions.py:580:53
+    |
+580 | async def get_user_active_sessions(user_id: int) -> list[JsonObject]:
+    |                                                     ---------------- declared return type
+    |
+ERROR Returned type `dict[str, float | int | list[dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]] | str | None]` is not assignable to declared return type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` [bad-return]
+   --> src\services\code_execution\service.py:169:16
+    |
+169 |           return {
+    |  ________________^
+170 | |             "run_id": self.run_uuid,
+171 | |             "language_id": language_id,
+172 | |             "status": self.status.value,
+173 | |             "passed": self.passed,
+174 | |             "total": self.total,
+175 | |             "score": self.score,
+176 | |             "stdout": self.stdout,
+177 | |             "stderr": self.stderr,
+178 | |             "compile_output": self.compile_output,
+179 | |             "time": self.time,
+    | |_______________________________^
+    |
+   ::: src\services\code_execution\service.py:168:55
+    |
+168 |       def metadata_record(self, *, language_id: int) -> JsonObject:
+    |                                                         ---------- declared return type
+    |
+ERROR Type `object` is not iterable [not-iterable]
+  --> src\services\courses\activities\utils.py:51:22
+   |
+51 |         for child in content:
+   |                      ^^^^^^^
+   |
+ERROR Type `object` is not iterable [not-iterable]
+  --> src\services\courses\activities\utils.py:76:25
+   |
+76 |         for row_node in content:
+   |                         ^^^^^^^
+   |
+ERROR Type `object` is not iterable [not-iterable]
+  --> src\services\courses\activities\utils.py:98:22
+   |
+98 |         for child in content:
+   |                      ^^^^^^^
+   |
+ERROR Returned type `list[dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None] | None]]` is not assignable to declared return type `list[dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]]` [bad-return]
+   --> src\services\courses\certifications.py:522:12
+    |
+522 |     return result
+    |            ^^^^^^
+    |
+   ::: src\services\courses\certifications.py:425:6
+    |
+425 | ) -> list[JsonObject]:
+    |      ---------------- declared return type
+    |
+ERROR Returned type `dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None]]` is not assignable to declared return type `dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]` [bad-return]
+   --> src\services\courses\certifications.py:703:12
+    |
+703 |       return {
+    |  ____________^
+704 | |         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
+705 | |         "certification": CertificationRead(**certification.model_dump()),
+706 | |         "course": {
+707 | |             "id": course.id,
+708 | |             "course_uuid": course.course_uuid,
+709 | |             "name": course.name,
+710 | |             "description": course.description,
+711 | |             "thumbnail_image": course.thumbnail_image,
+712 | |         },
+713 | |     }
+    | |_____^
+    |
+   ::: src\services\courses\certifications.py:669:6
+    |
+669 |   ) -> JsonObject:
+    |        ---------- declared return type
+    |
+ERROR Returned type `list[dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None] | None]]` is not assignable to declared return type `list[dict[str, bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None]]` [bad-return]
+   --> src\services\courses\certifications.py:778:12
+    |
+778 |     return result
+    |            ^^^^^^
+    |
+   ::: src\services\courses\certifications.py:720:6
+    |
+720 | ) -> list[JsonObject]:
+    |      ---------------- declared return type
+    |
+ERROR Cannot find module `src.types.narrowing` [missing-import]
+  --> src\services\courses\courses.py:11:1
+   |
+11 | from src.types.narrowing import require_persisted_id
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  Looked in these locations (from config in `X:\projects\ashyq-bilim\apps\api\pyproject.toml`):
+  Search path (from config file): ["X:\\projects\\ashyq-bilim\\apps\\api"]
+  Import root (inferred from project layout): "X:\\projects\\ashyq-bilim\\apps\\api\\src"
+  Site package path queried from interpreter: ["C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none\\DLLs", "C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv\\Lib\\site-packages"]
+ERROR Type parameter _T is not included in the type parameter list [invalid-type-var]
+  --> src\services\courses\courses.py:52:27
+   |
+52 |     query: SelectOfScalar[_T],
+   |                           ^^
+   |
+ERROR Type parameter _T is not included in the type parameter list [invalid-type-var]
+   --> src\services\courses\courses.py:135:49
+    |
+135 | def _apply_course_sort[T](query: SelectOfScalar[_T], sort_by: str | None) -> SelectOfScalar[_T]:
+    |                                                 ^^
+    |
+ERROR Type parameter _T is not included in the type parameter list [invalid-type-var]
+   --> src\services\courses\courses.py:141:46
+    |
+141 | def _apply_lms_sort[T](query: SelectOfScalar[_T], current_user: PublicUser | AnonymousUser) -> SelectOfScalar[_T]:
+    |                                              ^^
+    |
+ERROR Function declared to return `int`, but one or more paths are missing an explicit `return` [bad-return]
+   --> src\services\gamification\service.py:115:61
+    |
+115 | def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
+    |                                                             ^^^
+    |
+ERROR Cannot set item in `dict[str, JsonValue]` [unsupported-operation]
+   --> src\services\grading\pipeline\validate.py:102:41
+    |
+102 |                 normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Argument `ChoiceItemAnswer | CodeItemAnswer | FormItemAnswer | MatchingItemAnswer | OpenTextItemAnswer` is not assignable to parameter `value` with type `bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None` in function `dict.__setitem__`
+ERROR Cannot set item in `dict[str, JsonValue]` [unsupported-operation]
+   --> src\services\grading\pipeline\validate.py:125:41
+    |
+125 |                 normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Argument `ChoiceItemAnswer | CodeItemAnswer | FormItemAnswer | MatchingItemAnswer | OpenTextItemAnswer` is not assignable to parameter `value` with type `bool | dict[str, JsonValue] | float | int | list[JsonValue] | str | None` in function `dict.__setitem__`
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\services\grading\teacher.py:399:28
+    |
+399 |             scores_by_id = {}
+    |                            ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR Cannot infer type of empty container; it will be treated as containing `Any` [implicit-any-empty-container]
+   --> src\services\grading\teacher.py:879:18
+    |
+879 |             else {}
+    |                  ^^
+    |
+  Consider adding a type annotation or initializing with a non-empty value
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\services\users\users.py:4:19
+  |
+4 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\tests\test_ai_embeddings.py:1:19
+  |
+1 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\tests\test_ai_moderation.py:1:19
+  |
+1 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\tests\test_code_execution_service.py:4:19
+  |
+4 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\tests\test_gradebook_unsupported_policy.py:3:19
+  |
+3 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Could not import `SimpleNamespace` from `types` [missing-module-attribute]
+ --> src\tests\test_student_activity_runtime.py:7:19
+  |
+7 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+  |
+ERROR Cannot index into `bool` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `bool` has no attribute `__getitem__`
+ERROR Cannot index into `float` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `float` has no attribute `__getitem__`
+ERROR Cannot index into `int` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `int` has no attribute `__getitem__`
+ERROR `None` is not subscriptable [unsupported-operation]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Cannot index into `str` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  No matching overload found for function `str.__getitem__` called with arguments: (Literal['item_uuid'])
+  Possible overloads:
+  (key: SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | Unknown | None], /) -> LiteralString
+  (key: SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | Unknown | None], /) -> str [closest match]
+ERROR Cannot index into `list[JsonValue]` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  No matching overload found for function `list.__getitem__` called with arguments: (Literal['item_uuid'])
+  Possible overloads:
+  (i: SupportsIndex, /) -> JsonValue [closest match]
+  (s: slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | Unknown | None], /) -> list[JsonValue]
+ERROR Cannot index into `bool` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `bool` has no attribute `__getitem__`
+ERROR Cannot index into `float` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `float` has no attribute `__getitem__`
+ERROR Cannot index into `int` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+  Object of class `int` has no attribute `__getitem__`
+ERROR `None` is not subscriptable [unsupported-operation]
+   --> src\tests\test_student_submission_workflow.py:470:16
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+ERROR Cannot index into `dict[str, JsonValue]` [bad-index]
+   --> src\tests\test_student_submission_workflow.py:470:51
+    |
+470 |         assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+    |                                                   ^
+    |
+  Argument `Literal[0]` is not assignable to parameter `key` with type `str` in function `dict.__getitem__`
+ERROR Cannot find module `src.types.narrowing` [missing-import]
+ --> src\types\__init__.py:4:1
+  |
+4 | from src.types.narrowing import as_float, as_int, as_json_object, as_str, require_persisted_id
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  Looked in these locations (from config in `X:\projects\ashyq-bilim\apps\api\pyproject.toml`):
+  Search path (from config file): ["X:\\projects\\ashyq-bilim\\apps\\api"]
+  Import root (inferred from project layout): "X:\\projects\\ashyq-bilim\\apps\\api\\src"
+  Site package path queried from interpreter: ["C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none\\DLLs", "C:\\Users\\bmk\\AppData\\Roaming\\uv\\python\\cpython-3.14.5-windows-x86_64-none", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv", "X:\\projects\\ashyq-bilim\\apps\\api\\.venv\\Lib\\site-packages"]

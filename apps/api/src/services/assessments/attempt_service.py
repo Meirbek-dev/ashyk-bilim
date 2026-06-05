@@ -2,7 +2,7 @@
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import cast
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc
@@ -63,6 +63,7 @@ from src.services.grading.settings_loader import load_activity_settings
 from src.services.grading.submission import start_submission_v2
 from src.services.grading.teacher import _save_teacher_grade
 from src.services.progress import submissions as progress_submissions
+from src.types import JsonObject, require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +83,11 @@ async def start_assessment(
         current_user=current_user,
         db_session=db_session,
     )
+    activity_id = require_persisted_id(activity.id, model_name="Activity")
     is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
     try:
         result = start_submission_v2(
-            activity_id=activity.id,
+            activity_id=activity_id,
             assessment_type=AssessmentType(assessment.kind),
             current_user=current_user,
             db_session=db_session,
@@ -124,7 +126,7 @@ async def get_my_assessment_submissions(
             Submission.activity_id == activity.id,
             Submission.user_id == current_user.id,
         )
-        .order_by(desc(Submission.created_at))
+        .order_by(desc(col(Submission.created_at)))
     ).all()
     return [_build_student_submission_read(submission, db_session) for submission in submissions]
 
@@ -199,15 +201,15 @@ async def save_assessment_draft(
         _enforce_draft_version(draft, if_match)
 
         answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
-        current_payload: dict[str, object] = draft.answers_json if isinstance(draft.answers_json, dict) else {}
+        current_payload = cast("dict[str, object]", draft.answers_json)
         raw_answers = current_payload.get("answers")
-        current_answers: dict[str, object] = raw_answers if isinstance(raw_answers, dict) else {}
+        current_answers = cast("dict[str, object]", raw_answers) if isinstance(raw_answers, dict) else {}
 
         merged_answers: dict[str, object] = {**current_answers, **answers}
-        draft.answers_json = {
+        draft.answers_json = cast("JsonObject", {
             **current_payload,
             "answers": merged_answers,
-        }
+        })
         draft.draft_version += 1
         draft.updated_at = datetime.now(UTC)
 
@@ -263,6 +265,7 @@ async def submit_assessment(
 ) -> StudentSubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
+    activity_id = require_persisted_id(activity.id, model_name="Activity")
     is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
 
     if auto_submit:
@@ -323,9 +326,9 @@ async def submit_assessment(
         skip_constraints = is_teacher_preview
 
     try:
-        settings = load_activity_settings(activity.id, AssessmentType(assessment.kind), db_session)
+        settings = load_activity_settings(activity_id, AssessmentType(assessment.kind), db_session)
         result = await submit_assessment_pipeline(
-            activity_id=activity.id,
+            activity_id=activity_id,
             assessment_type=AssessmentType(assessment.kind),
             answers_payload=answers_payload,
             settings=settings,
@@ -387,14 +390,12 @@ async def get_attempt_state(
         can_continue=bool(state["can_continue"]),
         can_view_result=bool(state["can_view_result"]),
         can_start_revision=bool(state["can_start_revision"]),
-        recommended_action=str(state["recommended_action"]),
+        recommended_action=state["recommended_action"],
         primary_button_label_key=str(state["primary_button_label_key"]),
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
-        disabled_action_reasons=(
-            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
-        ),
+        disabled_action_reasons=state["disabled_action_reasons"],
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
         started_at=state["started_at"],
@@ -430,18 +431,19 @@ async def save_grading_draft(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
+    activity_id = require_persisted_id(activity.id, model_name="Activity")
 
     submission = _get_assessment_submission_or_404(
-        activity_id=activity.id,
+        activity_id=activity_id,
         submission_uuid=submission_uuid,
         db_session=db_session,
     )
 
     # Build item-level grade breakdown
     items = {item.item_uuid: item for item in _get_items(assessment, db_session)}
-    graded_items = []
     total_earned = 0.0
     total_possible = 0.0
+    item_feedback_list = []
 
     for entry in payload.item_grades:
         item = items.get(entry.item_uuid)
@@ -452,16 +454,14 @@ async def save_grading_draft(
         total_earned += score
         total_possible += max_score
 
-        graded_items.append({
-            "item_id": entry.item_uuid,
-            "item_text": item.title,
-            "score": score,
-            "max_score": max_score,
-            "correct": None,
-            "feedback": entry.feedback,
-            "needs_manual_review": entry.is_manual,
-            "rubric_criteria": [c.model_dump() for c in entry.rubric_criteria],
-        })
+        from src.db.grading.submissions import ItemFeedback, TeacherGradeInput
+        item_feedback_list.append(
+            ItemFeedback(
+                item_id=entry.item_uuid,
+                score=score,
+                feedback=entry.feedback or "",
+            )
+        )
 
     # Вычислить итоговый балл (процент 0–100)
     if payload.override_score and payload.final_score is not None:
@@ -474,19 +474,16 @@ async def save_grading_draft(
     # Pass the raw calculated score — _save_teacher_grade applies the late
     # penalty itself. Do NOT pre-apply the penalty here or it will be doubled.
     # Build TeacherGradeInput for the existing grade save pipeline
-    from src.db.grading.submissions import ItemFeedback, TeacherGradeInput
 
     grade_input = TeacherGradeInput(
         final_score=calculated_score,
         feedback=payload.overall_feedback,
         status=payload.status,
-        item_feedback=[
-            ItemFeedback(item_id=g["item_id"], score=g["score"], feedback=g["feedback"]) for g in graded_items
-        ],
+        item_feedback=item_feedback_list,
     )
 
     expected_version = _parse_if_match_version(if_match)
-    saved = _save_teacher_grade(
+    saved = await _save_teacher_grade(
         submission=submission,
         grade_input=grade_input,
         submission_uuid=submission_uuid,

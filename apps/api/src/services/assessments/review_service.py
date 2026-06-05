@@ -1,7 +1,6 @@
 """Assessment service — teacher review queue."""
 
 from collections import defaultdict
-from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_

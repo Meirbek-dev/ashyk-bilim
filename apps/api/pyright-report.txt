@@ -1,1 +1,242 @@
-0 errors, 0 warnings, 0 notes
+x:\projects\ashyq-bilim\apps\api\src\db\analytics.py
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:11:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:33:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:55:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:78:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:95:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:120:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:139:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:161:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\analytics.py:186:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\assessment_access.py
+  x:\projects\ashyq-bilim\apps\api\src\db\assessment_access.py:29:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\assessment_access.py:70:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\assessment_access.py:101:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\audit.py
+  x:\projects\ashyq-bilim\apps\api\src\db\audit.py:32:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\auth_sessions.py
+  x:\projects\ashyq-bilim\apps\api\src\db\auth_sessions.py:11:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\code_execution.py
+  x:\projects\ashyq-bilim\apps\api\src\db\code_execution.py:35:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\code_execution.py:81:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\gamification.py
+  x:\projects\ashyq-bilim\apps\api\src\db\gamification.py:82:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\gamification.py:147:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\gamification.py:187:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\grading\bulk_actions.py
+  x:\projects\ashyq-bilim\apps\api\src\db\grading\bulk_actions.py:34:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\grading\entries.py
+  x:\projects\ashyq-bilim\apps\api\src\db\grading\entries.py:51:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\grading\item_feedback.py
+  x:\projects\ashyq-bilim\apps\api\src\db\grading\item_feedback.py:23:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\grading\overrides.py
+  x:\projects\ashyq-bilim\apps\api\src\db\grading\overrides.py:42:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\grading\submissions.py
+  x:\projects\ashyq-bilim\apps\api\src\db\grading\submissions.py:334:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\permissions.py
+  x:\projects\ashyq-bilim\apps\api\src\db\permissions.py:35:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\permissions.py:72:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\permissions.py:96:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+  x:\projects\ashyq-bilim\apps\api\src\db\permissions.py:117:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\strict_base_model.py
+  x:\projects\ashyq-bilim\apps\api\src\db\strict_base_model.py:89:5 - error: Class variable "model_config" overrides instance variable of same name in class "SQLModelMetaclass" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\db\uploads.py
+  x:\projects\ashyq-bilim\apps\api\src\db\uploads.py:24:5 - error: "__tablename__" overrides symbol of same name in class "SQLModel"
+    Variable is mutable so its type is invariant
+      Override type "str" is not the same as base type "declared_attr[Unknown]" (reportIncompatibleVariableOverride)
+x:\projects\ashyq-bilim\apps\api\src\routers\auth.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\auth.py:369:12 - error: Type "dict[str, str]" is not assignable to return type "AuthRefreshResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\courses\certifications.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\certifications.py:125:12 - error: Type "JsonObject" is not assignable to return type "CertificationDetailResponse"
+    "dict[str, JsonValue]" is not assignable to "CertificationDetailResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\courses\chapters.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\chapters.py:78:12 - error: Type "dict[str, str]" is not assignable to return type "JsonObject"
+    "dict[str, str]" is not assignable to "dict[str, JsonValue]"
+      Type parameter "_VT@dict" is invariant, but "str" is not the same as "JsonValue"
+      Consider switching from "dict" to "Mapping" which is covariant in the value type (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\chapters.py:97:12 - error: Type "dict[str, str]" is not assignable to return type "JsonObject"
+    "dict[str, str]" is not assignable to "dict[str, JsonValue]"
+      Type parameter "_VT@dict" is invariant, but "str" is not the same as "JsonValue"
+      Consider switching from "dict" to "Mapping" which is covariant in the value type (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\chapters.py:118:12 - error: Type "dict[str, str]" is not assignable to return type "JsonObject"
+    "dict[str, str]" is not assignable to "dict[str, JsonValue]"
+      Type parameter "_VT@dict" is invariant, but "str" is not the same as "JsonValue"
+      Consider switching from "dict" to "Mapping" which is covariant in the value type (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\courses\collections.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\collections.py:92:12 - error: Type "dict[str, str]" is not assignable to return type "CollectionDetailResponse"
+    "dict[str, str]" is not assignable to "CollectionDetailResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:503:12 - error: Type "dict[str, str]" is not assignable to return type "CourseDetailResponse"
+    "dict[str, str]" is not assignable to "CourseDetailResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:516:12 - error: Type "dict[str, str]" is not assignable to return type "CourseContributorApplicationResponse"
+    "dict[str, str]" is not assignable to "CourseContributorApplicationResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:572:12 - error: Type "dict[str, str]" is not assignable to return type "CourseUpdateDeleteResponse"
+    "dict[str, str]" is not assignable to "CourseUpdateDeleteResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:585:12 - error: Type "list[dict[str, object]]" is not assignable to return type "list[CourseContributorResponse]"
+    "list[dict[str, object]]" is not assignable to "list[CourseContributorResponse]"
+      Type parameter "_T@list" is invariant, but "dict[str, object]" is not the same as "CourseContributorResponse"
+      Consider switching from "list" to "Sequence" which is covariant (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:604:12 - error: Type "dict[str, str]" is not assignable to return type "CourseContributorMutationResponse"
+    "dict[str, str]" is not assignable to "CourseContributorMutationResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:629:12 - error: Type "dict[str, list[dict[str, object]]]" is not assignable to return type "CourseBulkContributorResponse"
+    "dict[str, list[dict[str, object]]]" is not assignable to "CourseBulkContributorResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\courses.py:643:12 - error: Type "dict[str, list[dict[str, object]]]" is not assignable to return type "CourseBulkContributorResponse"
+    "dict[str, list[dict[str, object]]]" is not assignable to "CourseBulkContributorResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\courses\discussions.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\discussions.py:94:12 - error: Type "dict[str, str]" is not assignable to return type "DiscussionMessageResponse"
+    "dict[str, str]" is not assignable to "DiscussionMessageResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\discussions.py:118:12 - error: Type "dict[str, str]" is not assignable to return type "DiscussionMessageResponse"
+    "dict[str, str]" is not assignable to "DiscussionMessageResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\discussions.py:130:12 - error: Type "JsonObject" is not assignable to return type "DiscussionToggleResponse"
+    "dict[str, JsonValue]" is not assignable to "DiscussionToggleResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\courses\discussions.py:142:12 - error: Type "JsonObject" is not assignable to return type "DiscussionToggleResponse"
+    "dict[str, JsonValue]" is not assignable to "DiscussionToggleResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\platform.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\platform.py:86:12 - error: Type "dict[str, str]" is not assignable to return type "PlatformDetailResponse"
+    "dict[str, str]" is not assignable to "PlatformDetailResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\platform.py:105:12 - error: Type "dict[str, str]" is not assignable to return type "PlatformDetailResponse"
+    "dict[str, str]" is not assignable to "PlatformDetailResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\platform.py:127:12 - error: Type "dict[str, str]" is not assignable to return type "PlatformDetailResponse"
+    "dict[str, str]" is not assignable to "PlatformDetailResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\platform.py:148:12 - error: Type "dict[str, str]" is not assignable to return type "PlatformDetailResponse"
+    "dict[str, str]" is not assignable to "PlatformDetailResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\rbac.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\rbac.py:266:12 - error: Type "dict[str, str]" is not assignable to return type "RoleMutationResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\rbac.py:301:12 - error: Type "dict[str, str]" is not assignable to return type "RoleMutationResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\routers\uploads\chunked_upload.py
+  x:\projects\ashyq-bilim\apps\api\src\routers\uploads\chunked_upload.py:344:12 - error: Type "dict[str, str]" is not assignable to return type "ChunkedUploadInitiateResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\uploads\chunked_upload.py:372:12 - error: Type "dict[str, JsonValue]" is not assignable to return type "ChunkedUploadChunkResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\uploads\chunked_upload.py:415:16 - error: Type "dict[str, bool | str | int]" is not assignable to return type "ChunkedUploadCompleteResponse" (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\routers\uploads\chunked_upload.py:444:12 - error: Type "dict[str, str | int | bool]" is not assignable to return type "ChunkedUploadStatusResponse" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\services\ai\service.py
+  x:\projects\ashyq-bilim\apps\api\src\services\ai\service.py:359:16 - error: Type "object" is not assignable to return type "list[str]"
+    "object" is not assignable to "list[str]" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\services\analytics\assessments.py
+  x:\projects\ashyq-bilim\apps\api\src\services\analytics\assessments.py:1754:31 - error: "int" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\analytics\assessments.py:1754:31 - error: "float" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\analytics\assessments.py:1754:31 - error: "Literal[True]" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+x:\projects\ashyq-bilim\apps\api\src\services\analytics\queries.py
+  x:\projects\ashyq-bilim\apps\api\src\services\analytics\queries.py:486:31 - error: "Any" is not defined (reportUndefinedVariable)
+x:\projects\ashyq-bilim\apps\api\src\services\assessments\_shared.py
+  x:\projects\ashyq-bilim\apps\api\src\services\assessments\_shared.py:79:6 - error: Import "src.types.narrowing" could not be resolved (reportMissingImports)
+x:\projects\ashyq-bilim\apps\api\src\services\assessments\attempt_service.py
+  x:\projects\ashyq-bilim\apps\api\src\services\assessments\attempt_service.py:458:13 - error: "ItemFeedback" is not defined (reportUndefinedVariable)
+x:\projects\ashyq-bilim\apps\api\src\services\code_execution\service.py
+  x:\projects\ashyq-bilim\apps\api\src\services\code_execution\service.py:181:24 - error: Type "dict[str, str | int | float | list[JsonObject] | None]" is not assignable to return type "JsonObject"
+    Type "list[JsonObject]" is not assignable to type "JsonValue"
+      "list[JsonObject]" is not assignable to "str"
+      "list[JsonObject]" is not assignable to "int"
+      "list[JsonObject]" is not assignable to "float"
+      "list[JsonObject]" is not assignable to "bool"
+      "list[JsonObject]" is not assignable to "None"
+      "list[JsonObject]" is not assignable to "list[JsonValue]"
+        Type parameter "_T@list" is invariant, but "JsonObject" is not the same as "JsonValue" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\services\courses\activities\utils.py
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\activities\utils.py:51:22 - error: "object" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\activities\utils.py:76:25 - error: "object" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\activities\utils.py:98:22 - error: "object" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+x:\projects\ashyq-bilim\apps\api\src\services\courses\certifications.py
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\certifications.py:522:12 - error: Type "list[dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None] | None]]" is not assignable to return type "list[JsonObject]"
+    "list[dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None] | None]]" is not assignable to "list[JsonObject]"
+      Type parameter "_T@list" is invariant, but "dict[str, CertificateUserRead | CertificationRead | dict[str, int | str | None] | None]" is not the same as "JsonObject"
+      Consider switching from "list" to "Sequence" which is covariant (reportReturnType)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\certifications.py:703:12 - error: Type "dict[str, CertificateUserRead | CertificationRead | dict[str, JsonValue]]" is not assignable to return type "JsonObject"
+    Type "CertificateUserRead" is not assignable to type "JsonValue"
+      "CertificateUserRead" is not assignable to "str"
+      "CertificateUserRead" is not assignable to "int"
+      "CertificateUserRead" is not assignable to "float"
+      "CertificateUserRead" is not assignable to "bool"
+      "CertificateUserRead" is not assignable to "None"
+      "CertificateUserRead" is not assignable to "list[JsonValue]"
+      "CertificateUserRead" is not assignable to "dict[str, JsonValue]" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:11:6 - error: Import "src.types.narrowing" could not be resolved (reportMissingImports)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:52:27 - error: Type parameter "_T" is not included in the type parameter list for "_accessible_courses_filter" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:54:21 - error: Type parameter "_T" is not included in the type parameter list for "_accessible_courses_filter" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:135:49 - error: Type parameter "_T" is not included in the type parameter list for "_apply_course_sort" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:135:93 - error: Type parameter "_T" is not included in the type parameter list for "_apply_course_sort" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:141:46 - error: Type parameter "_T" is not included in the type parameter list for "_apply_lms_sort" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:141:111 - error: Type parameter "_T" is not included in the type parameter list for "_apply_lms_sort" (reportGeneralTypeIssues)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:726:16 - error: Unnecessary "cast" call; type is already "SelectOfScalar[int | None]" (reportUnnecessaryCast)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:727:16 - error: Unnecessary "cast" call; type is already "SelectOfScalar[int | None]" (reportUnnecessaryCast)
+  x:\projects\ashyq-bilim\apps\api\src\services\courses\courses.py:1537:20 - error: Unnecessary "cast" call; type is already "SelectOfScalar[int | None]" (reportUnnecessaryCast)
+x:\projects\ashyq-bilim\apps\api\src\services\gamification\service.py
+  x:\projects\ashyq-bilim\apps\api\src\services\gamification\service.py:115:61 - error: Function with declared return type "int" must return value on all code paths
+    "None" is not assignable to "int" (reportReturnType)
+x:\projects\ashyq-bilim\apps\api\src\services\grading\pipeline\orchestrator.py
+  x:\projects\ashyq-bilim\apps\api\src\services\grading\pipeline\orchestrator.py:182:43 - error: Type "JsonObject | dict[str, object]" is not assignable to declared type "dict[str, object]"
+    Type "JsonObject | dict[str, object]" is not assignable to type "dict[str, object]"
+      "dict[str, JsonValue]" is not assignable to "dict[str, object]"
+        Type parameter "_VT@dict" is invariant, but "JsonValue" is not the same as "object"
+        Consider switching from "dict" to "Mapping" which is covariant in the value type (reportAssignmentType)
+x:\projects\ashyq-bilim\apps\api\src\tasks\assessment_timer.py
+  x:\projects\ashyq-bilim\apps\api\src\tasks\assessment_timer.py:111:47 - error: Type "JsonObject | dict[str, object]" is not assignable to declared type "dict[str, object]"
+    Type "JsonObject | dict[str, object]" is not assignable to type "dict[str, object]"
+      "dict[str, JsonValue]" is not assignable to "dict[str, object]"
+        Type parameter "_VT@dict" is invariant, but "JsonValue" is not the same as "object"
+        Consider switching from "dict" to "Mapping" which is covariant in the value type (reportAssignmentType)
+x:\projects\ashyq-bilim\apps\api\src\types\__init__.py
+  x:\projects\ashyq-bilim\apps\api\src\types\__init__.py:4:6 - error: Import "src.types.narrowing" could not be resolved (reportMissingImports)
+84 errors, 0 warnings, 0 notes

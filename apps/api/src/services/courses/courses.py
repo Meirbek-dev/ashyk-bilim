@@ -1,11 +1,14 @@
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import TypeVar, cast
 
 from fastapi import HTTPException, Request, UploadFile, status
-from sqlalchemy import Select, func
+from sqlalchemy import func
+from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, and_, col, or_, select
+from sqlmodel.sql.expression import SelectOfScalar
+from src.types.narrowing import require_persisted_id
 from ulid import ULID
 
 from src.db.courses.activities import Activity
@@ -37,14 +40,18 @@ from src.services.courses._auth import (
     require_course_read_access,
 )
 from src.services.courses.thumbnails import upload_thumbnail
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
 
-def _accessible_courses_filter(
-    query: Select,
+_T = TypeVar("_T")
+
+
+def _accessible_courses_filter[T](
+    query: SelectOfScalar[_T],
     current_user: PublicUser | AnonymousUser,
-) -> Select:
+) -> SelectOfScalar[_T]:
     """Apply the standard course-access filter to *query*.
 
     Rules:
@@ -59,7 +66,7 @@ def _accessible_courses_filter(
     Returns the query with EXISTS and WHERE clause applied.
     """
     if isinstance(current_user, AnonymousUser):
-        return query.where(Course.public)
+        return query.where(col(Course.public))
 
     has_usergroup = (
         select(1)
@@ -125,13 +132,13 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
     )
 
 
-def _apply_course_sort(query: Select, sort_by: str | None) -> Select:
+def _apply_course_sort[T](query: SelectOfScalar[_T], sort_by: str | None) -> SelectOfScalar[_T]:
     if sort_by == "name":
         return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
     return query.order_by(col(Course.update_date).desc(), col(Course.id).desc())
 
 
-def _apply_lms_sort(query: Select, current_user: PublicUser | AnonymousUser) -> Select:
+def _apply_lms_sort[T](query: SelectOfScalar[_T], current_user: PublicUser | AnonymousUser) -> SelectOfScalar[_T]:
     from sqlalchemy import case, func, select
 
     from src.db.trail_runs import TrailRun
@@ -369,7 +376,7 @@ def _ready_sql_condition() -> ColumnElement[bool]:
     )
 
 
-def _preset_sql_filter(preset: str | None) -> ColumnElement[bool] | None:
+def _preset_sql_filter(preset: str | None) -> ColumnElement[bool] | Mapped[bool] | None:
     """Return an additional SQL WHERE clause for the given preset, or None."""
     from datetime import timedelta
 
@@ -610,7 +617,12 @@ async def get_course_meta(
 
     # Extract course and authors from results
     course = results[0][0]  # First result's Course
-    author_results = [(ra, u) for _, ra, u in results if ra is not None and u is not None]
+    author_results = []
+    for _, ra_raw, u_raw in results:
+        ra = cast("ResourceAuthor | None", ra_raw)
+        u = cast("User | None", u_raw)
+        if ra is not None and u is not None:
+            author_results.append((ra, u))
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -670,7 +682,7 @@ async def count_courses(
     db_session: Session,
 ) -> int:
     """Count total courses for the platform with proper access filtering."""
-    query = select(func.count(col(Course.id).distinct()))
+    query: SelectOfScalar[int] = select(func.count(col(Course.id).distinct()))
     query = _accessible_courses_filter(query, current_user)
     return db_session.exec(query).one()
 
@@ -684,17 +696,20 @@ async def get_courses(
 ) -> list[CourseReadWithPermissions]:
     # Simple caching for anonymous (public) course listings to reduce
     # load and avoid upstream rate limits. Uses Redis if available.
+    get_json_fn = None
+    set_json_fn = None
     try:
-        from src.services.cache.redis_client import get_json, set_json
+        from src.services.cache.redis_client import get_json as r_get_json, set_json as r_set_json
+        get_json_fn = r_get_json
+        set_json_fn = r_set_json
     except Exception:
-        get_json = None  # type: ignore[assignment]
-        set_json = None  # type: ignore[assignment]
+        pass
 
     # Only cache results for anonymous users (public content)
     cache_key = f"courses:platform:page:{page}:limit:{limit}"
-    if isinstance(current_user, AnonymousUser) and get_json is not None:
+    if isinstance(current_user, AnonymousUser) and get_json_fn is not None:
         try:
-            cached = get_json(cache_key)
+            cached = get_json_fn(cache_key)
             if cached:
                 # cached is a list of serialised course dicts
                 return [CourseReadWithPermissions.model_validate(c) for c in cached]
@@ -707,12 +722,12 @@ async def get_courses(
 
     offset = (page - 1) * limit
     # Step 1: Fetch paginated course IDs using LMS sorting
-    id_query = select(Course.id)
-    id_query = _accessible_courses_filter(id_query, current_user)
-    id_query = _apply_lms_sort(id_query, current_user)
+    id_query: SelectOfScalar[int | None] = cast("SelectOfScalar[int | None]", select(Course.id))
+    id_query = cast("SelectOfScalar[int | None]", _accessible_courses_filter(id_query, current_user))
+    id_query = cast("SelectOfScalar[int | None]", _apply_lms_sort(id_query, current_user))
     id_query = id_query.offset(offset).limit(limit)
 
-    course_ids = db_session.exec(id_query).all()
+    course_ids = [cid for cid in db_session.exec(id_query).all() if cid is not None]
     if not course_ids:
         return []
 
@@ -735,14 +750,16 @@ async def get_courses(
     for cid in course_ids:
         courses_map[cid] = (None, [])
 
-    for course, ra, author_user in results:
-        cid = course.id
-        if cid is None:
+    for course, ra_raw, author_user_raw in results:
+        course_id = course.id
+        if course_id is None:
             continue
-        if courses_map[cid][0] is None:
-            courses_map[cid] = (course, courses_map[cid][1])
+        ra = cast("ResourceAuthor | None", ra_raw)
+        author_user = cast("User | None", author_user_raw)
+        if courses_map[course_id][0] is None:
+            courses_map[course_id] = (course, courses_map[course_id][1])
         if ra is not None and author_user is not None:
-            courses_map[cid][1].append(
+            courses_map[course_id][1].append(
                 AuthorWithRole(
                     user=UserRead.model_validate(author_user),
                     authorship=ra.authorship,
@@ -805,10 +822,10 @@ async def get_courses(
         course_reads.append(course_read)
     try:
         is_anon = isinstance(current_user, AnonymousUser)
-        if is_anon and get_json is not None and set_json is not None:
+        if is_anon and get_json_fn is not None and set_json_fn is not None:
             try:
                 serialised = [cr.model_dump() for cr in course_reads]
-                set_json(cache_key, serialised, ttl=60)
+                set_json_fn(cache_key, serialised, ttl=60)
             except Exception:
                 # Swallow redis set errors
                 pass
@@ -836,13 +853,13 @@ async def search_courses(
     search_filter = _course_search_filter(search_query, dialect_name)
 
     # Base query
-    query = select(Course)
+    query: SelectOfScalar[Course] = select(Course)
     if search_filter is not None:
         query = query.where(search_filter)
 
     if isinstance(current_user, AnonymousUser):
         # For anonymous users, only show public courses
-        query = query.where(Course.public)
+        query = query.where(col(Course.public))
     else:
         # For authenticated users, show:
         # 1. Public courses
@@ -963,7 +980,7 @@ def _seed_starter_chapters(course: Course, creator_id: int, db_session: Session)
             name=chapter_data["name"],
             description=chapter_data["description"],
             thumbnail_image="",
-            course_id=course.id,
+            course_id=require_persisted_id(course.id, model_name="Course"),
             chapter_uuid=f"chapter_{ULID()}",
             creation_date=datetime.now(tz=UTC),
             update_date=datetime.now(tz=UTC),
@@ -1439,7 +1456,7 @@ async def get_editable_courses(
     search_query: str | None = None,
     sort_by: str | None = "updated",
     apply_pagination: bool = True,
-    extra_filter: ColumnElement[bool] | None = None,
+    extra_filter: ColumnElement[bool] | Mapped[bool] | None = None,
 ) -> list[CourseReadWithPermissions]:
     """Return courses for the platform that the current user has permission to edit
     (i.e. course:update). Anonymous users always get an empty list.
@@ -1471,8 +1488,9 @@ async def get_editable_courses(
 
     offset = (page - 1) * limit
 
+    id_query: SelectOfScalar[int | None]
     if has_broad_update:
-        id_query = select(Course.id)
+        id_query = cast("SelectOfScalar[int | None]", select(Course.id))
         if search_filter is not None:
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
@@ -1492,7 +1510,7 @@ async def get_editable_courses(
             .exists()
         )
 
-        id_query = select(Course.id).where(is_active_author)
+        id_query = cast("SelectOfScalar[int | None]", select(Course.id).where(is_active_author))
         if search_filter is not None:
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
@@ -1516,12 +1534,12 @@ async def get_editable_courses(
             col(Course.id).desc(),
         )
     else:
-        id_query = _apply_course_sort(id_query, sort_by)
+        id_query = cast("SelectOfScalar[int | None]", _apply_course_sort(id_query, sort_by))
 
     if apply_pagination:
         id_query = id_query.offset(offset).limit(limit)
 
-    sorted_ids = db_session.exec(id_query).all()
+    sorted_ids = [cid for cid in db_session.exec(id_query).all() if cid is not None]
     if not sorted_ids:
         return []
 
@@ -1541,12 +1559,14 @@ async def get_editable_courses(
         return []
 
     courses_map: OrderedDict[int, tuple[Course, list[AuthorWithRole]]] = OrderedDict()
-    for course, ra, author_user in results:
+    for course, ra_raw, author_user_raw in results:
         cid = course.id
         if cid is None:
             continue
         if cid not in courses_map:
             courses_map[cid] = (course, [])
+        ra = cast("ResourceAuthor | None", ra_raw)
+        author_user = cast("User | None", author_user_raw)
         if ra is not None and author_user is not None:
             courses_map[cid][1].append(
                 AuthorWithRole(
@@ -1654,7 +1674,7 @@ async def get_course_user_rights(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Get detailed user rights for a specific course.
 
     This function returns comprehensive rights information that can be used
@@ -1716,7 +1736,7 @@ async def get_course_user_rights(
         # Anonymous users can only read public courses
         if course.public:
             perms["read"] = True
-        return rights
+        return cast("JsonObject", rights)
 
     # Check course ownership
     statement = select(ResourceAuthor).where(
@@ -1856,4 +1876,4 @@ async def get_course_user_rights(
     if is_instructor_or_admin_or_maintainer_role:
         perms["create_certifications"] = True
 
-    return rights
+    return cast("JsonObject", rights)

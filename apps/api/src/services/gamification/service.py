@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
+from typing import TypedDict, cast
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -33,6 +33,16 @@ from src.db.gamification import (
     calculate_level,
 )
 from src.services.gamification.policy import get_policy
+from src.types import JsonObject
+
+
+class DashboardDataDict(TypedDict):
+    profile: GamificationProfile
+    recent_transactions: list[XPTransaction]
+    leaderboard: LeaderboardRead | None
+    user_rank: int
+    streak_info: dict[str, int]
+
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +115,7 @@ def _update_daily_tracking_with_policy(profile: GamificationProfile, amount: int
 def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
     """Reliable count(*) helper that works across SQL backends."""
     try:
-        value = db.scalar(stmt)
+        db.scalar(stmt)
     except (SQLAlchemyError, TypeError, AttributeError) as exc:
         logger.warning("Primary count query failed; attempting fallback", exc_info=exc)
         try:
@@ -113,22 +123,26 @@ def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
         except SQLAlchemyError as fallback_exc:
             logger.warning("Fallback count query failed", exc_info=fallback_exc)
             return 0
-        first = None
+        first: object = None
         try:
-            first = result.one_or_none()
-        except AttributeError, TypeError:
+            first = cast("object", result.one_or_none())
+        except (AttributeError, TypeError):
             try:
-                first = result.first()
-            except AttributeError, TypeError:
+                first = cast("object", result.first())
+            except (AttributeError, TypeError):
                 first = None
         if first is None:
             return 0
-        value = first[0] if isinstance(first, (tuple, list)) else first
-    if value is None:
+        final_val = first[0] if isinstance(first, (tuple, list)) else first
+        if final_val is None:
+            return 0
+        if isinstance(final_val, (int, float, str)):
+            try:
+                return int(final_val)
+            except ValueError:
+                return 0
         return 0
-    try:
-        return int(value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 0
 
 
@@ -251,7 +265,7 @@ def award_xp(
             return profile, existing_tx, existing_tx.triggered_level_up, False
         msg = f"Database error: {e}"
         raise GamificationError(msg)
-    except SQLAlchemyError, ValueError, TypeError:
+    except (SQLAlchemyError, ValueError, TypeError):
         db.rollback()
         raise
 
@@ -314,12 +328,12 @@ def get_recent_transactions(db: Session, user_id: int, limit: int = 10) -> list[
     return list(db.exec(stmt).all())
 
 
-def get_dashboard_data(db: Session, user_id: int, *, include_leaderboard: bool = False) -> dict[str, Any]:
+def get_dashboard_data(db: Session, user_id: int, *, include_leaderboard: bool = False) -> DashboardDataDict:
     profile = get_profile(db, user_id)
     transactions = get_recent_transactions(db, user_id, limit=10)
     user_xp = profile.total_xp
     higher_count = _count_users_with_more_xp(db, user_xp)
-    user_rank = higher_count + 1 if profile else None
+    user_rank = higher_count + 1
     leaderboard: LeaderboardRead | None = None
     if include_leaderboard:
         leaderboard = get_leaderboard_read(db, limit=10, offset=0)
@@ -338,7 +352,7 @@ def get_dashboard_data(db: Session, user_id: int, *, include_leaderboard: bool =
     }
 
 
-def update_preferences(db: Session, user_id: int, updates: dict[str, Any]) -> GamificationProfile:
+def update_preferences(db: Session, user_id: int, updates: JsonObject) -> GamificationProfile:
     """Merge and persist profile preferences, returning updated profile.
 
     - Non-dict values in updates are ignored
@@ -406,8 +420,6 @@ def get_leaderboard_read(db: Session, limit: int = 10, offset: int = 0) -> Leade
 
 def get_user_rank(db: Session, user_id: int) -> int | None:
     profile = get_profile(db, user_id)
-    if not profile:
-        return None
     higher_count = _count_users_with_more_xp(db, profile.total_xp)
     return higher_count + 1
 

@@ -5,7 +5,7 @@ All private helpers used across multiple assessment service modules live here.
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any, assert_never
+from typing import Literal, TypedDict, assert_never, cast
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -56,6 +56,7 @@ from src.db.grading.progress import (
     AssessmentGradingMode,
     AssessmentPolicy,
     GradeReleaseMode,
+    LatePolicy,
     LatePolicyNone,
 )
 from src.db.grading.submissions import (
@@ -74,6 +75,8 @@ from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
 from src.services.courses.access import user_has_course_access
 from src.services.grading.submission import start_submission_v2
+from src.types import JsonObject, JsonValue
+from src.types.narrowing import require_persisted_id
 
 ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_EXAM,
@@ -205,6 +208,31 @@ def _build_assessment_read(
     )
 
 
+class AssessmentAttemptState(TypedDict):
+    active_submission: Submission | None
+    can_edit: bool
+    can_save_draft: bool
+    can_submit: bool
+    can_start: bool
+    can_continue: bool
+    can_view_result: bool
+    can_start_revision: bool
+    recommended_action: Literal[
+        "START", "CONTINUE_DRAFT", "SUBMIT", "WAIT_FOR_RELEASE", "VIEW_RESULT", "START_REVISION", "NO_ACTION"
+    ]
+    primary_button_label_key: str
+    disabled_action_reasons: list[str]
+    effective_policy: AssessmentEffectivePolicy
+    server_now: datetime
+    started_at: datetime | None
+    timer_started_at: datetime | None
+    timer_expires_at: datetime | None
+    available_at: datetime | None
+    closes_at: datetime | None
+    due_at: datetime | None
+    time_remaining_seconds: int | None
+
+
 def _build_attempt_projection(
     assessment: Assessment,
     activity: Activity,
@@ -233,14 +261,12 @@ def _build_attempt_projection(
         can_continue=bool(state["can_continue"]),
         can_view_result=bool(state["can_view_result"]),
         can_start_revision=bool(state["can_start_revision"]),
-        recommended_action=str(state["recommended_action"]),
+        recommended_action=state["recommended_action"],
         primary_button_label_key=str(state["primary_button_label_key"]),
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
-        disabled_action_reasons=(
-            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
-        ),
+        disabled_action_reasons=state["disabled_action_reasons"],
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
         started_at=state["started_at"],
@@ -261,7 +287,7 @@ def _build_review_projection(
 ) -> AssessmentReviewProjection:
     return AssessmentReviewProjection(
         assessment_uuid=assessment.assessment_uuid,
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         activity_uuid=activity.activity_uuid,
         title=assessment.title,
         kind=assessment.kind,
@@ -274,7 +300,7 @@ def _build_attempt_state(
     activity: Activity,
     current_user: PublicUser,
     db_session: Session,
-) -> dict[str, object]:
+) -> AssessmentAttemptState:
     now = datetime.now(UTC)
     course = _get_course_for_activity_or_404(activity, db_session)
     is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
@@ -286,7 +312,7 @@ def _build_attempt_state(
             Submission.activity_id == activity.id,
             Submission.user_id == current_user.id,
         )
-        .order_by(desc(Submission.created_at))
+        .order_by(desc(col(Submission.created_at)))
     ).all()
     draft = next(
         (submission for submission in submissions if submission.status == SubmissionStatus.DRAFT),
@@ -330,8 +356,8 @@ def _build_attempt_state(
     time_remaining_seconds: int | None = None
     timed_close_at: datetime | None = None
     if draft is not None and time_limit_seconds and draft.started_at:
-        started_at = draft.started_at if draft.started_at.tzinfo else draft.started_at.replace(tzinfo=UTC)
-        timed_close_at = started_at + timedelta(seconds=int(time_limit_seconds))
+        started_at_local = draft.started_at if draft.started_at.tzinfo else draft.started_at.replace(tzinfo=UTC)
+        timed_close_at = started_at_local + timedelta(seconds=int(time_limit_seconds))
         time_remaining_seconds = max(0, int((timed_close_at - now).total_seconds()))
         if not is_teacher_preview and time_remaining_seconds <= 0:
             reasons.append("TIME_LIMIT_EXPIRED")
@@ -350,6 +376,9 @@ def _build_attempt_state(
     can_start_revision = active_status == SubmissionStatus.RETURNED and not reasons
 
     # Recommended action and label key for the primary button
+    recommended_action: Literal[
+        "START", "CONTINUE_DRAFT", "SUBMIT", "WAIT_FOR_RELEASE", "VIEW_RESULT", "START_REVISION", "NO_ACTION"
+    ]
     if reasons:
         recommended_action = "NO_ACTION"
         primary_button_label_key = "blocked"
@@ -373,18 +402,18 @@ def _build_attempt_state(
         primary_button_label_key = "noAction"
 
     # Server timestamps for the active draft/submission
-    started_at: datetime | None = None
+    ret_started_at: datetime | None = None
     timer_started_at: datetime | None = None
     timer_expires_at: datetime | None = None
     if draft is not None and draft.started_at:
         raw_started = draft.started_at
-        started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
+        ret_started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
         if time_limit_seconds:
-            timer_started_at = started_at
-            timer_expires_at = started_at + timedelta(seconds=int(time_limit_seconds))
+            timer_started_at = ret_started_at
+            timer_expires_at = ret_started_at + timedelta(seconds=int(time_limit_seconds))
     elif latest is not None and latest.started_at:
         raw_started = latest.started_at
-        started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
+        ret_started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
 
     return {
         "active_submission": active_submission,
@@ -411,7 +440,7 @@ def _build_attempt_state(
             settings_json=policy.settings_json if policy is not None else {},
         ),
         "server_now": now,
-        "started_at": started_at,
+        "started_at": ret_started_at,
         "timer_started_at": timer_started_at,
         "timer_expires_at": timer_expires_at,
         "available_at": available_at,
@@ -423,24 +452,28 @@ def _build_attempt_state(
 
 def _assert_attempt_action_allowed(
     *,
-    action: str,
+    action: Literal["start", "save_draft", "submit"],
     assessment: Assessment,
     activity: Activity,
     course: Course,
     current_user: PublicUser,
     db_session: Session,
-) -> dict[str, object]:
+) -> AssessmentAttemptState:
     _require_submit_access(current_user, activity, course, db_session)
     state = _build_attempt_state(assessment, activity, current_user, db_session)
-    allowed_key = {
-        "start": "can_edit",
-        "save_draft": "can_save_draft",
-        "submit": "can_submit",
-    }[action]
-    if not state[allowed_key]:
-        reasons: list[Any] = (
-            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
-        )
+
+    allowed = False
+    if action == "start":
+        allowed = state["can_edit"]
+    elif action == "save_draft":
+        allowed = state["can_save_draft"]
+    elif action == "submit":
+        allowed = state["can_submit"]
+    else:
+        assert_never(action)
+
+    if not allowed:
+        reasons = state["disabled_action_reasons"]
         reason = reasons[0] if reasons else "ACTION_NOT_ALLOWED"
         logger.warning(
             "ASSESSMENT_ATTEMPT_BLOCKED action=%s reason=%s assessment_uuid=%s activity_uuid=%s user_id=%s",
@@ -464,7 +497,7 @@ def _assert_attempt_action_allowed(
 def _release_state_for_submission(
     submission: Submission | None,
     db_session: Session,
-) -> str:
+) -> Literal["HIDDEN", "AWAITING_RELEASE", "VISIBLE", "RETURNED_FOR_REVISION"]:
     if submission is None:
         return "HIDDEN"
     submission_status = SubmissionStatus(submission.status)
@@ -519,8 +552,8 @@ def _get_items_raw(assessment: Assessment, db_session: Session) -> list[Assessme
     return list(
         db_session.exec(
             select(AssessmentItem)
-            .where(AssessmentItem.assessment_id == assessment.id)
-            .order_by(AssessmentItem.order, AssessmentItem.id)
+            .where(col(AssessmentItem.assessment_id) == assessment.id)
+            .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
         ).all()
     )
 
@@ -772,7 +805,10 @@ def _is_teacher_preview_user(
         return True
 
     bind = db_session.get_bind()
-    if bind is None or not sqlalchemy_inspect(bind).has_table(ResourceAuthor.__tablename__):
+    tablename = ResourceAuthor.__tablename__
+    if callable(tablename):
+        tablename = tablename()
+    if not sqlalchemy_inspect(bind).has_table(tablename):
         return False
 
     return (
@@ -1041,7 +1077,7 @@ def sync_activity_lifecycle(
     details["archived_at"] = _dt_iso(assessment.archived_at)
     activity.details = details
 
-    settings = activity.settings if isinstance(activity.settings, dict) else {}
+    settings = activity.settings
     settings.update({
         "lifecycle_status": lifecycle.value,
         "scheduled_at": _dt_iso(assessment.scheduled_at),
@@ -1106,7 +1142,7 @@ def _get_or_create_submission_draft(
     course = _get_course_for_activity_or_404(activity, db_session)
     is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
     read = start_submission_v2(
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         assessment_type=AssessmentType(assessment.kind),
         current_user=current_user,
         db_session=db_session,
@@ -1411,7 +1447,7 @@ def _build_policy_read(
         time_limit_seconds=policy.time_limit_seconds,
         due_at=policy.due_at,
         allow_late=policy.allow_late,
-        late_policy=policy.late_policy_json,
+        late_policy=cast("LatePolicy", policy.late_policy_json),
         grade_release_mode=str(policy.grade_release_mode),
         grading_mode=str(policy.grading_mode),
         completion_rule=str(policy.completion_rule),
@@ -1491,7 +1527,7 @@ def _build_student_submission_read(
 ) -> StudentSubmissionRead:
     result = StudentSubmissionRead.model_validate(submission)
     release_state = _release_state_for_submission(submission, db_session)
-    result.release_state = release_state  # type: ignore[assignment]
+    result.release_state = release_state
     result.is_result_visible = release_state in {"VISIBLE", "RETURNED_FOR_REVISION"}
     if not result.is_result_visible:
         result.auto_score = None
@@ -1507,7 +1543,7 @@ def _build_teacher_submission_read(
     db_session: Session,
 ) -> TeacherSubmissionRead:
     result = TeacherSubmissionRead.model_validate(submission)
-    result.release_state = _release_state_for_submission(submission, db_session)  # type: ignore[assignment]
+    result.release_state = _release_state_for_submission(submission, db_session)
     result.is_result_visible = result.release_state in {
         "VISIBLE",
         "RETURNED_FOR_REVISION",
@@ -1526,22 +1562,22 @@ def _hydrate_submission_grading_json(
 ) -> None:
     items = _get_items(assessment, db_session)
 
-    existing_grading = submission.grading_json or {}
-    if not isinstance(existing_grading, dict):
-        existing_grading = (
-            existing_grading.model_dump() if hasattr(existing_grading, "model_dump") else existing_grading.__dict__
-        )
+    existing_grading = cast("dict[str, object]", submission.grading_json)
 
-    existing_items = existing_grading.get("items", [])
-    existing_map = {}
-    for item in existing_items:
-        if isinstance(item, dict):
-            existing_map[item.get("item_id")] = item
-        elif hasattr(item, "item_id"):
-            existing_map[item.item_id] = item.model_dump() if hasattr(item, "model_dump") else item.__dict__
+    existing_items = existing_grading.get("items")
+    if not isinstance(existing_items, list):
+        existing_items = []
+
+    existing_map: dict[str, dict[str, object]] = {}
+    for it in existing_items:
+        if isinstance(it, dict):
+            item_id = it.get("item_id")
+            if isinstance(item_id, str):
+                existing_map[item_id] = {k: v for k, v in it.items() if isinstance(k, str)}
 
     answers = submission.answers_json or {}
-    answers_map = answers.get("answers", {})
+    raw_answers_map = answers.get("answers")
+    answers_map: dict[str, object] = cast("dict[str, object]", raw_answers_map) if isinstance(raw_answers_map, dict) else {}
 
     hydrated_items = []
     for item in items:
@@ -1549,28 +1585,46 @@ def _hydrate_submission_grading_json(
         user_ans = answers_map.get(item.item_uuid)
 
         needs_review = existing.get("needs_manual_review")
-        if needs_review is None:
+        if not isinstance(needs_review, bool):
             needs_review = item.kind == "OPEN_TEXT"
+
+        score_val = existing.get("score")
+        score = float(score_val) if isinstance(score_val, (int, float)) else 0.0
+
+        correct_val = existing.get("correct")
+        correct = bool(correct_val) if isinstance(correct_val, bool) else None
+
+        feedback_val = existing.get("feedback")
+        feedback = str(feedback_val) if isinstance(feedback_val, str) else ""
+
+        correct_answer_val = existing.get("correct_answer")
+        correct_answer = str(correct_answer_val) if isinstance(correct_answer_val, str) else None
 
         hydrated_items.append(
             GradedItem(
                 item_id=item.item_uuid,
                 item_text=item.title or "",
-                score=existing.get("score") or 0.0,
+                score=score,
                 max_score=item.max_score if item.max_score > 0 else 1.0,
-                correct=existing.get("correct"),
-                feedback=existing.get("feedback") or "",
+                correct=correct,
+                feedback=feedback,
                 needs_manual_review=needs_review,
-                user_answer=user_ans,
-                correct_answer=existing.get("correct_answer"),
+                user_answer=cast("JsonValue", user_ans),
+                correct_answer=correct_answer,
             )
         )
+
+    auto_graded_val = existing_grading.get("auto_graded")
+    auto_graded = bool(auto_graded_val) if isinstance(auto_graded_val, bool) else False
+
+    global_feedback_val = existing_grading.get("feedback")
+    global_feedback = str(global_feedback_val) if isinstance(global_feedback_val, str) else ""
 
     result.grading_json = GradingBreakdown(
         items=hydrated_items,
         needs_manual_review=any(i.needs_manual_review for i in hydrated_items),
-        auto_graded=existing_grading.get("auto_graded", False),
-        feedback=existing_grading.get("feedback") or "",
+        auto_graded=auto_graded,
+        feedback=global_feedback,
     )
 
 
@@ -1601,8 +1655,8 @@ def _snapshot_submission(
                     "item_uuid": item.item_uuid,
                     "kind": str(item.kind),
                     "title": item.title,
-                    "body_json": item.body_json,
-                    "metadata_json": item.metadata_json,
+                    "body_json": cast("JsonObject", item.body_json),
+                    "metadata_json": cast("JsonObject", item.metadata_json),
                     "max_score": item.max_score,
                     "order": item.order,
                 }
@@ -1660,7 +1714,7 @@ def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, Use
 
 def _submission_user(user: User) -> SubmissionUser:
     return SubmissionUser(
-        id=user.id,
+        id=require_persisted_id(user.id, model_name="User"),
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
@@ -1730,8 +1784,9 @@ def build_readiness(
                     message="Ограничение по времени должно быть больше нуля.",
                 )
             )
-        anti_cheat: dict[str, Any] = policy.anti_cheat_json if isinstance(policy.anti_cheat_json, dict) else {}
-        if isinstance(anti_cheat.get("violation_threshold"), int) and anti_cheat["violation_threshold"] < 1:
+        anti_cheat = cast("dict[str, object]", policy.anti_cheat_json)
+        violation_threshold = anti_cheat.get("violation_threshold")
+        if isinstance(violation_threshold, int) and violation_threshold < 1:
             issues.append(
                 ReadinessIssue(
                     code="policy.violation_threshold_invalid",
