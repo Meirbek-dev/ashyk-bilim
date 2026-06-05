@@ -23,8 +23,8 @@ duplicate ``grade.published`` event is harmless; the frontend deduplicates on
 from __future__ import annotations
 
 import logging
-from typing import Any
 
+from src.types import JsonObject
 from src.worker.broker import broker
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 async def publish_grading_event_task(
     event_type: str,
     submission_uuid: str,
-    payload: dict[str, Any] | None = None,
+    payload: JsonObject | None = None,
 ) -> None:
     """Publish a grading SSE event to Redis pub/sub and the replay log.
 

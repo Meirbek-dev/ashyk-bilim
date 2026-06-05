@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import ClassVar, Self
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import (
@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlmodel import Field as SQLField
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject, JsonValue
 
 # ── Submission metadata sub-shapes ────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ class CodeRunRecord(PydanticStrictBaseModel):
     compile_output: str | None = None
     time: float | None = None
     memory: int | None = None
-    details: list[dict[str, Any]] = Field(default_factory=list)
+    details: list[JsonObject] = Field(default_factory=list)
     created_at: datetime | None = None
 
     @field_validator("created_at", mode="before")
@@ -71,7 +72,7 @@ class PlagiarismScore(PydanticStrictBaseModel):
     score: float  # 0–1 similarity score
     checked_at: datetime
     flagged: bool = False
-    details: dict[str, Any] = Field(default_factory=dict)
+    details: JsonObject = Field(default_factory=dict)
 
     @field_validator("checked_at", mode="before")
     @classmethod
@@ -104,7 +105,7 @@ class SubmissionMetadata(PydanticStrictBaseModel):
     plagiarism_error: str | None = None
 
 
-def normalize_submission_metadata(value: object) -> dict[str, Any]:
+def normalize_submission_metadata(value: object) -> JsonObject:
     """Validate typed metadata sub-shapes while preserving unrecognized keys."""
     if isinstance(value, SubmissionMetadata):
         return value.model_dump(mode="json", exclude_none=True)
@@ -119,7 +120,7 @@ def normalize_submission_metadata(value: object) -> dict[str, Any]:
 def merge_submission_metadata(
     existing: object,
     **updates: object,
-) -> dict[str, Any]:
+) -> JsonObject:
     merged = {
         **normalize_submission_metadata(existing),
         **{key: value for key, value in updates.items() if value is not None},
@@ -151,8 +152,8 @@ class GradedItem(SQLModelStrictBaseModel):
     correct: bool | None = None  # None for non-auto-gradeable items
     feedback: str = ""
     needs_manual_review: bool = False
-    user_answer: Any = None
-    correct_answer: Any = None
+    user_answer: JsonValue = None
+    correct_answer: JsonValue = None
 
 
 class GradingBreakdown(SQLModelStrictBaseModel):
@@ -272,10 +273,10 @@ class SubmissionRead(SubmissionBase):
 
     id: int
     submission_uuid: str
-    answers_json: dict[str, Any] = SQLField(default_factory=dict)
+    answers_json: JsonObject = SQLField(default_factory=dict)
     raw_grading_json: GradingBreakdown = SQLField(default_factory=GradingBreakdown)
     grading_json: GradingBreakdown = SQLField(default_factory=GradingBreakdown)
-    metadata_json: dict[str, Any] = SQLField(default_factory=dict)
+    metadata_json: JsonObject = SQLField(default_factory=dict)
     late_penalty_pct: float = 0.0
     late_penalty_reason: str | None = None
     started_at: datetime | None = None
@@ -315,8 +316,8 @@ class SubmissionUpdate(SQLModelStrictBaseModel):
 
     final_score: float | None = None
     status: SubmissionStatus | None = None
-    raw_grading_json: dict[str, Any] | None = None
-    grading_json: dict[str, Any] | None = None
+    raw_grading_json: JsonObject | None = None
+    grading_json: JsonObject | None = None
     graded_at: datetime | None = None
 
     @field_validator("status", mode="before")
@@ -327,10 +328,10 @@ class SubmissionUpdate(SQLModelStrictBaseModel):
         return v
 
 
-class Submission(SubmissionBase, table=True):
+class Submission(SubmissionBase, table=True):  # type: ignore[misc]
     """Single unified row per student per assessment attempt."""
 
-    __tablename__ = "submission"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "submission"
     __table_args__ = (
         Index("ix_submission_user_activity", "user_id", "activity_id"),
         Index("ix_submission_uuid", "submission_uuid", unique=True),
@@ -384,19 +385,19 @@ class Submission(SubmissionBase, table=True):
     user_id: int = SQLField(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
 
     # Typed payload — validated by Pydantic schemas before saving
-    answers_json: dict[str, Any] = SQLField(
+    answers_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
-    grading_json: dict[str, Any] = SQLField(
+    grading_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
-    raw_grading_json: dict[str, Any] = SQLField(
+    raw_grading_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column("raw_grading_json", JSON, nullable=False, server_default="{}"),
     )
-    metadata_json: dict[str, Any] = SQLField(
+    metadata_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
@@ -469,11 +470,11 @@ class Submission(SubmissionBase, table=True):
         default=1,
         sa_column=Column("policy_version", Integer, nullable=False, server_default="1"),
     )
-    items_snapshot: dict[str, Any] | None = SQLField(
+    items_snapshot: JsonObject | None = SQLField(
         default_factory=None,
         sa_column=Column("items_snapshot", JSON, nullable=True),
     )
-    policy_snapshot: dict[str, Any] | None = SQLField(
+    policy_snapshot: JsonObject | None = SQLField(
         default_factory=None,
         sa_column=Column("policy_snapshot", JSON, nullable=True),
     )

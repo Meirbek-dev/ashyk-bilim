@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import ClassVar
 
 from pydantic import Field as PydanticField
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String, Text
@@ -10,6 +10,7 @@ from sqlmodel import Field
 from ulid import ULID
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
+from src.types import JsonObject
 
 
 class BulkActionType(StrEnum):
@@ -27,10 +28,10 @@ class BulkActionStatus(StrEnum):
     FAILED = "FAILED"
 
 
-class BulkAction(SQLModelStrictBaseModel, table=True):
+class BulkAction(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Persisted audit record for a teacher bulk operation."""
 
-    __tablename__ = "bulk_action"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "bulk_action"
     __table_args__ = (
         Index("ix_bulk_action_uuid", "action_uuid"),
         Index("ix_bulk_action_activity_status", "activity_id", "status"),
@@ -47,7 +48,7 @@ class BulkAction(SQLModelStrictBaseModel, table=True):
         )
     )
     action_type: BulkActionType = Field(sa_column=Column("action_type", String, nullable=False))
-    params: dict[str, Any] = Field(
+    params: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -94,7 +95,7 @@ class BulkActionRead(SQLModelStrictBaseModel):
     action_uuid: str
     performed_by: int
     action_type: BulkActionType
-    params: dict[str, Any] = PydanticField(default_factory=dict)
+    params: JsonObject = PydanticField(default_factory=dict)
     target_user_ids: list[int] = PydanticField(default_factory=list)
     activity_id: int
     status: BulkActionStatus

@@ -4,6 +4,7 @@ Single source of truth for all permission-related tables and Pydantic models.
 """
 
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from pydantic import ConfigDict, field_validator
 from sqlalchemy import Column, ForeignKey, Index, Integer, UniqueConstraint
@@ -28,10 +29,10 @@ from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBase
 # ============================================================================
 
 
-class Permission(SQLModelStrictBaseModel, table=True):
+class Permission(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Permission definition. Each row is a {resource}:{action}:{scope} triple."""
 
-    __tablename__ = "permissions"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "permissions"
     __table_args__ = (
         Index("idx_permissions_resource_action", "resource_type", "action"),
         Index("idx_permissions_name", "name", unique=True),
@@ -65,10 +66,10 @@ class Permission(SQLModelStrictBaseModel, table=True):
 # ============================================================================
 
 
-class Role(SQLModelStrictBaseModel, table=True):
+class Role(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Role definition."""
 
-    __tablename__ = "roles"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "roles"
     __table_args__ = (
         UniqueConstraint("slug", name="uq_roles_slug"),
         Index("idx_roles_slug", "slug"),
@@ -89,10 +90,10 @@ class Role(SQLModelStrictBaseModel, table=True):
 # ============================================================================
 
 
-class RolePermission(SQLModelStrictBaseModel, table=True):
+class RolePermission(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Many-to-many: which permissions belong to which roles."""
 
-    __tablename__ = "role_permissions"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "role_permissions"
     __table_args__ = (
         Index("idx_role_permissions_role", "role_id"),
         Index("idx_role_permissions_permission", "permission_id"),
@@ -110,10 +111,10 @@ class RolePermission(SQLModelStrictBaseModel, table=True):
 # ============================================================================
 
 
-class UserRole(SQLModelStrictBaseModel, table=True):
+class UserRole(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Which users have which roles."""
 
-    __tablename__ = "user_roles"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "user_roles"
     __table_args__ = (
         UniqueConstraint("user_id", "role_id", name="uq_user_roles_user_role"),
         Index("idx_user_roles_user_role", "user_id", "role_id"),

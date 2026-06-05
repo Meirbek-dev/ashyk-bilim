@@ -17,8 +17,8 @@ acceptable for audit purposes.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
+from src.types import JsonObject
 from src.worker.broker import broker
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ async def write_audit_event_task(
     session_id: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None,
-    metadata: dict[str, Any] | None = None,
+    metadata: JsonObject | None = None,
     severity: str = "info",
 ) -> None:
     """Persist a security audit event to the ``auth_audit_log`` table.
@@ -75,7 +75,7 @@ def _write_audit_sync(
     session_id: str | None,
     ip_address: str | None,
     user_agent: str | None,
-    metadata: dict[str, Any] | None,
+    metadata: JsonObject | None,
     severity: str,
 ) -> None:
     """Synchronous DB write — runs in a thread pool via asyncio.to_thread."""

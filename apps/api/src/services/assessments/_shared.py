@@ -438,7 +438,9 @@ def _assert_attempt_action_allowed(
         "submit": "can_submit",
     }[action]
     if not state[allowed_key]:
-        reasons: list[Any] = list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
+        reasons: list[Any] = (
+            list(state["disabled_action_reasons"]) if isinstance(state["disabled_action_reasons"], list) else []
+        )
         reason = reasons[0] if reasons else "ACTION_NOT_ALLOWED"
         logger.warning(
             "ASSESSMENT_ATTEMPT_BLOCKED action=%s reason=%s assessment_uuid=%s activity_uuid=%s user_id=%s",

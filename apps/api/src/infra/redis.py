@@ -20,13 +20,13 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 try:
-    import redis as _redis
-    import redis.asyncio as _aioredis
-except Exception:  # pragma: no cover
-    _redis = None  # type: ignore[assignment]
-    _aioredis = None  # type: ignore[assignment]
+    import redis
+    import redis.asyncio
 
-_redis_available = _redis is not None and _aioredis is not None  # type: ignore[redundant-expr]
+    _redis_available = True
+except ImportError:
+    _redis_available = False
+
 _sync_client: redis.Redis | None = None
 _async_client: redis.asyncio.Redis | None = None
 
@@ -42,12 +42,7 @@ def configure(url: str) -> None:
         _logger.warning("redis package not installed — Redis features disabled")
         return
 
-    from typing import Any, cast
-
-    redis_mod = cast("Any", _redis)
-    aioredis_mod = cast("Any", _aioredis)
-
-    _sync_client = redis_mod.Redis.from_url(
+    _sync_client = redis.Redis.from_url(
         url,
         decode_responses=False,
         socket_connect_timeout=2,
@@ -55,7 +50,7 @@ def configure(url: str) -> None:
         socket_keepalive=True,
         health_check_interval=10,
     )
-    _async_client = aioredis_mod.Redis.from_url(
+    _async_client = redis.asyncio.Redis.from_url(
         url,
         decode_responses=False,
         socket_connect_timeout=2,

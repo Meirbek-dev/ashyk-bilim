@@ -10,11 +10,11 @@ Two entry points:
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlmodel import Session
 
 from src.db.auth_audit_log import AuthAuditLog
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def write_audit_event(
     session_id: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None,
-    metadata: dict[str, Any] | None = None,
+    metadata: JsonObject | None = None,
     severity: str = "info",
 ) -> None:
     """Write a security audit event using an existing DB session.
@@ -57,7 +57,7 @@ def _audit_background_task(
     session_id: str | None,
     ip_address: str | None,
     user_agent: str | None,
-    metadata: dict[str, Any] | None,
+    metadata: JsonObject | None,
     severity: str,
 ) -> None:
     """Synchronous task target: opens its own DB session to write the audit event.
@@ -91,7 +91,7 @@ async def enqueue_audit_event(
     session_id: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None,
-    metadata: dict[str, Any] | None = None,
+    metadata: JsonObject | None = None,
     severity: str = "info",
 ) -> None:
     """Durably enqueue an audit event via taskiq.

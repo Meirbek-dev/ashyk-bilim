@@ -142,7 +142,9 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(
+    db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
     app.include_router(file_submissions_router, prefix="/file-submissions")
@@ -343,7 +345,9 @@ def test_get_assessment_404_for_unknown(api_client: TestClient, db_session_facto
 # ---------------------------------------------------------------------------
 
 
-def test_create_assessment_seeds_draft_and_policy(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_create_assessment_seeds_draft_and_policy(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """POST /assessments creates an assessment in DRAFT lifecycle with an AssessmentPolicy."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -366,7 +370,9 @@ def test_create_assessment_seeds_draft_and_policy(api_client: TestClient, db_ses
     assert data["assessment_uuid"] is not None
 
 
-def test_create_assessment_unknown_course_returns_404(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_create_assessment_unknown_course_returns_404(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """POST /assessments with a non-existent course_id returns 404."""
     _, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -388,7 +394,9 @@ def test_create_assessment_unknown_course_returns_404(api_client: TestClient, db
 # ---------------------------------------------------------------------------
 
 
-def test_create_file_submission_activity_is_first_class(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_create_file_submission_activity_is_first_class(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """POST /file-submissions creates a TYPE_FILE_SUBMISSION activity, not an assessment."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -446,7 +454,9 @@ def test_update_assessment_metadata(api_client: TestClient, db_session_factory: 
     assert data["description"] == "Updated description"
 
 
-def test_update_assessment_policy_max_attempts(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_update_assessment_policy_max_attempts(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """PATCH /assessments/{uuid} with a policy block updates max_attempts."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -496,7 +506,9 @@ def test_add_item_to_assessment(api_client: TestClient, db_session_factory: Call
     assert data["item_uuid"] is not None
 
 
-def test_unknown_item_kinds_are_rejected_for_assessments(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_unknown_item_kinds_are_rejected_for_assessments(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """Unknown item kinds cannot be authored inside assessments."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -649,7 +661,9 @@ def test_reorder_items_changes_order(api_client: TestClient, db_session_factory:
 # ---------------------------------------------------------------------------
 
 
-def test_lifecycle_transition_draft_to_published(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_lifecycle_transition_draft_to_published(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """POST /assessments/{uuid}/lifecycle/transition moves DRAFT → PUBLISHED."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -695,7 +709,9 @@ def test_lifecycle_transition_draft_to_published(api_client: TestClient, db_sess
     assert response.json()["published_at"] is not None
 
 
-def test_lifecycle_transition_published_to_archived(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_lifecycle_transition_published_to_archived(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """Transition PUBLISHED → ARCHIVED is allowed."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -709,7 +725,9 @@ def test_lifecycle_transition_published_to_archived(api_client: TestClient, db_s
     assert response.json()["archived_at"] is not None
 
 
-def test_lifecycle_transition_invalid_returns_422(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_lifecycle_transition_invalid_returns_422(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """Transitioning to an invalid state (e.g. PUBLISHED → SCHEDULED) returns 422."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -727,7 +745,9 @@ def test_lifecycle_transition_invalid_returns_422(api_client: TestClient, db_ses
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_check_passes_for_complete_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_readiness_check_passes_for_complete_assessment(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """An assessment with items and policy is considered READY."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -769,7 +789,9 @@ def test_readiness_check_flags_missing_items(api_client: TestClient, db_session_
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_manual_assessment_has_defaults(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_policy_preset_manual_assessment_has_defaults(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 

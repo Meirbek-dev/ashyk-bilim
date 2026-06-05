@@ -43,7 +43,9 @@ class FakeFactory:
 
 
 @pytest.mark.asyncio
-async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+async def test_code_execution_persists_visible_and_masks_hidden_results(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
     def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
         return [
             SimpleNamespace(
@@ -136,7 +138,9 @@ async def test_code_execution_reuses_idempotent_run(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_code_execution_retries_failed_idempotent_run(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+async def test_code_execution_retries_failed_idempotent_run(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
     calls = 0
 
     def fake_run(**_kwargs: object) -> list[SimpleNamespace]:
@@ -191,7 +195,9 @@ async def test_code_execution_retries_failed_idempotent_run(monkeypatch: pytest.
 
 
 @pytest.mark.asyncio
-async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+async def test_code_execution_truncates_output_and_passes_sandbox_policy(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
     captured_kwargs: dict[str, Any] = {}
     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
@@ -321,7 +327,9 @@ async def test_code_execution_raises_go_sandbox_limits(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
-async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+async def test_code_execution_sets_kotlin_compiler_jvm_options(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
     captured_kwargs: dict[str, Any] = {}
 
     def fake_run(**kwargs: object) -> list[SimpleNamespace]:
@@ -457,7 +465,9 @@ async def async_run_service(
 
 
 @pytest.mark.asyncio
-async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
+async def test_code_execution_with_different_source_code_and_hash_in_key(
+    monkeypatch: pytest.MonkeyPatch, db_session: Session
+) -> None:
     calls = 0
 
     def fake_run(**_kwargs: object) -> list[SimpleNamespace]:

@@ -1,6 +1,5 @@
 """Canonical code-challenge grading logic."""
 
-
 from src.db.assessments import CodeItemAnswer
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem

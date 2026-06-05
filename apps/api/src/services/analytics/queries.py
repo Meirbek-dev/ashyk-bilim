@@ -106,7 +106,9 @@ def _unwrap_model[ModelT](value: object, model_type: type[ModelT]) -> ModelT:
     raise TypeError(msg)
 
 
-def _unwrap_pair[LeftT, RightT](value: object, left_type: type[LeftT], right_type: type[RightT]) -> tuple[LeftT, RightT]:
+def _unwrap_pair[LeftT, RightT](
+    value: object, left_type: type[LeftT], right_type: type[RightT]
+) -> tuple[LeftT, RightT]:
     if isinstance(value, (tuple, list)):
         left = next((candidate for candidate in value if isinstance(candidate, left_type)), None)
         right = next(

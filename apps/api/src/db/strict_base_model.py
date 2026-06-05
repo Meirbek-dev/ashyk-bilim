@@ -8,9 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
 from sqlmodel._compat import SQLModelConfig
 
-JsonPrimitive = str | int | float | bool | None
-JsonValue = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
-JsonObject = dict[str, JsonValue]
+from src.types import JsonObject, JsonPrimitive, JsonValue
 
 
 def is_json_object(val: object) -> TypeGuard[JsonObject]:

@@ -19,6 +19,7 @@ expires_at              If set, the override is ignored after this timestamp.
 """
 
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from sqlalchemy import (
     Boolean,
@@ -35,10 +36,10 @@ from sqlmodel import Field
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
-class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
+class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Per-student exception to an AssessmentPolicy."""
 
-    __tablename__ = "student_policy_override"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "student_policy_override"
     __table_args__ = (
         UniqueConstraint(
             "policy_id",

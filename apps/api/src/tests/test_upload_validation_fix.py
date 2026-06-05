@@ -7,8 +7,6 @@ import pytest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from typing import Any
-
 from pydantic import ValidationError
 
 from src.db.uploads import UploadRead, UploadStatus
@@ -18,17 +16,12 @@ UploadRead.model_config["strict"] = True
 UploadRead.model_rebuild(force=True)
 
 
-def test_pydantic_is_strict() -> None:
-    """Verify that strict mode is actually enabled for the test."""
-    assert UploadRead.model_config.get("strict") is True
-
-
 def test_upload_read_status_coercion() -> None:
     """Verify that UploadRead allows 'status' to be a string even in strict mode.
     This simulates reading from a database column defined as String.
     """
     now = datetime.now(UTC)
-    data: dict[str, Any] = {
+    data: dict[str, object] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",
@@ -51,7 +44,7 @@ def test_upload_read_status_coercion() -> None:
 def test_upload_read_other_fields_remain_strict() -> None:
     """Verify that other fields (like size_bytes) still enforce strict types."""
     now = datetime.now(UTC)
-    data: dict[str, Any] = {
+    data: dict[str, object] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",

@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import ClassVar
 
 from sqlalchemy import (
     Column,
@@ -22,10 +23,10 @@ class AssessmentAccessMode(StrEnum):
     RESTRICTED = "RESTRICTED"
 
 
-class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):
+class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Access rule for one assessment, always scoped by course access first."""
 
-    __tablename__ = "assessment_access_policy"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "assessment_access_policy"
     __table_args__ = (
         UniqueConstraint("assessment_id", name="uq_assessment_access_policy_assessment"),
         Index("ix_assessment_access_policy_assessment_id", "assessment_id"),
@@ -63,10 +64,10 @@ class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):
     )
 
 
-class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):
+class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Direct learner allowlist entry for a restricted assessment."""
 
-    __tablename__ = "assessment_access_user"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "assessment_access_user"
     __table_args__ = (
         UniqueConstraint("policy_id", "user_id", name="uq_assessment_access_user_policy_user"),
         Index("ix_assessment_access_user_policy_id", "policy_id"),
@@ -94,10 +95,10 @@ class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):
     )
 
 
-class AssessmentAccessUserGroup(SQLModelStrictBaseModel, table=True):
+class AssessmentAccessUserGroup(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Usergroup allowlist entry for a restricted assessment."""
 
-    __tablename__ = "assessment_access_usergroup"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "assessment_access_usergroup"
     __table_args__ = (
         UniqueConstraint(
             "policy_id",

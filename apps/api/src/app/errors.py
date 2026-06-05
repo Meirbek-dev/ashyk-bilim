@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import Mapping
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -38,7 +39,7 @@ def _get_request_id(request: Request) -> str:
     return str(uuid.uuid4())
 
 
-def _response_headers(request_id: str, headers: dict[str, str] | None = None) -> dict[str, str]:
+def _response_headers(request_id: str, headers: Mapping[str, str] | None = None) -> dict[str, str]:
     response_headers = dict(headers or {})
     response_headers["X-Request-ID"] = request_id
     return response_headers
@@ -52,7 +53,7 @@ def api_error_response(
     message: str,
     details: dict[str, object] | list[dict[str, object]] | None = None,
     field_errors: list[ApiFieldError] | None = None,
-    headers: dict[str, str] | None = None,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     request_id = _get_request_id(request)
     envelope = ApiErrorEnvelope(
@@ -203,6 +204,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
         detail: object = exc.detail
+        details: dict[str, object] | list[dict[str, object]] | None
         if isinstance(detail, str) and detail in fastapi_users_error_map:
             code, message, details = fastapi_users_error_map[detail]
             return api_error_response(

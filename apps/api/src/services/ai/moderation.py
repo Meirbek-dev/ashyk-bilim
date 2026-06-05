@@ -29,7 +29,9 @@ def _flagged_categories(result: object) -> list[str]:
 
 def _category_scores(result: object, categories: list[str]) -> dict[str, float]:
     scores = _model_dump(getattr(result, "category_scores", None))
-    return {category: float(score) for category in categories if isinstance((score := scores.get(category)), (int, float))}
+    return {
+        category: float(score) for category in categories if isinstance((score := scores.get(category)), (int, float))
+    }
 
 
 async def moderate_text_input(text: str, *, stage: ModerationStage = "input") -> None:

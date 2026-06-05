@@ -27,7 +27,7 @@ dependencies = [
 
   # AI
   "openai>=2.41.0",
-  "pydantic-ai-slim[logfire,openai]>=1.105.0",
+  "pydantic-ai-slim[logfire,openai]>=1.106.0",
   "tiktoken>=0.13.0",
 
   # Async / Jobs
@@ -37,7 +37,7 @@ dependencies = [
 
   # API
   "fastapi-pagination>=0.15.14",
-  "python-multipart>=0.0.30",
+  "python-multipart>=0.0.32",
 
   # Infra / Observability
   "logfire[fastapi,sqlalchemy]>=4.35.0",
@@ -57,7 +57,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   # Lint / Format
-  "ruff>=0.15.15",
+  "ruff>=0.15.16",
 
   # Type Checking
   "basedpyright>=1.39.6",
@@ -181,6 +181,7 @@ ignore = [
   "N806",    # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
   "ERA001",  # commented-out-code: Allow code-like text in comments
   "S101",
+  "A005",    # module-shadowing: Allow 'types' module name inside packages
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -276,7 +277,7 @@ bad-argument-type = "ignore"
 [tool.mypy]
 python_version = "3.15"
 files = ["src", "tests"]
-mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+mypy_path = "$MYPY_CONFIG_FILE_DIR"
 
 plugins = ["pydantic.mypy"]
 

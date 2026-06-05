@@ -1,6 +1,5 @@
 """Canonical quiz/exam item grading logic."""
 
-
 from src.db.assessments import ChoiceItemAnswer, ChoiceItemBody, MatchingItemAnswer, MatchingItemBody
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem

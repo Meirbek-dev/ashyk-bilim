@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi_users import schemas
 from pydantic import ConfigDict, EmailStr
@@ -9,6 +8,7 @@ from ulid import ULID
 
 from src.db.permissions import RoleRead
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject
 
 
 class UserBase(SQLModelStrictBaseModel):
@@ -19,8 +19,8 @@ class UserBase(SQLModelStrictBaseModel):
     email: EmailStr
     avatar_image: str | None = ""
     bio: str | None = ""
-    details: dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
-    profile: dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    details: JsonObject | None = Field(default_factory=dict, sa_column=Column(JSON))
+    profile: JsonObject | None = Field(default_factory=dict, sa_column=Column(JSON))
     theme: str | None = "default"
     locale: str | None = "ru-RU"
 
@@ -40,8 +40,8 @@ class UserUpdate(schemas.CreateUpdateDictModel, SQLModelStrictBaseModel):
     email: str | None = None
     avatar_image: str | None = None
     bio: str | None = None
-    details: dict[str, Any] | None = None
-    profile: dict[str, Any] | None = None
+    details: JsonObject | None = None
+    profile: JsonObject | None = None
     theme: str | None = None
     locale: str | None = None
 
@@ -94,7 +94,7 @@ class InternalUser(SQLModelStrictBaseModel):
     username: str = "internal"
 
 
-class User(UserBase, table=True):
+class User(UserBase, table=True):  # type: ignore[misc]
     __table_args__ = (
         UniqueConstraint("username", name="uq_user_username"),
         UniqueConstraint("email", name="uq_user_email"),

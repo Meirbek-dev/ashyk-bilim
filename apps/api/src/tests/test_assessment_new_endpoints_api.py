@@ -146,7 +146,9 @@ def student_user_fixture() -> PublicUser:
     )
 
 
-def _make_api_client(db_session_factory: Callable[[], Session], user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def _make_api_client(
+    db_session_factory: Callable[[], Session], user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -297,7 +299,9 @@ def _seed_assessment(db_session_factory: Callable[[], Session]) -> tuple[str, in
 
 
 class TestAttemptState:
-    def test_returns_attempt_state(self, db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_returns_attempt_state(
+        self, db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, student_user, monkeypatch)
 
@@ -311,7 +315,9 @@ class TestAttemptState:
         assert "recommended_action" in data
         assert "primary_button_label_key" in data
 
-    def test_404_for_unknown_uuid(self, db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_404_for_unknown_uuid(
+        self, db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, student_user, monkeypatch)
 
@@ -324,7 +330,13 @@ class TestAttemptState:
 
 class TestPolicyPreset:
     @pytest.mark.parametrize("kind", ["EXAM", "QUIZ", "CODE_CHALLENGE"])
-    def test_returns_preset_for_kind(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch, kind: str) -> None:
+    def test_returns_preset_for_kind(
+        self,
+        db_session_factory: Callable[[], Session],
+        teacher_user: PublicUser,
+        monkeypatch: pytest.MonkeyPatch,
+        kind: str,
+    ) -> None:
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
         resp = client.get(f"/assessments/policy-preset/{kind}")
         assert resp.status_code == 200, resp.text
@@ -333,7 +345,9 @@ class TestPolicyPreset:
         assert data["kind"] == kind
         assert "max_attempts" in data
 
-    def test_404_for_unknown_kind(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_404_for_unknown_kind(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
         resp = client.get("/assessments/policy-preset/UNKNOWN_KIND")
         assert resp.status_code in {400, 404}
@@ -343,7 +357,9 @@ class TestPolicyPreset:
 
 
 class TestStudentOverrides:
-    def test_list_empty(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_list_empty(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 
@@ -351,7 +367,9 @@ class TestStudentOverrides:
         assert resp.status_code == 200
         assert resp.json() == []
 
-    def test_create_override(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_create_override(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 
@@ -367,7 +385,9 @@ class TestStudentOverrides:
         assert data["max_attempts_override"] == 5
         assert data["waive_late_penalty"] is True
 
-    def test_list_after_create(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_list_after_create(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 
@@ -379,7 +399,9 @@ class TestStudentOverrides:
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
-    def test_update_override(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_update_override(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 
@@ -394,7 +416,9 @@ class TestStudentOverrides:
         assert resp.status_code == 200, resp.text
         assert resp.json()["max_attempts_override"] == 10
 
-    def test_delete_override(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_delete_override(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         uuid, _ = _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 
@@ -405,7 +429,9 @@ class TestStudentOverrides:
         list_resp = client.get(f"/assessments/{uuid}/overrides")
         assert list_resp.json() == []
 
-    def test_404_assessment_not_found(self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_404_assessment_not_found(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 

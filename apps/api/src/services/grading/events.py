@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from ulid import ULID
 
 from src.infra import redis as redis_infra
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +30,10 @@ def _replay_key(submission_uuid: str) -> str:
 def grading_event(
     event_type: str,
     submission_uuid: str,
-    payload: dict[str, Any] | None = None,
+    payload: JsonObject | None = None,
     *,
     event_id: str | None = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     return {
         "event": event_type,
         "event_id": event_id or str(ULID()),
@@ -43,7 +43,7 @@ def grading_event(
     }
 
 
-def encode_sse(event: str, data: dict[str, Any]) -> str:
+def encode_sse(event: str, data: JsonObject) -> str:
     event_id = data.get("event_id", "")
     id_line = f"id: {event_id}\n" if event_id else ""
     return f"{id_line}event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
@@ -52,7 +52,7 @@ def encode_sse(event: str, data: dict[str, Any]) -> str:
 async def publish_grading_event(
     event_type: str,
     submission_uuid: str,
-    payload: dict[str, Any] | None = None,
+    payload: JsonObject | None = None,
 ) -> None:
     """Publish a grading event to Redis pub/sub and store it in the replay log."""
     client = redis_infra.get_async()
@@ -75,7 +75,7 @@ async def publish_grading_event(
 async def get_events_since(
     submission_uuid: str,
     since_event_id: str,
-) -> list[dict[str, Any]]:
+) -> list[JsonObject]:
     """Return events from the replay log that occurred after ``since_event_id``.
 
     We scan the full replay window (up to ``_REPLAY_WINDOW_SECONDS``) and
@@ -97,7 +97,7 @@ async def get_events_since(
         logger.warning("Failed to fetch replay events", exc_info=True)
         return []
 
-    events: list[dict[str, Any]] = []
+    events: list[JsonObject] = []
     for raw in raw_events:
         try:
             events.append(json.loads(raw))

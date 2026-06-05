@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 from pydantic_ai.messages import (
@@ -12,6 +12,7 @@ from pydantic_ai.messages import (
 )
 
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.types import JsonObject
 
 
 def utc_now() -> datetime:
@@ -27,7 +28,7 @@ class ChatMessageMetadata(PydanticStrictBaseModel):
     activity_uuid: str | None = None
     user_id: int | None = None
     request_id: str | None = None
-    extra: dict[str, Any] = Field(default_factory=dict)
+    extra: JsonObject = Field(default_factory=dict)
 
 
 class ChatMessage(PydanticStrictBaseModel):
@@ -68,7 +69,7 @@ class RetrievedChunk(PydanticStrictBaseModel):
     id: str
     document: str = Field(min_length=1)
     score: float | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonObject = Field(default_factory=dict)
 
 
 class DocumentChunk(PydanticStrictBaseModel):
@@ -77,7 +78,7 @@ class DocumentChunk(PydanticStrictBaseModel):
     source_index: int
     chunk_index: int
     token_count: int
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonObject = Field(default_factory=dict)
 
 
 class AgentDependencies(PydanticStrictBaseModel):

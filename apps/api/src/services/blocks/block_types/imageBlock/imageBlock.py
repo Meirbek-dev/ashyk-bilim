@@ -12,7 +12,9 @@ from src.services.courses._utils import (
 from src.services.users.users import PublicUser
 
 
-async def create_image_block(request: Request, image_file: UploadFile, activity_uuid: str, db_session: Session) -> BlockRead:
+async def create_image_block(
+    request: Request, image_file: UploadFile, activity_uuid: str, db_session: Session
+) -> BlockRead:
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
     course = _get_course_for_activity_or_404(activity, db_session)
 
@@ -49,7 +51,9 @@ async def create_image_block(request: Request, image_file: UploadFile, activity_
     return BlockRead.model_validate(block)
 
 
-async def get_image_block(request: Request, block_uuid: str, current_user: PublicUser, db_session: Session) -> BlockRead:
+async def get_image_block(
+    request: Request, block_uuid: str, current_user: PublicUser, db_session: Session
+) -> BlockRead:
     statement = select(Block).where(Block.block_uuid == block_uuid)
     block = db_session.exec(statement).first()
 

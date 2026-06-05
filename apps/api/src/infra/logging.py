@@ -1,5 +1,6 @@
 import logging.config
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import override
 
@@ -18,8 +19,17 @@ _RESET = "\x1b[0m"
 
 
 class ColorFormatter(logging.Formatter):
-    def __init__(self, *args: object, colorize: bool = True, **kwargs: object) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        fmt: str | None = None,
+        datefmt: str | None = None,
+        style: str = "%",
+        validate: bool = True,
+        *,
+        defaults: Mapping[str, object] | None = None,
+        colorize: bool = True,
+    ) -> None:
+        super().__init__(fmt, datefmt, style, validate, defaults=defaults)
         self.colorize = colorize and "NO_COLOR" not in os.environ
 
     @override

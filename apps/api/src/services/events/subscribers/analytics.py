@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
-from typing import Any
 
 logger = logging.getLogger("grading.analytics")
 
@@ -19,7 +18,7 @@ class AnalyticsSubscriber:
     async def handle(self, event: object) -> None:
         """Log the event with its type and all fields."""
         event_type = type(event).__name__
-        fields: dict[str, Any] = {}
+        fields: dict[str, object] = {}
 
         # Extract all dataclass fields
         if hasattr(event, "__dataclass_fields__"):

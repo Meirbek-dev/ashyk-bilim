@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, UniqueConstraint
 from sqlmodel import Field
@@ -6,8 +7,8 @@ from sqlmodel import Field
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
-class AuthSession(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "auth_sessions"  # pyright: ignore[reportAssignmentType]
+class AuthSession(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+    __tablename__: ClassVar[str] = "auth_sessions"
     __table_args__ = (
         UniqueConstraint("session_id", name="uq_auth_sessions_session_id"),
         UniqueConstraint("refresh_token_hash", name="uq_auth_sessions_refresh_token_hash"),

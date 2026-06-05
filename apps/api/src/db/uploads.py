@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, ClassVar
 
 from pydantic import ConfigDict, Field
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String
@@ -18,10 +18,10 @@ class UploadStatus(StrEnum):
     CANCELLED = "CANCELLED"
 
 
-class Upload(SQLModelStrictBaseModel, table=True):
+class Upload(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """One user-owned upload before it is referenced by a submission answer."""
 
-    __tablename__ = "upload"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "upload"
     __table_args__ = (
         Index("ix_upload_upload_uuid", "upload_uuid", unique=True),
         Index("ix_upload_user_status", "user_id", "status"),

@@ -5,7 +5,7 @@ import logging
 import secrets
 import time
 import uuid
-from typing import Any
+from typing import cast
 from urllib.parse import urlencode
 
 import httpx
@@ -15,6 +15,7 @@ from fastapi_users.jwt import decode_jwt, generate_jwt
 
 from src.security.keys import get_jwt_secret
 from src.services.cache.redis_client import get_async_redis_client
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ _GOOGLE_METADATA_FALLBACK: dict[str, str] = {
     "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
 }
 
-_metadata_cache: dict[str, Any] = {}
+_metadata_cache: JsonObject = {}
 _metadata_cached_at: float = 0.0
 
 
@@ -56,7 +57,7 @@ def _build_google_client(timeout: httpx.Timeout) -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=timeout)
 
 
-def _validate_google_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+def _validate_google_metadata(metadata: JsonObject) -> JsonObject:
     missing = [key for key in _REQUIRED_METADATA_KEYS if not isinstance(metadata.get(key), str)]
     if missing:
         msg = f"В метаданных Google discovery отсутствуют обязательные ключи: {', '.join(missing)}"
@@ -68,12 +69,12 @@ def _claims_from_google_id_token(
     id_token: str | None,
     *,
     client_id: str,
-) -> dict[str, Any] | None:
+) -> JsonObject | None:
     if not id_token:
         return None
 
     try:
-        claims = jwt.decode(
+        decoded = jwt.decode(
             id_token,
             options={
                 "verify_signature": False,
@@ -87,6 +88,9 @@ def _claims_from_google_id_token(
     except jwt.PyJWTError as exc:
         logger.warning("Failed to decode Google id_token", exc_info=exc)
         return None
+
+    # Cast decoded untyped jwt dict to JsonObject at the system boundary.
+    claims = cast("JsonObject", decoded)
 
     issuer = claims.get("iss")
     audience = claims.get("aud")
@@ -109,7 +113,7 @@ def _claims_from_google_id_token(
     return claims
 
 
-async def _get_google_metadata() -> dict[str, Any]:
+async def _get_google_metadata() -> JsonObject:
     global _metadata_cache, _metadata_cached_at
     if _metadata_cache and time.monotonic() - _metadata_cached_at < _METADATA_CACHE_TTL:
         return _metadata_cache
@@ -118,8 +122,11 @@ async def _get_google_metadata() -> dict[str, Any]:
         async with _build_google_client(_DISCOVERY_TIMEOUT) as client:
             response = await client.get(GOOGLE_DISCOVERY_URL)
             response.raise_for_status()
-            metadata = _validate_google_metadata(response.json())
-    except (httpx.HTTPError, ValueError) as exc:
+            resp_json = response.json()
+            if not isinstance(resp_json, dict):
+                raise TypeError("Metadata response must be a dictionary")
+            metadata = _validate_google_metadata(cast("JsonObject", resp_json))
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
         if _metadata_cache:
             logger.warning(
                 "Google discovery fetch failed; using stale cached metadata",
@@ -130,7 +137,7 @@ async def _get_google_metadata() -> dict[str, Any]:
             "Google discovery fetch failed; using built-in Google OAuth endpoints",
             exc_info=exc,
         )
-        return dict(_GOOGLE_METADATA_FALLBACK)
+        return cast("JsonObject", dict(_GOOGLE_METADATA_FALLBACK))
 
     _metadata_cache = metadata
     _metadata_cached_at = time.monotonic()
@@ -208,9 +215,11 @@ async def _consume_pkce_verifier(state_jti: str) -> str | None:
     key = f"pkce:{state_jti}"
     verifier = await r.get(key)
     await r.delete(key)
+    if isinstance(verifier, str):
+        return verifier
     if isinstance(verifier, bytes):
         return verifier.decode()
-    return verifier
+    return None
 
 
 def get_frontend_callback_from_state(state: str | None) -> str | None:
@@ -223,7 +232,7 @@ def get_frontend_callback_from_state(state: str | None) -> str | None:
 async def _post_google_token(
     client: httpx.AsyncClient,
     token_endpoint: str,
-    token_data: dict[str, Any],
+    token_data: JsonObject,
     *,
     redirect_uri: str,
     code_verifier_present: bool,
@@ -258,7 +267,7 @@ async def _get_google_userinfo(
     client: httpx.AsyncClient,
     userinfo_endpoint: str,
     access_token: str,
-) -> dict[str, Any]:
+) -> JsonObject:
     try:
         response = await client.get(
             userinfo_endpoint,
@@ -281,7 +290,10 @@ async def _get_google_userinfo(
             status_code=400,
             detail="Не удалось получить данные пользователя Google",
         )
-    return response.json()
+    resp_json = response.json()
+    if not isinstance(resp_json, dict):
+        raise HTTPException(status_code=400, detail="Userinfo response is not a JSON object")
+    return cast("JsonObject", resp_json)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -309,7 +321,9 @@ async def get_google_authorize_url(
         "access_type": "online",
         "prompt": "select_account",
     }
-    return metadata["authorization_endpoint"] + "?" + urlencode(params)
+    auth_endpoint = metadata.get("authorization_endpoint")
+    auth_endpoint_str = auth_endpoint if isinstance(auth_endpoint, str) else ""
+    return auth_endpoint_str + "?" + urlencode(params)
 
 
 async def exchange_google_code(
@@ -318,7 +332,7 @@ async def exchange_google_code(
     code: str,
     redirect_uri: str,
     state: str | None = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     metadata = await _get_google_metadata()
     code_verifier: str | None = None
     frontend_callback = "/"
@@ -338,7 +352,7 @@ async def exchange_google_code(
             )
 
     async with _build_google_client(_TOKEN_TIMEOUT) as client:
-        token_data: dict[str, Any] = {
+        token_data: JsonObject = {
             "client_id": client_id,
             "client_secret": client_secret,
             "code": code,
@@ -348,10 +362,13 @@ async def exchange_google_code(
         if code_verifier:
             token_data["code_verifier"] = code_verifier
 
+        token_endpoint = metadata.get("token_endpoint")
+        token_endpoint_str = token_endpoint if isinstance(token_endpoint, str) else ""
+
         try:
             token_resp = await _post_google_token(
                 client,
-                metadata["token_endpoint"],
+                token_endpoint_str,
                 token_data,
                 redirect_uri=redirect_uri,
                 code_verifier_present=code_verifier is not None,
@@ -376,7 +393,7 @@ async def exchange_google_code(
         except httpx.HTTPError as exc:
             logger.exception(
                 "Сетевая ошибка при обмене Google-токена | endpoint=%s | redirect_uri=%s | pkce=%s | error_type=%s",
-                metadata["token_endpoint"],
+                token_endpoint_str,
                 redirect_uri,
                 "yes" if code_verifier else "no",
                 type(exc).__name__,
@@ -387,15 +404,20 @@ async def exchange_google_code(
                 detail="Сервис Google OAuth временно недоступен",
             ) from exc
 
-        token = token_resp.json()
+        token_json = token_resp.json()
+        if not isinstance(token_json, dict):
+            raise HTTPException(status_code=400, detail="Invalid token response")
+        token = cast("JsonObject", token_json)
         access_token = token.get("access_token")
         if not isinstance(access_token, str) or not access_token:
             raise HTTPException(
                 status_code=400,
                 detail="В ответе Google token отсутствует access_token",
             )
+        id_token = token.get("id_token")
+        id_token_str = id_token if isinstance(id_token, str) else None
         id_token_claims = _claims_from_google_id_token(
-            token.get("id_token"),
+            id_token_str,
             client_id=client_id,
         )
 
@@ -404,9 +426,11 @@ async def exchange_google_code(
         return id_token_claims
 
     async with _build_google_client(_USERINFO_TIMEOUT) as userinfo_client:
+        userinfo_endpoint = metadata.get("userinfo_endpoint")
+        userinfo_endpoint_str = userinfo_endpoint if isinstance(userinfo_endpoint, str) else ""
         userinfo = await _get_google_userinfo(
             userinfo_client,
-            metadata["userinfo_endpoint"],
+            userinfo_endpoint_str,
             access_token,
         )
         userinfo["frontend_callback"] = frontend_callback

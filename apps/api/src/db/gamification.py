@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import ClassVar
 
 from pydantic import field_validator
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
@@ -76,10 +76,10 @@ def get_xp_for_level(level: int) -> int:
     return 50 * (level - 1) ** 2 + 50 * (level - 1)
 
 
-class GamificationProfile(SQLModel, table=True):
+class GamificationProfile(SQLModel, table=True):  # type: ignore[misc]
     """Single gamification profile model with consistent naming."""
 
-    __tablename__ = "gamification_profiles"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "gamification_profiles"
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -141,10 +141,10 @@ class GamificationProfile(SQLModel, table=True):
         return self.total_xp - get_xp_for_level(self.level)
 
 
-class XPTransaction(SQLModel, table=True):
+class XPTransaction(SQLModel, table=True):  # type: ignore[misc]
     """XP transaction audit trail."""
 
-    __tablename__ = "xp_transactions"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "xp_transactions"
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -178,13 +178,13 @@ class XPTransaction(SQLModel, table=True):
     )
 
 
-class PlatformGamificationConfig(SQLModel, table=True):
+class PlatformGamificationConfig(SQLModel, table=True):  # type: ignore[misc]
     """Gamification policy overrides.
 
     Safe optional overrides with sane defaults applied in service if fields are null.
     """
 
-    __tablename__ = "org_gamification_config"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "org_gamification_config"
 
     id: int | None = Field(default=None, primary_key=True)
     # Optional overrides
@@ -218,7 +218,7 @@ class ProfileRead(PydanticStrictBaseModel):
     daily_xp_earned: int
     total_activities_completed: int
     total_courses_completed: int
-    preferences: dict[str, Any]
+    preferences: JsonObject
     created_at: datetime
     updated_at: datetime
 

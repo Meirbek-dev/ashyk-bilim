@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import ClassVar
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text
 from sqlmodel import Field as SQLField
@@ -28,10 +29,10 @@ class CodeRunStatus(StrEnum):
     DEGRADED = "DEGRADED"
 
 
-class CodeRun(SQLModelStrictBaseModel, table=True):
+class CodeRun(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """One student/teacher code execution request."""
 
-    __tablename__ = "code_run"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "code_run"
     __table_args__ = (
         Index("ix_code_run_uuid", "run_uuid", unique=True),
         Index("ix_code_run_assessment_item", "assessment_uuid", "item_uuid"),
@@ -74,10 +75,10 @@ class CodeRun(SQLModelStrictBaseModel, table=True):
     )
 
 
-class CodeRunCase(SQLModelStrictBaseModel, table=True):
+class CodeRunCase(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """One Judge0 submission result inside a code run."""
 
-    __tablename__ = "code_run_case"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "code_run_case"
     __table_args__ = (
         Index("ix_code_run_case_run", "run_uuid"),
         Index("ix_code_run_case_test", "run_uuid", "test_id"),

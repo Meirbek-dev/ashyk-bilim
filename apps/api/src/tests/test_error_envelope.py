@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
@@ -31,7 +29,7 @@ def _build_client(*, raise_server_exceptions: bool = True) -> TestClient:
     return TestClient(app, raise_server_exceptions=raise_server_exceptions)
 
 
-def _assert_envelope(payload: dict[str, Any], *, code: str, request_id: str) -> None:
+def _assert_envelope(payload: dict[str, object], *, code: str, request_id: str) -> None:
     assert payload["code"] == code
     assert isinstance(payload["message"], str)
     assert "details" in payload
@@ -78,6 +76,7 @@ def test_unhandled_exception_returns_safe_500_envelope() -> None:
 def test_openapi_documents_standard_error_envelope() -> None:
     client = _build_client()
 
+    assert isinstance(client.app, FastAPI)
     schema = client.app.openapi()
 
     assert "ApiErrorEnvelope" in schema["components"]["schemas"]

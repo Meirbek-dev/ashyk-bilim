@@ -6,12 +6,13 @@ Replaces the old stub in services/integrations/plagiarism.py.
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol, override
+from typing import Protocol, override
 
 from src.services.events.types import (
     FileSubmissionSubmittedEvent,
     SubmissionSubmittedEvent,
 )
+from src.types import PlagiarismCheckResult
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class PlagiarismProvider(Protocol):
     """Protocol for pluggable plagiarism detection providers."""
 
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict[str, Any]:
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
         """Run plagiarism check. Returns a result dict with at minimum {score, flagged}."""
         raise NotImplementedError
 
@@ -28,7 +29,7 @@ class NoopPlagiarismProvider(PlagiarismProvider):
     """Default no-op provider — logs and returns clean."""
 
     @override
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict[str, Any]:
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
         return {"score": 0.0, "flagged": False}
 
 

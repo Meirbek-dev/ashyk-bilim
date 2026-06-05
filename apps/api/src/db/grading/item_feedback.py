@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import ClassVar
 
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, String, Text
@@ -16,10 +17,10 @@ class ItemFeedbackAnnotationType(StrEnum):
     AUDIO = "AUDIO"
 
 
-class ItemFeedbackEntry(SQLModelStrictBaseModel, table=True):
+class ItemFeedbackEntry(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Per-item inline feedback stored separately from the grading JSON blob."""
 
-    __tablename__ = "item_feedback"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "item_feedback"
     __table_args__ = (
         Index("ix_item_feedback_grading_entry_id", "grading_entry_id"),
         Index("ix_item_feedback_submission_item", "submission_id", "item_ref"),

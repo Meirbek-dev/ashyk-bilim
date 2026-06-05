@@ -15,7 +15,7 @@ Immutability is enforced via SQLAlchemy event listeners:
 """
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import ClassVar
 
 from sqlalchemy import (
     JSON,
@@ -33,6 +33,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
+from src.types import JsonObject
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -44,10 +45,10 @@ SYSTEM_GRADER_ID: int = 0
 _MUTABLE_FIELDS: frozenset[str] = frozenset({"published_at"})
 
 
-class GradingEntry(SQLModelStrictBaseModel, table=True):
+class GradingEntry(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     """Immutable ledger row recording one grading event for a submission."""
 
-    __tablename__ = "grading_entry"  # pyright: ignore[reportAssignmentType]
+    __tablename__: ClassVar[str] = "grading_entry"
     __table_args__ = (
         UniqueConstraint("entry_uuid", name="uq_grading_entry_uuid"),
         Index("ix_grading_entry_submission_id", "submission_id"),
@@ -84,11 +85,11 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     )
     final_score: float = Field(sa_column=Column("final_score", Float, nullable=False))
 
-    raw_breakdown: dict[str, Any] = Field(
+    raw_breakdown: JsonObject = Field(
         default_factory=dict,
         sa_column=Column("raw_breakdown", JSON, nullable=False, server_default="{}"),
     )
-    effective_breakdown: dict[str, Any] = Field(
+    effective_breakdown: JsonObject = Field(
         default_factory=dict,
         sa_column=Column("effective_breakdown", JSON, nullable=False, server_default="{}"),
     )
@@ -128,8 +129,8 @@ class GradingEntryRead(SQLModelStrictBaseModel):
     raw_score: float
     penalty_pct: float
     final_score: float
-    raw_breakdown: dict[str, Any]
-    effective_breakdown: dict[str, Any]
+    raw_breakdown: JsonObject
+    effective_breakdown: JsonObject
     overall_feedback: str
     grading_version: int
     created_at: datetime

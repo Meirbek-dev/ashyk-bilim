@@ -69,7 +69,9 @@ def test_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory: Callable[[], Session], test_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(
+    db_session_factory: Callable[[], Session], test_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/collections")
 
@@ -90,7 +92,9 @@ def api_client_fixture(db_session_factory: Callable[[], Session], test_user: Pub
     return TestClient(app)
 
 
-def test_collections_list_returns_full_course_objects(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+def test_collections_list_returns_full_course_objects(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """GET /collections/page/1/limit/20 returns collections with list of CourseRead objects instead of integers."""
     with db_session_factory() as session:
         user = User(

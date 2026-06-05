@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import Literal, cast
 
 from ulid import ULID
 
@@ -66,7 +66,7 @@ def load_chat_session(
     session_id = _session_id(aichat_uuid, user_id)
     settings = get_settings()
     window_size = settings.ai_config.history_window_size
-    storage_type = "memory"
+    storage_type: Literal["redis", "memory"] = "memory"
     messages: list[ChatMessage] = []
     total_messages = 0
     conversation_summary: str | None = None

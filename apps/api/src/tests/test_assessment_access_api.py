@@ -94,7 +94,9 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def api_client_fixture(
+    db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -120,7 +122,9 @@ def api_client_fixture(db_session_factory: Callable[[], Session], teacher_user: 
     return TestClient(app)
 
 
-def test_restricted_access_narrows_course_learners(db_session_factory: Callable[[], Session], api_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_restricted_access_narrows_course_learners(
+    db_session_factory: Callable[[], Session], api_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     response = api_client.get(f"/assessments/{assessment_uuid}/access")
     assert response.status_code == 200

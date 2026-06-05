@@ -120,7 +120,7 @@ def get_analytics_filters(
     timezone: Annotated[str, Query()] = "UTC",
     page: Annotated[int, Query()] = 1,
     page_size: Annotated[int, Query()] = 25,
-    sort_by: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[CourseSortBy | AssessmentSortBy | None, Query()] = None,
     sort_order: Annotated[SortOrder, Query()] = "desc",
 ) -> AnalyticsFilters:
     return AnalyticsFilters(

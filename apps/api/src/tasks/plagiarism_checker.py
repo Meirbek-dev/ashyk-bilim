@@ -26,11 +26,18 @@ import re
 from collections import Counter
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any
+from typing import Protocol, cast
 
 from sqlmodel import Session, col, select
 
 from src.db.grading.submissions import Submission, SubmissionStatus
+from src.types import JsonObject
+
+
+class QueryJSONB(Protocol):
+    def __getitem__(self, key: str) -> QueryJSONB: ...
+    def as_string(self) -> object: ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +73,7 @@ def _cosine(a: Counter[str], b: Counter[str]) -> float:
     return dot / (mag_a * mag_b)
 
 
-def _extract_text_from_answers(answers_json: dict[str, Any]) -> str:
+def _extract_text_from_answers(answers_json: JsonObject) -> str:
     """Concatenate all string answer values from the answers payload."""
     parts: list[str] = []
     for value in answers_json.values():
@@ -125,9 +132,8 @@ def run_check_tick() -> int:
             select(Submission)
             .where(col(Submission.status).in_(graded_statuses))
             .where(
-                # Submissions where plagiarism key is absent from metadata.
-                # Use a JSON path expression: metadata_json->>'plagiarism' IS NULL.
-                Submission.metadata_json["plagiarism"].as_string() is None
+                # Cast to QueryJSONB is required because mypy views metadata_json class property statically as dict/JsonObject.
+                cast("QueryJSONB", Submission.metadata_json)["plagiarism"].as_string() is None
             )
             .where(col(Submission.assessment_type).in_(list(_TEXT_TYPES)))
             .limit(_BATCH_SIZE)
@@ -190,7 +196,7 @@ def run_check_tick() -> int:
                     if flagged:
                         flagged_pairs += 1
 
-                    details: dict[str, Any] = {}
+                    details: JsonObject = {}
                     if most_similar_uuid is not None:
                         details["most_similar_submission_uuid"] = most_similar_uuid
                         details["most_similar_score"] = round(max_score, 4)
@@ -231,19 +237,22 @@ def _write_plagiarism_result(
     *,
     score: float,
     flagged: bool,
-    details: dict[str, Any],
+    details: JsonObject,
     now: datetime,
     status: str,
     error: str | None = None,
 ) -> None:
     """Write the plagiarism result back into the submission's metadata_json."""
-    current_meta: dict[str, Any] = submission.metadata_json or {}
-    current_meta["plagiarism"] = {
-        "score": round(score, 4),
-        "checked_at": now.isoformat(),
-        "flagged": flagged,
-        "details": details,
-    }
+    current_meta: JsonObject = dict(submission.metadata_json or {})
+    current_meta["plagiarism"] = cast(
+        "JsonObject",
+        {
+            "score": round(score, 4),
+            "checked_at": now.isoformat(),
+            "flagged": flagged,
+            "details": details,
+        },
+    )
     current_meta["plagiarism_status"] = status
     if error:
         current_meta["plagiarism_error"] = error
