@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Self
+from typing import ClassVar, Self
 
 from pydantic import field_validator, model_validator
 from sqlalchemy import (
@@ -82,7 +82,7 @@ class ActivityBase(SQLModelStrictBaseModel):
 
 
 class Activity(ActivityBase, table=True):
-    model_config = SQLModelConfig(from_attributes=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(from_attributes=True)  # type: ignore[mutable-override]
 
     id: int | None = Field(default=None, primary_key=True)
     # Override name with a length-constrained column at the DB level.
@@ -138,7 +138,7 @@ class ActivityCreate(ActivityBase):
     chapter_id: int
     activity_type: ActivityTypeEnum = ActivityTypeEnum.TYPE_CUSTOM
     activity_sub_type: ActivitySubTypeEnum = ActivitySubTypeEnum.SUBTYPE_CUSTOM
-    details: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))  # pyright: ignore[reportIncompatibleVariableOverride]
+    details: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))  # pyright: ignore[reportIncompatibleVariableOverride]
     settings: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     @model_validator(mode="after")
@@ -178,7 +178,7 @@ class ActivityUpdate(ActivityBase):
 
 
 class ActivityRead(ActivityBase):
-    model_config = SQLModelConfig(from_attributes=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(from_attributes=True)  # type: ignore[mutable-override]
 
     id: int
     creator_id: int | None = None

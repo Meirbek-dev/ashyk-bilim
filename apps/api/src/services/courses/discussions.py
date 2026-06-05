@@ -1,5 +1,4 @@
 import asyncio
-from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
@@ -22,6 +21,7 @@ from src.db.courses.discussions import (
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
+from src.types import JsonObject
 
 
 async def create_discussion(
@@ -430,7 +430,7 @@ async def toggle_discussion_like(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Toggle like status for a discussion - like if not liked, unlike if liked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
@@ -503,7 +503,7 @@ async def toggle_discussion_dislike(
     discussion_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Toggle dislike status for a discussion - dislike if not disliked, undislike if disliked."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(

@@ -94,7 +94,7 @@ class InternalUser(SQLModelStrictBaseModel):
     username: str = "internal"
 
 
-class User(UserBase, table=True):  # type: ignore[misc]
+class User(UserBase, table=True):
     __table_args__ = (
         UniqueConstraint("username", name="uq_user_username"),
         UniqueConstraint("email", name="uq_user_email"),

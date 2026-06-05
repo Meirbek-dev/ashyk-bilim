@@ -11,7 +11,6 @@ import asyncio
 import hashlib
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func as sql_func
@@ -45,6 +44,7 @@ from src.services.grading.pipeline.persist import persist_submission
 from src.services.grading.pipeline.validate import validate_and_parse
 from src.services.grading.settings_loader import AssessmentSettings
 from src.services.progress import submissions as progress_submissions
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ _SUBMIT_PERMISSION: dict[AssessmentType, str] = {
 async def submit_assessment(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict[str, Any],
+    answers_payload: JsonObject,
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
@@ -133,7 +133,7 @@ async def submit_assessment(
 async def _submit_assessment_inner(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict[str, Any],
+    answers_payload: JsonObject,
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
@@ -179,12 +179,12 @@ async def _submit_assessment_inner(
     # and cap the violations list at 500 entries.
     MAX_VIOLATIONS_STORED = 500
     if violation_exceeded:
-        current_meta: dict[str, Any] = draft.metadata_json or {}
+        current_meta: dict[str, object] = draft.metadata_json or {}
         current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
         raw_violations = current_meta.get("violations", [])
-        existing_violations: list[Any] = raw_violations if isinstance(raw_violations, list) else []
+        existing_violations: list[object] = raw_violations if isinstance(raw_violations, list) else []
         if len(existing_violations) > MAX_VIOLATIONS_STORED:
             current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True

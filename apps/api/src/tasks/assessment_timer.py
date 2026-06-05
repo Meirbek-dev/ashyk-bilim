@@ -15,7 +15,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
@@ -109,7 +108,7 @@ async def auto_submit_expired_drafts() -> int:
                 )
 
                 # Pre-populate metadata before submission
-                metadata: dict[str, Any] = submission.metadata_json or {}
+                metadata: dict[str, object] = submission.metadata_json or {}
                 metadata["auto_submit_reason"] = "TIME_EXPIRED"
                 metadata["auto_submitted_at"] = now.isoformat()
                 submission.metadata_json = metadata

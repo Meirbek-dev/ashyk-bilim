@@ -8,7 +8,7 @@
 """
 
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -20,6 +20,7 @@ from src.db.users import AnonymousUser, PublicUser, User as UserModel
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
+from src.types import JsonObject
 
 audit_log = logging.getLogger("rbac.audit")
 
@@ -79,7 +80,7 @@ class RoleRevocationRequest(BaseModel):
 
 
 class UserPermissionsResponse(BaseModel):
-    roles: list[dict[str, Any]]
+    roles: list[JsonObject]
     permissions: list[str]
 
 

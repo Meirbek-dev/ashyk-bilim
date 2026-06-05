@@ -9,20 +9,21 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, override
+from typing import override
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 import httpx
-import judge0
 from fastapi import HTTPException, status
 from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
 from sqlmodel import Session, select
 from ulid import ULID
 
+import judge0
 from config.config import get_settings, secret_value
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.utils.circuit_breaker import CircuitBreaker
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 judge0_breaker = CircuitBreaker("judge0", failure_threshold=5, recovery_timeout=30.0)
@@ -148,7 +149,7 @@ class CodeExecutionResult:
             if result.is_visible
         ]
 
-    def grading_details(self) -> list[dict[str, Any]]:
+    def grading_details(self) -> list[JsonObject]:
         return [
             {
                 "test_id": result.test_id,
@@ -164,7 +165,7 @@ class CodeExecutionResult:
             for result in self.details
         ]
 
-    def metadata_record(self, *, language_id: int) -> dict[str, Any]:
+    def metadata_record(self, *, language_id: int) -> JsonObject:
         return {
             "run_id": self.run_uuid,
             "language_id": language_id,

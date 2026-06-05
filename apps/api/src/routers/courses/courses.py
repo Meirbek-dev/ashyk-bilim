@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile
 from sqlmodel import Session
@@ -649,7 +649,7 @@ async def api_get_course_user_rights(
     course_uuid: str,
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     current_user: Annotated[PublicUser | AnonymousUser | None, Depends(get_optional_public_user)] = None,
-) -> dict[str, Any]:
+) -> CourseUserRightsResponse:
     """Get detailed user rights for a specific course.
 
     This endpoint returns comprehensive rights information that can be used
@@ -728,4 +728,6 @@ async def api_get_course_user_rights(
     """
     assert db_session is not None
     assert current_user is not None
-    return await get_course_user_rights(request, course_uuid, current_user, db_session)
+    return CourseUserRightsResponse.model_validate(
+        await get_course_user_rights(request, course_uuid, current_user, db_session)
+    )

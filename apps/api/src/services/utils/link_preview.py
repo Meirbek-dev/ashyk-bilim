@@ -6,12 +6,12 @@ import ipaddress
 import json
 import logging
 import socket
-from typing import Any, cast
+from typing import cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
 from cachebox import TTLCache
-from selectolax.lexbor import LexborHTMLParser
+from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from config.config import LinkPreviewConfig, get_settings
 from src.services.cache.redis_client import get_async_redis_client
@@ -65,10 +65,6 @@ async def close_link_preview_client() -> None:
 
 
 def _normalize_user_url(url: str) -> str:
-    if not isinstance(url, str):  # pyright: ignore[reportUnnecessaryIsInstance]
-        msg = "URL must be a string"
-        raise UnsafeLinkPreviewURL(msg)  # pyright: ignore[reportUnreachable]
-
     stripped = url.strip()
     if not stripped:
         msg = "URL must not be empty"
@@ -249,11 +245,11 @@ def _parse_preview(url: str, html: str) -> dict[str, str | None]:
     tree = LexborHTMLParser(html)
 
     def get_meta(property_name: str, attr: str = "property") -> str | None:
-        node = tree.css_first(f'meta[{attr}="{property_name}"]')
-        return node.attributes.get("content") if cast("Any", node) else None
+        node = cast("LexborNode | None", tree.css_first(f'meta[{attr}="{property_name}"]'))
+        return node.attributes.get("content") if node is not None else None
 
-    title_node = tree.css_first("title")
-    title = title_node.text(strip=True) if cast("Any", title_node) else None
+    title_node = cast("LexborNode | None", tree.css_first("title"))
+    title = title_node.text(strip=True) if title_node is not None else None
     description = get_meta("og:description") or get_meta("description", "name")
 
     og_image = get_meta("og:image")
@@ -331,7 +327,7 @@ async def _get_cached_preview(url: str, settings: LinkPreviewConfig) -> dict[str
 
     async with _memory_cache_lock:
         cache = _get_memory_cache(settings)
-        cached = cast("Any", cache.get(cache_key))
+        cached = cache.get(cache_key)
         if cached is None:
             return None
         return cached
@@ -376,6 +372,6 @@ def _get_memory_cache(
     return _memory_cache
 
 
-def _coerce_preview(value: dict[str, Any]) -> dict[str, str | None]:
+def _coerce_preview(value: dict[str, object]) -> dict[str, str | None]:
     keys = ("title", "description", "og_image", "favicon", "og_type", "og_url", "url")
     return {key: raw if isinstance((raw := value.get(key)), str) or raw is None else str(raw) for key in keys}

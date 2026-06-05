@@ -1,10 +1,10 @@
-from typing import Any
+# no-op
 
 from src.db.courses.activities import ActivityRead
 from src.db.courses.courses import CourseRead
 
 
-def _extract_inline_text(nodes: list[Any]) -> str:
+def _extract_inline_text(nodes: list[object]) -> str:
     """Recursively extract text from inline content nodes."""
     if not nodes:
         return ""
@@ -22,7 +22,7 @@ def _extract_inline_text(nodes: list[Any]) -> str:
     return "".join(parts)
 
 
-def _extract_block_text(node: dict[str, Any]) -> str:
+def _extract_block_text(node: dict[str, object]) -> str:
     """Extract text from a block-level content node, handling all common types."""
     node_type = node.get("type", "")
     content = node.get("content", [])
@@ -106,7 +106,7 @@ def _extract_block_text(node: dict[str, Any]) -> str:
     return ""
 
 
-def structure_activity_content_by_type(activity: ActivityRead | dict[str, Any]) -> list[str]:
+def structure_activity_content_by_type(activity: ActivityRead | dict[str, object]) -> list[str]:
     """Extract structured sections from activity content.
 
     Returns a list of text sections preserving document order and structure.

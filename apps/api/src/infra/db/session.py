@@ -1,6 +1,7 @@
 import contextlib
 import logging
 from collections.abc import Callable, Generator
+from typing import cast
 
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import sessionmaker
@@ -50,7 +51,7 @@ def get_db_session(request: Request) -> Generator[Session]:
 def get_session_factory(request: Request) -> SessionFactory:
     factory = getattr(request.app.state, "session_factory", None)
     if factory is not None:
-        return factory
+        return cast("SessionFactory", factory)
 
     override = request.app.dependency_overrides.get(get_db_session)
     if override is not None:

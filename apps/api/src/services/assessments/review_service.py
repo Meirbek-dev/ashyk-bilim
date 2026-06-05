@@ -61,7 +61,7 @@ def _validate_policy_override_ceilings(
     time_limit_override_seconds: int | None,
 ) -> None:
     """Raise HTTP 422 if override values exceed hard ceilings."""
-    errors: list[dict[str, Any]] = []
+    errors: list[dict[str, object]] = []
     if max_attempts is not None and max_attempts > _MAX_ATTEMPTS_CEILING:
         errors.append({
             "field": "max_attempts_override",

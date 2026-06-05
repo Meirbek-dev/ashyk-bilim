@@ -9,7 +9,7 @@
 """
 
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlmodel import Session
@@ -202,7 +202,7 @@ async def update_streak(
 
 @router.patch("/preferences", response_model=ProfileRead)
 async def update_preferences(
-    data: Annotated[dict[str, Any], Body()],
+    data: Annotated[dict[str, object], Body()],
     user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
     db: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ProfileRead:

@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 
 from pydantic import ConfigDict, field_validator
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, func
@@ -8,6 +7,7 @@ from sqlmodel import Field
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
 from src.db.trail_steps import TrailStepRead
+from src.types import JsonObject
 
 
 class TrailRunEnum(StrEnum):
@@ -23,7 +23,7 @@ class StatusEnum(StrEnum):
 
 class TrailRun(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    data: JsonObject = Field(default_factory=dict, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int = Field(sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE")))
@@ -49,7 +49,7 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
 
 
 class TrailRunCreate(SQLModelStrictBaseModel):
-    data: dict[str, Any] = Field(default_factory=dict)
+    data: JsonObject = Field(default_factory=dict)
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int
@@ -67,14 +67,14 @@ class TrailRunCreate(SQLModelStrictBaseModel):
 # trick because Lists are not supported in SQLModel (runs: list[TrailStep] )
 class TrailRunRead(PydanticStrictBaseModel):
     id: int | None = Field(default=None, primary_key=True)
-    data: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    data: JsonObject = Field(default_factory=dict, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
     trail_id: int = Field(default=None, foreign_key="trail.id")
     course_id: int = Field(default=None, foreign_key="course.id")
     user_id: int = Field(default=None, foreign_key="user.id")
     # course object
-    course: dict[str, Any] | None = None
+    course: JsonObject | None = None
     # timestamps
     creation_date: datetime | None = None
     update_date: datetime | None = None

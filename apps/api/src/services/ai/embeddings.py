@@ -6,6 +6,7 @@ from threading import Lock
 
 from cachebox import TTLCache
 from openai import AsyncOpenAI
+from openai.types import CreateEmbeddingResponse
 
 from config.config import get_settings, secret_value
 from src.services.ai.chunking import count_tokens_for_model
@@ -81,7 +82,7 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
         for attempt in range(3):
             try:
 
-                async def _call(batch: list[str] = batch) -> object:
+                async def _call(batch: list[str] = batch) -> CreateEmbeddingResponse:
                     return await asyncio.wait_for(
                         client.embeddings.create(
                             model=model_name,

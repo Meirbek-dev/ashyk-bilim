@@ -199,11 +199,11 @@ async def save_assessment_draft(
         _enforce_draft_version(draft, if_match)
 
         answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
-        current_payload: dict[str, Any] = draft.answers_json if isinstance(draft.answers_json, dict) else {}
+        current_payload: dict[str, object] = draft.answers_json if isinstance(draft.answers_json, dict) else {}
         raw_answers = current_payload.get("answers")
-        current_answers: dict[str, Any] = raw_answers if isinstance(raw_answers, dict) else {}
+        current_answers: dict[str, object] = raw_answers if isinstance(raw_answers, dict) else {}
 
-        merged_answers: dict[str, Any] = {**current_answers, **answers}
+        merged_answers: dict[str, object] = {**current_answers, **answers}
         draft.answers_json = {
             **current_payload,
             "answers": merged_answers,
@@ -667,7 +667,7 @@ async def validate_code_challenge_service(
     assessment_uuid: str,
     current_user: PublicUser,
     db_session: Session,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, db_session)

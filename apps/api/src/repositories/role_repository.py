@@ -7,7 +7,7 @@ here because it requires only DB access, not per-request permission state.
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from sqlalchemy import func
@@ -22,6 +22,7 @@ from src.db.permissions import (
     UserRole,
 )
 from src.infra.db.session import get_db_session
+from src.types import JsonObject
 
 
 class RoleRepository:
@@ -109,7 +110,7 @@ class RoleRepository:
         self.db.refresh(role)
         return role
 
-    def update_role(self, role: Role, body: RoleUpdate) -> tuple[Role, dict[str, Any]]:
+    def update_role(self, role: Role, body: RoleUpdate) -> tuple[Role, JsonObject]:
         """Apply non-unset fields from body to role. Returns (updated_role, changed_fields)."""
         changed = body.model_dump(exclude_unset=True)
         for field, value in changed.items():

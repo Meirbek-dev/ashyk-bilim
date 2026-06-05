@@ -27,7 +27,9 @@ def test_merge_submission_metadata_accepts_json_code_run_timestamp() -> None:
         latest_run=record.model_dump(mode="json"),
     )
 
-    assert metadata["latest_run"]["created_at"] == "2026-05-22T16:57:22Z"
+    latest_run = metadata["latest_run"]
+    assert isinstance(latest_run, dict)
+    assert latest_run["created_at"] == "2026-05-22T16:57:22Z"
 
 
 def test_submission_metadata_accepts_json_timestamps_in_strict_mode() -> None:

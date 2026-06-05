@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
@@ -24,6 +24,7 @@ from src.services.courses.chapters import (
     reorder_chapters_and_activities,
     update_chapter,
 )
+from src.types import JsonObject
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ async def api_move_activity_to_order(
     payload: ActivityOrderPayload,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Переместить активность на заданную позицию, при необходимости в другую главу (атомарно)."""
     return await move_activity_to_order(
         request,
@@ -91,7 +92,7 @@ async def api_reorder_chapters_and_activities(
     order: ChapterUpdateOrder,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Массово переупорядочить все главы и активности (устаревший вариант — предпочтительнее атомарные методы)."""
     return await reorder_chapters_and_activities(request, course_uuid, order, current_user, db_session)
 
@@ -113,5 +114,5 @@ async def api_delete_coursechapter(
     chapter_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     return await delete_chapter(request, chapter_uuid, current_user, db_session)

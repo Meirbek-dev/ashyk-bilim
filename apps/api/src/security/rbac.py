@@ -12,7 +12,20 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Annotated, Any
+from datetime import datetime
+from typing import Annotated, TypedDict
+
+
+class UserRoleDict(TypedDict):
+    id: int | None
+    slug: str
+    name: str
+    description: str | None
+    is_system: bool
+    priority: int
+    created_at: datetime
+    updated_at: datetime
+
 
 from fastapi import Depends, HTTPException, status
 from sqlmodel import Session, col, select
@@ -297,7 +310,7 @@ class PermissionChecker:
 
         return hierarchy_expanded
 
-    def get_user_roles(self, user_id: int) -> list[dict[str, Any]]:
+    def get_user_roles(self, user_id: int) -> list[UserRoleDict]:
         """Return role dicts for user."""
         from src.db.permissions import Role, UserRole
 
@@ -308,16 +321,16 @@ class PermissionChecker:
         )
         results = self.db.exec(query).all()
         return [
-            {
-                "id": role.id,
-                "slug": role.slug,
-                "name": role.name,
-                "description": role.description,
-                "is_system": role.is_system,
-                "priority": role.priority,
-                "created_at": role.created_at,
-                "updated_at": role.updated_at,
-            }
+            UserRoleDict(
+                id=role.id,
+                slug=role.slug,
+                name=role.name,
+                description=role.description,
+                is_system=role.is_system,
+                priority=role.priority,
+                created_at=role.created_at,
+                updated_at=role.updated_at,
+            )
             for role, _ in results
         ]
 
@@ -453,7 +466,9 @@ class PermissionChecker:
 
         # Fallback: role not seeded yet — use the in-memory definition so
         # anonymous browsing of public content keeps working.
-        guest_def = SYSTEM_ROLES.get(RoleSlug.GUEST, {})
+        guest_def = SYSTEM_ROLES.get(RoleSlug.GUEST)
+        if guest_def is None:
+            return set()
         return set(guest_def.get("permissions", []))
 
     def _load_permissions(self, user_id: int) -> set[str]:

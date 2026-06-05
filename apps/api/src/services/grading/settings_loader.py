@@ -6,7 +6,7 @@ AssessmentSettings object.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, assert_never
+from typing import assert_never
 
 from sqlmodel import Session, col, select
 
@@ -30,7 +30,7 @@ class CanonicalAssessmentItem:
 class AssessmentSettings:
     """Typed grading config for a single activity."""
 
-    questions: list[dict[str, Any]] = field(default_factory=list)
+    questions: list[dict[str, object]] = field(default_factory=list)
     items: list[CanonicalAssessmentItem] = field(default_factory=list)
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
@@ -94,7 +94,7 @@ def load_activity_settings(
         if canonical.kind == "CODE_CHALLENGE":
             return AssessmentSettings(
                 items=assessment_items,
-                due_date_iso=canonical.due_date,
+                due_date_iso=canonical.due_date.isoformat() if canonical.due_date is not None else None,
                 code_strategy=str(canonical.grading_strategy),
             )
         return AssessmentSettings(items=assessment_items)

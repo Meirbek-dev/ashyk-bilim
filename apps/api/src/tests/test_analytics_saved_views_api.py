@@ -3,7 +3,6 @@
 import pathlib
 import sys
 from collections.abc import Callable, Iterator
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -179,7 +178,7 @@ def test_teacher_interventions_lifecycle(api_client: TestClient, db_session_fact
     assert payload["items"] == []
 
     # 2. Create a new intervention
-    intervention_data: dict[str, Any] = {
+    intervention_data: dict[str, object] = {
         "user_id": 2,
         "course_id": 1,
         "intervention_type": "message_sent",

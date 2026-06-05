@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
+from src.types import JsonObject
 from src.worker.broker import broker
 
 logger = logging.getLogger(__name__)
 
 
 @broker.task(task_name="auth_session:created", retry_on_error=True, max_retries=3)
-async def audit_session_created_task(session_data: dict[str, Any]) -> None:
+async def audit_session_created_task(session_data: JsonObject) -> None:
     from src.services.auth.sessions import audit_create_sync
 
     try:
@@ -40,7 +40,7 @@ async def audit_session_revoked_task(session_id: str) -> None:
 async def audit_session_rotated_task(
     old_session_id: str,
     new_session_id: str,
-    new_session_data: dict[str, Any],
+    new_session_data: JsonObject,
 ) -> None:
     from src.services.auth.sessions import audit_rotate_sync
 

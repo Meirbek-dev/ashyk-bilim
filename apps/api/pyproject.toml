@@ -58,22 +58,19 @@ dependencies = [
 dev = [
   # Lint / Format
   "ruff>=0.15.16",
-
   # Type Checking
   "basedpyright>=1.39.6",
   "mypy>=2.1.0",
   "pyrefly>=1.0.0",
-
   # Testing
   "pytest>=9.0.3",
   "pytest-asyncio>=1.4.0",
   "pytest-cov>=7.1.0",
-
   # Dev Server
   "uvicorn[standard]>=0.49.0",
-
   # Fixtures
   "faker>=40.21.0",
+  "ty>=0.0.44",
 ]
 
 [tool.ruff]

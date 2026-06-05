@@ -18,7 +18,7 @@ import secrets
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal
+from typing import Literal
 
 import redis.asyncio
 from fastapi import HTTPException, status
@@ -31,6 +31,7 @@ from src.security.auth_lifetimes import (
     REFRESH_TOKEN_HARD_CAP_EXPIRE,
 )
 from src.services.cache.redis_client import get_async_redis_client
+from src.types import JsonObject, require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,7 @@ async def _ensure_user_sessions_index(r: redis.asyncio.Redis, user_id: int) -> s
     return user_key
 
 
-def _session_data_to_dict(data: SessionData) -> dict[str, Any]:
+def _session_data_to_dict(data: SessionData) -> JsonObject:
     return {
         "session_id": data.session_id,
         "token_family_id": data.token_family_id,
@@ -234,7 +235,7 @@ async def _get_active_session_ids(user_id: int) -> list[str]:
 # ── Background audit helpers (own DB session, non-blocking) ──────────────────
 
 
-def audit_create_sync(session_data_dict: dict[str, Any]) -> None:
+def audit_create_sync(session_data_dict: JsonObject) -> None:
     """Write a session-created audit record using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -283,7 +284,7 @@ def audit_revoke_sync(session_id: str) -> None:
         raise
 
 
-def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict[str, Any]) -> None:
+def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: JsonObject) -> None:
     """Mark old session as rotated and create new session record, in one DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -379,8 +380,8 @@ async def create_auth_session(
 
     No DB session required — audit uses its own engine connection.
     """
-    # Enforce session concurrency limit
-    active_ids = await _get_active_session_ids(user.id)
+    user_id = require_persisted_id(user.id, model_name="User")
+    active_ids = await _get_active_session_ids(user_id)
     if len(active_ids) >= MAX_SESSIONS_PER_USER:
         # Evict oldest sessions until we're under the limit
         sessions_to_evict = active_ids[: len(active_ids) - MAX_SESSIONS_PER_USER + 1]
@@ -394,7 +395,7 @@ async def create_auth_session(
     data = SessionData(
         session_id=session_id,
         token_family_id=token_family_id or _generate_family_id(),
-        user_id=user.id,
+        user_id=user_id,
         user_uuid=str(user.user_uuid),
         refresh_token_hash=hash_refresh_token(refresh_token),
         ip_address=ip_address,
@@ -576,7 +577,7 @@ async def revoke_all_user_sessions(user_id: int) -> int:
     return len(active_ids)
 
 
-async def get_user_active_sessions(user_id: int) -> list[dict[str, Any]]:
+async def get_user_active_sessions(user_id: int) -> list[JsonObject]:
     """Return metadata for all active sessions of a user."""
     active_ids = await _get_active_session_ids(user_id)
     result = []

@@ -5,20 +5,23 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
-from judge0 import Status
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
+
+from judge0 import Status
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from collections.abc import Generator
-from typing import Any, Never
+from typing import Never, cast
 
 from src.db.assessments import CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.code_execution.service import (
+    CodeExecutionResult,
     CodeExecutionService,
+    Judge0SdkClientFactory,
     _ConfiguredJudge0Client,
     _judge0_endpoint_candidates,
 )
@@ -31,14 +34,26 @@ def db_session() -> Generator[Session]:
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    SQLModel.metadata.create_all(engine, tables=[CodeRun.__table__, CodeRunCase.__table__])
+    SQLModel.metadata.create_all(
+        engine,
+        tables=[
+            SQLModel.metadata.tables["code_run"],
+            SQLModel.metadata.tables["code_run_case"],
+        ],
+    )
     with Session(engine) as session:
         yield session
-    SQLModel.metadata.drop_all(engine, tables=[CodeRunCase.__table__, CodeRun.__table__])
+    SQLModel.metadata.drop_all(
+        engine,
+        tables=[
+            SQLModel.metadata.tables["code_run_case"],
+            SQLModel.metadata.tables["code_run"],
+        ],
+    )
 
 
-class FakeFactory:
-    def get_client(self) -> SimpleNamespace:
+class FakeFactory(Judge0SdkClientFactory):
+    def get_client(self) -> SimpleNamespace:  # type: ignore[override]
         return SimpleNamespace(languages=[])
 
 
@@ -92,7 +107,9 @@ async def test_code_execution_persists_visible_and_masks_hidden_results(
     persisted = db_session.get(CodeRun, 1)
     assert persisted is not None
     assert persisted.status == CodeRunStatus.ACCEPTED
-    assert db_session.get(CodeRunCase, 2).is_visible is False
+    case_2 = db_session.get(CodeRunCase, 2)
+    assert case_2 is not None
+    assert case_2.is_visible is False
 
 
 @pytest.mark.asyncio
@@ -198,7 +215,7 @@ async def test_code_execution_retries_failed_idempotent_run(
 async def test_code_execution_truncates_output_and_passes_sandbox_policy(
     monkeypatch: pytest.MonkeyPatch, db_session: Session
 ) -> None:
-    captured_kwargs: dict[str, Any] = {}
+    captured_kwargs: dict[str, object] = {}
     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
     def fake_run(**kwargs: object) -> list[SimpleNamespace]:
@@ -255,7 +272,7 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(
 
 @pytest.mark.asyncio
 async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
-    captured_kwargs: dict[str, Any] = {}
+    captured_kwargs: dict[str, object] = {}
 
     def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
@@ -286,13 +303,13 @@ async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch: pytest.Monk
     assert captured_kwargs["memory_limit"] == 1536 * 1024
     assert captured_kwargs["stack_limit"] == 64 * 1024
     assert captured_kwargs["max_processes_and_or_threads"] == 128
-    assert "-J-XX:MaxMetaspaceSize=96m" in captured_kwargs["compiler_options"]
-    assert "-J-Xmx96m" in captured_kwargs["compiler_options"]
+    assert "-J-XX:MaxMetaspaceSize=96m" in cast("str", captured_kwargs["compiler_options"])
+    assert "-J-Xmx96m" in cast("str", captured_kwargs["compiler_options"])
 
 
 @pytest.mark.asyncio
 async def test_code_execution_raises_go_sandbox_limits(monkeypatch: pytest.MonkeyPatch, db_session: Session) -> None:
-    captured_kwargs: dict[str, Any] = {}
+    captured_kwargs: dict[str, object] = {}
 
     def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
@@ -330,7 +347,7 @@ async def test_code_execution_raises_go_sandbox_limits(monkeypatch: pytest.Monke
 async def test_code_execution_sets_kotlin_compiler_jvm_options(
     monkeypatch: pytest.MonkeyPatch, db_session: Session
 ) -> None:
-    captured_kwargs: dict[str, Any] = {}
+    captured_kwargs: dict[str, object] = {}
 
     def fake_run(**kwargs: object) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
@@ -359,13 +376,13 @@ async def test_code_execution_sets_kotlin_compiler_jvm_options(
     )
 
     assert captured_kwargs["memory_limit"] == 1536 * 1024
-    assert "-J-XX:MaxMetaspaceSize=256m" in captured_kwargs["compiler_options"]
-    assert "-J-Xmx512m" in captured_kwargs["compiler_options"]
+    assert "-J-XX:MaxMetaspaceSize=256m" in cast("str", captured_kwargs["compiler_options"])
+    assert "-J-Xmx512m" in cast("str", captured_kwargs["compiler_options"])
 
 
 def test_code_execution_filters_allowed_languages() -> None:
-    class Factory:
-        def get_client(self) -> SimpleNamespace:
+    class Factory(Judge0SdkClientFactory):
+        def get_client(self) -> SimpleNamespace:  # type: ignore[override]
             return SimpleNamespace(
                 languages=[
                     SimpleNamespace(id=71, name="Python (3.8.1)", is_archived=False),
@@ -437,7 +454,7 @@ async def async_run_service(
     time_limit_seconds: int | None = None,
     memory_limit_mb: int | None = None,
     single_case: bool = False,
-) -> CodeRun:
+) -> CodeExecutionResult:
     test_cases = [
         CodeTestCase(
             id="visible",

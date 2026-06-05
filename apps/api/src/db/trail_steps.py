@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
 
 from pydantic import Field as PydanticField, field_validator
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject
 
 
 class TrailStepTypeEnum(StrEnum):
@@ -31,7 +31,7 @@ class TrailStep(SQLModelStrictBaseModel, table=True):
     # Allow a default value for `grade` to avoid Pydantic errors when legacy rows
     # contain empty strings. Database column remains Integer.
     grade: int = Field(default=0, sa_column=Column(Integer))
-    data: dict[str, Any] = Field(
+    data: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON),
     )
@@ -60,7 +60,7 @@ class TrailStepRead(PydanticStrictBaseModel):
     teacher_verified: bool
     # Make grade tolerant: accept strings/empty values and coerce to int (default 0)
     grade: int = PydanticField(default=0)
-    data: dict[str, Any] = PydanticField(default_factory=dict)
+    data: JsonObject = PydanticField(default_factory=dict)
     trailrun_id: int
     trail_id: int
     activity_id: int
@@ -68,7 +68,7 @@ class TrailStepRead(PydanticStrictBaseModel):
     user_id: int
     creation_date: datetime | None = None
     update_date: datetime | None = None
-    activity: dict[str, Any] | None = None
+    activity: JsonObject | None = None
 
     @field_validator("grade", mode="before")
     @classmethod
@@ -77,14 +77,13 @@ class TrailStepRead(PydanticStrictBaseModel):
         if v is None:
             return 0
         if isinstance(v, str):
-            v = v.strip()
-            if v == "":
+            value = v.strip()
+            if value == "":
                 return 0
             try:
-                return int(v)
+                return int(value)
             except ValueError:
                 return 0
-        try:
+        if isinstance(v, (int, float)):
             return int(v)
-        except TypeError, ValueError:
-            return 0
+        return 0

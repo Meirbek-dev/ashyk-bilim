@@ -1,10 +1,9 @@
-from typing import Any
-
 from fastapi import APIRouter
 from pydantic import ConfigDict
 
 from config.config import get_settings
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.types import JsonObject
 
 router = APIRouter()
 
@@ -14,6 +13,6 @@ class DevConfigResponse(PydanticStrictBaseModel):
 
 
 @router.get("/config", response_model=DevConfigResponse)
-async def config() -> dict[str, Any]:
+async def config() -> JsonObject:
     settings = get_settings()
     return settings.model_dump(exclude={"internal", "bootstrap", "integrations"})

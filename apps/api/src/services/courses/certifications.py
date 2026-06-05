@@ -1,7 +1,6 @@
 import logging
 import string
 from datetime import datetime
-from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
@@ -23,6 +22,7 @@ from src.services.courses._auth import require_course_permission
 from src.services.courses.courses import _ensure_course_is_current
 from src.services.gamification import service as gamification_service
 from src.services.progress.submissions import recalculate_course_progress
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +197,7 @@ async def delete_certification(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     last_known_update_date: datetime | None = None,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Delete a certification."""
     statement = select(Certifications).where(col(Certifications.certification_uuid) == certification_uuid)
     certification = db_session.exec(statement).first()
@@ -422,7 +422,7 @@ async def get_user_certificates_for_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> list[dict[str, Any]]:
+) -> list[JsonObject]:
     """Get all certificates for a user in a specific course with certification details."""
     # Accept both raw id and 'course_'-prefixed UUIDs
     if not course_uuid.startswith("course_"):
@@ -666,7 +666,7 @@ async def get_certificate_by_user_certification_uuid(
     user_certification_uuid: str,
     current_user: PublicUser | AnonymousUser | None,
     db_session: Session,
-) -> dict[str, Any]:
+) -> JsonObject:
     """Get a certificate by user_certification_uuid with certification details."""
     # Get certificate user by user_certification_uuid
     statement = select(CertificateUser).where(col(CertificateUser.user_certification_uuid) == user_certification_uuid)
@@ -717,7 +717,7 @@ async def get_all_user_certificates(
     request: Request,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> list[dict[str, Any]]:
+) -> list[JsonObject]:
     """Get all certificates for the current user with complete linked information."""
     # Get all certificate users for this user
     statement = select(CertificateUser).where(col(CertificateUser.user_id) == current_user.id)

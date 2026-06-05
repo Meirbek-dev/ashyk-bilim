@@ -4,7 +4,6 @@ import operator
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from sqlmodel import Session, col, select
 
@@ -1262,7 +1261,7 @@ def get_teacher_assessment_detail(
     for course_id, user_id in snapshots:
         eligible_by_course[course_id].add(user_id)
 
-    records: list[tuple[Submission, Any]] = []
+    records: list[tuple[Submission, object]] = []
 
     if assessment_type == "manual_assessment":
         manual_assessment = next(

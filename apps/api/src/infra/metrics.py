@@ -17,7 +17,8 @@ from collections import defaultdict
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any
+
+from src.types import JsonObject, JsonValue
 
 
 @dataclass
@@ -36,8 +37,12 @@ class Counter:
     def get(self, labels: tuple[tuple[str, str], ...] = ()) -> float:
         return self._values[labels]
 
-    def collect(self) -> list[dict[str, Any]]:
-        return [{"labels": dict(k), "value": v} for k, v in self._values.items()]
+    def collect(self) -> list[JsonValue]:
+        res: list[JsonValue] = []
+        for k, v in self._values.items():
+            item: JsonObject = {"labels": dict(k), "value": v}
+            res.append(item)
+        return res
 
 
 @dataclass
@@ -62,19 +67,20 @@ class Histogram:
     def observe(self, value: float, labels: tuple[tuple[str, str], ...] = ()) -> None:
         self._observations[labels].append(value)
 
-    def collect(self) -> list[dict[str, Any]]:
-        results = []
+    def collect(self) -> list[JsonValue]:
+        results: list[JsonValue] = []
         for labels, observations in self._observations.items():
             if not observations:
                 continue
             sorted_obs = sorted(observations)
-            results.append({
+            item: JsonObject = {
                 "labels": dict(labels),
                 "count": len(sorted_obs),
                 "sum": sum(sorted_obs),
                 "p50": sorted_obs[len(sorted_obs) // 2],
                 "p99": sorted_obs[int(len(sorted_obs) * 0.99)],
-            })
+            }
+            results.append(item)
         return results
 
 
@@ -107,7 +113,7 @@ class MetricsRegistry:
         self.lifecycle_transition_total = Counter("assessment_lifecycle_transition_total")
         self.event_bus_dispatch_total = Counter("event_bus_dispatch_total")
 
-    def collect_all(self) -> dict[str, Any]:
+    def collect_all(self) -> JsonObject:
         """Collect all metrics for the /internal/metrics endpoint."""
         return {
             "grading_submission_total": self.submission_total.collect(),

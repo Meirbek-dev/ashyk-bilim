@@ -1,17 +1,16 @@
-from typing import Any
-
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.infra.health import get_liveness_status, get_readiness_status
+from src.types import JsonObject
 
 router = APIRouter()
 
 
 class HealthStatusResponse(PydanticStrictBaseModel):
     status: str
-    checks: dict[str, dict[str, Any]]
+    checks: dict[str, JsonObject]
 
 
 @router.get("", response_model=HealthStatusResponse)

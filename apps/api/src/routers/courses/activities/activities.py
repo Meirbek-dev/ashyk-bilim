@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from sqlmodel import Session
@@ -73,9 +73,9 @@ async def api_delete_activity(
     activity_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> dict[str, Any]:
+) -> ActivityDetailResponse:
     assert db_session is not None
-    return await delete_activity(request, activity_uuid, current_user, db_session)
+    return ActivityDetailResponse.model_validate(await delete_activity(request, activity_uuid, current_user, db_session))
 
 
 # Video activity

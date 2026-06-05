@@ -28,6 +28,8 @@ async def api_start_trail(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> Trail:
     """Start trail."""
+    assert user is not None
+    assert db_session is not None
     return await create_user_trail(request, user, trail_object, db_session)
 
 
@@ -40,6 +42,8 @@ async def api_get_user_trail(
     """Get a user trails."""
     if isinstance(user, AnonymousUser):
         return TrailRead(user_id=0, runs=[], trail_uuid="anonymous")
+    assert user is not None
+    assert db_session is not None
     return await get_user_trails(request, user=user, db_session=db_session)
 
 
@@ -51,6 +55,8 @@ async def api_add_course_to_trail(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """Add Course to trail."""
+    assert user is not None
+    assert db_session is not None
     return await add_course_to_trail(request, user, course_uuid, db_session)
 
 
@@ -62,6 +68,8 @@ async def api_remove_course_to_trail(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """Remove Course from trail."""
+    assert user is not None
+    assert db_session is not None
     return await remove_course_from_trail(request, user, course_uuid, db_session)
 
 
@@ -73,6 +81,8 @@ async def api_add_activity_to_trail(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """Add Course to trail."""
+    assert user is not None
+    assert db_session is not None
     return await add_activity_to_trail(request, user, activity_uuid, db_session)
 
 
@@ -84,4 +94,6 @@ async def api_remove_activity_from_trail(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """Remove Activity from trail."""
+    assert user is not None
+    assert db_session is not None
     return await remove_activity_from_trail(request, user, activity_uuid, db_session)

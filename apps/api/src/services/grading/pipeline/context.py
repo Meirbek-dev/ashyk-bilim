@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.grading.submissions import AssessmentType
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types import JsonObject, JsonValue
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +21,7 @@ class GradingContext:
 
     assessment_type: AssessmentType
     items: list[CanonicalAssessmentItem]
-    answers_by_item_uuid: dict[str, Any]
+    answers_by_item_uuid: dict[str, JsonValue]
     attempt_number: int
     max_score: float = 100.0
     code_strategy: str = "BEST_SUBMISSION"
@@ -33,8 +33,8 @@ class GradingContext:
 class ParsedAnswers:
     """Output of the validate stage."""
 
-    answers_by_item_uuid: dict[str, Any]
-    raw_payload: dict[str, Any] = field(default_factory=dict)
+    answers_by_item_uuid: dict[str, JsonValue]
+    raw_payload: JsonObject = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

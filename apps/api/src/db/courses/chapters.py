@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from pydantic import field_validator
 from sqlalchemy import DateTime, String, func
@@ -60,7 +61,7 @@ class ChapterRead(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = SQLModelConfig(arbitrary_types_allowed=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(arbitrary_types_allowed=True)  # type: ignore[mutable-override]
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
@@ -85,7 +86,7 @@ class ChapterReadWithPermissions(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = SQLModelConfig(arbitrary_types_allowed=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(arbitrary_types_allowed=True)  # type: ignore[mutable-override]
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod

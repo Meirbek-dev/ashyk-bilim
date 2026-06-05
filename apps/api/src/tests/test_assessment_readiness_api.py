@@ -4,7 +4,6 @@ import pathlib
 import sys
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -126,8 +125,8 @@ def _seed_assessment(
     kind: AssessmentType,
     title: str,
     scheduled_at: datetime | None,
-    policy_kwargs: dict[str, Any] | None = None,
-    items: list[dict[str, Any]] | None = None,
+    policy_kwargs: dict[str, object] | None = None,
+    items: list[dict[str, object]] | None = None,
 ) -> Assessment:
     with db_session_factory() as session:
         user = User(
@@ -244,7 +243,7 @@ def _seed_assessment(
         session.add(assessment)
         session.flush()
 
-        items_list: list[dict[str, Any]] = items or []
+        items_list: list[dict[str, object]] = items or []
         for index, item in enumerate(items_list, start=1):
             session.add(
                 AssessmentItem(

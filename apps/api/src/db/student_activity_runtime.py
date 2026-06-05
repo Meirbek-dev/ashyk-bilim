@@ -4,14 +4,14 @@ These schemas are the canonical API shape for the learner workspace.  They are
 intentionally independent from editor, assessment, and file-submission internals
 so the frontend can render one stable activity shell.
 """
-
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field
 
 from src.db.grading.progress import ActivityProgressState
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.types import JsonObject
 
 StudentActivityState = Literal[
     "not_started",
@@ -112,9 +112,9 @@ class StudentActivityPermissions(PydanticStrictBaseModel):
 class StudentActivityContentRuntime(PydanticStrictBaseModel):
     type: str
     subtype: str
-    content: dict[str, Any] = Field(default_factory=dict)
-    details: dict[str, Any] = Field(default_factory=dict)
-    settings: dict[str, Any] = Field(default_factory=dict)
+    content: JsonObject = Field(default_factory=dict)
+    details: JsonObject = Field(default_factory=dict)
+    settings: JsonObject = Field(default_factory=dict)
     assessment_uuid: str | None = None
     file_submission_uuid: str | None = None
 
@@ -161,4 +161,4 @@ class StudentActivityActionRequest(PydanticStrictBaseModel):
         "request_revision_start",
         "acknowledge_feedback",
     ]
-    payload: dict[str, Any] = Field(default_factory=dict)
+    payload: JsonObject = Field(default_factory=dict)

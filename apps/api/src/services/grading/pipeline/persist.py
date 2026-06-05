@@ -7,7 +7,6 @@ in a single transaction — if any step fails, everything rolls back.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from sqlmodel import Session
 from ulid import ULID
@@ -21,6 +20,7 @@ from src.services.progress.submissions import (
     _attach_policy,
     recalculate_activity_progress,
 )
+from src.types import JsonObject
 
 
 def persist_submission(
@@ -29,7 +29,7 @@ def persist_submission(
     result: GradingResult,
     penalty: PenaltyResult,
     effective: EffectivePolicy,
-    answers_payload: dict[str, Any],
+    answers_payload: JsonObject,
     now: datetime,
     policy: AssessmentPolicy | None = None,
     assessment_type: AssessmentType | None = None,

@@ -2,17 +2,18 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from fastapi import HTTPException, status
 from pydantic import Field as PydanticField, TypeAdapter, field_validator
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import Assessment, AssessmentItem
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.grading.progress import AssessmentPolicy
 from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.types import as_int
 
 
 class AccessModeEnum(StrEnum):
@@ -223,14 +224,14 @@ def _quiz_settings_payload(
     policy: AssessmentPolicy | None,
     db_session: Session,
 ) -> dict[str, object]:
-    questions: list[Any] = []
+    questions: list[dict[str, object]] = []
     if assessment.id is not None:
         questions = [
             item.body_json
             for item in db_session.exec(
                 select(AssessmentItem)
                 .where(AssessmentItem.assessment_id == assessment.id)
-                .order_by(AssessmentItem.order, AssessmentItem.id)
+                .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
             ).all()
         ]
     anti_cheat = policy.anti_cheat_json if policy else {}
@@ -243,7 +244,7 @@ def _quiz_settings_payload(
         "max_score_penalty_per_attempt": None,
         "track_violations": anti_cheat.get("tab_switch_detection") is True,
         "block_on_violations": anti_cheat.get("violation_threshold") is not None,
-        "max_violations": int(anti_cheat.get("violation_threshold", 3)),
+        "max_violations": as_int(anti_cheat.get("violation_threshold", 3), field="violation_threshold"),
     }
 
 
@@ -258,7 +259,7 @@ def _code_settings_payload(
         item = db_session.exec(
             select(AssessmentItem)
             .where(AssessmentItem.assessment_id == assessment.id)
-            .order_by(AssessmentItem.order, AssessmentItem.id)
+            .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
         ).first()
         if item is not None and isinstance(item.body_json, dict):
             payload.setdefault("allowed_languages", item.body_json.get("languages", []))

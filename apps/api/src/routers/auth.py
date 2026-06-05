@@ -1,12 +1,13 @@
 import contextlib
 import logging
-from typing import Annotated, Any, cast
+from typing import Annotated, cast
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import exceptions
+from fastapi_users.authentication import JWTStrategy
 from fastapi_users.router.common import ErrorCode
 from pydantic import EmailStr
 from sqlmodel import Session, select
@@ -180,7 +181,7 @@ async def _build_login_response(
     user: User,
     user_manager: UserManager,
 ) -> Response:
-    strategy = cast("Any", auth_backend.get_strategy())
+    strategy = cast("JWTStrategy[User, int]", auth_backend.get_strategy())
     access_token = await strategy.write_token(user)
     response = await auth_backend.transport.get_login_response(access_token)
 
@@ -309,8 +310,9 @@ def get_me(
 @router.get("/sessions", response_model=list[AuthSessionRead])
 async def list_sessions(
     current_user: CurrentActiveUser,
-) -> list[dict[str, Any]]:
-    return await get_user_active_sessions(current_user.id)
+) -> list[AuthSessionRead]:
+    sessions = await get_user_active_sessions(current_user.id)
+    return [AuthSessionRead.model_validate(s) for s in sessions]
 
 
 @router.post("/refresh", response_model=AuthRefreshResponse, dependencies=[Depends(_limit_auth_refresh_ip)])
@@ -359,7 +361,7 @@ async def refresh_token(
         user_agent=ua,
     )
 
-    strategy = cast("Any", auth_backend.get_strategy())
+    strategy = cast("JWTStrategy[User, int]", auth_backend.get_strategy())
     access_token = await strategy.write_token(user)
     set_access_cookie(response, access_token)
     set_refresh_cookie(response, new_refresh_token)

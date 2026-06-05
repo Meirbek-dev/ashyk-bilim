@@ -7,7 +7,7 @@ is accepted.
 
 from __future__ import annotations
 
-from typing import Any, NoReturn
+from typing import NoReturn
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from src.db.assessments import ITEM_ANSWER_ADAPTER
 from src.services.grading.pipeline.context import ParsedAnswers
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types import JsonValue
 
 # Hard limit on open-text answer length to prevent DoS via huge payloads.
 _OPEN_TEXT_MAX_CHARS: int = 50_000
@@ -81,7 +82,7 @@ def validate_and_parse(
     )
 
 
-def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
+def _extract_canonical_answers(answers_payload: object) -> dict[str, JsonValue]:
     """Extract canonical answers from the payload.
 
     Supports dict-keyed and list-of-entries formats.
@@ -93,7 +94,7 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
 
     # Format 1: dict keyed by item_uuid
     if isinstance(raw_answers, dict):
-        normalized: dict[str, Any] = {}
+        normalized: dict[str, JsonValue] = {}
         for item_uuid, raw_answer in raw_answers.items():
             if not isinstance(item_uuid, str):
                 _raise_invalid("Ключи ответов должны быть строками UUID элементов")
@@ -137,9 +138,9 @@ def _raise_invalid(
     message: str,
     *,
     code: str = "invalid_answer_payload",
-    extra: dict[str, Any] | None = None,
+    extra: dict[str, object] | None = None,
 ) -> NoReturn:
-    detail: dict[str, Any] = {"code": code, "message": message}
+    detail: dict[str, object] = {"code": code, "message": message}
     if extra:
         detail.update(extra)
     raise HTTPException(

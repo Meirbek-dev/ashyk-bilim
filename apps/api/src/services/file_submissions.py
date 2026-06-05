@@ -7,7 +7,6 @@ import io
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_
@@ -61,6 +60,7 @@ from src.services.events.types import (
     FileSubmissionSubmittedEvent,
 )
 from src.services.progress.submissions import recalculate_course_progress
+from src.types import JsonObject
 
 
 def _now() -> datetime:
@@ -1004,7 +1004,7 @@ def _check_version(attempt: FileSubmissionAttempt, if_match: str | None) -> None
         )
 
 
-def _build_attempt_read_no_files(attempt: FileSubmissionAttempt) -> dict[str, Any]:
+def _build_attempt_read_no_files(attempt: FileSubmissionAttempt) -> JsonObject:
     return {
         "attempt_uuid": attempt.attempt_uuid,
         "status": str(attempt.status),

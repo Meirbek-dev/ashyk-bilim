@@ -4,13 +4,12 @@ These are NOT exposed to end users. Mount under /internal/ with appropriate
 network-level access control (e.g., only accessible from the cluster).
 """
 
-from typing import Any
-
 from fastapi import APIRouter
 
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.infra.metrics import METRICS
 from src.services.events.bus import get_event_bus
+from src.types import JsonObject
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -55,7 +54,7 @@ class DeadLettersClearResponse(PydanticStrictBaseModel):
 
 
 @router.get("/metrics", response_model=MetricsResponse)
-async def get_metrics() -> dict[str, Any]:
+async def get_metrics() -> JsonObject:
     """Return all Prometheus-compatible metrics."""
     return METRICS.collect_all()
 

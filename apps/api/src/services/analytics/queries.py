@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from statistics import median
-from typing import Any, TypeVar
+from typing import TypeVar
 from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, col, select
@@ -84,7 +84,7 @@ class AnalyticsContext:
     exams: list[AssessmentAnalyticsRow]
     exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_submissions: list[tuple[Submission, Activity]]
-    quiz_question_stats: list[Any]
+    quiz_question_stats: list[object]
     code_submissions: list[tuple[Submission, Activity]]
     users_by_id: dict[int, User]
     usergroup_names_by_id: dict[int, str]
@@ -787,9 +787,9 @@ def hours_between(start_value: object, end_value: object) -> float | None:
     return round((end - start).total_seconds() / 3600, 2)
 
 
-def assessment_pass_threshold(settings: dict[str, Any] | None) -> float:
+def assessment_pass_threshold(settings: dict[str, object] | None) -> float:
     raw = (settings or {}).get("passing_score", 60)
     try:
         return float(raw)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 60.0

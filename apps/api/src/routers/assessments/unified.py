@@ -6,7 +6,7 @@ teacher submission lists.
 
 import asyncio
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -276,8 +276,8 @@ async def api_delete_item(
     item_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict[str, str]:
-    return await delete_assessment_item(assessment_uuid, item_uuid, current_user, db_session)
+) -> AssessmentDetailResponse:
+    return AssessmentDetailResponse.model_validate(await delete_assessment_item(assessment_uuid, item_uuid, current_user, db_session))
 
 
 # ── Student attempt flow ───────────────────────────────────────────────────────
@@ -579,11 +579,11 @@ async def api_validate_code_challenge(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict[str, Any]:
+) -> CodeChallengeValidationResponse:
     """Проверить эталонные решения для всех настроенных языков на тестовом наборе."""
     from src.services.assessments.attempt_service import validate_code_challenge_service
 
-    return await validate_code_challenge_service(assessment_uuid, current_user, db_session)
+    return CodeChallengeValidationResponse.model_validate(await validate_code_challenge_service(assessment_uuid, current_user, db_session))
 
 
 # ── Attempt state ──────────────────────────────────────────────────────────────
@@ -672,8 +672,8 @@ async def api_delete_override(
     user_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict[str, str]:
-    return await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session)
+) -> AssessmentDetailResponse:
+    return AssessmentDetailResponse.model_validate(await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session))
 
 
 # ── Inline quiz ────────────────────────────────────────────────────────────────
@@ -699,7 +699,7 @@ async def api_get_audit_trail(
     db_session: Annotated[Session, Depends(get_db_session)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
-) -> dict[str, Any]:
+) -> AssessmentAuditTrailResponse:
     """Показать события аудита для оценивания (только для преподавателя)."""
     from sqlalchemy import desc, func
     from sqlmodel import select
@@ -720,12 +720,12 @@ async def api_get_audit_trail(
     offset = (page - 1) * page_size
     rows = db_session.exec(query.offset(offset).limit(page_size)).all()
 
-    return {
+    return AssessmentAuditTrailResponse.model_validate({
         "items": [AuditEventRead.model_validate(row) for row in rows],
         "total": total,
         "page": page,
         "page_size": page_size,
-    }
+    })
 
 
 @router.post("/{assessment_uuid}/duplicate", response_model=AssessmentRead)
