@@ -242,7 +242,7 @@ export function updateCourseContributorMutationOptions(courseUuid: string, query
           contributors: {
             ...current.contributors,
             data: (current.contributors.data ?? []).map((contributor: AppCourseAuthor) =>
-              contributor.user_id === contributorUserId ? { ...contributor, ...payload } : contributor,
+              contributor.user_id === contributorUserId ? Object.assign(contributor, payload) : contributor,
             ),
           },
         }

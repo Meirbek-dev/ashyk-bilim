@@ -8,6 +8,7 @@ import {
   FileText,
   GraduationCap,
   LayoutTemplate,
+  Loader2,
   Video,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -16,6 +17,8 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
 
 import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal'
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
@@ -24,14 +27,21 @@ import VideoModal from './NewActivityModal/VideoActivityModal'
 import Exam from './NewActivityModal/ExamActivityModal'
 import FileSubmission from './NewActivityModal/FileSubmissionActivityModal'
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'exams' | 'codechallenge'
 
 interface ActivityTypeConfig {
-  id: ViewType
+  id: Exclude<ViewType, 'home'>
   labelKey: string
   descriptionKey: string
   icon: LucideIcon
-  iconClass: string
+  /** Tailwind color token applied to the icon */
+  iconColorClass: string
+  /** Tailwind background token applied to the icon container */
+  iconBgClass: string
+  /** Optional badge label (e.g. "New") */
+  badgeKey?: string
 }
 
 interface NewActivityModalProps {
@@ -44,50 +54,60 @@ interface NewActivityModalProps {
   course: AppCourse | AppCourseContextShape
 }
 
+// ─── Activity type registry ───────────────────────────────────────────────────
+
 const ACTIVITY_TYPES: ActivityTypeConfig[] = [
   {
     id: 'dynamic',
     labelKey: 'dynamicPage',
     descriptionKey: 'dynamicPageDesc',
     icon: LayoutTemplate,
-    iconClass: 'text-emerald-500',
+    iconColorClass: 'text-emerald-600 dark:text-emerald-400',
+    iconBgClass: 'bg-emerald-50 dark:bg-emerald-950/60',
   },
   {
     id: 'video',
     labelKey: 'video',
     descriptionKey: 'videoDesc',
     icon: Video,
-    iconClass: 'text-rose-500',
+    iconColorClass: 'text-rose-600 dark:text-rose-400',
+    iconBgClass: 'bg-rose-50 dark:bg-rose-950/60',
   },
   {
     id: 'documentpdf',
     labelKey: 'document',
     descriptionKey: 'documentDesc',
     icon: FileText,
-    iconClass: 'text-sky-500',
+    iconColorClass: 'text-sky-600 dark:text-sky-400',
+    iconBgClass: 'bg-sky-50 dark:bg-sky-950/60',
   },
   {
     id: 'filesubmission',
     labelKey: 'fileSubmission',
     descriptionKey: 'fileSubmissionDesc',
     icon: FileArchive,
-    iconClass: 'text-indigo-500',
+    iconColorClass: 'text-violet-600 dark:text-violet-400',
+    iconBgClass: 'bg-violet-50 dark:bg-violet-950/60',
   },
   {
     id: 'exams',
     labelKey: 'exams',
     descriptionKey: 'examsDesc',
     icon: GraduationCap,
-    iconClass: 'text-emerald-500',
+    iconColorClass: 'text-amber-600 dark:text-amber-400',
+    iconBgClass: 'bg-amber-50 dark:bg-amber-950/60',
   },
   {
     id: 'codechallenge',
     labelKey: 'codeChallenge',
     descriptionKey: 'codeChallengeDesc',
     icon: Code2,
-    iconClass: 'text-teal-500',
+    iconColorClass: 'text-teal-600 dark:text-teal-400',
+    iconBgClass: 'bg-teal-50 dark:bg-teal-950/60',
   },
 ]
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function NewActivityModal({
   closeModal,
@@ -100,12 +120,12 @@ export default function NewActivityModal({
 }: NewActivityModalProps) {
   const t = useTranslations('Components.NewActivity')
   const [selectedView, setSelectedView] = useState<ViewType>('home')
-  const [isQuickCreating, setIsQuickCreating] = useState<ViewType | null>(null)
+  const [isQuickCreating, setIsQuickCreating] = useState<Exclude<ViewType, 'home'> | null>(null)
 
   const handleBack = useCallback(() => setSelectedView('home'), [])
 
   const handleTypeSelect = useCallback(
-    async (view: ViewType) => {
+    async (view: Exclude<ViewType, 'home'>) => {
       if (view !== 'dynamic' && view !== 'codechallenge') {
         setSelectedView(view)
         return
@@ -123,11 +143,42 @@ export default function NewActivityModal({
 
   const sharedProps = { chapterId, course, closeModal }
 
-  if (selectedView === 'home') {
-    return (
-      <div className="w-full space-y-3">
-        <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase">{t('chooseType')}</p>
-        <div className="overflow-hidden rounded-xl border border-gray-200">
+  const isHome = selectedView === 'home'
+
+  const activeConfig = !isHome ? ACTIVITY_TYPES.find(a => a.id === selectedView) : null
+
+  return (
+    <div className="w-full">
+      {/* ── Header ── */}
+      <div className="mb-5 flex items-center gap-2">
+        {!isHome && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 rounded-md"
+            aria-label={t('backToActivities')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
+
+        <div className="min-w-0">
+          <h2 className="text-foreground text-sm leading-none font-semibold tracking-tight">
+            {isHome ? t('chooseType') : activeConfig ? t(activeConfig.labelKey) : ''}
+          </h2>
+          {isHome && <p className="text-muted-foreground mt-1 text-xs">{t('chooseTypeSubtitle')}</p>}
+        </div>
+      </div>
+
+      {/* ── Home: activity picker ── */}
+      {isHome && (
+        <div
+          role="list"
+          aria-label={t('chooseType')}
+          className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+        >
           {ACTIVITY_TYPES.map((activity, index) => (
             <ActivityTypeRow
               key={activity.id}
@@ -136,50 +187,44 @@ export default function NewActivityModal({
               description={t(activity.descriptionKey)}
               onClick={() => void handleTypeSelect(activity.id)}
               isLoading={isQuickCreating === activity.id}
+              isDisabled={isQuickCreating !== null && isQuickCreating !== activity.id}
               isLast={index === ACTIVITY_TYPES.length - 1}
             />
           ))}
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <Button
-        type="button"
-        onClick={handleBack}
-        variant="ghost"
-        className="inline-flex h-auto items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-200 focus-visible:outline-none"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {t('backToActivities')}
-      </Button>
-
-      {selectedView === 'dynamic' && <DynamicCanvaModal submitActivity={submitActivity} {...sharedProps} />}
-      {selectedView === 'video' && (
-        <VideoModal
-          submitFileActivity={submitFileActivity}
-          submitExternalVideo={submitExternalVideo}
-          chapterId={chapterId}
-          course={course}
-          closeModal={closeModal}
-        />
       )}
-      {selectedView === 'documentpdf' && (
-        <DocumentPdfModal
-          submitFileActivity={submitFileActivity}
-          chapterId={chapterId}
-          course={course}
-          closeModal={closeModal}
-        />
+
+      {/* ── Sub-views ── */}
+      {selectedView !== 'home' && (
+        <div className="animate-in fade-in slide-in-from-bottom-1 duration-150">
+          {selectedView === 'dynamic' && <DynamicCanvaModal submitActivity={submitActivity} {...sharedProps} />}
+          {selectedView === 'video' && (
+            <VideoModal
+              submitFileActivity={submitFileActivity}
+              submitExternalVideo={submitExternalVideo}
+              chapterId={chapterId}
+              course={course}
+              closeModal={closeModal}
+            />
+          )}
+          {selectedView === 'documentpdf' && (
+            <DocumentPdfModal
+              submitFileActivity={submitFileActivity}
+              chapterId={chapterId}
+              course={course}
+              closeModal={closeModal}
+            />
+          )}
+          {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
+          {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}
+          {selectedView === 'codechallenge' && <CodeChallenge submitActivity={submitActivity} {...sharedProps} />}
+        </div>
       )}
-      {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
-      {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}
-      {selectedView === 'codechallenge' && <CodeChallenge submitActivity={submitActivity} {...sharedProps} />}
     </div>
   )
 }
+
+// ─── ActivityTypeRow ──────────────────────────────────────────────────────────
 
 interface ActivityTypeRowProps {
   config: ActivityTypeConfig
@@ -187,6 +232,7 @@ interface ActivityTypeRowProps {
   description: string
   onClick: () => void
   isLoading?: boolean
+  isDisabled?: boolean
   isLast?: boolean
 }
 
@@ -196,43 +242,64 @@ function ActivityTypeRow({
   description,
   onClick,
   isLoading = false,
+  isDisabled = false,
   isLast = false,
 }: ActivityTypeRowProps) {
   const Icon = config.icon
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isLoading}
-      className={cn(
-        'group flex w-full items-center gap-3.5 px-4 py-3 text-left',
-        'transition-colors duration-100',
-        'hover:bg-gray-50',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-300',
-        'disabled:pointer-events-none disabled:opacity-50',
-        !isLast && 'border-b border-gray-100',
-      )}
-    >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white transition-colors group-hover:border-gray-300 group-hover:bg-gray-50">
-        {isLoading ? (
-          <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-gray-300 border-t-gray-600" />
-        ) : (
-          <Icon className={cn('h-3.5 w-3.5', config.iconClass)} />
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{label}</p>
-        <p className="mt-0.5 truncate text-xs text-gray-400">{description}</p>
-      </div>
-
-      <ChevronRight
+    <div role="listitem">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={isLoading || isDisabled}
+        aria-busy={isLoading}
         className={cn(
-          'h-3.5 w-3.5 shrink-0 text-gray-300 transition-all duration-100',
-          'group-hover:translate-x-0.5 group-hover:text-gray-400',
+          'group relative flex w-full items-center gap-3.5 px-4 py-3.5 text-left',
+          'transition-colors duration-100',
+          'hover:bg-accent',
+          'focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+          'disabled:pointer-events-none',
+          isDisabled && !isLoading && 'opacity-40',
+          !isLast && 'border-b border-border',
         )}
-      />
-    </button>
+      >
+        {/* Icon */}
+        <span
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+            'ring-1 ring-inset ring-border/60 transition-colors duration-100',
+            'group-hover:ring-border',
+            config.iconBgClass,
+          )}
+          aria-hidden="true"
+        >
+          {isLoading ? (
+            <Loader2 className={cn('h-4 w-4 animate-spin', config.iconColorClass)} />
+          ) : (
+            <Icon className={cn('h-4 w-4', config.iconColorClass)} />
+          )}
+        </span>
+
+        {/* Text */}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-foreground text-sm font-medium">{label}</span>
+            {isLoading && <span className="text-muted-foreground text-xs">Opening…</span>}
+          </span>
+          <span className="text-muted-foreground mt-0.5 block truncate text-xs">{description}</span>
+        </span>
+
+        {/* Chevron */}
+        <ChevronRight
+          className={cn(
+            'h-4 w-4 shrink-0 text-muted-foreground/40',
+            'transition-transform duration-100 ease-out',
+            'group-hover:translate-x-0.5 group-hover:text-muted-foreground',
+          )}
+          aria-hidden="true"
+        />
+      </button>
+    </div>
   )
 }

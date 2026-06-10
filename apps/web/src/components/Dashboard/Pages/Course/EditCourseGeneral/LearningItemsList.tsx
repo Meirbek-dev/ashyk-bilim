@@ -235,7 +235,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
           if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
             focusedEl.scrollIntoView({
               block: 'nearest',
-              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+              behavior: globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
             })
           }
         }
