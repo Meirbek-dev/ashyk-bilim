@@ -619,11 +619,8 @@ const UserProfileBuilder = () => {
                   label,
                 }))}
               >
-                <SelectTrigger
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground w-full border-0"
-                  withChevron={false}
-                >
-                  <div className="inline-flex items-center justify-center gap-2">
+                <SelectTrigger className="bg-primary hover:bg-primary/90 w-full border-0" withChevron={false}>
+                  <div className="text-primary-foreground inline-flex items-center justify-center gap-2">
                     <Plus size={16} />
                     {t('SectionsPanel.addSectionButton')}
                   </div>

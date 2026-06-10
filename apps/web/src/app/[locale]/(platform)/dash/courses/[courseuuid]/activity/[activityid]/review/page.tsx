@@ -10,7 +10,11 @@ export default async function PlatformAssessmentReviewPage(props: {
 }) {
   const [{ courseuuid, activityid }, { submission }] = await Promise.all([props.params, props.searchParams])
   const activity = await getActivity(activityid)
-  const assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
+  const isAssessable =
+    activity.activity_type === 'TYPE_EXAM' ||
+    activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
+    activity.activity_type === 'TYPE_CUSTOM'
+  const assessment = isAssessable ? await getAssessmentByActivityUuid(activity.activity_uuid) : null
 
   return renderCourseWorkspacePage({
     courseuuid,

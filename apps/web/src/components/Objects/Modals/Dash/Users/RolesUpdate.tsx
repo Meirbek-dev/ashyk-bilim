@@ -78,7 +78,10 @@ const RolesUpdate: FC<Props> = props => {
       await assignRoleToUser(userId, newRoleId)
 
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.users.allMembers(),
+        queryKey: ['users', 'members'],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.users.roleAssignments(),
       })
       props.setRolesModal(false)
       toast.success(t('toastSuccess'), { id: toastId })

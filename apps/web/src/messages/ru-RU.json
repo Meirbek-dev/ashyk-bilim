@@ -3627,8 +3627,7 @@
       "defaultUser": "Пользователь",
       "accountConnected": "Ваш аккаунт подключен. Выполнен вход в систему управления Ashyq Bilim.",
       "sessionActive": "Сессия активна",
-      "availableSections": "Доступные разделы",
-      "quickLinks": "Быстрые ссылки"
+      "availableSections": "Доступные разделы"
     },
     "CourseOverview": {
       "courseLabel": "Курс",

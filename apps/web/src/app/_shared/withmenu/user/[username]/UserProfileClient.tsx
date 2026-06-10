@@ -138,13 +138,15 @@ const ImageModal: FC<{
         >
           <X className="h-6 w-6" />
         </button>
-        <Image
-          src={image.url}
-          alt={image.caption || ''}
-          width={800}
-          height={600}
-          className="h-auto w-full rounded-lg"
-        />
+        {image.url ? (
+          <Image
+            src={image.url}
+            alt={image.caption || ''}
+            width={800}
+            height={600}
+            className="h-auto w-full rounded-lg"
+          />
+        ) : null}
         {image.caption ? <p className="text-foreground mt-4 text-center text-lg">{image.caption}</p> : null}
       </div>
     </div>
@@ -194,7 +196,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
               section.type === 'affiliation' &&
               section.affiliations?.map(
                 (affiliation: ProfileAffiliation, index: number) =>
-                  affiliation.logoUrl && (
+                  typeof affiliation.logoUrl === 'string' &&
+                  affiliation.logoUrl.trim() !== '' && (
                     <div key={index} className="border-background bg-card rounded-lg border-2 p-2 shadow-lg">
                       <Image
                         src={affiliation.logoUrl}
@@ -256,28 +259,31 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                       {/* Add Image Gallery section */}
                       {section.type === 'image-gallery' && (
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                          {(section.images ?? []).map((image: ProfileImage, imageIndex: number) => (
-                            <div
-                              key={imageIndex}
-                              className="group relative cursor-pointer"
-                              onClick={() => {
-                                setSelectedImage(image)
-                              }}
-                            >
-                              <Image
-                                src={image.url}
-                                alt={image.caption || ''}
-                                width={300}
-                                height={192}
-                                className="h-48 w-full rounded-lg object-cover"
-                              />
-                              {image.caption ? (
-                                <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-                                  <p className="text-foreground text-center text-sm">{image.caption}</p>
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
+                          {(section.images ?? []).map((image: ProfileImage, imageIndex: number) => {
+                            if (typeof image.url !== 'string' || !image.url.trim()) return null
+                            return (
+                              <div
+                                key={imageIndex}
+                                className="group relative cursor-pointer"
+                                onClick={() => {
+                                  setSelectedImage(image)
+                                }}
+                              >
+                                <Image
+                                  src={image.url}
+                                  alt={image.caption || ''}
+                                  width={300}
+                                  height={192}
+                                  className="h-48 w-full rounded-lg object-cover"
+                                />
+                                {image.caption ? (
+                                  <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                                    <p className="text-foreground text-center text-sm">{image.caption}</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            )
+                          })}
                         </div>
                       )}
 
@@ -351,7 +357,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                           {(section.affiliations ?? []).map((affiliation: ProfileAffiliation, affIndex: number) => (
                             <div key={affIndex} className="border-border border-l-2 pl-4">
                               <div className="flex items-start gap-4">
-                                {affiliation.logoUrl ? (
+                                {typeof affiliation.logoUrl === 'string' && affiliation.logoUrl.trim() !== '' ? (
                                   <Image
                                     src={affiliation.logoUrl}
                                     alt={affiliation.name}

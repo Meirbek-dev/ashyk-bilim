@@ -1,16 +1,14 @@
 import { BarChart2, BookCopy, ChevronRight, Settings, ShieldCheck, Users } from 'lucide-react'
-import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp'
 import ServerLink from '@/components/ui/ServerLink'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
-import Image from 'next/image'
 
 import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/rbac/navigation-policy'
 import { requireSession } from '@/lib/auth/session'
 import { sessionCan } from '@/lib/auth/permissions'
 
 import type { Action, Resource, Scope } from '@/types/permissions'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 
@@ -58,6 +56,13 @@ export default async function PlatformDashHomePage() {
       description: t('Admin.description'),
       badge: t('Admin.badge'),
     },
+    {
+      visible: true,
+      href: '/dash/user-account/settings/general',
+      icon: <Settings size={20} />,
+      title: t('AccountSettings.title'),
+      description: t('AccountSettings.description'),
+    },
   ].filter(card => card.visible)
 
   return (
@@ -65,12 +70,12 @@ export default async function PlatformDashHomePage() {
       {/* Standard Header */}
       <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
-      <main className="container mx-auto space-y-8 px-4 py-8 lg:px-8">
+      <main className="container mx-auto space-y-6 px-4 py-8 md:space-y-8 md:py-12 lg:px-8">
         {/* Dashboard Sections/Cards Grid */}
         <div className="space-y-4">
-          <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          <h2 className="text-muted-foreground/60 text-[10px] font-medium tracking-wider uppercase select-none">
             {t('availableSections')}
-          </h3>
+          </h2>
           {cards.length > 0 ? (
             <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {cards.map(card => (
@@ -87,45 +92,6 @@ export default async function PlatformDashHomePage() {
           ) : (
             <p className="text-muted-foreground text-sm font-medium">{t('noAccess')}</p>
           )}
-        </div>
-
-        {/* Platform Links / Quick Actions */}
-        <div className="space-y-4 pt-4">
-          <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('quickLinks')}</h3>
-          <div className="flex max-w-2xl flex-col gap-4 sm:flex-row">
-            <ServerLink
-              href="https://tou.edu.kz/ru/"
-              target="_blank"
-              className="border-border bg-card hover:bg-muted/40 flex flex-1 items-center justify-between gap-3 rounded-lg border p-4 transition-colors duration-200 active:translate-y-[1px]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-background relative flex shrink-0 items-center justify-center rounded-md border p-1">
-                  <Image
-                    width={20}
-                    height={20}
-                    src={touEmblemLight}
-                    alt={t('touUniversity')}
-                    className="object-contain"
-                  />
-                </div>
-                <span className="text-foreground text-sm font-semibold">{t('touUniversity')}</span>
-              </div>
-              <ChevronRight size={14} className="text-muted-foreground/40" />
-            </ServerLink>
-
-            <ServerLink
-              href="/dash/user-account/settings/general"
-              className="border-border bg-card hover:bg-muted/40 flex flex-1 items-center justify-between gap-3 rounded-lg border p-4 transition-colors duration-200 active:translate-y-[1px]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-background text-muted-foreground flex shrink-0 items-center justify-center rounded-md border p-1">
-                  <Settings size={20} className="size-5" />
-                </div>
-                <span className="text-foreground text-sm font-semibold">{t('AccountSettings.title')}</span>
-              </div>
-              <ChevronRight size={14} className="text-muted-foreground/40" />
-            </ServerLink>
-          </div>
         </div>
       </main>
     </div>
@@ -147,33 +113,34 @@ const DashboardCard = ({
 }) => {
   return (
     <ServerLink href={href} className="group block h-full">
-      <Card className="bg-card hover:bg-muted/40 hover:border-foreground/20 border-border/80 relative flex h-full flex-col justify-between overflow-hidden rounded-lg transition-colors duration-200 select-none">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <div className="flex items-start justify-between">
-            <div className="bg-muted text-muted-foreground group-hover:bg-muted/70 flex items-center justify-center rounded-md border p-2 transition-colors duration-200">
+      <Card className="border-border/50 bg-card hover:bg-muted/30 hover:border-border/80 flex h-full flex-col justify-between p-6 transition-all duration-200 select-none">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-muted-foreground group-hover:text-foreground size-5 transition-colors duration-200">
               {icon}
             </div>
             <div className="flex items-center gap-2">
               {badge && (
                 <Badge
-                  variant="secondary"
-                  className="border-transparent px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase"
+                  variant="outline"
+                  className="border-border/85 text-muted-foreground/90 bg-transparent px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase"
                 >
                   {badge}
                 </Badge>
               )}
               <ChevronRight
-                size={16}
-                className="text-muted-foreground/40 group-hover:text-foreground/70 transition-colors duration-200"
+                size={14}
+                className="text-muted-foreground/30 group-hover:text-foreground/70 transition-colors duration-200"
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col justify-end px-5 pb-5">
-          <CardTitle className="text-foreground mb-1 text-sm font-semibold tracking-tight">{title}</CardTitle>
-          <CardDescription className="text-muted-foreground text-xs leading-relaxed">{description}</CardDescription>
-        </CardContent>
+          <div className="space-y-1">
+            <h3 className="text-foreground text-sm font-semibold tracking-tight">{title}</h3>
+            <p className="text-muted-foreground text-xs leading-normal">{description}</p>
+          </div>
+        </div>
       </Card>
     </ServerLink>
   )
 }
+

@@ -18,11 +18,17 @@ export default async function PlatformAssessmentStudioPage(props: {
 
   let activity
   let course
-  let assessment
+  let assessment = null
 
   try {
     ;[activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)])
-    assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
+    const isAssessable =
+      activity.activity_type === 'TYPE_EXAM' ||
+      activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
+      activity.activity_type === 'TYPE_CUSTOM'
+    if (isAssessable) {
+      assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
+    }
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401) {
