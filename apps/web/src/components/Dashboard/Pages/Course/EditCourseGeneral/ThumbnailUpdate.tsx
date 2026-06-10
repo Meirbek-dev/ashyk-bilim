@@ -8,7 +8,6 @@ import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
-import { Card, CardContent } from '@components/ui/card'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -331,99 +330,95 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
 
   if (thumbnailType === 'both') {
     return (
-      <Card className="w-full">
-        <CardContent className="p-6">
-          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabType)}>
-            <TabsList className="mb-6 grid w-full grid-cols-2">
-              <TabsTrigger value="image" disabled={isSaving || disabled}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                {t('image')}
-              </TabsTrigger>
-              <TabsTrigger value="video" disabled={isSaving || disabled}>
-                <Video className="mr-2 h-4 w-4" />
-                {t('video')}
-              </TabsTrigger>
-            </TabsList>
+      <div className="bg-card w-full rounded-lg border p-6">
+        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabType)}>
+          <TabsList className="mb-6 grid w-full grid-cols-2">
+            <TabsTrigger value="image" disabled={isSaving || disabled}>
+              <ImageIcon className="mr-2 h-4 w-4" />
+              {t('image')}
+            </TabsTrigger>
+            <TabsTrigger value="video" disabled={isSaving || disabled}>
+              <Video className="mr-2 h-4 w-4" />
+              {t('video')}
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="image" className="space-y-6">
-              {renderThumbnailPreview()}
+          <TabsContent value="image" className="space-y-6">
+            {renderThumbnailPreview()}
 
-              {isSaving ? (
-                <div className="flex items-center justify-center">
-                  <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
-                    <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
-                    {t('uploading')}
-                  </div>
+            {isSaving ? (
+              <div className="flex items-center justify-center">
+                <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
+                  <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
+                  {t('uploading')}
                 </div>
-              ) : (
-                <div className="flex gap-2">{renderImageControls()}</div>
-              )}
+              </div>
+            ) : (
+              <div className="flex gap-2">{renderImageControls()}</div>
+            )}
 
-              <p className="text-muted-foreground text-center text-xs">{t('supportedFormats')}</p>
-              {disabledReason ? (
-                <Alert className="border-border bg-muted/60">
-                  <AlertTitle>{t('uploadImageButton')}</AlertTitle>
-                  <AlertDescription>{disabledReason}</AlertDescription>
-                </Alert>
-              ) : null}
-            </TabsContent>
+            <p className="text-muted-foreground text-center text-xs">{t('supportedFormats')}</p>
+            {disabledReason ? (
+              <Alert className="border-border bg-muted/60">
+                <AlertTitle>{t('uploadImageButton')}</AlertTitle>
+                <AlertDescription>{disabledReason}</AlertDescription>
+              </Alert>
+            ) : null}
+          </TabsContent>
 
-            <TabsContent value="video" className="space-y-6">
-              {renderThumbnailPreview()}
+          <TabsContent value="video" className="space-y-6">
+            {renderThumbnailPreview()}
 
-              {isSaving ? (
-                <div className="flex items-center justify-center">
-                  <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
-                    <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
-                    {t('uploading')}
-                  </div>
+            {isSaving ? (
+              <div className="flex items-center justify-center">
+                <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
+                  <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
+                  {t('uploading')}
                 </div>
-              ) : (
-                <div className="flex gap-2">{renderVideoControls()}</div>
-              )}
+              </div>
+            ) : (
+              <div className="flex gap-2">{renderVideoControls()}</div>
+            )}
 
-              <p className="text-muted-foreground text-center text-xs">{t('supportedVideoFormats')}</p>
-              {disabledReason ? (
-                <Alert className="border-border bg-muted/60">
-                  <AlertTitle>{t('uploadVideo')}</AlertTitle>
-                  <AlertDescription>{disabledReason}</AlertDescription>
-                </Alert>
-              ) : null}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            <p className="text-muted-foreground text-center text-xs">{t('supportedVideoFormats')}</p>
+            {disabledReason ? (
+              <Alert className="border-border bg-muted/60">
+                <AlertTitle>{t('uploadVideo')}</AlertTitle>
+                <AlertDescription>{disabledReason}</AlertDescription>
+              </Alert>
+            ) : null}
+          </TabsContent>
+        </Tabs>
+      </div>
     )
   }
 
   // Single tab view (image or video only)
   return (
-    <Card className="w-full">
-      <CardContent className="space-y-6 p-6">
-        {renderThumbnailPreview()}
+    <div className="bg-card flex w-full flex-col gap-6 rounded-lg border p-6">
+      {renderThumbnailPreview()}
 
-        {isSaving ? (
-          <div className="flex items-center justify-center">
-            <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
-              <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
-              {t('uploading')}
-            </div>
+      {isSaving ? (
+        <div className="flex items-center justify-center">
+          <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
+            <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
+            {t('uploading')}
           </div>
-        ) : (
-          <div className="flex gap-2">{thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}</div>
-        )}
+        </div>
+      ) : (
+        <div className="flex gap-2">{thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}</div>
+      )}
 
-        <p className="text-muted-foreground text-center text-xs">
-          {thumbnailType === 'image' ? t('supportedFormats') : t('supportedVideoFormats')}
-        </p>
-        {disabledReason ? (
-          <Alert className="border-border bg-muted/60">
-            <AlertTitle>{thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}</AlertTitle>
-            <AlertDescription>{disabledReason}</AlertDescription>
-          </Alert>
-        ) : null}
-      </CardContent>
-    </Card>
+      <p className="text-muted-foreground text-center text-xs">
+        {thumbnailType === 'image' ? t('supportedFormats') : t('supportedVideoFormats')}
+      </p>
+      {disabledReason ? (
+        <Alert className="border-border bg-muted/60">
+          <AlertTitle>{thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}</AlertTitle>
+          <AlertDescription>{disabledReason}</AlertDescription>
+        </Alert>
+      ) : null}
+    </div>
   )
 }
 

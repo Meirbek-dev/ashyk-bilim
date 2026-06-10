@@ -3,11 +3,12 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Theme } from 'emoji-picker-react'
 import type { EmojiClickData } from 'emoji-picker-react'
-import { Link as LinkIcon, Plus, X } from 'lucide-react'
+import { CircleDot, Link as LinkIcon, Plus, X } from 'lucide-react'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { generateUUID } from '@/lib/utils'
 import dynamic from 'next/dynamic'
+import { Button } from '@/components/ui/button'
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
   ssr: false,
@@ -59,7 +60,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
             return createLearningItem({
               id: safeItem.id || `${PLACEHOLDER_ID_PREFIX}${index}`,
               text: safeItem.text ?? '',
-              emoji: safeItem.emoji || '📝',
+              emoji: safeItem.emoji || '',
               ...(safeItem.link ? { link: safeItem.link } : {}),
             })
           })
@@ -73,7 +74,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
       {
         id: `${PLACEHOLDER_ID_PREFIX}0`,
         text: '',
-        emoji: '📝',
+        emoji: '',
       },
     ]
   }
@@ -140,7 +141,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
     const newItem: LearningItem = {
       id: generateUUID(),
       text: '',
-      emoji: '📝',
+      emoji: '',
     }
     const newItems = [...items, newItem]
     setItems(newItems)
@@ -234,7 +235,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
           if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
             focusedEl.scrollIntoView({
               block: 'nearest',
-              behavior: 'smooth',
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
             })
           }
         }
@@ -329,18 +330,20 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
         {items.map(item => (
           <div key={item.id} id={`learning-item-${item.id}`} className="group relative">
             <div className="border-border bg-muted/50 hover:bg-muted/70 flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors">
-              <button
+              <Button
                 type="button"
+                size="icon-sm"
+                variant="ghost"
                 onClick={() => {
                   setShowEmojiPicker(prev => (prev === item.id ? null : item.id))
                   setShowLinkInput(null)
                   setFocusedItemId(item.id)
                 }}
-                className="shrink-0 text-lg transition-transform hover:scale-110"
+                className="shrink-0 text-base"
                 aria-label={t('changeEmojiAriaLabel')}
               >
-                <span>{item.emoji}</span>
-              </button>
+                {item.emoji ? <span>{item.emoji}</span> : <CircleDot aria-hidden />}
+              </Button>
 
               <Input
                 ref={setInputRef(item.id)}
@@ -353,7 +356,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
                 }}
                 onBlur={handleInputBlur}
                 placeholder={t('placeholder')}
-                className="learning-item-input h-8 grow border-0 bg-transparent px-0 text-sm focus-visible:ring-0"
+                className="learning-item-input h-8 grow border-0 bg-transparent px-0 text-sm"
               />
 
               {item.link ? (
@@ -364,8 +367,10 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
               ) : null}
 
               <div className="flex items-center gap-1">
-                <button
+                <Button
                   type="button"
+                  size="icon-sm"
+                  variant="ghost"
                   data-itemid={item.id}
                   data-role="link-icon"
                   onClick={() => {
@@ -380,24 +385,26 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
                       }, 0)
                     }
                   }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground"
                   title={item.link ? t('editLinkTooltip') : t('addLinkTooltip')}
                   aria-label={item.link ? t('editLinkAriaLabel') : t('addLinkAriaLabel')}
                 >
-                  <LinkIcon size={15} />
-                </button>
+                  <LinkIcon />
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  size="icon-sm"
+                  variant="ghost"
                   onClick={() => {
                     removeItem(item.id)
                   }}
-                  className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  className="text-muted-foreground/70 hover:text-foreground"
                   aria-label={t('removeItemAriaLabel')}
                   title={t('removeItemTooltip')}
                 >
-                  <X size={15} />
-                </button>
+                  <X />
+                </Button>
               </div>
             </div>
 
@@ -441,14 +448,16 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
         ))}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={addItem}
-        className="text-muted-foreground hover:text-foreground mt-2 flex items-center gap-1.5 text-sm transition-colors"
+        className="text-muted-foreground hover:text-foreground mt-2 w-fit"
       >
-        <Plus size={16} className="text-primary" />
+        <Plus className="text-primary" data-icon="inline-start" aria-hidden />
         <span>{t('addItemButton')}</span>
-      </button>
+      </Button>
     </div>
   )
 }

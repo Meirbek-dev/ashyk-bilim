@@ -216,15 +216,17 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
       )}
     >
       <div className="flex items-center gap-3 border-b px-4 py-3 sm:px-6">
-        <button
+        <Button
           type="button"
-          className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-md p-1 active:cursor-grabbing"
+          size="icon-sm"
+          variant="ghost"
+          className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
           aria-label={t('dragChapter')}
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="h-5 w-5" />
-        </button>
+          <GripVertical className="size-5" aria-hidden />
+        </Button>
 
         <div className="bg-muted shrink-0 rounded-lg p-2">
           <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />

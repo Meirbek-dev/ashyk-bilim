@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl'
 
 export default function ConflictAlert() {
   const t = useTranslations('CourseEdit.Conflict')
-  const { refreshCourseMeta } = useCourse()
+  const { refreshCourseEditor } = useCourse()
   const conflict = useCourseEditorStore(state => state.conflict)
   const dismissConflict = useCourseEditorStore(state => state.dismissConflict)
   const saveAnyway = useCourseEditorStore(state => state.saveAnyway)
@@ -18,11 +18,11 @@ export default function ConflictAlert() {
 
   const handleReload = async () => {
     dismissConflict()
-    await refreshCourseMeta()
+    await refreshCourseEditor()
   }
 
   return (
-    <Alert className="border-destructive/50 bg-destructive/5 mx-4 mb-4 lg:mx-8">
+    <Alert role="alert" aria-live="polite" className="border-destructive/50 bg-destructive/5 mx-4 mb-4 lg:mx-8">
       <AlertTriangle className="text-destructive size-4" />
       <AlertTitle className="text-destructive">{t('title')}</AlertTitle>
       <AlertDescription className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

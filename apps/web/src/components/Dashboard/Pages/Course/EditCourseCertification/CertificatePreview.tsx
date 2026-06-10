@@ -89,8 +89,13 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
   useEffect(() => {
     const generateQRCode = async () => {
+      const certificateData = qrCodeLink || certificateId
+      if (!certificateData) {
+        setQrCodeUrl('')
+        return
+      }
+
       try {
-        const certificateData = qrCodeLink || `${certificateId}`
         const qrUrl = await QRCode.toDataURL(certificateData, {
           width: 185,
           margin: 1,

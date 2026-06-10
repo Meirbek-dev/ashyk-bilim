@@ -1,13 +1,16 @@
 'use client'
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
-import { AlertTriangle, Image as ImageIcon, Loader2, Tag, Video } from 'lucide-react'
-import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
+import { AlertTriangle, Image as ImageIcon, Tag, Video } from 'lucide-react'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
-import { Card, CardContent, CardHeader } from '@components/ui/card'
 import type { CourseGeneralValues } from '@/schemas/courseSchemas'
+import { CourseEditorNotice } from '@/features/courses/editor/components/CourseEditorNotice'
+import {
+  CourseEditorSection,
+  CourseEditorStagedSection,
+} from '@/features/courses/editor/components/CourseEditorSection'
 import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { valibotResolver } from '@hookform/resolvers/valibot'
@@ -23,21 +26,22 @@ import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import type * as v from 'valibot'
 import { MarkdownEditor, getMarkdownSaveGate } from '@/features/content-markdown'
+import { Spinner } from '@/components/ui/spinner'
 
 // Placeholder ID is stable across SSR and hydration; LearningItemsList replaces it
 // with a real UUID in a post-mount effect, avoiding hydration mismatches.
 const LEARNINGS_PLACEHOLDER_ID = '__placeholder_0__'
 
 function initializeLearnings(learnings: unknown): string {
-  if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
-  if (typeof learnings !== 'string') return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
+  if (!learnings) return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
+  if (typeof learnings !== 'string') return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
   try {
     const parsed = JSON.parse(learnings)
     if (Array.isArray(parsed)) return learnings
   } catch {
-    return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '📝' }])
+    return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: learnings, emoji: '' }])
   }
-  return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '📝' }])
+  return JSON.stringify([{ id: LEARNINGS_PLACEHOLDER_ID, text: '', emoji: '' }])
 }
 
 function parseTags(raw: unknown): string[] {
@@ -182,8 +186,8 @@ function EditCourseGeneral() {
   if (isLoading || !courseStructure) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-muted-foreground bg-muted flex animate-pulse items-center rounded-md border px-4 py-2 text-sm font-medium">
-          <Loader2 size={16} className="text-primary mr-2 animate-spin" />
+        <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+          <Spinner className="size-5" />
           <span>{t('loading')}</span>
         </div>
       </div>
@@ -191,72 +195,66 @@ function EditCourseGeneral() {
   }
 
   return (
-    <div className="space-y-6" role="main" aria-labelledby="course-edit-title">
-      <form id={formId} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" noValidate>
+    <div className="flex flex-col gap-6" role="main">
+      <form id={formId} onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-6" noValidate>
         {error && (
-          <Card className="border-destructive/50 bg-destructive/5" role="alert">
-            <CardContent className="p-4">
-              <div id={`${formId}-error`} className="text-destructive flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                <span className="font-medium">{error}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <Alert variant="destructive" id={`${formId}-error`}>
+            <AlertTriangle className="size-4" aria-hidden="true" />
+            <AlertTitle>{t('errors.saveFailed')}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        <Card>
-          <CardHeader>
-            <SectionHeader
-              title={t('title', { courseName: courseStructure.name || '' })}
-              description={t('subtitle')}
-              isDirty={isDirty}
-              isSaving={isSaving}
-              onSave={() => form.handleSubmit(handleSubmit)()}
-              onDiscard={handleDiscard}
-            />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-6">
-              <Field>
-                <FieldLabel className="text-base font-semibold" htmlFor="name">
-                  {t('name.label')}
-                </FieldLabel>
-                <FieldContent>
-                  <Input
-                    {...form.register('name')}
-                    id="name"
-                    placeholder={t('name.placeholder')}
-                    className="text-lg"
-                    maxLength={100}
-                  />
-                </FieldContent>
-                <FieldError errors={[form.formState.errors.name]} />
-              </Field>
+        <CourseEditorStagedSection
+          title={t('title', { courseName: courseStructure.name || '' })}
+          description={t('subtitle')}
+          isDirty={isDirty}
+          isSaving={isSaving}
+          onSave={() => form.handleSubmit(handleSubmit)()}
+          onDiscard={handleDiscard}
+          contentClassName="gap-6"
+        >
+          <div className="flex flex-col gap-6">
+            <Field>
+              <FieldLabel className="text-base font-semibold" htmlFor="name">
+                {t('name.label')}
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  {...form.register('name')}
+                  id="name"
+                  placeholder={t('name.placeholder')}
+                  className="text-lg"
+                  maxLength={100}
+                />
+              </FieldContent>
+              <FieldError errors={[form.formState.errors.name]} />
+            </Field>
 
-              <Field>
-                <FieldLabel className="text-base font-semibold" htmlFor="description">
-                  {t('description.label')}
-                </FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <MarkdownEditor
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        preset="courseDescription"
-                        placeholder={t('description.placeholder')}
-                        required
-                      />
-                    )}
-                  />
-                </FieldContent>
-                <FieldError errors={[form.formState.errors.description]} />
-              </Field>
+            <Field>
+              <FieldLabel className="text-base font-semibold" htmlFor="description">
+                {t('description.label')}
+              </FieldLabel>
+              <FieldContent>
+                <Controller
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <MarkdownEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      preset="courseDescription"
+                      placeholder={t('description.placeholder')}
+                      required
+                    />
+                  )}
+                />
+              </FieldContent>
+              <FieldError errors={[form.formState.errors.description]} />
+            </Field>
 
-              {/*<Field>
+            {/*<Field>
                 <FieldLabel
                   className="text-base font-semibold"
                   htmlFor="about"
@@ -274,86 +272,83 @@ function EditCourseGeneral() {
                 <FieldError errors={[form.formState.errors.about]} />
               </Field> */}
 
-              <Separator />
-
-              <Controller
-                control={form.control}
-                name="learnings"
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel className="text-base font-semibold">{t('learnings.label')}</FieldLabel>
-                    <div role="group" aria-labelledby="learnings-label">
-                      <LearningItemsList value={field.value} onChange={field.onChange} />
-                    </div>
-                    <FieldError errors={[fieldState.error]} />
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="tags"
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel className="flex items-center gap-2 text-base font-semibold">
-                      <Tag className="h-4 w-4" aria-hidden="true" />
-                      {t('tags.label')}
-                    </FieldLabel>
-                    <TagsInput
-                      placeholder={t('tags.placeholder')}
-                      value={field.value || []}
-                      onValueChange={field.onChange}
-                    />
-                    <FieldError errors={[fieldState.error]} />
-                  </Field>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <h2 className="text-foreground text-2xl font-bold tracking-tight">{t('thumbnail.label')}</h2>
-              <p className="text-muted-foreground text-sm">{t('thumbnail.mediaUpdatesIsolated')}</p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert className="border-border bg-muted/40">
-              <ImageIcon className="size-4" />
-              <AlertTitle>{t('thumbnail.mediaActionsTitle')}</AlertTitle>
-              <AlertDescription>{t('thumbnail.mediaActionsDescription')}</AlertDescription>
-            </Alert>
+            <Separator />
 
             <Controller
               control={form.control}
-              name="thumbnail_type"
+              name="learnings"
               render={({ field, fieldState }) => (
                 <Field>
-                  <FieldLabel className="text-base font-semibold">{t('thumbnailType')}</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange} items={thumbnailTypeItems}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {thumbnailTypeItems.map(item => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  <FieldLabel id="learnings-label" className="text-base font-semibold">
+                    {t('learnings.label')}
+                  </FieldLabel>
+                  <div role="group" aria-labelledby="learnings-label">
+                    <LearningItemsList value={field.value} onChange={field.onChange} />
+                  </div>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
               )}
             />
 
-            <ThumbnailUpdate thumbnailType={thumbnailType} />
-          </CardContent>
-        </Card>
+            <Controller
+              control={form.control}
+              name="tags"
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel className="flex items-center gap-2 text-base font-semibold">
+                    <Tag className="h-4 w-4" aria-hidden="true" />
+                    {t('tags.label')}
+                  </FieldLabel>
+                  <TagsInput
+                    placeholder={t('tags.placeholder')}
+                    value={field.value || []}
+                    onValueChange={field.onChange}
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+          </div>
+        </CourseEditorStagedSection>
+
+        <CourseEditorSection
+          title={t('thumbnail.label')}
+          description={t('thumbnail.mediaUpdatesIsolated')}
+          contentClassName="gap-6"
+        >
+          <CourseEditorNotice
+            icon={ImageIcon}
+            title={t('thumbnail.mediaActionsTitle')}
+            description={t('thumbnail.mediaActionsDescription')}
+          />
+
+          <Controller
+            control={form.control}
+            name="thumbnail_type"
+            render={({ field, fieldState }) => (
+              <Field>
+                <FieldLabel className="text-base font-semibold">{t('thumbnailType')}</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange} items={thumbnailTypeItems}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {thumbnailTypeItems.map(item => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+
+          <ThumbnailUpdate thumbnailType={thumbnailType} />
+        </CourseEditorSection>
       </form>
     </div>
   )

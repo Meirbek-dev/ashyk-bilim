@@ -4,10 +4,26 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { createCertification, deleteCertification, updateCertification } from '@services/courses/certifications'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { AlertTriangle, Award, FileText, Palette } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import {
+  AlertTriangle,
+  Award,
+  BriefcaseBusiness,
+  Circle,
+  Crown,
+  Diamond,
+  FileText,
+  GraduationCap,
+  Laptop,
+  Leaf,
+  Palette,
+  ScrollText,
+  Sparkles,
+  Waves,
+} from 'lucide-react'
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
+import { CourseEditorStagedSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -27,17 +43,17 @@ import { useTranslations } from 'next-intl'
 import * as v from 'valibot'
 
 const CERTIFICATE_PATTERNS = [
-  { value: 'royal', icon: '👑' },
-  { value: 'tech', icon: '💻' },
-  { value: 'nature', icon: '🌿' },
-  { value: 'geometric', icon: '◆' },
-  { value: 'vintage', icon: '📜' },
-  { value: 'waves', icon: '🌊' },
-  { value: 'minimal', icon: '⚪' },
-  { value: 'professional', icon: '💼' },
-  { value: 'academic', icon: '🎓' },
-  { value: 'modern', icon: '✨' },
-] as const
+  { value: 'royal', icon: Crown },
+  { value: 'tech', icon: Laptop },
+  { value: 'nature', icon: Leaf },
+  { value: 'geometric', icon: Diamond },
+  { value: 'vintage', icon: ScrollText },
+  { value: 'waves', icon: Waves },
+  { value: 'minimal', icon: Circle },
+  { value: 'professional', icon: BriefcaseBusiness },
+  { value: 'academic', icon: GraduationCap },
+  { value: 'modern', icon: Sparkles },
+] as const satisfies readonly { value: string; icon: LucideIcon }[]
 
 interface CourseCertificationResource {
   certification_uuid: string
@@ -269,11 +285,6 @@ const EditCourseCertification = () => {
     defaultValue: '',
   })
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   const handleSaveCertification = form.handleSubmit(async values => {
     if (!courseStructure || !isDirty) return
 
@@ -339,12 +350,7 @@ const EditCourseCertification = () => {
     )
   })
 
-  if (
-    !mounted ||
-    isLoading ||
-    !courseStructure ||
-    (course.isEditorDataLoading && editorData.certifications.data === null)
-  ) {
+  if (isLoading || !courseStructure || (course.isEditorDataLoading && editorData.certifications.data === null)) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="text-muted-foreground flex items-center gap-2">
@@ -365,236 +371,230 @@ const EditCourseCertification = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Card>
-          <CardHeader className="space-y-1">
-            <SectionHeader
-              title={t('courseCertification')}
-              description={t('enableCertification')}
-              isDirty={isDirty}
-              isSaving={isSaving}
-              onSave={handleSaveCertification}
-              onDiscard={handleDiscard}
-            >
-              <Controller
-                control={form.control}
-                name="enable_certification"
-                render={({ field }) => (
-                  <Label htmlFor="cert-toggle" className="cursor-pointer">
-                    <Switch
-                      id="cert-toggle"
-                      checked={field.value}
-                      onCheckedChange={checked => {
-                        field.onChange(checked)
-                      }}
-                      disabled={isSaving}
-                    />
-                  </Label>
-                )}
-              />
-            </SectionHeader>
-          </CardHeader>
-
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {isEnabled && (
-              <div className="space-y-8">
-                <div className="grid gap-8 lg:grid-cols-5">
-                  {/* Configuration */}
-                  <div className="space-y-8 lg:col-span-3">
-                    {/* Basic Information */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="text-muted-foreground h-5 w-5" />
-                        <h3 className="text-lg font-semibold">{t('basicInfo')}</h3>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{t('basicInfoDesc')}</p>
-                      <Separator />
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <Controller
-                          control={form.control}
-                          name="certification_name"
-                          render={({ field, fieldState }) => (
-                            <Field className="sm:col-span-2">
-                              <FieldLabel htmlFor={field.name}>{t('certificationName')}</FieldLabel>
-                              <FieldContent>
-                                <Input id={field.name} {...field} placeholder={t('certificationNamePlaceholder')} />
-                              </FieldContent>
-                              <FieldError errors={[fieldState.error]} />
-                            </Field>
-                          )}
-                        />
-
-                        <Controller
-                          control={form.control}
-                          name="certification_type"
-                          render={({ field, fieldState }) => (
-                            <Field className="sm:col-span-2">
-                              <FieldLabel>{t('certificationType')}</FieldLabel>
-                              <NativeSelect
-                                value={field.value || 'completion'}
-                                onChange={event => field.onChange(event.target.value)}
-                                className="w-full"
-                                aria-label={t('certificationType')}
-                              >
-                                {certificationTypeItems.map(item => (
-                                  <NativeSelectOption key={item.value} value={item.value}>
-                                    {item.label}
-                                  </NativeSelectOption>
-                                ))}
-                              </NativeSelect>
-                              <FieldError errors={[fieldState.error]} />
-                            </Field>
-                          )}
-                        />
-
-                        <Controller
-                          control={form.control}
-                          name="certification_description"
-                          render={({ field, fieldState }) => (
-                            <Field className="sm:col-span-2">
-                              <FieldLabel htmlFor={field.name}>{t('certificationDescription')}</FieldLabel>
-                              <FieldContent>
-                                <Textarea
-                                  id={field.name}
-                                  {...field}
-                                  placeholder={t('certificationDescriptionPlaceholder')}
-                                  className="min-h-[120px] resize-none"
-                                />
-                              </FieldContent>
-                              <FieldError errors={[fieldState.error]} />
-                            </Field>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Design Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Palette className="text-muted-foreground h-5 w-5" />
-                        <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>
-                      <Separator />
-
-                      <Controller
-                        control={form.control}
-                        name="certificate_pattern"
-                        render={({ field, fieldState }) => (
-                          <Field>
-                            <FieldLabel>{t('certificatePattern')}</FieldLabel>
-                            <RadioGroup
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-                            >
-                              {CERTIFICATE_PATTERNS.map(pattern => (
-                                <Label
-                                  key={pattern.value}
-                                  htmlFor={`pattern-${pattern.value}`}
-                                  className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                                    field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
-                                  }`}
-                                >
-                                  <RadioGroupItem
-                                    value={pattern.value}
-                                    id={`pattern-${pattern.value}`}
-                                    className="sr-only"
-                                  />
-                                  <span className="text-2xl">{pattern.icon}</span>
-                                  <span className="text-xs font-medium">
-                                    {t(`certificatePatterns.${pattern.value}`)}
-                                  </span>
-                                  {field.value === pattern.value && (
-                                    <Badge variant="secondary" className="absolute -top-2 -right-2">
-                                      {t('selectedIcon')}
-                                    </Badge>
-                                  )}
-                                </Label>
-                              ))}
-                            </RadioGroup>
-                            <FieldError errors={[fieldState.error]} />
-                          </Field>
-                        )}
-                      />
-
-                      <Controller
-                        control={form.control}
-                        name="certificate_instructor"
-                        render={({ field, fieldState }) => (
-                          <Field>
-                            <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
-                            <FieldContent>
-                              <Input id={field.name} {...field} placeholder={t('certificateInstructorPlaceholder')} />
-                            </FieldContent>
-                            <FieldError errors={[fieldState.error]} />
-                          </Field>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Preview */}
-                  <div className="lg:col-span-2">
-                    <div className="sticky top-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            <Award className="h-4 w-4" />
-                            {t('previewCertificate')}
-                          </CardTitle>
-                          <CardDescription>{t('livePreviewCertificate')}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <CertificatePreview
-                            certificationName={certificationName}
-                            certificationDescription={certificationDescription}
-                            certificationType={certificationType}
-                            certificatePattern={certificatePattern}
-                            {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
-                          />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isEnabled && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="bg-muted mb-4 rounded-full p-6">
-                  <Award className="text-muted-foreground h-12 w-12" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold">{t('noCertificationConfigured')}</h3>
-                <p className="text-muted-foreground mb-6 max-w-sm text-sm">{t('noCertificationDescription')}</p>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    form.setValue('enable_certification', true, {
-                      shouldDirty: true,
-                      shouldTouch: true,
-                    })
+    <div className="flex flex-col gap-6">
+      <CourseEditorStagedSection
+        title={t('courseCertification')}
+        description={t('enableCertification')}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        onSave={handleSaveCertification}
+        onDiscard={handleDiscard}
+        headerContent={
+          <Controller
+            control={form.control}
+            name="enable_certification"
+            render={({ field }) => (
+              <Label htmlFor="cert-toggle" className="cursor-pointer">
+                <Switch
+                  id="cert-toggle"
+                  checked={field.value}
+                  onCheckedChange={checked => {
+                    field.onChange(checked)
                   }}
                   disabled={isSaving}
-                >
-                  <Award className="h-4 w-4" />
-                  {t('enableCertificationButton')}
-                </Button>
-              </div>
+                />
+              </Label>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          />
+        }
+      >
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {isEnabled && (
+          <div className="space-y-8">
+            <div className="grid gap-8 lg:grid-cols-5">
+              {/* Configuration */}
+              <div className="space-y-8 lg:col-span-3">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="text-muted-foreground h-5 w-5" />
+                    <h3 className="text-lg font-semibold">{t('basicInfo')}</h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm">{t('basicInfoDesc')}</p>
+                  <Separator />
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Controller
+                      control={form.control}
+                      name="certification_name"
+                      render={({ field, fieldState }) => (
+                        <Field className="sm:col-span-2">
+                          <FieldLabel htmlFor={field.name}>{t('certificationName')}</FieldLabel>
+                          <FieldContent>
+                            <Input id={field.name} {...field} placeholder={t('certificationNamePlaceholder')} />
+                          </FieldContent>
+                          <FieldError errors={[fieldState.error]} />
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      control={form.control}
+                      name="certification_type"
+                      render={({ field, fieldState }) => (
+                        <Field className="sm:col-span-2">
+                          <FieldLabel>{t('certificationType')}</FieldLabel>
+                          <NativeSelect
+                            value={field.value || 'completion'}
+                            onChange={event => field.onChange(event.target.value)}
+                            className="w-full"
+                            aria-label={t('certificationType')}
+                          >
+                            {certificationTypeItems.map(item => (
+                              <NativeSelectOption key={item.value} value={item.value}>
+                                {item.label}
+                              </NativeSelectOption>
+                            ))}
+                          </NativeSelect>
+                          <FieldError errors={[fieldState.error]} />
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      control={form.control}
+                      name="certification_description"
+                      render={({ field, fieldState }) => (
+                        <Field className="sm:col-span-2">
+                          <FieldLabel htmlFor={field.name}>{t('certificationDescription')}</FieldLabel>
+                          <FieldContent>
+                            <Textarea
+                              id={field.name}
+                              {...field}
+                              placeholder={t('certificationDescriptionPlaceholder')}
+                              className="min-h-[120px] resize-none"
+                            />
+                          </FieldContent>
+                          <FieldError errors={[fieldState.error]} />
+                        </Field>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Design Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Palette className="text-muted-foreground h-5 w-5" />
+                    <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>
+                  <Separator />
+
+                  <Controller
+                    control={form.control}
+                    name="certificate_pattern"
+                    render={({ field, fieldState }) => (
+                      <Field>
+                        <FieldLabel>{t('certificatePattern')}</FieldLabel>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+                        >
+                          {CERTIFICATE_PATTERNS.map(pattern => {
+                            const Icon = pattern.icon
+                            return (
+                              <Label
+                                key={pattern.value}
+                                htmlFor={`pattern-${pattern.value}`}
+                                className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                                  field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
+                                }`}
+                              >
+                                <RadioGroupItem
+                                  value={pattern.value}
+                                  id={`pattern-${pattern.value}`}
+                                  className="sr-only"
+                                />
+                                <Icon className="text-muted-foreground size-5" aria-hidden />
+                                <span className="text-xs font-medium">{t(`certificatePatterns.${pattern.value}`)}</span>
+                                {field.value === pattern.value && (
+                                  <Badge variant="secondary" className="absolute -top-2 -right-2">
+                                    {t('selectedIcon')}
+                                  </Badge>
+                                )}
+                              </Label>
+                            )
+                          })}
+                        </RadioGroup>
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    control={form.control}
+                    name="certificate_instructor"
+                    render={({ field, fieldState }) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
+                        <FieldContent>
+                          <Input id={field.name} {...field} placeholder={t('certificateInstructorPlaceholder')} />
+                        </FieldContent>
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="lg:col-span-2">
+                <div className="sticky top-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Award className="h-4 w-4" />
+                        {t('previewCertificate')}
+                      </CardTitle>
+                      <CardDescription>{t('livePreviewCertificate')}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CertificatePreview
+                        certificationName={certificationName}
+                        certificationDescription={certificationDescription}
+                        certificationType={certificationType}
+                        certificatePattern={certificatePattern}
+                        {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isEnabled && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-muted mb-4 rounded-full p-6">
+              <Award className="text-muted-foreground h-12 w-12" />
+            </div>
+            <h3 className="mb-2 text-lg font-semibold">{t('noCertificationConfigured')}</h3>
+            <p className="text-muted-foreground mb-6 max-w-sm text-sm">{t('noCertificationDescription')}</p>
+            <Button
+              type="button"
+              onClick={() => {
+                form.setValue('enable_certification', true, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                })
+              }}
+              disabled={isSaving}
+            >
+              <Award className="h-4 w-4" />
+              {t('enableCertificationButton')}
+            </Button>
+          </div>
+        )}
+      </CourseEditorStagedSection>
     </div>
   )
 }

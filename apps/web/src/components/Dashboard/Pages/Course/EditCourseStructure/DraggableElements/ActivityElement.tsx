@@ -28,7 +28,7 @@ import {
   Video,
   X as XIcon,
 } from 'lucide-react'
-import { CourseWorkflowBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { CourseStatusBadge, CourseWorkflowBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -215,13 +215,17 @@ const ActivityElement = ({
       )}
     >
       {/* Drag Handle */}
-      <div
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        aria-label={activity.name}
         className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-5 w-5" />
-      </div>
+        <GripVertical className="size-5" aria-hidden />
+      </Button>
 
       {/* Type Badge */}
       <ActivityTypeBadge activityType={activity.activity_type} />
@@ -267,15 +271,7 @@ const ActivityElement = ({
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-            {activity.published ? (
-              <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                {t('liveBadge')}
-              </span>
-            ) : (
-              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                {t('draftBadge')}
-              </span>
-            )}
+            <CourseStatusBadge status={activity.published ? 'live' : 'draft'} />
             {isOwner && (
               <ToolTip content={t('ownerBadge')}>
                 <CourseWorkflowBadge tone="info">{t('ownerLabel')}</CourseWorkflowBadge>

@@ -15,6 +15,8 @@ import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { AlertTriangle, BookOpen, CheckCircle2, Hexagon, Loader2 } from 'lucide-react'
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { CourseEditorNotice } from '@/features/courses/editor/components/CourseEditorNotice'
+import { CourseEditorSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -267,7 +269,13 @@ const CurriculumEditor = () => {
   if (!course) return null
 
   return (
-    <div className="min-w-0">
+    <CourseEditorSection title={t('title')} description={t('curriculumInlineFeedback')} contentClassName="gap-4">
+      <CourseEditorNotice
+        icon={BookOpen}
+        title={t('curriculumChangesApplyImmediately')}
+        description={t('curriculumInlineFeedback')}
+      />
+
       {structureStatus !== 'idle' && (
         <Alert className="border-border bg-muted/40 mb-4">
           {structureStatus === 'saving' ? (
@@ -370,7 +378,7 @@ const CurriculumEditor = () => {
           </Button>
         )}
       </div>
-    </div>
+    </CourseEditorSection>
   )
 }
 
