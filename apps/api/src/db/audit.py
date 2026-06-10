@@ -26,10 +26,10 @@ class AuditEventType(StrEnum):
     BATCH_GRADE = "BATCH_GRADE"
 
 
-class AuditEvent(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class AuditEvent(SQLModelStrictBaseModel, table=True):
     """Immutable audit log entry for non-grade actions."""
 
-    __tablename__: ClassVar[str] = "audit_event"
+    __tablename__: ClassVar[str] = "audit_event"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index(
             "idx_audit_event_target",

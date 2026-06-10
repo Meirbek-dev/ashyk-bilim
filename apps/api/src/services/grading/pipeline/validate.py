@@ -15,7 +15,6 @@ from pydantic import ValidationError
 from src.db.assessments import ITEM_ANSWER_ADAPTER
 from src.services.grading.pipeline.context import ParsedAnswers
 from src.services.grading.settings_loader import CanonicalAssessmentItem
-from src.types import JsonValue
 
 # Hard limit on open-text answer length to prevent DoS via huge payloads.
 _OPEN_TEXT_MAX_CHARS: int = 50_000
@@ -82,7 +81,7 @@ def validate_and_parse(
     )
 
 
-def _extract_canonical_answers(answers_payload: object) -> dict[str, JsonValue]:
+def _extract_canonical_answers(answers_payload: object) -> dict[str, object]:
     """Extract canonical answers from the payload.
 
     Supports dict-keyed and list-of-entries formats.
@@ -94,23 +93,23 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, JsonValue]:
 
     # Format 1: dict keyed by item_uuid
     if isinstance(raw_answers, dict):
-        normalized: dict[str, JsonValue] = {}
+        normalized_by_uuid: dict[str, object] = {}
         for item_uuid, raw_answer in raw_answers.items():
             if not isinstance(item_uuid, str):
                 _raise_invalid("Ключи ответов должны быть строками UUID элементов")
             try:
-                normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+                normalized_by_uuid[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
             except ValidationError as exc:
                 _raise_invalid(
                     "Некорректное тело канонического ответа",
                     code="malformed_answer",
                     extra={"item_uuid": item_uuid, "errors": exc.errors()},
                 )
-        return normalized
+        return normalized_by_uuid
 
     # Format 2: list of {item_uuid, answer} entries
     if isinstance(raw_answers, list):
-        normalized = {}
+        normalized_entries: dict[str, object] = {}
         for entry in raw_answers:
             if not isinstance(entry, dict):
                 _raise_invalid("Записи ответов должны быть объектами")
@@ -122,14 +121,14 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, JsonValue]:
                     code="malformed_answer_entry",
                 )
             try:
-                normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+                normalized_entries[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
             except ValidationError as exc:
                 _raise_invalid(
                     "Некорректное тело канонического ответа",
                     code="malformed_answer",
                     extra={"item_uuid": item_uuid, "errors": exc.errors()},
                 )
-        return normalized
+        return normalized_entries
 
     return _raise_invalid("В отправке должны быть ответы", code="empty_answers")
 

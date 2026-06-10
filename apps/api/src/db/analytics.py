@@ -7,8 +7,8 @@ from sqlmodel import Field, SQLModel
 from src.types import JsonObject
 
 
-class AnalyticsEvent(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "analytics_event"
+class AnalyticsEvent(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "analytics_event"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     event_type: str
@@ -29,8 +29,8 @@ class AnalyticsEvent(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class DailyTeacherMetrics(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "daily_teacher_metrics"
+class DailyTeacherMetrics(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "daily_teacher_metrics"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     metric_date: date = Field(primary_key=True)
     teacher_user_id: int = Field(primary_key=True)
@@ -51,8 +51,8 @@ class DailyTeacherMetrics(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class DailyCourseMetrics(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "daily_course_metrics"
+class DailyCourseMetrics(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "daily_course_metrics"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     metric_date: date = Field(primary_key=True)
     course_id: int = Field(primary_key=True)
@@ -74,8 +74,8 @@ class DailyCourseMetrics(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class DailyCourseEngagement(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "daily_course_engagement"
+class DailyCourseEngagement(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "daily_course_engagement"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     metric_date: date = Field(primary_key=True)
     course_id: int = Field(primary_key=True)
@@ -91,8 +91,8 @@ class DailyCourseEngagement(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class DailyAssessmentMetrics(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "daily_assessment_metrics"
+class DailyAssessmentMetrics(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "daily_assessment_metrics"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     metric_date: date = Field(primary_key=True)
     assessment_type: str = Field(primary_key=True)
@@ -116,8 +116,8 @@ class DailyAssessmentMetrics(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class DailyUserCourseProgress(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "daily_user_course_progress"
+class DailyUserCourseProgress(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "daily_user_course_progress"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     metric_date: date = Field(primary_key=True)
     user_id: int = Field(primary_key=True)
@@ -135,8 +135,8 @@ class DailyUserCourseProgress(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class LearnerRiskSnapshot(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "learner_risk_snapshot"
+class LearnerRiskSnapshot(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "learner_risk_snapshot"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     snapshot_date: date = Field(primary_key=True)
     user_id: int = Field(primary_key=True)
@@ -157,8 +157,8 @@ class LearnerRiskSnapshot(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class TeacherIntervention(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "teacher_intervention"
+class TeacherIntervention(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "teacher_intervention"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     teacher_user_id: int = Field(index=True)
@@ -182,8 +182,8 @@ class TeacherIntervention(SQLModel, table=True):  # type: ignore[misc]
     resolved_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
 
 
-class AnalyticsSavedView(SQLModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "analytics_saved_view"
+class AnalyticsSavedView(SQLModel, table=True):
+    __tablename__: ClassVar[str] = "analytics_saved_view"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     teacher_user_id: int = Field(index=True)

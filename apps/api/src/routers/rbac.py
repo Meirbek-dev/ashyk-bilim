@@ -20,7 +20,7 @@ from src.db.users import AnonymousUser, PublicUser, User as UserModel
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
-from src.types import JsonObject
+from src.types import JsonObject, as_json_object
 
 audit_log = logging.getLogger("rbac.audit")
 
@@ -176,7 +176,7 @@ def get_my_permissions(
     permissions = sorted(checker.get_expanded_permissions(current_user.id))
 
     return UserPermissionsResponse(
-        roles=roles,
+        roles=[as_json_object(dict(role), field="roles") for role in roles],
         permissions=permissions,
     )
 
@@ -263,7 +263,7 @@ async def assign_role(
             "role_id": request.role_id,
         },
     )
-    return {"message": "Role assigned"}
+    return RoleMutationResponse(message="Role assigned")
 
 
 @router.post("/roles/revoke", response_model=RoleMutationResponse)
@@ -298,4 +298,4 @@ async def revoke_role(
             "role_id": request.role_id,
         },
     )
-    return {"message": "Role revoked"}
+    return RoleMutationResponse(message="Role revoked")

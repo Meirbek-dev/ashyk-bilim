@@ -21,6 +21,7 @@ from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.videos import upload_subtitle, upload_video
+from src.types import require_persisted_id
 
 
 def _move_temp_video_files(temp_path: Path, final_path: Path) -> None:
@@ -96,7 +97,7 @@ async def create_video_activity(
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
 
-    details_dict = json.loads(details) if isinstance(details, str) else details
+    details_dict = json.loads(details)
 
     activity_uuid = f"activity_{ULID()}"
 
@@ -116,7 +117,7 @@ async def create_video_activity(
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
         activity_sub_type=ActivitySubTypeEnum.SUBTYPE_VIDEO_HOSTED,
         activity_uuid=activity_uuid,
-        chapter_id=chapter.id,
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
         course_id=chapter.course_id,  # keep legacy column in sync
         content={"filename": f"video.{video_format}", "activity_uuid": activity_uuid},
         details=details_dict if isinstance(details_dict, dict) else json.loads(details_dict),
@@ -223,7 +224,7 @@ async def create_external_video_activity(
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
         activity_sub_type=ActivitySubTypeEnum.SUBTYPE_VIDEO_YOUTUBE,
         activity_uuid=activity_uuid,
-        chapter_id=chapter.id,
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
         course_id=chapter.course_id,
         content={"uri": data.uri, "type": data.type, "activity_uuid": activity_uuid},
         details=details,

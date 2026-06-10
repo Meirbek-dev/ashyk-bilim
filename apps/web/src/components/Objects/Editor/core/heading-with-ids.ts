@@ -26,7 +26,7 @@ export const HeadingWithIds = Heading.extend({
       new Plugin({
         key: new PluginKey('heading-with-ids'),
         appendTransaction: (_transactions, _oldState, newState) => {
-          const updates = collectHeadingIdUpdates(newState.doc as any)
+          const updates = collectHeadingIdUpdates(newState.doc as unknown as Parameters<typeof collectHeadingIdUpdates>[0])
 
           if (updates.length === 0) {
             return null

@@ -32,6 +32,7 @@ from src.security.auth_lifetimes import (
 )
 from src.services.cache.redis_client import get_async_redis_client
 from src.types import JsonObject, require_persisted_id
+from src.types.narrowing import as_int, as_str
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,12 @@ class RefreshSessionInspection:
 
 def _now_ts() -> int:
     return int(time.time())
+
+
+def _optional_str(value: object, *, field: str) -> str | None:
+    if value is None:
+        return None
+    return as_str(value, field=field)
 
 
 def _generate_session_id() -> str:
@@ -250,15 +257,15 @@ def audit_create_sync(session_data_dict: JsonObject) -> None:
 
             now = datetime.now(UTC)
             record = AuthSession(
-                session_id=session_data_dict["session_id"],
-                token_family_id=session_data_dict["token_family_id"],
-                user_id=session_data_dict["user_id"],
-                refresh_token_hash=session_data_dict["refresh_token_hash"],
+                session_id=as_str(session_data_dict["session_id"], field="session_id"),
+                token_family_id=as_str(session_data_dict["token_family_id"], field="token_family_id"),
+                user_id=as_int(session_data_dict["user_id"], field="user_id"),
+                refresh_token_hash=as_str(session_data_dict["refresh_token_hash"], field="refresh_token_hash"),
                 created_at=now,
                 last_seen_at=now,
                 expires_at=now + timedelta(seconds=REFRESH_SESSION_TTL),
-                ip_address=session_data_dict["ip_address"],
-                user_agent=session_data_dict["user_agent"],
+                ip_address=_optional_str(session_data_dict.get("ip_address"), field="ip_address"),
+                user_agent=_optional_str(session_data_dict.get("user_agent"), field="user_agent"),
             )
             db.add(record)
             db.commit()
@@ -303,15 +310,15 @@ def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict
             new_record = db.exec(select(AuthSession).where(AuthSession.session_id == new_session_id)).first()
             if new_record is None:
                 new_record = AuthSession(
-                    session_id=new_session_dict["session_id"],
-                    token_family_id=new_session_dict["token_family_id"],
-                    user_id=new_session_dict["user_id"],
-                    refresh_token_hash=new_session_dict["refresh_token_hash"],
+                    session_id=as_str(new_session_dict["session_id"], field="session_id"),
+                    token_family_id=as_str(new_session_dict["token_family_id"], field="token_family_id"),
+                    user_id=as_int(new_session_dict["user_id"], field="user_id"),
+                    refresh_token_hash=as_str(new_session_dict["refresh_token_hash"], field="refresh_token_hash"),
                     created_at=now,
                     last_seen_at=now,
                     expires_at=now + timedelta(seconds=REFRESH_SESSION_TTL),
-                    ip_address=new_session_dict["ip_address"],
-                    user_agent=new_session_dict["user_agent"],
+                    ip_address=_optional_str(new_session_dict.get("ip_address"), field="ip_address"),
+                    user_agent=_optional_str(new_session_dict.get("user_agent"), field="user_agent"),
                 )
                 db.add(new_record)
             db.commit()
@@ -386,7 +393,7 @@ async def create_auth_session(
         # Evict oldest sessions until we're under the limit
         sessions_to_evict = active_ids[: len(active_ids) - MAX_SESSIONS_PER_USER + 1]
         for oldest_sid in sessions_to_evict:
-            await _delete_session_from_redis(oldest_sid, user.id)
+            await _delete_session_from_redis(oldest_sid, user_id)
             await _fire_audit_revoke(oldest_sid)
 
     now = _now_ts()
@@ -580,7 +587,7 @@ async def revoke_all_user_sessions(user_id: int) -> int:
 async def get_user_active_sessions(user_id: int) -> list[JsonObject]:
     """Return metadata for all active sessions of a user."""
     active_ids = await _get_active_session_ids(user_id)
-    result = []
+    result: list[JsonObject] = []
     for sid in active_ids:
         data = await _read_session_from_redis(sid)
         if data:

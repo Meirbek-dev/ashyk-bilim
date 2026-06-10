@@ -4,6 +4,7 @@ import operator
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Literal, cast
 
 from sqlmodel import Session, col, select
 
@@ -65,6 +66,9 @@ from src.services.analytics.schemas import (
 from src.services.analytics.scope import TeacherAnalyticsScope
 
 EPOCH_START = datetime(1970, 1, 1, tzinfo=UTC)
+type _AssessmentOutlierType = Literal["manual_assessment", "quiz", "exam", "code_challenge"]
+type _AssessmentSloStatus = Literal["healthy", "warning", "breached", "not_applicable"]
+type _AssessmentItemSignal = Literal["healthy", "watch", "critical"]
 
 
 @dataclass
@@ -144,6 +148,9 @@ def _build_rollup_assessment_rows(
 
     rows: list[AssessmentOutlierRow] = []
     for row in rollups:
+        if row.assessment_type not in {"manual_assessment", "quiz", "exam", "code_challenge"}:
+            continue
+        assessment_type = cast("_AssessmentOutlierType", row.assessment_type)
         course = course_map.get(row.course_id)
         if course is None:
             continue
@@ -167,7 +174,7 @@ def _build_rollup_assessment_rows(
 
         rows.append(
             AssessmentOutlierRow(
-                assessment_type=row.assessment_type,
+                assessment_type=assessment_type,
                 assessment_id=row.assessment_id,
                 activity_id=row.activity_id,
                 course_id=row.course_id,
@@ -337,10 +344,11 @@ def _submission_has_suspicion(submission: Submission) -> bool:
     metadata = submission.metadata_json or {}
     violations = metadata.get("violations")
     violation_count = metadata.get("violation_count")
+    parsed_violation_count = int(violation_count) if isinstance(violation_count, (int, float, str)) else 0
     plagiarism = metadata.get("plagiarism")
     return (
         (isinstance(violations, list) and len(violations) > 0)
-        or (violation_count is not None and int(violation_count) > 0)
+        or parsed_violation_count > 0
         or (isinstance(plagiarism, dict) and bool(plagiarism.get("flagged")))
     )
 
@@ -415,7 +423,7 @@ def _build_slo_snapshot(
     observed_p90 = percentile(latencies, 0.9)
     overdue_backlog = diagnostics.stale_backlog
     if overdue_backlog > 0 or (observed_p90 is not None and observed_p90 > target_hours):
-        status = "breached"
+        status: _AssessmentSloStatus = "breached"
     elif diagnostics.awaiting_grading > 0 or (observed_p50 is not None and observed_p50 > 48):
         status = "warning"
     else:
@@ -577,7 +585,7 @@ def _build_workflow_item_rows(
         "returned_for_resubmission": 3,
         "late_submissions": 4,
     }
-    definitions = [
+    definitions: list[tuple[str, str, int, _AssessmentItemSignal, str]] = [
         (
             "awaiting_grading",
             "Ожидает проверки преподавателем",
@@ -1630,7 +1638,7 @@ def get_teacher_assessment_detail(
         item_analytics = _build_workflow_item_rows(diagnostics)
         for stat in [item for item in context.quiz_question_stats if item.activity_id == assessment_id]:
             accuracy_pct = safe_pct(stat.correct_count, stat.total_attempts)
-            signal = (
+            signal: _AssessmentItemSignal = (
                 "critical"
                 if accuracy_pct is not None and accuracy_pct < 50
                 else "watch"
@@ -1746,11 +1754,12 @@ def get_teacher_assessment_detail(
             score = manual_assessment_score(submission)
             if score is not None:
                 code_scores.append(score)
-                failed_tests = (
+                failed_tests_value = (
                     (submission.grading_json or {}).get("failed_tests")
                     or (submission.grading_json or {}).get("failed")
                     or []
                 )
+                failed_tests = failed_tests_value if isinstance(failed_tests_value, list) else []
                 for failed in failed_tests:
                     key = str(failed.get("id") if isinstance(failed, dict) else failed)
                     failure_counter[key] += 1

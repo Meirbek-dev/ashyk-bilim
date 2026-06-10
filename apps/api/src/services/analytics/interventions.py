@@ -16,6 +16,7 @@ from src.services.analytics.schemas import (
     TeacherInterventionRow,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope, ensure_course_in_scope
+from src.types import as_json_object
 
 
 def _row_from_model(item: TeacherIntervention) -> TeacherInterventionRow:
@@ -73,7 +74,7 @@ def create_teacher_intervention(
         notes=payload.notes,
         risk_score_before=current_risk,
         risk_score_after=current_risk if payload.status == "resolved" else None,
-        payload=payload.payload,
+        payload=as_json_object(payload.payload, field="intervention.payload"),
         created_at=now,
         updated_at=now,
         resolved_at=resolved_at,

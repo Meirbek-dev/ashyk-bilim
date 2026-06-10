@@ -7,8 +7,8 @@ from sqlmodel import Field
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
-class AuthSession(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
-    __tablename__: ClassVar[str] = "auth_sessions"
+class AuthSession(SQLModelStrictBaseModel, table=True):
+    __tablename__: ClassVar[str] = "auth_sessions"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("session_id", name="uq_auth_sessions_session_id"),
         UniqueConstraint("refresh_token_hash", name="uq_auth_sessions_refresh_token_hash"),

@@ -32,6 +32,7 @@ from src.services.file_submissions import (
     file_submission_attempts_for_gradebook,
     file_submission_configs_for_activities,
 )
+from src.types import require_persisted_id
 
 
 async def get_course_gradebook(
@@ -43,14 +44,15 @@ async def get_course_gradebook(
     course = _get_course_or_404(course_uuid, db_session)
     _require_gradebook_access(course, current_user, db_session)
 
-    activities = _course_activities(course.id, db_session)
+    course_id = require_persisted_id(course.id, model_name="Course")
+    activities = _course_activities(course_id, db_session)
     students = _course_students(course, activities, db_session)
-    student_ids = [s.id for s in students]
+    student_ids = [require_persisted_id(student.id, model_name="User") for student in students]
 
     # Optimized progress fetch: only for students in this course view
     progress_rows = db_session.exec(
         select(ActivityProgress).where(
-            ActivityProgress.course_id == course.id,
+            ActivityProgress.course_id == course_id,
             col(ActivityProgress.user_id).in_(student_ids),
         )
     ).all()
@@ -74,18 +76,20 @@ async def get_course_gradebook(
 
     cells: list[ActivityProgressCell] = []
     for student in students:
+        student_id = require_persisted_id(student.id, model_name="User")
         for activity in activities:
-            progress = progress_by_pair.get((student.id, activity.id))
+            activity_id = require_persisted_id(activity.id, model_name="Activity")
+            progress = progress_by_pair.get((student_id, activity_id))
             latest = (
                 submissions_by_id.get(progress.latest_submission_id)
                 if progress and progress.latest_submission_id
                 else None
             )
-            file_attempt = file_attempts_by_pair.get((student.id, activity.id))
+            file_attempt = file_attempts_by_pair.get((student_id, activity_id))
             cells.append(
                 _build_cell(
-                    student.id,
-                    activity.id,
+                    student_id,
+                    activity_id,
                     progress,
                     latest,
                     file_attempt_uuid=file_attempt.attempt_uuid if file_attempt else None,
@@ -96,8 +100,8 @@ async def get_course_gradebook(
     activities_payload = [
         _build_activity(
             activity,
-            policies_by_activity.get(activity.id),
-            file_configs_by_activity.get(activity.id),
+            policies_by_activity.get(require_persisted_id(activity.id, model_name="Activity")),
+            file_configs_by_activity.get(require_persisted_id(activity.id, model_name="Activity")),
         )
         for activity in activities
     ]
@@ -105,7 +109,7 @@ async def get_course_gradebook(
 
     return CourseGradebookResponse(
         course_uuid=course.course_uuid,
-        course_id=course.id,
+        course_id=course_id,
         course_name=course.name,
         students=students_payload,
         activities=activities_payload,
@@ -159,7 +163,7 @@ def _course_activities(course_id: int, db_session: Session) -> list[Activity]:
                 Activity.course_id == course_id,
                 Activity.published,
             )
-            .order_by(Activity.chapter_id, Activity.order, Activity.id)
+            .order_by(col(Activity.chapter_id), col(Activity.order), col(Activity.id))
         ).all()
     )
 
@@ -202,7 +206,7 @@ def _course_students(
 
     return list(
         db_session.exec(
-            select(User).where(or_(*conditions)).order_by(User.last_name, User.first_name, User.username)
+            select(User).where(or_(*conditions)).order_by(col(User.last_name), col(User.first_name), col(User.username))
         ).all()
     )
 
@@ -237,7 +241,7 @@ def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[i
 
 def _build_student(user: User) -> GradebookStudent:
     return GradebookStudent(
-        id=user.id,
+        id=require_persisted_id(user.id, model_name="User"),
         user_uuid=user.user_uuid,
         username=user.username,
         first_name=user.first_name,
@@ -252,7 +256,7 @@ def _build_activity(
     file_config: object | None = None,
 ) -> GradebookActivity:
     return GradebookActivity(
-        id=activity.id,
+        id=require_persisted_id(activity.id, model_name="Activity"),
         activity_uuid=activity.activity_uuid,
         name=activity.name,
         activity_type=str(activity.activity_type),

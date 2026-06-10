@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Literal, cast
 
 from sqlalchemy import func, select
 from sqlmodel import Session, col
@@ -75,7 +76,7 @@ def _metric(
         value=round(value, 1),
         delta_value=delta_value,
         delta_pct=delta_pct,
-        direction=direction_for_delta(delta_value),
+        direction=cast("Literal['up', 'down', 'flat']", direction_for_delta(delta_value)),
         label=label,
         unit=unit,
         is_higher_better=is_higher_better,
@@ -86,7 +87,7 @@ def _metric(
 
 def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], before_date: date) -> float | None:
     """Return the at-risk learner count from the most recent LearnerRiskSnapshot before *before_date*."""
-    latest_date_filters = [LearnerRiskSnapshot.snapshot_date < before_date]
+    latest_date_filters = [col(LearnerRiskSnapshot.snapshot_date) < before_date]
     if course_ids:
         latest_date_filters.append(col(LearnerRiskSnapshot.course_id).in_(course_ids))
     latest_date_result = sa_execute(
@@ -99,7 +100,7 @@ def _query_previous_at_risk_count(db_session: Session, course_ids: list[int], be
     if latest_date is None:
         return None
     filter_clause = [
-        LearnerRiskSnapshot.snapshot_date == latest_date,
+        col(LearnerRiskSnapshot.snapshot_date) == latest_date,
         col(LearnerRiskSnapshot.risk_level).in_(["medium", "high"]),
     ]
     if course_ids:

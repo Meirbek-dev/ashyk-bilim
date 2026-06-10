@@ -3,6 +3,7 @@
 from src.db.assessments import ChoiceItemAnswer, ChoiceItemBody, MatchingItemAnswer, MatchingItemBody
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types.narrowing import as_json_value
 
 
 def apply_attempt_penalty(
@@ -115,7 +116,7 @@ def _grade_canonical_choice(
         max_score=points,
         correct=correct,
         feedback=feedback,
-        user_answer=selected,
+        user_answer=as_json_value(selected, field="selected"),
         correct_answer=list(correct_option_ids),
     )
 

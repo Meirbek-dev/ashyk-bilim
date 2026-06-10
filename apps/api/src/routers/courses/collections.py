@@ -11,7 +11,7 @@ from src.db.collections import (
     CollectionUpdate,
 )
 from src.db.strict_base_model import PydanticStrictBaseModel
-from src.db.users import AnonymousUser
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.courses.collections import (
     create_collection,
@@ -20,7 +20,6 @@ from src.services.courses.collections import (
     get_collections,
     update_collection,
 )
-from src.services.users.users import PublicUser
 
 router = APIRouter()
 
@@ -34,7 +33,7 @@ async def api_create_collection(
     request: Request,
     collection_object: CollectionCreate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CollectionRead:
     """Create new Collection."""
     return await create_collection(request, collection_object, current_user, db_session)
@@ -45,7 +44,7 @@ async def api_get_collection(
     request: Request,
     collection_uuid: str,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CollectionReadWithPermissions:
     """Get single collection by ID with permission metadata."""
     return await get_collection(request, collection_uuid, current_user, db_session)
@@ -57,7 +56,7 @@ async def api_get_platform_collections(
     page: int,
     limit: int,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[CollectionReadWithPermissions]:
     """Get collections by page and limit with permission metadata."""
     return await get_collections(
@@ -75,7 +74,7 @@ async def api_update_collection(
     collection_object: CollectionUpdate,
     collection_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CollectionRead:
     """Update collection by ID."""
     return await update_collection(request, collection_object, collection_uuid, current_user, db_session)
@@ -86,7 +85,9 @@ async def api_delete_collection(
     request: Request,
     collection_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CollectionDetailResponse:
     """Delete collection by ID."""
-    return await delete_collection(request, collection_uuid, current_user, db_session)
+    return CollectionDetailResponse.model_validate(
+        await delete_collection(request, collection_uuid, current_user, db_session)
+    )

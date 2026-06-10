@@ -15,6 +15,7 @@ from src.db.courses.courses import Course, CourseRead
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
+from src.types import require_persisted_id
 
 ####################################################
 # CRUD
@@ -76,7 +77,7 @@ async def get_collection(
         if current_user.id
         else False
     )
-    is_owner = current_user.id is not None and collection.creator_id == current_user.id
+    is_owner = collection.creator_id == current_user.id
 
     return CollectionReadWithPermissions(
         **collection.model_dump(),
@@ -116,7 +117,8 @@ async def create_collection(
     db_session.refresh(collection)
 
     # SECURITY: Link courses to collection - ensure user has access to all courses being added
-    if collection and collection_object.courses:
+    collection_id = require_persisted_id(collection.id, model_name="Collection")
+    if collection_object.courses:
         # Batch-fetch all requested courses in a single query instead of one per course
         found_courses = db_session.exec(select(Course).where(col(Course.id).in_(collection_object.courses))).all()
 
@@ -135,8 +137,8 @@ async def create_collection(
             for course in found_courses:
                 current_time = utcnow()
                 collection_course = CollectionCourse(
-                    collection_id=int(collection.id),
-                    course_id=course.id,
+                    collection_id=collection_id,
+                    course_id=require_persisted_id(course.id, model_name="Course"),
                     creation_date=current_time,
                     update_date=current_time,
                 )
@@ -182,7 +184,7 @@ async def update_collection(
         resource_owner_id=collection.creator_id,
     )
 
-    courses = collection_object.courses
+    course_ids = collection_object.courses
 
     del collection_object.courses
 
@@ -202,10 +204,10 @@ async def update_collection(
         db_session.delete(collection_course)
 
     # Add new collection_courses
-    for course in courses or []:
+    for course in course_ids or []:
         current_time = utcnow()
         collection_course = CollectionCourse(
-            collection_id=int(collection.id),
+            collection_id=require_persisted_id(collection.id, model_name="Collection"),
             course_id=int(course),
             creation_date=current_time,
             update_date=current_time,
@@ -220,11 +222,11 @@ async def update_collection(
     updated_courses_statement = (
         select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     )
-    courses = list(db_session.exec(updated_courses_statement).all())
+    updated_courses = list(db_session.exec(updated_courses_statement).all())
 
     return CollectionRead(
         **collection.model_dump(),
-        courses=[CourseRead.model_validate(c) for c in courses],
+        courses=[CourseRead.model_validate(c) for c in updated_courses],
     )
 
 
@@ -275,7 +277,7 @@ async def get_collections(
 ) -> list[CollectionReadWithPermissions]:
 
     statement_public = select(Collection).where(Collection.public)
-    statement_all = select(Collection).distinct(Collection.id)
+    statement_all = select(Collection).distinct(col(Collection.id))
 
     statement = statement_public if current_user.id == 0 else statement_all
 
@@ -285,7 +287,7 @@ async def get_collections(
     if checker is None:
         checker = PermissionChecker(db_session)
 
-    collection_ids = [c.id for c in collections]
+    collection_ids = [require_persisted_id(c.id, model_name="Collection") for c in collections]
     is_public_user = current_user.id == 0
 
     # Batch fetch all courses for all collections in one query
@@ -306,11 +308,10 @@ async def get_collections(
 
     courses_by_collection: dict[int, list[Course]] = {}
     for cc, course in db_session.exec(batch_stmt).all():
-        if cc.collection_id is not None:
-            courses_by_collection.setdefault(cc.collection_id, []).append(course)
+        courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
     for collection in collections:
-        courses = courses_by_collection.get(collection.id or 0, [])
+        courses = courses_by_collection.get(require_persisted_id(collection.id, model_name="Collection"), [])
 
         can_update = (
             checker.check(
@@ -330,7 +331,7 @@ async def get_collections(
             if current_user.id
             else False
         )
-        is_owner = current_user.id is not None and collection.creator_id == current_user.id
+        is_owner = collection.creator_id == current_user.id
 
         enriched = CollectionReadWithPermissions(
             **collection.model_dump(),

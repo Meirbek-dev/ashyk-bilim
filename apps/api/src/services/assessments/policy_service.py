@@ -36,6 +36,7 @@ from src.services.assessments._helpers import (
     _require_grade,
 )
 from src.services.audit import record_audit_event
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ async def create_student_policy_override(
 
     now = datetime.now(UTC)
     override = StudentPolicyOverride(
-        policy_id=policy.id,
+        policy_id=require_persisted_id(policy.id, model_name="AssessmentPolicy"),
         user_id=payload.user_id,
         max_attempts_override=payload.max_attempts_override,
         due_at_override=payload.due_at_override,
@@ -276,7 +277,7 @@ async def delete_student_policy_override(
 
 def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:
     return StudentPolicyOverrideRead(
-        id=override.id,
+        id=require_persisted_id(override.id, model_name="StudentPolicyOverride"),
         user_id=override.user_id,
         policy_id=override.policy_id,
         max_attempts_override=override.max_attempts_override,

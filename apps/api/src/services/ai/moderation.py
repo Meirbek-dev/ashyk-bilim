@@ -1,14 +1,29 @@
 import asyncio
 import logging
-from typing import Literal
+from collections.abc import Sequence
+from typing import Literal, Protocol, runtime_checkable
+
+from openai.types.moderation_text_input_param import ModerationTextInputParam
 
 from config.config import get_settings
 from src.services.ai.embeddings import get_openai_client, openai_breaker
 from src.services.ai.exceptions import AIProcessingError, ContentModerationError
+from src.types import JsonObject, JsonValue
 
 logger = logging.getLogger(__name__)
 
 ModerationStage = Literal["input"]
+
+
+@runtime_checkable
+class _ModerationResult(Protocol):
+    flagged: bool
+
+
+@runtime_checkable
+class _ModerationResponse(Protocol):
+    results: Sequence[_ModerationResult]
+    model: str
 
 
 def _model_dump(value: object) -> dict[str, object]:
@@ -44,12 +59,13 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
         return
 
     try:
+        moderation_input: ModerationTextInputParam = {"type": "text", "text": stripped_text}
 
         async def _call() -> object:
             return await asyncio.wait_for(
                 get_openai_client().moderations.create(
                     model=settings.moderation_model,
-                    input=[{"type": "text", "text": stripped_text}],
+                    input=[moderation_input],
                 ),
                 timeout=settings.request_timeout,
             )
@@ -64,16 +80,21 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
             details={"error_type": type(exc).__name__, "stage": stage},
         ) from exc
 
+    if not isinstance(response, _ModerationResponse):
+        msg = "Content moderation returned an unexpected response"
+        raise AIProcessingError(msg, details={"stage": stage, "response_type": type(response).__name__})
+
     flagged_results = [result for result in response.results if result.flagged]
     if not flagged_results:
         return
 
     categories = sorted({category for result in flagged_results for category in _flagged_categories(result)})
-    category_scores = {
+    category_scores: JsonObject = {
         category: score
         for result in flagged_results
         for category, score in _category_scores(result, categories).items()
     }
+    category_values: list[JsonValue] = [*categories]
     logger.info(
         "AI moderation blocked %s text: model=%s categories=%s",
         stage,
@@ -84,7 +105,7 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
         details={
             "stage": stage,
             "model": response.model,
-            "categories": categories,
+            "categories": category_values,
             "category_scores": category_scores,
         }
     )

@@ -328,10 +328,10 @@ class SubmissionUpdate(SQLModelStrictBaseModel):
         return v
 
 
-class Submission(SubmissionBase, table=True):  # type: ignore[misc]
+class Submission(SubmissionBase, table=True):
     """Single unified row per student per assessment attempt."""
 
-    __tablename__: ClassVar[str] = "submission"
+    __tablename__: ClassVar[str] = "submission"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_submission_user_activity", "user_id", "activity_id"),
         Index("ix_submission_uuid", "submission_uuid", unique=True),

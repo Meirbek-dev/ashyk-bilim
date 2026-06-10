@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, UploadFile, status
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
@@ -233,6 +233,8 @@ async def api_create_course(
     """
     assert db_session is not None
     assert current_user is not None
+    if name is None or public is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="name and public are required")
     course = CourseCreate(
         name=name,
         description=description,
@@ -500,7 +502,7 @@ async def api_delete_course(
     """
     assert db_session is not None
     assert current_user is not None
-    return await delete_course(request, course_uuid, current_user, db_session)
+    return CourseDetailResponse.model_validate(await delete_course(request, course_uuid, current_user, db_session))
 
 
 @router.post("/{course_uuid}/apply-contributor", response_model=CourseContributorApplicationResponse)
@@ -513,7 +515,9 @@ async def api_apply_course_contributor(
     """Apply to be a contributor for a course."""
     assert db_session is not None
     assert current_user is not None
-    return await apply_course_contributor(request, course_uuid, current_user, db_session)
+    return CourseContributorApplicationResponse.model_validate(
+        await apply_course_contributor(request, course_uuid, current_user, db_session)
+    )
 
 
 @router.get("/{course_uuid}/updates", response_model=list[CourseUpdateRead])
@@ -569,7 +573,9 @@ async def api_delete_course_update(
     """Delete Course Update by courseupdate_uuid."""
     assert db_session is not None
     assert current_user is not None
-    return await delete_update(request, courseupdate_uuid, current_user, db_session)
+    return CourseUpdateDeleteResponse.model_validate(
+        await delete_update(request, courseupdate_uuid, current_user, db_session)
+    )
 
 
 @router.get("/{course_uuid}/contributors", response_model=list[CourseContributorResponse])
@@ -582,7 +588,8 @@ async def api_get_course_contributors(
     """Get all contributors for a specific course."""
     assert db_session is not None
     assert current_user is not None
-    return await get_course_contributors(request, course_uuid, current_user, db_session)
+    contributors = await get_course_contributors(request, course_uuid, current_user, db_session)
+    return [CourseContributorResponse.model_validate(contributor) for contributor in contributors]
 
 
 @router.put("/{course_uuid}/contributors/{contributor_user_id}", response_model=CourseContributorMutationResponse)
@@ -601,14 +608,16 @@ async def api_update_course_contributor(
     """
     assert db_session is not None
     assert current_user is not None
-    return await update_course_contributor(
-        request,
-        course_uuid,
-        contributor_user_id,
-        authorship,
-        authorship_status,
-        current_user,
-        db_session,
+    return CourseContributorMutationResponse.model_validate(
+        await update_course_contributor(
+            request,
+            course_uuid,
+            contributor_user_id,
+            authorship,
+            authorship_status,
+            current_user,
+            db_session,
+        )
     )
 
 
@@ -626,7 +635,9 @@ async def api_add_bulk_course_contributors(
     """
     assert db_session is not None
     assert current_user is not None
-    return await add_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    return CourseBulkContributorResponse.model_validate(
+        await add_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    )
 
 
 @router.delete("/{course_uuid}/bulk-remove-contributors", response_model=CourseBulkContributorResponse)
@@ -640,7 +651,9 @@ async def api_remove_bulk_course_contributors(
     """Remove multiple contributors from a course by their usernames."""
     assert db_session is not None
     assert current_user is not None
-    return await remove_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    return CourseBulkContributorResponse.model_validate(
+        await remove_bulk_course_contributors(request, course_uuid, usernames, current_user, db_session)
+    )
 
 
 @router.get("/{course_uuid}/rights", response_model=CourseUserRightsResponse)

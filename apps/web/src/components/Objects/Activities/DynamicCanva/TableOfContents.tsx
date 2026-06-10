@@ -17,7 +17,7 @@ export function useHeadingOutline(editor: Editor | null) {
     if (!editor) return
 
     const updateHeadings = () => {
-      setHeadings(extractHeadingOutline(editor.state.doc as any))
+      setHeadings(extractHeadingOutline(editor.state.doc as unknown as Parameters<typeof extractHeadingOutline>[0]))
     }
 
     editor.on('update', updateHeadings)

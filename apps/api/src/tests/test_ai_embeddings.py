@@ -1,8 +1,7 @@
-from types import SimpleNamespace
-
 import pytest
 
 from src.services.ai import embeddings
+from src.types.simple_namespace import SimpleNamespace
 
 
 @pytest.mark.asyncio

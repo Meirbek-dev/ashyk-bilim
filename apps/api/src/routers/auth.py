@@ -366,7 +366,7 @@ async def refresh_token(
     set_access_cookie(response, access_token)
     set_refresh_cookie(response, new_refresh_token)
 
-    return {"status": "ok"}
+    return AuthRefreshResponse(status="ok")
 
 
 @router.get(
@@ -446,11 +446,17 @@ async def google_callback(
             state=state,
         )
 
-        frontend_callback = userinfo.get("frontend_callback", frontend_callback)
+        frontend_callback_value = userinfo.get("frontend_callback", frontend_callback)
+        if not isinstance(frontend_callback_value, str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid frontend callback URL",
+            )
+        frontend_callback = frontend_callback_value
 
         user = await find_or_create_google_user(
             request=request,
-            google_user_data=userinfo,
+            google_user_data=dict(userinfo),
             current_user=AnonymousUser(),
             db_session=db_session,
         )

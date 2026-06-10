@@ -9,11 +9,13 @@ from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin
 from fastapi_users.exceptions import InvalidPasswordException
 from fastapi_users.schemas import BaseUserCreate
+from pydantic import SecretStr
 
 from src.auth.db import SQLModelUserDatabase, get_user_db
 from src.db.users import User
 from src.security.keys import get_jwt_secret
 from src.security.security import password_helper
+from src.types import require_persisted_id
 
 _logger = logging.getLogger(__name__)
 
@@ -21,11 +23,8 @@ MIN_PASSWORD_LENGTH = 8
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
-    @property
-    def reset_password_token_secret(self) -> str:  # type: ignore[override]
-        return get_jwt_secret()
-
     def __init__(self, user_db: SQLModelUserDatabase) -> None:
+        self.reset_password_token_secret: str | SecretStr = get_jwt_secret()
         super().__init__(user_db, password_helper=password_helper)
 
     @override
@@ -52,7 +51,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     async def on_after_reset_password(self, user: User, request: Request | None = None) -> None:
         from src.services.auth.sessions import revoke_all_user_sessions
 
-        await revoke_all_user_sessions(user.id)
+        await revoke_all_user_sessions(require_persisted_id(user.id, model_name="User"))
 
     @override
     async def on_after_register(self, user: User, request: Request | None = None) -> None:
@@ -69,7 +68,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
         def _assign_default_role() -> None:
             with session_factory() as session:
-                ensure_user_has_default_role(session, user.id)
+                ensure_user_has_default_role(session, require_persisted_id(user.id, model_name="User"))
 
         await asyncio.to_thread(_assign_default_role)
 

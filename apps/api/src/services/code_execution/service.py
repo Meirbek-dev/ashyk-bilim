@@ -9,21 +9,21 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import override
+from typing import Protocol, override, runtime_checkable
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 import httpx
 from fastapi import HTTPException, status
-from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 import judge0
 from config.config import get_settings, secret_value
+from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.utils.circuit_breaker import CircuitBreaker
-from src.types import JsonObject
+from src.types import JsonObject, JsonValue
 
 logger = logging.getLogger(__name__)
 judge0_breaker = CircuitBreaker("judge0", failure_threshold=5, recovery_timeout=30.0)
@@ -44,6 +44,20 @@ _JAVA_7_COMPILER_OPTIONS = (
     "-J-XX:ReservedCodeCacheSize=16m -J-XX:+UseSerialGC "
     "-J-XX:TieredStopAtLevel=1"
 )
+
+
+@runtime_checkable
+class _Judge0SubmissionLike(Protocol):
+    token: str | None
+    status: int | str | None
+    message: str | None
+    stdout: str | None
+    stderr: str | None
+    compile_output: str | None
+    time: float | str | None
+    memory: int | None
+
+
 _KOTLIN_COMPILER_OPTIONS = (
     "-J-Xmx512m -J-Xms64m -J-XX:MaxMetaspaceSize=256m "
     "-J-XX:CompressedClassSpaceSize=64m -J-XX:ReservedCodeCacheSize=64m "
@@ -166,6 +180,7 @@ class CodeExecutionResult:
         ]
 
     def metadata_record(self, *, language_id: int) -> JsonObject:
+        details: list[JsonValue] = list(self.grading_details())
         return {
             "run_id": self.run_uuid,
             "language_id": language_id,
@@ -178,7 +193,7 @@ class CodeExecutionResult:
             "compile_output": self.compile_output,
             "time": self.time,
             "memory": self.memory,
-            "details": self.grading_details(),
+            "details": details,
             "created_at": datetime.now(UTC).isoformat(),
         }
 
@@ -253,7 +268,7 @@ class Judge0SdkClientFactory:
             self._fingerprint = None
 
 
-class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
+class _ConfiguredJudge0Client(judge0.Client):
     def __init__(
         self,
         endpoint: str,
@@ -284,9 +299,9 @@ class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
             msg = "Judge0 client initialization failed"
             raise RuntimeError(msg) from exc
 
-    @property
+    @property  # type: ignore[explicit-override]
     @override
-    def retry_strategy(self) -> _BoundedIntervalRetry:
+    def retry_strategy(self) -> object:
         return _BoundedIntervalRetry(
             poll_interval_seconds=self._poll_interval_seconds,
             max_wait_seconds=self._poll_max_wait_seconds,
@@ -294,7 +309,7 @@ class _ConfiguredJudge0Client(judge0.Client):  # type: ignore[misc]
 
     @retry_strategy.setter
     @override
-    def retry_strategy(self, _value: _BoundedIntervalRetry) -> None:
+    def retry_strategy(self, value: object) -> None:
         return
 
 
@@ -500,9 +515,16 @@ class CodeExecutionService:
                 enable_network=False,
             )
 
-        submissions = judge0_breaker.call(_run_judge0)
-        if isinstance(submissions, judge0.Submission):
-            submissions = [submissions]
+        raw_submissions = judge0_breaker.call(_run_judge0)
+        if isinstance(raw_submissions, _Judge0SubmissionLike):
+            submissions = [raw_submissions]
+        elif isinstance(raw_submissions, list) and all(
+            isinstance(submission, _Judge0SubmissionLike) for submission in raw_submissions
+        ):
+            submissions = raw_submissions
+        else:
+            msg = "Judge0 returned an unexpected submission payload"
+            raise RuntimeError(msg)
 
         details: list[CodeExecutionCaseResult] = []
         passed = 0
@@ -665,7 +687,7 @@ class CodeExecutionService:
 
     def _result_from_db(self, db_session: Session, run: CodeRun) -> CodeExecutionResult:
         cases = db_session.exec(
-            select(CodeRunCase).where(CodeRunCase.run_uuid == run.run_uuid).order_by(CodeRunCase.id)
+            select(CodeRunCase).where(CodeRunCase.run_uuid == run.run_uuid).order_by(col(CodeRunCase.id))
         ).all()
         details = [
             CodeExecutionCaseResult(
@@ -866,21 +888,22 @@ def _truncate_output(value: str | None, max_bytes: int) -> str | None:
     return encoded[:budget].decode(errors="ignore") + _OUTPUT_TRUNCATION_MARKER
 
 
-def _max_queue_seconds(submissions: list[judge0.Submission]) -> float | None:
+def _max_queue_seconds(submissions: list[_Judge0SubmissionLike]) -> float | None:
     queue_times = [
         queue_seconds for submission in submissions if (queue_seconds := _queue_seconds(submission)) is not None
     ]
     return round(max(queue_times), 3) if queue_times else None
 
 
-def _queue_seconds(submission: judge0.Submission) -> float | None:
+def _queue_seconds(submission: _Judge0SubmissionLike) -> float | None:
     created_at = getattr(submission, "created_at", None)
     finished_at = getattr(submission, "finished_at", None)
-    if created_at is None or finished_at is None:
+    if not isinstance(created_at, datetime) or not isinstance(finished_at, datetime):
         return None
 
     total_seconds = (finished_at - created_at).total_seconds()
-    run_seconds = float(getattr(submission, "time", None) or 0)
+    raw_run_seconds = getattr(submission, "time", None)
+    run_seconds = float(raw_run_seconds) if isinstance(raw_run_seconds, (int, float, str)) else 0.0
     return max(0.0, total_seconds - run_seconds)
 
 

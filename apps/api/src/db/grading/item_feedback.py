@@ -17,10 +17,10 @@ class ItemFeedbackAnnotationType(StrEnum):
     AUDIO = "AUDIO"
 
 
-class ItemFeedbackEntry(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class ItemFeedbackEntry(SQLModelStrictBaseModel, table=True):
     """Per-item inline feedback stored separately from the grading JSON blob."""
 
-    __tablename__: ClassVar[str] = "item_feedback"
+    __tablename__: ClassVar[str] = "item_feedback"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_item_feedback_grading_entry_id", "grading_entry_id"),
         Index("ix_item_feedback_submission_item", "submission_id", "item_ref"),

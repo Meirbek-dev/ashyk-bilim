@@ -115,7 +115,8 @@ def _update_daily_tracking_with_policy(profile: GamificationProfile, amount: int
 def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
     """Reliable count(*) helper that works across SQL backends."""
     try:
-        db.scalar(stmt)
+        value = db.scalar(stmt)
+        return int(value or 0)
     except (SQLAlchemyError, TypeError, AttributeError) as exc:
         logger.warning("Primary count query failed; attempting fallback", exc_info=exc)
         try:
@@ -126,10 +127,10 @@ def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
         first: object = None
         try:
             first = cast("object", result.one_or_none())
-        except (AttributeError, TypeError):
+        except AttributeError, TypeError:
             try:
                 first = cast("object", result.first())
-            except (AttributeError, TypeError):
+            except AttributeError, TypeError:
                 first = None
         if first is None:
             return 0
@@ -142,7 +143,7 @@ def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
             except ValueError:
                 return 0
         return 0
-    except (TypeError, ValueError):
+    except ValueError:
         return 0
 
 
@@ -265,7 +266,7 @@ def award_xp(
             return profile, existing_tx, existing_tx.triggered_level_up, False
         msg = f"Database error: {e}"
         raise GamificationError(msg)
-    except (SQLAlchemyError, ValueError, TypeError):
+    except SQLAlchemyError, ValueError, TypeError:
         db.rollback()
         raise
 

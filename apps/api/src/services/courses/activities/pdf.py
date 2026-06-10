@@ -19,6 +19,7 @@ from src.security.file_validation import validate_upload
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.pdfs import upload_pdf
+from src.types import require_persisted_id
 
 MAX_DOCUMENT_PDF_SIZE = 100 * 1024 * 1024
 
@@ -129,7 +130,7 @@ async def create_documentpdf_activity(
             "filename": f"documentpdf.{pdf_format}",
             "activity_uuid": activity_uuid,
         },
-        chapter_id=chapter.id,
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
         course_id=chapter.course_id,  # keep legacy column in sync
         activity_uuid=activity_uuid,
         creation_date=now,

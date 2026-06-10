@@ -2,7 +2,7 @@ import logging.config
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import override
+from typing import Literal, override
 
 from src.infra.settings import AppSettings
 
@@ -23,7 +23,7 @@ class ColorFormatter(logging.Formatter):
         self,
         fmt: str | None = None,
         datefmt: str | None = None,
-        style: str = "%",
+        style: Literal["%", "{", "$"] = "%",
         validate: bool = True,
         *,
         defaults: Mapping[str, object] | None = None,

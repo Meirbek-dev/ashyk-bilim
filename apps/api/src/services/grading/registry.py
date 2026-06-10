@@ -16,6 +16,7 @@ from src.services.grading.quiz_grader import (
     apply_attempt_penalty,
     grade_canonical_choice_items,
 )
+from src.types.narrowing import as_json_value
 
 
 class GradingResult(BaseModel):
@@ -135,7 +136,10 @@ class ManualReviewGrader(BaseGrader):
                         correct=None,
                         feedback="",
                         needs_manual_review=True,
-                        user_answer=ctx.answers_by_item_uuid.get(item.item_uuid),
+                        user_answer=as_json_value(
+                            ctx.answers_by_item_uuid.get(item.item_uuid),
+                            field=f"answer:{item.item_uuid}",
+                        ),
                     )
                     for item in ctx.items
                 ],

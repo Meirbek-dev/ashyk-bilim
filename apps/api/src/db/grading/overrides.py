@@ -36,10 +36,10 @@ from sqlmodel import Field
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
-class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
     """Per-student exception to an AssessmentPolicy."""
 
-    __tablename__: ClassVar[str] = "student_policy_override"
+    __tablename__: ClassVar[str] = "student_policy_override"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint(
             "policy_id",

@@ -83,13 +83,15 @@ def api_update_platform_user_role(
 
     **Required Permission**: `platform:update`
     """
-    return update_platform_user_role(
-        request,
-        user_id,
-        role_id,
-        db_session,
-        current_user,
-        checker,
+    return PlatformDetailResponse.model_validate(
+        update_platform_user_role(
+            request,
+            user_id,
+            role_id,
+            db_session,
+            current_user,
+            checker,
+        )
     )
 
 
@@ -102,12 +104,14 @@ def api_remove_user_from_platform(
     checker: PermissionCheckerDep,
 ) -> PlatformDetailResponse:
     """Remove a user from the platform."""
-    return remove_platform_user(
-        request,
-        user_id,
-        db_session,
-        current_user,
-        checker,
+    return PlatformDetailResponse.model_validate(
+        remove_platform_user(
+            request,
+            user_id,
+            db_session,
+            current_user,
+            checker,
+        )
     )
 
 
@@ -124,11 +128,13 @@ async def api_update_app_logo(
     **Required Permission**: `platform:update`
     """
     checker.require(current_user.id, "platform:update")
-    return await update_app_logo(
-        request=request,
-        logo_file=logo_file,
-        current_user=current_user,
-        db_session=db_session,
+    return PlatformDetailResponse.model_validate(
+        await update_app_logo(
+            request=request,
+            logo_file=logo_file,
+            current_user=current_user,
+            db_session=db_session,
+        )
     )
 
 
@@ -145,11 +151,13 @@ async def api_update_platform_thumbnail(
     **Required Permission**: `platform:update`
     """
     checker.require(current_user.id, "platform:update")
-    return await update_platform_thumbnail(
-        request=request,
-        thumbnail_file=thumbnail_file,
-        current_user=current_user,
-        db_session=db_session,
+    return PlatformDetailResponse.model_validate(
+        await update_platform_thumbnail(
+            request=request,
+            thumbnail_file=thumbnail_file,
+            current_user=current_user,
+            db_session=db_session,
+        )
     )
 
 

@@ -1,6 +1,6 @@
 import logging
 from datetime import UTC, datetime
-from typing import TypeVar, cast
+from typing import cast
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlalchemy import func
@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, and_, col, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
-from src.types.narrowing import require_persisted_id
 from ulid import ULID
 
 from src.db.courses.activities import Activity
@@ -41,17 +40,15 @@ from src.services.courses._auth import (
 )
 from src.services.courses.thumbnails import upload_thumbnail
 from src.types import JsonObject
+from src.types.narrowing import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
 
-_T = TypeVar("_T")
-
-
 def _accessible_courses_filter[T](
-    query: SelectOfScalar[_T],
+    query: SelectOfScalar[T],
     current_user: PublicUser | AnonymousUser,
-) -> SelectOfScalar[_T]:
+) -> SelectOfScalar[T]:
     """Apply the standard course-access filter to *query*.
 
     Rules:
@@ -132,13 +129,13 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
     )
 
 
-def _apply_course_sort[T](query: SelectOfScalar[_T], sort_by: str | None) -> SelectOfScalar[_T]:
+def _apply_course_sort[T](query: SelectOfScalar[T], sort_by: str | None) -> SelectOfScalar[T]:
     if sort_by == "name":
         return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
     return query.order_by(col(Course.update_date).desc(), col(Course.id).desc())
 
 
-def _apply_lms_sort[T](query: SelectOfScalar[_T], current_user: PublicUser | AnonymousUser) -> SelectOfScalar[_T]:
+def _apply_lms_sort[T](query: SelectOfScalar[T], current_user: PublicUser | AnonymousUser) -> SelectOfScalar[T]:
     from sqlalchemy import case, func, select
 
     from src.db.trail_runs import TrailRun
@@ -700,6 +697,7 @@ async def get_courses(
     set_json_fn = None
     try:
         from src.services.cache.redis_client import get_json as r_get_json, set_json as r_set_json
+
         get_json_fn = r_get_json
         set_json_fn = r_set_json
     except Exception:
@@ -723,8 +721,8 @@ async def get_courses(
     offset = (page - 1) * limit
     # Step 1: Fetch paginated course IDs using LMS sorting
     id_query: SelectOfScalar[int | None] = cast("SelectOfScalar[int | None]", select(Course.id))
-    id_query = cast("SelectOfScalar[int | None]", _accessible_courses_filter(id_query, current_user))
-    id_query = cast("SelectOfScalar[int | None]", _apply_lms_sort(id_query, current_user))
+    id_query = _accessible_courses_filter(id_query, current_user)
+    id_query = _apply_lms_sort(id_query, current_user)
     id_query = id_query.offset(offset).limit(limit)
 
     course_ids = [cid for cid in db_session.exec(id_query).all() if cid is not None]
@@ -1534,7 +1532,7 @@ async def get_editable_courses(
             col(Course.id).desc(),
         )
     else:
-        id_query = cast("SelectOfScalar[int | None]", _apply_course_sort(id_query, sort_by))
+        id_query = _apply_course_sort(id_query, sort_by)
 
     if apply_pagination:
         id_query = id_query.offset(offset).limit(limit)

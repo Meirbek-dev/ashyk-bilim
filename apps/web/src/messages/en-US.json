@@ -1233,6 +1233,9 @@
     "unsavedChanges": "Unsaved changes"
   },
   "Components": {
+    "Calendar": {
+      "set": "Set"
+    },
     "SaveStateBadge": {
       "unsaved": "Unsaved",
       "saving": "Saving...",

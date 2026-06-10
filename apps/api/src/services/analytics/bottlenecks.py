@@ -25,10 +25,11 @@ def _time_spent_seconds(data: JsonObject | None, created: object, updated: objec
         "durationSeconds",
     ):
         raw = payload.get(key)
+        if not isinstance(raw, int | float | str):
+            continue
         try:
-            if raw is not None:
-                value = float(raw)
-                return value if value >= 0 else None
+            value = float(raw)
+            return value if value >= 0 else None
         except TypeError, ValueError:
             continue
     created_at = parse_timestamp(created)

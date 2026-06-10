@@ -5,7 +5,7 @@
       "source": "pydantic/skills",
       "sourceType": "github",
       "skillPath": "skills/building-pydantic-ai-agents/SKILL.md",
-      "computedHash": "d9c99874e2807d565c95d47c04ed131be3df1a688d63148d378b1ede6988a064"
+      "computedHash": "0ed2ea54eacc0ba3d27351babbb79f9f7b8cd110f08e4e97f9ab91842a122a5f"
     },
     "caveman": {
       "source": "juliusbrussee/caveman",
@@ -47,7 +47,7 @@
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
-      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+      "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
     },
     "javascript-testing-patterns": {
       "source": "wshobson/agents",
@@ -89,7 +89,7 @@
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "f0fdd03f4755cbb3b57e20fe6fd4a97c00d34e6780187b6559316986e8d848db"
+      "computedHash": "0dc0edeeaec2ae491ae506806517866a3f9bd48d04e0458feb37e0252862891f"
     },
     "stop-slop": {
       "source": "hardikpandya/stop-slop",

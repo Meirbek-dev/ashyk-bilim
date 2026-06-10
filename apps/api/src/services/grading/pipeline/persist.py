@@ -75,7 +75,7 @@ def persist_submission(
                 raw_breakdown=raw_breakdown,
                 effective_breakdown=effective_breakdown,
                 overall_feedback=(
-                    effective_breakdown.get("feedback", "") if isinstance(effective_breakdown, dict) else ""
+                    effective_breakdown["feedback"] if isinstance(effective_breakdown.get("feedback"), str) else ""
                 ),
                 grading_version=draft.grading_version,
                 created_at=now,

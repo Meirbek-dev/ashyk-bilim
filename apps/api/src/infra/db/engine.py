@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Protocol, cast
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -13,10 +14,14 @@ from src.infra.settings import AppSettings
 logger = logging.getLogger("src.infra.db.engine")
 
 
+class _QueryTimingContext(Protocol):
+    _query_start_time: float
+
+
 def _before_cursor_execute(
     conn: object, cursor: object, statement: str, parameters: object, context: object, executemany: bool
 ) -> None:
-    context._query_start_time = time.perf_counter()
+    cast("_QueryTimingContext", context)._query_start_time = time.perf_counter()
 
 
 def _after_cursor_execute(

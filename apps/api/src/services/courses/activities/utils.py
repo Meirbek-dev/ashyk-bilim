@@ -1,7 +1,22 @@
-# no-op
+from collections.abc import Mapping
+from typing import TypeGuard
 
 from src.db.courses.activities import ActivityRead
 from src.db.courses.courses import CourseRead
+
+
+def _is_node(value: object) -> TypeGuard[dict[str, object]]:
+    return isinstance(value, dict) and all(isinstance(key, str) for key in value)
+
+
+def _node_content(node: Mapping[str, object]) -> list[object]:
+    content = node.get("content")
+    return content if isinstance(content, list) else []
+
+
+def _node_attrs(node: Mapping[str, object]) -> dict[str, object]:
+    attrs = node.get("attrs")
+    return attrs if isinstance(attrs, dict) and all(isinstance(key, str) for key in attrs) else {}
 
 
 def _extract_inline_text(nodes: list[object]) -> str:
@@ -12,26 +27,27 @@ def _extract_inline_text(nodes: list[object]) -> str:
     for node in nodes:
         if isinstance(node, str):
             parts.append(node)
-        elif isinstance(node, dict):
+        elif _is_node(node):
             if "text" in node:
-                parts.append(node["text"])
+                parts.append(str(node["text"]))
             elif node.get("type") == "hardBreak":
                 parts.append("\n")
             elif "content" in node:
-                parts.append(_extract_inline_text(node["content"]))
+                parts.append(_extract_inline_text(_node_content(node)))
     return "".join(parts)
 
 
 def _extract_block_text(node: dict[str, object]) -> str:
     """Extract text from a block-level content node, handling all common types."""
     node_type = node.get("type", "")
-    content = node.get("content", [])
-    attrs = node.get("attrs", {})
+    content = _node_content(node)
+    attrs = _node_attrs(node)
 
     if node_type == "heading":
         level = attrs.get("level", 2)
         text = _extract_inline_text(content)
-        return f"{'#' * level} {text}" if text else ""
+        heading_level = level if isinstance(level, int) else 2
+        return f"{'#' * heading_level} {text}" if text else ""
 
     if node_type == "paragraph":
         return _extract_inline_text(content)
@@ -49,7 +65,7 @@ def _extract_block_text(node: dict[str, object]) -> str:
     if node_type == "blockquote":
         lines: list[str] = []
         for child in content:
-            if isinstance(child, dict):
+            if _is_node(child):
                 child_text = _extract_block_text(child)
                 if child_text:
                     lines.append(child_text)
@@ -58,10 +74,10 @@ def _extract_block_text(node: dict[str, object]) -> str:
     if node_type in {"bulletList", "orderedList"}:
         items = []
         for i, child in enumerate(content):
-            if isinstance(child, dict) and child.get("type") == "listItem":
+            if _is_node(child) and child.get("type") == "listItem":
                 item_parts: list[str] = []
-                for sub in child.get("content", []):
-                    if isinstance(sub, dict):
+                for sub in _node_content(child):
+                    if _is_node(sub):
                         sub_text = _extract_block_text(sub)
                         if sub_text:
                             item_parts.append(sub_text)
@@ -74,13 +90,13 @@ def _extract_block_text(node: dict[str, object]) -> str:
     if node_type == "table":
         rows = []
         for row_node in content:
-            if isinstance(row_node, dict) and row_node.get("type") == "tableRow":
+            if _is_node(row_node) and row_node.get("type") == "tableRow":
                 cells = []
-                for cell_node in row_node.get("content", []):
-                    if isinstance(cell_node, dict):
+                for cell_node in _node_content(row_node):
+                    if _is_node(cell_node):
                         cell_parts = []
-                        for sub in cell_node.get("content", []):
-                            if isinstance(sub, dict):
+                        for sub in _node_content(cell_node):
+                            if _is_node(sub):
                                 sub_text = _extract_block_text(sub)
                                 if sub_text:
                                     cell_parts.append(sub_text)
@@ -96,7 +112,7 @@ def _extract_block_text(node: dict[str, object]) -> str:
     if content:
         parts: list[str] = []
         for child in content:
-            if isinstance(child, dict):
+            if _is_node(child):
                 child_text = _extract_block_text(child)
                 if child_text:
                     parts.append(child_text)
@@ -123,7 +139,7 @@ def structure_activity_content_by_type(activity: ActivityRead | dict[str, object
 
     sections: list[str] = []
     for node in nodes:
-        if not isinstance(node, dict):
+        if not _is_node(node):
             continue
         text = _extract_block_text(node)
         if text and text.strip():

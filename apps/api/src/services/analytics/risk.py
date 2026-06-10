@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 from collections import defaultdict
 from datetime import UTC, date
+from typing import Literal
 
 from sqlalchemy import select
 from sqlmodel import Session, col
@@ -25,10 +26,12 @@ from src.services.analytics.queries import (
     progress_snapshots,
     to_iso,
 )
-from src.services.analytics.schemas import AtRiskLearnerRow, AtRiskLearnersResponse
+from src.services.analytics.schemas import AnalyticsFilterOption, AtRiskLearnerRow, AtRiskLearnersResponse
 from src.services.analytics.scope import TeacherAnalyticsScope
+from src.types import require_persisted_id
 
 _RISK_LEVEL_WEIGHT = {"low": 0, "medium": 1, "high": 2}
+_RiskLevel = Literal["low", "medium", "high"]
 
 
 def _risk_trend(
@@ -67,7 +70,7 @@ def _confidence_level(
     risk_score: float,
     reason_codes: list[str],
     days_since_last_activity: int | None,
-) -> str:
+) -> _RiskLevel:
     if risk_score >= 70 and len(reason_codes) >= 2:
         return "high"
     if days_since_last_activity is None and len(reason_codes) <= 1:
@@ -199,22 +202,23 @@ def build_risk_rows(context: AnalyticsContext, filters: AnalyticsFilters) -> lis
 
     course_manual_assessment_ids: dict[int, set[int]] = defaultdict(set)
     for manual_assessment in context.manual_assessments:
-        if manual_assessment.id is not None:
-            course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment.id)
+        manual_assessment_id = require_persisted_id(manual_assessment.id, model_name="Assessment")
+        course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment_id)
 
     course_exam_ids: dict[int, set[int]] = defaultdict(set)
     exam_thresholds: dict[int, float] = {}
     for exam in context.exams:
-        if exam.id is not None:
-            course_exam_ids[exam.course_id].add(exam.id)
-            exam_thresholds[exam.id] = assessment_pass_threshold(exam.settings)
+        exam_id = require_persisted_id(exam.id, model_name="Assessment")
+        course_exam_ids[exam.course_id].add(exam_id)
+        exam_thresholds[exam_id] = assessment_pass_threshold(exam.settings)
 
     course_code_ids: dict[int, set[int]] = defaultdict(set)
     for activity in context.activities_by_id.values():
-        if activity.course_id is None:
+        activity_id = activity.id
+        if activity.course_id is None or activity_id is None:
             continue
         if activity.activity_type.value == "TYPE_CODE_CHALLENGE":
-            course_code_ids[activity.course_id].add(activity.id)
+            course_code_ids[activity.course_id].add(activity_id)
 
     manual_assessment_seen: dict[tuple[int, int], set[int]] = defaultdict(set)
     for submission, manual_assessment in context.manual_assessment_submissions:
@@ -249,7 +253,7 @@ def build_risk_rows(context: AnalyticsContext, filters: AnalyticsFilters) -> lis
         key = (activity.course_id, submission.user_id)
         score = manual_assessment_score(submission)
         if score is not None and score >= 60:
-            code_success_by_pair[key].add(activity.id)
+            code_success_by_pair[key].add(require_persisted_id(activity.id, model_name="Activity"))
         elif manual_assessment_is_graded(submission):
             failed_assessments[key] += 1
 
@@ -284,7 +288,7 @@ def build_risk_rows(context: AnalyticsContext, filters: AnalyticsFilters) -> lis
         )
 
         if risk_score >= 70:
-            risk_level = "high"
+            risk_level: _RiskLevel = "high"
         elif risk_score >= 40:
             risk_level = "medium"
         else:
@@ -379,12 +383,12 @@ def get_at_risk_learners(
         page_size=filters.page_size,
         items=paged_rows,
         course_options=[
-            {"label": context.courses_by_id[course_id].name, "value": str(course_id)}
+            AnalyticsFilterOption(label=context.courses_by_id[course_id].name, value=str(course_id))
             for course_id in sorted(context.courses_by_id)
             if course_id in scope.course_ids
         ],
         cohort_options=[
-            {"label": name, "value": str(group_id)}
+            AnalyticsFilterOption(label=name, value=str(group_id))
             for group_id, name in sorted(context.usergroup_names_by_id.items(), key=lambda item: item[1].lower())
         ],
     )

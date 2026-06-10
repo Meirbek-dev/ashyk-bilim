@@ -396,12 +396,10 @@ def export_grades_csv(
         item_scores: list[str] = []
         if item_headers and isinstance(s.grading_json, dict):
             items = s.grading_json.get("items", [])
-            scores_by_id = {}
+            scores_by_id: dict[str, str] = {}
             if isinstance(items, list):
                 scores_by_id = {
-                    str(item.get("item_id", "")): str(item.get("score", ""))
-                    for item in items
-                    if isinstance(item, dict)
+                    str(item.get("item_id", "")): str(item.get("score", "")) for item in items if isinstance(item, dict)
                 }
             # Match order from header discovery
             if sample_submission and isinstance(sample_submission.grading_json, dict):
@@ -695,7 +693,7 @@ async def _save_teacher_grade(
     penalty_pct = float(submission.late_penalty_pct or 0)
     final_score = round(raw_score * (1 - min(100.0, max(0.0, penalty_pct)) / 100), 2)
 
-    raw_breakdown = (
+    raw_breakdown: JsonObject = (
         submission.raw_grading_json
         if getattr(submission, "raw_grading_json", None) is not None
         else submission.grading_json
@@ -864,14 +862,14 @@ async def bulk_publish_grades(
             continue
 
         latest_entry = latest_entries_by_submission.get(submission.id)
-        raw_breakdown = (
+        raw_breakdown: JsonObject = (
             latest_entry.raw_breakdown
             if latest_entry is not None and getattr(latest_entry, "raw_breakdown", None) is not None
             else submission.raw_grading_json
             if getattr(submission, "raw_grading_json", None) is not None
             else {}
         )
-        effective_breakdown = (
+        effective_breakdown: JsonObject = (
             latest_entry.effective_breakdown
             if latest_entry is not None and getattr(latest_entry, "effective_breakdown", None) is not None
             else submission.grading_json

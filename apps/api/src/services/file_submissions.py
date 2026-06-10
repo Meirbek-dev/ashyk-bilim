@@ -60,7 +60,7 @@ from src.services.events.types import (
     FileSubmissionSubmittedEvent,
 )
 from src.services.progress.submissions import recalculate_course_progress
-from src.types import JsonObject
+from src.types import JsonObject, require_persisted_id
 
 
 def _now() -> datetime:
@@ -87,9 +87,9 @@ async def create_file_submission(
         details={"lifecycle_status": FileSubmissionLifecycle.DRAFT.value},
         settings={"kind": "FILE_SUBMISSION"},
         published=False,
-        chapter_id=chapter.id,
-        course_id=course.id,
-        order=_next_activity_order(chapter.id, db_session),
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
+        course_id=require_persisted_id(course.id, model_name="Course"),
+        order=_next_activity_order(require_persisted_id(chapter.id, model_name="Chapter"), db_session),
         creator_id=current_user.id,
         activity_uuid=f"activity_{ULID()}",
         creation_date=now,
@@ -100,7 +100,7 @@ async def create_file_submission(
 
     file_submission = FileSubmissionActivity(
         file_submission_uuid=f"filesub_{ULID()}",
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         instructions=payload.instructions,
         rubric_json=payload.rubric,
         allowed_mime_types=_normalize_mimes(payload.allowed_mime_types),
@@ -248,8 +248,8 @@ async def start_file_submission_draft(
     now = _now()
     attempt = FileSubmissionAttempt(
         attempt_uuid=f"filesub_attempt_{ULID()}",
-        file_submission_id=file_submission.id,
-        activity_id=activity.id,
+        file_submission_id=require_persisted_id(file_submission.id, model_name="FileSubmissionActivity"),
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         user_id=current_user.id,
         status=FileSubmissionAttemptStatus.DRAFT,
         attempt_number=completed_attempts + 1,
@@ -589,7 +589,9 @@ def file_submission_attempts_for_gradebook(
         if not student_ids:
             return {}
         query = query.where(col(FileSubmissionAttempt.user_id).in_(student_ids))
-    attempts = db_session.exec(query.order_by(FileSubmissionAttempt.updated_at, FileSubmissionAttempt.id)).all()
+    attempts = db_session.exec(
+        query.order_by(col(FileSubmissionAttempt.updated_at), col(FileSubmissionAttempt.id))
+    ).all()
     result: dict[tuple[int, int], FileSubmissionAttempt] = {}
     for attempt in attempts:
         result[attempt.user_id, attempt.activity_id] = attempt
@@ -620,8 +622,8 @@ async def _create_draft_without_commit(
     now = _now()
     draft = FileSubmissionAttempt(
         attempt_uuid=f"filesub_attempt_{ULID()}",
-        file_submission_id=file_submission.id,
-        activity_id=activity.id,
+        file_submission_id=require_persisted_id(file_submission.id, model_name="FileSubmissionActivity"),
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         user_id=current_user.id,
         status=FileSubmissionAttemptStatus.DRAFT,
         attempt_number=completed_attempts + 1,
@@ -675,8 +677,8 @@ def _replace_attempt_files(
         db_session.add(
             FileSubmissionAttemptFile(
                 attempt_file_uuid=f"filesub_file_{ULID()}",
-                attempt_id=attempt.id,
-                upload_id=upload.id,
+                attempt_id=require_persisted_id(attempt.id, model_name="FileSubmissionAttempt"),
+                upload_id=require_persisted_id(upload.id, model_name="Upload"),
                 display_name=file_ref.display_name or upload.filename,
                 content_type=upload.content_type,
                 size_bytes=upload.size_bytes,
@@ -707,7 +709,7 @@ def _project_file_submission_progress(
     if progress is None:
         progress = ActivityProgress(
             course_id=activity.course_id,
-            activity_id=activity.id,
+            activity_id=require_persisted_id(activity.id, model_name="Activity"),
             user_id=attempt.user_id,
         )
 
@@ -864,7 +866,7 @@ def _build_attempt_read(
         user = db_session.get(User, attempt.user_id)
         if user is not None:
             user_read = FileSubmissionUserRead(
-                id=user.id,
+                id=require_persisted_id(user.id, model_name="User"),
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,
@@ -920,7 +922,7 @@ def _attempt_files(
         db_session.exec(
             select(FileSubmissionAttemptFile)
             .where(FileSubmissionAttemptFile.attempt_id == attempt.id)
-            .order_by(FileSubmissionAttemptFile.position, FileSubmissionAttemptFile.id)
+            .order_by(col(FileSubmissionAttemptFile.position), col(FileSubmissionAttemptFile.id))
         ).all()
     )
 

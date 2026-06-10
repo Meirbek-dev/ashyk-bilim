@@ -76,7 +76,7 @@ from src.services.assessments.settings import validate_settings
 from src.services.courses.access import user_has_course_access
 from src.services.grading.submission import start_submission_v2
 from src.types import JsonObject, JsonValue
-from src.types.narrowing import require_persisted_id
+from src.types.narrowing import as_json_object, require_persisted_id
 
 ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_EXAM,
@@ -434,10 +434,10 @@ def _build_attempt_state(
             time_limit_seconds=time_limit_seconds,
             due_at=due_at,
             allow_late=allow_late,
-            late_policy=policy.late_policy_json if policy is not None else {},
+            late_policy=dict(policy.late_policy_json) if policy is not None else {},
             grade_release_mode=(policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE),
-            anti_cheat_json=policy.anti_cheat_json if policy is not None else {},
-            settings_json=policy.settings_json if policy is not None else {},
+            anti_cheat_json=dict(policy.anti_cheat_json) if policy is not None else {},
+            settings_json=dict(policy.settings_json) if policy is not None else {},
         ),
         "server_now": now,
         "started_at": ret_started_at,
@@ -917,7 +917,7 @@ def _get_or_create_policy(
     if patch is not None:
         for field, value in _normalized_policy_patch(kind, patch).items():
             if field == "late_policy_json":
-                policy.late_policy_json = value if isinstance(value, dict) else {}
+                policy.late_policy_json = as_json_object(value, field=field) if isinstance(value, dict) else {}
                 continue
             if hasattr(policy, field):
                 setattr(policy, field, value)
@@ -1042,7 +1042,7 @@ def _default_completion_rule(kind: AssessmentType) -> AssessmentCompletionRule:
     return AssessmentCompletionRule.PASSED
 
 
-def _default_anti_cheat(kind: AssessmentType) -> dict[str, object]:
+def _default_anti_cheat(kind: AssessmentType) -> JsonObject:
     if kind != AssessmentType.EXAM:
         return {}
     return {
@@ -1453,8 +1453,8 @@ def _build_policy_read(
         completion_rule=str(policy.completion_rule),
         passing_score=policy.passing_score,
         review_visibility=str((policy.settings_json or {}).get("review_visibility", "FULL")),
-        anti_cheat_json=policy.anti_cheat_json,
-        settings_json=policy.settings_json,
+        anti_cheat_json=dict(policy.anti_cheat_json),
+        settings_json=dict(policy.settings_json),
     )
 
 
@@ -1564,9 +1564,8 @@ def _hydrate_submission_grading_json(
 
     existing_grading = cast("dict[str, object]", submission.grading_json)
 
-    existing_items = existing_grading.get("items")
-    if not isinstance(existing_items, list):
-        existing_items = []
+    raw_existing_items = existing_grading.get("items")
+    existing_items: list[object] = raw_existing_items if isinstance(raw_existing_items, list) else []
 
     existing_map: dict[str, dict[str, object]] = {}
     for it in existing_items:
@@ -1577,9 +1576,11 @@ def _hydrate_submission_grading_json(
 
     answers = submission.answers_json or {}
     raw_answers_map = answers.get("answers")
-    answers_map: dict[str, object] = cast("dict[str, object]", raw_answers_map) if isinstance(raw_answers_map, dict) else {}
+    answers_map: dict[str, object] = (
+        cast("dict[str, object]", raw_answers_map) if isinstance(raw_answers_map, dict) else {}
+    )
 
-    hydrated_items = []
+    hydrated_items: list[GradedItem] = []
     for item in items:
         existing = existing_map.get(item.item_uuid) or {}
         user_ans = answers_map.get(item.item_uuid)

@@ -91,7 +91,9 @@ async def api_delete_course_discussion(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> DiscussionMessageResponse:
     """Delete Course Discussion by discussion_uuid."""
-    return await delete_discussion(request, discussion_uuid, current_user, db_session)
+    return DiscussionMessageResponse.model_validate(
+        await delete_discussion(request, discussion_uuid, current_user, db_session)
+    )
 
 
 @router.post("/{course_uuid}/discussions/{discussion_uuid}/like", response_model=DiscussionLikeRead)
@@ -115,7 +117,9 @@ async def api_unlike_course_discussion(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> DiscussionMessageResponse:
     """Unlike a Course Discussion."""
-    return await unlike_discussion(request, discussion_uuid, current_user, db_session)
+    return DiscussionMessageResponse.model_validate(
+        await unlike_discussion(request, discussion_uuid, current_user, db_session)
+    )
 
 
 @router.put("/{course_uuid}/discussions/{discussion_uuid}/like", response_model=DiscussionToggleResponse)
@@ -127,7 +131,9 @@ async def api_toggle_course_discussion_like(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> DiscussionToggleResponse:
     """Toggle like status for a Course Discussion (like if not liked, unlike if liked)."""
-    return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
+    return DiscussionToggleResponse.model_validate(
+        await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
+    )
 
 
 @router.put("/{course_uuid}/discussions/{discussion_uuid}/dislike", response_model=DiscussionToggleResponse)
@@ -139,7 +145,9 @@ async def api_toggle_course_discussion_dislike(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> DiscussionToggleResponse:
     """Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)."""
-    return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
+    return DiscussionToggleResponse.model_validate(
+        await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
+    )
 
 
 @router.get("/{course_uuid}/discussions/{discussion_uuid}/replies", response_model=list[CourseDiscussionRead])

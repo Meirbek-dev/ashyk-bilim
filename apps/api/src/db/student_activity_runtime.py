@@ -4,6 +4,7 @@ These schemas are the canonical API shape for the learner workspace.  They are
 intentionally independent from editor, assessment, and file-submission internals
 so the frontend can render one stable activity shell.
 """
+
 from datetime import datetime
 from typing import Literal
 

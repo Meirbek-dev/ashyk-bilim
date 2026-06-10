@@ -18,10 +18,10 @@ class UploadStatus(StrEnum):
     CANCELLED = "CANCELLED"
 
 
-class Upload(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class Upload(SQLModelStrictBaseModel, table=True):
     """One user-owned upload before it is referenced by a submission answer."""
 
-    __tablename__: ClassVar[str] = "upload"
+    __tablename__: ClassVar[str] = "upload"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_upload_upload_uuid", "upload_uuid", unique=True),
         Index("ix_upload_user_status", "user_id", "status"),

@@ -4,7 +4,8 @@
 import importlib.util
 import pathlib
 import sys
-from types import SimpleNamespace
+
+from src.types.simple_namespace import SimpleNamespace
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))

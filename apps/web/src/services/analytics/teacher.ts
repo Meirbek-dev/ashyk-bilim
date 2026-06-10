@@ -108,12 +108,12 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
     sort_order: (getFirstQueryValue(searchParams.sort_order) as AnalyticsQuery['sort_order']) || 'desc',
-    ...(courseIds === undefined ? {} : { course_ids: courseIds }),
-    ...(cohortIds === undefined ? {} : { cohort_ids: cohortIds }),
-    ...(teacherUserIdValue === undefined ? {} : { teacher_user_id: teacherUserIdValue }),
-    ...(timezone === undefined ? { timezone: 'UTC' } : { timezone }),
-    ...(sortBy === undefined ? {} : { sort_by: sortBy }),
-    ...(bucketStart === undefined ? {} : { bucket_start: bucketStart }),
+    course_ids: courseIds ?? null,
+    cohort_ids: cohortIds ?? null,
+    teacher_user_id: teacherUserIdValue ?? null,
+    timezone: timezone || 'UTC',
+    sort_by: (sortBy as AnalyticsQuery['sort_by']) ?? null,
+    bucket_start: bucketStart ?? null,
   }
 }
 

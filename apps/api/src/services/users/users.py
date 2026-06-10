@@ -1,7 +1,6 @@
 import contextlib
 import logging
 from datetime import datetime
-from types import SimpleNamespace
 from typing import cast
 
 from fastapi import HTTPException, Request, UploadFile, status
@@ -26,6 +25,7 @@ from src.security.security import security_hash_password, security_verify_passwo
 from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
 from src.services.users.emails import enqueue_account_creation_email
+from src.types.simple_namespace import SimpleNamespace
 
 _logger = logging.getLogger(__name__)
 

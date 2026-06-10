@@ -170,12 +170,6 @@ async def _migrate_users_to_platform_task() -> None:
             print("=" * 80)
 
             platform = get_platform(db_session)
-
-            if not platform:
-                print("❌ Error: Platform not found")
-                print("Please create the platform first using 'python cli.py install'")
-                raise typer.Exit(code=1)
-
             print(f"✅ Found platform: {platform.name}")
 
             user_role = db_session.exec(select(Role).where(Role.slug == RoleSlug.USER)).first()
@@ -185,6 +179,7 @@ async def _migrate_users_to_platform_task() -> None:
                 print("Please run migrations first")
                 raise typer.Exit(code=1)
 
+            assert user_role.id is not None
             print(f"✅ Found user role: {user_role.name} (ID: {user_role.id})")
 
             all_users = db_session.exec(select(User)).all()
@@ -206,6 +201,7 @@ async def _migrate_users_to_platform_task() -> None:
 
             for user in users_without_platform:
                 try:
+                    assert user.id is not None
                     new_user_role = UserRole(user_id=user.id, role_id=user_role.id)
                     db_session.add(new_user_role)
                     migrated_count += 1

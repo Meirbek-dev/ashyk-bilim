@@ -9,6 +9,7 @@ from src.db.users import User, UserCreate, UserRead
 from src.repositories.role_repository import RoleRepository
 from src.security.rbac import PermissionChecker
 from src.security.security import security_hash_password
+from src.types import require_persisted_id
 
 
 # Install Default roles
@@ -81,7 +82,7 @@ def install_create_platform_user(user_object: UserCreate, db_session: Session) -
     checker = PermissionChecker(db_session)
     checker.assign_role(
         user_id=user.id or 0,
-        role_id=admin_role.id,
+        role_id=require_persisted_id(admin_role.id, model_name="Role"),
     )
 
     return UserRead.model_validate(user)

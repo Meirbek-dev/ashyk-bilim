@@ -4,12 +4,12 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 import sqlalchemy.exc
-from cachebox import TTLCache
-from pgvector.sqlalchemy import Vector
+from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
 from sqlalchemy import Column, MetaData, Table, Text, delete, select, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, insert as pg_insert
 from sqlmodel import Session
 
+from cachebox import TTLCache
 from config.config import get_settings
 from src.infra.db.engine import get_bg_engine
 from src.services.ai.cache_manager import get_ai_cache_manager

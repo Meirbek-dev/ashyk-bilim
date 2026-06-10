@@ -28,7 +28,8 @@ def _literal_assignment(module: ast.Module, name: str) -> object | None:
             targets = [node.target.id]
 
         if name in targets and value is not None:
-            return ast.literal_eval(value)
+            eval_val: object = ast.literal_eval(value)
+            return eval_val
 
     return None
 

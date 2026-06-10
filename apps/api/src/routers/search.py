@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.search.search import SearchResult, search_platform_content
 
@@ -15,10 +15,10 @@ router = APIRouter()
 async def api_search_platform_content(
     request: Request,
     query: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     page: int = 1,
     limit: int = 10,
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser | None, Depends(get_optional_public_user)] = None,
 ) -> SearchResult:
     return await search_platform_content(
         request=request,

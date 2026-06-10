@@ -67,6 +67,15 @@ class AssessmentAnalyticsRow:
 
 
 @dataclass(slots=True)
+class QuizQuestionStat:
+    activity_id: int
+    question_id: str
+    correct_count: int
+    total_attempts: int
+    avg_time_seconds: float | None = None
+
+
+@dataclass(slots=True)
 class AnalyticsContext:
     generated_at: datetime
     courses_by_id: dict[int, Course]
@@ -84,7 +93,7 @@ class AnalyticsContext:
     exams: list[AssessmentAnalyticsRow]
     exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_submissions: list[tuple[Submission, Activity]]
-    quiz_question_stats: list[object]
+    quiz_question_stats: list[QuizQuestionStat]
     code_submissions: list[tuple[Submission, Activity]]
     users_by_id: dict[int, User]
     usergroup_names_by_id: dict[int, str]
@@ -483,7 +492,7 @@ def load_analytics_context(
             _unwrap_pair(row, Submission, Activity) for row in db_session.exec(quiz_submission_stmt).all()
         ]
 
-    quiz_question_stats: list[Any] = []
+    quiz_question_stats: list[QuizQuestionStat] = []
 
     code_submissions: list[tuple[Submission, Activity]] = []
     if activity_ids:
@@ -789,7 +798,9 @@ def hours_between(start_value: object, end_value: object) -> float | None:
 
 def assessment_pass_threshold(settings: dict[str, object] | None) -> float:
     raw = (settings or {}).get("passing_score", 60)
+    if not isinstance(raw, int | float | str):
+        return 60.0
     try:
         return float(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 60.0

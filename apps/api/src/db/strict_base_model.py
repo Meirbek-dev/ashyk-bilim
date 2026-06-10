@@ -2,7 +2,7 @@ import os
 import warnings
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import ClassVar, TypeGuard
+from typing import TypeGuard
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
@@ -86,7 +86,7 @@ class PydanticStrictBaseModel(BaseModel):
 
 
 class SQLModelStrictBaseModel(SQLModel):
-    model_config: ClassVar[SQLModelConfig] = _SQLMODEL_CONFIG
+    model_config = _SQLMODEL_CONFIG
 
 
 SQLModelDefaultBase = SQLModelStrictBaseModel

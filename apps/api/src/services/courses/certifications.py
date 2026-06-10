@@ -25,6 +25,7 @@ from src.services.progress.submissions import recalculate_course_progress
 from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
+type CertificatePayload = dict[str, object]
 
 ####################################################
 # CRUD
@@ -350,16 +351,13 @@ async def create_certificate_user(
             f"{prefix_hash}-{current_year}{current_month:02d}{current_day:02d}-{user_uuid_short}-{timestamp_suffix}"
         )
 
-        # Create certificate user with enhanced data
-        certificate_data = {
-            "user_id": user_id,
-            "certification_id": certification_id,
-            "user_certification_uuid": user_certification_uuid,
-            "created_at": now,
-            "updated_at": now,
-        }
-
-        certificate_user = CertificateUser(**certificate_data)
+        certificate_user = CertificateUser(
+            user_id=user_id,
+            certification_id=certification_id,
+            user_certification_uuid=user_certification_uuid,
+            created_at=now,
+            updated_at=now,
+        )
 
         try:
             db_session.add(certificate_user)
@@ -422,7 +420,7 @@ async def get_user_certificates_for_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> list[JsonObject]:
+) -> list[CertificatePayload]:
     """Get all certificates for a user in a specific course with certification details."""
     # Accept both raw id and 'course_'-prefixed UUIDs
     if not course_uuid.startswith("course_"):
@@ -497,7 +495,7 @@ async def get_user_certificates_for_course(
     ).all()
     certs_by_id = {c.id: c for c in certifications_list}
 
-    result = [
+    result: list[CertificatePayload] = [
         {
             "certificate_user": CertificateUserRead(**cert_user.model_dump()),
             "certification": CertificationRead(**certs_by_id[cert_user.certification_id].model_dump())
@@ -666,7 +664,7 @@ async def get_certificate_by_user_certification_uuid(
     user_certification_uuid: str,
     current_user: PublicUser | AnonymousUser | None,
     db_session: Session,
-) -> JsonObject:
+) -> CertificatePayload:
     """Get a certificate by user_certification_uuid with certification details."""
     # Get certificate user by user_certification_uuid
     statement = select(CertificateUser).where(col(CertificateUser.user_certification_uuid) == user_certification_uuid)
@@ -717,7 +715,7 @@ async def get_all_user_certificates(
     request: Request,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> list[JsonObject]:
+) -> list[CertificatePayload]:
     """Get all certificates for the current user with complete linked information."""
     # Get all certificate users for this user
     statement = select(CertificateUser).where(col(CertificateUser.user_id) == current_user.id)
@@ -741,7 +739,7 @@ async def get_all_user_certificates(
     users_list = db_session.exec(select(User).where(col(User.id).in_(user_ids))).all()
     users_by_id = {u.id: u for u in users_list}
 
-    result = []
+    result: list[CertificatePayload] = []
     for cert_user in certificate_users:
         certification = certs_by_id.get(cert_user.certification_id)
         if not certification:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -60,7 +61,7 @@ from src.services.analytics.scope import (
 router = APIRouter()
 
 
-def _csv_response(stream: object, filename: str) -> StreamingResponse:
+def _csv_response(stream: Iterable[str | bytes], filename: str) -> StreamingResponse:
     return StreamingResponse(
         stream,
         media_type="text/csv",

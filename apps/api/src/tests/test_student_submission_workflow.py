@@ -467,7 +467,11 @@ def test_snapshot_submission_stores_items_as_dict(
         session.refresh(submission)
 
         assert isinstance(submission.items_snapshot, dict)
-        assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
+        snapshot_items = submission.items_snapshot.get("items")
+        assert isinstance(snapshot_items, list)
+        first_item = snapshot_items[0]
+        assert isinstance(first_item, dict)
+        assert first_item["item_uuid"] == "item_submit_1"
 
 
 # ---------------------------------------------------------------------------

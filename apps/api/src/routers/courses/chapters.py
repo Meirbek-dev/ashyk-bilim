@@ -24,7 +24,6 @@ from src.services.courses.chapters import (
     reorder_chapters_and_activities,
     update_chapter,
 )
-from src.types import JsonObject
 
 router = APIRouter()
 
@@ -38,7 +37,7 @@ async def api_create_coursechapter(
     request: Request,
     coursechapter_object: ChapterCreateRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ChapterRead:
     return await create_chapter(request, coursechapter_object, current_user, db_session)
 
@@ -48,7 +47,7 @@ async def api_get_coursechapter(
     request: Request,
     chapter_uuid: str,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ChapterRead:
     return await get_chapter(request, chapter_uuid, current_user, db_session)
 
@@ -59,7 +58,7 @@ async def api_move_chapter_to_order(
     chapter_uuid: str,
     payload: ChapterOrderPayload,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ChapterRead:
     """Переместить главу на заданную позицию внутри курса (атомарно)."""
     return await move_chapter_to_order(request, chapter_uuid, payload.position, current_user, db_session)
@@ -72,16 +71,18 @@ async def api_move_activity_to_order(
     activity_uuid: str,
     payload: ActivityOrderPayload,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> JsonObject:
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> ChapterDetailResponse:
     """Переместить активность на заданную позицию, при необходимости в другую главу (атомарно)."""
-    return await move_activity_to_order(
-        request,
-        activity_uuid,
-        payload.position,
-        payload.chapter_uuid,
-        current_user,
-        db_session,
+    return ChapterDetailResponse.model_validate(
+        await move_activity_to_order(
+            request,
+            activity_uuid,
+            payload.position,
+            payload.chapter_uuid,
+            current_user,
+            db_session,
+        )
     )
 
 
@@ -91,10 +92,12 @@ async def api_reorder_chapters_and_activities(
     course_uuid: str,
     order: ChapterUpdateOrder,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> JsonObject:
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> ChapterDetailResponse:
     """Массово переупорядочить все главы и активности (устаревший вариант — предпочтительнее атомарные методы)."""
-    return await reorder_chapters_and_activities(request, course_uuid, order, current_user, db_session)
+    return ChapterDetailResponse.model_validate(
+        await reorder_chapters_and_activities(request, course_uuid, order, current_user, db_session)
+    )
 
 
 @router.patch("/{chapter_uuid}", response_model=ChapterRead)
@@ -103,7 +106,7 @@ async def api_update_coursechapter(
     coursechapter_object: ChapterUpdate,
     chapter_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ChapterRead:
     return await update_chapter(request, coursechapter_object, chapter_uuid, current_user, db_session)
 
@@ -113,6 +116,6 @@ async def api_delete_coursechapter(
     request: Request,
     chapter_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
-) -> JsonObject:
-    return await delete_chapter(request, chapter_uuid, current_user, db_session)
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> ChapterDetailResponse:
+    return ChapterDetailResponse.model_validate(await delete_chapter(request, chapter_uuid, current_user, db_session))

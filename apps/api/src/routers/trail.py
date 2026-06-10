@@ -4,11 +4,10 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
-from src.db.trails import TrailCreate, TrailRead
+from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.trail.trail import (
-    Trail,
     add_activity_to_trail,
     add_course_to_trail,
     create_user_trail,

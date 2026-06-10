@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from sqlalchemy import and_, or_, select
 from sqlmodel import Session, col
@@ -40,7 +41,12 @@ def _coerce_course_id(value: object) -> int | None:
         if not value:
             return None
         return _coerce_course_id(value[0])
-    return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _has_analytics_scope(checker: PermissionChecker, user_id: int, action: str, scope: str) -> bool:
@@ -80,7 +86,7 @@ def resolve_teacher_scope(
             sa_execute(
                 db_session,
                 select(col(Course.id))
-                .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+                .outerjoin(ResourceAuthor, col(ResourceAuthor.resource_uuid) == Course.course_uuid)
                 .where(
                     or_(
                         col(Course.creator_id) == target_user_id,
@@ -101,7 +107,7 @@ def resolve_teacher_scope(
             sa_execute(
                 db_session,
                 select(col(Course.id))
-                .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+                .outerjoin(ResourceAuthor, col(ResourceAuthor.resource_uuid) == Course.course_uuid)
                 .where(
                     or_(
                         col(Course.creator_id) == current_user.id,
@@ -166,13 +172,13 @@ def resolve_course_id_for_assessment(
         if hasattr(row, "_mapping"):
             activity_obj = next((value for value in row._mapping.values() if isinstance(value, Activity)), None)
         else:
-            activity_obj = row[1]
-        if activity_obj is None:
+            activity_obj = cast("Activity", row[1])
+        if activity_obj is None or not isinstance(activity_obj.course_id, int):
             return None
         return activity_obj.course_id
     if assessment_type in {"quiz", "code_challenge"}:
         activity = sa_execute(db_session, select(Activity).where(col(Activity.id) == assessment_id)).scalars().first()
-        if activity is None or activity.course_id is None:
+        if activity is None or not isinstance(activity.course_id, int):
             return None
         if assessment_type == "code_challenge" and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE:
             return None

@@ -45,10 +45,10 @@ SYSTEM_GRADER_ID: int = 0
 _MUTABLE_FIELDS: frozenset[str] = frozenset({"published_at"})
 
 
-class GradingEntry(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class GradingEntry(SQLModelStrictBaseModel, table=True):
     """Immutable ledger row recording one grading event for a submission."""
 
-    __tablename__: ClassVar[str] = "grading_entry"
+    __tablename__: ClassVar[str] = "grading_entry"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("entry_uuid", name="uq_grading_entry_uuid"),
         Index("ix_grading_entry_submission_id", "submission_id"),

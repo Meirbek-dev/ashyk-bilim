@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from sqlalchemy import select
 from sqlmodel import Session, col
 
@@ -33,7 +35,9 @@ def build_data_quality(
         if supports_teacher_rollup_reads(filters)
         else None
     )
-    mode = "rollup" if supports_teacher_rollup_reads(filters) and teacher_rollup is not None else "live"
+    mode: Literal["live", "rollup"] = (
+        "rollup" if supports_teacher_rollup_reads(filters) and teacher_rollup is not None else "live"
+    )
     snapshots = progress_snapshots(context)
     missing_sources: list[str] = []
     if not context.trail_steps:
@@ -93,7 +97,7 @@ def build_data_quality(
             )
         )
 
-    confidence = "high"
+    confidence: Literal["low", "medium", "high"] = "high"
     if missing_sources or courses_without_enough_data:
         confidence = "medium"
     if freshness_seconds > 86_400 or len(missing_sources) >= 3:

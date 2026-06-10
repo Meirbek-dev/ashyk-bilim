@@ -12,6 +12,7 @@ from src.services.analytics.schemas import (
     SavedAnalyticsViewRow,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope
+from src.types.narrowing import as_json_object
 
 
 def _row(saved_view: AnalyticsSavedView) -> SavedAnalyticsViewRow:
@@ -20,7 +21,7 @@ def _row(saved_view: AnalyticsSavedView) -> SavedAnalyticsViewRow:
         teacher_user_id=saved_view.teacher_user_id,
         name=saved_view.name,
         view_type=saved_view.view_type,
-        query=saved_view.query,
+        query=dict(saved_view.query),
         created_at=saved_view.created_at,
         updated_at=saved_view.updated_at,
     )
@@ -59,14 +60,14 @@ def save_analytics_view(
             teacher_user_id=scope.teacher_user_id,
             name=payload.name,
             view_type=payload.view_type,
-            query=payload.query,
+            query=as_json_object(payload.query, field="query"),
             created_at=now,
             updated_at=now,
         )
         db_session.add(saved_view)
     else:
         saved_view = existing
-        saved_view.query = payload.query
+        saved_view.query = as_json_object(payload.query, field="query")
         saved_view.updated_at = now
         db_session.add(saved_view)
     db_session.commit()

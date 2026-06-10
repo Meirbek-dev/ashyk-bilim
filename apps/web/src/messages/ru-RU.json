@@ -1247,6 +1247,9 @@
     "unsavedChanges": "Несохраненные изменения"
   },
   "Components": {
+    "Calendar": {
+      "set": "Установить"
+    },
     "SaveStateBadge": {
       "unsaved": "Не сохранено",
       "saving": "Сохранение...",

@@ -1,4 +1,3 @@
-
 from sqlalchemy import Executable
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Session as SQLAlchemySession

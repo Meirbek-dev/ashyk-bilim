@@ -28,10 +28,10 @@ class BulkActionStatus(StrEnum):
     FAILED = "FAILED"
 
 
-class BulkAction(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class BulkAction(SQLModelStrictBaseModel, table=True):
     """Persisted audit record for a teacher bulk operation."""
 
-    __tablename__: ClassVar[str] = "bulk_action"
+    __tablename__: ClassVar[str] = "bulk_action"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_bulk_action_uuid", "action_uuid"),
         Index("ix_bulk_action_activity_status", "activity_id", "status"),

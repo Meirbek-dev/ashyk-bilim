@@ -25,8 +25,10 @@ from src.db.assessments import (
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.grading.submissions import (
     AssessmentType,
+    ItemFeedback,
     Submission,
     SubmissionStatus,
+    TeacherGradeInput,
 )
 from src.db.users import PublicUser
 from src.services.assessments._shared import (
@@ -206,10 +208,13 @@ async def save_assessment_draft(
         current_answers = cast("dict[str, object]", raw_answers) if isinstance(raw_answers, dict) else {}
 
         merged_answers: dict[str, object] = {**current_answers, **answers}
-        draft.answers_json = cast("JsonObject", {
-            **current_payload,
-            "answers": merged_answers,
-        })
+        draft.answers_json = cast(
+            "JsonObject",
+            {
+                **current_payload,
+                "answers": merged_answers,
+            },
+        )
         draft.draft_version += 1
         draft.updated_at = datetime.now(UTC)
 
@@ -454,7 +459,6 @@ async def save_grading_draft(
         total_earned += score
         total_possible += max_score
 
-        from src.db.grading.submissions import ItemFeedback, TeacherGradeInput
         item_feedback_list.append(
             ItemFeedback(
                 item_id=entry.item_uuid,

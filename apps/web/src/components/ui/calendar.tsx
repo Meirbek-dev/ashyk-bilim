@@ -3,6 +3,7 @@
 import { DayPicker, getDefaultClassNames } from '@daypicker/react'
 import type { DayButtonProps, Locale } from '@daypicker/react'
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 
 import {
   Calendar as CalendarIcon,
@@ -291,6 +292,7 @@ function CalendarDateTimePicker({
   minDate?: Date
   maxDate?: Date
 }) {
+  const t = useTranslations('Components.Calendar')
   const [open, setOpen] = React.useState(false)
   const parsedValue = parseDateTimeLocal(value)
   const [draftDate, setDraftDate] = React.useState<Date | undefined>(parsedValue ?? undefined)
@@ -356,7 +358,7 @@ function CalendarDateTimePicker({
               onChange={event => setDraftTime(event.target.value)}
             />
             <Button type="button" size="sm" disabled={disabled || !draftDate} onClick={commit}>
-              Set
+              {t('set')}
             </Button>
           </div>
         </div>

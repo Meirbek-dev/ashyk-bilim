@@ -191,7 +191,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
     )
   }
 
-  const details = userData.details ? (Object.values(userData.details) as UserDetail[]) : []
+  const details = userData.details ? (Object.values(userData.details) as unknown as UserDetail[]) : []
 
   return (
     <NodeViewWrapper className="block-user">

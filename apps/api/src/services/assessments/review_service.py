@@ -3,7 +3,7 @@
 from collections import defaultdict
 
 from fastapi import HTTPException, status
-from sqlalchemy import asc, desc, func, or_
+from sqlalchemy import func, or_
 from sqlmodel import Session, col, select
 
 from src.db.assessments import (
@@ -34,7 +34,6 @@ from src.db.grading.submissions import (
 )
 from src.db.users import PublicUser, User
 from src.services.assessments._shared import (
-    _REVIEW_SORT_MAP,
     _batch_fetch_users,
     _build_override_read,
     _build_teacher_submission_read,
@@ -47,6 +46,7 @@ from src.services.assessments._shared import (
     _submission_user,
 )
 from src.services.grading.teacher import _save_teacher_grade, bulk_publish_grades
+from src.types import require_persisted_id
 
 # ── Policy override ceilings ──────────────────────────────────────────────────
 # Hard limits that no override may exceed — prevents accidental misconfiguration.
@@ -136,12 +136,28 @@ async def get_assessment_submissions(
         )
 
     total = db_session.exec(select(func.count()).select_from(query.subquery())).one()
-    sort_col = _REVIEW_SORT_MAP.get(sort_by, Submission.submitted_at)
-    order_fn = desc if sort_dir == "desc" else asc
+    if sort_by == "final_score":
+        query = query.order_by(
+            col(Submission.final_score).desc() if sort_dir == "desc" else col(Submission.final_score).asc(),
+            col(Submission.created_at).desc(),
+        )
+    elif sort_by == "created_at":
+        query = query.order_by(
+            col(Submission.created_at).desc() if sort_dir == "desc" else col(Submission.created_at).asc(),
+            col(Submission.created_at).desc(),
+        )
+    elif sort_by == "attempt_number":
+        query = query.order_by(
+            col(Submission.attempt_number).desc() if sort_dir == "desc" else col(Submission.attempt_number).asc(),
+            col(Submission.created_at).desc(),
+        )
+    else:
+        query = query.order_by(
+            col(Submission.submitted_at).desc() if sort_dir == "desc" else col(Submission.submitted_at).asc(),
+            col(Submission.created_at).desc(),
+        )
     offset = max(page - 1, 0) * page_size
-    rows = db_session.exec(
-        query.order_by(order_fn(sort_col), desc(Submission.created_at)).offset(offset).limit(page_size)
-    ).all()
+    rows = db_session.exec(query.offset(offset).limit(page_size)).all()
     users = _batch_fetch_users({row.user_id for row in rows}, db_session)
 
     items = []
@@ -273,7 +289,7 @@ async def save_assessment_grade(
     _require_grade(current_user, course, db_session)
 
     submission = _get_assessment_submission_or_404(
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         submission_uuid=submission_uuid,
         db_session=db_session,
     )
@@ -300,7 +316,7 @@ async def publish_assessment_grades(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
-    return await bulk_publish_grades(activity.id, current_user, db_session)
+    return await bulk_publish_grades(require_persisted_id(activity.id, model_name="Activity"), current_user, db_session)
 
 
 def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
@@ -482,7 +498,9 @@ async def get_item_analytics(
 
     # Load all assessment items ordered by their position
     items = db_session.exec(
-        select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id).order_by(asc(AssessmentItem.order))
+        select(AssessmentItem)
+        .where(AssessmentItem.assessment_id == assessment.id)
+        .order_by(col(AssessmentItem.order).asc())
     ).all()
 
     if not items:
@@ -520,9 +538,7 @@ async def get_item_analytics(
     submission_total_scores: list[float] = []
 
     for submission in graded_submissions:
-        # grading_json is stored as plain dict in the ORM model; deserialize it
-        raw = submission.grading_json  # type: ignore[attr-defined]
-        grading = GradingBreakdown.model_validate(raw) if isinstance(raw, dict) else raw
+        grading = GradingBreakdown.model_validate(submission.grading_json)
         if submission.final_score is not None:
             submission_total_scores.append(submission.final_score)
         for graded_item in grading.items:
@@ -550,8 +566,7 @@ async def get_item_analytics(
         bot_correct: dict[str, int] = defaultdict(int)
         for submission in graded_submissions:
             uuid = submission.submission_uuid
-            raw2 = submission.grading_json  # type: ignore[attr-defined]
-            grading2 = GradingBreakdown.model_validate(raw2) if isinstance(raw2, dict) else raw2
+            grading2 = GradingBreakdown.model_validate(submission.grading_json)
             for graded_item in grading2.items:
                 iid = graded_item.item_id or ""
                 correct = graded_item.correct

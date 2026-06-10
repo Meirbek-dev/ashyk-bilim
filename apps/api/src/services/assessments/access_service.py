@@ -6,7 +6,9 @@ the set of learners that already have access to the parent course.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import cast
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, col, select
@@ -129,7 +131,7 @@ async def list_assessment_access_eligible_usergroups(
     eligible_ids = _eligible_usergroup_ids_for_course(course.course_uuid, db_session)
     if not eligible_ids:
         return []
-    groups = db_session.exec(select(UserGroup).where(col(UserGroup.id).in_(eligible_ids))).all()  # type: ignore[union-attr]
+    groups = db_session.exec(select(UserGroup).where(col(UserGroup.id).in_(eligible_ids))).all()
     return [_usergroup_read(group, db_session) for group in groups]
 
 
@@ -208,7 +210,7 @@ def _build_access_read(
     if group_rows:
         group_ids = [group.id for group in group_rows if group.id is not None]
         member_rows = db_session.exec(
-            select(UserGroupUser.user_id).where(col(UserGroupUser.usergroup_id).in_(group_ids))  # type: ignore[union-attr]
+            select(UserGroupUser.user_id).where(col(UserGroupUser.usergroup_id).in_(group_ids))
         ).all()
         effective_user_ids.update(member_rows)
 
@@ -224,16 +226,14 @@ def _eligible_usergroup_ids_for_course(
     course_uuid: str,
     db_session: Session,
 ) -> set[int]:
-    linked_group_ids = {
-        gid
-        for gid in db_session.exec(
+    linked_group_ids = set(
+        db_session.exec(
             select(UserGroupResource.usergroup_id).where(UserGroupResource.resource_uuid == course_uuid)
         ).all()
-        if gid is not None
-    }
+    )
     if linked_group_ids:
         return linked_group_ids
-    return {gid for gid in db_session.exec(select(UserGroup.id)).all() if gid is not None}
+    return set(cast("Sequence[int]", db_session.exec(select(UserGroup.id)).all()))
 
 
 def _user_read(user: User) -> AssessmentAccessUserRead:

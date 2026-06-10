@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -7,6 +6,7 @@ from config.config import reload_platform_config_cache
 from src.services.ai import moderation
 from src.services.ai.exceptions import ContentModerationError
 from src.services.ai.service import _ChatContext, generate_chat_answer
+from src.types.simple_namespace import SimpleNamespace
 
 
 @pytest.fixture(autouse=True)

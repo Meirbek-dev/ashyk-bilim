@@ -12,7 +12,7 @@ from datetime import datetime
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.grading.submissions import AssessmentType
 from src.services.grading.settings_loader import CanonicalAssessmentItem
-from src.types import JsonObject, JsonValue
+from src.types import JsonObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +21,7 @@ class GradingContext:
 
     assessment_type: AssessmentType
     items: list[CanonicalAssessmentItem]
-    answers_by_item_uuid: dict[str, JsonValue]
+    answers_by_item_uuid: dict[str, object]
     attempt_number: int
     max_score: float = 100.0
     code_strategy: str = "BEST_SUBMISSION"
@@ -33,7 +33,7 @@ class GradingContext:
 class ParsedAnswers:
     """Output of the validate stage."""
 
-    answers_by_item_uuid: dict[str, JsonValue]
+    answers_by_item_uuid: dict[str, object]
     raw_payload: JsonObject = field(default_factory=dict)
 
 

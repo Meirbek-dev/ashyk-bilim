@@ -4,7 +4,7 @@ import hashlib
 import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
@@ -331,9 +331,14 @@ async def initiate_chunked_upload(
 
     """
     assert current_user is not None
+    if type_of_dir not in {"platform", "users"}:
+        raise HTTPException(status_code=400, detail="type_of_dir must be 'platform' or 'users'")
+    if uuid is None:
+        raise HTTPException(status_code=400, detail="uuid is required")
+    upload_dir_type: Literal["platform", "users"] = "platform" if type_of_dir == "platform" else "users"
     upload_id = create_upload_session(
         directory=directory,
-        type_of_dir=type_of_dir,
+        type_of_dir=upload_dir_type,
         uuid=uuid,
         owner_user_id=current_user.id,
         filename=filename,
@@ -341,10 +346,10 @@ async def initiate_chunked_upload(
         file_size=file_size,
     )
 
-    return {
-        "upload_uuid": upload_id,
-        "message": "Сессия загрузки начата",
-    }
+    return ChunkedUploadInitiateResponse(
+        upload_uuid=upload_id,
+        message="Сессия загрузки начата",
+    )
 
 
 @router.post("/chunk", response_model=ChunkedUploadChunkResponse)
@@ -369,14 +374,14 @@ async def upload_chunk(
     _owned_chunked_session(upload_id, current_user.id)
     result = await process_chunk(upload_id, chunk_index, chunk)
 
-    return {
+    return ChunkedUploadChunkResponse.model_validate({
         "success": True,
         "upload_uuid": result["upload_id"],
         "chunk_index": result["chunk_index"],
         "chunks_received": result["chunks_received"],
         "total_chunks": result["total_chunks"],
         "is_complete": result["is_complete"],
-    }
+    })
 
 
 @router.post("/complete", response_model=ChunkedUploadCompleteResponse)
@@ -412,12 +417,12 @@ async def complete_chunked_upload(
         # Clean up
         cleanup_session(upload_id)
 
-        return {
-            "success": True,
-            "filename": session.filename,
-            "file_size": session.file_size,
-            "message": "Загрузка успешно завершена",
-        }
+        return ChunkedUploadCompleteResponse(
+            success=True,
+            filename=session.filename,
+            file_size=session.file_size,
+            message="Загрузка успешно завершена",
+        )
 
     except Exception:
         # Clean up on error
@@ -441,11 +446,11 @@ async def get_upload_status(
     """
     assert current_user is not None
     session = _owned_chunked_session(upload_id, current_user.id)
-    return {
-        "upload_uuid": session.upload_id,
-        "filename": session.filename,
-        "chunks_received": len(session.chunks_received),
-        "total_chunks": session.total_chunks,
-        "is_complete": session.is_complete(),
-        "file_size": session.file_size,
-    }
+    return ChunkedUploadStatusResponse(
+        upload_uuid=session.upload_id,
+        filename=session.filename,
+        chunks_received=len(session.chunks_received),
+        total_chunks=session.total_chunks,
+        is_complete=session.is_complete(),
+        file_size=session.file_size,
+    )

@@ -3,6 +3,18 @@
 from src.db.assessments import CodeItemAnswer
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types.narrowing import as_json_value
+
+
+def _float_value(value: object, default: float = 0.0) -> float:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def grade_code_challenge(
@@ -23,11 +35,11 @@ def grade_code_challenge(
     if not run_results:
         return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
-    total_weight = sum(float(t.get("weight", 1)) for t in run_results)
+    total_weight = sum(_float_value(t.get("weight"), 1.0) for t in run_results)
     if total_weight == 0:
         total_weight = len(run_results)
 
-    earned_weight = sum(float(t.get("weight", 1)) for t in run_results if t.get("passed", False))
+    earned_weight = sum(_float_value(t.get("weight"), 1.0) for t in run_results if t.get("passed", False) is True)
 
     raw_score = (earned_weight / total_weight) * 100
 
@@ -38,8 +50,8 @@ def grade_code_challenge(
         GradedItem(
             item_id=str(t.get("test_id", i)),
             item_text=str(t.get("description", f"Test {i + 1}")),
-            score=float(t.get("weight", 1)) if t.get("passed") else 0.0,
-            max_score=float(t.get("weight", 1)),
+            score=_float_value(t.get("weight"), 1.0) if t.get("passed") is True else 0.0,
+            max_score=_float_value(t.get("weight"), 1.0),
             correct=bool(t.get("passed", False)),
             feedback=str(t.get("message", "")),
             needs_manual_review=False,
@@ -97,7 +109,7 @@ def grade_canonical_code_item(
                     correct=None,
                     feedback="Requires manual review",
                     needs_manual_review=True,
-                    user_answer=_serialize_code_answer(raw_answer),
+                    user_answer=as_json_value(_serialize_code_answer(raw_answer), field="code_answer"),
                 )
             ],
             needs_manual_review=True,
@@ -121,7 +133,7 @@ def grade_canonical_code_item(
                 max_score=100.0,
                 correct=(latest_run.get("passed") == latest_run.get("total")) if latest_run.get("total") else None,
                 feedback="",
-                user_answer=_serialize_code_answer(raw_answer),
+                user_answer=as_json_value(_serialize_code_answer(raw_answer), field="code_answer"),
             )
         ],
         needs_manual_review=False,

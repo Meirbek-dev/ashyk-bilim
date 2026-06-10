@@ -61,11 +61,9 @@ def publish_due_assessments() -> int:
 
         for assessment in due_assessments:
             try:
-                activity = None
-                if assessment.activity_id is not None:
-                    from src.db.courses.activities import Activity
+                from src.db.courses.activities import Activity
 
-                    activity = db.get(Activity, assessment.activity_id)
+                activity = db.get(Activity, assessment.activity_id)
                 assessment.lifecycle = AssessmentLifecycle.PUBLISHED
                 assessment.published_at = now
                 assessment.scheduled_at = None

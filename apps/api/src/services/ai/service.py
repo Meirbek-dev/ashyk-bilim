@@ -14,6 +14,7 @@ from sqlmodel import Session
 from config.config import get_settings
 from src.db.courses.activities import ActivityRead
 from src.db.courses.courses import CourseRead
+from src.db.strict_base_model import is_str_list
 from src.services.ai.agent import get_agent, get_model, get_model_settings
 from src.services.ai.cache_manager import get_ai_cache_manager
 from src.services.ai.exceptions import (
@@ -356,7 +357,9 @@ async def _get_documents(
     cached_documents = cache_manager.db_cache.get(context_text_key)
     if cached_documents:
         logger.debug("Кэш текста контекста: HIT %s", activity_uuid)
-        return cached_documents
+        if is_str_list(cached_documents):
+            return cached_documents
+        logger.warning("Кэш текста контекста содержит неожиданный тип: %s", type(cached_documents).__name__)
 
     structured = await asyncio.to_thread(
         structure_activity_content_by_type,
@@ -535,7 +538,7 @@ async def stream_chat_answer(
 
     try:
         async with asyncio.timeout(timeout_seconds):
-            yield StatusEvent(
+            yield StatusEvent(  # noqa: ASYNC119
                 status="moderating",
                 aichat_uuid=ctx.session_id,
                 activity_uuid=ctx.activity.activity_uuid,
@@ -552,8 +555,9 @@ async def stream_chat_answer(
                 len(question.strip()),
             )
 
+            retrieved_chunks: list[RetrievedChunk]
             if policy.retrieval_enabled:
-                yield StatusEvent(
+                yield StatusEvent(  # noqa: ASYNC119
                     status="retrieving",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
@@ -572,17 +576,17 @@ async def stream_chat_answer(
                     retrieval_ms,
                 )
             else:
-                yield StatusEvent(
+                yield StatusEvent(  # noqa: ASYNC119
                     status="analyzing",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
                     message=_status_message("analyzing", retrieval_enabled=False, locale=ctx.locale),
                 )
-                retrieved_chunks: list[RetrievedChunk] = []
+                retrieved_chunks = list[RetrievedChunk]()
 
             deps = _build_agent_deps(ctx, policy, retrieved_chunks)
 
-            yield StatusEvent(
+            yield StatusEvent(  # noqa: ASYNC119
                 status="generating",
                 aichat_uuid=ctx.session_id,
                 activity_uuid=ctx.activity.activity_uuid,
@@ -607,7 +611,7 @@ async def stream_chat_answer(
             ):
                 async for delta in result.stream_text(delta=True, debounce_by=None):
                     if cancel_event and cancel_event.is_set():
-                        yield StatusEvent(
+                        yield StatusEvent(  # noqa: ASYNC119
                             status="aborted",
                             aichat_uuid=ctx.session_id,
                             activity_uuid=ctx.activity.activity_uuid,
@@ -623,7 +627,7 @@ async def stream_chat_answer(
                         continue
                     chunk_id += 1
                     full_response += delta
-                    yield DeltaEvent(content=delta, chunk_id=chunk_id)
+                    yield DeltaEvent(content=delta, chunk_id=chunk_id)  # noqa: ASYNC119
 
                 output = (await result.get_output()).strip()
                 if output and output != full_response:

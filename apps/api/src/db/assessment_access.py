@@ -23,10 +23,10 @@ class AssessmentAccessMode(StrEnum):
     RESTRICTED = "RESTRICTED"
 
 
-class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):
     """Access rule for one assessment, always scoped by course access first."""
 
-    __tablename__: ClassVar[str] = "assessment_access_policy"
+    __tablename__: ClassVar[str] = "assessment_access_policy"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("assessment_id", name="uq_assessment_access_policy_assessment"),
         Index("ix_assessment_access_policy_assessment_id", "assessment_id"),
@@ -64,10 +64,10 @@ class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):  # type: igno
     )
 
 
-class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):
     """Direct learner allowlist entry for a restricted assessment."""
 
-    __tablename__: ClassVar[str] = "assessment_access_user"
+    __tablename__: ClassVar[str] = "assessment_access_user"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("policy_id", "user_id", name="uq_assessment_access_user_policy_user"),
         Index("ix_assessment_access_user_policy_id", "policy_id"),
@@ -95,10 +95,10 @@ class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):  # type: ignore
     )
 
 
-class AssessmentAccessUserGroup(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class AssessmentAccessUserGroup(SQLModelStrictBaseModel, table=True):
     """Usergroup allowlist entry for a restricted assessment."""
 
-    __tablename__: ClassVar[str] = "assessment_access_usergroup"
+    __tablename__: ClassVar[str] = "assessment_access_usergroup"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint(
             "policy_id",

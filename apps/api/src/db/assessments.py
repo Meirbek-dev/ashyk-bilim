@@ -254,7 +254,7 @@ class AssessmentItemMetadata(PydanticStrictBaseModel):
 class Assessment(SQLModelStrictBaseModel, table=True):
     """Canonical assessment row for one gradeable activity."""
 
-    __tablename__ = "assessment"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "assessment"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_assessment_uuid", "assessment_uuid", unique=True),
         Index("ix_assessment_activity_id", "activity_id", unique=True),
@@ -371,7 +371,7 @@ class Assessment(SQLModelStrictBaseModel, table=True):
 class AssessmentItem(SQLModelStrictBaseModel, table=True):
     """Single authoring item inside an assessment."""
 
-    __tablename__ = "assessment_item"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "assessment_item"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_assessment_item_uuid", "item_uuid", unique=True),
         Index("ix_assessment_item_assessment_order", "assessment_id", "order"),
@@ -630,6 +630,13 @@ class AssessmentAttemptProjection(AttemptStateRead):
     """Backward-compatible OpenAPI name for the attempt state contract."""
 
 
+type AssessmentReviewSort = Literal["submitted_at", "final_score", "attempt_number"]
+
+
+def _default_assessment_review_sorts() -> list[AssessmentReviewSort]:
+    return ["submitted_at", "final_score", "attempt_number"]
+
+
 class AssessmentReviewProjection(PydanticStrictBaseModel):
     assessment_uuid: str
     activity_id: int
@@ -646,13 +653,7 @@ class AssessmentReviewProjection(PydanticStrictBaseModel):
     ] = "NEEDS_GRADING"
     supports_search: bool = True
     supports_late_only: bool = True
-    supported_sorts: list[Literal["submitted_at", "final_score", "attempt_number"]] = Field(
-        default_factory=lambda: [
-            "submitted_at",
-            "final_score",
-            "attempt_number",
-        ]
-    )
+    supported_sorts: list[AssessmentReviewSort] = Field(default_factory=_default_assessment_review_sorts)
 
     @field_validator("kind", mode="before")
     @classmethod

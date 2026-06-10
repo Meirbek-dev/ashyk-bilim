@@ -38,6 +38,7 @@ from src.services.progress.submissions import (
     unmark_manual_activity_complete,
 )
 from src.services.trail.trail import add_activity_to_trail, remove_activity_from_trail
+from src.types import as_json_object
 
 
 async def get_student_activity_runtime(
@@ -351,9 +352,9 @@ def _build_content(activity: Activity, db_session: Session) -> StudentActivityCo
     return StudentActivityContentRuntime(
         type=_enum_value(activity.activity_type) or "",
         subtype=_enum_value(activity.activity_sub_type) or "",
-        content=activity.content or {},
-        details=activity.details or {},
-        settings=activity.settings or {},
+        content=as_json_object(activity.content or {}, field="activity.content"),
+        details=as_json_object(activity.details or {}, field="activity.details"),
+        settings=as_json_object(activity.settings or {}, field="activity.settings"),
         assessment_uuid=assessment_uuid,
         file_submission_uuid=file_submission_uuid,
     )

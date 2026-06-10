@@ -516,6 +516,8 @@ def get_teacher_course_detail(
     for chapter_activity in context.chapter_activities:
         if chapter_activity.course_id != course_id:
             continue
+        if chapter_activity.id is None:
+            continue
         activity = context.activities_by_id.get(chapter_activity.id)
         if activity is None:
             continue
@@ -592,7 +594,7 @@ def get_teacher_course_detail(
     for chapter_id, _order in sorted(chapter_order.items(), key=operator.itemgetter(1)):
         chapter = context.chapters_by_id.get(chapter_id)
         count = len(chapter_counts.get(chapter_id, set()))
-        pct = safe_pct(count, previous_chapter_count) if previous_chapter_count else None
+        pct: float | None = safe_pct(count, previous_chapter_count) if previous_chapter_count else None
         chapter_funnel.append(
             FunnelStep(
                 label=chapter.name if chapter else f"Глава {chapter_id}",

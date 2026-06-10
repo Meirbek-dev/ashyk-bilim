@@ -3,6 +3,7 @@
 Student answer payloads are canonical AssessmentDraftPatch.answers payloads.
 Legacy per-type answer schemas are intentionally absent.
 """
+
 from datetime import datetime
 from typing import Literal
 

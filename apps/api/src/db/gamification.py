@@ -76,10 +76,10 @@ def get_xp_for_level(level: int) -> int:
     return 50 * (level - 1) ** 2 + 50 * (level - 1)
 
 
-class GamificationProfile(SQLModel, table=True):  # type: ignore[misc]
+class GamificationProfile(SQLModel, table=True):
     """Single gamification profile model with consistent naming."""
 
-    __tablename__: ClassVar[str] = "gamification_profiles"
+    __tablename__: ClassVar[str] = "gamification_profiles"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -141,10 +141,10 @@ class GamificationProfile(SQLModel, table=True):  # type: ignore[misc]
         return self.total_xp - get_xp_for_level(self.level)
 
 
-class XPTransaction(SQLModel, table=True):  # type: ignore[misc]
+class XPTransaction(SQLModel, table=True):
     """XP transaction audit trail."""
 
-    __tablename__: ClassVar[str] = "xp_transactions"
+    __tablename__: ClassVar[str] = "xp_transactions"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
@@ -178,13 +178,13 @@ class XPTransaction(SQLModel, table=True):  # type: ignore[misc]
     )
 
 
-class PlatformGamificationConfig(SQLModel, table=True):  # type: ignore[misc]
+class PlatformGamificationConfig(SQLModel, table=True):
     """Gamification policy overrides.
 
     Safe optional overrides with sane defaults applied in service if fields are null.
     """
 
-    __tablename__: ClassVar[str] = "org_gamification_config"
+    __tablename__: ClassVar[str] = "org_gamification_config"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     id: int | None = Field(default=None, primary_key=True)
     # Optional overrides

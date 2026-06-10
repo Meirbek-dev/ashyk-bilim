@@ -1,19 +1,16 @@
 import os
-from collections.abc import Callable
-from typing import Any, cast
+from typing import cast
 
 from granian import Granian
 from granian.constants import HTTPModes, Interfaces
 from granian.http import HTTP2Settings
 from granian.log import LogLevels
 from granian.utils.proxies import wrap_asgi_with_proxy_headers
+from starlette.types import ASGIApp
 
 from config.config import AppSettings, get_settings
 from src.app.factory import create_app
 from src.infra.logging import build_logging_config
-
-type ASGIApp = Callable[..., Any]
-
 
 settings = get_settings()
 app = create_app(settings)

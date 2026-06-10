@@ -277,7 +277,9 @@ async def api_delete_item(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentDetailResponse:
-    return AssessmentDetailResponse.model_validate(await delete_assessment_item(assessment_uuid, item_uuid, current_user, db_session))
+    return AssessmentDetailResponse.model_validate(
+        await delete_assessment_item(assessment_uuid, item_uuid, current_user, db_session)
+    )
 
 
 # ── Student attempt flow ───────────────────────────────────────────────────────
@@ -334,9 +336,9 @@ async def api_save_draft(
 )
 async def api_submit_assessment(
     assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
     payload: AssessmentDraftPatch | None = None,
-    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
-    db_session: Annotated[Session | None, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
     violation_count: Annotated[int, Query(ge=0)] = 0,
     auto_submit: Annotated[bool, Query()] = False,
@@ -583,7 +585,9 @@ async def api_validate_code_challenge(
     """Проверить эталонные решения для всех настроенных языков на тестовом наборе."""
     from src.services.assessments.attempt_service import validate_code_challenge_service
 
-    return CodeChallengeValidationResponse.model_validate(await validate_code_challenge_service(assessment_uuid, current_user, db_session))
+    return CodeChallengeValidationResponse.model_validate(
+        await validate_code_challenge_service(assessment_uuid, current_user, db_session)
+    )
 
 
 # ── Attempt state ──────────────────────────────────────────────────────────────
@@ -673,7 +677,9 @@ async def api_delete_override(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentDetailResponse:
-    return AssessmentDetailResponse.model_validate(await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session))
+    return AssessmentDetailResponse.model_validate(
+        await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session)
+    )
 
 
 # ── Inline quiz ────────────────────────────────────────────────────────────────
@@ -701,8 +707,8 @@ async def api_get_audit_trail(
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> AssessmentAuditTrailResponse:
     """Показать события аудита для оценивания (только для преподавателя)."""
-    from sqlalchemy import desc, func
-    from sqlmodel import select
+    from sqlalchemy import func
+    from sqlmodel import col, select
 
     from src.db.audit import AuditEvent
     from src.services.assessments._shared import (
@@ -715,7 +721,9 @@ async def api_get_audit_trail(
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
 
-    query = select(AuditEvent).where(AuditEvent.target_uuid == assessment_uuid).order_by(desc(AuditEvent.created_at))
+    query = (
+        select(AuditEvent).where(AuditEvent.target_uuid == assessment_uuid).order_by(col(AuditEvent.created_at).desc())
+    )
     total = db_session.exec(select(func.count()).select_from(query.subquery())).one()
     offset = (page - 1) * page_size
     rows = db_session.exec(query.offset(offset).limit(page_size)).all()

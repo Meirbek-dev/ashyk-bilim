@@ -37,6 +37,7 @@ from src.services.gamification.service import (
     DailyLimitExceededError,
     GamificationError,
 )
+from src.types import as_json_object, require_persisted_id
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -73,7 +74,7 @@ def _profile_to_read(p: GamificationProfile) -> ProfileRead:
 
 def _transaction_to_read(tx: XPTransaction) -> TransactionRead:
     return TransactionRead(
-        id=tx.id,
+        id=require_persisted_id(tx.id, model_name="XPTransaction"),
         user_id=tx.user_id,
         amount=tx.amount,
         source=tx.source,
@@ -95,7 +96,7 @@ async def get_unified_dashboard(
         profile = _profile_to_read(data["profile"])
         recent_txs = [
             TransactionRead(
-                id=tx.id,
+                id=require_persisted_id(tx.id, model_name="XPTransaction"),
                 user_id=tx.user_id,
                 amount=tx.amount,
                 source=tx.source,
@@ -209,7 +210,7 @@ async def update_preferences(
     assert user is not None
     assert db is not None
     try:
-        profile = service.update_preferences(db, user.id, data)
+        profile = service.update_preferences(db, user.id, as_json_object(data, field="preferences"))
         return _profile_to_read(profile)
     except Exception:
         logger.exception("Update preferences error for user %s", user.id)

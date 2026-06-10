@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy import desc
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, col, select
 
@@ -20,7 +19,7 @@ from src.db.users import PublicUser, User
 from src.infra.db.engine import build_session_factory, get_bg_engine
 from src.security.rbac import PermissionChecker
 from src.services.progress.submissions import recalculate_activity_progress
-from src.types import JsonObject
+from src.types import JsonObject, JsonValue, require_persisted_id
 
 
 def create_bulk_action(
@@ -120,15 +119,17 @@ def create_deadline_extension_action(
         )
 
     target_user_ids = [user.id for user in users if user.id is not None]
+    user_uuid_values: list[JsonValue] = [*user_uuids]
+    params: JsonObject = {
+        "new_due_at": new_due_at.isoformat(),
+        "reason": reason,
+        "user_uuids": user_uuid_values,
+    }
     action = create_bulk_action(
         action_type=BulkActionType.EXTEND_DEADLINE,
         activity_id=activity_id,
         performed_by=current_user.id,
-        params={
-            "new_due_at": new_due_at.isoformat(),
-            "reason": reason,
-            "user_uuids": user_uuids,
-        },
+        params=params,
         target_user_ids=target_user_ids,
         db_session=db_session,
     )
@@ -201,7 +202,7 @@ def _execute_deadline_extension_sync(
             ).first()
             if override is None:
                 override = StudentPolicyOverride(
-                    policy_id=policy.id,
+                    policy_id=require_persisted_id(policy.id, model_name="AssessmentPolicy"),
                     user_id=user_id,
                     granted_by=action.performed_by,
                 )
@@ -251,7 +252,7 @@ async def execute_deadline_extension(
             ).first()
             if override is None:
                 override = StudentPolicyOverride(
-                    policy_id=policy.id,
+                    policy_id=require_persisted_id(policy.id, model_name="AssessmentPolicy"),
                     user_id=user_id,
                     granted_by=action.performed_by,
                 )
@@ -344,7 +345,7 @@ def _latest_submission_uuids(
                 Submission.activity_id == activity_id,
                 Submission.user_id == user_id,
             )
-            .order_by(desc(Submission.created_at), desc(Submission.id))
+            .order_by(col(Submission.created_at).desc(), col(Submission.id).desc())
         ).first()
         if submission is not None:
             uuids.append(submission.submission_uuid)

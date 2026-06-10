@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field, field_validator
 from sqlalchemy import (
@@ -25,6 +25,7 @@ from src.db.strict_base_model import (
     SQLModelStrictBaseModel,
     coerce_date_to_end_of_day,
 )
+from src.types import JsonObject
 
 
 class FileSubmissionLifecycle(StrEnum):
@@ -48,8 +49,12 @@ class FileSubmissionScanStatus(StrEnum):
     ERROR = "ERROR"
 
 
+def _default_late_policy() -> JsonObject:
+    return {"kind": "NONE"}
+
+
 class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_activity"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "file_submission_activity"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("activity_id", name="uq_file_submission_activity_id"),
         UniqueConstraint("file_submission_uuid", name="uq_file_submission_activity_uuid"),
@@ -67,7 +72,7 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
         )
     )
     instructions: str = ""
-    rubric_json: dict[str, Any] = SQLField(
+    rubric_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -79,8 +84,8 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
     max_file_size_mb: int | None = None
     due_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
     allow_late: bool = SQLField(default=True, sa_column=Column(Boolean, nullable=False, server_default="true"))
-    late_policy_json: dict[str, Any] = SQLField(
-        default_factory=lambda: {"kind": "NONE"},
+    late_policy_json: JsonObject = SQLField(
+        default_factory=_default_late_policy,
         sa_column=Column(JSON, nullable=False, server_default='{"kind":"NONE"}'),
     )
     max_attempts: int | None = None
@@ -94,7 +99,7 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
     )
     published_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
     archived_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
-    settings_json: dict[str, Any] = SQLField(
+    settings_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -121,7 +126,7 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
 
 
 class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_attempt"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "file_submission_attempt"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("attempt_uuid", name="uq_file_submission_attempt_uuid"),
         Index("ix_file_submission_attempt_activity_user", "activity_id", "user_id"),
@@ -156,7 +161,7 @@ class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
     is_late: bool = SQLField(default=False, sa_column=Column(Boolean, nullable=False, server_default="false"))
     late_penalty_pct: float = SQLField(default=0.0, sa_column=Column(Float, nullable=False, server_default="0"))
     final_score: float | None = None
-    feedback_json: dict[str, Any] = SQLField(
+    feedback_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -184,7 +189,7 @@ class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
 
 
 class FileSubmissionAttemptFile(SQLModelStrictBaseModel, table=True):
-    __tablename__ = "file_submission_attempt_file"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "file_submission_attempt_file"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("attempt_file_uuid", name="uq_file_submission_file_uuid"),
         UniqueConstraint("attempt_id", "upload_id", name="uq_file_submission_upload"),
@@ -237,11 +242,11 @@ class FileSubmissionConfig(PydanticStrictBaseModel):
     max_file_size_mb: int | None = Field(default=None, ge=1, le=500)
     due_at: datetime | None = None
     allow_late: bool = True
-    late_policy: dict[str, Any] = Field(default_factory=lambda: {"kind": "NONE"})
+    late_policy: JsonObject = Field(default_factory=_default_late_policy)
     max_attempts: int | None = Field(default=None, ge=1, le=50)
     grade_release_mode: Literal["IMMEDIATE", "BATCH"] = "IMMEDIATE"
-    rubric: dict[str, Any] = Field(default_factory=dict)
-    settings: dict[str, Any] = Field(default_factory=dict)
+    rubric: JsonObject = Field(default_factory=dict)
+    settings: JsonObject = Field(default_factory=dict)
 
     @field_validator("due_at", mode="before")
     @classmethod
@@ -263,11 +268,11 @@ class FileSubmissionUpdate(PydanticStrictBaseModel):
     max_file_size_mb: int | None = Field(default=None, ge=1, le=500)
     due_at: datetime | None = None
     allow_late: bool | None = None
-    late_policy: dict[str, Any] | None = None
+    late_policy: JsonObject | None = None
     max_attempts: int | None = Field(default=None, ge=1, le=50)
     grade_release_mode: Literal["IMMEDIATE", "BATCH"] | None = None
-    rubric: dict[str, Any] | None = None
-    settings: dict[str, Any] | None = None
+    rubric: JsonObject | None = None
+    settings: JsonObject | None = None
 
     @field_validator("due_at", mode="before")
     @classmethod
@@ -287,7 +292,7 @@ class FileSubmissionDraftPatch(PydanticStrictBaseModel):
 class FileSubmissionGradePatch(PydanticStrictBaseModel):
     final_score: float | None = Field(default=None, ge=0, le=100)
     feedback: str = ""
-    rubric: dict[str, Any] = Field(default_factory=dict)
+    rubric: JsonObject = Field(default_factory=dict)
     status: Literal["GRADED", "PUBLISHED", "RETURNED"] = "GRADED"
 
 
@@ -322,7 +327,7 @@ class FileSubmissionAttemptRead(PydanticStrictBaseModel):
     is_late: bool = False
     late_penalty_pct: float = 0.0
     final_score: float | None = None
-    feedback: dict[str, Any] = Field(default_factory=dict)
+    feedback: JsonObject = Field(default_factory=dict)
     version: int = 1
     started_at: datetime | None = None
     submitted_at: datetime | None = None
@@ -349,11 +354,11 @@ class FileSubmissionRead(PydanticStrictBaseModel):
     max_file_size_mb: int | None = None
     due_at: datetime | None = None
     allow_late: bool = True
-    late_policy: dict[str, Any] = Field(default_factory=dict)
+    late_policy: JsonObject = Field(default_factory=dict)
     max_attempts: int | None = None
     grade_release_mode: str = "IMMEDIATE"
-    rubric: dict[str, Any] = Field(default_factory=dict)
-    settings: dict[str, Any] = Field(default_factory=dict)
+    rubric: JsonObject = Field(default_factory=dict)
+    settings: JsonObject = Field(default_factory=dict)
     current_attempt: FileSubmissionAttemptRead | None = None
     attempts: list[FileSubmissionAttemptRead] = Field(default_factory=list)
     created_at: datetime

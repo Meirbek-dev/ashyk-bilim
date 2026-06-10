@@ -63,7 +63,7 @@ async def get_gradebook_cursor(
     query = (
         select(ActivityProgress)
         .where(ActivityProgress.course_id == course.id)
-        .order_by(ActivityProgress.user_id, ActivityProgress.activity_id)
+        .order_by(col(ActivityProgress.user_id), col(ActivityProgress.activity_id))
     )
 
     if cursor is not None:

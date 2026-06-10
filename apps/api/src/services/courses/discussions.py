@@ -21,7 +21,7 @@ from src.db.courses.discussions import (
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
-from src.types import JsonObject
+from src.types import JsonObject, require_persisted_id
 
 
 async def create_discussion(
@@ -90,7 +90,9 @@ async def create_discussion(
             db_session.add(parent)
             db_session.commit()
 
-    return await get_discussion_with_details(discussion.id, db_session, current_user)
+    return await get_discussion_with_details(
+        require_persisted_id(discussion.id, model_name="CourseDiscussion"), db_session, current_user
+    )
 
 
 async def get_discussions_by_course_uuid(
@@ -136,7 +138,12 @@ async def get_discussions_by_course_uuid(
 
     # Gather all top-level discussion details in parallel
     all_discussion_data = list(
-        await asyncio.gather(*[get_discussion_with_details(d.id, db_session, current_user) for d in discussions])
+        await asyncio.gather(*[
+            get_discussion_with_details(
+                require_persisted_id(d.id, model_name="CourseDiscussion"), db_session, current_user
+            )
+            for d in discussions
+        ])
     )
 
     if include_replies and discussions:
@@ -160,7 +167,12 @@ async def get_discussions_by_course_uuid(
 
         # Gather all reply details in parallel
         all_reply_details = list(
-            await asyncio.gather(*[get_discussion_with_details(r.id, db_session, current_user) for r in all_replies])
+            await asyncio.gather(*[
+                get_discussion_with_details(
+                    require_persisted_id(r.id, model_name="CourseDiscussion"), db_session, current_user
+                )
+                for r in all_replies
+            ])
         )
         reply_details_by_id = {r.id: detail for r, detail in zip(all_replies, all_reply_details, strict=False)}
 
@@ -218,7 +230,7 @@ async def get_discussion_with_details(
     from src.db.users import UserRead
 
     user_read = UserRead(
-        id=user.id,
+        id=require_persisted_id(user.id, model_name="User"),
         user_uuid=user.user_uuid,
         username=user.username,
         first_name=user.first_name,
@@ -291,7 +303,9 @@ async def update_discussion(
     db_session.commit()
     db_session.refresh(discussion)
 
-    return await get_discussion_with_details(discussion.id, db_session, current_user)
+    return await get_discussion_with_details(
+        require_persisted_id(discussion.id, model_name="CourseDiscussion"), db_session, current_user
+    )
 
 
 async def delete_discussion(
@@ -363,7 +377,7 @@ async def like_discussion(
 
     # Create like
     like = DiscussionLike(
-        discussion_id=discussion.id,
+        discussion_id=require_persisted_id(discussion.id, model_name="CourseDiscussion"),
         user_id=current_user.id,
         creation_date=utcnow(),
     )
@@ -476,7 +490,7 @@ async def toggle_discussion_like(
             discussion.dislikes_count = max(0, discussion.dislikes_count - 1)
 
         like = DiscussionLike(
-            discussion_id=discussion.id,
+            discussion_id=require_persisted_id(discussion.id, model_name="CourseDiscussion"),
             user_id=current_user.id,
             creation_date=utcnow(),
         )
@@ -549,7 +563,7 @@ async def toggle_discussion_dislike(
             discussion.likes_count = max(0, discussion.likes_count - 1)
 
         dislike = DiscussionDislike(
-            discussion_id=discussion.id,
+            discussion_id=require_persisted_id(discussion.id, model_name="CourseDiscussion"),
             user_id=current_user.id,
             creation_date=utcnow(),
         )
@@ -614,5 +628,10 @@ async def get_discussion_replies(
     replies = db_session.exec(replies_query).all()
 
     return list(
-        await asyncio.gather(*[get_discussion_with_details(reply.id, db_session, current_user) for reply in replies])
+        await asyncio.gather(*[
+            get_discussion_with_details(
+                require_persisted_id(reply.id, model_name="CourseDiscussion"), db_session, current_user
+            )
+            for reply in replies
+        ])
     )

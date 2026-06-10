@@ -29,10 +29,10 @@ class CodeRunStatus(StrEnum):
     DEGRADED = "DEGRADED"
 
 
-class CodeRun(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class CodeRun(SQLModelStrictBaseModel, table=True):
     """One student/teacher code execution request."""
 
-    __tablename__: ClassVar[str] = "code_run"
+    __tablename__: ClassVar[str] = "code_run"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_code_run_uuid", "run_uuid", unique=True),
         Index("ix_code_run_assessment_item", "assessment_uuid", "item_uuid"),
@@ -75,10 +75,10 @@ class CodeRun(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
     )
 
 
-class CodeRunCase(SQLModelStrictBaseModel, table=True):  # type: ignore[misc]
+class CodeRunCase(SQLModelStrictBaseModel, table=True):
     """One Judge0 submission result inside a code run."""
 
-    __tablename__: ClassVar[str] = "code_run_case"
+    __tablename__: ClassVar[str] = "code_run_case"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_code_run_case_run", "run_uuid"),
         Index("ix_code_run_case_test", "run_uuid", "test_id"),

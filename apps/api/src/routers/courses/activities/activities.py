@@ -75,7 +75,9 @@ async def api_delete_activity(
     db_session: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> ActivityDetailResponse:
     assert db_session is not None
-    return ActivityDetailResponse.model_validate(await delete_activity(request, activity_uuid, current_user, db_session))
+    return ActivityDetailResponse.model_validate(
+        await delete_activity(request, activity_uuid, current_user, db_session)
+    )
 
 
 # Video activity

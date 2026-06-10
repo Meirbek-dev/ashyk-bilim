@@ -119,8 +119,7 @@ async def search_platform_content(
         )
         courses_by_collection: dict[int, list[Course]] = {}
         for cc, course in db_session.exec(batch_stmt).all():
-            if cc.collection_id is not None:
-                courses_by_collection.setdefault(cc.collection_id, []).append(course)
+            courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
         for collection in collections:
             collection_read = CollectionRead.model_validate({

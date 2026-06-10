@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import SupportsFloat, SupportsInt
 
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -24,17 +23,19 @@ from src.services.analytics.schemas import (
     WorkloadAgingBuckets,
 )
 
+__all__ = ["GRADING_SLA_HOURS", "TeacherWorkloadSummary", "build_teacher_workload"]
+
 GRADING_SLA_HOURS = 72
 
 
 def _as_int(value: object) -> int:
-    if isinstance(value, (str, bytes, bytearray, SupportsInt)):
+    if isinstance(value, int | float | str):
         return int(value)
     return 0
 
 
 def _as_float(value: object) -> float:
-    if isinstance(value, (str, bytes, bytearray, SupportsFloat, SupportsInt)):
+    if isinstance(value, int | float | str):
         return float(value)
     return 0.0
 

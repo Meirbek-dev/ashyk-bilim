@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import desc
 from sqlmodel import Session, col, select
 from ulid import ULID
 
@@ -25,6 +24,7 @@ from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionChecker
 from src.services.grading.events import publish_grading_event
+from src.types import require_persisted_id
 
 router = APIRouter()
 
@@ -92,24 +92,25 @@ def _latest_or_create_grading_entry(
     entry = db_session.exec(
         select(GradingEntry)
         .where(GradingEntry.submission_id == submission.id)
-        .order_by(desc(GradingEntry.created_at), desc(GradingEntry.id))
+        .order_by(col(GradingEntry.created_at).desc(), col(GradingEntry.id).desc())
     ).first()
     if entry is not None:
         return entry
 
     now = datetime.now(UTC)
-    grading_dict: JsonObject = submission.grading_json if isinstance(submission.grading_json, dict) else {}
-    raw_dict: JsonObject = submission.raw_grading_json if isinstance(submission.raw_grading_json, dict) else {}
+    grading_dict: JsonObject = dict(submission.grading_json)
+    raw_dict: JsonObject = dict(submission.raw_grading_json)
+    feedback_value = grading_dict.get("feedback", "")
     entry = GradingEntry(
         entry_uuid=f"entry_{ULID()}",
-        submission_id=submission.id,
+        submission_id=require_persisted_id(submission.id, model_name="Submission"),
         graded_by=current_user.id,
         raw_score=float(submission.final_score or submission.auto_score or 0),
         penalty_pct=float(submission.late_penalty_pct or 0),
         final_score=float(submission.final_score or submission.auto_score or 0),
         raw_breakdown=raw_dict,
         effective_breakdown=grading_dict,
-        overall_feedback=(grading_dict.get("feedback", "") if isinstance(grading_dict, dict) else ""),
+        overall_feedback=feedback_value if isinstance(feedback_value, str) else "",
         grading_version=submission.grading_version,
         created_at=now,
         published_at=None,
@@ -136,7 +137,7 @@ async def api_list_item_feedback(
         select(ItemFeedbackEntry)
         .join(GradingEntry, col(GradingEntry.id) == ItemFeedbackEntry.grading_entry_id)
         .where(ItemFeedbackEntry.submission_id == submission.id)
-        .order_by(ItemFeedbackEntry.created_at, ItemFeedbackEntry.id)
+        .order_by(col(ItemFeedbackEntry.created_at), col(ItemFeedbackEntry.id))
     )
     if submission.user_id == current_user.id:
         query = query.where(col(GradingEntry.published_at).is_not(None))
@@ -164,8 +165,8 @@ async def api_create_item_feedback(
     )
     now = datetime.now(UTC)
     row = ItemFeedbackEntry(
-        grading_entry_id=entry.id,
-        submission_id=submission.id,
+        grading_entry_id=require_persisted_id(entry.id, model_name="GradingEntry"),
+        submission_id=require_persisted_id(submission.id, model_name="Submission"),
         task_id=feedback.task_id,
         item_ref=feedback.item_ref,
         comment=feedback.comment,

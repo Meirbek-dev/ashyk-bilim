@@ -49,6 +49,7 @@ async def auto_submit_expired_drafts() -> int:
         submit_assessment as submit_assessment_pipeline,
     )
     from src.services.grading.settings_loader import load_activity_settings
+    from src.types import JsonObject
 
     try:
         engine = get_bg_engine()
@@ -108,7 +109,7 @@ async def auto_submit_expired_drafts() -> int:
                 )
 
                 # Pre-populate metadata before submission
-                metadata: dict[str, object] = submission.metadata_json or {}
+                metadata: JsonObject = dict(submission.metadata_json or {})
                 metadata["auto_submit_reason"] = "TIME_EXPIRED"
                 metadata["auto_submitted_at"] = now.isoformat()
                 submission.metadata_json = metadata

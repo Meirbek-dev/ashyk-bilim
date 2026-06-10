@@ -7,7 +7,7 @@ Request-scoped sessions are never moved across threads.
 """
 
 import asyncio
-from typing import Annotated, Any, override
+from typing import Annotated, override
 
 from fastapi import Depends
 from fastapi_users.db import BaseUserDatabase
@@ -38,10 +38,10 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         return await asyncio.to_thread(_get_by_email)
 
     @override
-    async def create(self, create_dict: dict[str, Any]) -> User:
+    async def create(self, create_dict: dict[str, object]) -> User:
         def _create() -> User:
             with self.session_factory() as session:
-                user = User(**create_dict)
+                user = User.model_validate(create_dict)
                 session.add(user)
                 session.commit()
                 session.refresh(user)
@@ -50,7 +50,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         return await asyncio.to_thread(_create)
 
     @override
-    async def update(self, user: User, update_dict: dict[str, Any]) -> User:
+    async def update(self, user: User, update_dict: dict[str, object]) -> User:
         def _update() -> User:
             with self.session_factory() as session:
                 db_user = session.get(User, user.id)

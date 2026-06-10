@@ -25,6 +25,7 @@ from src.services.courses._auth import require_course_permission
 from src.services.courses._utils import (
     _get_activity_by_uuid_or_404,
 )
+from src.types import require_persisted_id
 
 
 def _get_chapter_by_uuid(chapter_uuid: str, db_session: Session) -> Chapter:
@@ -67,17 +68,18 @@ async def create_chapter(
     checker = PermissionChecker(db_session)
     require_course_permission("chapter:create", current_user, course, checker)
 
+    course_id = require_persisted_id(course.id, model_name="Course")
     chapter = Chapter(
         name=chapter_object.name,
         description=chapter_object.description or "",
         thumbnail_image=chapter_object.thumbnail_image or "",
-        course_id=course.id,
+        course_id=course_id,
     )
     chapter.chapter_uuid = f"chapter_{ULID()}"
     chapter.creation_date = datetime.now(tz=UTC)
     chapter.update_date = datetime.now(tz=UTC)
     chapter.creator_id = current_user.id
-    chapter.order = _next_chapter_order(course.id, db_session)
+    chapter.order = _next_chapter_order(course_id, db_session)
 
     db_session.add(chapter)
     db_session.commit()
@@ -99,7 +101,7 @@ async def get_chapter(
     require_course_permission("course:read", current_user, course, checker)
 
     activities = db_session.exec(
-        select(Activity).where(Activity.chapter_id == chapter.id).order_by(Activity.order)
+        select(Activity).where(Activity.chapter_id == chapter.id).order_by(col(Activity.order))
     ).all()
 
     return ChapterRead.model_validate(
@@ -130,7 +132,7 @@ async def update_chapter(
     db_session.refresh(chapter)
 
     activities = db_session.exec(
-        select(Activity).where(Activity.chapter_id == chapter.id).order_by(Activity.order)
+        select(Activity).where(Activity.chapter_id == chapter.id).order_by(col(Activity.order))
     ).all()
 
     return ChapterRead.model_validate(
@@ -176,7 +178,7 @@ async def move_chapter_to_order(
         select(Chapter)
         .where(Chapter.course_id == chapter.course_id)
         .where(Chapter.id != chapter.id)
-        .order_by(Chapter.order)
+        .order_by(col(Chapter.order))
     ).all()
 
     # Clamp position to the valid range [1, total_chapters].
@@ -236,7 +238,7 @@ async def move_activity_to_order(
         select(Activity)
         .where(Activity.chapter_id == activity.chapter_id)
         .where(Activity.id != activity.id)
-        .order_by(Activity.order)
+        .order_by(col(Activity.order))
     ).all()
 
     # Clamp position to the valid range [1, total_activities].
@@ -271,7 +273,7 @@ async def get_course_chapters(
     if not course.public:
         require_course_permission("course:read", current_user, course, checker)
 
-    chapters = db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order)).all()
+    chapters = db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order))).all()
 
     chapter_reads = [
         ChapterReadWithPermissions.model_validate(chapter, update={"activities": []}) for chapter in chapters
@@ -283,7 +285,7 @@ async def get_course_chapters(
     chapter_ids = [c.id for c in chapter_reads]
 
     # Apply the published filter in SQL, not in Python.
-    activity_query = select(Activity).where(col(Activity.chapter_id).in_(chapter_ids)).order_by(Activity.order)
+    activity_query = select(Activity).where(col(Activity.chapter_id).in_(chapter_ids)).order_by(col(Activity.order))
     if not with_unpublished_activities:
         activity_query = activity_query.where(Activity.published)
 
@@ -291,8 +293,7 @@ async def get_course_chapters(
 
     activities_by_chapter: dict[int, list[Activity]] = defaultdict(list)
     for activity in activities:
-        if activity.chapter_id is not None:
-            activities_by_chapter[activity.chapter_id].append(activity)
+        activities_by_chapter[activity.chapter_id].append(activity)
 
     for chapter in chapter_reads:
         for activity in activities_by_chapter.get(chapter.id, []):
@@ -406,11 +407,10 @@ async def reorder_chapters_and_activities(
 
     for chapter_order in chapters_order.chapter_order_by_uuids:
         chapter = chapters_by_uuid[chapter_order.chapter_uuid]
-        if chapter.id is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Глава не найдена")
+        chapter_id = require_persisted_id(chapter.id, model_name="Chapter")
         for index, activity_uuid in enumerate(chapter_order.activities_order_by_uuids):
             activity = activities_by_uuid[activity_uuid]
-            activity.chapter_id = chapter.id
+            activity.chapter_id = chapter_id
             # Keep denormalized FK in sync.
             activity.course_id = course.id
             activity.order = index + 1

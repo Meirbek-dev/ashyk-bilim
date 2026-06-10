@@ -5,9 +5,9 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from cachebox import TTLCache
 from fastapi import HTTPException, Request, status
 
+from cachebox import TTLCache
 from src.services.cache.redis_client import get_async_redis_client
 
 
@@ -82,7 +82,7 @@ async def _local_check(key: str, rule: RateLimitRule) -> int | None:
     window_start = now - rule.window_seconds
 
     async with _LOCAL_LIMIT_LOCK:
-        timestamps = [timestamp for timestamp in _LOCAL_LIMITS.get(key, []) if timestamp >= window_start]
+        timestamps: list[float] = [timestamp for timestamp in _LOCAL_LIMITS.get(key, []) if timestamp >= window_start]
         if len(timestamps) >= rule.max_requests:
             oldest = min(timestamps)
             retry_after = max(1, int(rule.window_seconds - (now - oldest)))

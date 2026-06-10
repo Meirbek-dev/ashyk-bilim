@@ -122,12 +122,14 @@ async def api_delete_certification(
     last_known_update_date: Annotated[datetime | None, Query()] = None,
 ) -> CertificationDetailResponse:
     """Delete certification by certification_id."""
-    return await delete_certification(
-        request,
-        certification_uuid,
-        current_user,
-        db_session,
-        last_known_update_date=last_known_update_date,
+    return CertificationDetailResponse.model_validate(
+        await delete_certification(
+            request,
+            certification_uuid,
+            current_user,
+            db_session,
+            last_known_update_date=last_known_update_date,
+        )
     )
 
 

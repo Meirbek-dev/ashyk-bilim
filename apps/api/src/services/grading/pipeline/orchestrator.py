@@ -44,7 +44,7 @@ from src.services.grading.pipeline.persist import persist_submission
 from src.services.grading.pipeline.validate import validate_and_parse
 from src.services.grading.settings_loader import AssessmentSettings
 from src.services.progress import submissions as progress_submissions
-from src.types import JsonObject
+from src.types import JsonObject, JsonValue, as_json_object
 
 logger = logging.getLogger(__name__)
 
@@ -179,12 +179,12 @@ async def _submit_assessment_inner(
     # and cap the violations list at 500 entries.
     MAX_VIOLATIONS_STORED = 500
     if violation_exceeded:
-        current_meta: dict[str, object] = draft.metadata_json or {}
+        current_meta: JsonObject = dict(draft.metadata_json or {})
         current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
         raw_violations = current_meta.get("violations", [])
-        existing_violations: list[object] = raw_violations if isinstance(raw_violations, list) else []
+        existing_violations: list[JsonValue] = raw_violations if isinstance(raw_violations, list) else []
         if len(existing_violations) > MAX_VIOLATIONS_STORED:
             current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True
@@ -194,7 +194,7 @@ async def _submit_assessment_inner(
 
     # 7. Run code (CODE_CHALLENGE only)
     answers_by_item_uuid = parsed.answers_by_item_uuid
-    final_payload = parsed.raw_payload
+    final_payload: dict[str, object] = dict(parsed.raw_payload)
     if assessment_type == AssessmentType.CODE_CHALLENGE:
         answers_by_item_uuid, final_payload = await _run_final_code_answers(
             db_session=db_session,
@@ -238,7 +238,7 @@ async def _submit_assessment_inner(
             result=result,
             penalty=penalty,
             effective=effective,
-            answers_payload=final_payload,
+            answers_payload=as_json_object(final_payload, field="answers_payload"),
             now=now,
             policy=policy,
             assessment_type=assessment_type,
@@ -450,7 +450,7 @@ async def _run_final_code_answers(
                 passed=result.passed,
                 total=result.total,
                 score=result.score,
-                details=result.grading_details(),
+                details=[dict(detail) for detail in result.grading_details()],
             ),
         )
 

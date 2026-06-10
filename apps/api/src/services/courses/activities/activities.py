@@ -19,7 +19,7 @@ from src.db.courses.activities import (
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
 from src.db.file_submissions import FileSubmissionActivity, FileSubmissionLifecycle
-from src.db.grading.progress import AssessmentPolicy
+from src.db.grading.progress import LATE_POLICY_ADAPTER, AssessmentPolicy
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
@@ -128,9 +128,9 @@ def _get_activity_policy_read(
         max_attempts=policy.max_attempts,
         time_limit_seconds=policy.time_limit_seconds,
         due_at=policy.due_at,
-        late_policy=policy.late_policy_json,
-        anti_cheat_json=policy.anti_cheat_json,
-        settings_json=policy.settings_json,
+        late_policy=LATE_POLICY_ADAPTER.validate_python(policy.late_policy_json),
+        anti_cheat_json=dict(policy.anti_cheat_json),
+        settings_json=dict(policy.settings_json),
     )
 
 

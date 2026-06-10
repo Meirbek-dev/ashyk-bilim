@@ -72,7 +72,8 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
         # Embed course per step for convenience
         for step_read in rr.steps:
             if step_read.course_id:
-                step_read.data = {"course": courses_by_id.get(step_read.course_id)}
+                step_course = courses_by_id.get(step_read.course_id)
+                step_read.data = {"course": step_course.model_dump() if step_course is not None else {}}
 
     return TrailRead(**trail.model_dump(), runs=run_reads)
 

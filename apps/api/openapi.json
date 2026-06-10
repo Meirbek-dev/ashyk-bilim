@@ -144,9 +144,16 @@
             "type": "object"
           },
           "details": {
-            "additionalProperties": true,
-            "title": "Details",
-            "type": "object"
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           },
           "name": {
             "title": "Name",
@@ -3419,12 +3426,7 @@
           },
           "supported_sorts": {
             "items": {
-              "enum": [
-                "submitted_at",
-                "final_score",
-                "attempt_number"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/AssessmentReviewSort"
             },
             "title": "Supported Sorts",
             "type": "array"
@@ -3453,6 +3455,14 @@
         ],
         "title": "AssessmentReviewProjection",
         "type": "object"
+      },
+      "AssessmentReviewSort": {
+        "enum": [
+          "submitted_at",
+          "final_score",
+          "attempt_number"
+        ],
+        "type": "string"
       },
       "AssessmentScoreProjection": {
         "properties": {
@@ -4013,9 +4023,7 @@
             "type": "integer"
           },
           "payload_json": {
-            "additionalProperties": true,
-            "title": "Payload Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "target_kind": {
             "title": "Target Kind",
@@ -4945,9 +4953,7 @@
             "type": "integer"
           },
           "params": {
-            "additionalProperties": true,
-            "title": "Params",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "performed_by": {
             "title": "Performed By",
@@ -8649,9 +8655,7 @@
             "type": "string"
           },
           "feedback": {
-            "additionalProperties": true,
-            "title": "Feedback",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "files": {
             "items": {
@@ -8824,9 +8828,7 @@
             "type": "string"
           },
           "late_policy": {
-            "additionalProperties": true,
-            "title": "Late Policy",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Input"
           },
           "max_attempts": {
             "anyOf": [
@@ -8862,14 +8864,10 @@
             "type": "integer"
           },
           "rubric": {
-            "additionalProperties": true,
-            "title": "Rubric",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Input"
           },
           "settings": {
-            "additionalProperties": true,
-            "title": "Settings",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Input"
           },
           "title": {
             "title": "Title",
@@ -8971,9 +8969,7 @@
             "title": "Final Score"
           },
           "rubric": {
-            "additionalProperties": true,
-            "title": "Rubric",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Input"
           },
           "status": {
             "default": "GRADED",
@@ -9098,9 +9094,7 @@
             "type": "string"
           },
           "late_policy": {
-            "additionalProperties": true,
-            "title": "Late Policy",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "lifecycle": {
             "$ref": "#/components/schemas/FileSubmissionLifecycle"
@@ -9136,14 +9130,10 @@
             "type": "boolean"
           },
           "rubric": {
-            "additionalProperties": true,
-            "title": "Rubric",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "settings": {
-            "additionalProperties": true,
-            "title": "Settings",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "title": {
             "title": "Title",
@@ -9282,14 +9272,12 @@
           "late_policy": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Late Policy"
+            ]
           },
           "max_attempts": {
             "anyOf": [
@@ -9333,26 +9321,22 @@
           "rubric": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Rubric"
+            ]
           },
           "settings": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Settings"
+            ]
           },
           "title": {
             "anyOf": [
@@ -10052,7 +10036,7 @@
             "title": "Correct"
           },
           "correct_answer": {
-            "title": "Correct Answer"
+            "$ref": "#/components/schemas/JsonValue-Output"
           },
           "feedback": {
             "default": "",
@@ -10084,7 +10068,7 @@
             "type": "number"
           },
           "user_answer": {
-            "title": "User Answer"
+            "$ref": "#/components/schemas/JsonValue-Output"
           }
         },
         "required": [
@@ -10256,8 +10240,7 @@
         "properties": {
           "checks": {
             "additionalProperties": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/JsonObject-Output"
             },
             "title": "Checks",
             "type": "object"
@@ -10978,6 +10961,75 @@
         ],
         "title": "ItemKind",
         "type": "string"
+      },
+      "JsonObject-Input": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue-Input"
+        },
+        "type": "object"
+      },
+      "JsonObject-Output": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue-Output"
+        },
+        "type": "object"
+      },
+      "JsonPrimitive": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "JsonValue-Input": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/JsonPrimitive"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue-Input"
+            },
+            "type": "array"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue-Input"
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "JsonValue-Output": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/JsonPrimitive"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue-Output"
+            },
+            "type": "array"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue-Output"
+            },
+            "type": "object"
+          }
+        ]
       },
       "Judge0LanguageRead": {
         "properties": {
@@ -11906,9 +11958,7 @@
             "type": "integer"
           },
           "preferences": {
-            "additionalProperties": true,
-            "title": "Preferences",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "total_activities_completed": {
             "title": "Total Activities Completed",
@@ -12782,9 +12832,7 @@
             "type": "string"
           },
           "payload": {
-            "additionalProperties": true,
-            "title": "Payload",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Input"
           }
         },
         "required": [
@@ -12807,14 +12855,10 @@
             "title": "Assessment Uuid"
           },
           "content": {
-            "additionalProperties": true,
-            "title": "Content",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "details": {
-            "additionalProperties": true,
-            "title": "Details",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "file_submission_uuid": {
             "anyOf": [
@@ -12828,9 +12872,7 @@
             "title": "File Submission Uuid"
           },
           "settings": {
-            "additionalProperties": true,
-            "title": "Settings",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "subtype": {
             "title": "Subtype",
@@ -13606,9 +13648,7 @@
             "title": "Answered Count"
           },
           "answers_json": {
-            "additionalProperties": true,
-            "title": "Answers Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -13701,9 +13741,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "additionalProperties": true,
-            "title": "Metadata Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "raw_grading_json": {
             "$ref": "#/components/schemas/GradingBreakdown"
@@ -13939,9 +13977,7 @@
             "type": "integer"
           },
           "answers_json": {
-            "additionalProperties": true,
-            "title": "Answers Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -14029,9 +14065,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "additionalProperties": true,
-            "title": "Metadata Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "raw_grading_json": {
             "$ref": "#/components/schemas/GradingBreakdown"
@@ -15415,9 +15449,7 @@
             "type": "integer"
           },
           "answers_json": {
-            "additionalProperties": true,
-            "title": "Answers Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -15515,9 +15547,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "additionalProperties": true,
-            "title": "Metadata Json",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "policy_version": {
             "default": 1,
@@ -15804,14 +15834,12 @@
           "course": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Output"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Course"
+            ]
           },
           "course_id": {
             "title": "Course Id",
@@ -15834,9 +15862,7 @@
             "title": "Creation Date"
           },
           "data": {
-            "additionalProperties": true,
-            "title": "Data",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "id": {
             "anyOf": [
@@ -15893,14 +15919,12 @@
           "activity": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Output"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Activity"
+            ]
           },
           "activity_id": {
             "title": "Activity Id",
@@ -15927,9 +15951,7 @@
             "title": "Creation Date"
           },
           "data": {
-            "additionalProperties": true,
-            "title": "Data",
-            "type": "object"
+            "$ref": "#/components/schemas/JsonObject-Output"
           },
           "grade": {
             "default": 0,
@@ -16290,14 +16312,12 @@
           "details": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Details"
+            ]
           },
           "email": {
             "format": "email",
@@ -16345,14 +16365,12 @@
           "profile": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Profile"
+            ]
           },
           "theme": {
             "anyOf": [
@@ -16487,8 +16505,7 @@
           },
           "roles": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/JsonObject-Output"
             },
             "title": "Roles",
             "type": "array"
@@ -16559,14 +16576,12 @@
           "details": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Output"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Details"
+            ]
           },
           "email": {
             "format": "email",
@@ -16627,14 +16642,12 @@
           "profile": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Output"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Profile"
+            ]
           },
           "theme": {
             "anyOf": [
@@ -16920,14 +16933,12 @@
           "details": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Details"
+            ]
           },
           "email": {
             "anyOf": [
@@ -16987,14 +16998,12 @@
           "profile": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonObject-Input"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Profile"
+            ]
           },
           "theme": {
             "anyOf": [
@@ -18017,6 +18026,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -18233,6 +18264,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -18467,6 +18520,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -18683,6 +18758,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -18908,6 +19005,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -19133,6 +19252,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -19412,6 +19553,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -19628,6 +19791,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -19837,6 +20022,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -20046,6 +20253,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -20255,6 +20484,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -20496,6 +20747,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -20710,6 +20983,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -20936,6 +21231,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -21152,6 +21469,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -21368,6 +21707,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -21582,6 +21943,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {
@@ -21817,6 +22200,28 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "name",
+                    "active",
+                    "completion",
+                    "risk",
+                    "health",
+                    "engagement",
+                    "pressure",
+                    "difficulty",
+                    "signals"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "title",
+                    "submission",
+                    "pass",
+                    "difficulty",
+                    "latency",
+                    "signals"
+                  ],
                   "type": "string"
                 },
                 {

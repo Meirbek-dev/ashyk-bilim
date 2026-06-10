@@ -15,6 +15,12 @@ import time
 from datetime import datetime
 from typing import Annotated, TypedDict
 
+from fastapi import Depends, HTTPException, status
+from sqlmodel import Session, col, select
+
+from src.infra.db.session import get_db_session
+from src.services.cache.redis_client import get_redis_client
+
 
 class UserRoleDict(TypedDict):
     id: int | None
@@ -26,12 +32,6 @@ class UserRoleDict(TypedDict):
     created_at: datetime
     updated_at: datetime
 
-
-from fastapi import Depends, HTTPException, status
-from sqlmodel import Session, col, select
-
-from src.infra.db.session import get_db_session
-from src.services.cache.redis_client import get_redis_client
 
 _logger = logging.getLogger(__name__)
 

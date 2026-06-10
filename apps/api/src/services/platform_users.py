@@ -9,6 +9,7 @@ from src.db.permissions import Role, RoleRead, UserRole
 from src.db.platform import PaginatedPlatformUsers, PlatformUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def get_platform_users(
 ) -> PaginatedPlatformUsers:
     checker.require(current_user.id, "platform:read")
 
-    base_statement = select(User).join(UserRole, col(UserRole.user_id) == User.id).distinct(User.id)
+    base_statement = select(User).join(UserRole, col(UserRole.user_id) == User.id).distinct(col(User.id))
 
     all_user_ids = db_session.exec(select(User.id).join(UserRole, col(UserRole.user_id) == User.id).distinct()).all()
     total = len(all_user_ids)
@@ -34,7 +35,7 @@ def get_platform_users(
 
     platform_users_list = []
 
-    user_ids = [u.id for u in users]
+    user_ids = [require_persisted_id(u.id, model_name="User") for u in users]
     roles_by_user: dict[int, list[Role]] = defaultdict(list)
     if user_ids:
         all_role_rows = db_session.exec(
@@ -43,8 +44,7 @@ def get_platform_users(
             .where(col(UserRole.user_id).in_(user_ids))
         ).all()
         for role, user_role in all_role_rows:
-            if user_role.user_id is not None:
-                roles_by_user[user_role.user_id].append(role)
+            roles_by_user[user_role.user_id].append(role)
 
     for user in users:
         user_roles = roles_by_user.get(user.id or 0, [])
@@ -152,7 +152,7 @@ def update_platform_user_role(
         db_session.delete(user_role)
     db_session.flush()
 
-    checker.assign_role(user_id=user_id, role_id=role.id)
+    checker.assign_role(user_id=user_id, role_id=require_persisted_id(role.id, model_name="Role"))
     db_session.commit()
 
     return {"detail": "User role updated"}
