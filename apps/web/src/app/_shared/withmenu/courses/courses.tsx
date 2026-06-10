@@ -26,8 +26,8 @@ const EmptyStateMessage = ({
   <div className="col-span-full flex items-center justify-center py-12">
     <div className="max-w-md text-center">
       <div className="mb-6">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-          <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+          <svg className="text-muted-foreground h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -37,8 +37,10 @@ const EmptyStateMessage = ({
           </svg>
         </div>
       </div>
-      <h1 className="mb-3 text-2xl font-bold text-gray-700">{t('noCourses')}</h1>
-      <p className="mb-6 text-lg text-gray-500">{canManagePlatform ? t('createACourse') : t('noCoursesAvailable')}</p>
+      <h1 className="text-foreground mb-3 text-2xl font-bold">{t('noCourses')}</h1>
+      <p className="text-muted-foreground mb-6 text-base">
+        {canManagePlatform ? t('createACourse') : t('noCoursesAvailable')}
+      </p>
       {canManagePlatform ? <div className="flex justify-center">{createCourseTrigger}</div> : null}
     </div>
   </div>

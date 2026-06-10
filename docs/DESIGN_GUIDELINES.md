@@ -62,29 +62,29 @@ Use shadcn/ui tokens instead of hardcoded colors.
 Prefer:
 
 ```tsx
-bg - background;
-bg - card;
-bg - muted;
-bg - primary;
-bg - secondary;
-bg - accent;
-text - foreground;
-text - muted - foreground;
-text - primary;
-border - border;
-ring - ring;
+bg - background
+bg - card
+bg - muted
+bg - primary
+bg - secondary
+bg - accent
+text - foreground
+text - muted - foreground
+text - primary
+border - border
+ring - ring
 ```
 
 Avoid:
 
 ```tsx
-bg - white;
-bg - gray;
-bg - slate;
-text - gray;
-text - indigo;
-border - gray;
-etc;
+bg - white
+bg - gray
+bg - slate
+text - gray
+text - indigo
+border - gray
+etc
 ```
 
 Use semantic variants from shadcn/ui components where available.
@@ -122,11 +122,11 @@ text-transparent bg-clip-text bg-gradient-to-r
 Replace with stable system colors:
 
 ```tsx
-bg - background;
-bg - card;
-bg - muted;
-text - foreground;
-text - primary;
+bg - background
+bg - card
+bg - muted
+text - foreground
+text - primary
 ```
 
 Gradients should not be used to make weak hierarchy feel more exciting. Fix hierarchy with spacing, typography, layout, and semantic color.
@@ -140,30 +140,30 @@ Use icons only when they clarify meaning.
 Good examples:
 
 ```tsx
-Search;
-Settings;
-User;
-Calendar;
-ChevronRight;
-Check;
-AlertCircle;
-Trash;
-Edit;
-Plus;
-Download;
-Upload;
+Search
+Settings
+User
+Calendar
+ChevronRight
+Check
+AlertCircle
+Trash
+Edit
+Plus
+Download
+Upload
 ```
 
 Avoid decorative or hype icons unless the feature genuinely requires them:
 
 ```tsx
-Sparkles;
-Rocket;
-Flame;
-Zap;
-PartyPopper;
-Wand2;
-Star;
+Sparkles
+Rocket
+Flame
+Zap
+PartyPopper
+Wand2
+Star
 ```
 
 If an icon is only there to make the UI feel energetic, remove it.
@@ -189,10 +189,10 @@ etc
 Acceptable motion:
 
 ```tsx
-transition - colors;
-transition - opacity;
-duration - 150;
-duration - 200;
+transition - colors
+transition - opacity
+duration - 150
+duration - 200
 ```
 
 Use transforms only when they serve a clear interaction purpose, such as opening a dropdown, rotating a chevron, or animating a sheet/dialog.
@@ -217,12 +217,12 @@ border-gray-100
 Prefer:
 
 ```tsx
-rounded - lg;
-rounded - md;
-border;
-border - border;
-bg - card;
-shadow - sm;
+rounded - lg
+rounded - md
+border
+border - border
+bg - card
+shadow - sm
 ```
 
 Use strong shadows sparingly. Most app surfaces should rely on border, spacing, and background contrast rather than dramatic shadowing.

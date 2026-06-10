@@ -34,6 +34,7 @@ import { useTranslations } from 'next-intl'
 import DOMPurify from 'dompurify'
 import { getYouTubeVideoId } from '@/lib/utils'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { Button } from '@/components/ui/button'
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -270,16 +271,16 @@ const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick:
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
+      className="group flex flex-col items-center gap-1.5"
       title={t('addProductEmbedTitle', { productName: product.name })}
     >
       <div
-        className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm transition-shadow group-hover:shadow-md sm:h-12 sm:w-12"
+        className="flex h-10 w-10 items-center justify-center rounded-xl shadow-xs transition-shadow group-hover:shadow-sm sm:h-12 sm:w-12"
         style={{ backgroundColor: product.color }}
       >
         <product.icon size={isMobile ? 20 : 26} color="#FFFFFF" />
       </div>
-      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{product.name}</span>
+      <span className="text-muted-foreground group-hover:text-foreground text-xs font-medium">{product.name}</span>
     </button>
   )
 }
@@ -297,28 +298,34 @@ const EmbedToolbar = ({
   alignment: Alignment
   t: AppTranslator
 }) => (
-  <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100">
-    <button
+  <div className="border-border bg-background/90 absolute top-2 right-2 flex items-center gap-1 rounded-lg border p-1 opacity-0 shadow-xs backdrop-blur-sm transition-opacity group-hover:opacity-100">
+    <Button
       onClick={onEdit}
-      className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground hover:text-foreground"
       title={t('editEmbedTitle')}
     >
-      <Edit2 size={16} />
-    </button>
-    <button
+      <Edit2 size={14} />
+    </Button>
+    <Button
       onClick={onCenter}
-      className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground hover:text-foreground"
       title={alignment === 'center' ? t('alignLeftTitle') : t('centerAlignTitle')}
     >
-      <AlignCenter size={16} />
-    </button>
-    <button
+      <AlignCenter size={14} />
+    </Button>
+    <Button
       onClick={onRemove}
-      className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+      variant="ghost"
+      size="icon-xs"
+      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
       title={t('removeEmbedTitle')}
     >
-      <Trash2 size={16} />
-    </button>
+      <Trash2 size={14} />
+    </Button>
   </div>
 )
 
@@ -368,8 +375,12 @@ const InputModal = ({
   const isValid = (activeInput === 'url' && embedUrl) || (activeInput === 'code' && embedCode)
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/20 p-4 backdrop-blur-sm">
-      <form action={onSubmit} onKeyDown={handleKeyDown} className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <form
+        action={onSubmit}
+        onKeyDown={handleKeyDown}
+        className="border-border bg-card w-full max-w-lg rounded-xl border p-5 shadow-lg"
+      >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -381,7 +392,7 @@ const InputModal = ({
                 <selectedProduct.icon size={20} color="#FFFFFF" />
               </div>
             )}
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-foreground text-lg font-semibold">
               {activeInput === 'url'
                 ? selectedProduct
                   ? t('addProductEmbedTitle', {
@@ -391,27 +402,29 @@ const InputModal = ({
                 : t('addEmbedCodeTitle')}
             </h3>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="text-muted-foreground hover:text-foreground"
           >
-            <X size={20} />
-          </button>
+            <X size={16} />
+          </Button>
         </div>
 
         {/* Input */}
         {activeInput === 'url' ? (
           <div className="mb-3">
             <div className="relative">
-              <Link className="absolute top-1/2 left-3 -translate-y-1/2 text-blue-500" size={18} />
+              <Link className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" size={18} />
               <input
                 ref={urlInputRef}
                 name="embedUrl"
                 type="text"
                 value={embedUrl}
                 onChange={onUrlChange}
-                className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 py-3 pr-4 pl-11 transition-all focus:border-blue-500 focus:bg-white focus:outline-hidden"
+                className="border-border bg-muted/30 text-foreground focus:border-primary focus:bg-background w-full rounded-lg border py-2.5 pr-4 pl-11 transition-all focus:outline-hidden"
                 placeholder={
                   selectedProduct
                     ? t('productUrlPlaceholder', {
@@ -429,7 +442,7 @@ const InputModal = ({
               name="embedCode"
               value={embedCode}
               onChange={onCodeChange}
-              className="min-h-[140px] w-full rounded-xl border-2 border-gray-200 bg-gray-50 font-mono text-sm transition-all focus:border-blue-500 focus:bg-white"
+              className="border-border bg-muted/30 focus:border-primary focus:bg-background min-h-[140px] w-full rounded-lg border font-mono text-sm transition-all"
               placeholder={t('codePlaceholder')}
             />
           </div>
@@ -438,33 +451,26 @@ const InputModal = ({
         {/* Help Text */}
         <div className="mb-4 flex justify-end">
           {selectedProduct && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={onOpenDocs}
-              className="flex shrink-0 items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700"
+              className="text-primary h-auto p-0 text-xs font-medium"
             >
-              <HelpCircle size={14} />
+              <HelpCircle size={14} className="mr-1" />
               {t('guide')}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
-          >
+          <Button type="button" variant="ghost" onClick={onClose}>
             {t('cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={!isValid}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" disabled={!isValid} variant="default">
             {t('apply')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -485,7 +491,7 @@ const EmptyState = ({
   t: AppTranslator
 }) => (
   <div className="flex h-full w-full flex-col items-center justify-center p-6">
-    <p className="mb-5 text-center text-lg font-medium text-gray-700">{t('addEmbedFrom')}</p>
+    <p className="text-foreground mb-5 text-center text-lg font-medium">{t('addEmbedFrom')}</p>
 
     <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
       {SUPPORTED_PRODUCTS.map(product => (
@@ -493,24 +499,18 @@ const EmptyState = ({
       ))}
     </div>
 
-    <p className="mb-4 max-w-md text-center text-sm text-gray-500">{t('clickServiceToAdd')}</p>
+    <p className="text-muted-foreground mb-4 max-w-md text-center text-sm">{t('clickServiceToAdd')}</p>
 
     {isEditable && (
       <div className="flex gap-3">
-        <button
-          onClick={onUrlClick}
-          className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow"
-        >
-          <LinkIcon size={16} />
+        <Button onClick={onUrlClick} variant="outline" size="default">
+          <LinkIcon size={16} className="mr-1" />
           {t('urlButton')}
-        </button>
-        <button
-          onClick={onCodeClick}
-          className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow"
-        >
-          <Code size={16} />
+        </Button>
+        <Button onClick={onCodeClick} variant="outline" size="default">
+          <Code size={16} className="mr-1" />
           {t('codeButton')}
-        </button>
+        </Button>
       </div>
     )}
   </div>
@@ -742,7 +742,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
     <NodeViewWrapper className="embed-block w-full" ref={containerRef}>
       <div
         ref={resizeRef}
-        className={`group relative flex items-center justify-center overflow-hidden rounded-xl bg-gray-100 transition-shadow hover:shadow-sm ${
+        className={`group border-border bg-muted/40 relative flex items-center justify-center overflow-hidden rounded-xl border transition-shadow hover:shadow-xs ${
           alignment === 'center' ? 'mx-auto' : ''
         }`}
         style={getResponsiveStyles()}
@@ -801,7 +801,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
         {isEditable && hasContent && (
           <>
             <div
-              className="absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              className="bg-background/70 hover:bg-accent/90 absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100"
               role="button"
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'horizontal')}
@@ -817,10 +817,10 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
                 }
               }}
             >
-              <GripVertical size={16} className="text-gray-600" />
+              <GripVertical size={16} className="text-muted-foreground" />
             </div>
             <div
-              className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              className="bg-background/70 hover:bg-accent/90 absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100"
               role="button"
               tabIndex={0}
               onMouseDown={e => handleResizeStart(e, 'vertical')}
@@ -836,7 +836,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
                 }
               }}
             >
-              <GripHorizontal size={16} className="text-gray-600" />
+              <GripHorizontal size={16} className="text-muted-foreground" />
             </div>
           </>
         )}

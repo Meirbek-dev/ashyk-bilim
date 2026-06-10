@@ -6,6 +6,7 @@ import ScenariosModal from './ScenariosModal'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { Button } from '@/components/ui/button'
 
 interface ScenarioOption {
   id: string
@@ -81,19 +82,19 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
 
   return (
     <NodeViewWrapper className="block-scenarios">
-      <div className="rounded-xl bg-slate-100 px-3 py-2 transition-all ease-linear sm:px-5">
+      <div className="border-border bg-muted/40 rounded-xl border px-3 py-2 transition-all ease-linear sm:px-5">
         {/* Header section */}
         <div className="flex flex-wrap items-center gap-2 pt-1 text-sm">
           <div className="flex items-center space-x-2 text-sm">
-            <GitBranch className="text-slate-400" size={15} />
-            <p className="py-1 text-xs font-bold tracking-widest text-slate-400 uppercase">
+            <GitBranch className="text-muted-foreground" size={15} />
+            <p className="text-muted-foreground py-1 text-xs font-bold tracking-widest uppercase">
               {t('interactiveScenario')}
             </p>
           </div>
 
           {/* Completion message */}
           {scenarioComplete && !isEditable && (
-            <div className="rounded-md bg-lime-100 px-2 py-1 text-xs font-medium text-lime-700">
+            <div className="rounded-md border border-lime-500/20 bg-lime-500/10 px-2 py-1 text-xs font-medium text-lime-600 dark:text-lime-400">
               {t('scenarioComplete')}
             </div>
           )}
@@ -103,21 +104,18 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
           {/* Action buttons */}
           {isEditable ? (
             <div>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="rounded-lg bg-slate-200 px-2 py-1 text-xs font-bold text-slate-800 hover:bg-slate-300"
-              >
+              <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(true)}>
                 {t('editScenarios')}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex items-center space-x-1">
               <div
                 onClick={resetScenario}
-                className="cursor-pointer rounded-md p-1.5 hover:bg-slate-200"
+                className="hover:bg-accent cursor-pointer rounded-md p-1.5"
                 title={t('resetScenario')}
               >
-                <RefreshCcw className="text-slate-500" size={15} />
+                <RefreshCcw className="text-muted-foreground" size={15} />
               </div>
             </div>
           )}
@@ -136,34 +134,31 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                       setTitle(e.target.value)
                       props.updateAttributes({ title: e.target.value })
                     }}
-                    className="text-md bg-primary/10 w-full rounded-md border-2 border-dotted border-gray-200 p-2 font-bold text-slate-800"
+                    className="text-foreground text-md bg-primary/10 border-border w-full rounded-md border border-dashed p-2 font-bold"
                   />
                 </div>
               </div>
 
-              <div className="mt-3 rounded-lg border-2 border-dotted border-gray-200 bg-white p-3">
-                <p className="text-center text-sm text-slate-600">
+              <div className="border-border bg-card mt-3 rounded-lg border border-dashed p-3">
+                <p className="text-muted-foreground text-center text-sm">
                   {t('scenariosConfigured', { count: scenarios.length, max: 40 })}
                 </p>
-                <p className="mt-1 text-center text-xs text-slate-500">{t('clickEditToConfigure')}</p>
+                <p className="text-muted-foreground mt-1 text-center text-xs">{t('clickEditToConfigure')}</p>
               </div>
             </div>
           </div>
         ) : scenarioComplete ? (
           <div className="space-y-2 pt-3">
             <div className="mx-auto max-w-md py-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle size={24} className="text-emerald-600" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10">
+                <CheckCircle size={24} className="text-emerald-600 dark:text-emerald-400" />
               </div>
-              <h4 className="mb-2 text-xl font-bold text-slate-900">{t('scenarioComplete')}</h4>
-              <p className="mb-6 leading-relaxed text-slate-600">{t('scenarioCompleteDescription')}</p>
-              <button
-                onClick={resetScenario}
-                className="mx-auto flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md"
-              >
+              <h4 className="text-foreground mb-2 text-xl font-bold">{t('scenarioComplete')}</h4>
+              <p className="text-muted-foreground mb-6 leading-relaxed">{t('scenarioCompleteDescription')}</p>
+              <Button onClick={resetScenario} variant="default" className="mx-auto flex items-center gap-2">
                 <RotateCcw size={16} />
                 {t('startOver')}
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -173,11 +168,11 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
               if (!currentScenario) {
                 return (
                   <div className="mx-auto max-w-md py-8 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                      <GitBranch size={20} className="text-slate-400" />
+                    <div className="bg-muted mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                      <GitBranch size={20} className="text-muted-foreground" />
                     </div>
-                    <h3 className="mb-2 text-base font-medium text-slate-900">{t('scenarioNotFound')}</h3>
-                    <p className="text-sm text-slate-500">{t('scenarioNotFoundDescription')}</p>
+                    <h3 className="text-foreground mb-2 text-base font-medium">{t('scenarioNotFound')}</h3>
+                    <p className="text-muted-foreground text-sm">{t('scenarioNotFoundDescription')}</p>
                   </div>
                 )
               }
@@ -185,9 +180,9 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
               return (
                 <div className="mx-auto w-full max-w-xl space-y-4 p-4">
                   {/* Scenario Text */}
-                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="border-border bg-card rounded-xl border p-6 shadow-xs">
                     {currentScenario.imageUrl && (
-                      <div className="relative mb-4 h-48 w-full overflow-hidden rounded-lg border border-slate-200">
+                      <div className="border-border relative mb-4 h-48 w-full overflow-hidden rounded-lg border">
                         <NextImage
                           src={currentScenario.imageUrl}
                           alt={t('scenarioIllustrationAlt')}
@@ -198,7 +193,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                         />
                       </div>
                     )}
-                    <p className="text-base leading-relaxed font-medium text-slate-800">{currentScenario.text}</p>
+                    <p className="text-foreground text-base leading-relaxed font-medium">{currentScenario.text}</p>
                   </div>
 
                   {/* Response Options */}
@@ -207,20 +202,20 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                       <button
                         key={option.id}
                         onClick={() => handleOptionClick(option.nextScenarioId)}
-                        className="group w-full rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition-all hover:border-blue-300 hover:bg-blue-50 hover:shadow-md"
+                        className="group border-border bg-card hover:border-primary/50 hover:bg-accent w-full rounded-lg border p-3 text-left shadow-xs transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-slate-100 transition-colors group-hover:bg-blue-100">
-                            <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">
+                          <div className="bg-muted group-hover:bg-accent flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors">
+                            <span className="text-muted-foreground group-hover:text-accent-foreground text-sm font-bold">
                               {getOptionLetter(index)}
                             </span>
                           </div>
-                          <div className="flex-1 font-medium text-slate-800 transition-colors group-hover:text-blue-900">
+                          <div className="text-foreground group-hover:text-foreground flex-1 font-medium transition-colors">
                             {option.text}
                           </div>
                           <ArrowRight
                             size={16}
-                            className="text-slate-400 transition-all group-hover:translate-x-1 group-hover:text-blue-500"
+                            className="text-muted-foreground group-hover:text-primary transition-all group-hover:translate-x-1"
                           />
                         </div>
                       </button>

@@ -695,3 +695,46 @@ def test_bulk_publish_returns_zero_when_nothing_to_publish(
 
     assert response.status_code == 200
     assert response.json()["published_count"] == 0
+
+
+def test_status_mapping_save_publish_return(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+    """Friendly status values like save, publish, return map correctly to GRADED, PUBLISHED, RETURNED."""
+    assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
+
+    # 1. Test save -> GRADED (TeacherGradeInput endpoint)
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
+        json={"final_score": 85, "feedback": "Well written.", "status": "save"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "GRADED"
+    assert response.json()["final_score"] == 85
+
+    # 2. Test publish -> PUBLISHED (GradingDraftSave endpoint)
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade/grade",
+        json={
+            "item_grades": [{"item_uuid": "item_grade_1", "score": 90, "feedback": "Nice"}],
+            "overall_feedback": "Excellent work",
+            "status": "publish",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "PUBLISHED"
+    # item_grade_1 max_score is 100, earned 90. Final score is 90% -> 90.0
+    assert response.json()["final_score"] == 90.0
+
+    # 3. Test return -> RETURNED (GradingDraftSave endpoint)
+    # Note: alice's submission is PUBLISHED now, which doesn't support transition to RETURNED directly.
+    # Let's seed another clean attempt or revert bob's/another's submission to RETURNED from GRADED/PENDING.
+    # Bob is currently GRADED. Let's test return -> RETURNED on bob's submission.
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_bob_grade/grade",
+        json={
+            "item_grades": [{"item_uuid": "item_grade_1", "score": 50, "feedback": "Needs revision"}],
+            "overall_feedback": "Please fix it",
+            "status": "return",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "RETURNED"

@@ -209,6 +209,19 @@ class TeacherGradeInput(PydanticStrictBaseModel):
     status: str = "GRADED"
     feedback: str = ""
 
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: object) -> object:
+        if isinstance(v, str):
+            val = v.upper().strip()
+            mapping = {
+                "SAVE": "GRADED",
+                "PUBLISH": "PUBLISHED",
+                "RETURN": "RETURNED",
+            }
+            return mapping.get(val, val)
+        return v
+
 
 # ── Submission base + table ───────────────────────────────────────────────────
 

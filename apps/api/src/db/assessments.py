@@ -1004,6 +1004,19 @@ class GradingDraftSave(PydanticStrictBaseModel):
     # GRADED = save (teacher-only); PUBLISHED = publish to student; RETURNED = revise
     status: str = "GRADED"
 
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: object) -> object:
+        if isinstance(v, str):
+            val = v.upper().strip()
+            mapping = {
+                "SAVE": "GRADED",
+                "PUBLISH": "PUBLISHED",
+                "RETURN": "RETURNED",
+            }
+            return mapping.get(val, val)
+        return v
+
 
 class AssessmentPolicyPreset(PydanticStrictBaseModel):
     """Default policy settings for a given assessment kind."""
