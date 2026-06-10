@@ -18,22 +18,22 @@ These issues silently corrupt data or make correct reasoning about records impos
 
 The schema has **three different representations** for timestamps, all co-existing:
 
-| Table | Column | Current Type | Problem |
-|---|---|---|---|
-| `activity` | `creation_date`, `update_date` | `CHARACTER VARYING` | Entirely untyped. No DB-level ordering, arithmetic, or indexing |
-| `block` | `creation_date`, `update_date` | `TEXT` | Same |
-| `certifications` | `creation_date`, `update_date` | `TEXT` | Same |
-| `certificateuser` | `created_at`, `updated_at` | `CHARACTER VARYING` | Same |
-| `collection` | `creation_date`, `update_date` | `TEXT` | Same |
-| `examattempt` | `started_at`, `submitted_at` | `CHARACTER VARYING` | Timing arithmetic is impossible |
-| `hint_usage` | `unlocked_at` | `CHARACTER VARYING` | Same |
-| `role` | `creation_date`, `update_date` | `CHARACTER VARYING` | Same |
-| `trail`/`trailrun`/`trailstep` | `creation_date`, `update_date` | `TEXT` | Same |
-| `auth_audit_log` | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | Loses timezone offset; incorrect for KZ users in different locales |
-| `auth_sessions` | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | Security-critical table, session expiry math will be wrong |
-| `xp_transactions` | `created_at` | `TIMESTAMP WITHOUT TIME ZONE` | Daily streak calculations will break at DST boundaries |
-| `gamification_profiles` | `created_at`, `updated_at`, `last_xp_award_date` | `TIMESTAMP WITHOUT TIME ZONE` | Same |
-| `analytics_event` | `event_ts` | `TIMESTAMP WITHOUT TIME ZONE` | Event ordering across timezones is wrong |
+| Table                          | Column                                           | Current Type                  | Problem                                                            |
+| ------------------------------ | ------------------------------------------------ | ----------------------------- | ------------------------------------------------------------------ |
+| `activity`                     | `creation_date`, `update_date`                   | `CHARACTER VARYING`           | Entirely untyped. No DB-level ordering, arithmetic, or indexing    |
+| `block`                        | `creation_date`, `update_date`                   | `TEXT`                        | Same                                                               |
+| `certifications`               | `creation_date`, `update_date`                   | `TEXT`                        | Same                                                               |
+| `certificateuser`              | `created_at`, `updated_at`                       | `CHARACTER VARYING`           | Same                                                               |
+| `collection`                   | `creation_date`, `update_date`                   | `TEXT`                        | Same                                                               |
+| `examattempt`                  | `started_at`, `submitted_at`                     | `CHARACTER VARYING`           | Timing arithmetic is impossible                                    |
+| `hint_usage`                   | `unlocked_at`                                    | `CHARACTER VARYING`           | Same                                                               |
+| `role`                         | `creation_date`, `update_date`                   | `CHARACTER VARYING`           | Same                                                               |
+| `trail`/`trailrun`/`trailstep` | `creation_date`, `update_date`                   | `TEXT`                        | Same                                                               |
+| `auth_audit_log`               | `created_at`                                     | `TIMESTAMP WITHOUT TIME ZONE` | Loses timezone offset; incorrect for KZ users in different locales |
+| `auth_sessions`                | `created_at`                                     | `TIMESTAMP WITHOUT TIME ZONE` | Security-critical table, session expiry math will be wrong         |
+| `xp_transactions`              | `created_at`                                     | `TIMESTAMP WITHOUT TIME ZONE` | Daily streak calculations will break at DST boundaries             |
+| `gamification_profiles`        | `created_at`, `updated_at`, `last_xp_award_date` | `TIMESTAMP WITHOUT TIME ZONE` | Same                                                               |
+| `analytics_event`              | `event_ts`                                       | `TIMESTAMP WITHOUT TIME ZONE` | Event ordering across timezones is wrong                           |
 
 These are Rails-era remnants. The newer FastAPI tables (`submission`, `assessment_policy`, `activity_progress`) use `TIMESTAMP WITH TIME ZONE` correctly. The fix is to normalize everything to `TIMESTAMPTZ`.
 
@@ -58,6 +58,7 @@ tags character varying   -- e.g. "python,data-science,beginner"
 ```
 
 This is a denormalized string blob. You cannot:
+
 - Index tags for course search (`WHERE 'python' = ANY(...)`)
 - Count how many courses have a given tag
 - Rename or merge tags across all courses
@@ -128,6 +129,7 @@ CREATE TABLE public.submission (    -- Your LMS submission model
 - **Progress** = how far the user has gotten through that course
 
 Without a dedicated `enrollment` table you cannot:
+
 - Track who enrolled them (admin, self-service)
 - Set `access_expires_at` for time-limited courses
 - Put students on a `WAITLISTED` status
@@ -155,14 +157,14 @@ Every RAG query against this table performs a **full sequential scan**, computin
 
 These enums exist but the corresponding columns use `CHARACTER VARYING` instead:
 
-| Table | Column | Declared Enum | Actual Type |
-|---|---|---|---|
-| `submission` | `status` | `submissionstatus` | `character varying` |
-| `submission` | `assessment_type` | — | `character varying` |
-| `assessment` | `grading_type` | `gradingtypeenum` | `character varying` |
-| `assessment` | `lifecycle` | — | `character varying` |
-| `activity_progress` | `state` | — | `character varying` (no CHECK either) |
-| `assessment_policy` | `grading_mode`, `completion_rule`, `grade_release_mode` | — | `character varying` |
+| Table               | Column                                                  | Declared Enum      | Actual Type                           |
+| ------------------- | ------------------------------------------------------- | ------------------ | ------------------------------------- |
+| `submission`        | `status`                                                | `submissionstatus` | `character varying`                   |
+| `submission`        | `assessment_type`                                       | —                  | `character varying`                   |
+| `assessment`        | `grading_type`                                          | `gradingtypeenum`  | `character varying`                   |
+| `assessment`        | `lifecycle`                                             | —                  | `character varying`                   |
+| `activity_progress` | `state`                                                 | —                  | `character varying` (no CHECK either) |
+| `assessment_policy` | `grading_mode`, `completion_rule`, `grade_release_mode` | —                  | `character varying`                   |
 
 Any typo in application code (`"COMPLTED"` instead of `"COMPLETED"`) will silently insert bad data that the DB accepts without complaint.
 
@@ -187,15 +189,15 @@ All three parent FK columns are nullable. There is no CHECK constraint ensuring 
 
 The following tables are architecturally absent and represent gaps that world-class LMSes like Canvas and Moodle treat as first-class entities:
 
-| Missing Table | Impact |
-|---|---|
-| `enrollment` | Already detailed in P1-1 |
-| `course_prerequisite` | Cannot enforce "complete Course A before Course B" |
-| `notification` + `notification_preference` | No in-platform notification system for due dates, grades, replies |
-| `course_rating` | No student feedback / star rating on courses |
-| `tag` + `course_tag` | Needed to fix P0-3 properly |
-| `certificate_template` | `certifications.config json` has no structure; template HTML, issuer, validity period, verification URL are undeclared |
-| `course_section` / `cohort` | `usergroup` is too generic; a proper section model carries schedule, instructor assignment, and enrollment scope |
+| Missing Table                              | Impact                                                                                                                 |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `enrollment`                               | Already detailed in P1-1                                                                                               |
+| `course_prerequisite`                      | Cannot enforce "complete Course A before Course B"                                                                     |
+| `notification` + `notification_preference` | No in-platform notification system for due dates, grades, replies                                                      |
+| `course_rating`                            | No student feedback / star rating on courses                                                                           |
+| `tag` + `course_tag`                       | Needed to fix P0-3 properly                                                                                            |
+| `certificate_template`                     | `certifications.config json` has no structure; template HTML, issuer, validity period, verification URL are undeclared |
+| `course_section` / `cohort`                | `usergroup` is too generic; a proper section model carries schedule, instructor assignment, and enrollment scope       |
 
 ---
 
@@ -216,7 +218,7 @@ An activity can be assigned to multiple courses via the `course_id` column on bo
 
 #### P2-1 · `exam` Is a Legacy Parallel Assessment System
 
-The `exam` and `examattempt` tables predate your `assessment` / `submission` / `grading_entry` architecture. The comment on `exam.settings` literally reads: *"Compatibility storage for older exam routes. Canonical assessment settings live on activity.settings."* This is acknowledged technical debt. Having two grading pipelines means analytics, grade calculations, and reporting logic must be duplicated.
+The `exam` and `examattempt` tables predate your `assessment` / `submission` / `grading_entry` architecture. The comment on `exam.settings` literally reads: _"Compatibility storage for older exam routes. Canonical assessment settings live on activity.settings."_ This is acknowledged technical debt. Having two grading pipelines means analytics, grade calculations, and reporting logic must be duplicated.
 
 #### P2-2 · `discussionlike` / `discussiondislike` Should Be One `discussion_reaction` Table
 
@@ -1049,20 +1051,20 @@ def downgrade() -> None:
 
 ## Summary Priority Matrix
 
-| Issue | Risk | Effort | Revenue/UX Impact | Do When |
-|---|---|---|---|---|
-| P0-2: Floating-point money | **HIGH** | Low | Payment correctness | **Immediately** |
-| P1-1: Add `enrollment` table | Medium | Medium | Core LMS feature | **Sprint 1** |
-| P1-2: pgvector HNSW index | Low | Trivial | RAG performance | **Sprint 1** |
-| P0-4: JSON → JSONB | Low | Low | Query performance | **Sprint 1** |
-| P0-1: Timestamp normalization | Low | Medium | Data correctness | **Sprint 2** |
-| P0-3: Tags tables | Low | Medium | Search/discovery | **Sprint 2** |
-| P1-4: Unused enums | Low | Low | Type safety | **Sprint 2** |
-| P1-6: Notifications, prereqs, ratings | Low | Medium | Platform maturity | **Sprint 2-3** |
-| P0-5: `creator_id` FK | Low | Medium | Data integrity | **Sprint 3** |
-| P1-5: `block` parent constraint | Low | Trivial | Content integrity | **Sprint 3** |
-| P0-6: Consolidate roles | Medium | Medium | Maintainability | **Sprint 3** |
-| P0-7: Drop `submissions` orphan | Low | Trivial | Schema hygiene | **Sprint 3** |
-| P2-1: Deprecate `exam` table | Medium | High | Architecture | **Sprint 4+** |
-| P2-2: Merge discussion reactions | Low | Low | Schema hygiene | **Sprint 4** |
-| P2-4: Drop Rails relics | Low | Trivial | Schema hygiene | **Sprint 4** |
+| Issue                                 | Risk     | Effort  | Revenue/UX Impact   | Do When         |
+| ------------------------------------- | -------- | ------- | ------------------- | --------------- |
+| P0-2: Floating-point money            | **HIGH** | Low     | Payment correctness | **Immediately** |
+| P1-1: Add `enrollment` table          | Medium   | Medium  | Core LMS feature    | **Sprint 1**    |
+| P1-2: pgvector HNSW index             | Low      | Trivial | RAG performance     | **Sprint 1**    |
+| P0-4: JSON → JSONB                    | Low      | Low     | Query performance   | **Sprint 1**    |
+| P0-1: Timestamp normalization         | Low      | Medium  | Data correctness    | **Sprint 2**    |
+| P0-3: Tags tables                     | Low      | Medium  | Search/discovery    | **Sprint 2**    |
+| P1-4: Unused enums                    | Low      | Low     | Type safety         | **Sprint 2**    |
+| P1-6: Notifications, prereqs, ratings | Low      | Medium  | Platform maturity   | **Sprint 2-3**  |
+| P0-5: `creator_id` FK                 | Low      | Medium  | Data integrity      | **Sprint 3**    |
+| P1-5: `block` parent constraint       | Low      | Trivial | Content integrity   | **Sprint 3**    |
+| P0-6: Consolidate roles               | Medium   | Medium  | Maintainability     | **Sprint 3**    |
+| P0-7: Drop `submissions` orphan       | Low      | Trivial | Schema hygiene      | **Sprint 3**    |
+| P2-1: Deprecate `exam` table          | Medium   | High    | Architecture        | **Sprint 4+**   |
+| P2-2: Merge discussion reactions      | Low      | Low     | Schema hygiene      | **Sprint 4**    |
+| P2-4: Drop Rails relics               | Low      | Trivial | Schema hygiene      | **Sprint 4**    |

@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertTriangle,
@@ -10,14 +10,14 @@ import {
   MoreVertical,
   Play,
   Settings2,
-} from 'lucide-react';
-import { buildCourseWorkspacePath } from '@/lib/course-management';
-import { useEffect, useMemo, useState, useTransition } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import type { FC } from 'react';
-import { toast } from 'sonner';
-import { extractMarkdownSummary } from '@/features/content-markdown';
+} from 'lucide-react'
+import { buildCourseWorkspacePath } from '@/lib/course-management'
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import type { FC } from 'react'
+import { toast } from 'sonner'
+import { extractMarkdownSummary } from '@/features/content-markdown'
 
 import {
   AlertDialog,
@@ -29,60 +29,60 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { ResourceActionsMenu } from '@/components/Utils/ResourceActionsMenu';
-import type { ResourceAction } from '@/components/Utils/ResourceActionsMenu';
-import { useSession } from '@/hooks/useSession';
-import { Card, CardContent, CardFooter } from '@components/ui/card';
-import { Actions, Resources, Scopes } from '@/types/permissions';
-import UserAvatar from '@components/Objects/UserAvatar';
-import NextImage from '@components/ui/NextImage';
-import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
-import Link from '@components/ui/AppLink';
+} from '@/components/ui/alert-dialog'
+import { ResourceActionsMenu } from '@/components/Utils/ResourceActionsMenu'
+import type { ResourceAction } from '@/components/Utils/ResourceActionsMenu'
+import { useSession } from '@/hooks/useSession'
+import { Card, CardContent, CardFooter } from '@components/ui/card'
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import UserAvatar from '@components/Objects/UserAvatar'
+import NextImage from '@components/ui/NextImage'
+import { Button } from '@components/ui/button'
+import { Badge } from '@components/ui/badge'
+import Link from '@components/ui/AppLink'
 
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media';
-import { deleteCourseFromBackend } from '@services/courses/courses';
-import { getAbsoluteUrl } from '@services/config/config';
+import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import { deleteCourseFromBackend } from '@services/courses/courses'
+import { getAbsoluteUrl } from '@services/config/config'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface Course {
-  course_uuid?: string;
-  name?: string;
-  description?: string;
-  thumbnail_image?: string | null;
-  update_date?: string | null;
-  authors?: AppCourseAuthor[];
+  course_uuid?: string
+  name?: string
+  description?: string
+  thumbnail_image?: string | null
+  update_date?: string | null
+  authors?: AppCourseAuthor[]
   chapters?: {
-    activities?: unknown[];
-  }[];
-  can_update?: boolean;
-  can_delete?: boolean;
-  can_manage_contributors?: boolean;
-  is_owner?: boolean;
+    activities?: unknown[]
+  }[]
+  can_update?: boolean
+  can_delete?: boolean
+  can_manage_contributors?: boolean
+  is_owner?: boolean
 }
 
 export interface CourseThumbnailProps {
-  course: Course;
-  customLink?: string;
-  actionLink?: string;
-  trailData?: AppTrailData | null | undefined;
-  trailLoading?: boolean;
+  course: Course
+  customLink?: string
+  actionLink?: string
+  trailData?: AppTrailData | null | undefined
+  trailLoading?: boolean
   /** Set to true for above-the-fold cards to eager-load the thumbnail (fixes LCP) */
-  priority?: boolean;
+  priority?: boolean
 }
 
 // ============================================================================
 // Utilities
 // ============================================================================
 
-const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').replace('course_', '');
+const removeCoursePrefix = (courseUuid?: string): string => (courseUuid || '').replace('course_', '')
 
 const getAuthorFullName = (author?: AppUserSummary): string =>
-  author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : '';
+  author ? [author.first_name, author.middle_name, author.last_name].filter(Boolean).join(' ') : ''
 
 const formatDate = (dateString: string, locale: string): string => {
   try {
@@ -90,25 +90,25 @@ const formatDate = (dateString: string, locale: string): string => {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    });
+    })
   } catch {
-    return '';
+    return ''
   }
-};
+}
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
 interface CourseImageProps {
-  thumbnailUrl: string;
-  courseName: string;
-  updateDate: string;
-  locale: string;
-  courseUrl: string;
-  t: AppTranslator;
-  isOwner?: boolean;
-  priority?: boolean;
+  thumbnailUrl: string
+  courseName: string
+  updateDate: string
+  locale: string
+  courseUrl: string
+  t: AppTranslator
+  isOwner?: boolean
+  priority?: boolean
 }
 
 const CourseImage: FC<CourseImageProps> = ({
@@ -164,39 +164,39 @@ const CourseImage: FC<CourseImageProps> = ({
       )}
     </div>
   </Link>
-);
+)
 
 interface AuthorsDisplayProps {
-  authors: AppCourseAuthor[];
-  t: AppTranslator;
+  authors: AppCourseAuthor[]
+  t: AppTranslator
 }
 
 const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
   // LMS Best Practice: Sort authors so CREATORs/Main instructors appear first.
   const sortedAuthors = useMemo(() => {
     return [...authors].toSorted((a, b) => {
-      if (a.authorship === 'CREATOR' && b.authorship !== 'CREATOR') return -1;
-      if (b.authorship === 'CREATOR' && a.authorship !== 'CREATOR') return 1;
-      return 0;
-    });
-  }, [authors]);
+      if (a.authorship === 'CREATOR' && b.authorship !== 'CREATOR') return -1
+      if (b.authorship === 'CREATOR' && a.authorship !== 'CREATOR') return 1
+      return 0
+    })
+  }, [authors])
 
-  const displayedAuthors = sortedAuthors.slice(0, 3);
-  const hasMoreAuthors = sortedAuthors.length > 3;
-  const remainingCount = sortedAuthors.length - 3;
+  const displayedAuthors = sortedAuthors.slice(0, 3)
+  const hasMoreAuthors = sortedAuthors.length > 3
+  const remainingCount = sortedAuthors.length - 3
 
   const authorsText = useMemo(() => {
-    const names = displayedAuthors.map((a) => {
-      const u = a.user;
-      const fullName = getAuthorFullName(u);
-      return fullName.trim() !== '' ? fullName : u?.username || '';
-    });
+    const names = displayedAuthors.map(a => {
+      const u = a.user
+      const fullName = getAuthorFullName(u)
+      return fullName.trim() !== '' ? fullName : u?.username || ''
+    })
 
-    const joinedNames = names.join(', ');
-    return hasMoreAuthors ? `${joinedNames} +${remainingCount}` : joinedNames;
-  }, [displayedAuthors, hasMoreAuthors, remainingCount]);
+    const joinedNames = names.join(', ')
+    return hasMoreAuthors ? `${joinedNames} +${remainingCount}` : joinedNames
+  }, [displayedAuthors, hasMoreAuthors, remainingCount])
 
-  if (authors.length === 0) return null;
+  if (authors.length === 0) return null
 
   return (
     <div className="flex items-center gap-3 pt-2">
@@ -207,13 +207,13 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
         aria-label={t('courseAuthorsAria', { defaultValue: 'Course authors' })}
       >
         {displayedAuthors.map((author, idx) => {
-          const u = author.user;
-          const authorName = getAuthorFullName(u).trim() || (u?.username ?? '');
+          const u = author.user
+          const authorName = getAuthorFullName(u).trim() || (u?.username ?? '')
           // Format role for tooltip (e.g., "CREATOR" -> "Creator")
           const roleLabel = author.authorship
             ? author.authorship.charAt(0) + author.authorship.slice(1).toLowerCase()
-            : '';
-          const isCreator = author.authorship === 'CREATOR';
+            : ''
+          const isCreator = author.authorship === 'CREATOR'
 
           return (
             <div
@@ -235,7 +235,7 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
                 userId={u?.id}
               />
             </div>
-          );
+          )
         })}
 
         {hasMoreAuthors && (
@@ -266,13 +266,13 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
         </span>
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface ProgressBarProps {
-  percentage: number;
-  courseName: string;
-  t: AppTranslator;
+  percentage: number
+  courseName: string
+  t: AppTranslator
 }
 
 const ProgressBar: FC<ProgressBarProps> = ({ percentage, courseName, t }) => (
@@ -292,15 +292,15 @@ const ProgressBar: FC<ProgressBarProps> = ({ percentage, courseName, t }) => (
     </div>
     <span className="text-muted-foreground text-xs tabular-nums">{percentage}%</span>
   </div>
-);
+)
 
 interface CourseActionsProps {
-  isEnrolled: boolean;
-  isLoading: boolean;
-  progressPercentage: number;
-  courseUrl: string;
-  courseName: string;
-  t: AppTranslator;
+  isEnrolled: boolean
+  isLoading: boolean
+  progressPercentage: number
+  courseUrl: string
+  courseName: string
+  t: AppTranslator
 }
 
 const CourseActions: FC<CourseActionsProps> = ({
@@ -325,7 +325,7 @@ const CourseActions: FC<CourseActionsProps> = ({
           {t('loading', { defaultValue: 'Loading…' })}
         </Button>
       </div>
-    );
+    )
   }
 
   if (isEnrolled) {
@@ -345,7 +345,7 @@ const CourseActions: FC<CourseActionsProps> = ({
           {t('continueLearning', { defaultValue: 'Continue Learning' })}
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -360,48 +360,48 @@ const CourseActions: FC<CourseActionsProps> = ({
       <Play className="mr-2 h-3.5 w-3.5" />
       {t('startLearning')}
     </Button>
-  );
-};
+  )
+}
 
 interface AdminMenuProps {
-  course: Course;
-  onDelete: () => Promise<void>;
+  course: Course
+  onDelete: () => Promise<void>
 }
 
 const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
-  const t = useTranslations('Components.CourseThumbnail');
-  const router = useRouter();
-  const { can, user: _thumbnailUser } = useSession();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const currentUserId = _thumbnailUser?.id;
+  const t = useTranslations('Components.CourseThumbnail')
+  const router = useRouter()
+  const { can, user: _thumbnailUser } = useSession()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const currentUserId = _thumbnailUser?.id
 
   const isOwner = useMemo(() => {
-    if (!currentUserId || !course.authors?.length) return course.is_owner ?? false;
+    if (!currentUserId || !course.authors?.length) return course.is_owner ?? false
     return course.authors.some(
-      (a) =>
+      a =>
         a.authorship_status === 'ACTIVE' &&
         (a.authorship === 'CREATOR' || a.authorship === 'MAINTAINER') &&
         a.user?.id === currentUserId,
-    );
-  }, [currentUserId, course.authors, course.is_owner]);
+    )
+  }, [currentUserId, course.authors, course.is_owner])
 
   const canUpdate =
-    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN));
+    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
 
   const canDelete =
-    can(Resources.COURSE, Actions.DELETE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN));
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
-  const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])];
+  const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])]
 
   const handleDelete = () => {
     startTransition(async () => {
-      await onDelete();
-      setIsDeleteDialogOpen(false);
-    });
-  };
+      await onDelete()
+      setIsDeleteDialogOpen(false)
+    })
+  }
 
-  const courseIdClean = removeCoursePrefix(course.course_uuid);
+  const courseIdClean = removeCoursePrefix(course.course_uuid)
 
   const actions: ResourceAction[] = [
     {
@@ -427,7 +427,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
       requiresAction: 'delete',
       separator: true,
     },
-  ];
+  ]
 
   const trigger = (
     <Button
@@ -438,7 +438,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
     >
       <MoreVertical className="h-4 w-4" />
     </Button>
-  );
+  )
 
   return (
     <>
@@ -471,8 +471,8 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-};
+  )
+}
 
 // ============================================================================
 // Main Component
@@ -486,79 +486,79 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   trailLoading = false,
   priority = false,
 }) => {
-  const t = useTranslations('Components.CourseThumbnail');
-  const locale = useLocale();
-  const router = useRouter();
-  const { user: currentUser, isAuthenticated } = useSession();
-  const [hasMounted, setHasMounted] = useState(false);
+  const t = useTranslations('Components.CourseThumbnail')
+  const locale = useLocale()
+  const router = useRouter()
+  const { user: currentUser, isAuthenticated } = useSession()
+  const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
+    setHasMounted(true)
+  }, [])
 
   // Defensive: never show loading state for unauthenticated users even if
   // the parent accidentally passes trailLoading=true without trail data.
-  const effectiveTrailLoading = isAuthenticated && trailLoading && hasMounted;
+  const effectiveTrailLoading = isAuthenticated && trailLoading && hasMounted
 
   const activeAuthors = useMemo(
-    () => course.authors?.filter((a) => a.authorship_status === 'ACTIVE') || [],
+    () => course.authors?.filter(a => a.authorship_status === 'ACTIVE') || [],
     [course.authors],
-  );
+  )
 
-  const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid]);
+  const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid])
 
   const courseRun = useMemo(() => {
     return trailData?.runs?.find((run: AppTrailRun) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-      return cleanRunCourseUuid === cleanCourseUuid;
-    });
-  }, [trailData, cleanCourseUuid]);
+      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+      return cleanRunCourseUuid === cleanCourseUuid
+    })
+  }, [trailData, cleanCourseUuid])
 
   const { progressPercentage } = useMemo(() => {
     const total =
       courseRun?.course_total_steps ||
       course.chapters?.reduce((acc, chapter) => acc + (chapter.activities?.length || 0), 0) ||
-      0;
-    const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+      0
+    const completed = courseRun?.steps?.filter((step: AppTrailStep) => step.complete === true)?.length || 0
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
-    return { progressPercentage: percentage };
-  }, [courseRun, course.chapters]);
+    return { progressPercentage: percentage }
+  }, [courseRun, course.chapters])
 
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
       ? getCourseThumbnailMediaDirectory(course.course_uuid || '', course.thumbnail_image)
-      : '/empty_thumbnail.avif';
-  }, [course.thumbnail_image, course.course_uuid]);
+      : '/empty_thumbnail.avif'
+  }, [course.thumbnail_image, course.course_uuid])
 
   const courseUrl = useMemo(
     () => customLink || getAbsoluteUrl(`/course/${cleanCourseUuid}`),
     [customLink, cleanCourseUuid],
-  );
+  )
 
-  const actionUrl = useMemo(() => actionLink || courseUrl, [actionLink, courseUrl]);
+  const actionUrl = useMemo(() => actionLink || courseUrl, [actionLink, courseUrl])
 
-  const isEnrolled = hasMounted && Boolean(courseRun);
-  const titleId = `course-title-${cleanCourseUuid}`;
+  const isEnrolled = hasMounted && Boolean(courseRun)
+  const titleId = `course-title-${cleanCourseUuid}`
 
-  const currentUserId = currentUser?.id;
+  const currentUserId = currentUser?.id
   const isOwner = useMemo(() => {
-    if (!currentUserId || !activeAuthors.length) return false;
-    return activeAuthors.some((author) => author.authorship === 'CREATOR' && author.user?.id === currentUserId);
-  }, [currentUserId, activeAuthors]);
+    if (!currentUserId || !activeAuthors.length) return false
+    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user?.id === currentUserId)
+  }, [currentUserId, activeAuthors])
 
   const handleDelete = async () => {
-    const toastId = toast.loading(t('deleting'));
+    const toastId = toast.loading(t('deleting'))
     try {
-      await deleteCourseFromBackend(course.course_uuid || '');
-      toast.success(t('toastDeleteSuccess'));
-      router.refresh();
+      await deleteCourseFromBackend(course.course_uuid || '')
+      toast.success(t('toastDeleteSuccess'))
+      router.refresh()
     } catch {
-      toast.error(t('toastDeleteError'));
+      toast.error(t('toastDeleteError'))
     } finally {
-      toast.dismiss(toastId);
+      toast.dismiss(toastId)
     }
-  };
+  }
 
   return (
     <Card
@@ -613,8 +613,8 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
         />
       </CardFooter>
     </Card>
-  );
-};
+  )
+}
 
-export default CourseThumbnail;
-export { removeCoursePrefix };
+export default CourseThumbnail
+export { removeCoursePrefix }

@@ -246,6 +246,7 @@ const ActivityElement = ({
                 className="shrink-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
                 onClick={() => void handleSaveEdit()}
                 disabled={isSavingEdit}
+                aria-label={t('save')}
               >
                 {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </Button>
@@ -257,6 +258,7 @@ const ActivityElement = ({
                 className="shrink-0"
                 onClick={handleCancelEdit}
                 disabled={isSavingEdit}
+                aria-label={t('cancel')}
               >
                 <XIcon className="h-4 w-4" />
               </Button>
@@ -281,7 +283,13 @@ const ActivityElement = ({
             )}
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
-                <Button size="icon-sm" variant="outline" className="shrink-0" onClick={handleStartEdit}>
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={handleStartEdit}
+                  aria-label={t('editButton')}
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </ToolTip>
@@ -303,6 +311,7 @@ const ActivityElement = ({
               variant="outline"
               className={ACTION_ICON_BUTTON_CLASS}
               nativeButton={false}
+              aria-label={t('previewTooltip')}
               render={
                 <a
                   href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
@@ -325,6 +334,7 @@ const ActivityElement = ({
                 className={ACTION_ICON_BUTTON_CLASS}
                 onClick={handleTogglePublish}
                 disabled={isUpdatingPublish}
+                aria-label={activity.published ? t('unpublish') : t('publish')}
               >
                 {isUpdatingPublish ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -345,6 +355,7 @@ const ActivityElement = ({
                 variant="outline"
                 className="text-muted-foreground hover:text-destructive shadow-sm"
                 onClick={() => setIsDeleteDialogOpen(true)}
+                aria-label={t('deleteButton')}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

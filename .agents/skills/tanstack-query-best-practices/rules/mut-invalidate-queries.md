@@ -11,13 +11,13 @@ After mutations, invalidate all queries whose data might be affected. This ensur
 ```tsx
 // No invalidation - cache remains stale
 const createTodo = useMutation({
-  mutationFn: (newTodo) => api.createTodo(newTodo),
+  mutationFn: newTodo => api.createTodo(newTodo),
   // Missing onSuccess handler - todo list won't show new item
 })
 
 // Partial invalidation - misses related queries
 const deleteTodo = useMutation({
-  mutationFn: (todoId) => api.deleteTodo(todoId),
+  mutationFn: todoId => api.deleteTodo(todoId),
   onSuccess: () => {
     // Only invalidates list, not summary/counts
     queryClient.invalidateQueries({ queryKey: ['todos', 'list'] })
@@ -31,7 +31,7 @@ const deleteTodo = useMutation({
 ```tsx
 // Comprehensive invalidation
 const createTodo = useMutation({
-  mutationFn: (newTodo) => api.createTodo(newTodo),
+  mutationFn: newTodo => api.createTodo(newTodo),
   onSuccess: () => {
     // Invalidate all todo-related queries
     queryClient.invalidateQueries({ queryKey: ['todos'] })
@@ -76,9 +76,9 @@ const assignTodoToUser = useMutation({
 const mutation = useMutation({
   mutationFn: updatePost,
   onSuccess: (
-    data,      // Server response
+    data, // Server response
     variables, // What you passed to mutate()
-    context    // What onMutate returned
+    context, // What onMutate returned
   ) => {
     // Use variables to know which queries to invalidate
     queryClient.invalidateQueries({ queryKey: ['posts', variables.id] })
@@ -96,12 +96,12 @@ onSuccess: () => {
 }
 
 // Option 2: Update cache directly (no network request)
-onSuccess: (newTodo) => {
+onSuccess: newTodo => {
   queryClient.setQueryData(['todos'], (old: Todo[]) => [...old, newTodo])
 }
 
 // Option 3: Hybrid - update one, invalidate others
-onSuccess: (newTodo) => {
+onSuccess: newTodo => {
   // Immediately add to list
   queryClient.setQueryData(['todos', 'list'], (old: Todo[]) => [...old, newTodo])
   // Invalidate counts/summaries for eventual consistency

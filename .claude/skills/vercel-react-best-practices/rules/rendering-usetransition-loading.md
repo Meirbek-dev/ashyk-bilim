@@ -27,7 +27,7 @@ function SearchResults() {
 
   return (
     <>
-      <input onChange={(e) => handleSearch(e.target.value)} />
+      <input onChange={e => handleSearch(e.target.value)} />
       {isLoading && <Spinner />}
       <ResultsList results={results} />
     </>
@@ -47,7 +47,7 @@ function SearchResults() {
 
   const handleSearch = (value: string) => {
     setQuery(value) // Update input immediately
-    
+
     startTransition(async () => {
       // Fetch and update results
       const data = await fetchResults(value)
@@ -57,7 +57,7 @@ function SearchResults() {
 
   return (
     <>
-      <input onChange={(e) => handleSearch(e.target.value)} />
+      <input onChange={e => handleSearch(e.target.value)} />
       {isPending && <Spinner />}
       <ResultsList results={results} />
     </>

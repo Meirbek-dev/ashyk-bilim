@@ -37,8 +37,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 60 * 24,  // 24 hours - keep cache longer for persistence
-      staleTime: 1000 * 60 * 5,     // 5 minutes
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep cache longer for persistence
+      staleTime: 1000 * 60 * 5, // 5 minutes
     },
   },
 })
@@ -54,7 +54,7 @@ function App() {
       client={queryClient}
       persistOptions={{
         persister,
-        maxAge: 1000 * 60 * 60 * 24,  // 24 hours max
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours max
       }}
     >
       <MyApp />
@@ -71,9 +71,9 @@ import { get, set, del } from 'idb-keyval'
 
 const persister = createAsyncStoragePersister({
   storage: {
-    getItem: async (key) => await get(key),
+    getItem: async key => await get(key),
     setItem: async (key, value) => await set(key, value),
-    removeItem: async (key) => await del(key),
+    removeItem: async key => await del(key),
   },
   key: 'REACT_QUERY_CACHE',
 })
@@ -84,8 +84,8 @@ function App() {
       client={queryClient}
       persistOptions={{
         persister,
-        maxAge: 1000 * 60 * 60 * 24 * 7,  // 7 days
-        buster: APP_VERSION,  // Bust cache on app updates
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        buster: APP_VERSION, // Bust cache on app updates
       }}
     >
       <MyApp />
@@ -112,7 +112,7 @@ persistQueryClient({
   queryClient,
   persister,
   dehydrateOptions: {
-    shouldDehydrateQuery: (query) => {
+    shouldDehydrateQuery: query => {
       // Don't persist user-specific sensitive data
       if (query.queryKey[0] === 'user-session') return false
       // Don't persist real-time data
@@ -157,9 +157,7 @@ function App() {
     >
       {/* Show loading while restoring */}
       <PersistQueryClientProvider.Consumer>
-        {({ isRestoring }) =>
-          isRestoring ? <SplashScreen /> : <MainApp />
-        }
+        {({ isRestoring }) => (isRestoring ? <SplashScreen /> : <MainApp />)}
       </PersistQueryClientProvider.Consumer>
     </PersistQueryClientProvider>
   )
@@ -176,12 +174,12 @@ function MainApp() {
 
 ## Persistence Configuration
 
-| Option | Purpose |
-|--------|---------|
-| `maxAge` | Maximum cache age before considered invalid |
-| `buster` | String to invalidate cache (use app version) |
-| `dehydrateOptions.shouldDehydrateQuery` | Filter which queries to persist |
-| `hydrateOptions.shouldHydrate` | Filter which queries to restore |
+| Option                                  | Purpose                                      |
+| --------------------------------------- | -------------------------------------------- |
+| `maxAge`                                | Maximum cache age before considered invalid  |
+| `buster`                                | String to invalidate cache (use app version) |
+| `dehydrateOptions.shouldDehydrateQuery` | Filter which queries to persist              |
+| `hydrateOptions.shouldHydrate`          | Filter which queries to restore              |
 
 ## Context
 

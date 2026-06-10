@@ -109,7 +109,7 @@ ignore = [
   "PLC0415", # `import` should be at the top-level of a file
 
   # --- General & Style ---
-  "COM812",  # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
+  "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
   "PLR2004", # magic-value-comparison: Use of unnamed numerical constants in comparisons
   "PLR0913", # too-many-arguments: Function has too many arguments (typically > 5)
 
@@ -125,16 +125,16 @@ ignore = [
   "S104", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
 
   # --- Exceptions (tryceratops / flake8-errmsg) ---
-  "BLE001",  # blind-except: Do not catch `Exception` directly; use specific exceptions
-  "TRY003",  # raise-vanilla-args: Avoid long message strings in exception raises
-  "EM101",   # raw-string-in-exception: Exception must not use a string literal directly
-  "TRY300",  # try-consider-else: Move code to else block (noisy)
-  "TRY301",  # raise-within-try: Disallow raising within try block (noisy)
+  "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
+  "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
+  "EM101", # raw-string-in-exception: Exception must not use a string literal directly
+  "TRY300", # try-consider-else: Move code to else block (noisy)
+  "TRY301", # raise-within-try: Disallow raising within try block (noisy)
   "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
-  "D",      # docstring-rules: Disables all docstring-related rules
-  "D100",   # missing-docstring-in-public-module: Missing docstring at the top of a file
+  "D", # docstring-rules: Disables all docstring-related rules
+  "D100", # missing-docstring-in-public-module: Missing docstring at the top of a file
   "DOC201", # missing-docstring-in-function: Missing docstring in function
   "DOC202", # missing-docstring-in-method: Missing docstring in method
   "DOC501", # missing-docstring-in-class: Missing docstring in class
@@ -142,23 +142,23 @@ ignore = [
   "DOC402", # docstring-missing-yields: Docstring rule
 
   # --- Miscellaneous ---
-  "T20",    # flake8-print: Disallows `print` statements (prevents debug debris)
-  "TD002",  # missing-todo-author: TODO comment is missing an author name
-  "TD003",  # missing-todo-link: TODO comment is missing a link to a tracker/issue
+  "T20", # flake8-print: Disallows `print` statements (prevents debug debris)
+  "TD002", # missing-todo-author: TODO comment is missing an author name
+  "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
   "FIX002", # line-contains-todo: Disallow TODOs
 
   "PLC2701",
   "RUF001",
-  "RUF002",  # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
-  "RUF003",  # ambiguous-unicode-character-comment: False positives on Cyrillic comments
-  "E501",    # line-too-long: Line is too long
+  "RUF002", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
+  "RUF003", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
+  "E501", # line-too-long: Line is too long
 
   # --- Project Specific Ignores ---
-  "CPY001",  # missing-copyright-notice: Checks for copyright notice at the top of every file
-  "INP001",  # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
-  "ARG001",  # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
-  "RUF029",  # unused-async: Functions defined as async but without await (noisy for route consistency)
-  "FBT",     # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
+  "CPY001", # missing-copyright-notice: Checks for copyright notice at the top of every file
+  "INP001", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
+  "ARG001", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
+  "RUF029", # unused-async: Functions defined as async but without await (noisy for route consistency)
+  "FBT", # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
   "PLC1901", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
   "PLW0603", # global-statement: Discourage use of global statements (required for lazy singletons)
   "PLR0911", # too-many-return-statements: Pylint complexity check
@@ -167,18 +167,18 @@ ignore = [
   "PLR0915", # too-many-statements: Pylint complexity check
   "PLR0916", # too-many-boolean-expressions: Pylint complexity check
   "PLR0917", # too-many-positional-arguments: Pylint complexity check
-  "C901",    # complex-structure: McCabe complexity check
+  "C901", # complex-structure: McCabe complexity check
   "PLR1702", # too-many-nested-blocks: Pylint complexity check
   "PLR6301", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
-  "N818",    # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
-  "SLF001",  # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
-  "G004",    # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
-  "RUF067",  # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
-  "B904",    # raise-without-from-inside-except: Checks for raise within except block without 'from'
-  "N806",    # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
-  "ERA001",  # commented-out-code: Allow code-like text in comments
+  "N818", # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
+  "SLF001", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
+  "G004", # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
+  "RUF067", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
+  "B904", # raise-without-from-inside-except: Checks for raise within except block without 'from'
+  "N806", # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
+  "ERA001", # commented-out-code: Allow code-like text in comments
   "S101",
-  "A005",    # module-shadowing: Allow 'types' module name inside packages
+  "A005", # module-shadowing: Allow 'types' module name inside packages
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -187,17 +187,7 @@ ignore = [
   "F403",
 ]
 
-"**/tests/**/*.py" = [
-  "ARG001",
-  "ARG002",
-  "F811",
-  "PLR2004",
-  "RUF069",
-  "S101",
-  "S105",
-  "S106",
-  "SLF001",
-]
+"**/tests/**/*.py" = ["ARG001", "ARG002", "F811", "PLR2004", "RUF069", "S101", "S105", "S106", "SLF001"]
 
 "**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106"]
 
@@ -235,14 +225,7 @@ ignore_no_config = true
 [tool.pyrefly]
 project-includes = ["src", "tests"]
 
-project-excludes = [
-  "**/.[!/.]*",
-  "**/__pycache__",
-  ".venv",
-  "alembic",
-  "migrations",
-  "content",
-]
+project-excludes = ["**/.[!/.]*", "**/__pycache__", ".venv", "alembic", "migrations", "content"]
 
 search-path = ["."]
 
@@ -258,12 +241,7 @@ infer-return-types = "checked"
 permissive-ignores = false
 enabled-ignores = ["type", "pyrefly"]
 
-ignore-missing-imports = [
-  "cachebox.*",
-  "judge0.*",
-  "python_ulid.*",
-  "selectolax.*",
-]
+ignore-missing-imports = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
 
 [tool.pyrefly.errors]
 bad-override = "ignore"
@@ -336,15 +314,7 @@ warn_required_dynamic_aliases = true
 pythonVersion = "3.15"
 typeCheckingMode = "strict"
 
-exclude = [
-  "**/__pycache__",
-  "**/alembic",
-  "**/node_modules",
-  "**/tests",
-  "**/venv",
-  ".venv",
-  "**/migrations",
-]
+exclude = ["**/__pycache__", "**/alembic", "**/node_modules", "**/tests", "**/venv", ".venv", "**/migrations"]
 
 # Robustness without the "Any" nitpicking
 reportAny = false

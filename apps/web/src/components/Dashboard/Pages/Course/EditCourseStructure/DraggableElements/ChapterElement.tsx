@@ -250,6 +250,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   className="h-8 w-8 shrink-0 p-0 text-emerald-600 hover:text-emerald-700"
                   onClick={() => void handleSaveEdit()}
                   disabled={isSavingEdit}
+                  aria-label={t('save')}
                 >
                   {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
@@ -262,6 +263,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   className="h-8 w-8 shrink-0 p-0"
                   onClick={handleCancelEdit}
                   disabled={isSavingEdit}
+                  aria-label={t('cancel')}
                 >
                   <XIcon className="h-4 w-4" />
                 </Button>
@@ -280,6 +282,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   variant="ghost"
                   className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 p-0"
                   onClick={handleStartEdit}
+                  aria-label={t('edit')}
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
@@ -295,6 +298,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
               variant="ghost"
               className="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0 p-0"
               onClick={() => setIsDeleteDialogOpen(true)}
+              aria-label={t('deleteChapterButton')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

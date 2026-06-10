@@ -8,26 +8,24 @@ Here is the refactoring strategy to elevate your schema to a world-class standar
 
 ### Priority 1: Data Type Anti-Patterns (The "Silent Killers")
 
-**The Flaw:** 1. **Dates as Text:** Across several critical tables (`activity`, `block`, `exam`, `coursediscussion`), `creation_date` and `update_date` are defined as `VARCHAR` or `TEXT`. In an LMS, time-series analytics (e.g., "how many users completed this block today?") are paramount. Querying strings for date ranges requires constant casting and ruins index utilization.
-2. **UUIDs as Strings:** You are storing UUIDs (e.g., `activity_uuid`, `user_uuid`) as `VARCHAR`. Native PostgreSQL `UUID` types are 16 bytes, whereas standard strings are 36+ bytes and much slower to index.
-3. **JSON vs JSONB:** You use `JSON` instead of `JSONB` for columns like `content`, `settings`, and `payload`. `JSONB` stores data in a decomposed binary format, allowing indexing (GIN indexes) and blazing-fast key/value lookups.
+**The Flaw:** 1. **Dates as Text:** Across several critical tables (`activity`, `block`, `exam`, `coursediscussion`), `creation_date` and `update_date` are defined as `VARCHAR` or `TEXT`. In an LMS, time-series analytics (e.g., "how many users completed this block today?") are paramount. Querying strings for date ranges requires constant casting and ruins index utilization. 2. **UUIDs as Strings:** You are storing UUIDs (e.g., `activity_uuid`, `user_uuid`) as `VARCHAR`. Native PostgreSQL `UUID` types are 16 bytes, whereas standard strings are 36+ bytes and much slower to index. 3. **JSON vs JSONB:** You use `JSON` instead of `JSONB` for columns like `content`, `settings`, and `payload`. `JSONB` stores data in a decomposed binary format, allowing indexing (GIN indexes) and blazing-fast key/value lookups.
 
 **The Fix (DDL):**
 
 ```sql
 -- 1. Convert Text/Varchar to TIMESTAMPTZ
-ALTER TABLE activity 
+ALTER TABLE activity
   ALTER COLUMN creation_date TYPE TIMESTAMP WITH TIME ZONE USING creation_date::timestamptz,
   ALTER COLUMN update_date TYPE TIMESTAMP WITH TIME ZONE USING update_date::timestamptz;
 
 -- (Repeat for block, collection, exam, coursediscussion, etc.)
 
 -- 2. Convert Varchar to native UUID
-ALTER TABLE activity 
+ALTER TABLE activity
   ALTER COLUMN activity_uuid TYPE UUID USING activity_uuid::uuid;
 
 -- 3. Convert JSON to JSONB
-ALTER TABLE activity 
+ALTER TABLE activity
   ALTER COLUMN content TYPE JSONB USING content::jsonb,
   ALTER COLUMN details TYPE JSONB USING details::jsonb,
   ALTER COLUMN settings TYPE JSONB USING settings::jsonb;
@@ -48,13 +46,13 @@ def upgrade():
                existing_type=sa.VARCHAR(),
                type_=sa.DateTime(timezone=True),
                postgresql_using='creation_date::timestamp with time zone')
-               
+
     # Convert string UUIDs to native UUIDs
     op.alter_column('activity', 'activity_uuid',
                existing_type=sa.VARCHAR(),
                type_=postgresql.UUID(as_uuid=True),
                postgresql_using='activity_uuid::uuid')
-               
+
     # Convert JSON to JSONB
     op.alter_column('activity', 'content',
                existing_type=postgresql.JSON(),
@@ -85,7 +83,7 @@ CREATE SCHEMA IF NOT EXISTS judge0;
 ALTER TABLE submissions SET SCHEMA judge0;
 
 -- Fix the foreign key in code_run to point to actual submissions
-ALTER TABLE code_run 
+ALTER TABLE code_run
   DROP COLUMN submission_uuid,
   ADD COLUMN submission_id INTEGER REFERENCES submission(id) ON DELETE CASCADE;
 
@@ -109,7 +107,7 @@ ALTER SEQUENCE user_id_seq RENAME TO users_id_seq;
 -- Note: You will need to update all Foreign Keys referencing "user"(id) in Alembic.
 
 -- 2. Clean up the Block table hierarchy
-ALTER TABLE block 
+ALTER TABLE block
   DROP COLUMN course_id,
   DROP COLUMN chapter_id;
 -- The hierarchy should be dynamically resolved via JOINs: Block -> Activity -> Chapter -> Course.
@@ -122,10 +120,10 @@ ALTER TABLE block
 def upgrade():
     # 1. Drop constraints pointing to "user"
     op.drop_constraint('activity_progress_user_id_fkey', 'activity_progress', type_='foreignkey')
-    
+
     # 2. Rename table
     op.rename_table('user', 'users')
-    
+
     # 3. Recreate constraints
     op.create_foreign_key('activity_progress_user_id_fkey', 'activity_progress', 'users', ['user_id'], ['id'], ondelete='CASCADE')
 

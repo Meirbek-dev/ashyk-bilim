@@ -105,6 +105,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
               sideOffset={4}
             >
               <Command>
+                {/* TODO: Can't find themes via search */}
                 <CommandInput placeholder={t('searchPlaceholder')} value={search} onValueChange={setSearch} />
 
                 {/* Controls row */}
