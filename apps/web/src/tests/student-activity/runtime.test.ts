@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { derivePrimaryAction, normalizeProgressState } from '@/features/student-activity/domain'
 import { buildGradebookRollups, type GradebookRollupKind } from '@/features/grading/domain'

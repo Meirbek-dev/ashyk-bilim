@@ -1,6 +1,6 @@
 import { getSchema } from '@tiptap/core'
 import { Node as PMNode } from '@tiptap/pm/model'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core'
 

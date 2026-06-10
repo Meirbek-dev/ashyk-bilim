@@ -13,7 +13,7 @@
 
 import { Editor, getSchema } from '@tiptap/core'
 import { Node as PMNode } from '@tiptap/pm/model'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vite-plus/test'
 
 import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core'
 

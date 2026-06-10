@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import type { CodeChallengeSettings, TestCaseResult } from '@/services/courses/code-challenges'

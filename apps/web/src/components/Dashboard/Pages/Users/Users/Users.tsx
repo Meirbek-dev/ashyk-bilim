@@ -35,7 +35,7 @@ import DataTable from '@/components/ui/data-table'
 import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
-import { queryKeys } from '@/lib/react-query/queryKeys'
+import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
 import React, { useEffect, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -170,10 +170,10 @@ const Users = () => {
       const res = await removeUser(user_id)
       if (res.success || res.status === 200) {
         await queryClient.invalidateQueries({
-          queryKey: ['users', 'members'],
+          queryKey: membersQueryOptions(1, 20).queryKey.slice(0, 2),
         })
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.users.roleAssignments(),
+          queryKey: userRoleAssignmentsQueryOptions().queryKey,
         })
         toast.success(t('userRemovedSuccess'), { id: toastId })
       } else {

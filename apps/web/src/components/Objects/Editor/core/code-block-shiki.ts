@@ -58,7 +58,7 @@ function getDecorations(doc: ProsemirrorNode, highlighter: ShikiHighlighter) {
     }
   })
 
-  return DecorationSet.create(doc as unknown as Parameters<typeof DecorationSet.create>[0], decorations)
+  return DecorationSet.create(doc, decorations)
 }
 
 export const CodeBlockShiki = CodeBlock.extend({
@@ -88,7 +88,7 @@ export const CodeBlockShiki = CodeBlock.extend({
             if (!highlighter) {
               return DecorationSet.empty
             }
-            return getDecorations(doc as unknown as Parameters<typeof getDecorations>[0], highlighter)
+            return getDecorations(doc, highlighter)
           },
           apply(tr, set) {
             const highlighter = getResolvedHighlighter()
@@ -96,7 +96,7 @@ export const CodeBlockShiki = CodeBlock.extend({
               return DecorationSet.empty
             }
             if (tr.docChanged || tr.getMeta('shikiLoaded')) {
-              return getDecorations(tr.doc as unknown as Parameters<typeof getDecorations>[0], highlighter)
+              return getDecorations(tr.doc, highlighter)
             }
             const mapDecorations = set.map.bind(set)
             return mapDecorations(tr.mapping, tr.doc)

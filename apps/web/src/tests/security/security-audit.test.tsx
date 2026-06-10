@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { render, screen, cleanup } from '@testing-library/react'
 import { PermissionGuard } from '@/components/Security/PermissionGuard'
 import { SessionProvider } from '@/components/providers/session-provider'

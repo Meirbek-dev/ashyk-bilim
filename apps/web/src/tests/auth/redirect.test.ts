@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { isProtectedRoute, normalizeReturnTo, isAuthRoute } from '@/lib/auth/redirect'
 
 describe('Auth Redirect Logic', () => {

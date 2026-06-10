@@ -2,7 +2,7 @@
  * Unit tests for embed-validators.ts
  * Covers specific examples for each validator and the src builder helpers.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import {
   parseYouTubeUrl,
   validateExcalidrawUrl,

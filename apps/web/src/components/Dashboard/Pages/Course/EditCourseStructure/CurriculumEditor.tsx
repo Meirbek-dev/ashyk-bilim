@@ -291,16 +291,12 @@ const CurriculumEditor = () => {
       )}
 
       {course_structure.chapters.length === 0 && !showChapterInput ? (
-        <div className="bg-muted/20 mb-4 flex flex-col items-center rounded-xl border border-dashed px-6 py-12 text-center">
+        <div className="bg-muted/20 mb-4 flex flex-col items-center rounded-xl border border-dashed p-6 text-center">
           <div className="bg-muted mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
             <BookOpen className="text-muted-foreground h-6 w-6" />
           </div>
           <p className="text-foreground mb-1 text-sm font-semibold">{t('emptyStateTitle')}</p>
           <p className="text-muted-foreground mb-4 max-w-xs text-sm">{t('emptyStateDescription')}</p>
-          <Button variant="default" size="sm" onClick={handleStartNewChapter}>
-            <Hexagon strokeWidth={3} className="mr-2 size-4" />
-            {t('emptyStateAction')}
-          </Button>
         </div>
       ) : (
         <DndContext

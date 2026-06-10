@@ -13,7 +13,7 @@
 
 import React, { useRef, useState } from 'react'
 import { act, render } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any imports that use them

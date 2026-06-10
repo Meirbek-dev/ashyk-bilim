@@ -9,6 +9,8 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
+const ELLIPSIS_TEXT = '···'
+
 interface LeaderboardProps {
   entries: LeaderboardEntry[]
   currentUserId?: number
@@ -96,7 +98,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
                 {showSeparator && (
                   <div className="text-muted-foreground flex items-center gap-2 px-4 py-1.5 text-xs">
                     <div className="bg-border h-px flex-1" />
-                    <span>···</span>
+                    <span>{ELLIPSIS_TEXT}</span>
                     <div className="bg-border h-px flex-1" />
                   </div>
                 )}

@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 import { renderHook } from '@testing-library/react'
 import { SessionProvider, useSessionContext } from '@/components/providers/session-provider'
 import React from 'react'

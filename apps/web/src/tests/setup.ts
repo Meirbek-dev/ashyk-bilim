@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { vi } from 'vite-plus/test'
 
 // Polyfill process.env for browser environment
 if (typeof process === 'undefined') {

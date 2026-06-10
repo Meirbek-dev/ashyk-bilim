@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import CourseGradebookCommandCenter from '@/features/grading/gradebook/CourseGradebookCommandCenter'
 import type { CourseGradebookResponse } from '@/types/grading'

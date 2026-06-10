@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { validateMarkdownContent, getHighestMarkdownIssueSeverity } from '@/features/content-markdown'
 import {

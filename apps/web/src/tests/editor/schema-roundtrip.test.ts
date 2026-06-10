@@ -3,7 +3,7 @@
  * Tiptap's `getSchema` + ProseMirror `Node.fromJSON` / `.toJSON()` are
  * DOM-free and run in a Node environment without jsdom.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { getSchema } from '@tiptap/core'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Node as PMNode } from '@tiptap/pm/model'

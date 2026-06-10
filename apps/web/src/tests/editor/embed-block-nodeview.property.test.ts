@@ -7,7 +7,7 @@
  */
 
 import * as fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { clampEmbedHeight } from '../../components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 

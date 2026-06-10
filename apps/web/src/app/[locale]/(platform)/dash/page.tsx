@@ -143,4 +143,3 @@ const DashboardCard = ({
     </ServerLink>
   )
 }
-

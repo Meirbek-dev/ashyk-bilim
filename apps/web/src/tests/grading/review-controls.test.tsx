@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import GradeForm from '@/features/grading/review/components/GradeForm'

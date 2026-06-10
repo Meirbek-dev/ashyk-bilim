@@ -14,7 +14,7 @@
  *  - `runCodeItem` — success, throws on failure
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 const mocks = vi.hoisted(() => ({

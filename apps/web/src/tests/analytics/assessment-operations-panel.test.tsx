@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import AssessmentOperationsPanel from '@/components/Dashboard/Analytics/AssessmentOperationsPanel'
 import type { TeacherAssessmentDetailResponse } from '@/types/analytics'

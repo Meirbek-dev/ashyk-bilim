@@ -2,7 +2,7 @@ import { Editor } from '@tiptap/core'
 import { useState } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { MarkdownEditor } from '@/features/content-markdown'
 import { buildEditorExtensions } from '@/features/content-markdown/lib/tiptap-extensions'

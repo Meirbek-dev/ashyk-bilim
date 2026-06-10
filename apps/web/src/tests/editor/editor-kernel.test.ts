@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { EMPTY_TIPTAP_DOC } from '../../components/Objects/Editor/core/editor-content'
 import {

@@ -353,7 +353,6 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
           ) : (
             <div className="flex min-h-[60px] flex-col items-center justify-center gap-1 py-4 text-center">
               <p className="text-muted-foreground text-sm font-medium">{t('noActivities')}</p>
-              <p className="text-muted-foreground/70 text-xs">{t('noActivitiesHint')}</p>
             </div>
           )}
         </div>

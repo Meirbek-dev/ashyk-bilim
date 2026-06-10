@@ -2856,7 +2856,6 @@
       "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
       "emptyStateTitle": "Создайте учебный план",
       "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и учебные задачи.",
-      "emptyStateAction": "Добавить первый раздел",
       "activity": "Активность",
       "chapter": "Глава"
     },
@@ -2895,7 +2894,7 @@
     "editButton": "Редактировать",
     "noActivities": "Пока нет активностей",
     "deleteChapterConfirmationBreakdown": "Это безвозвратно удалит раздел и его {count, plural, =0 {0 занятий} one {# занятие} few {# занятия} other {# занятий}} ({published} опубликованных, {drafts} черновиков).",
-    "noActivitiesHint": "Добавьте первое учебная задача ниже",
+    "noActivitiesHint": "Добавьте первую активность",
     "save": "Сохранить",
     "cancel": "Отмена"
   },

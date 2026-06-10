@@ -11,7 +11,7 @@ import { Editor, getSchema } from '@tiptap/core'
 import { DOMParser as PMDOMParser, DOMSerializer, Node as PMNode } from '@tiptap/pm/model'
 import { StarterKit } from '@tiptap/starter-kit'
 import * as fc from 'fast-check'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vite-plus/test'
 
 import { EmbedBlock } from '../../components/Objects/Editor/Extensions/EmbedBlock/EmbedBlock'
 import type { EmbedType } from '../../components/Objects/Editor/Extensions/EmbedBlock/embed-options'

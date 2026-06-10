@@ -5,7 +5,7 @@
  * Feature: rich-text-editor
  */
 import * as fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import {
   validateTldrawUrl,
   buildTldrawSrc,
