@@ -66,14 +66,14 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
         rr.steps = [TrailStepRead(**s.model_dump()) for s in steps]
 
         course_obj = courses_by_id.get(rr.course_id)
-        rr.course = course_obj.model_dump() if course_obj else {}
+        rr.course = course_obj.model_dump(mode="json") if course_obj else {}
         rr.course_total_steps = chapter_act_count.get(rr.course_id, 0)
 
         # Embed course per step for convenience
         for step_read in rr.steps:
             if step_read.course_id:
                 step_course = courses_by_id.get(step_read.course_id)
-                step_read.data = {"course": step_course.model_dump() if step_course is not None else {}}
+                step_read.data = {"course": step_course.model_dump(mode="json") if step_course is not None else {}}
 
     return TrailRead(**trail.model_dump(), runs=run_reads)
 
