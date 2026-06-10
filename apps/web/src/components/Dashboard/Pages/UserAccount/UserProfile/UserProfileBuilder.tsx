@@ -17,7 +17,8 @@ import {
   Trash2,
   Trophy,
 } from 'lucide-react'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@components/ui/select'
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { updateProfile } from '@/lib/users/client'
 import { createElement, useEffect, useEffectEvent, useMemo, useState } from 'react'
@@ -1036,31 +1037,23 @@ const SkillsEditor: FC<{
                   }}
                   placeholder={t('SkillsEditor.skillNamePlaceholder')}
                 />
-                <Select
+                <NativeSelect
                   value={skill.level || 'intermediate'}
-                  onValueChange={value => {
+                  onChange={e => {
                     const newSkills = [...section.skills]
                     newSkills[index] = {
                       ...skill,
-                      level: value!,
+                      level: e.target.value as Exclude<ProfileSkill['level'], undefined>,
                     }
                     onChange({ ...section, skills: newSkills })
                   }}
-                  items={skillLevelItems(t)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('SkillsEditor.selectLevelPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {skillLevelItems(t).map(item => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  {skillLevelItems(t).map(item => (
+                    <NativeSelectOption key={item.value} value={item.value}>
+                      {item.label}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
                 <Input
                   value={skill.category || ''}
                   onChange={e => {

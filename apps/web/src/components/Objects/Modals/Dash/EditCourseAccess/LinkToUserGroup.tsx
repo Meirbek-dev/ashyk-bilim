@@ -1,6 +1,6 @@
 'use client'
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
 import { linkResourcesToUserGroup } from '@services/usergroups/usergroups'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useCourse } from '@components/Contexts/CourseContext'
@@ -68,18 +68,23 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
               <Users className="text-muted-foreground size-3.5" />
               {t('userGroupNameLabel')}
             </Label>
-            <Select value={effectiveUserGroup ?? undefined} onValueChange={setSelectedUserGroup}>
-              <SelectTrigger id="usergroup-select" className="w-full">
-                <SelectValue placeholder={t('selectUserGroup')} />
-              </SelectTrigger>
-              <SelectContent>
-                {(usergroups ?? []).map((group: UserGroup) => (
-                  <SelectItem key={group.id} value={String(group.id)}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              id="usergroup-select"
+              className="w-full"
+              value={effectiveUserGroup ?? ''}
+              onChange={e => setSelectedUserGroup(e.target.value)}
+            >
+              {effectiveUserGroup === null && (
+                <NativeSelectOption value="" disabled>
+                  {t('selectUserGroup')}
+                </NativeSelectOption>
+              )}
+              {(usergroups ?? []).map((group: UserGroup) => (
+                <NativeSelectOption key={group.id} value={String(group.id)}>
+                  {group.name}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
           </div>
           <Button onClick={handleLink} className="shrink-0">
             {t('linkButton')}
