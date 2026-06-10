@@ -39,10 +39,10 @@ from src.db.file_submissions import (
     FileSubmissionUserRead,
 )
 from src.db.grading.progress import (
-    LATE_POLICY_ADAPTER,
     ActivityProgress,
     ActivityProgressState,
     LatePolicyNone,
+    deserialize_late_policy,
 )
 from src.db.uploads import Upload, UploadStatus
 from src.db.users import AnonymousUser, PublicUser, User
@@ -767,7 +767,7 @@ def _late_penalty(file_submission: FileSubmissionActivity, submitted_at: datetim
         return 0.0
     if not file_submission.allow_late:
         raise HTTPException(status_code=409, detail="Поздние отправки закрыты")
-    policy = LATE_POLICY_ADAPTER.validate_python(file_submission.late_policy_json or {"kind": "NONE"})
+    policy = deserialize_late_policy(file_submission.late_policy_json)
     return float(policy.apply(submitted_at, file_submission.due_at))
 
 

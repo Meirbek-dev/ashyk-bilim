@@ -74,6 +74,16 @@ type LatePolicy = Annotated[
 LATE_POLICY_ADAPTER: TypeAdapter[LatePolicy] = TypeAdapter(LatePolicy)
 
 
+def deserialize_late_policy(value: object) -> LatePolicy:
+    """Safely validate and parse late policy, defaulting to LatePolicyNone if empty or invalid."""
+    if not value or (isinstance(value, dict) and "kind" not in value):
+        return LatePolicyNone(kind="NONE")
+    try:
+        return LATE_POLICY_ADAPTER.validate_python(value)
+    except Exception:
+        return LatePolicyNone(kind="NONE")
+
+
 class AssessmentGradingMode(StrEnum):
     AUTO = "AUTO"
     MANUAL = "MANUAL"
@@ -227,9 +237,7 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     @field_validator("late_policy_json", mode="before")
     @classmethod
     def validate_late_policy_json(cls, value: object) -> dict[str, object]:
-        if value is None or value == "":
-            return LatePolicyNone().model_dump(mode="json")
-        return LATE_POLICY_ADAPTER.validate_python(value).model_dump(mode="json")
+        return deserialize_late_policy(value).model_dump(mode="json")
 
 
 class ActivityProgress(SQLModelStrictBaseModel, table=True):

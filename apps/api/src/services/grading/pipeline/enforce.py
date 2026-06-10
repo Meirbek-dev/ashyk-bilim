@@ -12,10 +12,10 @@ from fastapi import HTTPException, status
 
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
-    LATE_POLICY_ADAPTER,
     AssessmentPolicy,
     LatePolicy,
     LatePolicyNone,
+    deserialize_late_policy,
 )
 from src.services.grading.pipeline.context import EffectivePolicy
 from src.services.grading.settings_loader import AssessmentSettings
@@ -45,7 +45,7 @@ def resolve_effective_policy(
         due_at = policy.due_at
         allow_late = policy.allow_late
         passing_score = policy.passing_score
-        late_policy = LATE_POLICY_ADAPTER.validate_python(policy.late_policy_json or {})
+        late_policy = deserialize_late_policy(policy.late_policy_json)
 
     # Per-student override overrides policy
     if override is not None:
