@@ -12,6 +12,8 @@ from pydantic_ai.messages import (
 )
 
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.services.ai.contracts.events import V2StreamEvent
+from src.services.ai.contracts.outputs import AIArtifact
 from src.types import JsonObject
 
 
@@ -96,6 +98,7 @@ class AgentDependencies(PydanticStrictBaseModel):
 
 class AgentAnswer(PydanticStrictBaseModel):
     message: str = Field(min_length=1)
+    artifact: AIArtifact | None = None
     chunk_count: int = 0
     finish_reason: str | None = None
     model_name: str | None = None
@@ -126,6 +129,7 @@ class FinalEvent(PydanticStrictBaseModel):
     aichat_uuid: str
     activity_uuid: str
     chunk_count: int
+    artifact: AIArtifact | None = None
 
 
 class ErrorEvent(PydanticStrictBaseModel):
@@ -136,4 +140,4 @@ class ErrorEvent(PydanticStrictBaseModel):
     status: int | None = None
 
 
-SSEEvent = StatusEvent | DeltaEvent | FinalEvent | ErrorEvent
+SSEEvent = StatusEvent | DeltaEvent | FinalEvent | ErrorEvent | V2StreamEvent

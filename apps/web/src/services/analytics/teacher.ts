@@ -110,7 +110,7 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
     sort_order: (getFirstQueryValue(searchParams.sort_order) as AnalyticsQuery['sort_order']) || 'desc',
     course_ids: courseIds ?? null,
     cohort_ids: cohortIds ?? null,
-    teacher_user_id: teacherUserIdValue ?? null,
+    ...(teacherUserIdValue !== undefined ? { teacher_user_id: teacherUserIdValue } : {}),
     timezone: timezone || 'UTC',
     sort_by: (sortBy as AnalyticsQuery['sort_by']) ?? null,
     bucket_start: bucketStart ?? null,

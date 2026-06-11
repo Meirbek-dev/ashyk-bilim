@@ -232,12 +232,12 @@ describe('teacher review controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pick date and time' }))
 
     const dueAtDialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /May 10/i }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /June 15/i }))
 
     const dueAtTimeInput = dueAtDialog.querySelector('input[type="time"]')
     expect(dueAtTimeInput).not.toBeNull()
     fireEvent.change(dueAtTimeInput!, { target: { value: '14:30' } })
-    fireEvent.click(within(dueAtDialog).getByRole('button', { name: 'Set' }))
+    fireEvent.click(within(dueAtDialog).getByRole('button', { name: /set/i }))
 
     fireEvent.change(screen.getByPlaceholderText('reasonPlaceholder'), {
       target: { value: 'Medical extension' },
@@ -255,7 +255,7 @@ describe('teacher review controls', () => {
     })
     expect(mocks.createStudentPolicyOverrideMock).toHaveBeenNthCalledWith(1, 'assessment_review', {
       user_id: 9,
-      due_at_override: new Date('2026-05-10T14:30').toISOString(),
+      due_at_override: new Date('2026-06-15T14:30').toISOString(),
       note: 'Medical extension',
     })
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued')

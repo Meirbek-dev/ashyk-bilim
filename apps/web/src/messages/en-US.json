@@ -34,6 +34,13 @@
       "suggestedPrompts": "Suggested prompts",
       "currentActivity": "Current activity",
       "askPlaceholder": "Ask anything about this activity...",
+      "aiComposerLabel": "AI message",
+      "emptyStateTitle": "Ask AI",
+      "emptyStateDescription": "Use the current activity as context.",
+      "errorStateTitle": "AI request failed",
+      "defaultErrorMessage": "The AI request failed. Try again.",
+      "retry": "Retry",
+      "dismiss": "Dismiss",
       "suggestions": {
         "dynamic": {
           "summarize": "Summarize this page for me",
@@ -1727,7 +1734,8 @@
       "fileSubmission": "File Submission",
       "fileSubmissionDesc": "Collect student files with review and feedback",
       "video": "Video",
-      "videoDesc": "Upload or embed a video for students to watch"
+      "videoDesc": "Upload or embed a video for students to watch",
+      "opening": "Opening…"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Allowed file types",

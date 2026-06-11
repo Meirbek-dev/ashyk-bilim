@@ -50,7 +50,7 @@ export function NativeItemOutline({ allowedKinds, itemNoun, itemNounKey }: Nativ
     validationIssues,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
-  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as unknown as Parameters<typeof t>[0]) : itemNoun
+  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),

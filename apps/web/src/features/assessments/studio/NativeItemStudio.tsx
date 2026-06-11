@@ -6,4 +6,4 @@ export { NativeItemAuthor } from './components/NativeItemAuthor'
 
 export type { SupportedStudioItemKind, StudioMode, AssessmentLifecycle, AssessmentStudioDetail } from './utils'
 export type { AssessmentEditorState, EditableItem, StudioTab } from './studioTypes'
-export type { SaveState } from './studioTypes'
+export type { SaveState } from '@/features/assessments/shared/SaveStateBadge'

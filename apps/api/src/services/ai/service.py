@@ -17,6 +17,8 @@ from src.db.courses.courses import CourseRead
 from src.db.strict_base_model import is_str_list
 from src.services.ai.agent import get_agent, get_model, get_model_settings
 from src.services.ai.cache_manager import get_ai_cache_manager
+from src.services.ai.contracts.intents import AIIntent, normalize_ai_intent
+from src.services.ai.contracts.outputs import build_artifact_for_intent
 from src.services.ai.exceptions import (
     ActivityNotFoundError,
     AIProcessingError,
@@ -30,9 +32,11 @@ from src.services.ai.models import (
     DeltaEvent,
     FinalEvent,
     RetrievedChunk,
+    SSEEvent,
     StatusEvent,
 )
 from src.services.ai.moderation import moderate_text_input
+from src.services.ai.orchestration import StreamEventFactory
 from src.services.ai.retrieval import retrieve_chunks
 from src.services.ai.schemas.ai import ActivityAIChatSessionResponse
 from src.services.ai.session_store import (
@@ -141,6 +145,7 @@ class _ChatContext:
 
 @dataclass(frozen=True, slots=True)
 class _RequestPolicy:
+    intent: AIIntent
     mode: RequestMode
     retrieval_enabled: bool
     task_instruction: str | None = None
@@ -228,11 +233,23 @@ def _detect_request_mode(question: str, *, has_session_history: bool) -> Request
     return RequestMode.INSTRUCTIONAL
 
 
-def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
-    mode = _detect_request_mode(question, has_session_history=bool(ctx.session_history))
+def _mode_for_intent(intent: AIIntent, question: str, *, has_session_history: bool) -> RequestMode:
+    if intent == AIIntent.AUTHORING_PATCH:
+        return RequestMode.EDITORIAL
+    if intent == AIIntent.RUBRIC_FEEDBACK:
+        return RequestMode.CRITIQUE
+    if intent == AIIntent.FREEFORM:
+        return _detect_request_mode(question, has_session_history=has_session_history)
+    return RequestMode.INSTRUCTIONAL
+
+
+def _build_request_policy(ctx: _ChatContext, question: str, intent: AIIntent | str | None = None) -> _RequestPolicy:
+    normalized_intent = normalize_ai_intent(intent)
+    mode = _mode_for_intent(normalized_intent, question, has_session_history=bool(ctx.session_history))
 
     if mode == RequestMode.TRANSLATION:
         return _RequestPolicy(
+            intent=normalized_intent,
             mode=mode,
             retrieval_enabled=False,
             task_instruction="Используйте предоставленный пользователем текст как основной источник. Сохраняйте структуру и не добавляйте лишний контент.",
@@ -240,6 +257,7 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
 
     if mode == RequestMode.CRITIQUE:
         return _RequestPolicy(
+            intent=normalized_intent,
             mode=mode,
             retrieval_enabled=False,
             task_instruction="Сосредоточьтесь на точной критике и предложениях по правке текста из сообщения пользователя.",
@@ -247,6 +265,7 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
 
     if mode == RequestMode.EDITORIAL:
         return _RequestPolicy(
+            intent=normalized_intent,
             mode=mode,
             retrieval_enabled=False,
             task_instruction="Сосредоточьтесь на качестве текста, ясности и связности на основе предоставленного пользователем текста.",
@@ -254,6 +273,7 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
 
     if mode == RequestMode.FOLLOW_UP:
         return _RequestPolicy(
+            intent=normalized_intent,
             mode=mode,
             retrieval_enabled=False,
             task_instruction="Сначала используйте недавний контекст разговора. Обращайтесь к общим знаниям только если недавнего обмена недостаточно.",
@@ -261,12 +281,13 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
 
     if _documents_are_small(ctx.documents) and len(question.strip()) <= 80:
         return _RequestPolicy(
+            intent=normalized_intent,
             mode=mode,
             retrieval_enabled=False,
             task_instruction="Контекст активности небольшой. Сначала опирайтесь на предоставленный запрос и недавний контекст, прежде чем переходить к поиску.",
         )
 
-    return _RequestPolicy(mode=mode, retrieval_enabled=True)
+    return _RequestPolicy(intent=normalized_intent, mode=mode, retrieval_enabled=True)
 
 
 def _status_message(status: str, *, retrieval_enabled: bool, locale: str) -> str:
@@ -428,6 +449,7 @@ async def generate_chat_answer(
     *,
     ctx: _ChatContext,
     question: str,
+    intent: AIIntent | str | None = None,
     cancel_event: asyncio.Event | None = None,
 ) -> AgentAnswer:
     if not question or not question.strip():
@@ -444,10 +466,11 @@ async def generate_chat_answer(
     try:
         async with asyncio.timeout(timeout_seconds):
             await moderate_text_input(question, stage="input")
-            policy = _build_request_policy(ctx, question)
+            policy = _build_request_policy(ctx, question, intent)
             logger.info(
-                "Политика AI-запроса: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
+                "Политика AI-запроса: session=%s intent=%s mode=%s retrieval=%s summary=%s question_chars=%d",
                 ctx.session_id,
+                policy.intent.value,
                 policy.mode.value,
                 policy.retrieval_enabled,
                 bool(ctx.conversation_summary),
@@ -494,6 +517,12 @@ async def generate_chat_answer(
         msg_0 = "AI вернул пустой ответ"
         raise AIProcessingError(msg_0)
 
+    artifact = build_artifact_for_intent(
+        intent=policy.intent,
+        answer=output,
+        retrieved_chunks=retrieved_chunks,
+    )
+
     append_messages(
         ctx.session_id,
         build_chat_messages(
@@ -510,6 +539,7 @@ async def generate_chat_answer(
     model_name = getattr(model_response, "model_name", None)
     return AgentAnswer(
         message=output,
+        artifact=artifact,
         chunk_count=len(retrieved_chunks),
         finish_reason=None if finish_reason is None else str(finish_reason),
         model_name=model_name,
@@ -520,35 +550,47 @@ async def stream_chat_answer(
     *,
     ctx: _ChatContext,
     question: str,
+    intent: AIIntent | str | None = None,
     cancel_event: asyncio.Event | None = None,
-) -> AsyncGenerator[StatusEvent | DeltaEvent | FinalEvent]:
+) -> AsyncGenerator[SSEEvent]:
     if not question or not question.strip():
         msg = "Вопрос не может быть пустым"
         raise AIProcessingError(msg)
 
     settings = get_settings().ai_config
     timeout_seconds = settings.request_timeout
+    stream_events = StreamEventFactory(thread_id=ctx.session_id)
+    normalized_intent = normalize_ai_intent(intent)
 
+    yield stream_events.started({
+        "activity_uuid": ctx.activity.activity_uuid,
+        "intent": normalized_intent.value,
+    })
+    processing_message = _status_message("processing", retrieval_enabled=True, locale=ctx.locale)
+    yield stream_events.status(status="processing", message=processing_message)
     yield StatusEvent(
         status="processing",
         aichat_uuid=ctx.session_id,
         activity_uuid=ctx.activity.activity_uuid,
-        message=_status_message("processing", retrieval_enabled=True, locale=ctx.locale),
+        message=processing_message,
     )
 
     try:
         async with asyncio.timeout(timeout_seconds):
+            moderating_message = _status_message("moderating", retrieval_enabled=True, locale=ctx.locale)
+            yield stream_events.status(status="moderating", message=moderating_message)  # noqa: ASYNC119
             yield StatusEvent(  # noqa: ASYNC119
                 status="moderating",
                 aichat_uuid=ctx.session_id,
                 activity_uuid=ctx.activity.activity_uuid,
-                message=_status_message("moderating", retrieval_enabled=True, locale=ctx.locale),
+                message=moderating_message,
             )
             await moderate_text_input(question, stage="input")
-            policy = _build_request_policy(ctx, question)
+            policy = _build_request_policy(ctx, question, normalized_intent)
             logger.info(
-                "Политика потокового AI-запроса: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
+                "Политика потокового AI-запроса: session=%s intent=%s mode=%s retrieval=%s summary=%s question_chars=%d",
                 ctx.session_id,
+                policy.intent.value,
                 policy.mode.value,
                 policy.retrieval_enabled,
                 bool(ctx.conversation_summary),
@@ -557,11 +599,18 @@ async def stream_chat_answer(
 
             retrieved_chunks: list[RetrievedChunk]
             if policy.retrieval_enabled:
+                retrieving_message = _status_message("retrieving", retrieval_enabled=True, locale=ctx.locale)
+                yield stream_events.status(status="retrieving", message=retrieving_message)  # noqa: ASYNC119
+                yield stream_events.tool_started(  # noqa: ASYNC119
+                    tool_name="search_course_content",
+                    label="Search course context",
+                    detail="Retrieving activity and course fragments.",
+                )
                 yield StatusEvent(  # noqa: ASYNC119
                     status="retrieving",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
-                    message=_status_message("retrieving", retrieval_enabled=True, locale=ctx.locale),
+                    message=retrieving_message,
                 )
                 retrieved_chunks, retrieval_ms = await _retrieve_chunks_for_policy(
                     ctx=ctx,
@@ -575,26 +624,35 @@ async def stream_chat_answer(
                     len(retrieved_chunks),
                     retrieval_ms,
                 )
+                yield stream_events.tool_finished(  # noqa: ASYNC119
+                    tool_name="search_course_content",
+                    label="Search course context",
+                    detail=f"{len(retrieved_chunks)} context fragments retrieved.",
+                )
             else:
+                analyzing_message = _status_message("analyzing", retrieval_enabled=False, locale=ctx.locale)
+                yield stream_events.status(status="analyzing", message=analyzing_message)  # noqa: ASYNC119
                 yield StatusEvent(  # noqa: ASYNC119
                     status="analyzing",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
-                    message=_status_message("analyzing", retrieval_enabled=False, locale=ctx.locale),
+                    message=analyzing_message,
                 )
                 retrieved_chunks = list[RetrievedChunk]()
 
             deps = _build_agent_deps(ctx, policy, retrieved_chunks)
 
+            generating_message = _status_message(
+                "generating",
+                retrieval_enabled=policy.retrieval_enabled,
+                locale=ctx.locale,
+            )
+            yield stream_events.status(status="generating", message=generating_message)  # noqa: ASYNC119
             yield StatusEvent(  # noqa: ASYNC119
                 status="generating",
                 aichat_uuid=ctx.session_id,
                 activity_uuid=ctx.activity.activity_uuid,
-                message=_status_message(
-                    "generating",
-                    retrieval_enabled=policy.retrieval_enabled,
-                    locale=ctx.locale,
-                ),
+                message=generating_message,
             )
 
             full_response = ""
@@ -611,6 +669,7 @@ async def stream_chat_answer(
             ):
                 async for delta in result.stream_text(delta=True, debounce_by=None):
                     if cancel_event and cancel_event.is_set():
+                        yield stream_events.aborted({"reason": "client_disconnected"})  # noqa: ASYNC119
                         yield StatusEvent(  # noqa: ASYNC119
                             status="aborted",
                             aichat_uuid=ctx.session_id,
@@ -659,12 +718,26 @@ async def stream_chat_answer(
         ),
     )
 
+    artifact = build_artifact_for_intent(
+        intent=normalized_intent,
+        answer=full_response,
+        retrieved_chunks=retrieved_chunks,
+    )
+    for citation in artifact.citations:
+        yield stream_events.citation(citation=citation)
+    yield stream_events.artifact(artifact=artifact, final=True)
     yield FinalEvent(
         content=full_response,
         aichat_uuid=ctx.session_id,
         activity_uuid=ctx.activity.activity_uuid,
         chunk_count=chunk_id,
+        artifact=artifact,
     )
+    yield stream_events.finished({
+        "activity_uuid": ctx.activity.activity_uuid,
+        "chunk_count": chunk_id,
+        "intent": normalized_intent.value,
+    })
 
 
 async def run_activity_chat(
@@ -672,6 +745,7 @@ async def run_activity_chat(
     activity_uuid: str,
     aichat_uuid: str | None,
     message: str,
+    intent: AIIntent | str | None = None,
     db_session: Session,
     user_id: int | None,
     locale: str | None,
@@ -687,7 +761,7 @@ async def run_activity_chat(
         locale=locale,
         request=request,
     )
-    answer = await generate_chat_answer(ctx=ctx, question=message, cancel_event=cancel_event)
+    answer = await generate_chat_answer(ctx=ctx, question=message, intent=intent, cancel_event=cancel_event)
     logger.info(
         "AI-чат %s завершён за %.1f мс",
         ctx.session_id,
@@ -697,6 +771,8 @@ async def run_activity_chat(
         aichat_uuid=ctx.session_id,
         activity_uuid=ctx.activity.activity_uuid,
         message=answer.message,
+        intent=normalize_ai_intent(intent),
+        artifact=answer.artifact,
     )
 
 
@@ -705,6 +781,7 @@ async def run_activity_chat_stream(
     activity_uuid: str,
     aichat_uuid: str | None,
     message: str,
+    intent: AIIntent | str | None = None,
     db_session: Session,
     user_id: int | None,
     locale: str | None,
@@ -722,6 +799,7 @@ async def run_activity_chat_stream(
     async for event in stream_chat_answer(
         ctx=ctx,
         question=message,
+        intent=intent,
         cancel_event=cancel_event,
     ):
         yield event

@@ -17,8 +17,6 @@ import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
 
 import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal'
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
@@ -247,6 +245,8 @@ function ActivityTypeRow({
 }: ActivityTypeRowProps) {
   const Icon = config.icon
 
+  const t = useTranslations('Components.NewActivity')
+
   return (
     <div role="listitem">
       <button
@@ -285,7 +285,7 @@ function ActivityTypeRow({
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="text-foreground text-sm font-medium">{label}</span>
-            {isLoading && <span className="text-muted-foreground text-xs">Opening…</span>}
+            {isLoading && <span className="text-muted-foreground text-xs">{t('opening')}</span>}
           </span>
           <span className="text-muted-foreground mt-0.5 block truncate text-xs">{description}</span>
         </span>

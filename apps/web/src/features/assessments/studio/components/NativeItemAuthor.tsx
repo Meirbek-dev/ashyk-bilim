@@ -59,7 +59,7 @@ export function NativeItemAuthor({
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
-  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as unknown as Parameters<typeof t>[0]) : itemNoun
+  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
   const VALID_TABS = new Set<StudioTab>(['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH'])
 

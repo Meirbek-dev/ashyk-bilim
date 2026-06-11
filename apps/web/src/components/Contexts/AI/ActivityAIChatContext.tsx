@@ -16,6 +16,14 @@ import type { TextPart } from '@tanstack/ai-client'
 import type { PropsWithChildren } from 'react'
 import { useChat } from '@tanstack/ai-react'
 import { useTranslations } from 'next-intl'
+import type {
+  AiArtifact,
+  AiIntent,
+  AiStreamEvent,
+  EvidenceCitation,
+  ToolProgressEvent,
+} from '@/features/ai/api/ai-event-contract'
+import { readAiStreamEventChunk } from '@/features/ai/api/ai-event-contract'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +43,17 @@ interface ActivityAIChatContextValue extends UseChatReturn {
   /** Clears local chat state and resets the backend session UUID. */
   resetConversation: () => void
   /** Sends a prompt and resolves with the final assistant text for that run. */
-  sendMessageAndGetResponse: (message: string) => Promise<string>
+  sendMessageAndGetResponse: (message: string, intent?: AiIntent) => Promise<string>
+  /** Sends a prompt with a typed LMS AI intent. */
+  sendIntentMessage: (message: string, intent: AiIntent) => void
+  /** Ordered v2 runtime events emitted by the backend. */
+  runtimeEvents: AiStreamEvent[]
+  /** Structured artifacts produced by the backend for this thread. */
+  artifacts: AiArtifact[]
+  /** Citations extracted from typed artifact and citation events. */
+  citations: EvidenceCitation[]
+  /** Tool progress events for the current thread. */
+  toolEvents: ToolProgressEvent[]
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -49,6 +67,10 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [runtimeEvents, setRuntimeEvents] = useState<AiStreamEvent[]>([])
+  const [artifacts, setArtifacts] = useState<AiArtifact[]>([])
+  const [citations, setCitations] = useState<EvidenceCitation[]>([])
+  const [toolEvents, setToolEvents] = useState<ToolProgressEvent[]>([])
 
   // Keep the session UUID in a ref so it survives React Fast Refresh and
   // Strict-Mode double-mounts without starting a new backend session.
@@ -57,6 +79,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   // Store the adapter's abort function so we can cancel in-flight requests.
   const abortRef = useRef<(() => void) | null>(null)
   const resolverQueueRef = useRef<((value: string) => void)[]>([])
+  const pendingIntentRef = useRef<AiIntent>('freeform')
 
   const adapter = useMemo(
     () =>
@@ -85,6 +108,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
           }
         },
         getSessionUuid: () => sessionUuidRef.current,
+        getIntent: () => pendingIntentRef.current,
         setSessionUuid: uuid => {
           sessionUuidRef.current = uuid
         },
@@ -109,12 +133,47 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   const chat = useChat({
     connection: adapter.connection,
     onChunk: chunk => {
+      const runtimeEvent = readAiStreamEventChunk(chunk)
+      if (runtimeEvent) {
+        setRuntimeEvents(prev => [...prev, runtimeEvent])
+        if (runtimeEvent.type === 'status.changed') {
+          setStatusMessage(runtimeEvent.payload.message)
+        }
+        if (
+          runtimeEvent.type === 'tool.started' ||
+          runtimeEvent.type === 'tool.delta' ||
+          runtimeEvent.type === 'tool.finished'
+        ) {
+          setToolEvents(prev => [...prev, runtimeEvent])
+        }
+        if (runtimeEvent.type === 'citation.added') {
+          const citationEvent = runtimeEvent
+          setCitations(prev => {
+            if (prev.some(citation => citation.id === citationEvent.payload.citation.id)) return prev
+            return [...prev, citationEvent.payload.citation]
+          })
+        }
+        if (runtimeEvent.type === 'artifact.delta') {
+          const artifact = runtimeEvent.payload.artifact
+          setArtifacts(prev => [...prev, artifact])
+          setCitations(prev => {
+            const next = [...prev]
+            for (const citation of artifact.citations) {
+              if (!next.some(existing => existing.id === citation.id)) {
+                next.push(citation)
+              }
+            }
+            return next
+          })
+        }
+      }
       if (chunk.type === 'CUSTOM' && chunk.name === 'ai_status') {
         setStatusMessage((chunk.value as { message?: string }).message ?? null)
       }
     },
     onFinish: message => {
       setStatusMessage(null)
+      pendingIntentRef.current = 'freeform'
       const text = message.parts
         .filter((part): part is TextPart => part.type === 'text')
         .map(part => part.content)
@@ -123,6 +182,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     },
     onError: () => {
       setStatusMessage(null)
+      pendingIntentRef.current = 'freeform'
       settleNextPendingResponse('')
     },
   })
@@ -147,6 +207,10 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     chatClearRef.current()
     setStatusMessage(null)
     setInputValue('')
+    setRuntimeEvents([])
+    setArtifacts([])
+    setCitations([])
+    setToolEvents([])
     sessionUuidRef.current = null
 
     while (resolverQueueRef.current.length) {
@@ -158,15 +222,24 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     setIsModalOpen(true)
   }, [])
 
-  const sendMessageAndGetResponse = useCallback((message: string): Promise<string> => {
+  const sendMessageAndGetResponse = useCallback((message: string, intent: AiIntent = 'freeform'): Promise<string> => {
     if (!message.trim()) {
       return Promise.resolve('')
     }
 
     return new Promise(resolve => {
+      pendingIntentRef.current = intent
       resolverQueueRef.current.push(resolve)
       chatSendMessageRef.current(message)
     })
+  }, [])
+
+  const sendIntentMessage = useCallback((message: string, intent: AiIntent) => {
+    if (!message.trim()) {
+      return
+    }
+    pendingIntentRef.current = intent
+    void chatSendMessageRef.current(message)
   }, [])
 
   useEffect(() => {
@@ -205,8 +278,27 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       abort,
       resetConversation,
       sendMessageAndGetResponse,
+      sendIntentMessage,
+      runtimeEvents,
+      artifacts,
+      citations,
+      toolEvents,
     }),
-    [chat, statusMessage, isModalOpen, openModal, inputValue, abort, resetConversation, sendMessageAndGetResponse],
+    [
+      chat,
+      statusMessage,
+      isModalOpen,
+      openModal,
+      inputValue,
+      abort,
+      resetConversation,
+      sendMessageAndGetResponse,
+      sendIntentMessage,
+      runtimeEvents,
+      artifacts,
+      citations,
+      toolEvents,
+    ],
   )
 
   return <ActivityAIChatContext.Provider value={value}>{children}</ActivityAIChatContext.Provider>

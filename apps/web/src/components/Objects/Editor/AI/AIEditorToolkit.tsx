@@ -28,6 +28,7 @@ import { useTheme } from '@/components/providers/theme-provider'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { toast } from 'sonner'
+import type { AiIntent } from '@/features/ai'
 
 // ============================================================================
 // Types
@@ -369,7 +370,7 @@ interface FeedbackModalProps {
   onCritisizeScopeChange: (scope: CritisizeScope) => void
   onDismissError: () => void
   onCancel: () => void
-  sendMessageAndGetResponse: (prompt: string) => Promise<string>
+  sendMessageAndGetResponse: (prompt: string, intent?: AiIntent) => Promise<string>
 }
 
 function UserFeedbackModal({
@@ -434,7 +435,7 @@ function UserFeedbackModal({
           if (!prompt) return
 
           onUserInputEnabledChange(false)
-          const response = await sendMessageAndGetResponse(prompt)
+          const response = await sendMessageAndGetResponse(prompt, 'authoring_patch')
           if (response) typeText(response)
           onUserInputEnabledChange(true)
           break
@@ -445,7 +446,7 @@ function UserFeedbackModal({
           const prompt = getPrompt({ label, selection })
           if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt)
+          const response = await sendMessageAndGetResponse(prompt, 'authoring_patch')
           const cleanedResponse = removeOccurrences(selection, response)
           if (cleanedResponse) typeText(cleanedResponse)
           break
@@ -456,7 +457,7 @@ function UserFeedbackModal({
           const prompt = getPrompt({ label, selection })
           if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt)
+          const response = await sendMessageAndGetResponse(prompt, 'authoring_patch')
           if (response) typeText(response, true)
           break
         }
@@ -472,7 +473,7 @@ function UserFeedbackModal({
           const prompt = getPrompt({ label, selection, scope: critisizeScope })
           if (!prompt) return
 
-          await sendMessageAndGetResponse(prompt)
+          await sendMessageAndGetResponse(prompt, 'rubric_feedback')
           break
         }
 
@@ -490,7 +491,7 @@ function UserFeedbackModal({
           })
           if (!prompt) return
 
-          const response = await sendMessageAndGetResponse(prompt)
+          const response = await sendMessageAndGetResponse(prompt, 'authoring_patch')
           if (response) typeText(response, true)
           break
         }

@@ -34,6 +34,13 @@
       "suggestedPrompts": "Рекомендуемые запросы",
       "currentActivity": "Текущая активность",
       "askPlaceholder": "Спросите о чем угодно по этой активности...",
+      "aiComposerLabel": "Сообщение ИИ",
+      "emptyStateTitle": "Спросить ИИ",
+      "emptyStateDescription": "Использовать текущую активность в качестве контекста.",
+      "errorStateTitle": "Сбой запроса ИИ",
+      "defaultErrorMessage": "Сбой запроса ИИ. Попробуйте еще раз.",
+      "retry": "Повторить",
+      "dismiss": "Скрыть",
       "suggestions": {
         "dynamic": {
           "summarize": "Кратко изложите эту страницу для меня",
@@ -165,7 +172,7 @@
       "expectedOutput": "Ожидаемый вывод",
       "expectedOutputPlaceholder": "Введите ожидаемый вывод...",
       "exampleTestCaseLabel": "напр., Проверка пустого списка",
-      "failed": "Провален",
+      "failed": "Не пройден",
       "form": {
         "addHint": "Добавить подсказку",
         "addTestCase": "Добавить тестовый случай",
@@ -449,9 +456,9 @@
       "problemStatementEmpty": "Описание задачи и спецификация не могут быть пустыми.",
       "outputComparison": "Сравнение вывода",
       "sideBySide": "Рядом",
-      "inline": "Внутри",
-      "noCodeAnswerSubmitted": "Кодовое решение для этого элемента не отправлено.",
-      "evaluatedLanguageId": "Язык оценивания ID: {language}",
+      "inline": "Внутристрочно",
+      "noCodeAnswerSubmitted": "Для этого задания не отправлен код.",
+      "evaluatedLanguageId": "ID оцененного языка: {language}",
       "testCasesPassedValue": "Пройдено тестов: {passed}/{total}",
       "gradeValue": "Оценка: {score}%",
       "submittedCode": "Отправленный код",
@@ -533,21 +540,11 @@
       "importFailed": "Неверный формат файла импорта.",
       "requirementsPending": "{count, plural, one {осталось # требование} few {осталось # требования} other {осталось # требований}}",
       "allChecksPassed": "Все проверки пройдены",
-      "outputComparison": "Сравнение вывода",
-      "sideBySide": "Рядом",
-      "inline": "Внутристрочно",
-      "noCodeAnswerSubmitted": "Для этого задания не отправлен код.",
       "solutionAccepted": "Решение принято",
       "submissionRequiresReview": "Решение требует проверки",
-      "evaluatedLanguageId": "ID оцененного языка: {language}",
       "testCasesPassed": "Пройдено тестов: {passed}/{total}",
-      "gradeValue": "Оценка: {score}%",
-      "submittedCode": "Отправленный код",
-      "compareAgainstTemplate": "Сравнить с шаблоном",
       "starterTemplate": "Начальный шаблон",
-      "studentSubmission": "Решение студента",
-      "failed": "Не пройден",
-      "caseNumber": "Тест {number}"
+      "studentSubmission": "Решение студента"
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
@@ -1725,7 +1722,8 @@
       "fileSubmission": "Отправка файлов",
       "fileSubmissionDesc": "Собирайте файлы студентов с проверкой и отзывами",
       "video": "Видео",
-      "videoDesc": "Загрузите или встройте видео для просмотра студентами"
+      "videoDesc": "Загрузите или встройте видео для просмотра студентами",
+      "opening": "Открытие…"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Разрешенные типы файлов",

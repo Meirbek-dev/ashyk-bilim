@@ -20,7 +20,7 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
 
   const handleBackToCourse = () => {
     if (!courseuuid) return
-    const isDash = typeof window !== 'undefined' ? window.location.pathname.includes('/dash/') : false
+    const isDash = typeof globalThis.window !== 'undefined' ? globalThis.location.pathname.includes('/dash/') : false
     router.push(isDash ? `/dash/courses/${courseuuid}` : `/course/${courseuuid}`)
   }
 

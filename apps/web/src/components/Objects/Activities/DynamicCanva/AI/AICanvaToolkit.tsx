@@ -11,6 +11,7 @@ import { useTheme } from '@/components/providers/theme-provider'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import Image from 'next/image'
+import type { AiIntent } from '@/features/ai'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ const AICanvaToolkit = (props: AICanvaToolkitProps) => {
 
 const AIActionButton = (props: { editor: Editor; label: ActionLabel }) => {
   const t = useTranslations('Activities.AICanvaToolkit')
-  const { sendMessage, setIsModalOpen } = useActivityAIChat()
+  const { sendIntentMessage, setIsModalOpen } = useActivityAIChat()
   const [actionState, setActionState] = useState<ActionState>('idle')
 
   async function handleAction(label: ActionLabel) {
@@ -80,7 +81,7 @@ const AIActionButton = (props: { editor: Editor; label: ActionLabel }) => {
         return
       }
       setIsModalOpen(true)
-      await sendMessage(prompt)
+      sendIntentMessage(prompt, getIntent(label))
       setActionState('done')
     } catch {
       setActionState('error')
@@ -108,6 +109,19 @@ const AIActionButton = (props: { editor: Editor; label: ActionLabel }) => {
       }
       case 'Examples': {
         return t('examplesPrompt', { selection })
+      }
+    }
+  }
+
+  const getIntent = (label: ActionLabel): AiIntent => {
+    switch (label) {
+      case 'Translate': {
+        return 'authoring_patch'
+      }
+      case 'Explain':
+      case 'Summarize':
+      case 'Examples': {
+        return 'tutor_answer'
       }
     }
   }

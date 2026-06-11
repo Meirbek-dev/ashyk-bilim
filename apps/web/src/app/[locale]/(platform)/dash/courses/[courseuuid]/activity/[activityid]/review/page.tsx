@@ -16,7 +16,7 @@ export default async function PlatformAssessmentReviewPage(props: {
   const [{ courseuuid, activityid }, { submission }] = await Promise.all([props.params, props.searchParams])
 
   let activity
-  let assessment = null
+  let assessment: Awaited<ReturnType<typeof getAssessmentByActivityUuid>> | null
   try {
     activity = await getActivity(activityid)
     const isAssessable =

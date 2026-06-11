@@ -59,7 +59,34 @@ interface ActivityErrorSseEvent extends ActivitySseEventBase {
   error_code?: string
 }
 
-type ActivitySseEvent = ActivityStatusSseEvent | ActivityDeltaSseEvent | ActivityFinalSseEvent | ActivityErrorSseEvent
+interface ActivityV2SseEvent extends ActivitySseEventBase {
+  version: 2
+  type:
+    | 'run.started'
+    | 'status.changed'
+    | 'tool.started'
+    | 'tool.delta'
+    | 'tool.finished'
+    | 'artifact.delta'
+    | 'message.delta'
+    | 'citation.added'
+    | 'run.finished'
+    | 'run.error'
+    | 'run.aborted'
+  event_id?: string
+  run_id?: string
+  thread_id?: string
+  sequence?: number
+  timestamp?: string
+  payload?: unknown
+}
+
+type ActivitySseEvent =
+  | ActivityStatusSseEvent
+  | ActivityDeltaSseEvent
+  | ActivityFinalSseEvent
+  | ActivityErrorSseEvent
+  | ActivityV2SseEvent
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
@@ -72,6 +99,37 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
 
   const type = readOptionalString(value.type)
   const version = readOptionalNumber(value.version)
+  const v2Types = new Set([
+    'run.started',
+    'status.changed',
+    'tool.started',
+    'tool.delta',
+    'tool.finished',
+    'artifact.delta',
+    'message.delta',
+    'citation.added',
+    'run.finished',
+    'run.error',
+    'run.aborted',
+  ])
+
+  if (version === 2 && type && v2Types.has(type)) {
+    const eventId = readOptionalString(value.event_id)
+    const runId = readOptionalString(value.run_id)
+    const threadId = readOptionalString(value.thread_id)
+    const sequence = readOptionalNumber(value.sequence)
+    const timestamp = readOptionalString(value.timestamp)
+    return {
+      type: type as ActivityV2SseEvent['type'],
+      version,
+      ...(eventId === undefined ? {} : { event_id: eventId }),
+      ...(runId === undefined ? {} : { run_id: runId }),
+      ...(threadId === undefined ? {} : { thread_id: threadId }),
+      ...(sequence === undefined ? {} : { sequence }),
+      ...(timestamp === undefined ? {} : { timestamp }),
+      ...('payload' in value ? { payload: value.payload } : {}),
+    }
+  }
 
   switch (type) {
     case 'status': {
@@ -169,6 +227,7 @@ function readActiveLocale(): string | null {
 interface ActivityChatAdapterOptions {
   activityUuid: string
   getStatusMessage: (status: string) => string | null
+  getIntent?: () => string | null
   /**
    * Provides the current session UUID from an external store (e.g. a React
    * ref in ActivityAIChatProvider) so it survives provider remounts.
@@ -198,6 +257,7 @@ export interface ActivityChatAdapter {
 export function createActivityChatAdapter({
   activityUuid,
   getStatusMessage,
+  getIntent,
   getSessionUuid,
   setSessionUuid,
 }: ActivityChatAdapterOptions): ActivityChatAdapter {
@@ -238,12 +298,13 @@ export function createActivityChatAdapter({
 
     // Route to the correct endpoint based on whether we have an active session.
     const sessionUuid = readUuid()
+    const intent = getIntent?.() ?? undefined
     const url = sessionUuid
       ? `${getAPIUrl()}ai/send/activity_chat_message_stream`
       : `${getAPIUrl()}ai/start/activity_chat_session_stream`
     const body = sessionUuid
-      ? { aichat_uuid: sessionUuid, message: text, activity_uuid: activityUuid }
-      : { message: text, activity_uuid: activityUuid }
+      ? { aichat_uuid: sessionUuid, message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
+      : { message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
 
     // Compose user-abort + 30 s timeout into a single signal.
     currentController = new AbortController()
@@ -413,6 +474,26 @@ export function createActivityChatAdapter({
                 timestamp: now(),
               }
               return
+            }
+
+            case 'run.started':
+            case 'status.changed':
+            case 'tool.started':
+            case 'tool.delta':
+            case 'tool.finished':
+            case 'artifact.delta':
+            case 'message.delta':
+            case 'citation.added':
+            case 'run.finished':
+            case 'run.error':
+            case 'run.aborted': {
+              yield {
+                type: EventType.CUSTOM,
+                name: event.type,
+                value: event,
+                timestamp: now(),
+              }
+              break
             }
 
             default: {
