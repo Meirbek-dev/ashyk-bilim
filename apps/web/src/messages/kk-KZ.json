@@ -6808,7 +6808,13 @@
     "gradebookLoadError": "Бағалау журналы жүктелмеді",
     "gradebookLoadErrorDescription": "Сұранысты қайталаңыз. Егер қате қайталана берсе, бағалау журналының деректері уақытша қолжетімсіз болуы мүмкін.",
     "retry": "Қайталау",
-    "ref": "Код: {digest}"
+    "ref": "Код: {digest}",
+    "activityNotFound": "Белсенділік табылмады",
+    "activityNotFoundMessage": "Сіз іздеген белсенділік жоқ немесе жойылған.",
+    "courseNotFound": "Курс табылмады",
+    "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
+    "backToCourse": "Курсқа оралу",
+    "backToDashboard": "Басқару тақтасына"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {

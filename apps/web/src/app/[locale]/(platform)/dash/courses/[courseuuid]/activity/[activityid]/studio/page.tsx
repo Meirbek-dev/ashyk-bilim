@@ -9,6 +9,7 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { getSession } from '@/lib/auth/session'
 import { redirect } from '@/i18n/navigation'
 import AccessDenied from '@/components/Errors/AccessDenied'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
 export default async function PlatformAssessmentStudioPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>
@@ -41,6 +42,10 @@ export default async function PlatformAssessmentStudioPage(props: {
     if (apiError.status === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
+    }
+    if (apiError.status === 404) {
+      const activeSession = await getSession()
+      return <ResourceNotFound type="activity" courseuuid={courseuuid} session={activeSession} />
     }
     throw error
   }

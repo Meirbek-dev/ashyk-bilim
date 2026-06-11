@@ -9,6 +9,7 @@ import type { Metadata } from 'next'
 import { redirect } from '@/i18n/navigation'
 import { getLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
 import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course'
 
@@ -86,6 +87,10 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
     if (apiError.status === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
+    }
+    if (apiError.status === 404) {
+      const activeSession = await getSession()
+      return <ResourceNotFound type="course" session={activeSession} />
     }
     throw error
   }

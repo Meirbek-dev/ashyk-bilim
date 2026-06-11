@@ -8,6 +8,7 @@ import { getStudentActivityRuntime } from '@/features/student-activity/api/runti
 import { redirect } from '@/i18n/navigation'
 import { getLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity'
 
@@ -90,6 +91,10 @@ export default async function PlatformActivityPage(props: {
     if (apiError.status === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
+    }
+    if (apiError.status === 404) {
+      const activeSession = await getSession()
+      return <ResourceNotFound type="activity" courseuuid={courseuuid} session={activeSession} />
     }
     throw error
   }

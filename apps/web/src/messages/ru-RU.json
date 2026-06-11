@@ -6807,7 +6807,13 @@
     "gradebookLoadError": "Не удалось загрузить журнал оценок",
     "gradebookLoadErrorDescription": "Повторите запрос. Если ошибка повторится, данные журнала оценок могут быть временно недоступны.",
     "retry": "Повторить",
-    "ref": "Код: {digest}"
+    "ref": "Код: {digest}",
+    "activityNotFound": "Активность не найдена",
+    "activityNotFoundMessage": "Запрашиваемая активность не существует или была удалена.",
+    "courseNotFound": "Курс не найден",
+    "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
+    "backToCourse": "Вернуться к курсу",
+    "backToDashboard": "В панель управления"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {

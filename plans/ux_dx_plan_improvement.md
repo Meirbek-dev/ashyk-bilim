@@ -600,14 +600,6 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 - **Action:** Use task records for long jobs: pending/running/succeeded/failed/retryable/cancelled with user-visible status where relevant.
 - **Done when:** Bulk grading, plagiarism, AI indexing, upload cleanup expose traceable statuses.
 
-#### 083. [P2] Add API deprecation policy
-
-- **Effort:** S/M
-- **Impact:** Medium
-- **Evidence:** The codebase has many legacy cleanup migrations and compatibility remnants.
-- **Action:** Document deprecation headers, sunset dates, migration path, and route removal process.
-- **Done when:** No endpoint is removed without a documented sunset plan.
-
 #### 084. [P1] Centralize permission checks at use-case boundaries
 
 - **Effort:** S/M
