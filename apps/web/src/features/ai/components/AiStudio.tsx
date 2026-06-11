@@ -10,6 +10,7 @@ import {
   RadioTowerIcon,
   ShieldCheckIcon,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -43,13 +44,14 @@ interface AiStudioRunConsoleProps {
 }
 
 function Shell({ children, className }: AiStudioShellProps) {
+  const t = useTranslations('Activities.AiStudio')
   return (
     <section
       className={cn(
         'bg-background grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden lg:grid-cols-[18rem_minmax(0,1fr)_20rem] lg:grid-rows-1',
         className,
       )}
-      aria-label="AI Learning Studio"
+      aria-label={t('shellAriaLabel')}
     >
       {children}
     </section>
@@ -57,10 +59,11 @@ function Shell({ children, className }: AiStudioShellProps) {
 }
 
 function ContextMap({ title, description, citations, latestArtifact, statusMessage }: AiStudioContextMapProps) {
+  const t = useTranslations('Activities.AiStudio')
   return (
     <aside
       className="bg-muted/30 flex min-h-0 flex-col border-b lg:border-r lg:border-b-0"
-      aria-label="Learning context"
+      aria-label={t('learningContextAria')}
     >
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
@@ -82,18 +85,18 @@ function ContextMap({ title, description, citations, latestArtifact, statusMessa
       <Separator />
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-4 p-4">
-          <section className="flex flex-col gap-2" aria-label="Current artifact">
+          <section className="flex flex-col gap-2" aria-label={t('currentArtifactAria')}>
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-medium">Artifact</h3>
-              <Badge variant={latestArtifact ? 'secondary' : 'outline'}>{latestArtifact?.kind ?? 'waiting'}</Badge>
+              <h3 className="text-xs font-medium">{t('artifactTitle')}</h3>
+              <Badge variant={latestArtifact ? 'secondary' : 'outline'}>{latestArtifact?.kind ?? t('waiting')}</Badge>
             </div>
             <p className="text-muted-foreground text-xs">
-              {latestArtifact?.summary ?? 'Generated learning objects will anchor here when the run finishes.'}
+              {latestArtifact?.summary ?? t('defaultSummary')}
             </p>
           </section>
-          <section className="flex flex-col gap-2" aria-label="Evidence map">
+          <section className="flex flex-col gap-2" aria-label={t('evidenceMapAria')}>
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-medium">Evidence</h3>
+              <h3 className="text-xs font-medium">{t('evidenceTitle')}</h3>
               <Badge variant="outline">{citations.length}</Badge>
             </div>
             {citations.length > 0 ? (
@@ -106,7 +109,7 @@ function ContextMap({ title, description, citations, latestArtifact, statusMessa
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-xs">No citations attached to this run yet.</p>
+              <p className="text-muted-foreground text-xs">{t('noCitations')}</p>
             )}
           </section>
         </div>
@@ -120,28 +123,29 @@ function Main({ children, className }: AiStudioMainProps) {
 }
 
 function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: AiStudioRunConsoleProps) {
+  const t = useTranslations('Activities.AiStudio')
   const visibleEvents = events.slice(-8)
   const latestRun = visibleEvents.at(-1)
 
   return (
-    <aside className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l" aria-label="AI run console">
+    <aside className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l" aria-label={t('aiRunConsoleAria')}>
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ActivityIcon className="text-primary" aria-hidden="true" />
-            <h2 className="text-sm font-semibold">Run console</h2>
+            <h2 className="text-sm font-semibold">{t('runConsoleTitle')}</h2>
           </div>
-          <Badge variant={isLoading ? 'default' : 'outline'}>{isLoading ? 'live' : 'idle'}</Badge>
+          <Badge variant={isLoading ? 'default' : 'outline'}>{isLoading ? t('live') : t('idle')}</Badge>
         </div>
         <p className="text-muted-foreground text-xs">
-          {statusMessage ?? latestRun?.type ?? 'No active run. Tool calls and audit events appear here.'}
+          {statusMessage ?? latestRun?.type ?? t('defaultConsoleStatus')}
         </p>
       </div>
       <Separator />
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-3 p-4">
-          <section className="flex flex-col gap-2" aria-label="Tool timeline">
-            <h3 className="text-xs font-medium">Tools</h3>
+          <section className="flex flex-col gap-2" aria-label={t('toolTimelineAria')}>
+            <h3 className="text-xs font-medium">{t('toolsTitle')}</h3>
             {toolEvents.length > 0 ? (
               toolEvents.slice(-5).map(event => (
                 <div
@@ -160,11 +164,11 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-xs">No tools have run.</p>
+              <p className="text-muted-foreground text-xs">{t('noTools')}</p>
             )}
           </section>
-          <section className="flex flex-col gap-2" aria-label="Event sequence">
-            <h3 className="text-xs font-medium">Events</h3>
+          <section className="flex flex-col gap-2" aria-label={t('eventSequenceAria')}>
+            <h3 className="text-xs font-medium">{t('eventsTitle')}</h3>
             {visibleEvents.length > 0 ? (
               visibleEvents.map(event => (
                 <div key={event.event_id} className="flex items-center gap-2 text-xs">
@@ -173,16 +177,16 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-xs">The next run will stream ordered v2 events.</p>
+              <p className="text-muted-foreground text-xs">{t('nextRunStream')}</p>
             )}
           </section>
-          <section className="bg-background flex flex-col gap-2 rounded-md border p-3" aria-label="Trust controls">
+          <section className="bg-background flex flex-col gap-2 rounded-md border p-3" aria-label={t('trustControlsAria')}>
             <div className="flex items-center gap-2 text-xs font-medium">
               <ShieldCheckIcon className="text-primary" aria-hidden="true" />
-              Approval boundary
+              {t('approvalBoundary')}
             </div>
             <p className="text-muted-foreground text-xs">
-              Course edits, interventions, and publishing actions require explicit review.
+              {t('approvalBoundaryDesc')}
             </p>
           </section>
         </div>
@@ -192,11 +196,12 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
 }
 
 function ArtifactCanvas({ children, className }: AiStudioMainProps) {
+  const t = useTranslations('Activities.AiStudio')
   return (
-    <section className={cn('bg-background border-t p-3', className)} aria-label="Artifact canvas">
+    <section className={cn('bg-background border-t p-3', className)} aria-label={t('artifactCanvasAria')}>
       <div className="flex items-center gap-2 pb-2 text-xs font-medium">
         <FileTextIcon className="text-primary" aria-hidden="true" />
-        Artifact canvas
+        {t('artifactCanvasTitle')}
       </div>
       {children}
     </section>

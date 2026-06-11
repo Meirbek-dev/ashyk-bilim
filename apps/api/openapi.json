@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "AIIntent": {
+        "enum": [
+          "freeform",
+          "tutor_answer",
+          "flashcards",
+          "hint_ladder",
+          "code_review_hint",
+          "authoring_patch",
+          "rubric_feedback",
+          "teacher_intervention"
+        ],
+        "title": "AIIntent",
+        "type": "string"
+      },
       "ActivityAIChatSessionResponse": {
         "properties": {
           "activity_uuid": {
@@ -10,6 +24,59 @@
           "aichat_uuid": {
             "title": "Aichat Uuid",
             "type": "string"
+          },
+          "artifact": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "authoring_patch": "#/components/schemas/AuthoringPatch",
+                    "code_review_hint": "#/components/schemas/CodeReviewHint",
+                    "flashcard_set": "#/components/schemas/FlashcardSet",
+                    "hint_ladder": "#/components/schemas/HintLadder",
+                    "rubric_feedback": "#/components/schemas/RubricFeedbackExplanation",
+                    "safety_refusal": "#/components/schemas/SafetyRefusal",
+                    "teacher_intervention": "#/components/schemas/TeacherInterventionDraft",
+                    "tutor_answer": "#/components/schemas/TutorAnswer"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TutorAnswer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/FlashcardSet"
+                  },
+                  {
+                    "$ref": "#/components/schemas/HintLadder"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CodeReviewHint"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AuthoringPatch"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RubricFeedbackExplanation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TeacherInterventionDraft"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SafetyRefusal"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/AIIntent",
+            "default": "freeform"
           },
           "message": {
             "title": "Message",
@@ -3868,6 +3935,69 @@
         "title": "AuthorWithRole",
         "type": "object"
       },
+      "AuthoringPatch": {
+        "properties": {
+          "changed_blocks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changed Blocks",
+            "type": "array"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "kind": {
+            "const": "authoring_patch",
+            "default": "authoring_patch",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "patch_markdown": {
+            "title": "Patch Markdown",
+            "type": "string"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "risk_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Risk Labels",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "patch_markdown"],
+        "title": "AuthoringPatch",
+        "type": "object"
+      },
       "BatchGradeItem": {
         "description": "Single submission grade payload for batch teacher grading.",
         "properties": {
@@ -5671,6 +5801,75 @@
           }
         },
         "title": "CodeItemBody",
+        "type": "object"
+      },
+      "CodeReviewHint": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "issue": {
+            "title": "Issue",
+            "type": "string"
+          },
+          "kind": {
+            "const": "code_review_hint",
+            "default": "code_review_hint",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "next_step": {
+            "title": "Next Step",
+            "type": "string"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "related_test": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Test"
+          },
+          "reveals_solution": {
+            "default": false,
+            "title": "Reveals Solution",
+            "type": "boolean"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "issue", "next_step"],
+        "title": "CodeReviewHint",
         "type": "object"
       },
       "CodeRunRequest": {
@@ -7892,6 +8091,42 @@
         "title": "ErrorModel",
         "type": "object"
       },
+      "EvidenceCitation": {
+        "properties": {
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "source_type": {
+            "default": "unknown",
+            "enum": ["course", "activity", "submission", "rubric", "system", "unknown"],
+            "title": "Source Type",
+            "type": "string"
+          }
+        },
+        "required": ["id", "label", "excerpt"],
+        "title": "EvidenceCitation",
+        "type": "object"
+      },
       "ExternalVideo": {
         "properties": {
           "chapter_id": {
@@ -8729,6 +8964,86 @@
         "title": "FileSubmissionUserRead",
         "type": "object"
       },
+      "Flashcard": {
+        "properties": {
+          "back": {
+            "title": "Back",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "difficulty": {
+            "default": "practice",
+            "enum": ["intro", "practice", "challenge"],
+            "title": "Difficulty",
+            "type": "string"
+          },
+          "front": {
+            "title": "Front",
+            "type": "string"
+          }
+        },
+        "required": ["front", "back"],
+        "title": "Flashcard",
+        "type": "object"
+      },
+      "FlashcardSet": {
+        "properties": {
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/Flashcard"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "kind": {
+            "const": "flashcard_set",
+            "default": "flashcard_set",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "cards"],
+        "title": "FlashcardSet",
+        "type": "object"
+      },
       "ForecastItem": {
         "properties": {
           "assessment_id": {
@@ -9508,6 +9823,91 @@
         },
         "required": ["status", "checks"],
         "title": "HealthStatusResponse",
+        "type": "object"
+      },
+      "HintLadder": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "kind": {
+            "const": "hint_ladder",
+            "default": "hint_ladder",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/HintStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "steps"],
+        "title": "HintLadder",
+        "type": "object"
+      },
+      "HintStep": {
+        "properties": {
+          "citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "level": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "reveals_solution": {
+            "default": false,
+            "title": "Reveals Solution",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["level", "title", "hint"],
+        "title": "HintStep",
         "type": "object"
       },
       "HistogramBucket": {
@@ -11667,6 +12067,115 @@
         "title": "RubricCriterion",
         "type": "object"
       },
+      "RubricFeedbackExplanation": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "feedback": {
+            "title": "Feedback",
+            "type": "string"
+          },
+          "kind": {
+            "const": "rubric_feedback",
+            "default": "rubric_feedback",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "rubric_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rubric Criteria",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "feedback"],
+        "title": "RubricFeedbackExplanation",
+        "type": "object"
+      },
+      "SafetyRefusal": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "kind": {
+            "const": "safety_refusal",
+            "default": "safety_refusal",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "recovery": {
+            "title": "Recovery",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "reason", "recovery"],
+        "title": "SafetyRefusal",
+        "type": "object"
+      },
       "SavedAnalyticsViewCreate": {
         "properties": {
           "name": {
@@ -11803,6 +12312,10 @@
             "title": "Aichat Uuid",
             "type": "string"
           },
+          "intent": {
+            "$ref": "#/components/schemas/AIIntent",
+            "default": "freeform"
+          },
           "message": {
             "maxLength": 20000,
             "minLength": 1,
@@ -11819,6 +12332,10 @@
           "activity_uuid": {
             "title": "Activity Uuid",
             "type": "string"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/AIIntent",
+            "default": "freeform"
           },
           "message": {
             "maxLength": 20000,
@@ -13979,6 +14496,66 @@
         "title": "TeacherInterventionCreate",
         "type": "object"
       },
+      "TeacherInterventionDraft": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "cohort_summary": {
+            "title": "Cohort Summary",
+            "type": "string"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "intervention_draft": {
+            "title": "Intervention Draft",
+            "type": "string"
+          },
+          "kind": {
+            "const": "teacher_intervention",
+            "default": "teacher_intervention",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "privacy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Privacy Notes",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "cohort_summary", "intervention_draft"],
+        "title": "TeacherInterventionDraft",
+        "type": "object"
+      },
       "TeacherInterventionListResponse": {
         "properties": {
           "generated_at": {
@@ -14923,6 +15500,55 @@
         },
         "required": ["id", "user_id", "amount", "source", "triggered_level_up", "previous_level", "created_at"],
         "title": "TransactionRead",
+        "type": "object"
+      },
+      "TutorAnswer": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 0.55,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "kind": {
+            "const": "tutor_answer",
+            "default": "tutor_answer",
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "policy_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Policy Notes",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": ["summary", "content"],
+        "title": "TutorAnswer",
         "type": "object"
       },
       "UploadCreate": {

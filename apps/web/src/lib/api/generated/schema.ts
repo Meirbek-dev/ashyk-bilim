@@ -4160,12 +4160,40 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /**
+     * AIIntent
+     * @enum {string}
+     */
+    AIIntent:
+      | 'freeform'
+      | 'tutor_answer'
+      | 'flashcards'
+      | 'hint_ladder'
+      | 'code_review_hint'
+      | 'authoring_patch'
+      | 'rubric_feedback'
+      | 'teacher_intervention'
     /** ActivityAIChatSessionResponse */
     ActivityAIChatSessionResponse: {
       /** Activity Uuid */
       activity_uuid: string
       /** Aichat Uuid */
       aichat_uuid: string
+      /** Artifact */
+      artifact?:
+        | (
+            | components['schemas']['TutorAnswer']
+            | components['schemas']['FlashcardSet']
+            | components['schemas']['HintLadder']
+            | components['schemas']['CodeReviewHint']
+            | components['schemas']['AuthoringPatch']
+            | components['schemas']['RubricFeedbackExplanation']
+            | components['schemas']['TeacherInterventionDraft']
+            | components['schemas']['SafetyRefusal']
+          )
+        | null
+      /** @default freeform */
+      intent: components['schemas']['AIIntent']
       /** Message */
       message: string
     }
@@ -5771,6 +5799,33 @@ export interface components {
       update_date: string
       user: components['schemas']['UserRead']
     }
+    /** AuthoringPatch */
+    AuthoringPatch: {
+      /** Changed Blocks */
+      changed_blocks?: string[]
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'authoring_patch'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Patch Markdown */
+      patch_markdown: string
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Risk Labels */
+      risk_labels?: string[]
+      /** Summary */
+      summary: string
+    }
     /**
      * BatchGradeItem
      * @description Single submission grade payload for batch teacher grading.
@@ -6525,6 +6580,38 @@ export interface components {
       tests?: components['schemas']['CodeTestCase'][]
       /** Time Limit Seconds */
       time_limit_seconds?: number | null
+    }
+    /** CodeReviewHint */
+    CodeReviewHint: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /** Issue */
+      issue: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'code_review_hint'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Next Step */
+      next_step: string
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Related Test */
+      related_test?: string | null
+      /**
+       * Reveals Solution
+       * @default false
+       */
+      reveals_solution: boolean
+      /** Summary */
+      summary: string
     }
     /**
      * CodeRunRequest
@@ -7421,6 +7508,23 @@ export interface components {
             [key: string]: string
           }
     }
+    /** EvidenceCitation */
+    EvidenceCitation: {
+      /** Excerpt */
+      excerpt: string
+      /** Id */
+      id: string
+      /** Label */
+      label: string
+      /** Score */
+      score?: number | null
+      /**
+       * Source Type
+       * @default unknown
+       * @enum {string}
+       */
+      source_type: 'course' | 'activity' | 'submission' | 'rubric' | 'system' | 'unknown'
+    }
     /** ExternalVideo */
     ExternalVideo: {
       /** Chapter Id */
@@ -7731,6 +7835,44 @@ export interface components {
       user_uuid?: string | null
       /** Username */
       username: string
+    }
+    /** Flashcard */
+    Flashcard: {
+      /** Back */
+      back: string
+      /** Citation Ids */
+      citation_ids?: string[]
+      /**
+       * Difficulty
+       * @default practice
+       * @enum {string}
+       */
+      difficulty: 'intro' | 'practice' | 'challenge'
+      /** Front */
+      front: string
+    }
+    /** FlashcardSet */
+    FlashcardSet: {
+      /** Cards */
+      cards: components['schemas']['Flashcard'][]
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'flashcard_set'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Summary */
+      summary: string
     }
     /** ForecastItem */
     ForecastItem: {
@@ -8077,6 +8219,45 @@ export interface components {
       /** Status */
       status: string
     }
+    /** HintLadder */
+    HintLadder: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'hint_ladder'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Steps */
+      steps: components['schemas']['HintStep'][]
+      /** Summary */
+      summary: string
+    }
+    /** HintStep */
+    HintStep: {
+      /** Citation Ids */
+      citation_ids?: string[]
+      /** Hint */
+      hint: string
+      /** Level */
+      level: number
+      /**
+       * Reveals Solution
+       * @default false
+       */
+      reveals_solution: boolean
+      /** Title */
+      title: string
+    }
     /** HistogramBucket */
     HistogramBucket: {
       /** Count */
@@ -8327,8 +8508,18 @@ export interface components {
       [key: string]: components['schemas']['JsonValue-Output']
     }
     JsonPrimitive: string | number | boolean | null
-    'JsonValue-Input': SafeJsonValue
-    'JsonValue-Output': SafeJsonValue
+    'JsonValue-Input':
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue-Input'][]
+      | {
+          [key: string]: components['schemas']['JsonValue-Input']
+        }
+    'JsonValue-Output':
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue-Output'][]
+      | {
+          [key: string]: components['schemas']['JsonValue-Output']
+        }
     /** Judge0LanguageRead */
     Judge0LanguageRead: {
       /** Id */
@@ -8938,6 +9129,56 @@ export interface components {
        */
       score: number
     }
+    /** RubricFeedbackExplanation */
+    RubricFeedbackExplanation: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /** Feedback */
+      feedback: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'rubric_feedback'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Rubric Criteria */
+      rubric_criteria?: string[]
+      /** Summary */
+      summary: string
+    }
+    /** SafetyRefusal */
+    SafetyRefusal: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'safety_refusal'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Reason */
+      reason: string
+      /** Recovery */
+      recovery: string
+      /** Summary */
+      summary: string
+    }
     /** SavedAnalyticsViewCreate */
     SavedAnalyticsViewCreate: {
       /** Name */
@@ -9014,6 +9255,8 @@ export interface components {
       activity_uuid: string
       /** Aichat Uuid */
       aichat_uuid: string
+      /** @default freeform */
+      intent: components['schemas']['AIIntent']
       /** Message */
       message: string
     }
@@ -9021,6 +9264,8 @@ export interface components {
     StartActivityAIChatSession: {
       /** Activity Uuid */
       activity_uuid: string
+      /** @default freeform */
+      intent: components['schemas']['AIIntent']
       /** Message */
       message: string
     }
@@ -9867,6 +10112,33 @@ export interface components {
       /** User Id */
       user_id: number
     }
+    /** TeacherInterventionDraft */
+    TeacherInterventionDraft: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /** Cohort Summary */
+      cohort_summary: string
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /** Intervention Draft */
+      intervention_draft: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'teacher_intervention'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Privacy Notes */
+      privacy_notes?: string[]
+      /** Summary */
+      summary: string
+    }
     /** TeacherInterventionListResponse */
     TeacherInterventionListResponse: {
       /** Generated At */
@@ -10247,6 +10519,29 @@ export interface components {
       triggered_level_up: boolean
       /** User Id */
       user_id: number
+    }
+    /** TutorAnswer */
+    TutorAnswer: {
+      /** Citations */
+      citations?: components['schemas']['EvidenceCitation'][]
+      /**
+       * Confidence
+       * @default 0.55
+       */
+      confidence: number
+      /** Content */
+      content: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'tutor_answer'
+      /** Next Actions */
+      next_actions?: string[]
+      /** Policy Notes */
+      policy_notes?: string[]
+      /** Summary */
+      summary: string
     }
     /** UploadCreate */
     UploadCreate: {
@@ -21060,5 +21355,3 @@ export interface operations {
     }
   }
 }
-
-type SafeJsonValue = string | number | boolean | null | SafeJsonValue[] | { [key: string]: SafeJsonValue }
