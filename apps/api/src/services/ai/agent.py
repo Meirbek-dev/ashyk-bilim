@@ -10,12 +10,14 @@ from pydantic_ai.settings import ModelSettings
 from config.config import get_settings, secret_value
 from src.services.ai.exceptions import RetrievalError
 from src.services.ai.models import AgentDependencies
+from src.services.ai.retrieval import retrieve_chunks
 
 logger = logging.getLogger(__name__)
 
 _BASE_SYSTEM_PROMPT = (
     "You are an educational assistant helping a student with course material. "
     "Prioritize the provided lecture context when it is relevant. "
+    "Use the search_course_content tool when the visible context is insufficient or the user asks for evidence. "
     "If the provided context is insufficient, you may use general knowledge, but say so plainly. "
     "Stay on topic, decline unrelated requests, "
     "and prefer clear, structured explanations."
@@ -68,6 +70,33 @@ def _build_instructions(ctx: RunContext[AgentDependencies]) -> str:
         )
 
     return "\n\n".join(context_blocks)
+
+
+@_AGENT.tool
+async def search_course_content(ctx: RunContext[AgentDependencies], query: str) -> list[dict[str, object]]:
+    """Search activity and course context for grounded LMS evidence."""
+    deps = ctx.deps
+    if not deps.retrieval_enabled:
+        return []
+
+    if deps.retrieved_chunks:
+        return [chunk.model_dump(mode="json") for chunk in deps.retrieved_chunks[:5]]
+
+    if not deps.documents or not deps.embedding_model_name:
+        return []
+
+    try:
+        chunks = await retrieve_chunks(
+            query=query.strip(),
+            documents=deps.documents,
+            embedding_model_name=deps.embedding_model_name,
+            collection_name=f"activity_{deps.activity_uuid}",
+        )
+    except RetrievalError:
+        logger.exception("Agent retrieval tool failed for activity %s", deps.activity_uuid)
+        return []
+
+    return [chunk.model_dump(mode="json") for chunk in chunks[:5]]
 
 
 def get_agent() -> Agent[AgentDependencies, str]:

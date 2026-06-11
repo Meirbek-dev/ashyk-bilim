@@ -1,9 +1,9 @@
 """Versioned stream events for the AI LMS runtime."""
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.services.ai.contracts.outputs import AIArtifact, EvidenceCitation
@@ -45,6 +45,10 @@ class CitationAddedPayload(PydanticStrictBaseModel):
     citation: EvidenceCitation
 
 
+class MessageDeltaPayload(PydanticStrictBaseModel):
+    delta: Annotated[str, StringConstraints(min_length=1, strip_whitespace=False)]
+
+
 class RunErrorPayload(PydanticStrictBaseModel):
     message: str
     code: str
@@ -79,7 +83,7 @@ class V2ToolFinishedEvent(V2EventBase):
 
 class V2MessageDeltaEvent(V2EventBase):
     type: Literal["message.delta"] = "message.delta"
-    payload: JsonObject
+    payload: MessageDeltaPayload
 
 
 class V2ArtifactDeltaEvent(V2EventBase):

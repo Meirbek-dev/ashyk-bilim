@@ -16,9 +16,9 @@ from src.db.courses.activities import ActivityRead
 from src.db.courses.courses import CourseRead
 from src.db.strict_base_model import is_str_list
 from src.services.ai.agent import get_agent, get_model, get_model_settings
+from src.services.ai.artifact_agents import generate_structured_artifact
 from src.services.ai.cache_manager import get_ai_cache_manager
 from src.services.ai.contracts.intents import AIIntent, normalize_ai_intent
-from src.services.ai.contracts.outputs import build_artifact_for_intent
 from src.services.ai.exceptions import (
     ActivityNotFoundError,
     AIProcessingError,
@@ -29,11 +29,8 @@ from src.services.ai.exceptions import (
 from src.services.ai.models import (
     AgentAnswer,
     AgentDependencies,
-    DeltaEvent,
-    FinalEvent,
     RetrievedChunk,
     SSEEvent,
-    StatusEvent,
 )
 from src.services.ai.moderation import moderate_text_input
 from src.services.ai.orchestration import StreamEventFactory
@@ -430,12 +427,17 @@ def _build_agent_deps(
     ctx: _ChatContext,
     policy: _RequestPolicy,
     retrieved_chunks: list[RetrievedChunk],
+    embedding_model_name: str | None = None,
 ) -> AgentDependencies:
     return AgentDependencies(
         activity_uuid=ctx.activity.activity_uuid,
         activity_name=ctx.activity.name,
         course_name=ctx.course.name,
         session_id=ctx.session_id,
+        requested_intent=policy.intent.value,
+        documents=ctx.documents,
+        embedding_model_name=embedding_model_name,
+        retrieval_enabled=policy.retrieval_enabled,
         user_id=ctx.user_id,
         request_id=ctx.request_id,
         request_mode=policy.mode.value,
@@ -490,7 +492,7 @@ async def generate_chat_answer(
                     retrieval_ms,
                 )
 
-            deps = _build_agent_deps(ctx, policy, retrieved_chunks)
+            deps = _build_agent_deps(ctx, policy, retrieved_chunks, embedding_model_name=settings.embedding_model)
             async with _get_ai_semaphore(settings.max_concurrent_requests):
                 result = await get_agent().run(
                     question.strip(),
@@ -517,8 +519,10 @@ async def generate_chat_answer(
         msg_0 = "AI вернул пустой ответ"
         raise AIProcessingError(msg_0)
 
-    artifact = build_artifact_for_intent(
+    artifact = await generate_structured_artifact(
+        deps=deps,
         intent=policy.intent,
+        question=question,
         answer=output,
         retrieved_chunks=retrieved_chunks,
     )
@@ -568,23 +572,11 @@ async def stream_chat_answer(
     })
     processing_message = _status_message("processing", retrieval_enabled=True, locale=ctx.locale)
     yield stream_events.status(status="processing", message=processing_message)
-    yield StatusEvent(
-        status="processing",
-        aichat_uuid=ctx.session_id,
-        activity_uuid=ctx.activity.activity_uuid,
-        message=processing_message,
-    )
 
     try:
         async with asyncio.timeout(timeout_seconds):
             moderating_message = _status_message("moderating", retrieval_enabled=True, locale=ctx.locale)
             yield stream_events.status(status="moderating", message=moderating_message)  # noqa: ASYNC119
-            yield StatusEvent(  # noqa: ASYNC119
-                status="moderating",
-                aichat_uuid=ctx.session_id,
-                activity_uuid=ctx.activity.activity_uuid,
-                message=moderating_message,
-            )
             await moderate_text_input(question, stage="input")
             policy = _build_request_policy(ctx, question, normalized_intent)
             logger.info(
@@ -606,12 +598,6 @@ async def stream_chat_answer(
                     label="Search course context",
                     detail="Retrieving activity and course fragments.",
                 )
-                yield StatusEvent(  # noqa: ASYNC119
-                    status="retrieving",
-                    aichat_uuid=ctx.session_id,
-                    activity_uuid=ctx.activity.activity_uuid,
-                    message=retrieving_message,
-                )
                 retrieved_chunks, retrieval_ms = await _retrieve_chunks_for_policy(
                     ctx=ctx,
                     question=question,
@@ -632,15 +618,9 @@ async def stream_chat_answer(
             else:
                 analyzing_message = _status_message("analyzing", retrieval_enabled=False, locale=ctx.locale)
                 yield stream_events.status(status="analyzing", message=analyzing_message)  # noqa: ASYNC119
-                yield StatusEvent(  # noqa: ASYNC119
-                    status="analyzing",
-                    aichat_uuid=ctx.session_id,
-                    activity_uuid=ctx.activity.activity_uuid,
-                    message=analyzing_message,
-                )
                 retrieved_chunks = list[RetrievedChunk]()
 
-            deps = _build_agent_deps(ctx, policy, retrieved_chunks)
+            deps = _build_agent_deps(ctx, policy, retrieved_chunks, embedding_model_name=settings.embedding_model)
 
             generating_message = _status_message(
                 "generating",
@@ -648,12 +628,6 @@ async def stream_chat_answer(
                 locale=ctx.locale,
             )
             yield stream_events.status(status="generating", message=generating_message)  # noqa: ASYNC119
-            yield StatusEvent(  # noqa: ASYNC119
-                status="generating",
-                aichat_uuid=ctx.session_id,
-                activity_uuid=ctx.activity.activity_uuid,
-                message=generating_message,
-            )
 
             full_response = ""
             chunk_id = 0
@@ -670,23 +644,13 @@ async def stream_chat_answer(
                 async for delta in result.stream_text(delta=True, debounce_by=None):
                     if cancel_event and cancel_event.is_set():
                         yield stream_events.aborted({"reason": "client_disconnected"})  # noqa: ASYNC119
-                        yield StatusEvent(  # noqa: ASYNC119
-                            status="aborted",
-                            aichat_uuid=ctx.session_id,
-                            activity_uuid=ctx.activity.activity_uuid,
-                            message=_status_message(
-                                "aborted",
-                                retrieval_enabled=policy.retrieval_enabled,
-                                locale=ctx.locale,
-                            ),
-                        )
                         return
 
                     if not delta:
                         continue
                     chunk_id += 1
                     full_response += delta
-                    yield DeltaEvent(content=delta, chunk_id=chunk_id)  # noqa: ASYNC119
+                    yield stream_events.message_delta(delta=delta)  # noqa: ASYNC119
 
                 output = (await result.get_output()).strip()
                 if output and output != full_response:
@@ -718,21 +682,16 @@ async def stream_chat_answer(
         ),
     )
 
-    artifact = build_artifact_for_intent(
+    artifact = await generate_structured_artifact(
+        deps=deps,
         intent=normalized_intent,
+        question=question,
         answer=full_response,
         retrieved_chunks=retrieved_chunks,
     )
     for citation in artifact.citations:
         yield stream_events.citation(citation=citation)
     yield stream_events.artifact(artifact=artifact, final=True)
-    yield FinalEvent(
-        content=full_response,
-        aichat_uuid=ctx.session_id,
-        activity_uuid=ctx.activity.activity_uuid,
-        chunk_count=chunk_id,
-        artifact=artifact,
-    )
     yield stream_events.finished({
         "activity_uuid": ctx.activity.activity_uuid,
         "chunk_count": chunk_id,
@@ -787,7 +746,7 @@ async def run_activity_chat_stream(
     locale: str | None,
     request: Request | None,
     cancel_event: asyncio.Event | None = None,
-) -> AsyncGenerator[StatusEvent | DeltaEvent | FinalEvent]:
+) -> AsyncGenerator[SSEEvent]:
     ctx = await build_chat_context(
         activity_uuid=activity_uuid,
         aichat_uuid=aichat_uuid,

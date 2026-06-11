@@ -88,6 +88,10 @@ class AgentDependencies(PydanticStrictBaseModel):
     activity_name: str
     course_name: str
     session_id: str
+    requested_intent: str = "freeform"
+    documents: list[str] = Field(default_factory=list)
+    embedding_model_name: str | None = None
+    retrieval_enabled: bool = True
     user_id: int | None = None
     request_id: str | None = None
     request_mode: str = "instructional"

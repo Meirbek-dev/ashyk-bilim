@@ -547,7 +547,7 @@
       "studentSubmission": "Решение студента"
     },
     "DocumentPdf": {
-      "viewerTitle": "PDF Document Viewer"
+      "viewerTitle": "Просмотрщик PDF-документов"
     },
     "ExamActivity": {
       "unansweredQuestions": "Неотвеченные вопросы",
@@ -706,7 +706,7 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "codeChallenge": "Код задача",
+      "codeChallenge": "Код-зона",
       "document": "Документ",
       "exam": "Тест",
       "fileSubmission": "Отправка файлов",
@@ -736,7 +736,7 @@
       "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
       "video": "Видео",
-      "codeChallenge": "Code challenge"
+      "codeChallenge": "Код-зона"
     },
     "chapter": "Глава",
     "chapters": "Главы",
@@ -752,7 +752,7 @@
     "enterFocusMode": "Войти в режим фокусировки",
     "exitFocusMode": "Выйти из режима фокусировки",
     "focusMode": "Режим фокусировки",
-    "aiAssistant": "AI Assistant",
+    "aiAssistant": "Ashyk AI",
     "keyboardShortcuts": "Сочетания клавиш",
     "lastUpdated": "Последнее обновление",
     "markAsComplete": "Отметить как завершенное",
@@ -791,15 +791,15 @@
     "unmarkDialogTitle": "Снять отметку о завершении активности?",
     "unpublishedActivity": "Эта активность еще не опубликована",
     "viewAllActivities": "Посмотреть все активности",
-    "assessmentUnavailable": "This assessment is not available yet.",
-    "backToCourse": "Back to course",
-    "courseComplete": "Course complete",
-    "fileSubmissionInlineAction": "Use the submission form",
-    "needsRevision": "Needs revision",
-    "noAction": "No action available",
-    "notStarted": "Not started",
-    "submitted": "Submitted",
-    "support": "Support",
+    "assessmentUnavailable": "Этот тест еще не доступен.",
+    "backToCourse": "Назад к курсу",
+    "courseComplete": "Курс завершен",
+    "fileSubmissionInlineAction": "Используйте форму отправки",
+    "needsRevision": "Требует доработки",
+    "noAction": "Действия недоступны",
+    "notStarted": "Не начато",
+    "submitted": "Отправлено",
+    "support": "Поддержка",
     "viewAssessment": "Перейти к учебной задаче",
     "viewResult": "Смотреть результат",
     "startActivity": "Начать",
@@ -877,7 +877,6 @@
       "loading": "Загрузка...",
       "login": "Войти",
       "loginTo": "Войти в",
-      "newToAcme": "Впервые в Acme?",
       "or": "ИЛИ",
       "password": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
@@ -885,7 +884,6 @@
       "resetPassword": "Сбросить пароль",
       "showPassword": "Показать пароль",
       "signIn": "Войти",
-      "signInToAcme": "Вход в Acme",
       "signInWithGoogle": "Войти с помощью Google",
       "signup": "Зарегистрироваться",
       "sso": "Единый вход (SSO)",
@@ -1341,7 +1339,7 @@
         "teacherWorkloadComparison": "Сравнение нагрузки учителей",
         "courseHealthRanking": "Рейтинг здоровья курса",
         "teacher": "Учитель",
-        "backlog": "Backlog",
+        "backlog": "Бэклог",
         "atRisk": "В зоне риска",
         "course": "Курс",
         "health": "Здоровье",
@@ -1702,7 +1700,7 @@
         "selectDifficulty": "Выберите сложность",
         "selectType": "Выберите тип",
         "subtitle": "Создайте программное упражнение с автоматической проверкой",
-        "title": "Создать код задачу",
+        "title": "Создать код-зону",
         "type": "Тип задачи",
         "typeCompetitive": "Соревновательный",
         "typeCompetitiveHint": "Включает таблицу лидеров по очкам и времени",
@@ -1711,7 +1709,7 @@
       },
       "backToActivities": "Вернуться к активностям",
       "chooseType": "Выберите тип активности",
-      "codeChallenge": "Код задача",
+      "codeChallenge": "Код-зона",
       "codeChallengeDesc": "Создайте программное упражнение с автоматической проверкой",
       "document": "Документ",
       "documentDesc": "Загрузите PDF или документ для чтения студентами",
@@ -2064,8 +2062,8 @@
       "selectRolePlaceholder": "Выберите роль",
       "selectUserPlaceholder": "Выберите пользователя",
       "slugHelp": "Короткий уникальный идентификатор используемый в коде",
-      "slugCreateHelp": "Слаг — постоянный идентификатор для API и политик. После создания его нельзя изменить.",
-      "slugImmutableHelp": "Слаг — постоянный идентификатор для API и политик. Его нельзя изменить после создания.",
+      "slugCreateHelp": "Слаг - постоянный идентификатор для API и политик. После создания его нельзя изменить.",
+      "slugImmutableHelp": "Слаг - постоянный идентификатор для API и политик. Его нельзя изменить после создания.",
       "system": "системная",
       "systemWide": "На уровне всей системы",
       "systemRoleReadOnlyBanner": "Системные роли управляются платформой и не могут быть изменены. Клонируйте роль, чтобы создать редактируемую копию.",
@@ -2234,8 +2232,7 @@
     },
     "SignIn": {
       "emailLabel": "Электронная почта",
-      "emailPlaceholder": "you@example.com",
-      "newToPlatform": "Новый на Acme?",
+      "emailPlaceholder": "you@example.kz",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
       "rememberMe": "Запомнить меня",
@@ -2472,7 +2469,7 @@
       "websiteUrl": "URL веб-сайта"
     },
     "WhitelistManagement": {
-      "accessModeSetToWhitelist": "Режим доступа установлен в WHITELIST - белый список будет применяться",
+      "accessModeSetToWhitelist": "Установлен WHITELIST режим доступа",
       "deselectAll": "Снять все",
       "errorFetchingStudents": "Не удалось загрузить студентов",
       "errorUpdatingWhitelist": "Не удалось обновить белый список",
@@ -2682,7 +2679,7 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "codeChallenge": "Код задача",
+        "codeChallenge": "Код-зона",
         "document": "Документ",
         "dynamic": "Динамический",
         "exam": "Тест",
@@ -4722,17 +4719,17 @@
         "cancelButton": "Отмена",
         "editButton": "Редактировать",
         "deleteButton": "Удалить",
-        "editTitle": "Edit Embed",
-        "description": "Choose a trusted service, then paste a share or embed URL.",
-        "categoryLabel": "Embed categories",
-        "serviceLabel": "Embed services",
-        "searchPlaceholder": "Search services...",
-        "urlLabel": "URL",
-        "urlForService": "{service} URL",
-        "selectServiceFirst": "Select a service to continue.",
-        "embedUrlHint": "Use the service embed/share URL for the most reliable result.",
-        "errorSelectType": "Please select an embed service",
-        "updateButton": "Update",
+        "editTitle": "Редактировать встроенный объект",
+        "description": "Выберите надежный сервис, а затем вставьте ссылку для общего доступа или встраивания.",
+        "categoryLabel": "Категории встраивания",
+        "serviceLabel": "Сервисы встраивания",
+        "searchPlaceholder": "Поиск сервисов...",
+        "urlLabel": "URL-адрес",
+        "urlForService": "URL-адрес {service}",
+        "selectServiceFirst": "Выберите сервис, чтобы продолжить.",
+        "embedUrlHint": "Для наиболее надежного результата используйте ссылку для встраивания или общего доступа, предоставленную сервисом.",
+        "errorSelectType": "Пожалуйста, выберите сервис встраивания",
+        "updateButton": "Обновить",
         "providers": {
           "figma": {
             "label": "Figma",
@@ -4900,11 +4897,11 @@
           },
           "rutube": {
             "label": "RuTube",
-            "description": "Российский видеохостинг — зеркала или дополнения к YouTube."
+            "description": "Российский видеохостинг - зеркала или дополнения к YouTube."
           },
           "vk-video": {
             "label": "VK Видео",
-            "description": "Видео ВКонтакте — широко просматривается в СНГ."
+            "description": "Видео ВКонтакте - широко просматривается в СНГ."
           },
           "vk-clips": {
             "label": "VK Клипы / Посты",
@@ -5352,24 +5349,18 @@
       "creatingProduct": "Создание продукта...",
       "currentPasswordLabel": "Текущий пароль",
       "deleting": "Удаление...",
-      "deletingStripeConfig": "Удаление конфигурации Stripe...",
       "deletingUserGroup": "Удаление группы пользователей...",
-      "enablingStripe": "Включение Stripe...",
       "errorGeneric": "Произошла ошибка",
       "errorNetwork": "Ошибка сети, проверьте соединение",
       "errors": {
         "archiveProductFailed": "Не удалось архивировать продукт.",
         "createProductError": "Ошибка создания продукта. Пожалуйста, попробуйте еще раз.",
         "createProductFailed": "Не удалось создать продукт.",
-        "deleteStripeConfigFailed": "Не удалось удалить конфигурацию Stripe.",
         "deleteUserGroupFailed": "Ошибка удаления группы пользователей.",
-        "enableStripeFailed": "Не удалось включить Stripe.",
         "fetchLinkedCoursesFailed": "Не удалось получить связанные курсы.",
         "linkCourseFailed": "Не удалось связать курс.",
         "loadCustomersFailed": "Ошибка загрузки клиентов.",
-        "loadStripeConfigFailed": "Не удалось загрузить конфигурацию Stripe.",
         "removeUserFailed": "Ошибка удаления пользователя.",
-        "startStripeOnboardingFailed": "Не удалось начать подключение Stripe.",
         "unlinkCourseFailed": "Не удалось разорвать связь с курсом.",
         "updateConfigFailed": "Не удалось обновить конфигурацию.",
         "updateProductFailed": "Не удалось обновить продукт."
@@ -5396,9 +5387,6 @@
       "saving": "Сохранение...",
       "savingLandingPage": "Сохранение домашней страницы...",
       "savingProfile": "Сохранение профиля...",
-      "startingStripeOnboarding": "Начало подключения Stripe...",
-      "stripeConfigDeletedSuccess": "Конфигурация Stripe успешно удалена.",
-      "stripeEnabledSuccess": "Stripe успешно включен!",
       "successGeneric": "Операция прошла успешно",
       "unsavedChanges": "Несохраненные изменения",
       "updating": "Обновление...",
@@ -5425,9 +5413,6 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Краткое описание",
           "descriptionRequired": "Требуется краткое описание",
-          "exploreDescription": "Поделитесь курсами и контентом с сообществом Ashyk Bilim.<br/>Включите эту функцию, чтобы помочь учащимся найти ваши ценные образовательные ресурсы.",
-          "exploreLabel": "ИССЛЕДОВАТЬ",
-          "exploreTitle": "Показать в Ashyk Bilim Explore",
           "labelLabel": "Метка платформы",
           "labelPlaceholder": "Выберите метку платформы",
           "labelRequired": "Требуется метка",
@@ -7980,7 +7965,7 @@
             "published": "Выбранные оценки опубликованы",
             "returned": "Выбранные работы возвращены",
             "bulkActionFailed": "Массовое действие не удалось",
-            "bulkPartialFailure": "{failed} работа(ы) не удалось обновить — смотрите подробности ниже.",
+            "bulkPartialFailure": "{failed} работа(ы) не удалось обновить - смотрите подробности ниже.",
             "deadlineQueued": "Продление срока поставлено в очередь",
             "extendFailed": "Не удалось продлить срок",
             "hiddenReleased": "Скрытые оценки опубликованы",
@@ -8121,11 +8106,11 @@
       "Studio": {
         "kinds": {
           "EXAM": "Тест",
-          "CODE_CHALLENGE": "Код задача",
+          "CODE_CHALLENGE": "Код-зона",
           "QUIZ": "Квиз",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Тест",
-          "TYPE_CODE_CHALLENGE": "Код задача"
+          "TYPE_CODE_CHALLENGE": "Код-зона"
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",
@@ -8443,7 +8428,7 @@
           "releaseTitle": "Управление публикацией",
           "releaseBody": "Держите оценки скрытыми во время проверки, затем публикуйте результаты, когда группа готова.",
           "itemAnalyticsTitle": "Аналитика по вопросам",
-          "noAnalyticsData": "Нет проверенных работ — аналитика появится после того, как студенты сдадут и работы будут оценены.",
+          "noAnalyticsData": "Нет проверенных работ - аналитика появится после того, как студенты сдадут и работы будут оценены.",
           "colQuestion": "Вопрос",
           "colKind": "Тип",
           "colMaxScore": "Баллы",

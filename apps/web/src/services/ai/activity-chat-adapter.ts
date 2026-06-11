@@ -26,8 +26,16 @@ const REQUEST_TIMEOUT_MS = 30_000
 /** Cookie carrying the active app locale. */
 const LOCALE_COOKIE_NAME = 'NEXT_LOCALE'
 
-/** Supported SSE protocol version. */
-export const ACTIVITY_CHAT_PROTOCOL_VERSION = 1
+/** Primary SSE protocol version for the redesigned AI runtime. */
+export const ACTIVITY_CHAT_PROTOCOL_VERSION = 2
+
+/** v1 remains supported while text deltas migrate to v2 message.delta. */
+export const ACTIVITY_CHAT_LEGACY_PROTOCOL_VERSION = 1
+
+const SUPPORTED_ACTIVITY_CHAT_PROTOCOL_VERSIONS = new Set<number>([
+  ACTIVITY_CHAT_LEGACY_PROTOCOL_VERSION,
+  ACTIVITY_CHAT_PROTOCOL_VERSION,
+])
 
 let hasLoggedProtocolVersionMismatch = false
 
@@ -93,6 +101,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const readOptionalString = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
 const readOptionalNumber = (value: unknown): number | undefined => (typeof value === 'number' ? value : undefined)
+
+const readMessageDeltaContent = (payload: unknown): string | null => {
+  if (!isRecord(payload)) return null
+  const delta = readOptionalString(payload.delta)
+  if (delta) return delta
+  const content = readOptionalString(payload.content)
+  if (content) return content
+  return readOptionalString(payload.text) ?? null
+}
 
 const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
   if (!isRecord(value)) return null
@@ -331,8 +348,27 @@ export function createActivityChatAdapter({
     const messageId = generateUUID()
     const now = () => Date.now()
 
+    let activeRunId = runId
+    let activeThreadId = activityUuid
     let messageStarted = false
     let streamedText = ''
+    let hasV2MessageDelta = false
+
+    const normalizeV2Event = (event: ActivityV2SseEvent): ActivityV2SseEvent => {
+      const normalizedRunId = event.run_id ?? activeRunId
+      const normalizedThreadId = event.thread_id ?? activeThreadId
+      activeRunId = normalizedRunId
+      activeThreadId = normalizedThreadId
+
+      return {
+        ...event,
+        run_id: normalizedRunId,
+        thread_id: normalizedThreadId,
+        event_id: event.event_id ?? generateUUID(),
+        sequence: event.sequence ?? 0,
+        timestamp: event.timestamp ?? new Date(now()).toISOString(),
+      }
+    }
 
     // activityUuid is the stable thread identifier for this chat session.
     yield {
@@ -368,12 +404,14 @@ export function createActivityChatAdapter({
 
           if (
             event.version !== undefined &&
-            event.version !== ACTIVITY_CHAT_PROTOCOL_VERSION &&
+            !SUPPORTED_ACTIVITY_CHAT_PROTOCOL_VERSIONS.has(event.version) &&
             !hasLoggedProtocolVersionMismatch
           ) {
             hasLoggedProtocolVersionMismatch = true
             console.warn(
-              `Unsupported activity chat protocol version: ${String(event.version)}. Expected ${ACTIVITY_CHAT_PROTOCOL_VERSION}.`,
+              `Unsupported activity chat protocol version: ${String(event.version)}. Supported versions: ${[
+                ...SUPPORTED_ACTIVITY_CHAT_PROTOCOL_VERSIONS,
+              ].join(', ')}.`,
             )
           }
 
@@ -402,6 +440,9 @@ export function createActivityChatAdapter({
 
             case 'delta':
             case 'chunk': {
+              if (hasV2MessageDelta) {
+                break
+              }
               if (!messageStarted) {
                 yield {
                   type: EventType.TEXT_MESSAGE_START,
@@ -435,7 +476,7 @@ export function createActivityChatAdapter({
                 messageStarted = true
               }
               const finalDelta = reconcileFinalMessageDelta(streamedText, event.content ?? '')
-              if (finalDelta) {
+              if (!hasV2MessageDelta && finalDelta) {
                 yield {
                   type: EventType.TEXT_MESSAGE_CONTENT,
                   messageId,
@@ -450,8 +491,8 @@ export function createActivityChatAdapter({
               }
               yield {
                 type: EventType.RUN_FINISHED,
-                threadId: activityUuid,
-                runId,
+                threadId: activeThreadId,
+                runId: activeRunId,
                 timestamp: now(),
               }
               return
@@ -487,11 +528,52 @@ export function createActivityChatAdapter({
             case 'run.finished':
             case 'run.error':
             case 'run.aborted': {
+              const normalizedEvent = normalizeV2Event(event)
               yield {
                 type: EventType.CUSTOM,
-                name: event.type,
-                value: event,
+                name: normalizedEvent.type,
+                value: normalizedEvent,
                 timestamp: now(),
+              }
+              if (normalizedEvent.type === 'message.delta') {
+                const delta = readMessageDeltaContent(normalizedEvent.payload)
+                if (!delta) {
+                  break
+                }
+                hasV2MessageDelta = true
+                if (!messageStarted) {
+                  yield {
+                    type: EventType.TEXT_MESSAGE_START,
+                    messageId,
+                    role: 'assistant',
+                    timestamp: now(),
+                  }
+                  messageStarted = true
+                }
+                streamedText += delta
+                yield {
+                  type: EventType.TEXT_MESSAGE_CONTENT,
+                  messageId,
+                  delta,
+                  timestamp: now(),
+                }
+              }
+              if (normalizedEvent.type === 'run.error') {
+                if (messageStarted) {
+                  yield {
+                    type: EventType.TEXT_MESSAGE_END,
+                    messageId,
+                    timestamp: now(),
+                  }
+                }
+                const payload = isRecord(normalizedEvent.payload) ? normalizedEvent.payload : {}
+                yield {
+                  type: EventType.RUN_ERROR,
+                  message: readOptionalString(payload.message) ?? 'Streaming failed',
+                  ...(readOptionalString(payload.code) ? { code: readOptionalString(payload.code) } : {}),
+                  timestamp: now(),
+                }
+                return
               }
               break
             }
@@ -510,8 +592,8 @@ export function createActivityChatAdapter({
       }
       yield {
         type: EventType.RUN_FINISHED,
-        threadId: activityUuid,
-        runId,
+        threadId: activeThreadId,
+        runId: activeRunId,
         timestamp: now(),
       }
     } finally {

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AiStreamEvent } from '@/features/ai'
-import { isAiStreamEvent, readAiStreamEventChunk } from '@/features/ai'
+import {
+  createInitialAiRuntimeState,
+  isAiStreamEvent,
+  readAiStreamEventChunk,
+  reduceAiStreamEvent,
+} from '@/features/ai'
+import { ACTIVITY_CHAT_PROTOCOL_VERSION, parseActivitySseDataLine } from '@services/ai/activity-chat-adapter'
+import { aiV2StreamFixture } from './ai-v2-stream.fixture'
 
 const baseEvent = {
   version: 2,
@@ -63,5 +70,42 @@ describe('AI event contract', () => {
     if (parsed?.type === 'artifact.delta') {
       expect(parsed.payload.artifact.kind).toBe('hint_ladder')
     }
+  })
+
+  it('parses v2 SSE events as the primary activity chat protocol', () => {
+    const firstEvent = aiV2StreamFixture[0]
+    if (!firstEvent) throw new Error('fixture must include a run.started event')
+
+    expect(ACTIVITY_CHAT_PROTOCOL_VERSION).toBe(2)
+    expect(parseActivitySseDataLine(`data: ${JSON.stringify(firstEvent)}`)).toEqual(firstEvent)
+  })
+
+  it('reduces a full v2 stream into runtime state for the AI workspace', () => {
+    const state = aiV2StreamFixture.reduce(reduceAiStreamEvent, createInitialAiRuntimeState())
+
+    expect(state.activeRunId).toBe('run-v2-1')
+    expect(state.activeThreadId).toBe('thread-activity-1')
+    expect(state.events).toHaveLength(aiV2StreamFixture.length)
+    expect(state.latestStatusMessage).toBeNull()
+    expect(state.toolEvents).toHaveLength(2)
+    expect(state.artifacts).toHaveLength(1)
+    expect(state.artifacts[0]?.kind).toBe('hint_ladder')
+    expect(state.citations).toHaveLength(1)
+    expect(state.messageTextByRunId['run-v2-1']).toBe('Start by isolating the given values.')
+    expect(state.sequenceError).toBeNull()
+    expect(state.isFinished).toBe(true)
+  })
+
+  it('flags non-monotonic v2 stream sequence numbers', () => {
+    const firstEvent = aiV2StreamFixture[0]
+    const secondEvent = aiV2StreamFixture[1]
+    if (!firstEvent || !secondEvent) throw new Error('fixture must include at least two events')
+
+    const state = reduceAiStreamEvent(reduceAiStreamEvent(createInitialAiRuntimeState(), firstEvent), {
+      ...secondEvent,
+      sequence: 1,
+    })
+
+    expect(state.sequenceError).toContain('Non-monotonic AI stream sequence')
   })
 })

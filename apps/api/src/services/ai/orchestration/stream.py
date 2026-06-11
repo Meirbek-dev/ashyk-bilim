@@ -5,11 +5,13 @@ from ulid import ULID
 from src.services.ai.contracts.events import (
     ArtifactDeltaPayload,
     CitationAddedPayload,
+    MessageDeltaPayload,
     RunErrorPayload,
     StatusChangedPayload,
     ToolProgressPayload,
     V2ArtifactDeltaEvent,
     V2CitationAddedEvent,
+    V2MessageDeltaEvent,
     V2RunAbortedEvent,
     V2RunErrorEvent,
     V2RunFinishedEvent,
@@ -74,6 +76,16 @@ class StreamEventFactory:
             thread_id=self.thread_id,
             sequence=sequence,
             payload=ToolProgressPayload(tool_name=tool_name, label=label, status="complete", detail=detail),
+        )
+
+    def message_delta(self, *, delta: str) -> V2MessageDeltaEvent:
+        event_id, sequence = self._next()
+        return V2MessageDeltaEvent(
+            event_id=event_id,
+            run_id=self.run_id,
+            thread_id=self.thread_id,
+            sequence=sequence,
+            payload=MessageDeltaPayload(delta=delta),
         )
 
     def artifact(self, *, artifact: AIArtifact, final: bool = True) -> V2ArtifactDeltaEvent:

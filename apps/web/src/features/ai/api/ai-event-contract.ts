@@ -185,7 +185,11 @@ export interface RunAbortedEvent extends AiStreamEventBase<'run.aborted'> {
 }
 
 export interface MessageDeltaEvent extends AiStreamEventBase<'message.delta'> {
-  payload?: Record<string, unknown>
+  payload?: {
+    delta?: string
+    content?: string
+    text?: string
+  }
 }
 
 export type AiStreamEvent =
@@ -215,6 +219,27 @@ const eventTypes = new Set<AiStreamEventType>([
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
+const readOptionalString = (value: unknown): string | null => (typeof value === 'string' ? value : null)
+
+const appendUniqueCitations = (current: EvidenceCitation[], incoming: EvidenceCitation[]): EvidenceCitation[] => {
+  const next = [...current]
+  for (const citation of incoming) {
+    if (!next.some(existing => existing.id === citation.id)) {
+      next.push(citation)
+    }
+  }
+  return next
+}
+
+const readMessageDelta = (event: MessageDeltaEvent): string | null => {
+  if (!isRecord(event.payload)) return null
+  return (
+    readOptionalString(event.payload.delta) ??
+    readOptionalString(event.payload.content) ??
+    readOptionalString(event.payload.text)
+  )
+}
+
 export function isAiStreamEvent(value: unknown): value is AiStreamEvent {
   if (!isRecord(value)) return false
   return value.version === 2 && typeof value.type === 'string' && eventTypes.has(value.type as AiStreamEventType)
@@ -223,4 +248,130 @@ export function isAiStreamEvent(value: unknown): value is AiStreamEvent {
 export function readAiStreamEventChunk(chunk: unknown): AiStreamEvent | null {
   if (!isRecord(chunk) || chunk.type !== 'CUSTOM') return null
   return isAiStreamEvent(chunk.value) ? chunk.value : null
+}
+
+export interface AiRuntimeState {
+  events: AiStreamEvent[]
+  artifacts: AiArtifact[]
+  citations: EvidenceCitation[]
+  toolEvents: ToolProgressEvent[]
+  activeRunId: string | null
+  activeThreadId: string | null
+  latestStatusMessage: string | null
+  messageTextByRunId: Record<string, string>
+  lastSequenceByRunId: Record<string, number>
+  sequenceError: string | null
+  error: RunErrorEvent['payload'] | null
+  isAborted: boolean
+  isFinished: boolean
+}
+
+export function createInitialAiRuntimeState(): AiRuntimeState {
+  return {
+    events: [],
+    artifacts: [],
+    citations: [],
+    toolEvents: [],
+    activeRunId: null,
+    activeThreadId: null,
+    latestStatusMessage: null,
+    messageTextByRunId: {},
+    lastSequenceByRunId: {},
+    sequenceError: null,
+    error: null,
+    isAborted: false,
+    isFinished: false,
+  }
+}
+
+export function reduceAiStreamEvent(state: AiRuntimeState, event: AiStreamEvent): AiRuntimeState {
+  const previousSequence = state.lastSequenceByRunId[event.run_id]
+  const sequenceError =
+    previousSequence !== undefined && event.sequence <= previousSequence
+      ? `Non-monotonic AI stream sequence for run ${event.run_id}: ${event.sequence} after ${previousSequence}.`
+      : state.sequenceError
+
+  const baseState: AiRuntimeState = {
+    ...state,
+    events: [...state.events, event],
+    activeRunId: event.run_id,
+    activeThreadId: event.thread_id,
+    lastSequenceByRunId: {
+      ...state.lastSequenceByRunId,
+      [event.run_id]: event.sequence,
+    },
+    sequenceError,
+  }
+
+  switch (event.type) {
+    case 'run.started': {
+      return {
+        ...baseState,
+        error: null,
+        isAborted: false,
+        isFinished: false,
+      }
+    }
+    case 'status.changed': {
+      return {
+        ...baseState,
+        latestStatusMessage: event.payload.message,
+      }
+    }
+    case 'tool.started':
+    case 'tool.delta':
+    case 'tool.finished': {
+      return {
+        ...baseState,
+        toolEvents: [...state.toolEvents, event],
+      }
+    }
+    case 'citation.added': {
+      return {
+        ...baseState,
+        citations: appendUniqueCitations(state.citations, [event.payload.citation]),
+      }
+    }
+    case 'artifact.delta': {
+      return {
+        ...baseState,
+        artifacts: [...state.artifacts, event.payload.artifact],
+        citations: appendUniqueCitations(state.citations, event.payload.artifact.citations),
+      }
+    }
+    case 'message.delta': {
+      const delta = readMessageDelta(event)
+      if (!delta) return baseState
+      return {
+        ...baseState,
+        messageTextByRunId: {
+          ...state.messageTextByRunId,
+          [event.run_id]: `${state.messageTextByRunId[event.run_id] ?? ''}${delta}`,
+        },
+      }
+    }
+    case 'run.finished': {
+      return {
+        ...baseState,
+        latestStatusMessage: null,
+        isFinished: true,
+      }
+    }
+    case 'run.error': {
+      return {
+        ...baseState,
+        latestStatusMessage: null,
+        error: event.payload,
+        isFinished: true,
+      }
+    }
+    case 'run.aborted': {
+      return {
+        ...baseState,
+        latestStatusMessage: null,
+        isAborted: true,
+        isFinished: true,
+      }
+    }
+  }
 }

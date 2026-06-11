@@ -23,7 +23,11 @@ import type {
   EvidenceCitation,
   ToolProgressEvent,
 } from '@/features/ai/api/ai-event-contract'
-import { readAiStreamEventChunk } from '@/features/ai/api/ai-event-contract'
+import {
+  createInitialAiRuntimeState,
+  readAiStreamEventChunk,
+  reduceAiStreamEvent,
+} from '@/features/ai/api/ai-event-contract'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,10 +71,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
-  const [runtimeEvents, setRuntimeEvents] = useState<AiStreamEvent[]>([])
-  const [artifacts, setArtifacts] = useState<AiArtifact[]>([])
-  const [citations, setCitations] = useState<EvidenceCitation[]>([])
-  const [toolEvents, setToolEvents] = useState<ToolProgressEvent[]>([])
+  const [runtimeState, setRuntimeState] = useState(createInitialAiRuntimeState)
 
   // Keep the session UUID in a ref so it survives React Fast Refresh and
   // Strict-Mode double-mounts without starting a new backend session.
@@ -135,36 +136,16 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     onChunk: chunk => {
       const runtimeEvent = readAiStreamEventChunk(chunk)
       if (runtimeEvent) {
-        setRuntimeEvents(prev => [...prev, runtimeEvent])
+        setRuntimeState(prev => reduceAiStreamEvent(prev, runtimeEvent))
         if (runtimeEvent.type === 'status.changed') {
           setStatusMessage(runtimeEvent.payload.message)
         }
         if (
-          runtimeEvent.type === 'tool.started' ||
-          runtimeEvent.type === 'tool.delta' ||
-          runtimeEvent.type === 'tool.finished'
+          runtimeEvent.type === 'run.finished' ||
+          runtimeEvent.type === 'run.error' ||
+          runtimeEvent.type === 'run.aborted'
         ) {
-          setToolEvents(prev => [...prev, runtimeEvent])
-        }
-        if (runtimeEvent.type === 'citation.added') {
-          const citationEvent = runtimeEvent
-          setCitations(prev => {
-            if (prev.some(citation => citation.id === citationEvent.payload.citation.id)) return prev
-            return [...prev, citationEvent.payload.citation]
-          })
-        }
-        if (runtimeEvent.type === 'artifact.delta') {
-          const artifact = runtimeEvent.payload.artifact
-          setArtifacts(prev => [...prev, artifact])
-          setCitations(prev => {
-            const next = [...prev]
-            for (const citation of artifact.citations) {
-              if (!next.some(existing => existing.id === citation.id)) {
-                next.push(citation)
-              }
-            }
-            return next
-          })
+          setStatusMessage(null)
         }
       }
       if (chunk.type === 'CUSTOM' && chunk.name === 'ai_status') {
@@ -207,10 +188,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     chatClearRef.current()
     setStatusMessage(null)
     setInputValue('')
-    setRuntimeEvents([])
-    setArtifacts([])
-    setCitations([])
-    setToolEvents([])
+    setRuntimeState(createInitialAiRuntimeState())
     sessionUuidRef.current = null
 
     while (resolverQueueRef.current.length) {
@@ -279,10 +257,10 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       resetConversation,
       sendMessageAndGetResponse,
       sendIntentMessage,
-      runtimeEvents,
-      artifacts,
-      citations,
-      toolEvents,
+      runtimeEvents: runtimeState.events,
+      artifacts: runtimeState.artifacts,
+      citations: runtimeState.citations,
+      toolEvents: runtimeState.toolEvents,
     }),
     [
       chat,
@@ -294,10 +272,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       resetConversation,
       sendMessageAndGetResponse,
       sendIntentMessage,
-      runtimeEvents,
-      artifacts,
-      citations,
-      toolEvents,
+      runtimeState,
     ],
   )
 

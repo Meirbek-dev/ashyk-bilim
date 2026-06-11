@@ -5,6 +5,13 @@ from src.db.model_registry import import_orm_models
 EXPECTED_TABLE_NAMES = {
     "activity",
     "activity_progress",
+    "ai_approval",
+    "ai_artifact",
+    "ai_eval_result",
+    "ai_event",
+    "ai_evidence",
+    "ai_run",
+    "ai_thread",
     "analytics_event",
     "analytics_saved_view",
     "assessment",

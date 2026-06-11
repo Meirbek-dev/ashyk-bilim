@@ -1,6 +1,7 @@
 from importlib import import_module
 
 ORM_MODEL_MODULES: tuple[str, ...] = (
+    "src.db.ai_runtime",
     "src.db.analytics",
     "src.db.assessment_access",
     "src.db.assessments",

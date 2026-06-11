@@ -12,10 +12,8 @@ import { activityPromptIntents } from '../intents/activity-intents'
 import { AiArtifactRenderer } from './AiArtifactRenderer'
 import { AiComposer } from './AiComposer'
 import { AiErrorState } from './AiErrorState'
-import { AiEvidenceDrawer } from './AiEvidenceDrawer'
+import { AiStudio } from './AiStudio'
 import { AiThread } from './AiThread'
-import { AiToolTimeline } from './AiToolTimeline'
-import { AiWorkspace } from './AiWorkspace'
 
 export interface StudentTutorWorkspaceProps {
   title: string
@@ -38,10 +36,11 @@ export function StudentTutorWorkspace({ title, description, open, onOpenChange }
     artifacts,
     citations,
     toolEvents,
+    runtimeEvents,
   } = useActivityAIChat()
 
   const latestArtifact = artifacts.at(-1)
-  const typedToolEvents = useMemo(() => toolEvents.slice(-6), [toolEvents])
+  const visibleToolEvents = useMemo(() => toolEvents.slice(-6), [toolEvents])
 
   const submitPrompt = (message: string, intent: AiIntent = 'freeform') => {
     sendIntentMessage(message, intent)
@@ -54,7 +53,11 @@ export function StudentTutorWorkspace({ title, description, open, onOpenChange }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-xl" showCloseButton={false}>
+      <SheetContent
+        side="right"
+        className="w-[calc(100vw-0.75rem)] gap-0 p-0 sm:max-w-[min(96rem,calc(100vw-2rem))]"
+        showCloseButton={false}
+      >
         <SheetHeader className="border-b">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -80,25 +83,36 @@ export function StudentTutorWorkspace({ title, description, open, onOpenChange }
             </p>
           )}
         </SheetHeader>
-        <AiWorkspace>
-          <AiToolTimeline events={typedToolEvents} />
-          <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto]">
+        <AiStudio.Shell>
+          <AiStudio.ContextMap
+            title={title}
+            description={description}
+            citations={citations}
+            latestArtifact={latestArtifact ?? null}
+            statusMessage={statusMessage}
+          />
+          <AiStudio.Main>
             <AiThread messages={messages} isLoading={isLoading} onPrompt={promptFromEmptyState} />
-            <div className="flex flex-col gap-3 p-3">
+            <AiStudio.ArtifactCanvas>
               {error && <AiErrorState message={error.message} onDismiss={clear} />}
               <AiArtifactRenderer artifact={latestArtifact ?? null} />
-            </div>
-          </div>
-          <AiEvidenceDrawer citations={citations} />
-          <AiComposer
-            value={inputValue}
-            onChange={setInputValue}
-            onSubmit={submitPrompt}
-            onStop={stop}
-            disabled={isLoading}
-            intents={activityPromptIntents}
+            </AiStudio.ArtifactCanvas>
+            <AiComposer
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={submitPrompt}
+              onStop={stop}
+              disabled={isLoading}
+              intents={activityPromptIntents}
+            />
+          </AiStudio.Main>
+          <AiStudio.RunConsole
+            events={runtimeEvents}
+            toolEvents={visibleToolEvents}
+            statusMessage={statusMessage}
+            isLoading={isLoading}
           />
-        </AiWorkspace>
+        </AiStudio.Shell>
       </SheetContent>
     </Sheet>
   )

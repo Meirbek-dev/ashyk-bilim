@@ -3,6 +3,7 @@
 from src.services.ai.contracts.events import (
     ArtifactDeltaPayload,
     CitationAddedPayload,
+    MessageDeltaPayload,
     RunErrorPayload,
     StatusChangedPayload,
     ToolProgressPayload,
@@ -49,6 +50,7 @@ __all__ = [
     "FlashcardSet",
     "HintLadder",
     "HintStep",
+    "MessageDeltaPayload",
     "RubricFeedbackExplanation",
     "RunErrorPayload",
     "SafetyRefusal",

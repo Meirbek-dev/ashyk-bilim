@@ -139,6 +139,18 @@ def _citations_from_chunks(chunks: list[object]) -> list[EvidenceCitation]:
     return citations
 
 
+def _confidence_from_evidence(*, answer: str, citations: list[EvidenceCitation]) -> float:
+    if not answer.strip():
+        return 0.0
+
+    evidence_scores = [citation.score for citation in citations if citation.score is not None]
+    average_score = sum(evidence_scores) / len(evidence_scores) if evidence_scores else 0.62
+    evidence_coverage = min(len(citations), 3) / 3
+    answer_signal = min(len(answer.strip()), 600) / 600
+    confidence = (average_score * 0.58) + (evidence_coverage * 0.27) + (answer_signal * 0.15)
+    return round(min(max(confidence, 0.35), 0.92), 2)
+
+
 def build_artifact_for_intent(
     *,
     intent: AIIntent,
@@ -158,6 +170,7 @@ def build_artifact_for_intent(
     policy_notes = ["Grounded in retrieved course context when citations are shown."]
     next_actions = ["Ask for an example.", "Request a shorter explanation."]
     summary = _summary(answer)
+    confidence = _confidence_from_evidence(answer=answer, citations=citations)
 
     if intent == AIIntent.FLASHCARDS:
         sentences = [part.strip() for part in answer.replace("\n", " ").split(".") if part.strip()]
@@ -176,7 +189,7 @@ def build_artifact_for_intent(
             summary=summary,
             cards=cards,
             citations=citations,
-            confidence=0.62 if citations else 0.48,
+            confidence=confidence,
             policy_notes=policy_notes,
             next_actions=["Practice these cards.", "Generate a quiz from this topic."],
         )
@@ -200,7 +213,7 @@ def build_artifact_for_intent(
                 ),
             ],
             citations=citations,
-            confidence=0.6 if citations else 0.45,
+            confidence=confidence,
             policy_notes=[*policy_notes, "Hints avoid revealing a full solution by default."],
             next_actions=["Show the next hint.", "Check my attempt."],
         )
@@ -211,7 +224,7 @@ def build_artifact_for_intent(
             issue=summary,
             next_step="Run the smallest failing case, then compare the expected and actual state before changing the algorithm.",
             citations=citations,
-            confidence=0.52,
+            confidence=confidence,
             policy_notes=["Code mentor output avoids full solution disclosure unless policy allows it."],
             next_actions=["Explain the failing test.", "Give one more hint."],
         )
@@ -223,7 +236,7 @@ def build_artifact_for_intent(
             changed_blocks=["selection"],
             risk_labels=["review-before-publish"],
             citations=citations,
-            confidence=0.58,
+            confidence=confidence,
             policy_notes=["Patch should be reviewed by an author before publishing."],
             next_actions=["Insert patch.", "Revise tone.", "Simplify language."],
         )
@@ -234,7 +247,7 @@ def build_artifact_for_intent(
             feedback=answer,
             rubric_criteria=[],
             citations=citations,
-            confidence=0.55,
+            confidence=confidence,
             policy_notes=policy_notes,
             next_actions=["Show rubric criteria.", "Draft a revision plan."],
         )
@@ -246,7 +259,7 @@ def build_artifact_for_intent(
             intervention_draft=answer,
             privacy_notes=["Review learner data scope before sending this intervention."],
             citations=citations,
-            confidence=0.5,
+            confidence=confidence,
             policy_notes=["Teacher-facing suggestions require human review."],
             next_actions=["Edit draft.", "Create follow-up task."],
         )
@@ -255,7 +268,7 @@ def build_artifact_for_intent(
         summary=summary,
         content=answer,
         citations=citations,
-        confidence=0.65 if citations else 0.5,
+        confidence=confidence,
         policy_notes=policy_notes
         if citations
         else ["No citations were retrieved; answer may rely on general knowledge."],
