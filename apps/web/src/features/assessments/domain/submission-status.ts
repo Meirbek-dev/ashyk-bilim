@@ -21,11 +21,19 @@ import type { components } from '@/lib/api/generated/schema'
 export type SubmissionStatus = components['schemas']['SubmissionStatus']
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
-  DRAFT: 'Draft',
-  PENDING: 'Awaiting grade',
-  GRADED: 'Graded',
-  PUBLISHED: 'Released',
-  RETURNED: 'Returned',
+  DRAFT: 'statusDraft',
+  PENDING: 'statusPending',
+  GRADED: 'statusGraded',
+  PUBLISHED: 'statusPublished',
+  RETURNED: 'statusReturned',
+}
+
+/**
+ * Get localized label for a submission status.
+ * Requires a translator function scoped to 'Grading.Table' namespace.
+ */
+export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: string) => string): string {
+  return t(SUBMISSION_STATUS_LABELS[status])
 }
 
 export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, SubmissionStatus[]> = {

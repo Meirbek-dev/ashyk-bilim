@@ -48,7 +48,11 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const filteredThemes = useMemo(() => {
     if (!search.trim()) return [...themes]
     const lower = search.toLowerCase()
-    return themes.filter(theme => tThemes(`${theme.name}.name`).toLowerCase().includes(lower))
+    return themes.filter(theme => {
+      const name = tThemes(`${theme.name}.name`).toLowerCase()
+      const description = tThemes(`${theme.name}.description`).toLowerCase()
+      return name.includes(lower) || description.includes(lower)
+    })
   }, [themes, search, tThemes])
 
   const currentIndex = useMemo(() => themes.findIndex(th => th.name === currentTheme.name), [themes, currentTheme.name])
@@ -104,8 +108,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
               align="start"
               sideOffset={4}
             >
-              <Command>
-                {/* TODO: Can't find themes via search */}
+              <Command shouldFilter={false}>
                 <CommandInput placeholder={t('searchPlaceholder')} value={search} onValueChange={setSearch} />
 
                 {/* Controls row */}

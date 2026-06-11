@@ -27,15 +27,6 @@ const STATUS_VARIANTS: Record<SubmissionStatus, 'secondary' | 'warning' | 'succe
   RETURNED: 'destructive',
 }
 
-// Maps to next-intl keys under Grading.Table
-const STATUS_LABEL_KEYS: Record<SubmissionStatus, string> = {
-  DRAFT: 'statusDraft',
-  PENDING: 'statusPending',
-  GRADED: 'statusGraded',
-  PUBLISHED: 'statusPublished',
-  RETURNED: 'statusReturned',
-}
-
 export default function SubmissionStatusBadge({ status, className }: SubmissionStatusBadgeProps) {
   const t = useTranslations('Grading.Table')
 
@@ -44,7 +35,7 @@ export default function SubmissionStatusBadge({ status, className }: SubmissionS
       variant={STATUS_VARIANTS[status] ?? 'default'}
       className={cn('inline-flex items-center text-xs font-semibold', className)}
     >
-      {t(STATUS_LABEL_KEYS[status] ?? SUBMISSION_STATUS_LABELS[status] ?? status)}
+      {t(SUBMISSION_STATUS_LABELS[status] ?? status)}
     </Badge>
   )
 }

@@ -58,9 +58,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       case Judge0Status.ACCEPTED: {
         return {
           icon: CheckCircle2,
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
+          color: 'text-foreground',
           badgeVariant: 'success' as const,
           label: t('status.accepted'),
         }
@@ -68,9 +66,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       case Judge0Status.WRONG_ANSWER: {
         return {
           icon: XCircle,
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          color: 'text-destructive',
           badgeVariant: 'destructive' as const,
           label: t('status.wrongAnswer'),
         }
@@ -78,9 +74,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       case Judge0Status.TIME_LIMIT_EXCEEDED: {
         return {
           icon: Clock,
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
+          color: 'text-muted-foreground',
           badgeVariant: 'warning' as const,
           label: t('status.timeLimitExceeded'),
         }
@@ -88,9 +82,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       case Judge0Status.COMPILATION_ERROR: {
         return {
           icon: AlertCircle,
-          color: 'text-orange-600',
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-200',
+          color: 'text-muted-foreground',
           badgeVariant: 'warning' as const,
           label: t('status.compilationError'),
         }
@@ -103,9 +95,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       case Judge0Status.RUNTIME_ERROR_OTHER: {
         return {
           icon: AlertCircle,
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          color: 'text-destructive',
           badgeVariant: 'destructive' as const,
           label: t('status.runtimeError'),
         }
@@ -113,9 +103,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
       default: {
         return {
           icon: AlertCircle,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
+          color: 'text-muted-foreground',
           badgeVariant: 'secondary' as const,
           label: result.status_description || t('status.unknown'),
         }
@@ -129,29 +117,21 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
   // For hidden tests, show minimal info
   if (!isVisible) {
     return (
-      <div
-        className={cn('flex items-center justify-between rounded-lg border p-3', config.borderColor, config.bgColor)}
-      >
+      <div className="bg-card flex items-center justify-between rounded-lg border p-3">
         <div className="flex items-center gap-2">
           <StatusIcon className={cn('h-5 w-5', config.color)} />
           <span className="font-medium">
             {t('hiddenTest')} #{index + 1}
           </span>
         </div>
-        <Badge variant={result.passed ? 'success' : 'destructive'}>{result.passed ? t('passed') : t('failed')}</Badge>
+        <Badge variant={config.badgeVariant}>{result.passed ? t('passed') : t('failed')}</Badge>
       </div>
     )
   }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div
-        className={cn(
-          'rounded-lg border transition-colors',
-          config.borderColor,
-          isOpen ? config.bgColor : 'bg-background hover:bg-muted/50',
-        )}
-      >
+      <div className={cn('rounded-lg border transition-colors', isOpen ? 'bg-muted/50' : 'bg-card hover:bg-muted/50')}>
         <CollapsibleTrigger className="flex w-full items-center justify-between p-3">
           <div className="flex items-center gap-3">
             {isOpen ? (
@@ -184,7 +164,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
                 })}
               </div>
             )}
-            <Badge variant={result.passed ? 'success' : 'destructive'}>{config.label}</Badge>
+            <Badge variant={config.badgeVariant}>{config.label}</Badge>
           </div>
         </CollapsibleTrigger>
 
@@ -213,7 +193,7 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
                 <pre
                   className={cn(
                     'overflow-x-auto rounded p-2 text-sm',
-                    result.passed ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800',
+                    result.passed ? 'bg-muted text-foreground' : 'bg-destructive/10 text-destructive',
                   )}
                 >
                   {result.stdout}
@@ -224,8 +204,8 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
             {/* Compilation Error */}
             {result.compile_output && (
               <div>
-                <div className="mb-1 text-sm font-medium text-red-600">{t('compilationOutput')}:</div>
-                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">
+                <div className="text-destructive mb-1 text-sm font-medium">{t('compilationOutput')}:</div>
+                <pre className="bg-destructive/10 text-destructive overflow-x-auto rounded p-2 text-sm">
                   {result.compile_output}
                 </pre>
               </div>
@@ -234,8 +214,10 @@ function TestCaseCard({ result, index, isVisible = true, testDescription, expect
             {/* Runtime Error */}
             {result.stderr && (
               <div>
-                <div className="mb-1 text-sm font-medium text-red-600">{t('stderr')}:</div>
-                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">{result.stderr}</pre>
+                <div className="text-destructive mb-1 text-sm font-medium">{t('stderr')}:</div>
+                <pre className="bg-destructive/10 text-destructive overflow-x-auto rounded p-2 text-sm">
+                  {result.stderr}
+                </pre>
               </div>
             )}
 

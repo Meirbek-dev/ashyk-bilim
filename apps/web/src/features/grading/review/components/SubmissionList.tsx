@@ -38,6 +38,7 @@ export default function SubmissionList({
 }: SubmissionListProps) {
   const t = useTranslations('Features.Grading.Review.submissionList')
   const tReview = useTranslations('Features.Grading.Review')
+  const tTable = useTranslations('Grading.Table')
   const locale = useLocale()
 
   return (
@@ -60,10 +61,10 @@ export default function SubmissionList({
           >
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
-            <NativeSelectOption value="PENDING">{SUBMISSION_STATUS_LABELS.PENDING}</NativeSelectOption>
-            <NativeSelectOption value="GRADED">{SUBMISSION_STATUS_LABELS.GRADED}</NativeSelectOption>
-            <NativeSelectOption value="PUBLISHED">{SUBMISSION_STATUS_LABELS.PUBLISHED}</NativeSelectOption>
-            <NativeSelectOption value="RETURNED">{SUBMISSION_STATUS_LABELS.RETURNED}</NativeSelectOption>
+            <NativeSelectOption value="PENDING">{tTable(SUBMISSION_STATUS_LABELS.PENDING)}</NativeSelectOption>
+            <NativeSelectOption value="GRADED">{tTable(SUBMISSION_STATUS_LABELS.GRADED)}</NativeSelectOption>
+            <NativeSelectOption value="PUBLISHED">{tTable(SUBMISSION_STATUS_LABELS.PUBLISHED)}</NativeSelectOption>
+            <NativeSelectOption value="RETURNED">{tTable(SUBMISSION_STATUS_LABELS.RETURNED)}</NativeSelectOption>
           </NativeSelect>
           <NativeSelect value={sortBy} onChange={event => onSortChange(event.target.value)} aria-label={t('sort')}>
             <NativeSelectOption value="submitted_at">{t('sorting.submitted')}</NativeSelectOption>

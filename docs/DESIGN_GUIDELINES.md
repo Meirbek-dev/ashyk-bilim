@@ -276,7 +276,7 @@ For each component:
 
 ## Tone of the Redesign
 
-The final UI should feel:
+The final UI, all components should feel:
 
 Professional
 Consistent
@@ -299,6 +299,8 @@ Inconsistent
 Visually improvised
 
 ---
+
+Note: Skip gamification components
 
 ## Coding Agent Instruction
 

@@ -1,11 +1,11 @@
 import type { ActivityProgressCell, ActivityProgressState, ReleaseState, SubmissionStatus } from './types'
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
-  DRAFT: 'Draft',
-  PENDING: 'Awaiting grade',
-  GRADED: 'Graded',
-  PUBLISHED: 'Released',
-  RETURNED: 'Returned',
+  DRAFT: 'statusDraft',
+  PENDING: 'statusPending',
+  GRADED: 'statusGraded',
+  PUBLISHED: 'statusPublished',
+  RETURNED: 'statusReturned',
 }
 
 export const SUBMISSION_STATUS_COLORS: Record<SubmissionStatus, string> = {
@@ -25,22 +25,46 @@ export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, Submission
 }
 
 export const RELEASE_STATE_LABELS: Record<ReleaseState, string> = {
-  HIDDEN: 'Hidden from student',
-  AWAITING_RELEASE: 'Awaiting release',
-  VISIBLE: 'Visible to student',
-  RETURNED_FOR_REVISION: 'Returned for revision',
+  HIDDEN: 'releaseStateHidden',
+  AWAITING_RELEASE: 'releaseStateAwaitingRelease',
+  VISIBLE: 'releaseStateVisible',
+  RETURNED_FOR_REVISION: 'releaseStateReturned',
 }
 
 export const ACTIVITY_PROGRESS_STATE_LABELS: Record<ActivityProgressState, string> = {
-  NOT_STARTED: 'Not started',
-  IN_PROGRESS: 'In progress',
-  SUBMITTED: 'Submitted',
-  NEEDS_GRADING: 'Needs grading',
-  RETURNED: 'Returned',
-  GRADED: 'Graded',
-  PASSED: 'Passed',
-  FAILED: 'Failed',
-  COMPLETED: 'Completed',
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  SUBMITTED: 'submitted',
+  NEEDS_GRADING: 'needs_grading',
+  RETURNED: 'returned',
+  GRADED: 'graded',
+  PASSED: 'passed',
+  FAILED: 'failed',
+  COMPLETED: 'completed',
+}
+
+/**
+ * Get localized label for a submission status.
+ * Requires a translator function scoped to 'Grading.Table' namespace.
+ */
+export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: string) => string): string {
+  return t(SUBMISSION_STATUS_LABELS[status])
+}
+
+/**
+ * Get localized label for a release state.
+ * Requires a translator function scoped to 'Features.Grading.Review' or 'Grading.Panel' namespace.
+ */
+export function getReleaseStateLabel(state: ReleaseState, t: (key: string) => string): string {
+  return t(RELEASE_STATE_LABELS[state])
+}
+
+/**
+ * Get localized label for an activity progress state.
+ * Requires a translator function scoped to 'Grading.Gradebook.states' namespace.
+ */
+export function getActivityProgressStateLabel(state: ActivityProgressState, t: (key: string) => string): string {
+  return t(ACTIVITY_PROGRESS_STATE_LABELS[state])
 }
 
 export const ACTIVITY_PROGRESS_STATE_CLASSES: Record<ActivityProgressState, string> = {

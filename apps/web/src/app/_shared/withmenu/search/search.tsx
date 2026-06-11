@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getAbsoluteUrl } from '@services/config/config'
 import UserAvatar from '@components/Objects/UserAvatar'
 import NextImage from '@components/ui/NextImage'
+import { Skeleton } from '@components/ui/skeleton'
+import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -90,20 +92,19 @@ const FilterButton = ({
   onTypeChange: (type: ContentType) => void
   t: (key: string) => string
 }) => (
-  <button
+  <Button
+    type="button"
+    variant={selectedType === type ? 'secondary' : 'ghost'}
+    size="sm"
     onClick={() => {
       onTypeChange(type)
     }}
-    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors ${
-      selectedType === type
-        ? 'bg-primary/10 text-primary font-medium'
-        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-    }`}
+    className="shrink-0"
   >
-    <Icon size={16} />
+    <Icon data-icon="inline-start" />
     <span>{t(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`)}</span>
     <span className={selectedType === type ? 'text-primary/70' : 'text-muted-foreground/60'}>({count})</span>
-  </button>
+  </Button>
 )
 
 const Pagination = ({
@@ -120,19 +121,17 @@ const Pagination = ({
   return (
     <div className="mt-8 flex justify-center gap-2">
       {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-        <button
+        <Button
+          type="button"
+          variant={currentPage === pageNum ? 'default' : 'ghost'}
+          size="icon-sm"
           key={pageNum}
           onClick={() => {
             onPageChange(pageNum)
           }}
-          className={`h-8 w-8 rounded-lg text-sm transition-colors ${
-            currentPage === pageNum
-              ? 'bg-primary text-primary-foreground font-medium'
-              : 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'
-          }`}
         >
           {pageNum}
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -141,11 +140,11 @@ const Pagination = ({
 const LoadingState = () => (
   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
     {[1, 2, 3, 4, 5, 6].map(i => (
-      <div key={i} className="soft-shadow bg-card animate-pulse rounded-xl p-4">
-        <div className="bg-muted/40 mb-4 h-32 w-full rounded-lg" />
-        <div className="space-y-2">
-          <div className="bg-muted/40 h-4 w-3/4 rounded" />
-          <div className="bg-muted/40 h-3 w-1/2 rounded" />
+      <div key={i} className="bg-card rounded-lg border p-4">
+        <Skeleton className="mb-4 h-32 w-full rounded-lg" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
         </div>
       </div>
     ))}
@@ -241,7 +240,7 @@ const SearchPage = () => {
                   setSearchQuery(e.target.value)
                 }}
                 placeholder={t('searchInputPlaceholder')}
-                className="soft-shadow border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 h-12 w-full rounded-xl border pr-4 pl-12 text-sm transition-all focus:ring-1 focus:outline-none"
+                className="h-12 w-full rounded-lg pr-4 pl-12"
               />
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
                 <Search
@@ -249,12 +248,9 @@ const SearchPage = () => {
                   size={20}
                 />
               </div>
-              <button
-                type="submit"
-                className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center px-4 text-sm"
-              >
+              <Button type="submit" variant="ghost" size="sm" className="absolute inset-y-1 right-1">
                 {t('searchButton')}
-              </button>
+              </Button>
             </form>
 
             {/* Filters */}
@@ -343,7 +339,7 @@ const SearchPage = () => {
                       <Link
                         key={course.course_uuid}
                         href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
-                        className="soft-shadow group border-border bg-card text-card-foreground overflow-hidden rounded-xl border transition-all hover:shadow-md"
+                        className="group bg-card text-card-foreground overflow-hidden rounded-lg border shadow-sm transition-shadow hover:shadow-md"
                       >
                         <div className="relative aspect-video w-full overflow-hidden">
                           <NextImage
@@ -354,7 +350,7 @@ const SearchPage = () => {
                             }
                             alt={course.name}
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="object-cover"
                             sizes="100vw"
                           />
                         </div>
@@ -409,9 +405,9 @@ const SearchPage = () => {
                       <Link
                         key={collection.collection_uuid}
                         href={getAbsoluteUrl(`/collection/${collection.collection_uuid.replace('collection_', '')}`)}
-                        className="soft-shadow border-border bg-card text-card-foreground flex items-start gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
+                        className="bg-card text-card-foreground flex items-start gap-4 rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
-                        <div className="bg-muted/20 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
+                        <div className="bg-muted flex size-12 shrink-0 items-center justify-center rounded-lg">
                           <Book size={24} className="text-muted-foreground" />
                         </div>
                         <div>
@@ -443,7 +439,7 @@ const SearchPage = () => {
                       <Link
                         key={user.user_uuid}
                         href={getAbsoluteUrl(`/user/${user.username}`)}
-                        className="soft-shadow border-border bg-card text-card-foreground flex items-center gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
+                        className="bg-card text-card-foreground flex items-center gap-4 rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
                         <UserAvatar
                           size="lg"
