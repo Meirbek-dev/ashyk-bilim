@@ -72,11 +72,22 @@ async def search_platform_content(
             + func.coalesce(User.bio, ""),
         )
         query = func.websearch_to_tsquery("english", normalized_query)
+        pattern = f"%{normalized_query}%"
         users_query = (
             select(User)
             .where(col(User.id).in_(select(UserRole.user_id)))
-            .where(vector.op("@@")(query))
+            .where(
+                or_(
+                    vector.op("@@")(query),
+                    col(User.username).ilike(pattern),
+                    col(User.first_name).ilike(pattern),
+                    col(User.last_name).ilike(pattern),
+                    col(User.email).ilike(pattern),
+                )
+            )
             .order_by(
+                col(User.username).ilike(f"{normalized_query}%").desc(),
+                col(User.first_name).ilike(f"{normalized_query}%").desc(),
                 func.ts_rank_cd(vector, query).desc(),
                 col(User.id).desc(),
             )
@@ -91,6 +102,7 @@ async def search_platform_content(
                     col(User.username).ilike(pattern),
                     col(User.first_name).ilike(pattern),
                     col(User.last_name).ilike(pattern),
+                    col(User.email).ilike(pattern),
                     col(User.bio).ilike(pattern),
                 )
             )
