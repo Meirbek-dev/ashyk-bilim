@@ -54,6 +54,16 @@ export type AssessmentViewModel =
   | { surface: 'ATTEMPT'; vm: AttemptViewModel; kind: AssessmentKind }
   | null
 
+const RECOMMENDED_ACTION_MAP: Record<string, AttemptViewModel['recommendedAction']> = {
+  START: 'start',
+  CONTINUE_DRAFT: 'continueDraft',
+  SUBMIT: 'submit',
+  WAIT_FOR_RELEASE: 'waitForRelease',
+  VIEW_RESULT: 'viewResult',
+  START_REVISION: 'startRevision',
+  NO_ACTION: 'noAction',
+}
+
 /**
  * Fetches activity metadata and returns a typed view model for the requested
  * surface. Returns null while loading or if the activity is not assessable.
@@ -155,6 +165,7 @@ function useAssessment(
   // ATTEMPT surface
   const attemptProjection = assessment.attempt_projection
   const effectivePolicy = attemptProjection?.effective_policy as AssessmentPolicyDTO | null | undefined
+  const disabledReasons = attemptProjection?.disabled_action_reasons ?? []
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
@@ -176,7 +187,7 @@ function useAssessment(
     canSubmit: attemptProjection?.can_submit ?? false,
     isReturnedForRevision: attemptProjection?.is_returned_for_revision ?? false,
     isResultVisible: attemptProjection?.is_result_visible ?? false,
-    disabledActionReasons: attemptProjection?.disabled_action_reasons ?? [],
+    disabledActionReasons: disabledReasons,
     serverNow: attemptProjection?.server_now ?? null,
     availableAt: attemptProjection?.available_at ?? null,
     closesAt: attemptProjection?.closes_at ?? null,
@@ -188,7 +199,13 @@ function useAssessment(
     canContinue: attemptProjection?.can_continue ?? false,
     canViewResult: attemptProjection?.can_view_result ?? false,
     canStartRevision: attemptProjection?.can_start_revision ?? false,
-    recommendedAction: (attemptProjection?.recommended_action as AttemptViewModel['recommendedAction']) ?? 'noAction',
+    recommendedAction: (() => {
+      if (disabledReasons.length > 0) {
+        return 'blocked'
+      }
+      const rawAction = attemptProjection?.recommended_action
+      return rawAction ? (RECOMMENDED_ACTION_MAP[rawAction] ?? 'noAction') : 'noAction'
+    })(),
     primaryButtonLabelKey: attemptProjection?.primary_button_label_key ?? 'noAction',
     startedAt: attemptProjection?.started_at ?? null,
     timerStartedAt: attemptProjection?.timer_started_at ?? null,

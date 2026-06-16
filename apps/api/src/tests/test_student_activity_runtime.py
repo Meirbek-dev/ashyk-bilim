@@ -54,7 +54,7 @@ def test_primary_action_blocks_unavailable_content() -> None:
     assert action.reason == "unavailable"
 
 
-def test_primary_action_prefers_assessment_receipt_and_feedback_states() -> None:
+def test_primary_action_for_submitted_and_completed_activities_guides_user() -> None:
     activity = SimpleNamespace(activity_type=ActivityTypeEnum.TYPE_EXAM)
     next_item = StudentActivityNavItem(
         id=3,
@@ -64,14 +64,15 @@ def test_primary_action_prefers_assessment_receipt_and_feedback_states() -> None
         published=True,
     )
 
-    submitted = _derive_primary_action(
+    # With next activity, should return next_activity
+    submitted_with_next = _derive_primary_action(
         activity=activity,
         can_view=True,
         is_authenticated=True,
         next_item=next_item,
         progress=StudentActivityProgressRuntime(state="needs_grading"),
     )
-    passed = _derive_primary_action(
+    passed_with_next = _derive_primary_action(
         activity=activity,
         can_view=True,
         is_authenticated=True,
@@ -79,8 +80,29 @@ def test_primary_action_prefers_assessment_receipt_and_feedback_states() -> None
         progress=StudentActivityProgressRuntime(state="passed", complete=True),
     )
 
-    assert submitted.id == "view_receipt"
-    assert passed.id == "view_feedback"
+    assert submitted_with_next.id == "next_activity"
+    assert submitted_with_next.target_activity_uuid == "activity_next"
+    assert passed_with_next.id == "next_activity"
+    assert passed_with_next.target_activity_uuid == "activity_next"
+
+    # Without next activity, should return back_to_course
+    submitted_without_next = _derive_primary_action(
+        activity=activity,
+        can_view=True,
+        is_authenticated=True,
+        next_item=None,
+        progress=StudentActivityProgressRuntime(state="needs_grading"),
+    )
+    passed_without_next = _derive_primary_action(
+        activity=activity,
+        can_view=True,
+        is_authenticated=True,
+        next_item=None,
+        progress=StudentActivityProgressRuntime(state="passed", complete=True),
+    )
+
+    assert submitted_without_next.id == "back_to_course"
+    assert passed_without_next.id == "back_to_course"
 
 
 def test_final_invariant_migration_targets_deprecated_tables() -> None:
