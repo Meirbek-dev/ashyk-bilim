@@ -962,8 +962,8 @@ async def search_courses(
 
 
 _STARTER_CHAPTERS = [
-    {"name": "Introduction", "description": "Overview and course objectives"},
-    {"name": "Core Lessons", "description": "Main learning content"},
+    {"name": "Введение", "description": "Обзор и цели курса"},
+    {"name": "Основные уроки", "description": "Основное содержание обучения"},
 ]
 
 
