@@ -51,6 +51,7 @@ import DataTable from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -628,9 +629,9 @@ const CoursesHome = ({
             </form>
 
             <div className="flex shrink-0 items-center gap-3">
-              <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+              <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('sort.label')}
-              </label>
+              </Label>
               <NativeSelect
                 value={sortBy}
                 onChange={event => updateRoute({ sort: event.target.value, page: '1' })}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, Link, Unlink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { isSafeMarkdownUrl } from '../utils/markdown-sanitize'
 import { useTranslations } from 'next-intl'
@@ -82,9 +83,9 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
 
         {/* URL input */}
         <div className="mb-2 space-y-1">
-          <label htmlFor="link-dialog-url" className="text-muted-foreground text-xs font-medium">
+          <Label htmlFor="link-dialog-url" className="text-muted-foreground text-xs">
             {t('linkDialog.urlLabel')}
-          </label>
+          </Label>
           <Input
             id="link-dialog-url"
             ref={inputRef}
@@ -107,11 +108,11 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
         </div>
 
         {/* Open in new tab */}
-        <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm">
+        <Label className="mb-4 cursor-pointer">
           <input type="checkbox" checked={newTab} onChange={e => setNewTab(e.target.checked)} className="rounded" />
           <ExternalLink className="text-muted-foreground size-3.5" />
           <span>{t('linkDialog.openNewTab')}</span>
-        </label>
+        </Label>
 
         {/* Actions */}
         <div className="flex items-center justify-between gap-2">

@@ -5,6 +5,7 @@ import type { KeyboardEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface LinkInputTooltipProps {
   onSave: (url: string) => void
@@ -38,9 +39,9 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
   return (
     <div className="border-border bg-popover absolute top-full left-0 z-[1000] mt-1.5 rounded-lg border p-2 shadow-md">
       <form action={handleSubmit} className="flex items-center gap-1.5">
-        <label htmlFor={inputId} className="sr-only">
+        <Label htmlFor={inputId} className="sr-only">
           {t('enterUrl')}
-        </label>
+        </Label>
         <Input
           id={inputId}
           name="url"

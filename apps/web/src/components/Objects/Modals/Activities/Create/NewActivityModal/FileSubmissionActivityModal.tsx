@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Field, FieldContent, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { CalendarDatePicker } from '@/components/ui/calendar'
@@ -209,26 +210,23 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <FieldLabel>{t('allowedTypes')}</FieldLabel>
-          <label className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition select-none">
+          <Label className="hover:bg-muted/50 cursor-pointer rounded-md px-2 py-1 transition">
             <Checkbox
               checked={allMimesSelected}
               indeterminate={someMimesSelected && !allMimesSelected}
               onCheckedChange={handleSelectAll}
             />
             {t('selectAll')}
-          </label>
+          </Label>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {MIME_PRESETS.map(preset => {
             const checked = preset.mimes.every(mime => selectedMimes.includes(mime))
             return (
-              <label
-                key={preset.id}
-                className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm transition select-none"
-              >
+              <Label key={preset.id} className="hover:bg-muted/50 cursor-pointer rounded-md border p-3 transition">
                 <Checkbox checked={checked} onCheckedChange={value => togglePreset(preset.mimes, value)} />
                 {preset.label}
-              </label>
+              </Label>
             )
           })}
         </div>

@@ -127,7 +127,7 @@ function StructureOption({
   checked: boolean
 }) {
   return (
-    <label
+    <Label
       htmlFor={id}
       className={cn(
         'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors',
@@ -141,7 +141,7 @@ function StructureOption({
         <div className={cn('text-sm font-medium', checked ? 'text-foreground' : 'text-muted-foreground')}>{title}</div>
         <div className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{description}</div>
       </div>
-    </label>
+    </Label>
   )
 }
 
@@ -249,7 +249,7 @@ export function VisibilitySection({ value, onChange }: VisibilitySectionProps) {
             },
           ] satisfies { value: CourseInitialVisibility; title: string; description: string }[]
         ).map(opt => (
-          <label
+          <Label
             key={opt.value}
             htmlFor={`visibility-${opt.value}`}
             className={cn(
@@ -267,7 +267,7 @@ export function VisibilitySection({ value, onChange }: VisibilitySectionProps) {
               </div>
               <div className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{opt.description}</div>
             </div>
-          </label>
+          </Label>
         ))}
       </RadioGroup>
 
@@ -320,7 +320,7 @@ export function DestinationSection({ value, onChange }: DestinationSectionProps)
             },
           ] satisfies { value: CourseCreateDestination; title: string; description: string }[]
         ).map(opt => (
-          <label
+          <Label
             key={opt.value}
             htmlFor={`destination-${opt.value}`}
             className={cn(
@@ -338,7 +338,7 @@ export function DestinationSection({ value, onChange }: DestinationSectionProps)
               </div>
               <div className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{opt.description}</div>
             </div>
-          </label>
+          </Label>
         ))}
       </RadioGroup>
     </section>

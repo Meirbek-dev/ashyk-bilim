@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -432,28 +433,28 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         <ScrollArea className="min-h-0 flex-1">
           {selectedTestCase ? (
             <div className="space-y-4 p-4">
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('descriptionLabel')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('descriptionLabel')}</Label>
                 <MarkdownEditor
                   value={selectedTestCase.description ?? ''}
                   onChange={description => updateTest(selectedTestCase.id, { description })}
                   preset="codeExampleExplanation"
                   placeholder={t('assertionDescriptionPlaceholder')}
                 />
-              </label>
+              </div>
 
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('stdinInput')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('stdinInput')}</Label>
                 <Textarea
                   value={selectedTestCase.input}
                   onChange={e => updateTest(selectedTestCase.id, { input: e.target.value })}
                   className="min-h-36 font-mono text-xs leading-relaxed"
                   placeholder={t('stdinPlaceholder')}
                 />
-              </label>
+              </div>
 
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('expectedStdout')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('expectedStdout')}</Label>
                 <Textarea
                   value={selectedTestCase.expected_output}
                   onChange={e =>
@@ -464,7 +465,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   className="min-h-36 font-mono text-xs leading-relaxed"
                   placeholder={t('expectedAssertionPlaceholder')}
                 />
-              </label>
+              </div>
 
               <div className="bg-muted/20 space-y-1.5 rounded-md border p-3">
                 <div className="text-foreground flex items-center gap-1.5 text-xs font-semibold">

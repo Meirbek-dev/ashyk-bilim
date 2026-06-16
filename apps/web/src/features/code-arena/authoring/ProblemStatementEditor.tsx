@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
@@ -62,17 +63,17 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
           /* Markdown Input Form Panel */
           <div className="mx-auto max-w-4xl space-y-6 p-6">
             <div className="grid gap-4 md:grid-cols-[1fr_160px_160px]">
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.title')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('form.title')}</Label>
                 <Input
                   value={draft.title ?? ''}
                   onChange={e => onChange({ title: e.target.value })}
                   placeholder={t('form.titlePlaceholder')}
                 />
-              </label>
+              </div>
 
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</Label>
                 <NativeSelect
                   value={draft.difficulty ?? 'EASY'}
                   onChange={e => onChange({ difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' })}
@@ -81,60 +82,60 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   <NativeSelectOption value="MEDIUM">{t('difficulty.medium')}</NativeSelectOption>
                   <NativeSelectOption value="HARD">{t('difficulty.hard')}</NativeSelectOption>
                 </NativeSelect>
-              </label>
+              </div>
 
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('maxScore')}</span>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">{t('maxScore')}</Label>
                 <Input
                   type="number"
                   min={1}
                   value={draft.points ?? 100}
                   onChange={e => onChange({ points: Number(e.target.value) })}
                 />
-              </label>
+              </div>
             </div>
 
-            <label className="grid gap-1.5">
-              <span className="text-muted-foreground text-xs font-semibold uppercase">
+            <div className="grid gap-1.5">
+              <Label className="text-muted-foreground text-xs font-semibold uppercase">
                 {t('problemDescriptionMarkdown')}
-              </span>
+              </Label>
               <MarkdownEditor
                 value={draft.prompt ?? ''}
                 onChange={prompt => onChange({ prompt })}
                 preset="codeProblemStatement"
                 placeholder={t('form.promptPlaceholder')}
               />
-            </label>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">
                   {t('inputSpecificationMarkdown')}
-                </span>
+                </Label>
                 <MarkdownEditor
                   value={draft.input_spec ?? ''}
                   onChange={input_spec => onChange({ input_spec })}
                   preset="codeInputSpec"
                   placeholder={t('form.inputSpecPlaceholder')}
                 />
-              </label>
-              <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-muted-foreground text-xs font-semibold uppercase">
                   {t('outputSpecificationMarkdown')}
-                </span>
+                </Label>
                 <MarkdownEditor
                   value={draft.output_spec ?? ''}
                   onChange={output_spec => onChange({ output_spec })}
                   preset="codeOutputSpec"
                   placeholder={t('form.outputSpecPlaceholder')}
                 />
-              </label>
+              </div>
             </div>
 
-            <label className="grid gap-1.5">
-              <span className="text-muted-foreground text-xs font-semibold uppercase">
+            <div className="grid gap-1.5">
+              <Label className="text-muted-foreground text-xs font-semibold uppercase">
                 {t('constraintsOnePerLine')}
-              </span>
+              </Label>
               <Textarea
                 value={constraintsList.join('\n')}
                 onChange={e =>
@@ -145,10 +146,10 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                       .filter(Boolean),
                   })
                 }
-                className="min-h-24 font-mono text-sm"
+                className="min-h-24 font-mono text-xs leading-relaxed"
                 placeholder={t('form.constraintsPlaceholder')}
               />
-            </label>
+            </div>
           </div>
         ) : (
           /* Live Render Preview Panel */

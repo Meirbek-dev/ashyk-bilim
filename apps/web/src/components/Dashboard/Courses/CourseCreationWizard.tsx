@@ -370,9 +370,7 @@ export default function CourseCreationWizard() {
 
                   {template === 'outline' ? (
                     <div className="space-y-2">
-                      <label htmlFor="source-course-search" className="text-foreground text-sm font-medium">
-                        {t('template.sourceCourse')}
-                      </label>
+                      <FieldLabel htmlFor="source-course-search">{t('template.sourceCourse')}</FieldLabel>
 
                       {/* Async search input */}
                       <div className="relative">

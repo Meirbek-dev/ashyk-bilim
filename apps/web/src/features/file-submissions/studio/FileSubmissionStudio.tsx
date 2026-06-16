@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
 import Link from '@components/ui/AppLink'
 import {
@@ -332,20 +333,20 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           <Field>
             <div className="mb-2 flex items-center justify-between">
               <FieldLabel className="mb-0">{t('allowedFileTypes')}</FieldLabel>
-              <label className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition select-none">
+              <Label className="hover:bg-muted/50 cursor-pointer rounded-md px-2 py-1 transition">
                 <CustomCheckbox
                   checked={allMimesSelected}
                   indeterminate={someMimesSelected && !allMimesSelected}
                   onCheckedChange={handleSelectAll}
                 />
                 {t('selectAll')}
-              </label>
+              </Label>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {MIME_PRESETS.map(preset => {
                 const checked = preset.mimes.every(mime => allowedMimeTypes.includes(mime))
                 return (
-                  <label
+                  <Label
                     key={preset.id}
                     className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-md border p-3 transition"
                   >
@@ -357,7 +358,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                     <div className="grid gap-0.5">
                       <span className="text-sm leading-none font-medium">{preset.label}</span>
                     </div>
-                  </label>
+                  </Label>
                 )
               })}
             </div>

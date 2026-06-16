@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { Filter, Globe2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -161,9 +162,9 @@ export default function TeacherFilterBar({
           className="bg-card grid grid-cols-1 gap-4 rounded-2xl border p-5 shadow-2xs sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.windowSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.window}
               onChange={event =>
@@ -183,9 +184,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.compareSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.compare}
               onChange={event =>
@@ -207,9 +208,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.bucketSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.bucket}
               onChange={event =>
@@ -231,9 +232,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.courseSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.course_ids}
               onChange={event =>
@@ -254,9 +255,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.cohortSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.cohort_ids}
               onChange={event =>
@@ -277,9 +278,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.timezoneSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.timezone}
               onChange={event =>
@@ -299,9 +300,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.sortBySelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.sort_by}
               onChange={event => setFormState(state => ({ ...state, sort_by: event.target.value }))}
@@ -316,9 +317,9 @@ export default function TeacherFilterBar({
           </div>
 
           <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            <Label className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
               {t('filters.sortOrderSelect')}
-            </label>
+            </Label>
             <NativeSelect
               value={formState.sort_order}
               onChange={event =>

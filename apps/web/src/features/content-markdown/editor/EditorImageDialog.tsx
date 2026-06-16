@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { isSafeMarkdownImageUrl } from '../utils/markdown-sanitize'
 import { useTranslations } from 'next-intl'
@@ -71,9 +72,9 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Image URL */}
         <div className="mb-2 space-y-1">
-          <label htmlFor="image-dialog-src" className="text-muted-foreground text-xs font-medium">
+          <Label htmlFor="image-dialog-src" className="text-muted-foreground text-xs">
             {t('imageDialog.srcLabel')}
-          </label>
+          </Label>
           <Input
             id="image-dialog-src"
             ref={inputRef}
@@ -93,10 +94,10 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Alt text */}
         <div className="mb-3 space-y-1">
-          <label htmlFor="image-dialog-alt" className="text-muted-foreground text-xs font-medium">
+          <Label htmlFor="image-dialog-alt" className="text-muted-foreground text-xs">
             {t('imageDialog.altLabel')}{' '}
             <span className="text-muted-foreground/60">{t('imageDialog.altLabelOptional')}</span>
-          </label>
+          </Label>
           <Input
             id="image-dialog-alt"
             value={alt}

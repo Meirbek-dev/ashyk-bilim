@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { Permission, RoleWithPermissions } from '@/types/permissions'
 
@@ -157,9 +158,9 @@ export function PermissionsDialog({
                         disabled={(role.is_system && !isSuperAdmin) || isResourcePending}
                         onCheckedChange={() => handleToggleResourcePermissions(resourceType, perms)}
                       />
-                      <label htmlFor={`resource-toggle-${resourceType}`} className="text-sm">
+                      <Label htmlFor={`resource-toggle-${resourceType}`}>
                         {isResourcePending ? t('updating') : t('selectAllResource')}
-                      </label>
+                      </Label>
                     </div>
                   </div>
 
@@ -177,12 +178,12 @@ export function PermissionsDialog({
                               disabled={(role.is_system && !isSuperAdmin) || pending}
                               onCheckedChange={() => handleTogglePermission(perm, hasPermission)}
                             />
-                            <label htmlFor={`perm-${perm.id}`} className="cursor-pointer text-sm">
+                            <Label htmlFor={`perm-${perm.id}`} className="cursor-pointer">
                               <span className="block">{perm.name}</span>
                               {perm.description && (
                                 <span className="text-muted-foreground block text-xs">{perm.description}</span>
                               )}
-                            </label>
+                            </Label>
                           </div>
                           <div className="flex items-center gap-2">
                             {pending && <Loader2 className="text-muted-foreground h-3.5 w-3.5 animate-spin" />}

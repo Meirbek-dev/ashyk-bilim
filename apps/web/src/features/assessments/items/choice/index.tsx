@@ -121,7 +121,7 @@ export function ChoiceItemAttempt({
         {item.options.map((option, index) => {
           const id = optionId(option, index)
           return (
-            <label
+            <Label
               key={String(id)}
               className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
             >
@@ -136,7 +136,7 @@ export function ChoiceItemAttempt({
               <div className="min-w-0 flex-1 text-sm leading-relaxed">
                 <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
               </div>
-            </label>
+            </Label>
           )
         })}
       </div>
@@ -154,7 +154,7 @@ export function ChoiceItemAttempt({
       {item.options.map((option, index) => {
         const id = optionId(option, index)
         return (
-          <label
+          <Label
             key={String(id)}
             className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
           >
@@ -162,7 +162,7 @@ export function ChoiceItemAttempt({
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
               <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
             </div>
-          </label>
+          </Label>
         )
       })}
     </RadioGroup>
