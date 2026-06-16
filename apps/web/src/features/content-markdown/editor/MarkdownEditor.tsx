@@ -64,6 +64,17 @@ export function MarkdownEditor({
   // Ref to track whether current content change came from the editor itself
   const isInternalUpdateRef = useRef(false)
 
+  const [isDirty, setIsDirty] = useState(false)
+  const internalValuesRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (internalValuesRef.current.has(normalizedValue)) {
+      internalValuesRef.current.delete(normalizedValue)
+      return
+    }
+    setIsDirty(false)
+  }, [normalizedValue])
+
   const issues = useMemo(
     () => validateMarkdownContent(normalizedValue, preset, required ? { required } : {}),
     [normalizedValue, preset, required],
@@ -100,8 +111,20 @@ export function MarkdownEditor({
     onUpdate: ({ editor: activeEditor }) => {
       const markdown = (activeEditor.storage as MarkdownStorage).markdown?.getMarkdown?.()
       if (markdown === undefined) return
+      const normalized = normalizeMarkdown(markdown)
+      if (!isDirty && normalized === normalizedValue) {
+        return
+      }
       isInternalUpdateRef.current = true
-      onChange(normalizeMarkdown(markdown))
+      internalValuesRef.current.add(normalized)
+      if (internalValuesRef.current.size > 20) {
+        const first = internalValuesRef.current.values().next().value
+        if (first !== undefined) {
+          internalValuesRef.current.delete(first)
+        }
+      }
+      setIsDirty(true)
+      onChange(normalized)
     },
     editorProps: {
       attributes: {
@@ -160,16 +183,27 @@ export function MarkdownEditor({
 
   const handleSourceChange = useCallback(
     (nextValue: string) => {
+      const normalized = normalizeMarkdown(nextValue.replace(/\r\n?/g, '\n'))
+      internalValuesRef.current.add(normalized)
+      if (internalValuesRef.current.size > 20) {
+        const first = internalValuesRef.current.values().next().value
+        if (first !== undefined) {
+          internalValuesRef.current.delete(first)
+        }
+      }
+      setIsDirty(true)
       onChange(nextValue.replace(/\r\n?/g, '\n'))
     },
     [onChange],
   )
 
-  const severity = issues.some(i => i.severity === 'error')
-    ? 'error'
-    : issues.some(i => i.severity === 'warning')
-      ? 'warning'
-      : null
+  const severity = isDirty
+    ? issues.some(i => i.severity === 'error')
+      ? 'error'
+      : issues.some(i => i.severity === 'warning')
+        ? 'warning'
+        : null
+    : null
 
   const editorPanel = (
     <div
@@ -264,7 +298,7 @@ export function MarkdownEditor({
         wordCount={wordCount}
         isEmpty={isMarkdownStructurallyEmpty(normalizedValue)}
         saveState={saveState}
-        issues={issues}
+        issues={isDirty ? issues : []}
       />
     </div>
   )

@@ -102,4 +102,37 @@ describe('MarkdownEditor', () => {
       expect.arrayContaining([expect.objectContaining({ code: 'link.unsafe' })]),
     )
   })
+
+  it('does not display visual errors when not dirty, but shows them after user edits', async () => {
+    const user = userEvent.setup()
+
+    function Harness() {
+      const [value, setValue] = useState('')
+      return <MarkdownEditor value={value} onChange={setValue} preset="questionPrompt" required />
+    }
+
+    const { container } = render(<Harness />)
+
+    // The editor has empty/required issues but since it is not dirty, it should NOT render any issues button in the status bar
+    expect(screen.queryByRole('button', { name: /issues/i })).toBeNull()
+    // It should not have the border-destructive class
+    expect(container.firstChild).not.toHaveClass('border-destructive/70')
+
+    // Now switch to source mode and type something to make it dirty
+    await user.click(screen.getByRole('button', { name: 'Source' }))
+    const source = screen.getByRole('textbox', { name: /markdown source/i })
+
+    // Type something to make it dirty
+    await user.type(source, 'a')
+
+    // Backspace to make it empty again (and thus invalid because required)
+    await user.clear(source)
+
+    // Since it has been edited, it is dirty.
+    // The empty validation issue should now be visually displayed.
+    await waitFor(() => {
+      expect(screen.getByText('Содержание не может быть пустым.')).toBeInTheDocument()
+    })
+    expect(container.querySelector('.border-destructive\\/70')).not.toBeNull()
+  })
 })
