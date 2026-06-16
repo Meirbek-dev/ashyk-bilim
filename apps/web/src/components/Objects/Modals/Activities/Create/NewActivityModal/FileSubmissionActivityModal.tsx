@@ -86,8 +86,20 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   const [dueAt, setDueAt] = useState('')
   const [maxFiles, setMaxFiles] = useState(1)
   const [maxSize, setMaxSize] = useState<number | ''>(25)
-  const [selectedMimes, setSelectedMimes] = useState<string[]>([])
+  const [selectedMimes, setSelectedMimes] = useState<string[]>(() => MIME_PRESETS.flatMap(preset => preset.mimes))
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const ALL_MIMES = MIME_PRESETS.flatMap(preset => preset.mimes)
+  const allMimesSelected = ALL_MIMES.every(mime => selectedMimes.includes(mime))
+  const someMimesSelected = ALL_MIMES.some(mime => selectedMimes.includes(mime))
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedMimes(ALL_MIMES)
+    } else {
+      setSelectedMimes([])
+    }
+  }
 
   const togglePreset = (mimes: string[], checked: boolean) => {
     setSelectedMimes(current => {
@@ -196,12 +208,25 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       </div>
 
       <div className="space-y-2">
-        <FieldLabel>{t('allowedTypes')}</FieldLabel>
+        <div className="flex items-center justify-between">
+          <FieldLabel>{t('allowedTypes')}</FieldLabel>
+          <label className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition select-none">
+            <Checkbox
+              checked={allMimesSelected}
+              indeterminate={someMimesSelected && !allMimesSelected}
+              onCheckedChange={handleSelectAll}
+            />
+            {t('selectAll')}
+          </label>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {MIME_PRESETS.map(preset => {
             const checked = preset.mimes.every(mime => selectedMimes.includes(mime))
             return (
-              <label key={preset.id} className="flex items-center gap-2 rounded-md border p-3 text-sm">
+              <label
+                key={preset.id}
+                className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm transition select-none"
+              >
                 <Checkbox checked={checked} onCheckedChange={value => togglePreset(preset.mimes, value)} />
                 {preset.label}
               </label>

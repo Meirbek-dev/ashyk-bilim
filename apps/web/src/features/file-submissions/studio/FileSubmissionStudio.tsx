@@ -21,6 +21,7 @@ import {
 import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
+import { CustomCheckbox } from '@/components/ui/custom/custom-checkbox'
 
 interface FileSubmissionStudioProps {
   courseUuid: string
@@ -119,6 +120,18 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     setMaxFileSizeMb(data.max_file_size_mb ?? '')
     setAllowedMimeTypes(data.allowed_mime_types ?? [])
   }, [data])
+
+  const ALL_MIMES = MIME_PRESETS.flatMap(preset => preset.mimes)
+  const allMimesSelected = ALL_MIMES.every(mime => allowedMimeTypes.includes(mime))
+  const someMimesSelected = ALL_MIMES.some(mime => allowedMimeTypes.includes(mime))
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setAllowedMimeTypes(ALL_MIMES)
+    } else {
+      setAllowedMimeTypes([])
+    }
+  }
 
   const togglePreset = (mimes: string[], checked: boolean) => {
     setAllowedMimeTypes(current => {
@@ -317,7 +330,17 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </div>
 
           <Field>
-            <FieldLabel>{t('allowedFileTypes')}</FieldLabel>
+            <div className="mb-2 flex items-center justify-between">
+              <FieldLabel className="mb-0">{t('allowedFileTypes')}</FieldLabel>
+              <label className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition select-none">
+                <CustomCheckbox
+                  checked={allMimesSelected}
+                  indeterminate={someMimesSelected && !allMimesSelected}
+                  onCheckedChange={handleSelectAll}
+                />
+                {t('selectAll')}
+              </label>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {MIME_PRESETS.map(preset => {
                 const checked = preset.mimes.every(mime => allowedMimeTypes.includes(mime))

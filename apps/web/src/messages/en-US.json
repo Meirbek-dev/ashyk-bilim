@@ -1775,6 +1775,7 @@
       "maxFiles": "Max files",
       "maxSize": "Max size (MB)",
       "requiredFields": "Title and instructions are required",
+      "selectAll": "Select all",
       "title": "Title"
     },
     "NewChapterModal": {
@@ -9800,6 +9801,7 @@
     "maxFiles": "Max files",
     "maxSize": "Max size MB",
     "allowedFileTypes": "Allowed file types",
+    "selectAll": "Select all",
     "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
     "collectionRules": "Collection rules",
     "attempts": "Attempts",
