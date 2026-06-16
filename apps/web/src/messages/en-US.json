@@ -9785,7 +9785,8 @@
     "searchLearnersPlaceholder": "Search learners",
     "scorePlaceholder": "0–100",
     "feedbackPlaceholder": "Feedback",
-    "rubricScorePlaceholder": "0"
+    "rubricScorePlaceholder": "0",
+    "downloadCsv": "Download CSV"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",

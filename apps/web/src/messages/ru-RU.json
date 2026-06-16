@@ -9798,7 +9798,8 @@
     "searchLearnersPlaceholder": "Поиск по учащимся",
     "scorePlaceholder": "0–100",
     "feedbackPlaceholder": "Отзыв",
-    "rubricScorePlaceholder": "0"
+    "rubricScorePlaceholder": "0",
+    "downloadCsv": "Скачать CSV"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Загрузка студии отправки файлов",

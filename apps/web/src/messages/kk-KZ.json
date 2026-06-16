@@ -9970,7 +9970,8 @@
     "searchLearnersPlaceholder": "Оқушыларды іздеу",
     "scorePlaceholder": "0–100",
     "feedbackPlaceholder": "Кері байланыс",
-    "rubricScorePlaceholder": "0"
+    "rubricScorePlaceholder": "0",
+    "downloadCsv": "CSV жүктеу"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Файл жіберу студиясын жүктеу",
