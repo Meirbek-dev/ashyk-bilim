@@ -166,7 +166,6 @@ export default function NewActivityModal({
           <h2 className="text-foreground text-sm leading-none font-semibold tracking-tight">
             {isHome ? t('chooseType') : activeConfig ? t(activeConfig.labelKey) : ''}
           </h2>
-          {isHome && <p className="text-muted-foreground mt-1 text-xs">{t('chooseTypeSubtitle')}</p>}
         </div>
       </div>
 

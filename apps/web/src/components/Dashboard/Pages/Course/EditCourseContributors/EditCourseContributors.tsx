@@ -505,13 +505,20 @@ const EditCourseContributors = () => {
         />
 
         <div className="flex flex-col gap-3">
-          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-            <PopoverTrigger
-              render={triggerProps => (
-                <div className="relative w-full">
-                  <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Popover
+            open={searchOpen}
+            onOpenChange={(open, details) => {
+              if (!open && details?.reason === 'trigger-press') {
+                return
+              }
+              setSearchOpen(open)
+            }}
+          >
+            <div className="relative w-full">
+              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <PopoverTrigger
+                render={
                   <Input
-                    {...triggerProps}
                     className="pl-8"
                     placeholder={t('searchUsersPlaceholder')}
                     value={searchQuery}
@@ -523,13 +530,15 @@ const EditCourseContributors = () => {
                       if (nextQuery.trim()) setSearchOpen(true)
                       else setSearchOpen(false)
                     }}
+                    onKeyDown={e => e.stopPropagation()}
+                    onKeyUp={e => e.stopPropagation()}
                   />
-                </div>
-              )}
-              nativeButton={false}
-            />
-            <PopoverContent className="w-(--anchor-width) p-0" align="start">
-              <Command>
+                }
+                nativeButton={false}
+              />
+            </div>
+            <PopoverContent className="w-(--anchor-width) p-0" align="start" initialFocus={false}>
+              <Command shouldFilter={false}>
                 <CommandList>
                   {isSearching ? (
                     <div className="text-muted-foreground p-4 text-center text-sm">{t('searchingMessage')}</div>

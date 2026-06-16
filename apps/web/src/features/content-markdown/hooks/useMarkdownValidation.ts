@@ -9,6 +9,7 @@ export interface MarkdownValidationIssue {
 }
 
 function hasUnbalancedMathDelimiters(markdown: string): boolean {
+  // Удаляем блоки кода, чтобы не учитывать находящиеся там символы
   const withoutCode = markdown.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
   let inlineOpen = false
   let blockOpen = false
@@ -38,8 +39,8 @@ function hasUnbalancedMathDelimiters(markdown: string): boolean {
 }
 
 /**
- * Validates markdown content against a preset's constraints.
- * Returns all issues, not just the first.
+ * Проверяет Markdown-контент на соответствие ограничениям пресета.
+ * Возвращает все обнаруженные проблемы, а не только первую.
  */
 export function validateMarkdownContent(
   markdown: string,
@@ -49,7 +50,7 @@ export function validateMarkdownContent(
   const config = MARKDOWN_PRESETS[preset]
   const issues: MarkdownValidationIssue[] = []
 
-  // ── Required field ────────────────────────────────────────────────────────
+  // ── Обязательное поле ──────────────────────────────────────────────────────
   if (options.required && isMarkdownStructurallyEmpty(markdown)) {
     issues.push({
       severity: 'error',
@@ -58,28 +59,28 @@ export function validateMarkdownContent(
     })
   }
 
-  // ── Length check ──────────────────────────────────────────────────────────
+  // ── Проверка длины ─────────────────────────────────────────────────────────
   const overBy = markdown.length - config.maxLength
   if (overBy > 0) {
     issues.push({
       severity: 'error',
       code: 'content.tooLong',
-      message: `Content is ${overBy} characters over the limit.`,
+      message: `Превышен лимит символов. Удалите лишние символы: ${overBy}.`,
     })
   } else if (markdown.length > config.maxLength * 0.9) {
     issues.push({
       severity: 'warning',
       code: 'content.nearLimit',
-      message: `Content is approaching the character limit.`,
+      message: `Длина текста приближается к установленному лимиту.`,
     })
   }
 
-  // ── Security checks ───────────────────────────────────────────────────────
+  // ── Проверки безопасности ──────────────────────────────────────────────────
   if (hasRawHtml(markdown)) {
     issues.push({
       severity: 'error',
       code: 'html.raw',
-      message: 'Raw HTML is not supported.',
+      message: 'Прямая вставка HTML (Raw HTML) не поддерживается.',
     })
   }
 
@@ -88,35 +89,35 @@ export function validateMarkdownContent(
     issues.push({
       severity: 'error',
       code: 'link.unsafe',
-      message: 'One or more links use an unsafe protocol.',
+      message: 'Одна или несколько ссылок используют небезопасный протокол.',
     })
   }
 
-  // ── Structure checks ─────────────────────────────────────────────────────
-  // Count triple-backtick fences that are NOT inside code spans (simplified: count ```)
-  // Strip inline code spans first so embedded backticks don't count
+  // ── Проверки структуры ────────────────────────────────────────────────────
+  // Считаем тройные обратные кавычки, которые НЕ находятся внутри инлайнового кода
+  // (сначала удаляем инлайновые блоки, чтобы их кавычки не искажали результат)
   const withoutInlineCode = markdown.replace(/`[^`\n]+`/g, '')
   const fenceCount = withoutInlineCode.match(/```/g)?.length ?? 0
   if (fenceCount % 2 !== 0) {
     issues.push({
       severity: 'warning',
       code: 'codeFence.unclosed',
-      message: 'A code block appears to be missing a closing fence.',
+      message: 'Похоже, в блоке кода пропущена закрывающая конструкция (```).',
     })
   }
 
-  // ── Math checks ───────────────────────────────────────────────────────────
+  // ── Проверки математических выражений ──────────────────────────────────────
   if (config.allowMath) {
     if (hasUnbalancedMathDelimiters(markdown)) {
       issues.push({
         severity: 'warning',
         code: 'math.unbalanced',
-        message: 'A math expression appears to have an unbalanced $ delimiter.',
+        message: 'Похоже, в математическом выражении не сбалансирован разделитель $.',
       })
     }
   }
 
-  // ── Table structure check ─────────────────────────────────────────────────
+  // ── Проверка структуры таблиц ──────────────────────────────────────────────
   if (config.allowTable) {
     const tableLines = markdown.split('\n').filter(l => l.includes('|'))
     let lastColCount = -1
@@ -126,7 +127,7 @@ export function validateMarkdownContent(
         issues.push({
           severity: 'warning',
           code: 'table.columnMismatch',
-          message: 'A table appears to have rows with different column counts.',
+          message: 'Похоже, в таблице есть строки с разным количеством колонок.',
         })
         break
       }
