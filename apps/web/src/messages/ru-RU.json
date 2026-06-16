@@ -794,6 +794,7 @@
     "nextActivityTitle": "Далее: {name}",
     "nextActivityTooltip": "Далее: {activityName}",
     "noContent": "Нет содержимого",
+    "emptyContentDescription": "На этой странице пока нет содержимого.",
     "noNextActivity": "Нет следующей активности",
     "noPrevActivity": "Нет предыдущей активности",
     "noPreviousActivity": "Нет предыдущей активности",

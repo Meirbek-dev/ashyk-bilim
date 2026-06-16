@@ -794,6 +794,7 @@
     "nextActivityTitle": "Келесі: {name}",
     "nextActivityTooltip": "Келесі: {activityName}",
     "noContent": "Мазмұн жоқ",
+    "emptyContentDescription": "Бұл бетте әлі ешқандай мазмұн жоқ.",
     "noNextActivity": "Келесі белсенділік жоқ",
     "noPrevActivity": "Алдыңғы белсенділік жоқ",
     "noPreviousActivity": "Алдыңғы белсенділік жоқ",

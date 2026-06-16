@@ -5,10 +5,11 @@ import { Tiptap } from '@tiptap/react'
 import { useEditorInstance } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core'
 import TableOfContents, { useHeadingOutline } from '@components/Objects/Activities/DynamicCanva/TableOfContents'
-import { ListTree } from 'lucide-react'
+import { ListTree, FileText } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
@@ -40,9 +41,21 @@ export function InteractiveViewer(props: InteractiveViewerProps) {
         <div className="prosemirror-interactive-layout">
           <div className="prosemirror-interactive-layout-content">
             {editor ? (
-              <Tiptap instance={editor}>
-                <Tiptap.Content />
-              </Tiptap>
+              editor.isEmpty ? (
+                <Empty className="my-4 border border-dashed bg-muted/40 py-12">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <FileText className="size-4" />
+                    </EmptyMedia>
+                    <EmptyTitle>{t('noContent')}</EmptyTitle>
+                    <EmptyDescription>{t('emptyContentDescription')}</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <Tiptap instance={editor}>
+                  <Tiptap.Content />
+                </Tiptap>
+              )
             ) : null}
           </div>
           {hasToc ? (

@@ -791,6 +791,7 @@
     "nextActivityTitle": "Next: {name}",
     "nextActivityTooltip": "Next: {activityName}",
     "noContent": "No content available",
+    "emptyContentDescription": "This page does not have any content yet.",
     "noNextActivity": "No next activity",
     "noPrevActivity": "No previous activity",
     "noPreviousActivity": "No previous activity",
