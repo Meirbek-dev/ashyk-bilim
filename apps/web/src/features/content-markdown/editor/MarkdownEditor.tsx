@@ -209,7 +209,6 @@ export function MarkdownEditor({
     <div
       className={cn(
         'bg-card overflow-hidden rounded-md border shadow-sm transition-colors',
-        'focus-within:ring-ring focus-within:ring-2 focus-within:ring-offset-0',
         disabled && 'opacity-70',
         severity === 'error' && 'border-destructive/70',
         severity === 'warning' && 'border-amber-500/70',

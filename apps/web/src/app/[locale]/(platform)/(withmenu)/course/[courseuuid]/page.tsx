@@ -7,7 +7,7 @@ import { APP_NAME } from '@/lib/constants'
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import { redirect } from '@/i18n/navigation'
-import { getLocale } from 'next-intl/server'
+import { getLocale, setRequestLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -68,8 +68,9 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformCoursePage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params
+export default async function PlatformCoursePage(props: { params: Promise<{ locale: string; courseuuid: string }> }) {
+  const { locale, courseuuid } = await props.params
+  setRequestLocale(locale)
 
   let course_meta
   let session

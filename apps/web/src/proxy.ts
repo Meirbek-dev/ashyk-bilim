@@ -35,7 +35,7 @@ export const config = {
      * untouched. Root files such as /favicon.ico are excluded, while dotted
      * dynamic route segments remain matchable.
      */
-    '/((?!api|trpc|_next|_vercel|fonts|umami|examples|[\\w-]+\\.\\w+).*)',
+    '/((?!api|trpc|_next|_vercel|fonts|umami|examples|\\.well-known|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
   ],
 }
@@ -160,6 +160,14 @@ export default async function proxy(req: NextRequest) {
 
   if (pathname.startsWith('/health')) {
     return rewriteWithHeaders(req, requestId, '/api/health')
+  }
+
+  if (pathname.includes('/.well-known')) {
+    const { pathnameWithoutLocale } = getPathInfo(pathname)
+    if (pathname !== pathnameWithoutLocale) {
+      return NextResponse.redirect(new URL(pathnameWithoutLocale, req.url))
+    }
+    return NextResponse.next()
   }
 
   if (pathname === '/redirect_from_auth') {

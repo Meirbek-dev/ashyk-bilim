@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { cache } from 'react'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { redirect } from '@/i18n/navigation'
-import { getLocale } from 'next-intl/server'
+import { getLocale, setRequestLocale } from 'next-intl/server'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
@@ -65,9 +65,10 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 }
 
 export default async function PlatformActivityPage(props: {
-  params: Promise<{ courseuuid: string; activityid: string }>
+  params: Promise<{ locale: string; courseuuid: string; activityid: string }>
 }) {
-  const { courseuuid, activityid } = await props.params
+  const { locale, courseuuid, activityid } = await props.params
+  setRequestLocale(locale)
   const isCourseEnd = activityid === 'end'
 
   let course_meta

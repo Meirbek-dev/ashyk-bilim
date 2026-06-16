@@ -51,6 +51,40 @@ const modeClassName: Record<MarkdownRenderMode, string> = {
   plainSummary: '',
 }
 
+function remarkHeadingIds() {
+  return (tree: any) => {
+    const headingIds = new Map<string, number>()
+
+    function extractText(node: any): string {
+      if (!node) return ''
+      if (node.type === 'text') return node.value || ''
+      if (node.value) return node.value
+      if (node.children) return node.children.map(extractText).join('')
+      return ''
+    }
+
+    function traverse(node: any) {
+      if (node.type === 'heading') {
+        const text = extractText(node)
+        const base = slugifyMarkdownHeading(text) || 'section'
+        const count = headingIds.get(base) ?? 0
+        headingIds.set(base, count + 1)
+        const id = count === 0 ? base : `${base}-${count + 1}`
+
+        if (!node.data) node.data = {}
+        if (!node.data.hProperties) node.data.hProperties = {}
+        node.data.hProperties.id = id
+      }
+
+      if (node.children) {
+        node.children.forEach(traverse)
+      }
+    }
+
+    traverse(tree)
+  }
+}
+
 export function MarkdownContent({
   content,
   mode = 'prompt',
@@ -66,14 +100,6 @@ export function MarkdownContent({
   const containerRef = useRef<HTMLDivElement>(null)
   const shouldShowAnchors = showHeadingAnchors ?? MODE_WITH_ANCHORS.has(mode)
   const hasMath = MODE_WITH_MATH.has(mode) && /\$/.test(content)
-  const headingIds = new Map<string, number>()
-
-  const nextHeadingId = (raw: React.ReactNode) => {
-    const base = slugifyMarkdownHeading(extractMarkdownHeadingText(raw)) || 'section'
-    const count = headingIds.get(base) ?? 0
-    headingIds.set(base, count + 1)
-    return count === 0 ? base : `${base}-${count + 1}`
-  }
 
   // Lazy-load KaTeX CSS only when math is actually present
   useEffect(() => {
@@ -107,7 +133,7 @@ export function MarkdownContent({
   if (!content?.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>
   if (mode === 'plainSummary') return <>{extractMarkdownSummary(content)}</>
 
-  const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm]
+  const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm, remarkHeadingIds]
   if (hasMath) remarkPlugins.push(remarkMath)
 
   const rehypePlugins: Parameters<typeof ReactMarkdown>[0]['rehypePlugins'] = []
@@ -132,44 +158,50 @@ export function MarkdownContent({
         rehypePlugins={rehypePlugins}
         components={{
           // ── Headings ────────────────────────────────────────────────────────
-          h1: ({ children, ...props }) =>
+          h1: ({ children, id, ...props }) =>
             shouldShowAnchors ? (
               <MarkdownHeading
                 level={1}
-                anchorId={nextHeadingId(children)}
+                anchorId={id}
                 {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
               </MarkdownHeading>
             ) : (
-              <h1 {...props}>{children}</h1>
+              <h1 id={id} {...props}>
+                {children}
+              </h1>
             ),
-          h2: ({ children, ...props }) =>
+          h2: ({ children, id, ...props }) =>
             shouldShowAnchors ? (
               <MarkdownHeading
                 level={2}
-                anchorId={nextHeadingId(children)}
+                anchorId={id}
                 {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
               </MarkdownHeading>
             ) : (
-              <h2 {...props}>{children}</h2>
+              <h2 id={id} {...props}>
+                {children}
+              </h2>
             ),
-          h3: ({ children, ...props }) =>
+          h3: ({ children, id, ...props }) =>
             shouldShowAnchors ? (
               <MarkdownHeading
                 level={3}
-                anchorId={nextHeadingId(children)}
+                anchorId={id}
                 {...(onHeadingAnchorClick ? { onAnchorClick: onHeadingAnchorClick } : {})}
                 {...props}
               >
                 {children}
               </MarkdownHeading>
             ) : (
-              <h3 {...props}>{children}</h3>
+              <h3 id={id} {...props}>
+                {children}
+              </h3>
             ),
 
           // ── Links ────────────────────────────────────────────────────────────
