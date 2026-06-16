@@ -42,7 +42,7 @@ export function InteractiveViewer(props: InteractiveViewerProps) {
           <div className="prosemirror-interactive-layout-content">
             {editor ? (
               editor.isEmpty ? (
-                <Empty className="my-4 border border-dashed bg-muted/40 py-12">
+                <Empty className="bg-muted/40 my-4 border border-dashed py-12">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
                       <FileText className="size-4" />

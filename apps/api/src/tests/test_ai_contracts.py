@@ -173,3 +173,12 @@ async def test_student_agent_exposes_course_search_tool() -> None:
 
     tool_names = {tool.name for tool in model.last_model_request_parameters.function_tools}
     assert "search_course_content" in tool_names
+
+
+def test_start_activity_ai_chat_session_validation_strict_mode() -> None:
+    from src.services.ai.schemas.ai import StartActivityAIChatSession
+
+    data = {"activity_uuid": "some-uuid", "message": "Hello AI", "intent": "authoring_patch"}
+    # Validate with strict=True to simulate the developer/strict environment validation behavior.
+    session = StartActivityAIChatSession.model_validate(data, strict=True)
+    assert session.intent == AIIntent.AUTHORING_PATCH
