@@ -2007,6 +2007,9 @@
         "updatedRole": "Роль успешно обновлена",
         "updating": "Обновление роли..."
       },
+      "updating": "Обновление роли...",
+      "updateRole": "Обновить роль",
+      "updatedRole": "Роль успешно обновлена",
       "acrossResourceTypes": "По {count} типам ресурсов",
       "actions": "Действия",
       "allPermissionsDescription": "Список всех доступных разрешений в системе.",

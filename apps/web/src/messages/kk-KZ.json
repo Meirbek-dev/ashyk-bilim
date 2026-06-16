@@ -2008,6 +2008,9 @@
         "updatedRole": "Рөл сәтті жаңартылды",
         "updating": "Рөл жаңартылуда..."
       },
+      "updating": "Рөл жаңартылуда...",
+      "updateRole": "Рөлді жаңарту",
+      "updatedRole": "Рөл сәтті жаңартылды",
       "acrossResourceTypes": "{count} ресурс түрлерінен тұрады",
       "actions": "Әрекеттер",
       "allPermissionsDescription": "Жүйеде қолжетімді барлық рұқсаттардың тізімі.",

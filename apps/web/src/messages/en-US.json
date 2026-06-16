@@ -2021,6 +2021,9 @@
         "updatedRole": "Role updated successfully",
         "updating": "Updating role..."
       },
+      "updating": "Updating role...",
+      "updateRole": "Update Role",
+      "updatedRole": "Role updated successfully",
       "basicAccess": "Basic access",
       "cardTitle": "Organization Roles",
       "createRole": "Create Role",

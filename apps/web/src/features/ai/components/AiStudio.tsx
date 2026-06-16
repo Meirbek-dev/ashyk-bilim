@@ -90,9 +90,7 @@ function ContextMap({ title, description, citations, latestArtifact, statusMessa
               <h3 className="text-xs font-medium">{t('artifactTitle')}</h3>
               <Badge variant={latestArtifact ? 'secondary' : 'outline'}>{latestArtifact?.kind ?? t('waiting')}</Badge>
             </div>
-            <p className="text-muted-foreground text-xs">
-              {latestArtifact?.summary ?? t('defaultSummary')}
-            </p>
+            <p className="text-muted-foreground text-xs">{latestArtifact?.summary ?? t('defaultSummary')}</p>
           </section>
           <section className="flex flex-col gap-2" aria-label={t('evidenceMapAria')}>
             <div className="flex items-center justify-between gap-2">
@@ -128,7 +126,10 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
   const latestRun = visibleEvents.at(-1)
 
   return (
-    <aside className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l" aria-label={t('aiRunConsoleAria')}>
+    <aside
+      className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l"
+      aria-label={t('aiRunConsoleAria')}
+    >
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -137,9 +138,7 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
           </div>
           <Badge variant={isLoading ? 'default' : 'outline'}>{isLoading ? t('live') : t('idle')}</Badge>
         </div>
-        <p className="text-muted-foreground text-xs">
-          {statusMessage ?? latestRun?.type ?? t('defaultConsoleStatus')}
-        </p>
+        <p className="text-muted-foreground text-xs">{statusMessage ?? latestRun?.type ?? t('defaultConsoleStatus')}</p>
       </div>
       <Separator />
       <ScrollArea className="min-h-0 flex-1">
@@ -180,14 +179,15 @@ function RunConsole({ events, toolEvents, statusMessage, isLoading = false }: Ai
               <p className="text-muted-foreground text-xs">{t('nextRunStream')}</p>
             )}
           </section>
-          <section className="bg-background flex flex-col gap-2 rounded-md border p-3" aria-label={t('trustControlsAria')}>
+          <section
+            className="bg-background flex flex-col gap-2 rounded-md border p-3"
+            aria-label={t('trustControlsAria')}
+          >
             <div className="flex items-center gap-2 text-xs font-medium">
               <ShieldCheckIcon className="text-primary" aria-hidden="true" />
               {t('approvalBoundary')}
             </div>
-            <p className="text-muted-foreground text-xs">
-              {t('approvalBoundaryDesc')}
-            </p>
+            <p className="text-muted-foreground text-xs">{t('approvalBoundaryDesc')}</p>
           </section>
         </div>
       </ScrollArea>
