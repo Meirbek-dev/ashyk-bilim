@@ -14,12 +14,11 @@ import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
-
 const MIME_PRESETS = [
   { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
   {
     id: 'documents',
-    label: 'Documents',
+    label: 'Документы',
     mimes: [
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -31,12 +30,12 @@ const MIME_PRESETS = [
   },
   {
     id: 'images',
-    label: 'Images',
+    label: 'Изображения',
     mimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'],
   },
   {
     id: 'spreadsheets',
-    label: 'Spreadsheets',
+    label: 'Таблицы',
     mimes: [
       'text/csv',
       'application/vnd.ms-excel',
@@ -46,7 +45,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'archives',
-    label: 'Archives',
+    label: 'Архивы',
     mimes: [
       'application/zip',
       'application/x-zip-compressed',
@@ -60,7 +59,7 @@ const MIME_PRESETS = [
   },
   {
     id: 'text',
-    label: 'Text and code',
+    label: 'Текст и код',
     mimes: [
       'text/plain',
       'text/markdown',
