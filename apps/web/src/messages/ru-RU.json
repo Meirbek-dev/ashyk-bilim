@@ -7984,6 +7984,7 @@
           "publishSelected": "Опубликовать выбранное",
           "returnSelected": "Вернуть выбранное",
           "releaseHidden": "Открыть скрытые оценки",
+          "deadlinePlaceholder": "Выберите дату и время",
           "reasonPlaceholder": "Причина",
           "extend": "Продлить",
           "export": "Экспорт",

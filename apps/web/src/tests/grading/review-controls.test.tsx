@@ -229,7 +229,7 @@ describe('teacher review controls', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pick date and time' }))
+    fireEvent.click(screen.getByRole('button', { name: 'deadlinePlaceholder' }))
 
     const dueAtDialog = await screen.findByRole('dialog')
     fireEvent.click(within(dueAtDialog).getByRole('button', { name: /June 15/i }))

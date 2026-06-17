@@ -7968,6 +7968,7 @@
           "publishSelected": "Таңдалғанын жариялау",
           "returnSelected": "Таңдалғанын қайтару",
           "releaseHidden": "Жасырын бағаларды жариялау",
+          "deadlinePlaceholder": "Күн мен уақытты таңдаңыз",
           "reasonPlaceholder": "Себебі",
           "extend": "Ұзарту",
           "export": "Экспорт",

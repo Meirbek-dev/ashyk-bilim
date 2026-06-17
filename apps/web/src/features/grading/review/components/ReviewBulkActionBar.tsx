@@ -222,6 +222,7 @@ export default function ReviewBulkActionBar({
         value={deadlineLocal}
         onChange={setDeadlineLocal}
         disabled={disabled || isPending}
+        placeholder={t('deadlinePlaceholder')}
         className="w-48"
       />
       <Input
