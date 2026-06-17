@@ -9589,7 +9589,11 @@
     "passwordTooLong": "Password must be at most 128 characters",
     "passwordNeedsLowercase": "Password must contain at least one lowercase letter",
     "passwordNeedsUppercase": "Password must contain at least one uppercase letter",
-    "passwordNeedsNumber": "Password must contain at least one number"
+    "passwordNeedsNumber": "Password must contain at least one number",
+    "titleTooLong": "Title must not exceed 100 characters",
+    "descriptionTooLong": "Description must not exceed 8000 characters",
+    "sourceCourseRequired": "Please select a source course",
+    "learningsInvalid": "Invalid format for learning outcomes"
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",

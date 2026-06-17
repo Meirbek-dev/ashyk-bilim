@@ -13,7 +13,7 @@ import { extractMarkdownSummary } from '../utils/markdown-extract'
 import { sanitizeMarkdownImageUrl, sanitizeMarkdownUrl } from '../utils/markdown-sanitize'
 import { MarkdownCodeBlock } from './MarkdownCodeBlock'
 import { MarkdownImage } from './MarkdownImage'
-import { MarkdownHeading, extractMarkdownHeadingText, slugifyMarkdownHeading } from './MarkdownHeading'
+import { MarkdownHeading, slugifyMarkdownHeading } from './MarkdownHeading'
 import { AiStreamingCursor } from './MarkdownStreaming'
 
 interface MarkdownContentProps {

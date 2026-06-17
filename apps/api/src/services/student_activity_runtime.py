@@ -375,8 +375,7 @@ def _derive_primary_action(
     if progress.state in {"published", "passed", "failed", "submitted", "needs_grading"}:
         if next_item is not None:
             return StudentPrimaryAction(id="next_activity", enabled=True, target_activity_uuid=next_item.uuid)
-        else:
-            return StudentPrimaryAction(id="back_to_course", enabled=True)
+        return StudentPrimaryAction(id="back_to_course", enabled=True)
     if progress.state == "graded_hidden":
         return StudentPrimaryAction(id="review_policy", enabled=True)
     if activity.activity_type in {

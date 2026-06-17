@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { cva } from 'class-variance-authority'
 import type { VariantProps } from 'class-variance-authority'
+import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
@@ -167,6 +168,8 @@ function FieldError({
 }: React.ComponentProps<'div'> & {
   errors?: ({ message?: string } | undefined)[]
 }) {
+  const validationT = useTranslations('Validation')
+
   const content = useMemo(() => {
     if (children) {
       return children
@@ -178,16 +181,43 @@ function FieldError({
 
     const uniqueErrors = [...new Map(errors.map(error => [error?.message, error])).values()]
 
+    const getTranslatedMessage = (message?: string) => {
+      if (!message) return ''
+
+      // Convert snake_case to camelCase since localization keys are in camelCase
+      const camelCaseKey = message.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+
+      try {
+        if (typeof validationT.has === 'function' && validationT.has(camelCaseKey)) {
+          return validationT(camelCaseKey)
+        }
+      } catch {
+        // Fallback
+      }
+
+      try {
+        if (typeof validationT.has === 'function' && validationT.has(message)) {
+          return validationT(message)
+        }
+      } catch {
+        // Fallback
+      }
+
+      return message
+    }
+
     if (uniqueErrors?.length === 1) {
-      return uniqueErrors[0]?.message
+      return getTranslatedMessage(uniqueErrors[0]?.message)
     }
 
     return (
       <ul className="ms-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+        {uniqueErrors.map(
+          (error, index) => error?.message && <li key={index}>{getTranslatedMessage(error.message)}</li>,
+        )}
       </ul>
     )
-  }, [children, errors])
+  }, [children, errors, validationT])
 
   if (!content) {
     return null

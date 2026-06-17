@@ -5747,7 +5747,7 @@ export interface components {
       event_uuid: string
       /** Id */
       id: number
-      payload_json: components['schemas']['JsonObject-Output']
+      payload_json: components['schemas']['JsonObject']
       /** Target Kind */
       target_kind: string
       /** Target Uuid */
@@ -6115,7 +6115,7 @@ export interface components {
       error_log: string
       /** Id */
       id: number
-      params?: components['schemas']['JsonObject-Output']
+      params?: components['schemas']['JsonObject']
       /** Performed By */
       performed_by: number
       status: components['schemas']['BulkActionStatus']
@@ -7580,7 +7580,7 @@ export interface components {
        * Format: date-time
        */
       created_at: string
-      feedback?: components['schemas']['JsonObject-Output']
+      feedback?: components['schemas']['JsonObject']
       /** Files */
       files?: components['schemas']['FileSubmissionAttemptFileRead'][]
       /** Final Score */
@@ -7650,7 +7650,7 @@ export interface components {
        * @default
        */
       instructions: string
-      late_policy?: components['schemas']['JsonObject-Input']
+      late_policy?: components['schemas']['JsonObject']
       /** Max Attempts */
       max_attempts?: number | null
       /** Max File Size Mb */
@@ -7660,8 +7660,8 @@ export interface components {
        * @default 1
        */
       max_files: number
-      rubric?: components['schemas']['JsonObject-Input']
-      settings?: components['schemas']['JsonObject-Input']
+      rubric?: components['schemas']['JsonObject']
+      settings?: components['schemas']['JsonObject']
       /** Title */
       title: string
     }
@@ -7700,7 +7700,7 @@ export interface components {
       feedback: string
       /** Final Score */
       final_score?: number | null
-      rubric?: components['schemas']['JsonObject-Input']
+      rubric?: components['schemas']['JsonObject']
       /**
        * Status
        * @default GRADED
@@ -7753,7 +7753,7 @@ export interface components {
       id: number
       /** Instructions */
       instructions: string
-      late_policy?: components['schemas']['JsonObject-Output']
+      late_policy?: components['schemas']['JsonObject']
       lifecycle: components['schemas']['FileSubmissionLifecycle']
       /** Max Attempts */
       max_attempts?: number | null
@@ -7763,8 +7763,8 @@ export interface components {
       max_files: number
       /** Published */
       published: boolean
-      rubric?: components['schemas']['JsonObject-Output']
-      settings?: components['schemas']['JsonObject-Output']
+      rubric?: components['schemas']['JsonObject']
+      settings?: components['schemas']['JsonObject']
       /** Title */
       title: string
       /**
@@ -7807,15 +7807,15 @@ export interface components {
       grade_release_mode?: ('IMMEDIATE' | 'BATCH') | null
       /** Instructions */
       instructions?: string | null
-      late_policy?: components['schemas']['JsonObject-Input'] | null
+      late_policy?: components['schemas']['JsonObject'] | null
       /** Max Attempts */
       max_attempts?: number | null
       /** Max File Size Mb */
       max_file_size_mb?: number | null
       /** Max Files */
       max_files?: number | null
-      rubric?: components['schemas']['JsonObject-Input'] | null
-      settings?: components['schemas']['JsonObject-Input'] | null
+      rubric?: components['schemas']['JsonObject'] | null
+      settings?: components['schemas']['JsonObject'] | null
       /** Title */
       title?: string | null
     }
@@ -8098,7 +8098,7 @@ export interface components {
     GradedItem: {
       /** Correct */
       correct?: boolean | null
-      correct_answer?: components['schemas']['JsonValue-Output']
+      correct_answer?: components['schemas']['JsonValue']
       /**
        * Feedback
        * @default
@@ -8126,7 +8126,7 @@ export interface components {
        * @default 0
        */
       score: number
-      user_answer?: components['schemas']['JsonValue-Output']
+      user_answer?: components['schemas']['JsonValue']
     }
     /** GradingBacklogItem */
     GradingBacklogItem: {
@@ -8214,7 +8214,7 @@ export interface components {
     HealthStatusResponse: {
       /** Checks */
       checks: {
-        [key: string]: components['schemas']['JsonObject-Output']
+        [key: string]: components['schemas']['JsonObject']
       }
       /** Status */
       status: string
@@ -8501,25 +8501,10 @@ export interface components {
      * @enum {string}
      */
     ItemKind: 'CHOICE' | 'OPEN_TEXT' | 'FORM' | 'CODE' | 'MATCHING'
-    'JsonObject-Input': {
-      [key: string]: components['schemas']['JsonValue-Input']
+    JsonObject: {
+      [key: string]: components['schemas']['JsonValue']
     }
-    'JsonObject-Output': {
-      [key: string]: components['schemas']['JsonValue-Output']
-    }
-    JsonPrimitive: string | number | boolean | null
-    'JsonValue-Input':
-      | components['schemas']['JsonPrimitive']
-      | components['schemas']['JsonValue-Input'][]
-      | {
-          [key: string]: components['schemas']['JsonValue-Input']
-        }
-    'JsonValue-Output':
-      | components['schemas']['JsonPrimitive']
-      | components['schemas']['JsonValue-Output'][]
-      | {
-          [key: string]: components['schemas']['JsonValue-Output']
-        }
+    JsonValue: unknown
     /** Judge0LanguageRead */
     Judge0LanguageRead: {
       /** Id */
@@ -8869,7 +8854,7 @@ export interface components {
       longest_learning_streak: number
       /** Longest Login Streak */
       longest_login_streak: number
-      preferences: components['schemas']['JsonObject-Output']
+      preferences: components['schemas']['JsonObject']
       /** Total Activities Completed */
       total_activities_completed: number
       /** Total Courses Completed */
@@ -9310,17 +9295,17 @@ export interface components {
         | 'submit'
         | 'request_revision_start'
         | 'acknowledge_feedback'
-      payload?: components['schemas']['JsonObject-Input']
+      payload?: components['schemas']['JsonObject']
     }
     /** StudentActivityContentRuntime */
     StudentActivityContentRuntime: {
       /** Assessment Uuid */
       assessment_uuid?: string | null
-      content?: components['schemas']['JsonObject-Output']
-      details?: components['schemas']['JsonObject-Output']
+      content?: components['schemas']['JsonObject']
+      details?: components['schemas']['JsonObject']
       /** File Submission Uuid */
       file_submission_uuid?: string | null
-      settings?: components['schemas']['JsonObject-Output']
+      settings?: components['schemas']['JsonObject']
       /** Subtype */
       subtype: string
       /** Type */
@@ -9605,7 +9590,7 @@ export interface components {
       activity_id: number
       /** Answered Count */
       answered_count?: number | null
-      answers_json?: components['schemas']['JsonObject-Output']
+      answers_json?: components['schemas']['JsonObject']
       assessment_type: components['schemas']['AssessmentType']
       /**
        * Attempt Number
@@ -9653,7 +9638,7 @@ export interface components {
       late_penalty_pct: number
       /** Late Penalty Reason */
       late_penalty_reason?: string | null
-      metadata_json?: components['schemas']['JsonObject-Output']
+      metadata_json?: components['schemas']['JsonObject']
       raw_grading_json?: components['schemas']['GradingBreakdown']
       /**
        * Release State
@@ -9727,7 +9712,7 @@ export interface components {
     SubmissionRead: {
       /** Activity Id */
       activity_id: number
-      answers_json?: components['schemas']['JsonObject-Output']
+      answers_json?: components['schemas']['JsonObject']
       assessment_type: components['schemas']['AssessmentType']
       /**
        * Attempt Number
@@ -9770,7 +9755,7 @@ export interface components {
       late_penalty_pct: number
       /** Late Penalty Reason */
       late_penalty_reason?: string | null
-      metadata_json?: components['schemas']['JsonObject-Output']
+      metadata_json?: components['schemas']['JsonObject']
       raw_grading_json?: components['schemas']['GradingBreakdown']
       /** Started At */
       started_at?: string | null
@@ -10278,7 +10263,7 @@ export interface components {
     TeacherSubmissionRead: {
       /** Activity Id */
       activity_id: number
-      answers_json?: components['schemas']['JsonObject-Output']
+      answers_json?: components['schemas']['JsonObject']
       assessment_type: components['schemas']['AssessmentType']
       /**
        * Attempt Number
@@ -10331,7 +10316,7 @@ export interface components {
       late_penalty_pct: number
       /** Late Penalty Reason */
       late_penalty_reason?: string | null
-      metadata_json?: components['schemas']['JsonObject-Output']
+      metadata_json?: components['schemas']['JsonObject']
       /**
        * Policy Version
        * @default 1
@@ -10445,14 +10430,14 @@ export interface components {
     }
     /** TrailRunRead */
     TrailRunRead: {
-      course?: components['schemas']['JsonObject-Output'] | null
+      course?: components['schemas']['JsonObject'] | null
       /** Course Id */
       course_id?: number
       /** Course Total Steps */
       course_total_steps: number
       /** Creation Date */
       creation_date?: string | null
-      data?: components['schemas']['JsonObject-Output']
+      data?: components['schemas']['JsonObject']
       /** Id */
       id?: number | null
       /** @default STATUS_IN_PROGRESS */
@@ -10468,7 +10453,7 @@ export interface components {
     }
     /** TrailStepRead */
     TrailStepRead: {
-      activity?: components['schemas']['JsonObject-Output'] | null
+      activity?: components['schemas']['JsonObject'] | null
       /** Activity Id */
       activity_id: number
       /** Complete */
@@ -10477,7 +10462,7 @@ export interface components {
       course_id: number
       /** Creation Date */
       creation_date?: string | null
-      data?: components['schemas']['JsonObject-Output']
+      data?: components['schemas']['JsonObject']
       /**
        * Grade
        * @default 0
@@ -10636,7 +10621,7 @@ export interface components {
        * @default
        */
       bio: string | null
-      details?: components['schemas']['JsonObject-Input'] | null
+      details?: components['schemas']['JsonObject'] | null
       /**
        * Email
        * Format: email
@@ -10664,7 +10649,7 @@ export interface components {
       middle_name: string | null
       /** Password */
       password: string
-      profile?: components['schemas']['JsonObject-Input'] | null
+      profile?: components['schemas']['JsonObject'] | null
       /**
        * Theme
        * @default default
@@ -10715,7 +10700,7 @@ export interface components {
       /** Permissions */
       permissions: string[]
       /** Roles */
-      roles: components['schemas']['JsonObject-Output'][]
+      roles: components['schemas']['JsonObject'][]
     }
     /** UserRankRead */
     UserRankRead: {
@@ -10741,7 +10726,7 @@ export interface components {
        * @default
        */
       bio: string | null
-      details?: components['schemas']['JsonObject-Output'] | null
+      details?: components['schemas']['JsonObject'] | null
       /**
        * Email
        * Format: email
@@ -10778,7 +10763,7 @@ export interface components {
        * @default
        */
       middle_name: string | null
-      profile?: components['schemas']['JsonObject-Output'] | null
+      profile?: components['schemas']['JsonObject'] | null
       /**
        * Theme
        * @default default
@@ -10858,7 +10843,7 @@ export interface components {
       avatar_image?: string | null
       /** Bio */
       bio?: string | null
-      details?: components['schemas']['JsonObject-Input'] | null
+      details?: components['schemas']['JsonObject'] | null
       /** Email */
       email?: string | null
       /** First Name */
@@ -10869,7 +10854,7 @@ export interface components {
       locale?: string | null
       /** Middle Name */
       middle_name?: string | null
-      profile?: components['schemas']['JsonObject-Input'] | null
+      profile?: components['schemas']['JsonObject'] | null
       /** Theme */
       theme?: string | null
       /** Username */
@@ -11481,7 +11466,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11545,7 +11530,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11609,7 +11594,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11676,7 +11661,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11740,7 +11725,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11806,7 +11791,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11875,7 +11860,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11941,7 +11926,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12003,7 +11988,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12065,7 +12050,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12127,7 +12112,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12191,7 +12176,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12255,7 +12240,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12323,7 +12308,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12387,7 +12372,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12451,7 +12436,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12515,7 +12500,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12583,7 +12568,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }

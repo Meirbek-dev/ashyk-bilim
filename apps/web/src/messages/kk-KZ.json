@@ -9774,7 +9774,11 @@
     "passwordTooLong": "Құпиясөз ең көбі 128 таңбадан тұруы керек",
     "passwordNeedsLowercase": "Құпиясөзде кем дегенде бір кіші әріп болуы керек",
     "passwordNeedsUppercase": "Құпиясөзде кем дегенде бір бас әріп болуы керек",
-    "passwordNeedsNumber": "Құпиясөзде кем дегенде бір сан болуы керек"
+    "passwordNeedsNumber": "Құпиясөзде кем дегенде бір сан болуы керек",
+    "titleTooLong": "Атау 100 таңбадан аспауы керек",
+    "descriptionTooLong": "Сипаттама 8000 таңбадан аспауы керек",
+    "sourceCourseRequired": "Бастапқы курсты таңдаңыз",
+    "learningsInvalid": "Оқу нәтижелерінің пішімі қате"
   },
   "activity": "Белсенділік",
   "additionalSettings": "Қосымша параметрлер",

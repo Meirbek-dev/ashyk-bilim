@@ -3816,7 +3816,7 @@
             "type": "integer"
           },
           "payload_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "target_kind": {
             "title": "Target Kind",
@@ -4715,7 +4715,7 @@
             "type": "integer"
           },
           "params": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "performed_by": {
             "title": "Performed By",
@@ -8248,7 +8248,7 @@
             "type": "string"
           },
           "feedback": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "files": {
             "items": {
@@ -8406,7 +8406,7 @@
             "type": "string"
           },
           "late_policy": {
-            "$ref": "#/components/schemas/JsonObject-Input"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "max_attempts": {
             "anyOf": [
@@ -8442,10 +8442,10 @@
             "type": "integer"
           },
           "rubric": {
-            "$ref": "#/components/schemas/JsonObject-Input"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "settings": {
-            "$ref": "#/components/schemas/JsonObject-Input"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "title": {
             "title": "Title",
@@ -8536,7 +8536,7 @@
             "title": "Final Score"
           },
           "rubric": {
-            "$ref": "#/components/schemas/JsonObject-Input"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "status": {
             "default": "GRADED",
@@ -8653,7 +8653,7 @@
             "type": "string"
           },
           "late_policy": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "lifecycle": {
             "$ref": "#/components/schemas/FileSubmissionLifecycle"
@@ -8689,10 +8689,10 @@
             "type": "boolean"
           },
           "rubric": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "settings": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "title": {
             "title": "Title",
@@ -8820,7 +8820,7 @@
           "late_policy": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -8869,7 +8869,7 @@
           "rubric": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -8879,7 +8879,7 @@
           "settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -9616,7 +9616,7 @@
             "title": "Correct"
           },
           "correct_answer": {
-            "$ref": "#/components/schemas/JsonValue-Output"
+            "$ref": "#/components/schemas/JsonValue"
           },
           "feedback": {
             "default": "",
@@ -9648,7 +9648,7 @@
             "type": "number"
           },
           "user_answer": {
-            "$ref": "#/components/schemas/JsonValue-Output"
+            "$ref": "#/components/schemas/JsonValue"
           }
         },
         "required": ["item_id"],
@@ -9811,7 +9811,7 @@
         "properties": {
           "checks": {
             "additionalProperties": {
-              "$ref": "#/components/schemas/JsonObject-Output"
+              "$ref": "#/components/schemas/JsonObject"
             },
             "title": "Checks",
             "type": "object"
@@ -10573,75 +10573,13 @@
         "title": "ItemKind",
         "type": "string"
       },
-      "JsonObject-Input": {
+      "JsonObject": {
         "additionalProperties": {
-          "$ref": "#/components/schemas/JsonValue-Input"
+          "$ref": "#/components/schemas/JsonValue"
         },
         "type": "object"
       },
-      "JsonObject-Output": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/JsonValue-Output"
-        },
-        "type": "object"
-      },
-      "JsonPrimitive": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "integer"
-          },
-          {
-            "type": "number"
-          },
-          {
-            "type": "boolean"
-          },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "JsonValue-Input": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/JsonPrimitive"
-          },
-          {
-            "items": {
-              "$ref": "#/components/schemas/JsonValue-Input"
-            },
-            "type": "array"
-          },
-          {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue-Input"
-            },
-            "type": "object"
-          }
-        ]
-      },
-      "JsonValue-Output": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/JsonPrimitive"
-          },
-          {
-            "items": {
-              "$ref": "#/components/schemas/JsonValue-Output"
-            },
-            "type": "array"
-          },
-          {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue-Output"
-            },
-            "type": "object"
-          }
-        ]
-      },
+      "JsonValue": {},
       "Judge0LanguageRead": {
         "properties": {
           "id": {
@@ -11508,7 +11446,7 @@
             "type": "integer"
           },
           "preferences": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "total_activities_completed": {
             "title": "Total Activities Completed",
@@ -12401,7 +12339,7 @@
             "type": "string"
           },
           "payload": {
-            "$ref": "#/components/schemas/JsonObject-Input"
+            "$ref": "#/components/schemas/JsonObject"
           }
         },
         "required": ["command"],
@@ -12422,10 +12360,10 @@
             "title": "Assessment Uuid"
           },
           "content": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "details": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "file_submission_uuid": {
             "anyOf": [
@@ -12439,7 +12377,7 @@
             "title": "File Submission Uuid"
           },
           "settings": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "subtype": {
             "title": "Subtype",
@@ -13168,7 +13106,7 @@
             "title": "Answered Count"
           },
           "answers_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -13261,7 +13199,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "raw_grading_json": {
             "$ref": "#/components/schemas/GradingBreakdown"
@@ -13478,7 +13416,7 @@
             "type": "integer"
           },
           "answers_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -13566,7 +13504,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "raw_grading_json": {
             "$ref": "#/components/schemas/GradingBreakdown"
@@ -14935,7 +14873,7 @@
             "type": "integer"
           },
           "answers_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "assessment_type": {
             "$ref": "#/components/schemas/AssessmentType"
@@ -15033,7 +14971,7 @@
             "title": "Late Penalty Reason"
           },
           "metadata_json": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "policy_version": {
             "default": 1,
@@ -15290,7 +15228,7 @@
           "course": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Output"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -15318,7 +15256,7 @@
             "title": "Creation Date"
           },
           "data": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "id": {
             "anyOf": [
@@ -15372,7 +15310,7 @@
           "activity": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Output"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -15404,7 +15342,7 @@
             "title": "Creation Date"
           },
           "data": {
-            "$ref": "#/components/schemas/JsonObject-Output"
+            "$ref": "#/components/schemas/JsonObject"
           },
           "grade": {
             "default": 0,
@@ -15771,7 +15709,7 @@
           "details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -15824,7 +15762,7 @@
           "profile": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -15950,7 +15888,7 @@
           },
           "roles": {
             "items": {
-              "$ref": "#/components/schemas/JsonObject-Output"
+              "$ref": "#/components/schemas/JsonObject"
             },
             "title": "Roles",
             "type": "array"
@@ -16016,7 +15954,7 @@
           "details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Output"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -16082,7 +16020,7 @@
           "profile": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Output"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -16345,7 +16283,7 @@
           "details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"
@@ -16410,7 +16348,7 @@
           "profile": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonObject-Input"
+                "$ref": "#/components/schemas/JsonObject"
               },
               {
                 "type": "null"

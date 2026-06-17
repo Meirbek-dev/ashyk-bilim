@@ -25,8 +25,8 @@ export function extractMarkdownHeadingText(children: ReactNode): string {
 
 interface MarkdownHeadingProps extends ComponentPropsWithoutRef<'h1'> {
   level: 1 | 2 | 3 | 4 | 5 | 6
-  anchorId?: string
-  onAnchorClick?: (id: string) => void
+  anchorId?: string | undefined
+  onAnchorClick?: ((id: string) => void) | undefined
 }
 
 const HEADING_CLASS: Record<number, string> = {

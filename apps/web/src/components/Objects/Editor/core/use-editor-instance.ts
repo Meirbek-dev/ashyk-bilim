@@ -2,7 +2,7 @@
 
 import { useEditor } from '@tiptap/react'
 import type { UseEditorOptions } from '@tiptap/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { createEditorExtensions, resolveEditorContent } from './editor-kernel'
 import type { EditorPresetName } from './editor-presets'
 import { getEditorPresetDefinition } from './editor-presets'
@@ -31,17 +31,31 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
     [preset, activity],
   )
 
-  // Resolve content once on mount
-  const [resolvedContent, _setResolvedContent] = useState(() => resolveEditorContent(content))
+  const editor = useEditor(
+    {
+      extensions,
+      content: resolveEditorContent(content),
+      immediatelyRender: false,
+      injectCSS: false,
+      shouldRerenderOnTransaction: preset === 'discussion',
+      editable: presetDef.isEditable,
+      ...(onUpdate === undefined ? {} : { onUpdate: ({ editor }) => onUpdate(editor.getJSON()) }),
+      ...overrides,
+    },
+    [preset, activity?.activity_uuid],
+  )
 
-  return useEditor({
-    extensions,
-    content: resolvedContent,
-    immediatelyRender: false,
-    injectCSS: false,
-    shouldRerenderOnTransaction: preset === 'discussion',
-    editable: presetDef.isEditable,
-    ...(onUpdate === undefined ? {} : { onUpdate: ({ editor }) => onUpdate(editor.getJSON()) }),
-    ...overrides,
-  })
+  // Keep editor content in sync when `content` prop changes
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+
+    const newContent = resolveEditorContent(content)
+    const currentContent = editor.getJSON()
+
+    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+      editor.commands.setContent(newContent, { emitUpdate: false })
+    }
+  }, [editor, content])
+
+  return editor
 }
