@@ -7012,6 +7012,7 @@
     },
     "Panel": {
       "title": "Grading panel",
+      "selectSubmission": "Select a submission to begin reviewing.",
       "loading": "Loading...",
       "notYetSubmitted": "Not yet submitted",
       "noData": "No submission data",
@@ -8037,6 +8038,7 @@
         },
         "Panel": {
           "title": "Grading panel",
+          "selectSubmission": "Select a submission to begin reviewing.",
           "loading": "Loading...",
           "notYetSubmitted": "Not yet submitted",
           "noData": "No submission data",

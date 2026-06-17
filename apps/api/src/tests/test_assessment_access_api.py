@@ -140,6 +140,17 @@ def test_restricted_access_narrows_course_learners(
     assert [user["id"] for user in body["users"]] == [STUDENT_ID]
     assert body["effective_user_count"] == 1
 
+    # Call PUT again with the same parameters to verify that flushing prevents IntegrityError (UniqueViolation)
+    response = api_client.put(
+        f"/assessments/{assessment_uuid}/access",
+        json={"mode": "RESTRICTED", "user_ids": [STUDENT_ID], "usergroup_ids": []},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "RESTRICTED"
+    assert [user["id"] for user in body["users"]] == [STUDENT_ID]
+    assert body["effective_user_count"] == 1
+
     monkeypatch.setattr(PermissionChecker, "check", lambda *_args, **_kwargs: True)
     with db_session_factory() as session:
         activity = session.get(Activity, activity_id)

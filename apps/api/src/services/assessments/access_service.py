@@ -164,6 +164,7 @@ def _replace_policy_users(
     existing = db_session.exec(select(AssessmentAccessUser).where(AssessmentAccessUser.policy_id == policy_id)).all()
     for row in existing:
         db_session.delete(row)
+    db_session.flush()
     for user_id in user_ids:
         db_session.add(AssessmentAccessUser(policy_id=policy_id, user_id=user_id))
 
@@ -178,6 +179,7 @@ def _replace_policy_usergroups(
     ).all()
     for row in existing:
         db_session.delete(row)
+    db_session.flush()
     for usergroup_id in usergroup_ids:
         db_session.add(AssessmentAccessUserGroup(policy_id=policy_id, usergroup_id=usergroup_id))
 

@@ -11466,7 +11466,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11530,7 +11530,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11594,7 +11594,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11661,7 +11661,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11725,7 +11725,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11791,7 +11791,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11860,7 +11860,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11926,7 +11926,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -11988,7 +11988,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12050,7 +12050,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12112,7 +12112,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12176,7 +12176,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12240,7 +12240,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12308,7 +12308,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12372,7 +12372,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12436,7 +12436,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12500,7 +12500,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
@@ -12568,7 +12568,7 @@ export interface operations {
               | 'difficulty'
               | 'signals'
             )
-          | ('title' | 'submission' | 'pass' | 'latency')
+          | ('title' | 'submission' | 'pass' | 'difficulty' | 'latency' | 'signals')
           | null
         sort_order?: 'asc' | 'desc'
       }
