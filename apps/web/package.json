@@ -22,7 +22,7 @@
     "lint:empty-folders": "node scripts/check-empty-folders.mjs",
     "format": "vp fmt --write",
     "start": "next start",
-    "check-types": "next typegen && tsgo --noEmit",
+    "checktypes": "next typegen && tsgo --noEmit",
     "bundle:analyze": "next experimental-analyze",
     "knip": "knip"
   },

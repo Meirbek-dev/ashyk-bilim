@@ -752,8 +752,8 @@ The backlog below contains **150 concrete suggestions**. Items intentionally ske
 
 - **Effort:** S/M
 - **Impact:** High
-- **Evidence:** Web workflow runs lint only, not `check-types` or Vitest.
-- **Action:** Add `bun run check-types` and `bun run test` to web workflow. Cache Bun and Next typegen.
+- **Evidence:** Web workflow runs lint only, not `checktypes` or Vitest.
+- **Action:** Add `bun run checktypes` and `bun run test` to web workflow. Cache Bun and Next typegen.
 - **Done when:** Frontend type/unit regressions fail before merge.
 
 #### 103. [P1] Add Playwright smoke to CI on critical PRs

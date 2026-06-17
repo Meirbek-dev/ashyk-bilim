@@ -14,7 +14,7 @@
     "generate:contracts": "bun run --cwd apps/api generate:contracts && bun run --cwd apps/web generate:contracts",
     "services": "docker-compose up -d db redis",
     "services:judge0": "docker-compose up -d db redis && docker-compose up -d --force-recreate judge0-workers judge0-server",
-    "check-types": "turbo run check-types",
+    "checktypes": "turbo run checktypes",
     "format": "turbo run format",
     "lint": "turbo run lint",
     "test": "turbo run test",

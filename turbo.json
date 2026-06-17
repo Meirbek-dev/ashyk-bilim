@@ -14,8 +14,8 @@
     "start": {
       "dependsOn": ["^build"]
     },
-    "check-types": {
-      "dependsOn": ["^check-types"]
+    "checktypes": {
+      "dependsOn": ["^checktypes"]
     },
     "generate:contracts": {
       "cache": false,

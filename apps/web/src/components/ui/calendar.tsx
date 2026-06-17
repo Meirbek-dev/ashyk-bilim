@@ -273,7 +273,7 @@ function CalendarDateTimePicker({
   id,
   value,
   onChange,
-  placeholder = 'Pick date and time',
+  placeholder = 'Выберите дату и время',
   className,
   buttonVariant = 'outline',
   disabled = false,
