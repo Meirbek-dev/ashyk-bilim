@@ -1,3 +1,4 @@
+import { ReactScan } from '@/components/providers/ReactScan'
 import { ThemeScript } from '@/components/providers/theme-script'
 import { defaultLocale } from '@/i18n/config'
 import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       style={getThemeStyle(initialTheme)}
       suppressHydrationWarning
     >
+      <ReactScan />
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
