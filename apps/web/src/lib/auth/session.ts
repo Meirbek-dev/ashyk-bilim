@@ -7,6 +7,7 @@ import { getLocale } from 'next-intl/server'
 import { redirect as localeRedirect } from '@/i18n/navigation'
 import { apiFetch } from '@/lib/api-client'
 import { isAccessTokenExpired } from './cookie-bridge'
+import { buildReturnTo } from './return-to'
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from './types'
 import type { Session, UserSessionResponse } from './types'
 
@@ -14,7 +15,7 @@ async function getPageReturnTo(): Promise<string | null> {
   const headersList = await headers()
   const pathname = headersList.get('x-pathname')
   if (!pathname) return null
-  return `${pathname}${headersList.get('x-search') ?? ''}`
+  return buildReturnTo(pathname, headersList.get('x-search'))
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -69,15 +70,14 @@ export const getSession = cache(async (): Promise<Session | null> => {
 /**
  * Require an authenticated session or redirect to /login.
  *
- * The returnTo path comes from the x-pathname header injected by proxy.ts,
+ * The returnTo path comes from request headers injected by proxy.ts,
  * so the user lands back at their intended destination after signing in.
  */
 export async function requireSession(): Promise<Session> {
   const session = await getSession()
   if (!session) {
-    const headersList = await headers()
-    const locale = await getLocale()
-    const returnTo = headersList.get('x-pathname') ?? '/'
+    const [headersList, locale] = await Promise.all([headers(), getLocale()])
+    const returnTo = buildReturnTo(headersList.get('x-pathname'), headersList.get('x-search'))
     return localeRedirect({
       href: `/login?returnTo=${encodeURIComponent(returnTo)}`,
       locale,

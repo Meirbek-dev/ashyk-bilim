@@ -1,32 +1,11 @@
 import createMiddleware from 'next-intl/middleware'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { localePrefixes } from './i18n/config'
 import { routing } from './i18n/routing'
-import { isAccessTokenExpired } from './lib/auth/cookie-bridge'
-import { ACCESS_TOKEN_COOKIE_NAME } from './lib/auth/types'
+import { getPathInfo, toInternalAuthPath, toInternalEditorPath } from './lib/auth/routes'
 import { generateUUID } from './lib/utils'
 
-const AUTH_REWRITE: Record<string, string> = {
-  '/forgot': '/auth/forgot',
-  '/login': '/auth/login',
-  '/reset': '/auth/reset',
-  '/signup': '/auth/signup',
-}
-
-const EDITOR_PATH_RE = /^\/course\/[\w-]+\/activity\/[\w-]+\/edit$/
 const handleI18nRouting = createMiddleware(routing)
-
-const PROTECTED_PREFIXES = [
-  '/dash',
-  '/profile',
-  '/settings',
-  '/admin',
-  '/analytics',
-  '/editor',
-  '/certificates',
-  '/assessments',
-] as const
 
 export const config = {
   matcher: [
@@ -40,44 +19,15 @@ export const config = {
   ],
 }
 
-const localePathPrefixes = [
-  ...routing.locales.map(locale => [locale, `/${locale}`] as const),
-  ...Object.entries(localePrefixes),
-].toSorted(([, a], [, b]) => b.length - a.length)
-
-function getPathInfo(pathname: string) {
-  const match = localePathPrefixes.find(([, prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-
-  if (!match) {
-    return {
-      locale: undefined,
-      pathnameWithoutLocale: pathname,
-    }
-  }
-
-  const [locale, prefix] = match
-
-  return {
-    locale,
-    pathnameWithoutLocale: pathname.slice(prefix.length) || '/',
-  }
-}
-
 function buildRequestHeaders(req: NextRequest, requestId: string, locale?: string) {
   const headers = new Headers(req.headers)
 
-  headers.set('x-forwarded-host', req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host)
-  headers.set('x-forwarded-proto', req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol.replace(':', ''))
   headers.set('x-request-id', requestId)
   headers.set('x-pathname', req.nextUrl.pathname)
   headers.set('x-search', req.nextUrl.search)
 
   if (locale) {
     headers.set('x-next-intl-locale', locale)
-  }
-
-  if (req.nextUrl.port) {
-    headers.set('x-forwarded-port', req.nextUrl.port)
   }
 
   return headers
@@ -88,7 +38,7 @@ function withRequestId(response: NextResponse, requestId: string) {
   return response
 }
 
-function applyRequestHeaders(response: NextResponse, req: NextRequest, requestId: string, locale?: string) {
+function attachRequestHeaders(response: NextResponse, req: NextRequest, requestId: string, locale?: string) {
   const headerResponse = NextResponse.next({
     request: { headers: buildRequestHeaders(req, requestId, locale) },
   })
@@ -114,114 +64,71 @@ function applyRequestHeaders(response: NextResponse, req: NextRequest, requestId
   return withRequestId(response, requestId)
 }
 
-function copyPublicResponseHeaders(source: Headers, target: NextResponse) {
-  source.forEach((value, key) => {
-    if (!key.startsWith('x-middleware-')) {
-      target.headers.set(key, value)
-    }
-  })
-}
-
-function rewriteWithHeaders(
-  req: NextRequest,
-  requestId: string,
-  pathname: string,
-  locale?: string,
-  responseHeaders?: Headers,
-) {
-  const response = NextResponse.rewrite(new URL(pathname, req.url), {
-    request: { headers: buildRequestHeaders(req, requestId, locale) },
-  })
-
-  if (responseHeaders) {
-    copyPublicResponseHeaders(responseHeaders, response)
-  }
-
-  return withRequestId(response, requestId)
-}
-
-function getPublicOrigin(req: NextRequest): string {
-  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host
-  const proto = (req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol).replace(':', '')
-  return `${proto}://${host}`
-}
-
-function redirectToRefresh(req: NextRequest, requestId: string, pathname: string, search: string) {
-  const returnTo = encodeURIComponent(pathname + search)
+function rewriteWithHeaders(req: NextRequest, requestId: string, pathname: string, locale?: string) {
   return withRequestId(
-    NextResponse.redirect(new URL(`/api/auth/refresh?returnTo=${returnTo}`, getPublicOrigin(req))),
+    NextResponse.rewrite(new URL(pathname, req.url), {
+      request: { headers: buildRequestHeaders(req, requestId, locale) },
+    }),
     requestId,
   )
 }
 
-export default async function proxy(req: NextRequest) {
+function getResolvedPathname(req: NextRequest, response: NextResponse): string {
+  const rewrite = response.headers.get('x-middleware-rewrite')
+  return rewrite ? new URL(rewrite).pathname : req.nextUrl.pathname
+}
+
+function isWellKnownPath(pathname: string): boolean {
+  return pathname === '/.well-known' || pathname.startsWith('/.well-known/')
+}
+
+export default function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl
   const requestId = generateUUID()
 
-  if (pathname.startsWith('/health')) {
+  if (pathname === '/health' || pathname.startsWith('/health/')) {
     return rewriteWithHeaders(req, requestId, '/api/health')
   }
 
   if (pathname.includes('/.well-known')) {
     const { pathnameWithoutLocale } = getPathInfo(pathname)
     if (pathname !== pathnameWithoutLocale) {
-      return NextResponse.redirect(new URL(pathnameWithoutLocale, req.url))
+      return withRequestId(NextResponse.redirect(new URL(pathnameWithoutLocale, req.url)), requestId)
     }
-    return NextResponse.next()
+    return withRequestId(NextResponse.next(), requestId)
   }
 
   if (pathname === '/redirect_from_auth') {
-    const queryString = req.nextUrl.searchParams.toString()
     const redirectUrl = new URL('/', req.nextUrl.origin)
-    if (queryString) {
-      redirectUrl.search = queryString
-    }
+    redirectUrl.search = req.nextUrl.search
     return withRequestId(NextResponse.redirect(redirectUrl), requestId)
   }
 
-  if (pathname.startsWith('/sitemap.xml')) {
+  if (pathname === '/sitemap.xml') {
     return rewriteWithHeaders(req, requestId, '/api/sitemap')
   }
 
   const i18nResponse = handleI18nRouting(req)
-  withRequestId(i18nResponse, requestId)
-
   if (!i18nResponse.ok) {
-    return i18nResponse
+    return withRequestId(i18nResponse, requestId)
   }
 
-  const resolvedUrl = new URL(i18nResponse.headers.get('x-middleware-rewrite') ?? req.url)
-  const { locale, pathnameWithoutLocale } = getPathInfo(resolvedUrl.pathname)
+  const resolvedPathname = getResolvedPathname(req, i18nResponse)
+  const { locale } = getPathInfo(resolvedPathname)
 
-  if (!locale) {
-    return applyRequestHeaders(i18nResponse, req, requestId)
+  if (isWellKnownPath(getPathInfo(resolvedPathname).pathnameWithoutLocale)) {
+    return attachRequestHeaders(i18nResponse, req, requestId, locale)
   }
 
-  const authRewrite = AUTH_REWRITE[pathnameWithoutLocale]
+  const authRewrite = toInternalAuthPath(resolvedPathname)
   if (authRewrite) {
-    return rewriteWithHeaders(req, requestId, `/${locale}${authRewrite}${search}`, locale, i18nResponse.headers)
+    return rewriteWithHeaders(req, requestId, `${authRewrite}${search}`, locale)
   }
 
-  const isProtected =
-    PROTECTED_PREFIXES.some(prefix => pathnameWithoutLocale.startsWith(prefix)) ||
-    EDITOR_PATH_RE.test(pathnameWithoutLocale)
-  if (isProtected) {
-    const accessToken = req.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value
-
-    if (!accessToken || isAccessTokenExpired(accessToken)) {
-      return redirectToRefresh(req, requestId, pathname, search)
-    }
+  const editorRewrite = toInternalEditorPath(resolvedPathname)
+  if (editorRewrite) {
+    return rewriteWithHeaders(req, requestId, `${editorRewrite}${search}`, locale)
   }
 
-  if (EDITOR_PATH_RE.test(pathnameWithoutLocale)) {
-    return rewriteWithHeaders(
-      req,
-      requestId,
-      `/${locale}/editor${pathnameWithoutLocale}${search}`,
-      locale,
-      i18nResponse.headers,
-    )
-  }
-
-  return applyRequestHeaders(i18nResponse, req, requestId, locale)
+  return attachRequestHeaders(i18nResponse, req, requestId, locale)
 }

@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { loginAction, signupAction, logoutAction } from '@/app/actions/auth'
 
+vi.mock('server-only', () => ({}))
+
 // Mock headers and cookies from Next.js
 const mockCookies = {
   get: vi.fn(),

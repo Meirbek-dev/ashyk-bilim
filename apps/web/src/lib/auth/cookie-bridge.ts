@@ -142,9 +142,9 @@ export function clearAuthCookies(response: NextResponse): NextResponse {
 /**
  * Decode the ``exp`` claim from an access token WITHOUT verifying the signature.
  *
- * Safe to call in the proxy / middleware context where we only need to know
- * whether to attempt a refresh.  Actual signature verification happens in
- * ``getSession()`` (server components) and ``proxy.ts`` (middleware).
+ * Safe only as an untrusted refresh hint. It does not verify the JWT
+ * signature, user state, session revocation, or permissions. Actual
+ * authentication remains enforced by the backend and `getSession()`.
  */
 export function getAccessTokenExpiry(accessToken: string | undefined): number | null {
   if (!accessToken) return null

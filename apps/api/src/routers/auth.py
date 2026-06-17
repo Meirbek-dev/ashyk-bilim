@@ -331,6 +331,12 @@ async def refresh_token(
 
     inspection = await inspect_refresh_session(db_session, token)
 
+    if inspection.status == "rotated":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Refresh token was already rotated",
+        )
+
     if inspection.status == "reused":
         if inspection.token_family_id and inspection.user_id:
             await revoke_token_family(inspection.token_family_id, inspection.user_id)

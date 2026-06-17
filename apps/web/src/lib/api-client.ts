@@ -10,7 +10,7 @@
  */
 
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
-import { isAuthRoute } from '@/lib/auth/redirect'
+import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
 import { getApiErrorMessage, parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
 import type { ApiErrorLike } from '@/types/shared'
@@ -72,6 +72,7 @@ const DEFAULT_TIMEOUT_MS = 30_000 // 30 seconds
 
 /** Prevents multiple concurrent 401 responses from racing to redirect. */
 let authRedirectPending = false
+let authRefreshPromise: Promise<boolean> | null = null
 
 function createTimeoutReason(timeoutMs: number): Error {
   const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`)
@@ -117,6 +118,37 @@ function combineAbortSignals(signals: AbortSignal[]): {
       }
     },
   }
+}
+
+function getBrowserReturnTo(): string {
+  const { pathname, search } = globalThis.location
+  return `${pathname}${search}` || '/'
+}
+
+async function refreshBrowserSession(returnTo: string): Promise<boolean> {
+  authRefreshPromise ??= fetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      'x-auth-refresh': 'fetch',
+    },
+    credentials: 'include',
+    cache: 'no-store',
+    redirect: 'manual',
+  })
+    .then(response => response.ok)
+    .catch(() => false)
+    .finally(() => {
+      authRefreshPromise = null
+    })
+
+  return authRefreshPromise
+}
+
+function redirectBrowserToLogin(returnTo: string): void {
+  if (authRedirectPending) return
+  authRedirectPending = true
+  globalThis.location.assign(buildLoginRedirect(returnTo))
 }
 
 export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
@@ -169,11 +201,18 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
       ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
     })
 
-    if (!isServer && response.status === 401 && !authRedirectPending) {
-      const { pathname, search } = globalThis.location
-      if (!isAuthRoute(pathname)) {
-        authRedirectPending = true
-        globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`)
+    if (!isServer && response.status === 401) {
+      const returnTo = getBrowserReturnTo()
+      if (!isAuthRoute(globalThis.location.pathname)) {
+        const refreshed = await refreshBrowserSession(returnTo)
+        if (refreshed) {
+          return fetch(url, {
+            ...options,
+            ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
+          })
+        }
+
+        redirectBrowserToLogin(returnTo)
       }
     }
 

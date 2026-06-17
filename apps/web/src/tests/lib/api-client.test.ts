@@ -8,7 +8,7 @@ vi.mock('@services/config/config', () => ({
 }))
 
 vi.mock('@/lib/auth/redirect', () => ({
-  buildLoginRedirect: () => '/login',
+  buildLoginRedirect: (returnTo?: string | null) => `/login?returnTo=${encodeURIComponent(returnTo ?? '/')}`,
   isAuthRoute: () => false,
 }))
 
@@ -66,5 +66,34 @@ describe('apiFetch timeout', () => {
     const data = await response.json()
 
     expect(data.ok).toBe(true)
+  })
+
+  it('should refresh once and retry concurrent 401 responses', async () => {
+    const calls: string[] = []
+    let originalRequestCount = 0
+    ;(global.fetch as any).mockImplementation((url: string | Request | URL) => {
+      const urlString = String(url)
+      calls.push(urlString)
+
+      if (urlString.startsWith('/api/auth/refresh')) {
+        return Promise.resolve(new Response(JSON.stringify({ status: 'ok' }), { status: 200 }))
+      }
+
+      originalRequestCount += 1
+      if (originalRequestCount <= 2) {
+        return Promise.resolve(new Response(null, { status: 401 }))
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    })
+
+    const [first, second] = await Promise.all([
+      apiFetch('needs-auth', { timeoutMs: false }),
+      apiFetch('needs-auth', { timeoutMs: false }),
+    ])
+
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+    expect(calls.filter(call => call.startsWith('/api/auth/refresh'))).toHaveLength(1)
   })
 })

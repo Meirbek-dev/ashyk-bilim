@@ -38,11 +38,13 @@ logger = logging.getLogger(__name__)
 
 REFRESH_SESSION_TTL = int(REFRESH_TOKEN_EXPIRE.total_seconds())
 REFRESH_SESSION_HARD_CAP = int(REFRESH_TOKEN_HARD_CAP_EXPIRE.total_seconds())
+REFRESH_ROTATION_GRACE_SECONDS = 10
 MAX_SESSIONS_PER_USER = 10
 SESSION_PREFIX = "session:"
 USER_SESSIONS_PREFIX = "user_sessions:"
+ROTATED_SESSION_PREFIX = "rotated_session:"
 
-RefreshSessionStatus = Literal["active", "expired", "revoked", "reused", "invalid"]
+RefreshSessionStatus = Literal["active", "expired", "revoked", "reused", "rotated", "invalid"]
 
 
 @dataclass(slots=True)
@@ -114,6 +116,10 @@ def _user_sessions_key(user_id: int) -> str:
     return USER_SESSIONS_PREFIX + str(user_id)
 
 
+def _rotated_session_key(session_id: str) -> str:
+    return ROTATED_SESSION_PREFIX + session_id
+
+
 def _redis_key_type_name(key_type: bytes | str) -> str:
     if isinstance(key_type, bytes):
         return key_type.decode("utf-8", errors="ignore")
@@ -157,6 +163,17 @@ def _parse_session_data(raw: bytes | str) -> SessionData | None:
         return SessionData(**d)
     except Exception:
         return None
+
+
+def _rotation_grace_payload(old_session: SessionData, new_session: SessionData, *, rotated_at: int) -> JsonObject:
+    return {
+        "session_id": old_session.session_id,
+        "token_family_id": old_session.token_family_id,
+        "user_id": old_session.user_id,
+        "refresh_token_hash": old_session.refresh_token_hash,
+        "replaced_by_session_id": new_session.session_id,
+        "rotated_at": rotated_at,
+    }
 
 
 # ── Redis operations (Sorted Set) ─────────────────────────────────────────────
@@ -214,6 +231,38 @@ async def _delete_session_from_redis(session_id: str, user_id: int) -> None:
         await pipe.delete(_session_key(session_id))
         await pipe.zrem(user_key, session_id)
         await pipe.execute()
+
+
+async def _write_rotation_grace(old_session: SessionData, new_session: SessionData, *, rotated_at: int) -> None:
+    r = get_async_redis_client()
+    if not r:
+        return
+
+    payload = json.dumps(_rotation_grace_payload(old_session, new_session, rotated_at=rotated_at))
+    await r.set(_rotated_session_key(old_session.session_id), payload, ex=REFRESH_ROTATION_GRACE_SECONDS)
+
+
+async def _read_rotation_grace(session_id: str) -> JsonObject | None:
+    r = get_async_redis_client()
+    if not r:
+        return None
+
+    try:
+        raw = await r.get(_rotated_session_key(session_id))
+    except Exception:
+        logger.warning("Redis error reading refresh rotation grace for %s", session_id)
+        return None
+
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        logger.warning("Corrupt refresh rotation grace payload for %s", session_id)
+        return None
+
+    return data if isinstance(data, dict) else None
 
 
 async def _find_session_by_refresh_token(refresh_token: str) -> SessionData | None:
@@ -479,6 +528,15 @@ async def inspect_refresh_session(db_session: Session, refresh_token: str) -> Re
             user_id=data.user_id,
         )
 
+    grace = await _read_rotation_grace(session_id)
+    if grace is not None and grace.get("refresh_token_hash") == hash_refresh_token(refresh_token):
+        return RefreshSessionInspection(
+            status="rotated",
+            session_id=session_id,
+            token_family_id=as_str(grace["token_family_id"], field="token_family_id"),
+            user_id=as_int(grace["user_id"], field="user_id"),
+        )
+
     # Session not in Redis — check PostgreSQL for reuse / revocation diagnosis.
     # This is a READ-only path; any resulting audit writes are also fire-and-forget.
     record = db_session.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
@@ -521,8 +579,6 @@ async def rotate_session(
 ) -> tuple[SessionData, str]:
     """Rotate a refresh session.  No DB session required — audit is async."""
     now = _now_ts()
-    await _delete_session_from_redis(old_session.session_id, old_session.user_id)
-
     new_session_id = _generate_session_id()
     new_refresh_token = _generate_refresh_token(new_session_id)
     new_data = SessionData(
@@ -539,7 +595,9 @@ async def rotate_session(
         absolute_expires_at=old_session.absolute_expires_at,
     )
     remaining = max(1, min(REFRESH_SESSION_TTL, old_session.absolute_expires_at - now))
+    await _delete_session_from_redis(old_session.session_id, old_session.user_id)
     await _write_session_to_redis(new_data, remaining)
+    await _write_rotation_grace(old_session, new_data, rotated_at=now)
     await _fire_audit_rotate(old_session.session_id, new_session_id, new_data)
     return new_data, new_refresh_token
 
