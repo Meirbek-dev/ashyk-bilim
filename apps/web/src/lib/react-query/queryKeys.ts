@@ -10,7 +10,9 @@ export const queryKeys = {
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
     draft: (assessmentUuid: string | null | undefined) =>
       ['assessments', 'draft', assessmentUuid || 'missing'] as const,
+    itemAnalytics: (assessmentUuid: string) => ['assessments', 'item-analytics', assessmentUuid] as const,
     readiness: (assessmentUuid: string) => ['assessments', 'readiness', assessmentUuid] as const,
+    stats: (assessmentUuid: string) => ['assessments', 'submission-stats', assessmentUuid] as const,
   },
   codeChallenges: {
     languages: () => ['code-challenges', 'languages'] as const,

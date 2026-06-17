@@ -531,6 +531,44 @@ def test_unknown_item_kinds_are_rejected_for_assessments(
     assert response.status_code == 422
 
 
+def test_code_challenge_rejects_choice_items(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """CODE_CHALLENGE assessments may only author CODE items."""
+    course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
+    create_response = api_client.post(
+        "/assessments",
+        json={
+            "kind": "CODE_CHALLENGE",
+            "title": "Code challenge",
+            "course_id": course_id,
+            "chapter_id": chapter_id,
+        },
+    )
+    assert create_response.status_code == 200
+    assessment_uuid = create_response.json()["assessment_uuid"]
+
+    response = api_client.post(
+        f"/assessments/{assessment_uuid}/items",
+        json={
+            "kind": "CHOICE",
+            "title": "Wrong item type",
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose.",
+                "options": [
+                    {"text": "A", "is_correct": True},
+                    {"text": "B", "is_correct": False},
+                ],
+                "multiple": False,
+            },
+            "max_score": 10,
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_update_item_title(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid}/items/{item_uuid} updates the item title."""
     assessment_uuid = _seed_published_assessment(db_session_factory)

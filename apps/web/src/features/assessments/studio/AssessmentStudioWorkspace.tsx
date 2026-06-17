@@ -19,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -152,7 +151,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 }
               />
               <DropdownMenuContent align="end">
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={isPending || !studio.canArchive}
                   onSelect={archiveAssessment}

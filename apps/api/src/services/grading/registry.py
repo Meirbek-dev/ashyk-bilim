@@ -44,7 +44,10 @@ class GraderRegistry:
 
     @classmethod
     def get(cls, assessment_type: AssessmentType) -> BaseGrader:
-        grader_cls = cls._graders.get(assessment_type, ManualReviewGrader)
+        grader_cls = cls._graders.get(assessment_type)
+        if grader_cls is None:
+            message = f"No grader registered for assessment type {assessment_type.value}"
+            raise RuntimeError(message)
         return grader_cls()
 
     @classmethod

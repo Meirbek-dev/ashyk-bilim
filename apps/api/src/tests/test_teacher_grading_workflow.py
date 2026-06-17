@@ -60,6 +60,7 @@ from src.routers.assessments.unified import router as assessments_router
 from src.security.rbac import PermissionChecker
 from src.services.assessments import core
 from src.services.grading import teacher as teacher_service
+from src.services.grading.teacher import export_grades_csv
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -466,6 +467,36 @@ def test_get_submission_stats_includes_avg_score(
     stats = response.json()
     # Bob's score is 78; Alice is PENDING with no score
     assert stats["avg_score"] == 78.0
+
+
+def test_submission_stats_uses_assessment_passing_score(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """pass_rate must respect the configured policy threshold, not a hardcoded 50%."""
+    assessment_uuid, activity_id, _ = _seed_course_and_assessment(db_session_factory)
+    with db_session_factory() as session:
+        policy = session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).one()
+        policy.passing_score = 80.0
+        session.add(policy)
+        session.commit()
+
+    response = api_client.get(f"/assessments/{assessment_uuid}/submissions/stats")
+
+    assert response.status_code == 200
+    assert response.json()["pass_rate"] == 0.0
+
+
+def test_export_grades_csv_uses_assessment_items_for_headers(
+    db_session_factory: Callable[[], Session], teacher_user: PublicUser
+) -> None:
+    """CSV columns are derived from the current assessment item set, not a sample submission."""
+    _assessment_uuid, activity_id, _ = _seed_course_and_assessment(db_session_factory)
+
+    with db_session_factory() as session:
+        lines = list(export_grades_csv(activity_id, teacher_user, session))
+
+    assert lines
+    assert "Элемент: Write a summary" in lines[0]
 
 
 # ---------------------------------------------------------------------------

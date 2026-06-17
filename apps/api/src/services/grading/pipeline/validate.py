@@ -74,6 +74,19 @@ def validate_and_parse(
                     "actual": str(answer_kind),
                 },
             )
+        if str(item.kind) == "OPEN_TEXT":
+            answer_text = getattr(answer, "text", None)
+            if answer_text is None and isinstance(answer, dict):
+                answer_text = answer.get("text")
+            if isinstance(answer_text, str) and len(answer_text) > _OPEN_TEXT_MAX_CHARS:
+                _raise_invalid(
+                    "Ответ на открытый вопрос превышает максимально допустимую длину",
+                    code="open_text_too_long",
+                    extra={
+                        "item_uuid": item_uuid,
+                        "max_chars": _OPEN_TEXT_MAX_CHARS,
+                    },
+                )
 
     return ParsedAnswers(
         answers_by_item_uuid=answers_by_item_uuid,

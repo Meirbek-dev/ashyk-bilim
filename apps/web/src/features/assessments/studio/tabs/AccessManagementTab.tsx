@@ -212,7 +212,6 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 <p className="truncate text-sm font-medium">{displayUser(user)}</p>
                 <p className="text-muted-foreground truncate text-xs">{user.email}</p>
               </div>
-              <Badge variant="outline">#{user.id}</Badge>
             </Button>
           ))}
         </AccessList>

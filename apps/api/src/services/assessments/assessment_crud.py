@@ -79,6 +79,7 @@ _SCORING_FIELDS: frozenset[str] = frozenset({"body", "body_json", "kind", "max_s
 _SUPPORTED_ITEM_KINDS_BY_ASSESSMENT: dict[AssessmentType, frozenset[ItemKind]] = {
     AssessmentType.EXAM: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
     AssessmentType.QUIZ: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
+    AssessmentType.CODE_CHALLENGE: frozenset({ItemKind.CODE}),
 }
 
 

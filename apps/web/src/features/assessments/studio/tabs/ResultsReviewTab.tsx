@@ -1,12 +1,14 @@
 'use client'
 
 import { BarChart3, BookOpenCheck, ChevronDown, ChevronUp, Clock4, ExternalLink, TrendingUp, Users } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useQuery } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { cn } from '@/lib/utils'
 import { apiFetcher } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import Link from '@components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -43,39 +45,21 @@ interface ResultsReviewTabProps {
 
 export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
-  const [stats, setStats] = useState<SubmissionStats | null>(null)
-  const [itemAnalytics, setItemAnalytics] = useState<ItemAnalytics[] | null>(null)
   const [analyticsExpanded, setAnalyticsExpanded] = useState(true)
 
-  useEffect(() => {
-    let cancelled = false
-    apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`)
-      .then(data => {
-        if (!cancelled) setStats(data)
-        return data
-      })
-      .catch(() => {
-        if (!cancelled) setStats(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [assessmentUuid])
+  const statsQuery = useQuery({
+    queryKey: queryKeys.assessments.stats(assessmentUuid),
+    queryFn: () => apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
+    staleTime: 30_000,
+  })
+  const itemAnalyticsQuery = useQuery({
+    queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
+    queryFn: () => apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
+    staleTime: 30_000,
+  })
 
-  useEffect(() => {
-    let cancelled = false
-    apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`)
-      .then(data => {
-        if (!cancelled) setItemAnalytics(data)
-        return data
-      })
-      .catch(() => {
-        if (!cancelled) setItemAnalytics([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [assessmentUuid])
+  const stats = statsQuery.data ?? null
+  const itemAnalytics = itemAnalyticsQuery.data ?? null
 
   const cleanCourseUuid = courseUuid?.replace(/^course_/, '') ?? ''
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')

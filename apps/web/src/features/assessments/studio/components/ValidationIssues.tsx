@@ -4,7 +4,7 @@ import type { classifyValidationIssue } from '@/features/assessments/domain/read
 
 export function useIssueMessage(issue: ValidationIssue): string {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation')
-  return t(issue.code.replace('.', '_'))
+  return t(issue.code.replaceAll('.', '_'))
 }
 
 export function InlineIssueMessage({ issue }: { issue: ValidationIssue }) {

@@ -221,8 +221,10 @@ async def get_assessment_submission_stats(
     ).all()
     graded_scores = [float(score) for score in raw_graded_scores if score is not None]
 
+    policy = _get_policy_for_assessment(assessment, db_session)
+    passing_score = float(policy.passing_score) if policy is not None else 60.0
     avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
-    passing = [score for score in graded_scores if score >= 50.0]
+    passing = [score for score in graded_scores if score >= passing_score]
     pass_rate = round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
 
     # Build 10-point score distribution buckets (0–10, 10–20, … 90–100)

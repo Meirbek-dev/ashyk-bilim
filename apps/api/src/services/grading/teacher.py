@@ -11,6 +11,7 @@ from sqlalchemy import ColumnElement, asc, desc, func, or_
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.db.assessments import Assessment, AssessmentItem
 from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
 from src.db.grading.entries import GradingEntry
@@ -255,7 +256,8 @@ async def get_submission_stats(
     graded_scores = [float(s) for s in graded_scores_raw if s is not None]
 
     avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
-    passing = [s for s in graded_scores if s >= 50.0]
+    passing_score = _policy_passing_score_for_activity(activity_id, db_session)
+    passing = [s for s in graded_scores if s >= passing_score]
     pass_rate = round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
 
     return SubmissionStats(
@@ -332,23 +334,8 @@ def export_grades_csv(
     buf = io.StringIO()
     writer = csv.writer(buf)
 
-    # Discover item columns from the first graded submission's breakdown
-    item_headers: list[str] = []
-    sample_submission = db_session.exec(
-        select(Submission).where(
-            Submission.activity_id == activity_id,
-            Submission.status != SubmissionStatus.DRAFT,
-            col(Submission.grading_json).is_not(None),
-        )
-    ).first()
-    if sample_submission and isinstance(sample_submission.grading_json, dict):
-        items = sample_submission.grading_json.get("items", [])
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, dict):
-                    item_id = str(item.get("item_id", ""))
-                    item_text = str(item.get("item_text", item_id))
-                    item_headers.append(item_text or item_id)
+    item_columns = _csv_item_columns(activity_id, db_session)
+    item_headers = [label for _item_id, label in item_columns]
 
     header = [
         "Имя студента",
@@ -401,14 +388,7 @@ def export_grades_csv(
                 scores_by_id = {
                     str(item.get("item_id", "")): str(item.get("score", "")) for item in items if isinstance(item, dict)
                 }
-            # Match order from header discovery
-            if sample_submission and isinstance(sample_submission.grading_json, dict):
-                sample_items = sample_submission.grading_json.get("items", [])
-                if isinstance(sample_items, list):
-                    for item in sample_items:
-                        if isinstance(item, dict):
-                            item_id = str(item.get("item_id", ""))
-                            item_scores.append(str(scores_by_id.get(item_id, "")))
+            item_scores = [str(scores_by_id.get(item_id, "")) for item_id, _label in item_columns]
         elif item_headers:
             item_scores = [""] * len(item_headers)
 
@@ -549,6 +529,9 @@ async def batch_grade_submissions(
 
     # ── Phase 2: Apply all changes (no more validation errors) ───────────────
     results: list[BatchGradeResultItem] = []
+    previous_status_by_uuid = {
+        submission_uuid: submission.status for submission_uuid, (submission, _activity) in submissions_by_uuid.items()
+    }
     succeeded = 0
     failed = 0
 
@@ -567,6 +550,8 @@ async def batch_grade_submissions(
                 submission_uuid=grade.submission_uuid,
                 current_user=current_user,
                 db_session=db_session,
+                commit=False,
+                emit_side_effects=False,
             )
             results.append(
                 BatchGradeResultItem(
@@ -583,26 +568,53 @@ async def batch_grade_submissions(
                 "Непредвиденный сбой пакетного оценивания для отправки %s",
                 grade.submission_uuid,
             )
-            abort_results = list(results)
+            abort_results = [
+                BatchGradeResultItem(
+                    submission_uuid=applied.submission_uuid,
+                    success=False,
+                    error="Отменено из-за отката пакетного оценивания",
+                )
+                for applied in batch_request.grades[: len(results)]
+            ]
+            abort_results.append(
+                BatchGradeResultItem(
+                    submission_uuid=grade.submission_uuid,
+                    success=False,
+                    error=error_msg,
+                )
+            )
             abort_results.extend(
                 BatchGradeResultItem(
                     submission_uuid=pending.submission_uuid,
                     success=False,
                     error="Отменено из-за предыдущей ошибки",
                 )
-                for pending in batch_request.grades[len(results) :]
-            )
-            # Mark the failing item
-            abort_results[len(results) - 1] = BatchGradeResultItem(
-                submission_uuid=grade.submission_uuid,
-                success=False,
-                error=error_msg,
+                for pending in batch_request.grades[len(results) + 1 :]
             )
             return BatchGradeResponse(
                 results=abort_results,
                 succeeded=0,
                 failed=len(abort_results),
             )
+
+    try:
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
+        raise
+
+    for grade in batch_request.grades:
+        submission, _ = submissions_by_uuid[grade.submission_uuid]
+        await _emit_teacher_grade_side_effects(
+            submission=submission,
+            submission_uuid=grade.submission_uuid,
+            previous_status=previous_status_by_uuid[grade.submission_uuid],
+            requested_status=SubmissionStatus(grade.status),
+            final_score=float(submission.final_score or 0),
+            published_at=datetime.now(UTC),
+            feedback=grade.feedback or "",
+            db_session=db_session,
+        )
 
     return BatchGradeResponse(results=results, succeeded=succeeded, failed=failed)
 
@@ -615,6 +627,8 @@ async def _save_teacher_grade(
     current_user: PublicUser,
     db_session: Session,
     expected_version: int | None = None,
+    commit: bool = True,
+    emit_side_effects: bool = True,
 ) -> SubmissionRead:
     """Сохранить оценку, введённую преподавателем, после проверки доступа.
 
@@ -738,48 +752,23 @@ async def _save_teacher_grade(
         commit=False,  # we commit below — all three tables in one transaction
     )
 
-    db_session.commit()
-    db_session.refresh(submission)
+    if commit:
+        db_session.commit()
+        db_session.refresh(submission)
 
     # ── Post-commit side-effects (durable, via taskiq) ────────────────────────
     # Enqueued AFTER the DB commit so a queue failure never rolls back a grade.
     # Each task is idempotent — replaying is always safe.
-    if (
-        current_status != SubmissionStatus.PUBLISHED
-        and requested_status == SubmissionStatus.PUBLISHED
-        and final_score >= _policy_passing_score_for_submission(submission, db_session)
-    ):
-        from src.worker.tasks.xp_award import award_xp_for_submission
-
-        await award_xp_for_submission.kiq(
+    if emit_side_effects:
+        await _emit_teacher_grade_side_effects(
+            submission=submission,
             submission_uuid=submission_uuid,
-            user_id=submission.user_id,
-            assessment_type=str(submission.assessment_type),
-        )
-
-    if requested_status == SubmissionStatus.PUBLISHED:
-        from src.worker.tasks.sse import publish_grading_event_task
-
-        await publish_grading_event_task.kiq(
-            "grade.published",
-            submission_uuid,
-            {
-                "submission_uuid": submission_uuid,
-                "final_score": final_score,
-                "published_at": now.isoformat(),
-            },
-        )
-    elif requested_status == SubmissionStatus.RETURNED:
-        from src.worker.tasks.sse import publish_grading_event_task
-
-        await publish_grading_event_task.kiq(
-            "submission.returned",
-            submission_uuid,
-            {
-                "submission_uuid": submission_uuid,
-                "feedback": grade_input.feedback,
-                "returned_at": now.isoformat(),
-            },
+            previous_status=current_status,
+            requested_status=requested_status,
+            final_score=final_score,
+            published_at=now,
+            feedback=grade_input.feedback,
+            db_session=db_session,
         )
 
     return SubmissionRead.model_validate(submission)
@@ -1013,3 +1002,94 @@ def _policy_passing_score_for_submission(
             select(AssessmentPolicy).where(AssessmentPolicy.activity_id == submission.activity_id)
         ).first()
     return float(policy.passing_score) if policy is not None else 60.0
+
+
+def _policy_passing_score_for_activity(
+    activity_id: int,
+    db_session: Session,
+) -> float:
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
+    return float(policy.passing_score) if policy is not None else 60.0
+
+
+def _csv_item_columns(activity_id: int, db_session: Session) -> list[tuple[str, str]]:
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity_id)).first()
+    if assessment is not None and assessment.id is not None:
+        items = db_session.exec(
+            select(AssessmentItem)
+            .where(AssessmentItem.assessment_id == assessment.id)
+            .order_by(col(AssessmentItem.order).asc())
+        ).all()
+        if items:
+            return [(item.item_uuid, item.title or item.item_uuid) for item in items]
+
+    snapshot_submission = db_session.exec(
+        select(Submission).where(
+            Submission.activity_id == activity_id,
+            Submission.status != SubmissionStatus.DRAFT,
+            col(Submission.items_snapshot).is_not(None),
+        )
+    ).first()
+    if snapshot_submission and isinstance(snapshot_submission.items_snapshot, dict):
+        snapshot_items = snapshot_submission.items_snapshot.get("items", [])
+        if isinstance(snapshot_items, list):
+            return [
+                (
+                    str(item.get("item_uuid", "")),
+                    str(item.get("title") or item.get("item_uuid", "")),
+                )
+                for item in snapshot_items
+                if isinstance(item, dict) and item.get("item_uuid")
+            ]
+
+    return []
+
+
+async def _emit_teacher_grade_side_effects(
+    *,
+    submission: Submission,
+    submission_uuid: str,
+    previous_status: SubmissionStatus,
+    requested_status: SubmissionStatus,
+    final_score: float,
+    published_at: datetime,
+    feedback: str,
+    db_session: Session,
+) -> None:
+    if (
+        previous_status != SubmissionStatus.PUBLISHED
+        and requested_status == SubmissionStatus.PUBLISHED
+        and final_score >= _policy_passing_score_for_submission(submission, db_session)
+    ):
+        from src.worker.tasks.xp_award import award_xp_for_submission
+
+        await award_xp_for_submission.kiq(
+            submission_uuid=submission_uuid,
+            user_id=submission.user_id,
+            assessment_type=str(submission.assessment_type),
+        )
+
+    if requested_status == SubmissionStatus.PUBLISHED:
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
+            "grade.published",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "final_score": final_score,
+                "published_at": published_at.isoformat(),
+            },
+        )
+    elif requested_status == SubmissionStatus.RETURNED:
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
+            "submission.returned",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "feedback": feedback,
+                "returned_at": published_at.isoformat(),
+            },
+        )
