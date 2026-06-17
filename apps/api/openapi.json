@@ -107,6 +107,9 @@
             "title": "Assessment Type",
             "type": "string"
           },
+          "canonical_policy": {
+            "$ref": "#/components/schemas/AssessmentCanonicalPolicy"
+          },
           "completion_rule": {
             "default": "GRADED",
             "title": "Completion Rule",
@@ -2028,6 +2031,87 @@
         "title": "AssessmentAuditTrailResponse",
         "type": "object"
       },
+      "AssessmentCanonicalPolicy": {
+        "description": "Single typed policy contract consumed by authoring and attempt surfaces.",
+        "properties": {
+          "allow_late": {
+            "default": true,
+            "title": "Allow Late",
+            "type": "boolean"
+          },
+          "completion_rule": {
+            "$ref": "#/components/schemas/AssessmentCompletionRule",
+            "default": "GRADED"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/AssessmentDeliveryPolicy"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grade_release_mode": {
+            "$ref": "#/components/schemas/GradeReleaseMode",
+            "default": "IMMEDIATE"
+          },
+          "grading_mode": {
+            "$ref": "#/components/schemas/AssessmentGradingMode",
+            "default": "AUTO"
+          },
+          "integrity": {
+            "$ref": "#/components/schemas/AssessmentIntegrityPolicy"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "passing_score": {
+            "default": 60.0,
+            "title": "Passing Score",
+            "type": "number"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "review_visibility": {
+            "$ref": "#/components/schemas/AssessmentReviewVisibility",
+            "default": "FULL"
+          },
+          "time_limit_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Seconds"
+          }
+        },
+        "title": "AssessmentCanonicalPolicy",
+        "type": "object"
+      },
       "AssessmentCohortRow": {
         "properties": {
           "avg_attempts": {
@@ -2175,6 +2259,32 @@
           "chapter_id"
         ],
         "title": "AssessmentCreate",
+        "type": "object"
+      },
+      "AssessmentDeliveryPolicy": {
+        "properties": {
+          "negative_marking_percent": {
+            "default": 0.0,
+            "title": "Negative Marking Percent",
+            "type": "number"
+          },
+          "partial_credit": {
+            "default": false,
+            "title": "Partial Credit",
+            "type": "boolean"
+          },
+          "randomize_options": {
+            "default": false,
+            "title": "Randomize Options",
+            "type": "boolean"
+          },
+          "randomize_questions": {
+            "default": false,
+            "title": "Randomize Questions",
+            "type": "boolean"
+          }
+        },
+        "title": "AssessmentDeliveryPolicy",
         "type": "object"
       },
       "AssessmentDetailResponse": {
@@ -2326,6 +2436,9 @@
             "title": "Attempts Used",
             "type": "integer"
           },
+          "canonical_policy": {
+            "$ref": "#/components/schemas/AssessmentCanonicalPolicy"
+          },
           "due_at": {
             "anyOf": [
               {
@@ -2394,6 +2507,48 @@
         ],
         "title": "AssessmentGradingType",
         "type": "string"
+      },
+      "AssessmentIntegrityPolicy": {
+        "properties": {
+          "copy_paste_protection": {
+            "default": false,
+            "title": "Copy Paste Protection",
+            "type": "boolean"
+          },
+          "devtools_detection": {
+            "default": false,
+            "title": "Devtools Detection",
+            "type": "boolean"
+          },
+          "fullscreen_required": {
+            "default": false,
+            "title": "Fullscreen Required",
+            "type": "boolean"
+          },
+          "right_click_disabled": {
+            "default": false,
+            "title": "Right Click Disabled",
+            "type": "boolean"
+          },
+          "tab_switch_detection": {
+            "default": false,
+            "title": "Tab Switch Detection",
+            "type": "boolean"
+          },
+          "violation_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violation Threshold"
+          }
+        },
+        "title": "AssessmentIntegrityPolicy",
+        "type": "object"
       },
       "AssessmentItemAnalyticsRow": {
         "properties": {
@@ -3021,6 +3176,17 @@
             ],
             "title": "Due At"
           },
+          "grace_period_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace Period Minutes"
+          },
           "grade_release_mode": {
             "anyOf": [
               {
@@ -3062,6 +3228,28 @@
             ],
             "title": "Max Attempts"
           },
+          "negative_marking_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negative Marking Percent"
+          },
+          "partial_credit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partial Credit"
+          },
           "passing_score": {
             "anyOf": [
               {
@@ -3072,6 +3260,28 @@
               }
             ],
             "title": "Passing Score"
+          },
+          "randomize_options": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Randomize Options"
+          },
+          "randomize_questions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Randomize Questions"
           },
           "required": {
             "anyOf": [
@@ -3443,6 +3653,16 @@
       },
       "AssessmentReadiness": {
         "properties": {
+          "blocker_count": {
+            "default": 0,
+            "title": "Blocker Count",
+            "type": "integer"
+          },
+          "contract_version": {
+            "default": 1,
+            "title": "Contract Version",
+            "type": "integer"
+          },
           "issues": {
             "items": {
               "$ref": "#/components/schemas/ReadinessIssue"
@@ -3453,6 +3673,11 @@
           "ok": {
             "title": "Ok",
             "type": "boolean"
+          },
+          "warning_count": {
+            "default": 0,
+            "title": "Warning Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -3528,6 +3753,14 @@
           "submitted_at",
           "final_score",
           "attempt_number"
+        ],
+        "type": "string"
+      },
+      "AssessmentReviewVisibility": {
+        "enum": [
+          "NONE",
+          "SCORE_ONLY",
+          "FULL"
         ],
         "type": "string"
       },
@@ -12484,9 +12717,56 @@
       },
       "ReadinessIssue": {
         "properties": {
+          "action_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Label"
+          },
+          "area": {
+            "default": "publish",
+            "enum": [
+              "details",
+              "questions",
+              "policy",
+              "audience",
+              "results",
+              "publish",
+              "system"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "auto_fix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Fix"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
           },
           "item_uuid": {
             "anyOf": [
@@ -12502,6 +12782,40 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "severity": {
+            "default": "blocker",
+            "enum": [
+              "blocker",
+              "warning",
+              "advice",
+              "audit"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "view": {
+            "default": "publish",
+            "enum": [
+              "settings",
+              "questions",
+              "audience",
+              "results",
+              "publish"
+            ],
+            "title": "View",
+            "type": "string"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
           }
         },
         "required": [

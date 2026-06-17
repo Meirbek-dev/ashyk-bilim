@@ -344,6 +344,11 @@ class TestPolicyPreset:
         assert "kind" in data
         assert data["kind"] == kind
         assert "max_attempts" in data
+        if kind == "EXAM":
+            assert data["grade_release_mode"] == "BATCH"
+            assert data["grading_mode"] == "AUTO_THEN_MANUAL"
+            assert data["completion_rule"] == "PASSED"
+            assert data["review_visibility"] == "SCORE_ONLY"
 
     def test_404_for_unknown_kind(
         self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
@@ -384,6 +389,25 @@ class TestStudentOverrides:
         assert data["user_id"] == STUDENT_ID
         assert data["max_attempts_override"] == 5
         assert data["waive_late_penalty"] is True
+
+    def test_time_limit_override_is_not_silently_accepted(
+        self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        uuid, _ = _seed_assessment(db_session_factory)
+        client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
+
+        resp = client.post(
+            f"/assessments/{uuid}/overrides",
+            json={
+                "user_id": STUDENT_ID,
+                "time_limit_override_seconds": 1800,
+            },
+        )
+
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert detail["errors"][0]["field"] == "time_limit_override_seconds"
+        assert detail["errors"][0]["code"] == "UNSUPPORTED_UNTIL_ACCOMMODATIONS"
 
     def test_list_after_create(
         self, db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch

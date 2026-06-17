@@ -19,6 +19,12 @@ from src.db.assessment_access import (
     AssessmentAccessUser,
     AssessmentAccessUserGroup,
 )
+from src.db.assessment_contracts import (
+    AssessmentCanonicalPolicy,
+    AssessmentDeliveryPolicy,
+    AssessmentIntegrityPolicy,
+    AssessmentReviewVisibility,
+)
 from src.db.assessments import (
     ITEM_ANSWER_ADAPTER,
     ITEM_BODY_ADAPTER,
@@ -52,8 +58,6 @@ from src.db.courses.courses import Course
 from src.db.grading.entries import GradingEntry
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
     AssessmentPolicy,
     GradeReleaseMode,
     LatePolicy,
@@ -72,6 +76,7 @@ from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
+from src.services.assessments.policy_defaults import default_anti_cheat, get_policy_preset
 from src.services.assessments.settings import validate_settings
 from src.services.courses.access import user_has_course_access
 from src.services.grading.submission import start_submission_v2
@@ -438,6 +443,13 @@ def _build_attempt_state(
             grade_release_mode=(policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE),
             anti_cheat_json=dict(policy.anti_cheat_json) if policy is not None else {},
             settings_json=dict(policy.settings_json) if policy is not None else {},
+            canonical_policy=_build_canonical_policy(
+                policy,
+                max_attempts=max_attempts,
+                time_limit_seconds=time_limit_seconds,
+                due_at=due_at,
+                allow_late=allow_late,
+            ),
         ),
         "server_now": now,
         "started_at": ret_started_at,
@@ -896,19 +908,21 @@ def _get_or_create_policy(
 ) -> AssessmentPolicy:
     policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
     if policy is None:
+        preset = get_policy_preset(kind)
         policy = AssessmentPolicy(
             policy_uuid=f"policy_{ULID()}",
             activity_id=activity_id,
             assessment_type=kind,
-            grading_mode=_default_grading_mode(kind),
-            completion_rule=_default_completion_rule(kind),
-            passing_score=60,
-            max_attempts=1 if kind == AssessmentType.EXAM else None,
-            time_limit_seconds=3600 if kind == AssessmentType.EXAM else None,
-            allow_late=kind != AssessmentType.EXAM,
+            grading_mode=preset.grading_mode,
+            completion_rule=preset.completion_rule,
+            grade_release_mode=preset.grade_release_mode,
+            passing_score=preset.passing_score,
+            max_attempts=preset.max_attempts,
+            time_limit_seconds=preset.time_limit_seconds,
+            allow_late=preset.allow_late,
             late_policy_json=LatePolicyNone().model_dump(mode="json"),
-            anti_cheat_json=_default_anti_cheat(kind),
-            settings_json={},
+            anti_cheat_json=default_anti_cheat(kind),
+            settings_json={"review_visibility": preset.review_visibility},
             created_at=now,
             updated_at=now,
         )
@@ -944,6 +958,15 @@ def _normalized_policy_patch(
         settings_overrides["required"] = payload.pop("required")
     if "review_visibility" in payload:
         settings_overrides["review_visibility"] = payload.pop("review_visibility")
+    for field in (
+        "randomize_questions",
+        "randomize_options",
+        "partial_credit",
+        "negative_marking_percent",
+        "grace_period_minutes",
+    ):
+        if field in payload:
+            settings_overrides[field] = payload.pop(field)
 
     settings_json = _normalize_policy_settings_json(
         kind,
@@ -1030,29 +1053,6 @@ def _first_string_setting(payload: dict[str, object], *keys: str) -> str | None:
 
 def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
     return _first_int_setting(payload, "time_limit_seconds")
-
-
-def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
-    if kind == AssessmentType.EXAM:
-        return AssessmentGradingMode.AUTO_THEN_MANUAL
-    return AssessmentGradingMode.AUTO
-
-
-def _default_completion_rule(kind: AssessmentType) -> AssessmentCompletionRule:
-    return AssessmentCompletionRule.PASSED
-
-
-def _default_anti_cheat(kind: AssessmentType) -> JsonObject:
-    if kind != AssessmentType.EXAM:
-        return {}
-    return {
-        "copy_paste_protection": True,
-        "tab_switch_detection": True,
-        "devtools_detection": True,
-        "right_click_disable": True,
-        "fullscreen_enforcement": True,
-        "violation_threshold": 3,
-    }
 
 
 def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
@@ -1434,6 +1434,85 @@ def _get_policy_for_assessment(
     ).first()
 
 
+def _build_canonical_policy(
+    policy: AssessmentPolicy | None,
+    *,
+    max_attempts: int | object | None = _UNSET,
+    time_limit_seconds: int | object | None = _UNSET,
+    due_at: datetime | object | None = _UNSET,
+    allow_late: bool | object = _UNSET,
+) -> AssessmentCanonicalPolicy:
+    if policy is None:
+        return AssessmentCanonicalPolicy()
+
+    settings = dict(policy.settings_json or {})
+    anti_cheat = dict(policy.anti_cheat_json or {})
+    return AssessmentCanonicalPolicy(
+        max_attempts=policy.max_attempts if max_attempts is _UNSET else cast("int | None", max_attempts),
+        time_limit_seconds=(
+            policy.time_limit_seconds if time_limit_seconds is _UNSET else cast("int | None", time_limit_seconds)
+        ),
+        due_at=policy.due_at if due_at is _UNSET else cast("datetime | None", due_at),
+        allow_late=policy.allow_late if allow_late is _UNSET else bool(allow_late),
+        late_policy=cast("LatePolicy", policy.late_policy_json),
+        grade_release_mode=policy.grade_release_mode,
+        grading_mode=policy.grading_mode,
+        completion_rule=policy.completion_rule,
+        passing_score=policy.passing_score,
+        required=settings.get("required") is True,
+        review_visibility=_review_visibility(settings),
+        integrity=AssessmentIntegrityPolicy(
+            copy_paste_protection=_bool_setting(anti_cheat, "copy_paste_protection"),
+            tab_switch_detection=_bool_setting(anti_cheat, "tab_switch_detection"),
+            devtools_detection=_bool_setting(anti_cheat, "devtools_detection"),
+            right_click_disabled=_bool_setting(anti_cheat, "right_click_disabled", "right_click_disable"),
+            fullscreen_required=_bool_setting(anti_cheat, "fullscreen_required", "fullscreen_enforcement"),
+            violation_threshold=_int_setting(anti_cheat, "violation_threshold"),
+        ),
+        delivery=AssessmentDeliveryPolicy(
+            randomize_questions=_bool_setting(settings, "randomize_questions", "shuffle_questions"),
+            randomize_options=_bool_setting(settings, "randomize_options", "shuffle_answers"),
+            partial_credit=_bool_setting(settings, "partial_credit"),
+            negative_marking_percent=_float_setting(settings, "negative_marking_percent") or 0.0,
+        ),
+    )
+
+
+def _review_visibility(settings: dict[str, object]) -> AssessmentReviewVisibility:
+    value = settings.get("review_visibility")
+    if value in {"NONE", "SCORE_ONLY", "FULL"}:
+        return cast("AssessmentReviewVisibility", value)
+    if settings.get("allow_result_review") is False:
+        return "NONE"
+    if settings.get("show_correct_answers") is False:
+        return "SCORE_ONLY"
+    return "FULL"
+
+
+def _bool_setting(payload: dict[str, object], *keys: str) -> bool:
+    return any(payload.get(key) is True for key in keys)
+
+
+def _int_setting(payload: dict[str, object], key: str) -> int | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return None
+
+
+def _float_setting(payload: dict[str, object], key: str) -> float | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None
+
+
 def _build_policy_read(
     policy: AssessmentPolicy | None,
 ) -> ActivityAssessmentPolicyRead | None:
@@ -1455,6 +1534,7 @@ def _build_policy_read(
         review_visibility=str((policy.settings_json or {}).get("review_visibility", "FULL")),
         anti_cheat_json=dict(policy.anti_cheat_json),
         settings_json=dict(policy.settings_json),
+        canonical_policy=_build_canonical_policy(policy),
     )
 
 
@@ -1817,4 +1897,44 @@ def build_readiness(
             )
         issues.extend(_item_readiness_issues(item))
 
-    return AssessmentReadiness(ok=not issues, issues=issues)
+    normalized_issues = [_normalize_readiness_issue(issue) for issue in issues]
+    return AssessmentReadiness(
+        ok=not any(issue.severity == "blocker" for issue in normalized_issues),
+        issues=normalized_issues,
+        blocker_count=sum(1 for issue in normalized_issues if issue.severity == "blocker"),
+        warning_count=sum(1 for issue in normalized_issues if issue.severity == "warning"),
+    )
+
+
+def _normalize_readiness_issue(issue: ReadinessIssue) -> ReadinessIssue:
+    code = issue.code
+    area: Literal["details", "questions", "policy", "audience", "results", "publish", "system"] = issue.area
+    view: Literal["settings", "questions", "audience", "results", "publish"] = issue.view
+    field = issue.field
+
+    if code.startswith("assessment.title"):
+        area = "details"
+        view = "settings"
+        field = field or "title"
+    elif code.startswith("assessment.empty"):
+        area = "questions"
+        view = "questions"
+    elif code.startswith(("policy.", "schedule.")):
+        area = "policy"
+        view = "settings"
+    elif code.startswith(("item.", "choice.", "matching.", "code.", "form.", "open_text.")):
+        area = "questions"
+        view = "questions"
+
+    return ReadinessIssue(
+        code=issue.code,
+        message=issue.message,
+        item_uuid=issue.item_uuid,
+        severity=issue.severity,
+        area=area,
+        why=issue.why or issue.message,
+        field=field,
+        view=view,
+        action_label=issue.action_label,
+        auto_fix=issue.auto_fix,
+    )

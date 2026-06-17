@@ -42,6 +42,31 @@ export interface PolicyView {
   antiCheat: AntiCheatPolicy
 }
 
+export interface AssessmentIntegrityPolicyDTO {
+  copy_paste_protection?: boolean | null
+  tab_switch_detection?: boolean | null
+  devtools_detection?: boolean | null
+  right_click_disabled?: boolean | null
+  fullscreen_required?: boolean | null
+  violation_threshold?: number | null
+}
+
+export interface AssessmentDeliveryPolicyDTO {
+  randomize_questions?: boolean | null
+  randomize_options?: boolean | null
+  partial_credit?: boolean | null
+  negative_marking_percent?: number | null
+}
+
+export interface AssessmentCanonicalPolicyDTO {
+  max_attempts?: number | null
+  time_limit_seconds?: number | null
+  due_at?: string | null
+  late_policy?: Record<string, unknown> | null
+  integrity?: AssessmentIntegrityPolicyDTO | null
+  delivery?: AssessmentDeliveryPolicyDTO | null
+}
+
 const DEFAULT_ANTI_CHEAT_POLICY: AntiCheatPolicy = {
   copyPasteProtection: false,
   tabSwitchDetection: false,
@@ -66,6 +91,7 @@ export interface AssessmentPolicyDTO {
   late_policy_json?: Record<string, unknown> | null
   late_policy?: Record<string, unknown> | null
   anti_cheat_json?: Record<string, unknown> | null
+  canonical_policy?: AssessmentCanonicalPolicyDTO | null
 }
 
 export function isAntiCheatEnabled(policy: AntiCheatPolicy): boolean {
@@ -80,6 +106,28 @@ export function isAntiCheatEnabled(policy: AntiCheatPolicy): boolean {
 
 export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | undefined): PolicyView {
   if (!policy) return DEFAULT_POLICY_VIEW
+  const canonical = policy.canonical_policy
+  if (canonical) {
+    const integrity = canonical.integrity ?? {}
+    const latePolicy = canonical.late_policy ?? {}
+
+    return {
+      dueAt: canonical.due_at ?? null,
+      maxAttempts: typeof canonical.max_attempts === 'number' ? canonical.max_attempts : null,
+      timeLimitSeconds: typeof canonical.time_limit_seconds === 'number' ? canonical.time_limit_seconds : null,
+      latePolicy: {
+        penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
+      },
+      antiCheat: {
+        copyPasteProtection: integrity.copy_paste_protection === true,
+        tabSwitchDetection: integrity.tab_switch_detection === true,
+        devtoolsDetection: integrity.devtools_detection === true,
+        rightClickDisabled: integrity.right_click_disabled === true,
+        fullscreenEnforced: integrity.fullscreen_required === true,
+        violationThreshold: typeof integrity.violation_threshold === 'number' ? integrity.violation_threshold : null,
+      },
+    }
+  }
   const antiCheat = policy.anti_cheat_json ?? {}
   const latePolicy = policy.late_policy_json ?? policy.late_policy ?? {}
 

@@ -48,6 +48,7 @@ from src.services.assessments.attempt_service import (
     start_assessment,
     submit_assessment,
 )
+from src.services.assessments.policy_defaults import get_policy_preset
 from src.services.assessments.review_service import (
     create_student_policy_override,
     delete_student_policy_override,
@@ -55,7 +56,6 @@ from src.services.assessments.review_service import (
     get_assessment_submission_stats,
     get_assessment_submissions,
     get_item_analytics,
-    get_policy_preset,
     list_student_policy_overrides,
     publish_assessment_grades,
     save_assessment_grade,

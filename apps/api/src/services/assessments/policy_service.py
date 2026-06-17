@@ -15,20 +15,13 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from src.db.assessments import (
-    AssessmentPolicyPreset,
     StudentPolicyOverrideCreate,
     StudentPolicyOverrideRead,
     StudentPolicyOverrideUpdate,
 )
 from src.db.audit import AuditEventType
 from src.db.grading.overrides import StudentPolicyOverride
-from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
-    AssessmentPolicy,
-    GradeReleaseMode,
-)
-from src.db.grading.submissions import AssessmentType
+from src.db.grading.progress import AssessmentPolicy
 from src.db.users import PublicUser
 from src.services.assessments._helpers import (
     _get_activity_and_course,
@@ -41,52 +34,17 @@ from src.types import require_persisted_id
 logger = logging.getLogger(__name__)
 
 
-def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
-    """Return default policy settings for a given assessment kind."""
-    presets: dict[AssessmentType, AssessmentPolicyPreset] = {
-        AssessmentType.QUIZ: AssessmentPolicyPreset(
-            kind=AssessmentType.QUIZ,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.GRADED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
-        AssessmentType.EXAM: AssessmentPolicyPreset(
-            kind=AssessmentType.EXAM,
-            grade_release_mode=GradeReleaseMode.BATCH,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.GRADED,
-            passing_score=60.0,
-            max_attempts=1,
-            time_limit_seconds=3600,
-            allow_late=False,
-            anti_cheat_enabled=True,
-            review_visibility="SCORE_ONLY",
-        ),
-        AssessmentType.CODE_CHALLENGE: AssessmentPolicyPreset(
-            kind=AssessmentType.CODE_CHALLENGE,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.PASSED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
-    }
-    if kind not in presets:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Предустановка политики оценивания не найдена",
-        )
-    return presets[kind]
+def _reject_unsupported_time_limit_override(time_limit_override_seconds: int | None) -> None:
+    if time_limit_override_seconds is None:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail={
+            "code": "POLICY_OVERRIDE_FIELD_UNSUPPORTED",
+            "field": "time_limit_override_seconds",
+            "message": "Индивидуальный лимит времени будет включен в разделе доступности и льгот.",
+        },
+    )
 
 
 async def list_student_policy_overrides(
@@ -141,6 +99,7 @@ async def create_student_policy_override(
             status_code=status.HTTP_409_CONFLICT,
             detail="Исключение для этого студента уже существует",
         )
+    _reject_unsupported_time_limit_override(payload.time_limit_override_seconds)
 
     now = datetime.now(UTC)
     override = StudentPolicyOverride(
@@ -208,8 +167,10 @@ async def update_student_policy_override(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Исключение не найдено",
         )
+    _reject_unsupported_time_limit_override(payload.time_limit_override_seconds)
 
     changes = payload.model_dump(exclude_unset=True)
+    changes.pop("time_limit_override_seconds", None)
     for field, value in changes.items():
         setattr(override, field, value)
     override.updated_at = datetime.now(UTC)

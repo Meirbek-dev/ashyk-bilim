@@ -72,6 +72,7 @@ from src.routers.file_submissions import router as file_submissions_router
 from src.security.rbac import PermissionChecker
 from src.services import file_submissions as file_submission_service
 from src.services.assessments import core
+from src.services.assessments.settings import get_settings as get_assessment_settings
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -368,6 +369,16 @@ def test_create_assessment_seeds_draft_and_policy(
     assert data["title"] == "New ManualAssessment"
     assert data["kind"] == "EXAM"
     assert data["assessment_uuid"] is not None
+    policy = data["assessment_policy"]
+    canonical_policy = policy["canonical_policy"]
+    assert policy["grade_release_mode"] == "BATCH"
+    assert policy["grading_mode"] == "AUTO_THEN_MANUAL"
+    assert policy["completion_rule"] == "PASSED"
+    assert canonical_policy["max_attempts"] == 1
+    assert canonical_policy["time_limit_seconds"] == 3600
+    assert canonical_policy["review_visibility"] == "SCORE_ONLY"
+    assert canonical_policy["integrity"]["copy_paste_protection"] is True
+    assert canonical_policy["integrity"]["fullscreen_required"] is True
 
 
 def test_create_assessment_unknown_course_returns_404(
@@ -469,6 +480,7 @@ def test_update_assessment_policy_max_attempts(
     data = response.json()
     policy = data.get("assessment_policy") or {}
     assert policy.get("max_attempts") == 2
+    assert policy["canonical_policy"]["max_attempts"] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -820,6 +832,48 @@ def test_readiness_check_flags_missing_items(api_client: TestClient, db_session_
     assert data["ok"] is False
     issue_codes = [issue["code"] for issue in data["issues"]]
     assert len(issue_codes) > 0
+    assert data["blocker_count"] > 0
+    assert data["issues"][0]["severity"] == "blocker"
+    assert data["issues"][0]["area"] == "questions"
+    assert data["issues"][0]["view"] == "questions"
+
+
+def test_legacy_settings_endpoint_prefers_canonical_policy(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """Legacy assessment settings adapters read AssessmentPolicy before Activity.settings."""
+    course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
+    response = api_client.post(
+        "/assessments",
+        json={
+            "kind": "EXAM",
+            "title": "Canonical Settings",
+            "course_id": course_id,
+            "chapter_id": chapter_id,
+        },
+    )
+    assert response.status_code == 200
+    activity_id = response.json()["activity_id"]
+
+    with db_session_factory() as session:
+        activity = session.get(Activity, activity_id)
+        assert activity is not None
+        activity.settings = {
+            "kind": "EXAM",
+            "attempt_limit": 99,
+            "time_limit": 5,
+            "copy_paste_protection": False,
+        }
+        session.add(activity)
+        session.commit()
+
+    with db_session_factory() as session:
+        settings = get_assessment_settings(activity_id, session)
+
+    assert settings.kind == "EXAM"
+    assert settings.attempt_limit == 1
+    assert settings.time_limit == 60
+    assert settings.copy_paste_protection is True
 
 
 # ---------------------------------------------------------------------------
@@ -838,5 +892,7 @@ def test_policy_preset_manual_assessment_has_defaults(
     assert response.status_code == 200
     data = response.json()
     # Should contain grading mode and release mode
-    assert "grading_mode" in data
-    assert "grade_release_mode" in data
+    assert data["grading_mode"] == "AUTO_THEN_MANUAL"
+    assert data["completion_rule"] == "PASSED"
+    assert data["grade_release_mode"] == "BATCH"
+    assert data["review_visibility"] == "SCORE_ONLY"

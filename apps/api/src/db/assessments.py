@@ -25,6 +25,7 @@ from sqlmodel import Field as SQLField
 from ulid import ULID
 
 from src.db.assessment_access import AssessmentAccessMode
+from src.db.assessment_contracts import AssessmentCanonicalPolicy
 from src.db.courses.activities import ActivityAssessmentPolicyRead
 from src.db.grading.progress import (
     AssessmentCompletionRule,
@@ -442,6 +443,12 @@ class AssessmentPolicyPatch(PydanticStrictBaseModel):
     required: bool | None = None
     # Review visibility: what students see after release
     review_visibility: Literal["NONE", "SCORE_ONLY", "FULL"] | None = None
+    # Delivery policy fields stored canonically through settings_json for now.
+    randomize_questions: bool | None = None
+    randomize_options: bool | None = None
+    partial_credit: bool | None = None
+    negative_marking_percent: float | None = None
+    grace_period_minutes: int | None = None
     # Anti-cheat
     anti_cheat_json: dict[str, object] | None = None
     # Arbitrary extension fields
@@ -568,6 +575,7 @@ class AssessmentEffectivePolicy(PydanticStrictBaseModel):
     grade_release_mode: GradeReleaseMode = GradeReleaseMode.IMMEDIATE
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
+    canonical_policy: AssessmentCanonicalPolicy = Field(default_factory=AssessmentCanonicalPolicy)
 
     @field_validator("grade_release_mode", mode="before")
     @classmethod
@@ -852,11 +860,21 @@ class ReadinessIssue(PydanticStrictBaseModel):
     code: str
     message: str
     item_uuid: str | None = None
+    severity: Literal["blocker", "warning", "advice", "audit"] = "blocker"
+    area: Literal["details", "questions", "policy", "audience", "results", "publish", "system"] = "publish"
+    why: str | None = None
+    field: str | None = None
+    view: Literal["settings", "questions", "audience", "results", "publish"] = "publish"
+    action_label: str | None = None
+    auto_fix: str | None = None
 
 
 class AssessmentReadiness(PydanticStrictBaseModel):
     ok: bool
     issues: list[ReadinessIssue] = Field(default_factory=list)
+    blocker_count: int = 0
+    warning_count: int = 0
+    contract_version: int = 1
 
 
 class AssessmentAnswerPatch(PydanticStrictBaseModel):

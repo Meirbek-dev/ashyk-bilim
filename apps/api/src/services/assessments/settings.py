@@ -129,6 +129,8 @@ def validate_settings(payload: dict[str, object]) -> AssessmentSettings:
 
 def get_settings(activity_id: int, db_session: Session) -> AssessmentSettings:
     activity = _get_activity_or_404(activity_id, db_session)
+    if _has_canonical_assessment_settings(activity, db_session):
+        return _settings_for_activity(activity, db_session)
     raw_settings = activity.settings or {}
     if raw_settings.get("kind"):
         return validate_settings(raw_settings)
@@ -160,6 +162,18 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
             detail="Активность не найдена",
         )
     return activity
+
+
+def _has_canonical_assessment_settings(activity: Activity, db_session: Session) -> bool:
+    if activity.activity_type in {
+        ActivityTypeEnum.TYPE_EXAM,
+        ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+    }:
+        return True
+    if activity.id is None:
+        return False
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
+    return assessment is not None and AssessmentType(assessment.kind) == AssessmentType.QUIZ
 
 
 def _settings_for_activity(
@@ -200,11 +214,17 @@ def _exam_settings_payload(
             db_session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
         )
     anti_cheat = policy.anti_cheat_json if policy else {}
+    settings = dict(policy.settings_json or {}) if policy else {}
+    review_visibility = str(settings.get("review_visibility", "FULL"))
     return {
         "kind": "EXAM",
         "time_limit": (int(policy.time_limit_seconds / 60) if policy and policy.time_limit_seconds else None),
         "attempt_limit": policy.max_attempts if policy else 1,
+        "shuffle_questions": _bool_setting(settings, "randomize_questions", "shuffle_questions"),
+        "shuffle_answers": _bool_setting(settings, "randomize_options", "shuffle_answers"),
         "question_limit": question_limit or None,
+        "allow_result_review": review_visibility != "NONE",
+        "show_correct_answers": review_visibility == "FULL",
         "passing_score": int(policy.passing_score) if policy else 60,
         "copy_paste_protection": anti_cheat.get("copy_paste_protection") is True,
         "tab_switch_detection": anti_cheat.get("tab_switch_detection") is True,
@@ -212,6 +232,7 @@ def _exam_settings_payload(
         "right_click_disable": anti_cheat.get("right_click_disable") is True,
         "fullscreen_enforcement": anti_cheat.get("fullscreen_enforcement") is True,
         "violation_threshold": anti_cheat.get("violation_threshold", 3),
+        "negative_marking_percent": _float_setting(settings, "negative_marking_percent") or 0.0,
         "lifecycle_status": _lifecycle_value(activity, assessment),
         "scheduled_at": assessment.scheduled_at.isoformat() if assessment and assessment.scheduled_at else None,
         "published_at": assessment.published_at.isoformat() if assessment and assessment.published_at else None,
@@ -294,3 +315,16 @@ def _lifecycle_value(activity: Activity, assessment: Assessment | None) -> str:
 
 def _dump_settings(settings: AssessmentSettings) -> dict[str, object]:
     return settings.model_dump(mode="json")
+
+
+def _bool_setting(payload: dict[str, object], *keys: str) -> bool:
+    return any(payload.get(key) is True for key in keys)
+
+
+def _float_setting(payload: dict[str, object], key: str) -> float | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None

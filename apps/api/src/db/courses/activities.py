@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlmodel import Field
 from sqlmodel._compat import SQLModelConfig
 
+from src.db.assessment_contracts import AssessmentCanonicalPolicy
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
@@ -218,6 +219,7 @@ class ActivityAssessmentPolicyRead(SQLModelStrictBaseModel):
     review_visibility: str = "FULL"
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
+    canonical_policy: AssessmentCanonicalPolicy = Field(default_factory=AssessmentCanonicalPolicy)
 
     @field_validator("late_policy", mode="before")
     @classmethod

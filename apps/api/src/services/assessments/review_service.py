@@ -8,7 +8,6 @@ from sqlmodel import Session, col, select
 
 from src.db.assessments import (
     AssessmentItem,
-    AssessmentPolicyPreset,
     ReviewQueueRead,
     StudentPolicyOverrideCreate,
     StudentPolicyOverrideRead,
@@ -16,14 +15,8 @@ from src.db.assessments import (
     TeacherSubmissionRead,
 )
 from src.db.grading.overrides import StudentPolicyOverride
-from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
-    GradeReleaseMode,
-)
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
-    AssessmentType,
     GradingBreakdown,
     ItemAnalytics,
     ScoreDistributionBucket,
@@ -51,8 +44,6 @@ from src.types import require_persisted_id
 # ── Policy override ceilings ──────────────────────────────────────────────────
 # Hard limits that no override may exceed — prevents accidental misconfiguration.
 _MAX_ATTEMPTS_CEILING: int = 10
-_MAX_TIME_LIMIT_MINUTES: int = 480  # 8 hours
-_MAX_TIME_LIMIT_SECONDS: int = _MAX_TIME_LIMIT_MINUTES * 60
 
 
 def _validate_policy_override_ceilings(
@@ -69,15 +60,11 @@ def _validate_policy_override_ceilings(
             "ceiling": _MAX_ATTEMPTS_CEILING,
             "provided": max_attempts,
         })
-    if time_limit_override_seconds is not None and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS:
+    if time_limit_override_seconds is not None:
         errors.append({
             "field": "time_limit_override_seconds",
-            "code": "EXCEEDS_CEILING",
-            "message": (
-                f"time_limit_override_seconds не может превышать {_MAX_TIME_LIMIT_SECONDS} "
-                f"({_MAX_TIME_LIMIT_MINUTES} минут)."
-            ),
-            "ceiling": _MAX_TIME_LIMIT_SECONDS,
+            "code": "UNSUPPORTED_UNTIL_ACCOMMODATIONS",
+            "message": "Индивидуальный лимит времени будет включен в разделе доступности и льгот.",
             "provided": time_limit_override_seconds,
         })
     if errors:
@@ -321,49 +308,6 @@ async def publish_assessment_grades(
     return await bulk_publish_grades(require_persisted_id(activity.id, model_name="Activity"), current_user, db_session)
 
 
-def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
-    """Return kind-appropriate default policy settings."""
-    presets: dict[AssessmentType, AssessmentPolicyPreset] = {
-        AssessmentType.EXAM: AssessmentPolicyPreset(
-            kind=AssessmentType.EXAM,
-            grade_release_mode=GradeReleaseMode.BATCH,
-            grading_mode=AssessmentGradingMode.AUTO_THEN_MANUAL,
-            completion_rule=AssessmentCompletionRule.PASSED,
-            passing_score=60.0,
-            max_attempts=1,
-            time_limit_seconds=3600,
-            allow_late=False,
-            anti_cheat_enabled=True,
-            review_visibility="SCORE_ONLY",
-        ),
-        AssessmentType.QUIZ: AssessmentPolicyPreset(
-            kind=AssessmentType.QUIZ,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.PASSED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
-        AssessmentType.CODE_CHALLENGE: AssessmentPolicyPreset(
-            kind=AssessmentType.CODE_CHALLENGE,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.PASSED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="SCORE_ONLY",
-        ),
-    }
-    return presets[kind]
-
-
 # ── Phase 2: Student policy override management ───────────────────────────────
 
 
@@ -453,7 +397,9 @@ async def update_student_policy_override(
         payload.time_limit_override_seconds,
     )
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    changes.pop("time_limit_override_seconds", None)
+    for field, value in changes.items():
         setattr(override, field, value)
     override.granted_by = current_user.id
     db_session.add(override)
