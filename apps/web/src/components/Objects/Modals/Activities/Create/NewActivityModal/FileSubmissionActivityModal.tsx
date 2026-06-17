@@ -15,6 +15,7 @@ import { CalendarDatePicker } from '@/components/ui/calendar'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
+
 const MIME_PRESETS = [
   { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
   {

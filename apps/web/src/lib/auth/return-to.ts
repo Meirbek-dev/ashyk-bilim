@@ -1,7 +1,13 @@
 import { getPathInfo, isAuthRoute } from './routes'
 
 function containsUnsafeCharacters(value: string): boolean {
-  return /[\u0000-\u001F\u007F\\]/.test(value)
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
+    if (code <= 0x1F || code === 0x7F || code === 0x5C) {
+      return true
+    }
+  }
+  return false
 }
 
 export function normalizeReturnTo(returnTo: string | null | undefined): string {

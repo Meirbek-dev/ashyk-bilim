@@ -4,6 +4,7 @@ import pathlib
 import sys
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pytest
 from fastapi import FastAPI
@@ -205,7 +206,7 @@ def _seed_assessment(
         session.add(activity)
         session.flush()
 
-        policy_payload = {
+        policy_payload: dict[str, Any] = {
             "policy_uuid": "policy_readiness",
             "activity_id": activity.id,
             "assessment_type": kind,
@@ -218,8 +219,8 @@ def _seed_assessment(
             "due_at": None,
             "allow_late": True,
             "late_policy_json": LatePolicyNone().model_dump(mode="json"),
-            "anti_cheat_json": {},
-            "settings_json": {},
+            "anti_cheat_json": cast("dict[str, Any]", {}),
+            "settings_json": cast("dict[str, Any]", {}),
         }
         policy_payload.update(policy_kwargs or {})
         policy = AssessmentPolicy(**policy_payload)

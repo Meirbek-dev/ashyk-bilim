@@ -39,7 +39,7 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
       injectCSS: false,
       shouldRerenderOnTransaction: preset === 'discussion',
       editable: presetDef.isEditable,
-      ...(onUpdate === undefined ? {} : { onUpdate: ({ editor }) => onUpdate(editor.getJSON()) }),
+      ...(onUpdate === undefined ? {} : { onUpdate: ({ editor: ed }) => onUpdate(ed.getJSON()) }),
       ...overrides,
     },
     [preset, activity?.activity_uuid],

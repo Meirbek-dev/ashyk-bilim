@@ -118,9 +118,22 @@ def _validate_artifact_for_intent(artifact: AIArtifact, intent: AIIntent) -> Non
         raise ModelRetry("Teacher intervention drafts must include privacy notes.")
 
 
+ArtifactAgentOutput = (
+    TutorAnswer
+    | FlashcardSet
+    | HintLadder
+    | CodeReviewHint
+    | AuthoringPatch
+    | RubricFeedbackExplanation
+    | TeacherInterventionDraft
+)
+
+
 @_ARTIFACT_AGENT.output_validator
-def _validate_artifact_output(ctx: RunContext[AgentDependencies], artifact: AIArtifact) -> AIArtifact:
-    return validate_artifact_output_for_deps(ctx.deps, artifact)
+def _validate_artifact_output(
+    ctx: RunContext[AgentDependencies], artifact: ArtifactAgentOutput
+) -> ArtifactAgentOutput:
+    return cast("ArtifactAgentOutput", validate_artifact_output_for_deps(ctx.deps, artifact))
 
 
 def validate_artifact_output_for_deps(deps: AgentDependencies, artifact: AIArtifact) -> AIArtifact:

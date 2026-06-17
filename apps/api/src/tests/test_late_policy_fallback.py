@@ -1,6 +1,7 @@
 import pathlib
 import sys
 from datetime import UTC, datetime
+from typing import Any, cast
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -67,11 +68,11 @@ def test_deserialize_late_policy_invalid_fallback() -> None:
 
 def test_assessment_policy_validation_uses_deserialize() -> None:
     # Verify that AssessmentPolicy validates late_policy_json safely via model_validate
-    policy_dict = {
+    policy_dict: dict[str, Any] = {
         "policy_uuid": "pol_1",
         "activity_id": 1,
         "assessment_type": "EXAM",
-        "late_policy_json": {},
+        "late_policy_json": cast("dict[str, Any]", {}),
     }
     policy = AssessmentPolicy.model_validate(policy_dict)
     assert policy.late_policy_json == {"kind": "NONE"}

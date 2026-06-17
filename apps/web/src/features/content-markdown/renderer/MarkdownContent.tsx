@@ -51,11 +51,20 @@ const modeClassName: Record<MarkdownRenderMode, string> = {
   plainSummary: '',
 }
 
+interface UnistNode {
+  type: string
+  value?: string
+  children?: UnistNode[]
+  data?: {
+    hProperties?: Record<string, unknown>
+  } & Record<string, unknown>
+}
+
 function remarkHeadingIds() {
-  return (tree: any) => {
+  return (tree: UnistNode) => {
     const headingIds = new Map<string, number>()
 
-    function extractText(node: any): string {
+    function extractText(node: UnistNode | undefined): string {
       if (!node) return ''
       if (node.type === 'text') return node.value || ''
       if (node.value) return node.value
@@ -63,7 +72,7 @@ function remarkHeadingIds() {
       return ''
     }
 
-    function traverse(node: any) {
+    function traverse(node: UnistNode) {
       if (node.type === 'heading') {
         const text = extractText(node)
         const base = slugifyMarkdownHeading(text) || 'section'

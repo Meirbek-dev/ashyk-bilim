@@ -238,7 +238,6 @@ min-severity = "error"
 check-unannotated-defs = true
 infer-return-types = "checked"
 
-permissive-ignores = false
 enabled-ignores = ["type", "pyrefly"]
 
 ignore-missing-imports = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]

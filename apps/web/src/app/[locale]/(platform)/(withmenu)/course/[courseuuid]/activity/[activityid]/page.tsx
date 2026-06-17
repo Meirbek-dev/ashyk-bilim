@@ -83,10 +83,10 @@ export default async function PlatformActivityPage(props: {
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401) {
-      const locale = await getLocale()
+      const activeLocale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}/activity/${activityid}`)}`,
-        locale,
+        locale: activeLocale,
       })
     }
     if (apiError.status === 403) {

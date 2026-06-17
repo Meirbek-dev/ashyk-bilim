@@ -3,7 +3,8 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
+  // eslint-disable-next-line typescript/no-explicit-any
+  plugins: [react() as any],
   resolve: {
     // Vite now handles this natively, so we can remove the external plugin
     tsconfigPaths: true,

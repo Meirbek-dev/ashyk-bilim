@@ -50,7 +50,7 @@ async def test_recently_rotated_refresh_token_does_not_report_reuse(monkeypatch:
 
     monkeypatch.setattr(sessions, "get_async_redis_client", lambda: fake_redis)
 
-    await sessions._write_rotation_grace(old_session, new_session, rotated_at=123)  # noqa: SLF001
+    await sessions._write_rotation_grace(old_session, new_session, rotated_at=123)
     inspection = await sessions.inspect_refresh_session(_NoRecordSession(), old_refresh_token)  # type: ignore[arg-type]
 
     assert inspection.status == "rotated"

@@ -17,9 +17,9 @@ function resolveBackendUrl(path: string): string {
   return `${getServerAPIUrl().replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }
 
-function appendIfPresent(headers: Headers, key: string, value: string | null): void {
+function appendIfPresent(targetHeaders: Headers, key: string, value: string | null): void {
   if (value) {
-    headers.set(key, value)
+    targetHeaders.set(key, value)
   }
 }
 
@@ -110,25 +110,25 @@ export function serverAuthFetchForRequest(
 }
 
 export function postAuthJson(path: string, body: unknown, init: ServerAuthFetchInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers)
-  headers.set('content-type', 'application/json')
+  const jsonHeaders = new Headers(init.headers)
+  jsonHeaders.set('content-type', 'application/json')
 
   return serverAuthFetch(path, {
     ...init,
     method: 'POST',
-    headers,
+    headers: jsonHeaders,
     body: JSON.stringify(body),
   })
 }
 
 export function postAuthForm(path: string, body: URLSearchParams, init: ServerAuthFetchInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers)
-  headers.set('content-type', 'application/x-www-form-urlencoded')
+  const formHeaders = new Headers(init.headers)
+  formHeaders.set('content-type', 'application/x-www-form-urlencoded')
 
   return serverAuthFetch(path, {
     ...init,
     method: 'POST',
-    headers,
+    headers: formHeaders,
     body,
   })
 }

@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+# Test cases for AI contracts.
 
 import pytest
 from pydantic_ai import ModelRetry
@@ -72,7 +72,7 @@ def test_build_artifact_for_intent_shapes_product_outputs() -> None:
 
 
 def test_build_artifact_adds_citations_from_retrieved_chunks() -> None:
-    chunk = SimpleNamespace(document="Course context explains the core concept in detail.", score=0.87)
+    chunk = RetrievedChunk(id="chunk-1", document="Course context explains the core concept in detail.", score=0.87)
     artifact = build_artifact_for_intent(
         intent=AIIntent.TUTOR_ANSWER,
         answer="The answer should cite retrieved context.",

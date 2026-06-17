@@ -79,10 +79,10 @@ export default async function PlatformCoursePage(props: { params: Promise<{ loca
   } catch (error: unknown) {
     const apiError = error as AppApiError
     if (apiError.status === 401) {
-      const locale = await getLocale()
+      const activeLocale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/course/${courseuuid}`)}`,
-        locale,
+        locale: activeLocale,
       })
     }
     if (apiError.status === 403) {
