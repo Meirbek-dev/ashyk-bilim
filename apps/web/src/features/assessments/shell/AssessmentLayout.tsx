@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import type { AttemptConflictState } from './AssessmentActionBar'
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment'
@@ -28,7 +27,7 @@ import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptG
 
 import { AssessmentChrome } from './AssessmentChrome'
 import { ActionBarContext, AssessmentActionBar, useActionBarState } from './AssessmentActionBar'
-import type { AttemptRecoveryState } from './AssessmentActionBar'
+import type { AttemptConflictState, AttemptRecoveryState } from './AssessmentActionBar'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

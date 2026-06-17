@@ -2767,7 +2767,7 @@
         "linkInputAriaLabel": "Введите URL-адрес ссылки для этого пункта обучения",
         "linkInputPlaceholder": "Введите URL-адрес для ссылки (необязательно)",
         "noItems": "Пока не добавлено ни одного элемента обучения.",
-        "placeholder": "Введите, что вы узнаете...",
+        "placeholder": "Что изучат студенты...",
         "removeItemAriaLabel": "Удалить элемент обучения",
         "removeItemTooltip": "Удалить элемент",
         "searchEmojis": "Искать эмодзи..."

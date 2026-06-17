@@ -87,13 +87,17 @@ interface CourseProviderProps {
 
 const CourseContext = createContext<CourseContextValue | null>(null)
 
+function CourseLoadError() {
+  const t = useTranslations('Contexts.Course')
+  return <ErrorUI message={t('loadError')} />
+}
+
 export const CourseProvider = ({
   children,
   courseuuid,
   withUnpublishedActivities = false,
   initialCourse,
 }: CourseProviderProps) => {
-  const t = useTranslations('Contexts.Course')
   const openEditor = useCourseEditorStore(state => state.openEditor)
   const dirtySections = useCourseEditorStore(state => state.dirtySections)
   const [isMounted, setIsMounted] = useState(false)
@@ -175,8 +179,8 @@ export const CourseProvider = ({
     ],
   )
 
-  if (error) return <ErrorUI message={t('loadError')} />
   if (isLoading || !isMounted) return <PageLoading />
+  if (error) return <CourseLoadError />
 
   if (contextValue) {
     return <CourseContext.Provider value={contextValue}>{children}</CourseContext.Provider>
