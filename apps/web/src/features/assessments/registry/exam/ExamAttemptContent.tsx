@@ -266,7 +266,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               </div>
             )}
             {questions.length > 0 && isAntiCheatWarningVisible(policy) ? (
-              <Alert className="border-red-200 bg-red-50/80 text-red-900">
+              <Alert className="border-red-200 bg-red-50/80 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100">
                 <ShieldAlert className="size-4" />
                 <AlertTitle>{t('antiCheatingEnabled')}</AlertTitle>
                 <AlertDescription>
@@ -688,7 +688,7 @@ function ExamTakingContent({
 
       {viewMode === 'CARD' ? (
         /* ── Card mode: one question at a time ─────────────── */
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">
             <ExamQuestionCard
               question={currentQuestion}
@@ -712,7 +712,7 @@ function ExamTakingContent({
         </div>
       ) : (
         /* ── Scroll mode: all questions visible ─────────────── */
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">
             {orderedQuestions.map((question, index) => (
               <div
@@ -722,7 +722,7 @@ function ExamTakingContent({
                 }}
                 id={`exam-q-${index}`}
                 className={cn(
-                  'scroll-mt-4 rounded-xl transition-all duration-300',
+                  'scroll-mt-4 rounded-lg transition-all duration-300',
                   currentIndex === index && 'ring-2 ring-primary/30',
                 )}
               >

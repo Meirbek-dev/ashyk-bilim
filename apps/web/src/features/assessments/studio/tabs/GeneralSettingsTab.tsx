@@ -92,7 +92,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
   const warningCodes = getPolicyWarningCodes(state)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-6 md:px-6">
       {/* Save indicator */}
       <div className="flex items-center justify-end">
         <SaveStateBadge state={saveState} />
@@ -102,211 +102,212 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
       {warningCodes.length > 0 ? <PolicyWarningList codes={warningCodes} /> : null}
 
       {/* Details Card */}
-      <SettingsCard icon={GraduationCap} title={tSetup('detailsTitle')} description={tSetup('detailsDescription')}>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="assessment-title">{t('titleLabel')}</Label>
-            <Input
-              id="assessment-title"
-              value={state.title}
-              disabled={disabled}
-              aria-invalid={hasIssue('title')}
-              className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={e => onChange({ ...state, title: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
-            <MarkdownEditor
-              value={state.description}
-              disabled={disabled}
-              preset="assessmentDescription"
-              minHeight={220}
-              onChange={description => onChange({ ...state, description })}
-            />
-          </div>
-        </div>
-      </SettingsCard>
-
-      {/* Access & Timing Card */}
-      <SettingsCard icon={CalendarClock} title={tSetup('timingTitle')} description={tSetup('timingDescription')}>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="assessment-available-from">{tSetup('availableFromLabel')}</Label>
-            <CalendarDateTimePicker
-              id="assessment-available-from"
-              value={state.availableFrom}
-              onChange={availableFrom => onChange({ ...state, availableFrom })}
-              disabled={disabled}
-              placeholder={tSetup('availableFromLabel')}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
-            <CalendarDateTimePicker
-              id="assessment-due-at"
-              value={state.dueAt}
-              onChange={dueAt => onChange({ ...state, dueAt })}
-              disabled={disabled}
-              className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              placeholder={t('dueDateLabel')}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
-            <Input
-              id="exam-max-attempts"
-              type="number"
-              min={1}
-              value={state.maxAttempts}
-              disabled={disabled}
-              aria-invalid={hasIssue('maxAttempts')}
-              className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-              onChange={e => onChange({ ...state, maxAttempts: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
-            <div className="relative">
-              <Timer className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                id="exam-time-limit"
-                type="number"
-                min={1}
-                value={state.timeLimitMinutes}
-                disabled={disabled}
-                className="pl-9"
-                aria-invalid={hasIssue('timeLimitMinutes')}
-                onChange={e => onChange({ ...state, timeLimitMinutes: e.target.value })}
-              />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,0.95fr)]">
+        <div className="space-y-5">
+          <SettingsCard icon={GraduationCap} title={tSetup('detailsTitle')} description={tSetup('detailsDescription')}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="assessment-title">{t('titleLabel')}</Label>
+                <Input
+                  id="assessment-title"
+                  value={state.title}
+                  disabled={disabled}
+                  aria-invalid={hasIssue('title')}
+                  className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                  onChange={e => onChange({ ...state, title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
+                <MarkdownEditor
+                  value={state.description}
+                  disabled={disabled}
+                  preset="assessmentDescription"
+                  minHeight={220}
+                  onChange={description => onChange({ ...state, description })}
+                />
+              </div>
             </div>
-          </div>
-        </div>
-        {/* Grace period */}
-        <div className="mt-4 max-w-48 space-y-2">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
-            <Tooltip>
-              <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-              <TooltipContent side="right" className="max-w-xs">
-                <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Input
-            id="exam-grace-period"
-            type="number"
-            min={0}
-            value={state.gracePeriodMinutes}
-            disabled={disabled}
-            onChange={e => onChange({ ...state, gracePeriodMinutes: e.target.value })}
-          />
-        </div>
-      </SettingsCard>
+          </SettingsCard>
 
-      {/* Grading Card */}
-      <SettingsCard icon={Target} title={tSetup('gradingTitle')} description={tSetup('gradingDescription')}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
-              <Tooltip>
-                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent side="right" className="max-w-xs">
-                  <p className="text-xs">{tSetup('passThresholdDesc')}</p>
-                </TooltipContent>
-              </Tooltip>
+          <SettingsCard icon={CalendarClock} title={tSetup('timingTitle')} description={tSetup('timingDescription')}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="assessment-available-from">{tSetup('availableFromLabel')}</Label>
+                <CalendarDateTimePicker
+                  id="assessment-available-from"
+                  value={state.availableFrom}
+                  onChange={availableFrom => onChange({ ...state, availableFrom })}
+                  disabled={disabled}
+                  placeholder={tSetup('availableFromLabel')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
+                <CalendarDateTimePicker
+                  id="assessment-due-at"
+                  value={state.dueAt}
+                  onChange={dueAt => onChange({ ...state, dueAt })}
+                  disabled={disabled}
+                  className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                  placeholder={t('dueDateLabel')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
+                <Input
+                  id="exam-max-attempts"
+                  type="number"
+                  min={1}
+                  value={state.maxAttempts}
+                  disabled={disabled}
+                  aria-invalid={hasIssue('maxAttempts')}
+                  className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                  onChange={e => onChange({ ...state, maxAttempts: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
+                <div className="relative">
+                  <Timer className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input
+                    id="exam-time-limit"
+                    type="number"
+                    min={1}
+                    value={state.timeLimitMinutes}
+                    disabled={disabled}
+                    className="pl-9"
+                    aria-invalid={hasIssue('timeLimitMinutes')}
+                    onChange={e => onChange({ ...state, timeLimitMinutes: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="relative">
+            {/* Grace period */}
+            <div className="mt-4 max-w-48 space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
+                <Tooltip>
+                  <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+                  <TooltipContent side="right" className="max-w-xs">
+                    <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Input
-                id="exam-pass-threshold"
+                id="exam-grace-period"
                 type="number"
                 min={0}
-                max={100}
-                value={state.passThreshold}
+                value={state.gracePeriodMinutes}
                 disabled={disabled}
-                placeholder="60"
-                className="pr-8"
-                onChange={e => onChange({ ...state, passThreshold: e.target.value })}
+                onChange={e => onChange({ ...state, gracePeriodMinutes: e.target.value })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
             </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
-              <Tooltip>
-                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent side="right" className="max-w-xs">
-                  <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
-                </TooltipContent>
-              </Tooltip>
+          </SettingsCard>
+        </div>
+
+        <div className="space-y-5">
+          <SettingsCard icon={Target} title={tSetup('gradingTitle')} description={tSetup('gradingDescription')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
+                  <Tooltip>
+                    <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="text-xs">{tSetup('passThresholdDesc')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="exam-pass-threshold"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={state.passThreshold}
+                    disabled={disabled}
+                    placeholder="60"
+                    className="pr-8"
+                    onChange={e => onChange({ ...state, passThreshold: e.target.value })}
+                  />
+                  <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
+                  <Tooltip>
+                    <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="exam-negative-marking"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={state.negativeMarkingPercent}
+                    disabled={disabled}
+                    placeholder={tSetup('negativeMarkingPlaceholder')}
+                    className="pr-8"
+                    onChange={e => onChange({ ...state, negativeMarkingPercent: e.target.value })}
+                  />
+                  <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+                </div>
+              </div>
             </div>
-            <div className="relative">
-              <Input
-                id="exam-negative-marking"
-                type="number"
-                min={0}
-                max={100}
-                value={state.negativeMarkingPercent}
+            <div className="mt-4 space-y-3">
+              <ToggleFeatureRow
+                label={tSetup('partialCreditLabel')}
+                description={tSetup('partialCreditDesc')}
+                checked={state.partialCredit}
                 disabled={disabled}
-                placeholder={tSetup('negativeMarkingPlaceholder')}
-                className="pr-8"
-                onChange={e => onChange({ ...state, negativeMarkingPercent: e.target.value })}
+                onChange={checked => onChange({ ...state, partialCredit: checked })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
             </div>
-          </div>
-        </div>
-        <div className="mt-4 space-y-3">
-          <ToggleFeatureRow
-            label={tSetup('partialCreditLabel')}
-            description={tSetup('partialCreditDesc')}
-            checked={state.partialCredit}
-            disabled={disabled}
-            onChange={checked => onChange({ ...state, partialCredit: checked })}
-          />
-        </div>
-      </SettingsCard>
+          </SettingsCard>
 
-      {/* Randomization Card */}
-      <SettingsCard
-        icon={Shuffle}
-        title={tSetup('randomizationTitle')}
-        description={tSetup('randomizationDescription')}
-      >
-        <div className="space-y-3">
-          <ToggleFeatureRow
-            label={tSetup('randomizeQuestionsLabel')}
-            description={tSetup('randomizeQuestionsDesc')}
-            checked={state.randomizeQuestions}
-            disabled={disabled}
-            onChange={checked => onChange({ ...state, randomizeQuestions: checked })}
-          />
-          <ToggleFeatureRow
-            label={tSetup('randomizeOptionsLabel')}
-            description={tSetup('randomizeOptionsDesc')}
-            checked={state.randomizeOptions}
-            disabled={disabled}
-            onChange={checked => onChange({ ...state, randomizeOptions: checked })}
-          />
+          <SettingsCard
+            icon={Shuffle}
+            title={tSetup('randomizationTitle')}
+            description={tSetup('randomizationDescription')}
+          >
+            <div className="space-y-3">
+              <ToggleFeatureRow
+                label={tSetup('randomizeQuestionsLabel')}
+                description={tSetup('randomizeQuestionsDesc')}
+                checked={state.randomizeQuestions}
+                disabled={disabled}
+                onChange={checked => onChange({ ...state, randomizeQuestions: checked })}
+              />
+              <ToggleFeatureRow
+                label={tSetup('randomizeOptionsLabel')}
+                description={tSetup('randomizeOptionsDesc')}
+                checked={state.randomizeOptions}
+                disabled={disabled}
+                onChange={checked => onChange({ ...state, randomizeOptions: checked })}
+              />
+            </div>
+          </SettingsCard>
+
+          <SettingsCard
+            icon={UserCheck}
+            title={tSetup('resultReviewTitle')}
+            description={tSetup('resultReviewDescription')}
+          >
+            <ReviewVisibilityControl
+              value={releasePolicy}
+              disabled={disabled}
+              onChange={nextPolicy => onChange(applyResultReleasePolicy(state, nextPolicy))}
+            />
+          </SettingsCard>
         </div>
-      </SettingsCard>
+      </div>
 
-      {/* Result Review Card */}
-      <SettingsCard
-        icon={UserCheck}
-        title={tSetup('resultReviewTitle')}
-        description={tSetup('resultReviewDescription')}
-      >
-        <ReviewVisibilityControl
-          value={releasePolicy}
-          disabled={disabled}
-          onChange={nextPolicy => onChange(applyResultReleasePolicy(state, nextPolicy))}
-        />
-      </SettingsCard>
-
-      {/* Integrity controls */}
       <SettingsCard
         icon={ShieldAlert}
         title={tSetup('integrityTitle')}
@@ -415,7 +416,7 @@ function PolicyImpactSummary({
     state.fullscreenEnforcement
 
   return (
-    <section className="bg-card rounded-2xl border p-5 shadow-sm">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <ListChecks className="text-muted-foreground size-4" />
         <h3 className="text-sm font-semibold">{tSetup('impactTitle')}</h3>
@@ -435,7 +436,7 @@ function PolicyImpactSummary({
 
 function ImpactPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-muted/40 rounded-xl border px-3 py-2">
+    <div className="bg-muted/40 rounded-md border px-3 py-2">
       <p className="text-muted-foreground text-[11px] font-medium uppercase">{label}</p>
       <p className="mt-1 text-sm font-medium">{value}</p>
     </div>
@@ -445,7 +446,7 @@ function ImpactPill({ label, value }: { label: string; value: string }) {
 function PolicyWarningList({ codes }: { codes: PolicyWarningCode[] }) {
   const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
   return (
-    <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+    <section className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-950 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-100">
       <div className="mb-2 flex items-center gap-2">
         <AlertTriangle className="size-4" />
         <h3 className="text-sm font-semibold">{tSetup('warningsTitle')}</h3>
@@ -481,7 +482,7 @@ function ReviewVisibilityControl({
           aria-pressed={value === option}
           onClick={() => onChange(option)}
           className={cn(
-            'rounded-xl border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            'rounded-lg border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
             value === option ? 'border-primary bg-primary/10' : 'bg-card hover:bg-muted/50',
           )}
         >
@@ -510,10 +511,10 @@ function SettingsCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-card rounded-2xl border p-5 shadow-sm">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="bg-muted mt-0.5 rounded-lg p-2">
+          <div className="bg-muted mt-0.5 rounded-md p-2">
             <Icon className="text-muted-foreground size-4" />
           </div>
           <div>
@@ -542,7 +543,7 @@ function ToggleFeatureRow({
   onChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border p-3">
+    <div className="flex items-start justify-between gap-4 rounded-md border p-3">
       <div>
         <p className="text-sm font-medium">{label}</p>
         <p className="text-muted-foreground text-xs">{description}</p>

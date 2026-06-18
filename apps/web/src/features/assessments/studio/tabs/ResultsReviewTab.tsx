@@ -172,8 +172,8 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 px-4 py-6">
-      <div className="bg-card flex flex-col gap-3 rounded-lg border p-5 md:flex-row md:items-center md:justify-between">
+    <div className="mx-auto w-full max-w-[92rem] space-y-5 px-4 py-5 md:px-6">
+      <div className="bg-card flex flex-col gap-3 rounded-lg border p-5 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="bg-muted rounded-md border p-2">
             <BarChart3 className="text-muted-foreground size-5" />
@@ -414,7 +414,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       </section>
 
       {stats && stats.score_distribution.some(bucket => bucket.count > 0) ? (
-        <div className="bg-card rounded-lg border p-5">
+        <div className="bg-card rounded-lg border p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
@@ -432,7 +432,7 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         </div>
       ) : null}
 
-      <div className="bg-card rounded-lg border">
+      <div className="bg-card rounded-lg border shadow-sm">
         <Button
           type="button"
           variant="ghost"
@@ -552,7 +552,7 @@ function ResultMetric({
     lime: 'text-lime-600',
   }[accent]
   return (
-    <div className="bg-card rounded-lg border p-4">
+    <div className="bg-card rounded-lg border p-4 shadow-sm">
       <Icon className={`${color} size-5`} />
       <p className="text-muted-foreground mt-3 text-xs">{label}</p>
       <p className="text-2xl font-semibold">{value}</p>
@@ -572,7 +572,7 @@ function OperateInsight({
   body: string
 }) {
   return (
-    <div className="bg-card rounded-lg border p-4">
+    <div className="bg-card rounded-lg border p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <Icon className="text-muted-foreground size-5" />
         <span className="text-xl font-semibold">{value}</span>

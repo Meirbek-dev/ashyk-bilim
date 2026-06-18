@@ -94,7 +94,7 @@ export default function ExamQuestionCard({
     <Card
       role="group"
       aria-labelledby={`question-title-${questionId}`}
-      className={cn(isFlagged && 'ring-2 ring-amber-400/60 dark:ring-amber-500/60')}
+      className={cn('rounded-lg shadow-sm', isFlagged && 'ring-2 ring-yellow-400/60 dark:ring-yellow-500/60')}
     >
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
@@ -112,7 +112,7 @@ export default function ExamQuestionCard({
                 aria-label={isFlagged ? t('unflagQuestion') : t('flagQuestion')}
                 className={cn(
                   'size-8 transition-colors',
-                  isFlagged ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500',
+                  isFlagged ? 'text-yellow-600 hover:text-yellow-700' : 'text-muted-foreground hover:text-yellow-600',
                 )}
               >
                 {isFlagged ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}

@@ -332,27 +332,23 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 xl:grid-cols-[22rem_minmax(0,1fr)_22rem]">
-      <aside className="space-y-4">
-        <section className="bg-card rounded-lg border p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+    <div className="mx-auto w-full max-w-[92rem] space-y-5 px-4 py-5 md:px-6">
+      <section className="bg-card rounded-lg border p-4 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(28rem,1.2fr)_minmax(18rem,0.7fr)] xl:items-start">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-md">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div className="min-w-0">
               <h2 className="text-sm font-semibold">{t('title')}</h2>
               <p className="text-muted-foreground mt-1 text-xs">{t('description')}</p>
             </div>
-            <ShieldCheck className="text-primary size-5 shrink-0" />
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <Metric label={t('eligibleLoaded')} value={eligibleUsers.length} />
-            <Metric label={t('effectivePreview')} value={effectivePreviewCount} />
-          </div>
-        </section>
 
-        <section className="bg-card rounded-lg border p-4">
           <RadioGroup
             value={mode}
             onValueChange={value => setMode(value as AccessMode)}
-            className="space-y-3"
+            className="grid gap-3 md:grid-cols-2"
             disabled={disabled}
           >
             <ModeOption
@@ -370,93 +366,99 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
               active={mode === 'RESTRICTED'}
             />
           </RadioGroup>
-          <Button className="mt-4 w-full" disabled={disabled || isPending} onClick={save}>
-            {isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />}
-            {t('save')}
-          </Button>
-          {lastSaveError ? (
-            <RecoverableError message={lastSaveError} retryLabel={t('retrySave')} onRetry={save} />
-          ) : null}
-        </section>
 
-        <AudiencePreview
-          mode={mode}
-          selectedUsers={selectedUsers.size}
-          selectedGroups={selectedGroups.size}
-          effectiveCount={effectivePreviewCount}
-          excludedLoadedCount={excludedLoadedCount}
-        />
-      </aside>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Metric label={t('eligibleLoaded')} value={eligibleUsers.length} />
+              <Metric label={t('effectivePreview')} value={effectivePreviewCount} />
+            </div>
+            <Button className="w-full" disabled={disabled || isPending} onClick={save}>
+              {isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />}
+              {t('save')}
+            </Button>
+          </div>
+        </div>
+        {lastSaveError ? <RecoverableError message={lastSaveError} retryLabel={t('retrySave')} onRetry={save} /> : null}
+      </section>
 
-      <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'RESTRICTED' && 'opacity-60')}>
-        <AccessList
-          title={t('students')}
-          count={selectedUsers.size}
-          search={query}
-          searchPlaceholder={t('searchStudents')}
-          isSearching={isSearchingUsers}
-          onSearch={setQuery}
-        >
-          {eligibleUsers.map(user => (
-            <SelectableUserRow
-              key={user.id}
-              user={user}
-              selected={selectedUsers.has(user.id)}
-              disabled={disabled || mode !== 'RESTRICTED'}
-              hasOverride={overrideByUserId.has(user.id)}
-              onToggle={() => toggleSet(setSelectedUsers, user.id)}
-            />
-          ))}
-        </AccessList>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
+        <main className={cn('grid gap-5 lg:grid-cols-2', mode !== 'RESTRICTED' && 'opacity-60')}>
+          <AccessList
+            title={t('students')}
+            count={selectedUsers.size}
+            search={query}
+            searchPlaceholder={t('searchStudents')}
+            isSearching={isSearchingUsers}
+            onSearch={setQuery}
+          >
+            {eligibleUsers.map(user => (
+              <SelectableUserRow
+                key={user.id}
+                user={user}
+                selected={selectedUsers.has(user.id)}
+                disabled={disabled || mode !== 'RESTRICTED'}
+                hasOverride={overrideByUserId.has(user.id)}
+                onToggle={() => toggleSet(setSelectedUsers, user.id)}
+              />
+            ))}
+          </AccessList>
 
-        <AccessList
-          title={t('usergroups')}
-          count={selectedGroups.size}
-          search={groupQuery}
-          searchPlaceholder={t('searchGroups')}
-          isSearching={isSearchingGroups}
-          onSearch={setGroupQuery}
-        >
-          {eligibleGroups.map(group => (
-            <SelectableGroupRow
-              key={group.id}
-              group={group}
-              selected={selectedGroups.has(group.id)}
-              expanded={expandedGroups.has(group.id)}
-              disabled={disabled || mode !== 'RESTRICTED'}
-              onToggle={() => toggleSet(setSelectedGroups, group.id)}
-              onExpand={() => toggleSet(setExpandedGroups, group.id)}
-            />
-          ))}
-        </AccessList>
-      </main>
+          <AccessList
+            title={t('usergroups')}
+            count={selectedGroups.size}
+            search={groupQuery}
+            searchPlaceholder={t('searchGroups')}
+            isSearching={isSearchingGroups}
+            onSearch={setGroupQuery}
+          >
+            {eligibleGroups.map(group => (
+              <SelectableGroupRow
+                key={group.id}
+                group={group}
+                selected={selectedGroups.has(group.id)}
+                expanded={expandedGroups.has(group.id)}
+                disabled={disabled || mode !== 'RESTRICTED'}
+                onToggle={() => toggleSet(setSelectedGroups, group.id)}
+                onExpand={() => toggleSet(setExpandedGroups, group.id)}
+              />
+            ))}
+          </AccessList>
+        </main>
 
-      <aside className="space-y-4">
-        <SelectedAudienceDrawer
-          users={selectedUserRows}
-          groups={selectedGroupRows}
-          overrides={overrideByUserId}
-          disabled={disabled}
-          onRemoveUser={id => toggleSet(setSelectedUsers, id)}
-          onRemoveGroup={id => toggleSet(setSelectedGroups, id)}
-          onDeleteOverride={deleteOverride}
-        />
-        <AccommodationPanel
-          attempts={overrideAttempts}
-          dueAt={overrideDueAt}
-          note={overrideNote}
-          waiveLate={overrideWaiveLate}
-          disabled={disabled || isOverridePending}
-          isPending={isOverridePending}
-          selectedCount={selectedUsers.size}
-          lastError={lastOverrideError}
-          onAttemptsChange={setOverrideAttempts}
-          onDueAtChange={setOverrideDueAt}
-          onNoteChange={setOverrideNote}
-          onWaiveLateChange={setOverrideWaiveLate}
-          onApply={applyOverrides}
-        />
-      </aside>
+        <aside className="space-y-4">
+          <AudiencePreview
+            mode={mode}
+            selectedUsers={selectedUsers.size}
+            selectedGroups={selectedGroups.size}
+            effectiveCount={effectivePreviewCount}
+            excludedLoadedCount={excludedLoadedCount}
+          />
+          <SelectedAudienceDrawer
+            users={selectedUserRows}
+            groups={selectedGroupRows}
+            overrides={overrideByUserId}
+            disabled={disabled}
+            onRemoveUser={id => toggleSet(setSelectedUsers, id)}
+            onRemoveGroup={id => toggleSet(setSelectedGroups, id)}
+            onDeleteOverride={deleteOverride}
+          />
+          <AccommodationPanel
+            attempts={overrideAttempts}
+            dueAt={overrideDueAt}
+            note={overrideNote}
+            waiveLate={overrideWaiveLate}
+            disabled={disabled || isOverridePending}
+            isPending={isOverridePending}
+            selectedCount={selectedUsers.size}
+            lastError={lastOverrideError}
+            onAttemptsChange={setOverrideAttempts}
+            onDueAtChange={setOverrideDueAt}
+            onNoteChange={setOverrideNote}
+            onWaiveLateChange={setOverrideWaiveLate}
+            onApply={applyOverrides}
+          />
+        </aside>
+      </div>
     </div>
   )
 }
@@ -569,7 +571,7 @@ function AccessList({
   children: ReactNode
 }) {
   return (
-    <section className="bg-card flex min-h-[560px] flex-col rounded-lg border">
+    <section className="bg-card flex min-h-[620px] flex-col rounded-lg border shadow-sm">
       <div className="border-b p-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold">{title}</h3>
@@ -693,7 +695,7 @@ function SelectedAudienceDrawer({
 }) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
   return (
-    <section className="bg-card rounded-lg border">
+    <section className="bg-card rounded-lg border shadow-sm">
       <div className="border-b p-4">
         <h3 className="text-sm font-semibold">{t('selectedDrawerTitle')}</h3>
         <p className="text-muted-foreground mt-1 text-xs">{t('selectedDrawerDesc')}</p>
@@ -793,7 +795,7 @@ function AccommodationPanel({
 }) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
   return (
-    <section className="bg-card rounded-lg border p-4">
+    <section className="bg-card rounded-lg border p-4 shadow-sm">
       <div className="mb-4 flex items-start gap-3">
         <CalendarClock className="text-muted-foreground mt-0.5 size-4 shrink-0" />
         <div>

@@ -155,11 +155,10 @@ export default function PublishDashboardTab({
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 md:px-6">
-      {/* Status Banner */}
+    <div className="mx-auto w-full max-w-[92rem] space-y-5 px-4 py-5 md:px-6">
       <div
         className={cn(
-          'flex items-center justify-between gap-4 rounded-xl border p-5',
+          'flex items-center justify-between gap-4 rounded-lg border p-5 shadow-sm',
           isPublished
             ? 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30'
             : isScheduled
@@ -270,9 +269,8 @@ export default function PublishDashboardTab({
         archivedAt={archivedAt ?? null}
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: Exam Metrics */}
-        <div className="space-y-4 lg:col-span-1">
+      <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.42fr)_minmax(0,1fr)]">
+        <div className="space-y-4">
           <h3 className="text-sm font-semibold">{tPublish('metricsTitle')}</h3>
 
           <div className="grid grid-cols-2 gap-3">
@@ -294,7 +292,7 @@ export default function PublishDashboardTab({
 
           {/* Breakdown by kind */}
           {Object.entries(kindCounts).length > 0 ? (
-            <div className="bg-card rounded-xl border p-4">
+            <div className="bg-card rounded-lg border p-4 shadow-sm">
               <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
                 {tPublish('questionTypes')}
               </p>
@@ -323,20 +321,19 @@ export default function PublishDashboardTab({
           ) : null}
         </div>
 
-        {/* Right: Pre-flight Checklist */}
-        <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-4">
           <h3 className="text-sm font-semibold">{tPublish('preflightTitle')}</h3>
 
           {!hasIssues ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-lime-300 bg-lime-50 p-8 text-center dark:border-lime-800 dark:bg-lime-950/30">
-              <CheckCircle2 className="size-10 text-lime-600 dark:text-lime-400" />
-              <p className="mt-3 font-semibold text-lime-900 dark:text-lime-100">{tPublish('noIssues')}</p>
+            <div className="flex flex-col items-center justify-center rounded-lg border border-green-300 bg-green-50 p-8 text-center dark:border-green-800 dark:bg-green-950/30">
+              <CheckCircle2 className="size-10 text-green-600 dark:text-green-400" />
+              <p className="mt-3 font-semibold text-green-900 dark:text-green-100">{tPublish('noIssues')}</p>
               <p className="text-muted-foreground mt-1 text-sm">{tPublish('noIssuesDesc')}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {assessmentLevelIssues.length > 0 ? (
-                <div className="bg-card rounded-xl border p-4">
+                <div className="bg-card rounded-lg border p-4 shadow-sm">
                   <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {tPublish('assessmentIssues')}
                   </p>
@@ -354,7 +351,7 @@ export default function PublishDashboardTab({
               ) : null}
 
               {itemLevelIssues.length > 0 ? (
-                <div className="bg-card rounded-xl border p-4">
+                <div className="bg-card rounded-lg border p-4 shadow-sm">
                   <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {tPublish('questionIssues')}
                   </p>
@@ -428,7 +425,7 @@ function LifecycleAuditTimeline({
   ].filter((entry): entry is { key: string; label: string; value: string } => entry !== null)
 
   return (
-    <section className="bg-card rounded-lg border p-5">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold">{tPublish('auditTimelineTitle')}</h2>
@@ -475,7 +472,7 @@ function StudentPreviewPanel({
   const currentScenarioComplete = previewedScenarios.has(activeScenario)
 
   return (
-    <section className="bg-card rounded-lg border p-5">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           <div className="bg-muted rounded-md border p-2">
@@ -665,7 +662,7 @@ function ImpactRow({ label, value }: { label: string; value: string }) {
 
 function MetricCard({ icon: Icon, label, value }: { icon: typeof BookOpen; label: string; value: string }) {
   return (
-    <div className="bg-card rounded-xl border p-3">
+    <div className="bg-card rounded-lg border p-3 shadow-sm">
       <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
         <Icon className="size-3.5 shrink-0" />
         <span className="truncate">{label}</span>
@@ -687,11 +684,11 @@ function ChecklistItem({
   navigateLabel?: string
 }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/20">
-      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+    <div className="flex items-start gap-2.5 rounded-md border border-yellow-200 bg-yellow-50/70 px-3 py-2 dark:border-yellow-800 dark:bg-yellow-950/20">
+      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-yellow-700 dark:text-yellow-300" />
       <div className="min-w-0 flex-1">
-        {context ? <p className="text-[10px] font-medium text-amber-700 dark:text-amber-300">{context}</p> : null}
-        <p className="text-xs text-amber-900 dark:text-amber-200">{message}</p>
+        {context ? <p className="text-[10px] font-medium text-yellow-700 dark:text-yellow-300">{context}</p> : null}
+        <p className="text-xs text-yellow-900 dark:text-yellow-200">{message}</p>
       </div>
       {onNavigate ? (
         <Button
@@ -699,7 +696,7 @@ function ChecklistItem({
           variant="link"
           size="sm"
           onClick={onNavigate}
-          className="h-auto shrink-0 p-0 text-[10px] font-medium text-amber-700 underline-offset-2 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+          className="h-auto shrink-0 p-0 text-[10px] font-medium text-yellow-700 underline-offset-2 hover:text-yellow-900 dark:text-yellow-300 dark:hover:text-yellow-100"
         >
           {navigateLabel}
           <ExternalLink className="ml-0.5 inline size-2.5" />

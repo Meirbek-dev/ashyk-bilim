@@ -328,9 +328,9 @@ export default function BuilderCanvasTab({
   )
 
   return (
-    <div className="flex h-[calc(100vh-120px)] overflow-hidden">
+    <div className="grid h-[calc(100vh-168px)] min-h-[620px] grid-cols-1 overflow-hidden lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(34rem,1fr)_19rem]">
       {/* Left Outline Sidebar */}
-      <aside className="bg-card/60 flex w-80 shrink-0 flex-col border-r">
+      <aside className="bg-card/70 flex min-h-0 flex-col border-r">
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
@@ -463,7 +463,7 @@ export default function BuilderCanvasTab({
       </aside>
 
       {/* Middle Canvas */}
-      <main className="min-w-0 flex-1 overflow-y-auto">
+      <main className="bg-muted/10 min-w-0 overflow-y-auto">
         {!itemState ? (
           <div className="flex h-full items-center justify-center p-8">
             <div className="max-w-sm text-center">
@@ -919,7 +919,7 @@ function ItemCanvas({
   const itemIndex = items.findIndex(i => i.item_uuid === item.item_uuid)
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 md:px-8">
+    <div className="mx-auto w-full max-w-4xl space-y-5 px-4 py-5 md:px-6">
       {/* Canvas Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -964,7 +964,7 @@ function ItemCanvas({
       </div>
 
       {/* Item Metadata */}
-      <section className="bg-card rounded-xl border p-5 shadow-sm">
+      <section className="bg-card rounded-lg border p-5 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold">{t('itemMetadataTitle', { itemNoun })}</h3>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem]">
           <div className="space-y-2">
@@ -1004,7 +1004,7 @@ function ItemCanvas({
       <section
         id="canvas-item-content"
         tabIndex={-1}
-        className="bg-card focus-visible:ring-primary/40 rounded-xl border p-5 shadow-sm focus-visible:ring-2 focus-visible:outline-none"
+        className="bg-card focus-visible:ring-primary/40 rounded-lg border p-5 shadow-sm focus-visible:ring-2 focus-visible:outline-none"
       >
         <h3 className="mb-4 text-sm font-semibold">{t('itemContentTitle', { itemNoun })}</h3>
         {renderBodyEditor(item)}
@@ -1030,7 +1030,7 @@ function FeedbackEditor({
   if (feedback === null) return null
 
   return (
-    <section className="bg-card rounded-xl border p-5 shadow-sm">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="mb-4">
         <h3 className="text-sm font-semibold">{tBuilder('feedbackTitle')}</h3>
         <p className="text-muted-foreground mt-1 text-xs">{tBuilder('feedbackDescription')}</p>
@@ -1060,7 +1060,7 @@ function ItemPreviewPanel({
   const prompt = getItemPrompt(item)
 
   return (
-    <section className="bg-card rounded-xl border p-5 shadow-sm">
+    <section className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Eye className="text-muted-foreground size-4" />
