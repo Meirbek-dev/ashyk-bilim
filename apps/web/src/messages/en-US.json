@@ -718,6 +718,7 @@
       "latestSubmission": "Latest submission",
       "resultsWaitingForReleaseTitle": "Results awaiting publication",
       "resultsWaitingForReleaseDescription": "Your test has been graded, but results will be available after the teacher publishes them.",
+      "resultAvailable": "Result available",
       "noQuestions": "There are no questions in this exam.",
       "testNotReadyTitle": "Test is not ready",
       "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
@@ -8147,6 +8148,7 @@
       "Items": {
         "Choice": {
           "prompt": "Prompt",
+          "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
           "promptPlaceholder": "Write your question here. Supports **Markdown** and $\\LaTeX$ math.",
           "type": "Type",
           "trueLabel": "True",
@@ -8461,7 +8463,18 @@
           "flagQuestion": "Flag for review",
           "unflagQuestion": "Remove flag",
           "answered_short": "ans",
-          "resumedDraftDescription": "Last saved: {time}"
+          "resumedDraftDescription": "Last saved: {time}",
+          "codeChallenge": "Code Challenge",
+          "securityViolationAlertTitle": "Security Violation Detected",
+          "securityViolationAlertDescription": "Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.",
+          "secondsRemaining": "seconds remaining",
+          "reEnterFullscreen": "Re-enter Fullscreen",
+          "clickBackToResume": "Click back or refocus to resume.",
+          "assessmentTitle": "Assessment",
+          "connectionLostTitle": "Connection Lost",
+          "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
+          "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
+          "draftConflictAnswerCounts": "Local: {localCount} answers | Server: {serverCount} answers"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",

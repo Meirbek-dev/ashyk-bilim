@@ -12,7 +12,6 @@ Build tools work best when import and file-system paths are obvious at build tim
 Prefer explicit maps or literal paths so the set of reachable files stays narrow and predictable. This is the same rule whether you are choosing modules with `import()` or reading files in server/build code.
 
 When analysis becomes too broad, the cost is real:
-
 - Larger server bundles
 - Slower builds
 - Worse cold starts
@@ -54,7 +53,9 @@ const baseDir = path.join(process.cwd(), 'content/' + contentKind)
 
 ```ts
 const baseDir =
-  kind === ContentKind.Blog ? path.join(process.cwd(), 'content/blog') : path.join(process.cwd(), 'content/docs')
+  kind === ContentKind.Blog
+    ? path.join(process.cwd(), 'content/blog')
+    : path.join(process.cwd(), 'content/docs')
 ```
 
 In Next.js server code, this matters for output file tracing too. `path.join(process.cwd(), someVar)` can widen the traced file set because Next.js statically analyze `import`, `require`, and `fs` usage.

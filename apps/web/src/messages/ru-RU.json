@@ -724,7 +724,9 @@
       "resumedDraftDescription": "Мы нашли ваш предыдущий черновик и восстановили ваши ответы.",
       "switchToScrollMode": "Переключиться в режим прокрутки (все вопросы)",
       "switchToCardMode": "Переключиться в режим карточек (по одному вопросу)",
+      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
       "resultsWaitingForReleaseDescription": "Ваш тест проверен, но результаты будут доступны после того, как преподаватель их опубликует.",
+      "resultAvailable": "Результат доступен",
       "noQuestions": "В этом тесте нет вопросов.",
       "testNotReadyTitle": "Тест не готов",
       "noQuestionsWarning": "В этом тесте пока нет вопросов, поэтому его нельзя начать.",
@@ -8755,6 +8757,7 @@
       "Items": {
         "Choice": {
           "prompt": "Формулировка",
+          "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} other {# баллов}}",
           "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
           "type": "Тип",
           "trueLabel": "Верно",
@@ -9067,7 +9070,22 @@
           "resolveDraftConflict": "Разрешить конфликт черновиков",
           "draftConflictAvailable": "На сервере найдена более новая версия ваших ответов.",
           "keepMyLocalVersion": "Оставить мою локальную версию",
-          "useLatestSavedVersion": "Использовать последнюю сохраненную версию"
+          "useLatestSavedVersion": "Использовать последнюю сохраненную версию",
+          "flagQuestion": "Отметить для проверки",
+          "unflagQuestion": "Снять отметку",
+          "answered_short": "отв.",
+          "resumedDraftDescription": "Последнее сохранение: {time}",
+          "codeChallenge": "Задача по коду",
+          "securityViolationAlertTitle": "Обнаружено нарушение безопасности",
+          "securityViolationAlertDescription": "Пожалуйста, немедленно вернитесь в окно экзамена. Невыполнение этого требования приведет к автоматической отправке вашего экзамена.",
+          "secondsRemaining": "секунд осталось",
+          "reEnterFullscreen": "Вернуться в полноэкранный режим",
+          "clickBackToResume": "Вернитесь или сфокусируйтесь, чтобы продолжить.",
+          "assessmentTitle": "Оценивание",
+          "connectionLostTitle": "Подключение потеряно",
+          "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
+          "draftConflictDescription": "Более новая версия #{latestVersion} ваших ответов была сохранена на сервере в {latestSavedAt}. Какую версию вы хотите использовать?",
+          "draftConflictAnswerCounts": "Локально: {localCount} ответов | На сервере: {serverCount} ответов"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",

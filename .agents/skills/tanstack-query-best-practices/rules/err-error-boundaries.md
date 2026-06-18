@@ -45,7 +45,9 @@ function QueryErrorBoundary({ children }: { children: React.ReactNode }) {
         <div className="error-container">
           <h2>Something went wrong</h2>
           <pre>{error.message}</pre>
-          <button onClick={resetErrorBoundary}>Try again</button>
+          <button onClick={resetErrorBoundary}>
+            Try again
+          </button>
         </div>
       )}
     >
@@ -84,7 +86,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQueryErrorResetBoundary } from '@tanstack/react-query'
 
 export const Route = createFileRoute('/posts')({
-  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(postQueries.list()),
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(postQueries.list()),
 
   errorComponent: ({ error, reset }) => {
     const { reset: resetQuery } = useQueryErrorResetBoundary()

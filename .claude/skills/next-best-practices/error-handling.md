@@ -13,7 +13,13 @@ Catches errors in a route segment and its children:
 ```tsx
 'use client'
 
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
   return (
     <div>
       <h2>Something went wrong!</h2>
@@ -32,7 +38,13 @@ Catches errors in root layout:
 ```tsx
 'use client'
 
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
   return (
     <html>
       <body>
@@ -95,7 +107,6 @@ async function createPost(formData: FormData) {
 ```
 
 Same applies to:
-
 - `redirect()` - 307 temporary redirect
 - `permanentRedirect()` - 308 permanent redirect
 - `notFound()` - 404 not found
@@ -193,7 +204,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const post = await getPost(id)
 
   if (!post) {
-    notFound() // Renders closest not-found.tsx
+    notFound()  // Renders closest not-found.tsx
   }
 
   return <div>{post.title}</div>

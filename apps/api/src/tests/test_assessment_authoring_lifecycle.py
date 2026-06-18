@@ -555,9 +555,7 @@ def test_unknown_item_kinds_are_rejected_for_assessments(
     assert response.status_code == 422
 
 
-def test_code_challenge_rejects_choice_items(
-    api_client: TestClient, db_session_factory: Callable[[], Session]
-) -> None:
+def test_code_challenge_rejects_choice_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """CODE_CHALLENGE assessments may only author CODE items."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
     create_response = api_client.post(
@@ -819,7 +817,9 @@ def test_lifecycle_transition_draft_to_published(
     assert response.json()["lifecycle"] == "PUBLISHED"
     assert response.json()["published_at"] is not None
     with db_session_factory() as session:
-        activity = session.exec(select(Activity).where(Activity.activity_uuid == response.json()["activity_uuid"])).one()
+        activity = session.exec(
+            select(Activity).where(Activity.activity_uuid == response.json()["activity_uuid"])
+        ).one()
         audit_entries = (activity.details or {}).get("assessment_lifecycle_audit")
         assert isinstance(audit_entries, list)
         assert audit_entries[-1]["to"] == "PUBLISHED"

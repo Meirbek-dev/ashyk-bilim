@@ -432,15 +432,15 @@ Use explicit composition slots and narrow selector hooks:
 
 Recommended component map:
 
-| Current | Target |
-| --- | --- |
-| `AssessmentWorkspaceShell` | `AssessmentStudioShell`, `StudioHeader`, `StudioNav`, `ReadinessStrip`, `IssueDrawer` |
-| `GeneralSettingsTab` | `DeliveryPolicyView`, `SchedulePanel`, `ScoringPanel`, `ResultReleasePanel`, `IntegrityPanel` |
-| `BuilderCanvasTab` | `QuestionWorkbench`, `QuestionOutline`, `QuestionEditor`, `QuestionPreviewPane`, `QuestionInspector` |
-| `AccessManagementTab` | `AudienceBuilder`, `AudienceRosterTable`, `AudienceSelectionPanel`, `AccommodationTable` |
-| `ResultsReviewTab` | `ReviewOperateView`, `SubmissionQueue`, `SubmissionActionPanel`, `QualityInsightsPanel` |
-| `PublishDashboardTab` | `PublishGateView`, `PreviewRunPanel`, `LifecycleAuditPanel`, `PublishImpactDialog` |
-| readiness rail | `ReadinessStrip` plus `IssueDrawer` |
+| Current                    | Target                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `AssessmentWorkspaceShell` | `AssessmentStudioShell`, `StudioHeader`, `StudioNav`, `ReadinessStrip`, `IssueDrawer`                |
+| `GeneralSettingsTab`       | `DeliveryPolicyView`, `SchedulePanel`, `ScoringPanel`, `ResultReleasePanel`, `IntegrityPanel`        |
+| `BuilderCanvasTab`         | `QuestionWorkbench`, `QuestionOutline`, `QuestionEditor`, `QuestionPreviewPane`, `QuestionInspector` |
+| `AccessManagementTab`      | `AudienceBuilder`, `AudienceRosterTable`, `AudienceSelectionPanel`, `AccommodationTable`             |
+| `ResultsReviewTab`         | `ReviewOperateView`, `SubmissionQueue`, `SubmissionActionPanel`, `QualityInsightsPanel`              |
+| `PublishDashboardTab`      | `PublishGateView`, `PreviewRunPanel`, `LifecycleAuditPanel`, `PublishImpactDialog`                   |
+| readiness rail             | `ReadinessStrip` plus `IssueDrawer`                                                                  |
 
 Avoid boolean prop APIs such as `showInspector`, `compact`, `isAccessMode`, `showPreview`, and `hasRail`. Prefer explicit variants and slots:
 

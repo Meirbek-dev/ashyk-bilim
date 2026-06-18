@@ -58,6 +58,7 @@ def validate_and_parse(
             CodeItemAnswer,
             MatchingItemAnswer,
         )
+
         for item_uuid in missing_items:
             item = item_by_uuid[item_uuid]
             if item.kind == "CHOICE":

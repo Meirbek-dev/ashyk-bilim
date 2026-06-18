@@ -228,7 +228,6 @@ no_implicit_optional = true
 ```
 
 Incremental adoption goals:
-
 - All function parameters annotated
 - All return types annotated
 - Class attributes annotated

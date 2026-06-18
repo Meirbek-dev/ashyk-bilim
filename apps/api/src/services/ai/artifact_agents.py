@@ -130,9 +130,7 @@ ArtifactAgentOutput = (
 
 
 @_ARTIFACT_AGENT.output_validator
-def _validate_artifact_output(
-    ctx: RunContext[AgentDependencies], artifact: ArtifactAgentOutput
-) -> ArtifactAgentOutput:
+def _validate_artifact_output(ctx: RunContext[AgentDependencies], artifact: ArtifactAgentOutput) -> ArtifactAgentOutput:
     return cast("ArtifactAgentOutput", validate_artifact_output_for_deps(ctx.deps, artifact))
 
 

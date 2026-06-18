@@ -46,7 +46,7 @@ def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
         CodeItemBody,
         MatchingItemBody,
     )
-    
+
     items = [
         CanonicalAssessmentItem(
             item_uuid="q_choice",
@@ -87,29 +87,29 @@ def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
 
     # Empty payload
     payload = {}
-    
+
     parsed = validate_and_parse(payload, items=items)
-    
+
     # Check that answers_by_item_uuid has all 5 keys with correct defaults
     answers = parsed.answers_by_item_uuid
     assert len(answers) == 5
-    
+
     assert answers["q_choice"].kind == "CHOICE"
     assert answers["q_choice"].selected == []
-    
+
     assert answers["q_opentext"].kind == "OPEN_TEXT"
     assert answers["q_opentext"].text == ""
-    
+
     assert answers["q_form"].kind == "FORM"
     assert answers["q_form"].values == {}
-    
+
     assert answers["q_code"].kind == "CODE"
     assert answers["q_code"].language == 71
     assert answers["q_code"].source == ""
-    
+
     assert answers["q_matching"].kind == "MATCHING"
     assert answers["q_matching"].matches == []
-    
+
     # Check that payload["answers"] is updated for persistence
     raw_answers = parsed.raw_payload["answers"]
     assert isinstance(raw_answers, dict)
@@ -123,4 +123,3 @@ def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
         "latest_run": None,
     }
     assert raw_answers["q_matching"] == {"kind": "MATCHING", "matches": []}
-

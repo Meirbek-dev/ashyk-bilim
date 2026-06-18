@@ -85,7 +85,11 @@ function ForwardMessageProvider({ children }: { children: React.ReactNode }) {
   const inputRef = useRef(null)
 
   return (
-    <Composer.Provider state={state} actions={{ update: setState, submit: forwardMessage }} meta={{ inputRef }}>
+    <Composer.Provider
+      state={state}
+      actions={{ update: setState, submit: forwardMessage }}
+      meta={{ inputRef }}
+    >
       {children}
     </Composer.Provider>
   )

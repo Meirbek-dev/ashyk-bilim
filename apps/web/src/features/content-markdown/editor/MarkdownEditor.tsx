@@ -138,7 +138,7 @@ export function MarkdownEditor({
 
   // Sync external value changes into the editor, but skip updates the editor itself emitted
   useEffect(() => {
-    if (!editor) return
+    if (!editor || editor.isDestroyed) return
     if (isInternalUpdateRef.current) {
       isInternalUpdateRef.current = false
       return
@@ -151,7 +151,8 @@ export function MarkdownEditor({
   }, [editor, normalizedValue])
 
   useEffect(() => {
-    editor?.setEditable(!disabled)
+    if (!editor || editor.isDestroyed) return
+    editor.setEditable(!disabled)
   }, [disabled, editor])
 
   // Fullscreen keyboard shortcut
@@ -218,7 +219,7 @@ export function MarkdownEditor({
     >
       {/* Toolbar */}
       <EditorToolbar
-        editor={editor}
+        editor={editor && !editor.isDestroyed ? editor : null}
         config={config}
         disabled={disabled}
         viewMode={viewMode}
@@ -255,7 +256,7 @@ export function MarkdownEditor({
         )}
         {viewMode !== 'preview' && viewMode !== 'source' && (
           <EditorContent
-            editor={editor}
+            editor={editor && !editor.isDestroyed ? editor : null}
             className={cn(
               'prose prose-sm dark:prose-invert min-h-0 max-w-none overflow-y-auto',
               '[&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror]:outline-none',

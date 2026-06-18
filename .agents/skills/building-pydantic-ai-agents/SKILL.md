@@ -4,7 +4,7 @@ description: Build AI agents with Pydantic AI — tools, capabilities (including
 license: MIT
 compatibility: Requires Python 3.10+
 metadata:
-  version: '1.1.0'
+  version: "1.1.0"
   author: pydantic
 ---
 
@@ -16,7 +16,6 @@ This skill provides patterns, architecture guidance, and tested code examples fo
 ## When to Use This Skill
 
 Invoke this skill when:
-
 - User asks to build an AI agent, create an LLM-powered app, or mentions Pydantic AI
 - User wants to add tools, capabilities (thinking, web search), or structured output to an agent
 - User asks to define agents from YAML/JSON specs or use template strings
@@ -26,7 +25,6 @@ Invoke this skill when:
 - The agent design includes optional instructions, specialist workflows, long-tail tools, or any context the model does not need on most turns
 
 Do **not** use this skill for:
-
 - The Pydantic validation library alone (`pydantic`/`BaseModel` without agents)
 - Other AI frameworks (LangChain, LlamaIndex, CrewAI, AutoGen)
 - General Python development unrelated to AI agents
@@ -214,30 +212,30 @@ agent = Agent.from_file('agent.yaml')
 
 Load only the most relevant reference first. Read additional references only if the task spans multiple areas.
 
-| I want to...                                                                                                                       | Reference                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Create/configure agents, choose output types, use deps, define specs, or pick run methods                                          | [Agents Core](./references/AGENTS-CORE.md)                                                                  |
-| Bundle reusable behavior or intercept lifecycle events                                                                             | [Capabilities and Hooks](./references/CAPABILITIES-AND-HOOKS.md)                                            |
-| Decide what should load eagerly vs on demand, apply progressive disclosure, defer capability loading, or explain `load_capability` | [Capabilities on Demand](./references/ON-DEMAND-CAPABILITIES.md)                                            |
-| Add function tools, toolsets, MCP servers, or explicit search tools                                                                | [Tools Core](./references/TOOLS-CORE.md)                                                                    |
-| Use provider-native web search, web fetch, or code execution                                                                       | [Native Tools](./references/NATIVE-TOOLS.md)                                                                |
-| Use advanced tool features such as approval, retries, `ToolReturn`, validators, timeouts, or tool search                           | [Tools Advanced](./references/TOOLS-ADVANCED.md)                                                            |
-| Work with multimodal input, message history, or context trimming                                                                   | [Input and History](./references/INPUT-AND-HISTORY.md)                                                      |
-| Test or debug agent behavior                                                                                                       | [Testing and Debugging](./references/TESTING-AND-DEBUGGING.md)                                              |
-| Coordinate multiple agents or build graph workflows                                                                                | [Orchestration and Integrations](./references/ORCHESTRATION-AND-INTEGRATIONS.md#coordinate-multiple-agents) |
-| Call the model directly, expose A2A, use durable execution, embeddings, evals, or third-party integrations                         | [Orchestration and Integrations](./references/ORCHESTRATION-AND-INTEGRATIONS.md)                            |
-| Compare abstractions, output modes, decorators, or model-string patterns                                                           | [Architecture and Decision Guide](./references/ARCHITECTURE.md)                                             |
-| Follow an older link into `COMMON-TASKS.md`                                                                                        | [Task Reference Map](./references/COMMON-TASKS.md)                                                          |
+| I want to... | Reference |
+|---|---|
+| Create/configure agents, choose output types, use deps, define specs, or pick run methods | [Agents Core](./references/AGENTS-CORE.md) |
+| Bundle reusable behavior or intercept lifecycle events | [Capabilities and Hooks](./references/CAPABILITIES-AND-HOOKS.md) |
+| Decide what should load eagerly vs on demand, apply progressive disclosure, defer capability loading, or explain `load_capability` | [Capabilities on Demand](./references/ON-DEMAND-CAPABILITIES.md) |
+| Add function tools, toolsets, MCP servers, or explicit search tools | [Tools Core](./references/TOOLS-CORE.md) |
+| Use provider-native web search, web fetch, or code execution | [Native Tools](./references/NATIVE-TOOLS.md) |
+| Use advanced tool features such as approval, retries, `ToolReturn`, validators, timeouts, or tool search | [Tools Advanced](./references/TOOLS-ADVANCED.md) |
+| Work with multimodal input, message history, or context trimming | [Input and History](./references/INPUT-AND-HISTORY.md) |
+| Test or debug agent behavior | [Testing and Debugging](./references/TESTING-AND-DEBUGGING.md) |
+| Coordinate multiple agents or build graph workflows | [Orchestration and Integrations](./references/ORCHESTRATION-AND-INTEGRATIONS.md#coordinate-multiple-agents) |
+| Call the model directly, expose A2A, use durable execution, embeddings, evals, or third-party integrations | [Orchestration and Integrations](./references/ORCHESTRATION-AND-INTEGRATIONS.md) |
+| Compare abstractions, output modes, decorators, or model-string patterns | [Architecture and Decision Guide](./references/ARCHITECTURE.md) |
+| Follow an older link into `COMMON-TASKS.md` | [Task Reference Map](./references/COMMON-TASKS.md) |
 
 ## Architecture and Decisions
 
 Load [Architecture and Decision Guide](./references/ARCHITECTURE.md) only when the user is choosing between abstractions or wants comparison tables and decision trees:
 
-| Topic                 | What it covers                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------ |
-| Decision Trees        | Tool registration, output modes, multi-agent patterns, capabilities, testing approaches, extensibility |
-| Comparison Tables     | Output modes, model provider prefixes, tool decorators, built-in capabilities, agent methods           |
-| Architecture Overview | Execution flow, generic types, construction patterns, lifecycle hooks, model string format             |
+| Topic | What it covers |
+|---|---|
+| Decision Trees | Tool registration, output modes, multi-agent patterns, capabilities, testing approaches, extensibility |
+| Comparison Tables | Output modes, model provider prefixes, tool decorators, built-in capabilities, agent methods |
+| Architecture Overview | Execution flow, generic types, construction patterns, lifecycle hooks, model string format |
 
 **Quick reference — model string format:** `"provider:model-name"` (e.g., `"openai:gpt-5.2"`, `"anthropic:claude-sonnet-4-6"`, `"google:gemini-3-pro-preview"`)
 
@@ -265,16 +263,16 @@ These are mistakes agents commonly make with Pydantic AI. Getting these wrong pr
 
 Load exactly one of these unless the task clearly spans multiple families:
 
-| Task family                                                                                                   | Reference                                                                        |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Core agent setup, output, deps, specs, models, run methods                                                    | [Agents Core](./references/AGENTS-CORE.md)                                       |
-| Capabilities, hooks, and reusable behavior                                                                    | [Capabilities and Hooks](./references/CAPABILITIES-AND-HOOKS.md)                 |
-| Progressive disclosure, deferred capabilities, capabilities on demand, and `load_capability` semantics        | [Capabilities on Demand](./references/ON-DEMAND-CAPABILITIES.md)                 |
-| Function tools, toolsets, MCP, explicit search tools                                                          | [Tools Core](./references/TOOLS-CORE.md)                                         |
-| Provider-native tools                                                                                         | [Native Tools](./references/NATIVE-TOOLS.md)                                     |
-| Approval, retries, validators, timeouts, rich tool returns, tool search, and tool-level deferred loading      | [Tools Advanced](./references/TOOLS-ADVANCED.md)                                 |
-| Multimodal input, message history, history processors                                                         | [Input and History](./references/INPUT-AND-HISTORY.md)                           |
-| Testing, request inspection, and Logfire debugging                                                            | [Testing and Debugging](./references/TESTING-AND-DEBUGGING.md)                   |
+| Task family | Reference |
+|---|---|
+| Core agent setup, output, deps, specs, models, run methods | [Agents Core](./references/AGENTS-CORE.md) |
+| Capabilities, hooks, and reusable behavior | [Capabilities and Hooks](./references/CAPABILITIES-AND-HOOKS.md) |
+| Progressive disclosure, deferred capabilities, capabilities on demand, and `load_capability` semantics | [Capabilities on Demand](./references/ON-DEMAND-CAPABILITIES.md) |
+| Function tools, toolsets, MCP, explicit search tools | [Tools Core](./references/TOOLS-CORE.md) |
+| Provider-native tools | [Native Tools](./references/NATIVE-TOOLS.md) |
+| Approval, retries, validators, timeouts, rich tool returns, tool search, and tool-level deferred loading | [Tools Advanced](./references/TOOLS-ADVANCED.md) |
+| Multimodal input, message history, history processors | [Input and History](./references/INPUT-AND-HISTORY.md) |
+| Testing, request inspection, and Logfire debugging | [Testing and Debugging](./references/TESTING-AND-DEBUGGING.md) |
 | Multi-agent patterns, graphs, direct API, A2A, durable execution, embeddings, evals, third-party integrations | [Orchestration and Integrations](./references/ORCHESTRATION-AND-INTEGRATIONS.md) |
 
 Use [Task Reference Map](./references/COMMON-TASKS.md) only for compatibility with older links or when you need a pointer from an old section name to the new file.

@@ -348,14 +348,12 @@ def _append_lifecycle_audit_note(
     details = dict(activity.details or {})
     raw_entries = details.get("assessment_lifecycle_audit")
     entries = raw_entries if isinstance(raw_entries, list) else []
-    entries.append(
-        {
-            "to": target.value,
-            "note": note,
-            "user_id": user_id,
-            "created_at": created_at.isoformat(),
-        }
-    )
+    entries.append({
+        "to": target.value,
+        "note": note,
+        "user_id": user_id,
+        "created_at": created_at.isoformat(),
+    })
     details["assessment_lifecycle_audit"] = entries[-25:]
     activity.details = details
 

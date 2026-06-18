@@ -11,7 +11,7 @@
       "source": "juliusbrussee/caveman",
       "sourceType": "github",
       "skillPath": "skills/caveman/SKILL.md",
-      "computedHash": "7935e83f9c6a8b7cbb5404d144b0d19e3ba93583f4388301c3dada37cd25adf8"
+      "computedHash": "b0e7741886c0c32270cedc1a2fc21c2879d90964d3ce00f24952de7064613404"
     },
     "design-taste-frontend": {
       "source": "leonxlnx/taste-skill",
@@ -23,7 +23,7 @@
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/executing-plans/SKILL.md",
-      "computedHash": "b41c919caf1bb07fbacb0e29899ac513f9eb11cd4dd695975ad352c2c03cc4d7"
+      "computedHash": "d3e5b64b97d4713e3a7f33625cae12ed9305898d85a1c6309f46765c39a9d789"
     },
     "fastapi": {
       "source": "fastapi/fastapi",
