@@ -212,3 +212,31 @@ Assumptions and deviations:
 
 - No backend regrade endpoint exists in the current assessment contract. Phase 7 exposes a regrade candidate workflow marker and routes teachers back to affected submissions; a persisted regrade job is left for a future backend contract.
 - Integrity review uses existing submission metadata violations. It does not introduce real proctoring or new integrity telemetry.
+
+## Phase 8 - Audit, QA, And Rollout
+
+Status: completed.
+
+What changed:
+
+- Added an assessment lifecycle audit timeline to the publish dashboard so instructors can see draft/current, scheduled, published, and archived timestamps beside the publish gate.
+- Added `NEXT_PUBLIC_ASSESSMENT_REWRITE` and `NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES` rollout handling with an old-studio fallback that keeps existing exams readable when the rewrite is disabled.
+- Added a migration guide for existing exams and rollback through environment flags.
+- Added Playwright coverage for instructor studio navigation, access/publish/results views, and student mobile readability.
+- Added Vitest coverage for rollout modes and course allowlists.
+- Added API coverage for the published-with-submissions lock path in the authoring lifecycle suite.
+
+Tests and checks:
+
+- `vp check --fix apps/web/src/features/assessments/studio/rollout.ts apps/web/src/tests/assessments/rollout.test.ts apps/web/src/features/assessments/studio/AssessmentStudioWorkspace.tsx apps/web/src/features/assessments/studio/utils.ts apps/web/src/features/assessments/studio/components/NativeItemAuthor.tsx apps/web/src/features/assessments/studio/tabs/PublishDashboardTab.tsx apps/web/e2e/specs/06-assessment-rewrite.spec.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json apps/api/src/tests/test_assessment_authoring_lifecycle.py` passed.
+- `vp test apps/web/src/tests/assessments/rollout.test.ts apps/web/src/tests/assessments/workspace-state.test.ts apps/web/src/tests/assessments/publish-gate-utils.test.ts apps/web/src/tests/assessments/operate-view-utils.test.ts` passed: 13 tests.
+- `vp test` passed: 51 files, 389 tests.
+- `uv run --project apps/api pytest apps/api/src/tests/test_assessment_authoring_lifecycle.py -q` passed: 22 tests.
+- `uv run --project apps/api pytest apps/api/src/tests/test_assessment_access_api.py apps/api/src/tests/test_assessment_authoring_lifecycle.py apps/api/src/tests/test_assessment_phase0_contract_api.py apps/api/src/tests/test_assessment_review_api.py -q` passed: 38 tests.
+- `vp run test:e2e -- --list e2e/specs/06-assessment-rewrite.spec.ts` was attempted from `apps/web` but could not enumerate because the Playwright web server hit `ECONNREFUSED 127.0.0.1:1338`; the local API service was not running.
+
+Assumptions and deviations:
+
+- The rollout keeps old exams readable through a conservative fallback, not a second editable legacy studio.
+- Integrity remains deterrents-only and audit/review-oriented. No real proctoring claims or new telemetry were added.
+- Playwright flows are committed but need a seeded E2E environment with the API service running to execute end to end.

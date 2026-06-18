@@ -1,16 +1,19 @@
 export interface AssessmentRewriteRolloutInput {
   courseUuid: string
-  env?: {
-    NEXT_PUBLIC_ASSESSMENT_REWRITE?: string
-    NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES?: string
-  }
+  env?: AssessmentRewriteEnv
 }
 
-export function isAssessmentRewriteEnabled({ courseUuid, env = process.env }: AssessmentRewriteRolloutInput): boolean {
-  const mode = normalizeMode(env.NEXT_PUBLIC_ASSESSMENT_REWRITE)
+interface AssessmentRewriteEnv {
+  NEXT_PUBLIC_ASSESSMENT_REWRITE?: string | undefined
+  NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES?: string | undefined
+}
+
+export function isAssessmentRewriteEnabled({ courseUuid, env }: AssessmentRewriteRolloutInput): boolean {
+  const rolloutEnv = env ?? readPublicAssessmentRewriteEnv()
+  const mode = normalizeMode(rolloutEnv.NEXT_PUBLIC_ASSESSMENT_REWRITE)
   if (mode === 'off') return false
   if (mode === 'course-allowlist') {
-    return parseCourseAllowlist(env.NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES).has(normalizeCourseUuid(courseUuid))
+    return parseCourseAllowlist(rolloutEnv.NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES).has(normalizeCourseUuid(courseUuid))
   }
   return true
 }
@@ -33,4 +36,11 @@ function normalizeMode(value: string | undefined): 'on' | 'off' | 'course-allowl
 
 function normalizeCourseUuid(value: string): string {
   return value.trim().replace(/^course_/, '')
+}
+
+function readPublicAssessmentRewriteEnv(): AssessmentRewriteEnv {
+  return {
+    NEXT_PUBLIC_ASSESSMENT_REWRITE: process.env.NEXT_PUBLIC_ASSESSMENT_REWRITE,
+    NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES: process.env.NEXT_PUBLIC_ASSESSMENT_REWRITE_COURSES,
+  }
 }
