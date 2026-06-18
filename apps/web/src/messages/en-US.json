@@ -8671,8 +8671,6 @@
         },
         "lifecycleChanged": "Lifecycle changed to {state}",
         "updateLifecycleFailed": "Failed to update lifecycle",
-        "rewriteDisabledTitle": "Assessment rewrite is disabled",
-        "rewriteDisabledDescription": "{title} remains readable. Enable NEXT_PUBLIC_ASSESSMENT_REWRITE for editing in the new studio.",
         "breadcrumb": {
           "curriculum": "Curriculum",
           "studio": "Studio"
@@ -9082,7 +9080,7 @@
           "confirmPublish": "Publish exam",
           "confirmSchedule": "Schedule exam",
           "auditTimelineTitle": "Audit timeline",
-          "auditTimelineDesc": "Lifecycle events are shown here so instructors can verify rollout state before publishing.",
+          "auditTimelineDesc": "Lifecycle events are shown here so instructors can verify the current state before publishing.",
           "auditDraft": "Draft created",
           "auditScheduled": "Scheduled",
           "auditPublished": "Published",

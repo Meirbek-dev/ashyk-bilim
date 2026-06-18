@@ -30,14 +30,6 @@ export interface StudioReadinessPayload {
 }
 
 export interface AssessmentPolicyDetail {
-  due_at?: string | null
-  max_attempts?: number | null
-  time_limit_seconds?: number | null
-  passing_score?: number | null
-  review_visibility?: 'NONE' | 'SCORE_ONLY' | 'FULL' | null
-  anti_cheat_json?: Record<string, unknown> | null
-  late_policy_json?: Record<string, unknown> | null
-  settings_json?: Record<string, unknown> | null
   canonical_policy?: AssessmentCanonicalPolicyDetail | null
 }
 
@@ -136,7 +128,7 @@ export function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTi
 
 export function buildAssessmentPatch(
   _mode: StudioMode,
-  assessment: AssessmentStudioDetail,
+  _assessment: AssessmentStudioDetail,
   state: AssessmentEditorState,
 ) {
   const dueAt = state.dueAt ? new Date(state.dueAt).toISOString() : null
@@ -145,7 +137,6 @@ export function buildAssessmentPatch(
     description: state.description,
   }
 
-  const settings = normalizeRecord(assessment.assessment_policy?.settings_json)
   payload.policy = {
     due_at: dueAt,
     max_attempts: state.maxAttempts ? Number(state.maxAttempts) : null,
@@ -157,34 +148,12 @@ export function buildAssessmentPatch(
     partial_credit: state.partialCredit,
     negative_marking_percent: state.negativeMarkingPercent ? Number(state.negativeMarkingPercent) : 0,
     grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
-    anti_cheat_json: {
-      copy_paste_protection: state.copyPasteProtection,
-      tab_switch_detection: state.tabSwitchDetection,
-      devtools_detection: state.devtoolsDetection,
-      right_click_disable: state.rightClickDisable,
-      fullscreen_enforcement: state.fullscreenEnforcement,
-      violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : null,
-    },
-    settings_json: {
-      ...settings,
-      attempt_limit: state.maxAttempts ? Number(state.maxAttempts) : null,
-      time_limit: state.timeLimitMinutes ? Number(state.timeLimitMinutes) : null,
-      allow_result_review: state.allowResultReview,
-      show_correct_answers: state.showCorrectAnswers,
-      copy_paste_protection: state.copyPasteProtection,
-      tab_switch_detection: state.tabSwitchDetection,
-      devtools_detection: state.devtoolsDetection,
-      right_click_disable: state.rightClickDisable,
-      fullscreen_enforcement: state.fullscreenEnforcement,
-      violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : null,
-      pass_threshold: state.passThreshold ? Number(state.passThreshold) : null,
-      randomize_questions: state.randomizeQuestions,
-      randomize_options: state.randomizeOptions,
-      partial_credit: state.partialCredit,
-      grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
-      available_from: state.availableFrom ? new Date(state.availableFrom).toISOString() : null,
-      negative_marking_percent: state.negativeMarkingPercent ? Number(state.negativeMarkingPercent) : 0,
-    },
+    copy_paste_protection: state.copyPasteProtection,
+    tab_switch_detection: state.tabSwitchDetection,
+    devtools_detection: state.devtoolsDetection,
+    right_click_disabled: state.rightClickDisable,
+    fullscreen_required: state.fullscreenEnforcement,
+    violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : null,
   }
   return payload
 }
@@ -193,100 +162,38 @@ export function toAssessmentEditorState(assessment: AssessmentStudioDetail): Ass
   const canonical = assessment.assessment_policy?.canonical_policy
   const canonicalIntegrity = canonical?.integrity
   const canonicalDelivery = canonical?.delivery
-  const antiCheat = normalizeRecord(assessment.assessment_policy?.anti_cheat_json)
-  const settings = normalizeRecord(assessment.assessment_policy?.settings_json)
-  const dueAt = canonical?.due_at ?? assessment.assessment_policy?.due_at
-  const maxAttempts = canonical?.max_attempts ?? assessment.assessment_policy?.max_attempts
-  const timeLimitSeconds = canonical?.time_limit_seconds ?? assessment.assessment_policy?.time_limit_seconds
-  const reviewVisibility = canonical?.review_visibility ?? assessment.assessment_policy?.review_visibility
+  const dueAt = canonical?.due_at
+  const maxAttempts = canonical?.max_attempts
+  const timeLimitSeconds = canonical?.time_limit_seconds
+  const reviewVisibility = canonical?.review_visibility
   return {
     title: assessment.title,
     description: assessment.description ?? '',
     dueAt: toDateTimeLocal(dueAt),
     gradingType: assessment.grading_type ?? 'PERCENTAGE',
-    maxAttempts:
-      typeof maxAttempts === 'number'
-        ? String(maxAttempts)
-        : typeof settings.max_attempts === 'number'
-          ? String(settings.max_attempts)
-          : typeof settings.attempt_limit === 'number'
-            ? String(settings.attempt_limit)
-            : '1',
-    timeLimitMinutes:
-      typeof timeLimitSeconds === 'number'
-        ? String(Math.max(1, Math.ceil(timeLimitSeconds / 60)))
-        : typeof settings.time_limit_seconds === 'number'
-          ? String(Math.max(1, Math.ceil(settings.time_limit_seconds / 60)))
-          : typeof settings.time_limit === 'number'
-            ? String(settings.time_limit)
-            : '',
-    copyPasteProtection:
-      canonicalIntegrity?.copy_paste_protection === true ||
-      antiCheat.copy_paste_protection === true ||
-      settings.copy_paste_protection === true,
-    tabSwitchDetection:
-      canonicalIntegrity?.tab_switch_detection === true ||
-      antiCheat.tab_switch_detection === true ||
-      settings.tab_switch_detection === true,
-    devtoolsDetection:
-      canonicalIntegrity?.devtools_detection === true ||
-      antiCheat.devtools_detection === true ||
-      settings.devtools_detection === true,
-    rightClickDisable:
-      canonicalIntegrity?.right_click_disabled === true ||
-      antiCheat.right_click_disable === true ||
-      settings.right_click_disable === true,
-    fullscreenEnforcement:
-      canonicalIntegrity?.fullscreen_required === true ||
-      antiCheat.fullscreen_enforcement === true ||
-      settings.fullscreen_enforcement === true,
+    maxAttempts: typeof maxAttempts === 'number' ? String(maxAttempts) : '1',
+    timeLimitMinutes: typeof timeLimitSeconds === 'number' ? String(Math.max(1, Math.ceil(timeLimitSeconds / 60))) : '',
+    copyPasteProtection: canonicalIntegrity?.copy_paste_protection === true,
+    tabSwitchDetection: canonicalIntegrity?.tab_switch_detection === true,
+    devtoolsDetection: canonicalIntegrity?.devtools_detection === true,
+    rightClickDisable: canonicalIntegrity?.right_click_disabled === true,
+    fullscreenEnforcement: canonicalIntegrity?.fullscreen_required === true,
     violationThreshold:
       typeof canonicalIntegrity?.violation_threshold === 'number'
         ? String(canonicalIntegrity.violation_threshold)
-        : typeof antiCheat.violation_threshold === 'number'
-          ? String(antiCheat.violation_threshold)
-          : typeof settings.violation_threshold === 'number'
-            ? String(settings.violation_threshold)
-            : '3',
-    allowResultReview:
-      reviewVisibility === 'NONE'
-        ? false
-        : reviewVisibility === 'SCORE_ONLY' || reviewVisibility === 'FULL'
-          ? true
-          : settings.allow_result_review !== false,
-    showCorrectAnswers:
-      reviewVisibility === 'FULL'
-        ? true
-        : reviewVisibility === 'SCORE_ONLY' || reviewVisibility === 'NONE'
-          ? false
-          : typeof settings.show_correct_answers === 'boolean'
-            ? settings.show_correct_answers
-            : settings.allow_result_review !== false,
-    passThreshold:
-      typeof canonical?.passing_score === 'number'
-        ? String(canonical.passing_score)
-        : typeof assessment.assessment_policy?.passing_score === 'number'
-          ? String(assessment.assessment_policy.passing_score)
-          : typeof settings.pass_threshold === 'number'
-            ? String(settings.pass_threshold)
-            : '',
-    randomizeQuestions:
-      canonicalDelivery?.randomize_questions === true ||
-      settings.randomize_questions === true ||
-      settings.shuffle_questions === true,
-    randomizeOptions:
-      canonicalDelivery?.randomize_options === true ||
-      settings.randomize_options === true ||
-      settings.shuffle_answers === true,
-    partialCredit: canonicalDelivery?.partial_credit === true || settings.partial_credit === true,
-    gracePeriodMinutes: typeof settings.grace_period_minutes === 'number' ? String(settings.grace_period_minutes) : '',
-    availableFrom: settings.available_from ? toDateTimeLocal(settings.available_from as string) : '',
+        : '3',
+    allowResultReview: reviewVisibility !== 'NONE',
+    showCorrectAnswers: reviewVisibility !== 'SCORE_ONLY' && reviewVisibility !== 'NONE',
+    passThreshold: typeof canonical?.passing_score === 'number' ? String(canonical.passing_score) : '',
+    randomizeQuestions: canonicalDelivery?.randomize_questions === true,
+    randomizeOptions: canonicalDelivery?.randomize_options === true,
+    partialCredit: canonicalDelivery?.partial_credit === true,
+    gracePeriodMinutes: '',
+    availableFrom: '',
     negativeMarkingPercent:
       typeof canonicalDelivery?.negative_marking_percent === 'number' && canonicalDelivery.negative_marking_percent > 0
         ? String(canonicalDelivery.negative_marking_percent)
-        : typeof settings.negative_marking_percent === 'number' && settings.negative_marking_percent > 0
-          ? String(settings.negative_marking_percent)
-          : '',
+        : '',
   }
 }
 

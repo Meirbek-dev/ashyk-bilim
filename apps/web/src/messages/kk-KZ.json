@@ -8722,8 +8722,6 @@
         },
         "lifecycleChanged": "Кезең {state} күйіне ауысты",
         "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
-        "rewriteDisabledTitle": "Жаңа бағалау студиясы өшірулі",
-        "rewriteDisabledDescription": "{title} оқуға қолжетімді болып қалады. Жаңа студияда өңдеу үшін NEXT_PUBLIC_ASSESSMENT_REWRITE қосыңыз.",
         "breadcrumb": {
           "curriculum": "Оқу жоспары",
           "studio": "Студия"

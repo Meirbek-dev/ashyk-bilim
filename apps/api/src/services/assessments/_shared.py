@@ -933,6 +933,16 @@ def _get_or_create_policy(
             if field == "late_policy_json":
                 policy.late_policy_json = as_json_object(value, field=field) if isinstance(value, dict) else {}
                 continue
+            if field == "anti_cheat_json":
+                current = dict(policy.anti_cheat_json or {})
+                current.update(as_json_object(value, field=field) if isinstance(value, dict) else {})
+                policy.anti_cheat_json = current
+                continue
+            if field == "settings_json":
+                current = dict(policy.settings_json or {})
+                current.update(as_json_object(value, field=field) if isinstance(value, dict) else {})
+                policy.settings_json = current
+                continue
             if hasattr(policy, field):
                 setattr(policy, field, value)
         policy.policy_version = _policy_version(policy) + 1
@@ -952,7 +962,7 @@ def _normalized_policy_patch(
         lp = payload.pop("late_policy")
         payload["late_policy_json"] = lp
 
-    # Map policy fields that live in settings_json
+    # Project named policy fields into the persisted policy JSON columns.
     settings_overrides: dict[str, object] = {}
     if "required" in payload:
         settings_overrides["required"] = payload.pop("required")
@@ -968,9 +978,20 @@ def _normalized_policy_patch(
         if field in payload:
             settings_overrides[field] = payload.pop(field)
 
+    anti_cheat_overrides: dict[str, object] = {}
+    for patch_field, stored_field in (
+        ("copy_paste_protection", "copy_paste_protection"),
+        ("tab_switch_detection", "tab_switch_detection"),
+        ("devtools_detection", "devtools_detection"),
+        ("right_click_disabled", "right_click_disable"),
+        ("fullscreen_required", "fullscreen_enforcement"),
+        ("violation_threshold", "violation_threshold"),
+    ):
+        if patch_field in payload:
+            anti_cheat_overrides[stored_field] = payload.pop(patch_field)
+
     settings_json = _normalize_policy_settings_json(
         kind,
-        patch.settings_json if "settings_json" in patch.model_fields_set else None,
         due_at=patch.due_at if "due_at" in patch.model_fields_set else _UNSET,
         max_attempts=(patch.max_attempts if "max_attempts" in patch.model_fields_set else _UNSET),
         time_limit_seconds=(patch.time_limit_seconds if "time_limit_seconds" in patch.model_fields_set else _UNSET),
@@ -979,28 +1000,26 @@ def _normalized_policy_patch(
         merged = dict(settings_json or {})
         merged.update(settings_overrides)
         payload["settings_json"] = merged
-    elif "settings_json" in payload:
-        existing = dict(payload["settings_json"] or {})
-        existing.update(settings_overrides)
-        payload["settings_json"] = existing
+
+    if anti_cheat_overrides:
+        payload["anti_cheat_json"] = anti_cheat_overrides
 
     return payload
 
 
 def _normalize_policy_settings_json(
     kind: AssessmentType,
-    settings_json: dict[str, object] | None,
     *,
     due_at: datetime | object | None = _UNSET,
     max_attempts: int | object | None = _UNSET,
     time_limit_seconds: int | object | None = _UNSET,
 ) -> dict[str, object] | None:
-    if settings_json is None and due_at is _UNSET and max_attempts is _UNSET and time_limit_seconds is _UNSET:
+    if due_at is _UNSET and max_attempts is _UNSET and time_limit_seconds is _UNSET:
         return None
 
-    normalized = dict(settings_json or {})
+    normalized: dict[str, object] = {}
 
-    normalized_due_at = _first_string_setting(normalized, "due_at", "due_date_iso", "due_date")
+    normalized_due_at: str | None = None
     if due_at is not _UNSET:
         normalized_due_at = due_at.isoformat() if isinstance(due_at, datetime) else None
     if due_at is not _UNSET or normalized_due_at is not None:
@@ -1010,7 +1029,7 @@ def _normalize_policy_settings_json(
         if kind == AssessmentType.CODE_CHALLENGE:
             normalized["due_date"] = normalized_due_at
 
-    normalized_max_attempts = _first_int_setting(normalized, "max_attempts", "attempt_limit")
+    normalized_max_attempts: int | None = None
     if max_attempts is not _UNSET:
         normalized_max_attempts = max_attempts if isinstance(max_attempts, int) else None
     if max_attempts is not _UNSET or normalized_max_attempts is not None:
@@ -1019,7 +1038,7 @@ def _normalize_policy_settings_json(
             normalized["attempt_limit"] = normalized_max_attempts
 
     if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
-        normalized_time_limit_seconds = _time_limit_seconds_from_settings(normalized)
+        normalized_time_limit_seconds: int | None = None
         if time_limit_seconds is not _UNSET:
             normalized_time_limit_seconds = time_limit_seconds if isinstance(time_limit_seconds, int) else None
         if time_limit_seconds is not _UNSET or normalized_time_limit_seconds is not None:

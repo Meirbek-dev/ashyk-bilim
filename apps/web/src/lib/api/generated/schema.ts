@@ -5383,13 +5383,15 @@ export interface components {
         AssessmentPolicyPatch: {
             /** Allow Late */
             allow_late?: boolean | null;
-            /** Anti Cheat Json */
-            anti_cheat_json?: {
-                [key: string]: unknown;
-            } | null;
             completion_rule?: components["schemas"]["AssessmentCompletionRule"] | null;
+            /** Copy Paste Protection */
+            copy_paste_protection?: boolean | null;
+            /** Devtools Detection */
+            devtools_detection?: boolean | null;
             /** Due At */
             due_at?: string | null;
+            /** Fullscreen Required */
+            fullscreen_required?: boolean | null;
             /** Grace Period Minutes */
             grace_period_minutes?: number | null;
             grade_release_mode?: components["schemas"]["GradeReleaseMode"] | null;
@@ -5411,12 +5413,14 @@ export interface components {
             required?: boolean | null;
             /** Review Visibility */
             review_visibility?: ("NONE" | "SCORE_ONLY" | "FULL") | null;
-            /** Settings Json */
-            settings_json?: {
-                [key: string]: unknown;
-            } | null;
+            /** Right Click Disabled */
+            right_click_disabled?: boolean | null;
+            /** Tab Switch Detection */
+            tab_switch_detection?: boolean | null;
             /** Time Limit Seconds */
             time_limit_seconds?: number | null;
+            /** Violation Threshold */
+            violation_threshold?: number | null;
         };
         /**
          * AssessmentPolicyPreset

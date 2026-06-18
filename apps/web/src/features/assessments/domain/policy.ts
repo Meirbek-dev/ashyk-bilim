@@ -5,7 +5,7 @@
  * from any assessment type into one shape. Each kind provides a
  * `toPolicyView()` adapter in its registry contribution.
  *
- * Maps directly from backend AssessmentPolicy, including anti_cheat_json.
+ * Maps directly from backend AssessmentPolicy.canonical_policy.
  */
 
 export interface AntiCheatPolicy {
@@ -94,14 +94,6 @@ export const DEFAULT_POLICY_VIEW: PolicyView = {
 }
 
 export interface AssessmentPolicyDTO {
-  max_attempts?: number | null
-  time_limit_seconds?: number | null
-  due_at?: string | null
-  late_policy_json?: Record<string, unknown> | null
-  late_policy?: Record<string, unknown> | null
-  anti_cheat_json?: Record<string, unknown> | null
-  settings_json?: Record<string, unknown> | null
-  review_visibility?: 'NONE' | 'SCORE_ONLY' | 'FULL' | null
   canonical_policy?: AssessmentCanonicalPolicyDTO | null
 }
 
@@ -118,39 +110,15 @@ export function isAntiCheatEnabled(policy: AntiCheatPolicy): boolean {
 export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | undefined): PolicyView {
   if (!policy) return DEFAULT_POLICY_VIEW
   const canonical = policy.canonical_policy
-  if (canonical) {
-    const integrity = canonical.integrity ?? {}
-    const latePolicy = canonical.late_policy ?? {}
-    const reviewVisibility = normalizeReviewVisibility(canonical.review_visibility)
-
-    return {
-      dueAt: canonical.due_at ?? null,
-      maxAttempts: typeof canonical.max_attempts === 'number' ? canonical.max_attempts : null,
-      timeLimitSeconds: typeof canonical.time_limit_seconds === 'number' ? canonical.time_limit_seconds : null,
-      reviewVisibility,
-      resultReviewAllowed: reviewVisibility !== 'NONE',
-      correctAnswersVisible: reviewVisibility === 'FULL',
-      latePolicy: {
-        penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
-      },
-      antiCheat: {
-        copyPasteProtection: integrity.copy_paste_protection === true,
-        tabSwitchDetection: integrity.tab_switch_detection === true,
-        devtoolsDetection: integrity.devtools_detection === true,
-        rightClickDisabled: integrity.right_click_disabled === true,
-        fullscreenEnforced: integrity.fullscreen_required === true,
-        violationThreshold: typeof integrity.violation_threshold === 'number' ? integrity.violation_threshold : null,
-      },
-    }
-  }
-  const antiCheat = policy.anti_cheat_json ?? {}
-  const latePolicy = policy.late_policy_json ?? policy.late_policy ?? {}
-  const reviewVisibility = reviewVisibilityFromLegacyPolicy(policy)
+  if (!canonical) return DEFAULT_POLICY_VIEW
+  const integrity = canonical.integrity ?? {}
+  const latePolicy = canonical.late_policy ?? {}
+  const reviewVisibility = normalizeReviewVisibility(canonical.review_visibility)
 
   return {
-    dueAt: policy.due_at ?? null,
-    maxAttempts: typeof policy.max_attempts === 'number' ? policy.max_attempts : null,
-    timeLimitSeconds: typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
+    dueAt: canonical.due_at ?? null,
+    maxAttempts: typeof canonical.max_attempts === 'number' ? canonical.max_attempts : null,
+    timeLimitSeconds: typeof canonical.time_limit_seconds === 'number' ? canonical.time_limit_seconds : null,
     reviewVisibility,
     resultReviewAllowed: reviewVisibility !== 'NONE',
     correctAnswersVisible: reviewVisibility === 'FULL',
@@ -158,28 +126,16 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
       penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
     },
     antiCheat: {
-      copyPasteProtection: Boolean(antiCheat.copy_paste_protection),
-      tabSwitchDetection: Boolean(antiCheat.tab_switch_detection),
-      devtoolsDetection: Boolean(antiCheat.devtools_detection),
-      rightClickDisabled: Boolean(antiCheat.right_click_disable),
-      fullscreenEnforced: Boolean(antiCheat.fullscreen_enforcement),
-      violationThreshold: typeof antiCheat.violation_threshold === 'number' ? antiCheat.violation_threshold : null,
+      copyPasteProtection: integrity.copy_paste_protection === true,
+      tabSwitchDetection: integrity.tab_switch_detection === true,
+      devtoolsDetection: integrity.devtools_detection === true,
+      rightClickDisabled: integrity.right_click_disabled === true,
+      fullscreenEnforced: integrity.fullscreen_required === true,
+      violationThreshold: typeof integrity.violation_threshold === 'number' ? integrity.violation_threshold : null,
     },
   }
 }
 
 function normalizeReviewVisibility(value: unknown): PolicyView['reviewVisibility'] {
   return value === 'NONE' || value === 'SCORE_ONLY' || value === 'FULL' ? value : 'FULL'
-}
-
-function reviewVisibilityFromLegacyPolicy(policy: AssessmentPolicyDTO): PolicyView['reviewVisibility'] {
-  const direct = normalizeReviewVisibility(policy.review_visibility)
-  if (direct !== 'FULL' || policy.review_visibility === 'FULL') return direct
-
-  const settings = policy.settings_json ?? {}
-  const settingsVisibility = normalizeReviewVisibility(settings.review_visibility)
-  if (settingsVisibility !== 'FULL' || settings.review_visibility === 'FULL') return settingsVisibility
-  if (settings.allow_result_review === false) return 'NONE'
-  if (settings.show_correct_answers === false) return 'SCORE_ONLY'
-  return 'FULL'
 }

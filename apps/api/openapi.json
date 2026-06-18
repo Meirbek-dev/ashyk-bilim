@@ -3154,18 +3154,6 @@
             ],
             "title": "Allow Late"
           },
-          "anti_cheat_json": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Anti Cheat Json"
-          },
           "completion_rule": {
             "anyOf": [
               {
@@ -3175,6 +3163,28 @@
                 "type": "null"
               }
             ]
+          },
+          "copy_paste_protection": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copy Paste Protection"
+          },
+          "devtools_detection": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Devtools Detection"
           },
           "due_at": {
             "anyOf": [
@@ -3187,6 +3197,17 @@
               }
             ],
             "title": "Due At"
+          },
+          "fullscreen_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fullscreen Required"
           },
           "grace_period_minutes": {
             "anyOf": [
@@ -3322,17 +3343,27 @@
             ],
             "title": "Review Visibility"
           },
-          "settings_json": {
+          "right_click_disabled": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Settings Json"
+            "title": "Right Click Disabled"
+          },
+          "tab_switch_detection": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tab Switch Detection"
           },
           "time_limit_seconds": {
             "anyOf": [
@@ -3344,6 +3375,17 @@
               }
             ],
             "title": "Time Limit Seconds"
+          },
+          "violation_threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violation Threshold"
           }
         },
         "title": "AssessmentPolicyPatch",

@@ -10,7 +10,7 @@ export interface AssessmentWorkspaceUrlState {
 
 export function readAssessmentWorkspaceUrlState(search: string): AssessmentWorkspaceUrlState {
   const params = new URLSearchParams(search)
-  const rawView = (params.get('view') ?? params.get('tab') ?? '').toUpperCase()
+  const rawView = (params.get('view') ?? '').toUpperCase()
   const view = WORKSPACE_VIEWS.has(rawView as AssessmentWorkspaceView)
     ? (rawView as AssessmentWorkspaceView)
     : 'BUILDER'
@@ -28,7 +28,6 @@ export function writeAssessmentWorkspaceUrlState(href: string, patch: Partial<As
   const next = { ...current, ...patch }
 
   url.searchParams.set('view', next.view.toLowerCase())
-  url.searchParams.delete('tab')
   setNullableParam(url.searchParams, 'item', next.selectedItemUuid)
   setNullableParam(url.searchParams, 'issue', next.selectedIssueCode)
   return url.toString()

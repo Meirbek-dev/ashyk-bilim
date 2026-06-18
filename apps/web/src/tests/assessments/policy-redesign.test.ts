@@ -33,7 +33,7 @@ const baseState: AssessmentEditorState = {
 }
 
 describe('assessment policy redesign helpers', () => {
-  it('maps release policy to the legacy booleans without ambiguity', () => {
+  it('maps release policy to canonical review visibility controls', () => {
     expect(resultReleasePolicyFromState(baseState)).toBe('FULL')
     expect(resultReleasePolicyFromState({ ...baseState, showCorrectAnswers: false })).toBe('SCORE_ONLY')
     expect(resultReleasePolicyFromState({ ...baseState, allowResultReview: false })).toBe('NONE')
@@ -69,18 +69,13 @@ describe('assessment policy redesign helpers', () => {
 })
 
 describe('assessment runtime policy contract', () => {
-  it('uses canonical review visibility before legacy settings', () => {
+  it('uses canonical review visibility and integrity policy', () => {
     const policy = policyFromAssessmentPolicy({
       canonical_policy: {
         review_visibility: 'SCORE_ONLY',
         max_attempts: 2,
         time_limit_seconds: 1800,
         integrity: { tab_switch_detection: true, violation_threshold: 2 },
-      },
-      settings_json: {
-        review_visibility: 'FULL',
-        allow_result_review: true,
-        show_correct_answers: true,
       },
     })
 
@@ -91,11 +86,11 @@ describe('assessment runtime policy contract', () => {
     expect(policy.antiCheat.tabSwitchDetection).toBe(true)
   })
 
-  it('falls back to legacy result review booleans', () => {
+  it('uses defaults when canonical policy is absent', () => {
     expect(
       policyFromAssessmentPolicy({
-        settings_json: { allow_result_review: true, show_correct_answers: false },
+        canonical_policy: null,
       }).reviewVisibility,
-    ).toBe('SCORE_ONLY')
+    ).toBe('FULL')
   })
 })

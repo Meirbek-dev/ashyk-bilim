@@ -473,7 +473,15 @@ def test_update_assessment_policy_max_attempts(
 
     response = api_client.patch(
         f"/assessments/{assessment_uuid}",
-        json={"policy": {"max_attempts": 2}},
+        json={
+            "policy": {
+                "max_attempts": 2,
+                "copy_paste_protection": True,
+                "right_click_disabled": True,
+                "fullscreen_required": False,
+                "violation_threshold": 4,
+            }
+        },
     )
 
     assert response.status_code == 200
@@ -481,6 +489,10 @@ def test_update_assessment_policy_max_attempts(
     policy = data.get("assessment_policy") or {}
     assert policy.get("max_attempts") == 2
     assert policy["canonical_policy"]["max_attempts"] == 2
+    assert policy["canonical_policy"]["integrity"]["copy_paste_protection"] is True
+    assert policy["canonical_policy"]["integrity"]["right_click_disabled"] is True
+    assert policy["canonical_policy"]["integrity"]["fullscreen_required"] is False
+    assert policy["canonical_policy"]["integrity"]["violation_threshold"] == 4
 
 
 # ---------------------------------------------------------------------------

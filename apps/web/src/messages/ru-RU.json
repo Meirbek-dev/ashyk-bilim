@@ -8157,8 +8157,6 @@
         },
         "lifecycleChanged": "Этап изменён на {state}",
         "updateLifecycleFailed": "Не удалось обновить этап",
-        "rewriteDisabledTitle": "Новая студия оценивания отключена",
-        "rewriteDisabledDescription": "{title} остается доступным для чтения. Включите NEXT_PUBLIC_ASSESSMENT_REWRITE для редактирования в новой студии.",
         "breadcrumb": {
           "curriculum": "Учебный план",
           "studio": "Студия"

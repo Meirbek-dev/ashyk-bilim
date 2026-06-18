@@ -15,13 +15,13 @@ describe('assessment workspace URL state', () => {
     })
   })
 
-  it('accepts legacy tab param and normalizes unknown views to builder', () => {
-    expect(readAssessmentWorkspaceUrlState('?tab=access').view).toBe('ACCESS')
+  it('ignores non-canonical params and normalizes unknown views to builder', () => {
+    expect(readAssessmentWorkspaceUrlState('?tab=access').view).toBe('BUILDER')
     expect(readAssessmentWorkspaceUrlState('?view=unknown').view).toBe('BUILDER')
   })
 
-  it('writes canonical params and removes legacy tab state', () => {
-    const next = writeAssessmentWorkspaceUrlState('https://example.test/studio?tab=setup', {
+  it('writes canonical params without preserving unrelated state', () => {
+    const next = writeAssessmentWorkspaceUrlState('https://example.test/studio', {
       view: 'BUILDER',
       selectedItemUuid: 'item_2',
       selectedIssueCode: 'matching.pairs_missing',

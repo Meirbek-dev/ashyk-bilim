@@ -439,20 +439,23 @@ class AssessmentPolicyPatch(PydanticStrictBaseModel):
     grading_mode: AssessmentGradingMode | None = None
     completion_rule: AssessmentCompletionRule | None = None
     passing_score: float | None = None
-    # Required flag (stored in settings_json)
+    # Required flag
     required: bool | None = None
     # Review visibility: what students see after release
     review_visibility: Literal["NONE", "SCORE_ONLY", "FULL"] | None = None
-    # Delivery policy fields stored canonically through settings_json for now.
+    # Delivery policy
     randomize_questions: bool | None = None
     randomize_options: bool | None = None
     partial_credit: bool | None = None
     negative_marking_percent: float | None = None
     grace_period_minutes: int | None = None
     # Anti-cheat
-    anti_cheat_json: dict[str, object] | None = None
-    # Arbitrary extension fields
-    settings_json: dict[str, object] | None = None
+    copy_paste_protection: bool | None = None
+    tab_switch_detection: bool | None = None
+    devtools_detection: bool | None = None
+    right_click_disabled: bool | None = None
+    fullscreen_required: bool | None = None
+    violation_threshold: int | None = None
 
     @field_validator("due_at", mode="before")
     @classmethod

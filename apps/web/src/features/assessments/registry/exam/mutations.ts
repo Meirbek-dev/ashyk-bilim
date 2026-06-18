@@ -4,12 +4,7 @@ import { apiFetch } from '@/lib/api-client'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
-import {
-  buildExamAntiCheatSettings,
-  getExamAttemptLimit,
-  getExamTimeLimitSeconds,
-  normalizeExamPolicySettings,
-} from './policySettings'
+import { buildExamPolicyPatch } from './policySettings'
 
 export interface CreateExamWithActivityInput {
   activityName: string
@@ -29,7 +24,6 @@ export interface CreateExamWithActivityResponse {
 async function createExamWithActivityRequest(
   input: CreateExamWithActivityInput,
 ): Promise<CreateExamWithActivityResponse> {
-  const normalizedSettings = normalizeExamPolicySettings(input.settings)
   const response = await apiFetch('assessments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,12 +34,7 @@ async function createExamWithActivityRequest(
       course_id: input.courseId,
       chapter_id: input.chapterId,
       grading_type: 'PERCENTAGE',
-      policy: {
-        max_attempts: getExamAttemptLimit(normalizedSettings) ?? 1,
-        time_limit_seconds: getExamTimeLimitSeconds(normalizedSettings),
-        anti_cheat_json: buildExamAntiCheatSettings(normalizedSettings),
-        settings_json: normalizedSettings,
-      },
+      policy: buildExamPolicyPatch(input.settings),
     }),
   })
 
