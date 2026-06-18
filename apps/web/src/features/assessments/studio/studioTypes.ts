@@ -1,6 +1,19 @@
 import type { AssessmentItem, AssessmentItemMetadata } from '@/features/assessments/domain/items'
 
 export type StudioTab = 'SETUP' | 'BUILDER' | 'ACCESS' | 'RESULTS' | 'PUBLISH'
+export type AssessmentWorkspaceView = StudioTab
+
+export interface WorkspaceReadinessIssue {
+  code: string
+  message: string
+  itemUuid?: string
+  severity: 'blocker' | 'warning' | 'advice' | 'audit'
+  area: 'details' | 'questions' | 'policy' | 'audience' | 'results' | 'publish' | 'system'
+  view: AssessmentWorkspaceView
+  field?: string
+  why?: string
+  actionLabel?: string
+}
 
 export interface AssessmentEditorState {
   title: string

@@ -8288,6 +8288,11 @@
           "descriptionLabel": "Описание",
           "failedToSaveSettings": "Не удалось сохранить параметры учебные задачи",
           "failedToSaveItem": "Не удалось сохранить {itemNoun}",
+          "reorderFailed": "Не удалось сохранить порядок вопросов. Предыдущий порядок восстановлен.",
+          "saveLedger": {
+            "assessment": "Оценка",
+            "item": "Выбранный элемент"
+          },
           "defaultItemTitle": "Элемент без названия",
           "copyOf": "Копия {title}",
           "Form": {
@@ -8328,6 +8333,21 @@
           "access": "Доступ",
           "results": "Результаты",
           "publish": "Проверка и публикация"
+        },
+        "Workspace": {
+          "workspace": "Рабочая область",
+          "navigator": "Навигация рабочей области оценки",
+          "mainArea": "Рабочая область оценки",
+          "currentView": "Текущий раздел",
+          "allSaved": "Все изменения сохранены",
+          "retrySave": "Повторить сохранение: {label}",
+          "readinessRail": "Готовность и блокеры публикации",
+          "readiness": "Готовность",
+          "blocked": "Есть блокеры",
+          "ready": "Готово",
+          "blockerCount": "{count} блок.",
+          "zeroBlockers": "0 блокеров",
+          "noIssues": "Блокеров публикации нет."
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Детали и описание",

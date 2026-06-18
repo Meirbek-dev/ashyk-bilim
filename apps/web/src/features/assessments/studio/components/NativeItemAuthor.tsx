@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { apiFetch } from '@/lib/api-client'
-import { cn } from '@/lib/utils'
 import { useAssessmentStudioContext } from '../context'
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import {
@@ -20,6 +19,8 @@ import AccessManagementTab from '../tabs/AccessManagementTab'
 import ResultsReviewTab from '../tabs/ResultsReviewTab'
 import type { AssessmentEditorState, EditableItem, StudioTab } from '../studioTypes'
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
+import { AssessmentWorkspaceShell } from '../workspace/AssessmentWorkspaceShell'
+import type { AssessmentWorkspaceNavItem } from '../workspace/AssessmentWorkspaceShell'
 import {
   buildAssessmentPatch,
   getAssessmentEditorIssues,
@@ -56,38 +57,20 @@ export function NativeItemAuthor({
     isEditable,
     totalPoints,
     validationIssues,
+    setActiveView,
+    setSaveLedgerEntry,
+    clearSaveLedgerEntry,
   } = useAssessmentStudioContext()
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
-  const VALID_TABS = new Set<StudioTab>(['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH'])
-
-  const [activeTab, setActiveTabState] = useState<StudioTab>(() => {
-    if (typeof globalThis.window !== 'undefined') {
-      const raw = new URLSearchParams(globalThis.location.search).get('tab')?.toUpperCase()
-      if (raw && VALID_TABS.has(raw as StudioTab)) return raw as StudioTab
-    }
-    return 'BUILDER'
-  })
-
-  const setActiveTab = useCallback((tab: StudioTab) => {
-    setActiveTabState(tab)
-    if (typeof globalThis.window !== 'undefined') {
-      const url = new URL(globalThis.location.href)
-      url.searchParams.set('tab', tab.toLowerCase())
-      globalThis.history.replaceState(null, '', url.toString())
-    }
-  }, [])
-
   const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>([])
 
-  // Sync local order with server items
   useEffect(() => {
     setLocalOrderedUuids(items.map(item => item.item_uuid))
   }, [items])
 
-  // Produce the displayed items in local order
   const orderedItems = localOrderedUuids
     .map(uuid => items.find(item => item.item_uuid === uuid))
     .filter((item): item is AssessmentItem => Boolean(item))
@@ -153,10 +136,11 @@ export function NativeItemAuthor({
             metadata: nextItem.metadata,
           }),
         })
-        if (!response.ok)
+        if (!response.ok) {
           throw new Error(
             await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
           )
+        }
         lastSavedItemRef.current = serializeItemState(nextItem)
         setItemSaveState('saved')
         await refresh()
@@ -192,11 +176,33 @@ export function NativeItemAuthor({
     return () => clearTimeout(timeout)
   }, [isEditable, itemState, saveItem])
 
+  useEffect(() => {
+    setSaveLedgerEntry({
+      id: 'assessment',
+      label: t('saveLedger.assessment'),
+      state: assessmentSaveState,
+      retry: () => void saveAssessment(assessmentState),
+    })
+    return () => clearSaveLedgerEntry('assessment')
+  }, [assessmentSaveState, assessmentState, clearSaveLedgerEntry, saveAssessment, setSaveLedgerEntry, t])
+
+  useEffect(() => {
+    const retry = itemState ? () => void saveItem(itemState) : null
+    setSaveLedgerEntry({
+      id: 'item',
+      label: t('saveLedger.item'),
+      state: itemSaveState,
+      ...(retry ? { retry } : {}),
+    })
+    return () => clearSaveLedgerEntry('item')
+  }, [clearSaveLedgerEntry, itemSaveState, itemState, saveItem, setSaveLedgerEntry, t])
+
   const handleReorder = useCallback(
     async (orderedUuids: string[]) => {
+      const previousOrder = localOrderedUuids
       setLocalOrderedUuids(orderedUuids)
       try {
-        await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -206,12 +212,14 @@ export function NativeItemAuthor({
             })),
           }),
         })
+        if (!response.ok) throw new Error(await responseError(response, t('reorderFailed')))
         await refresh()
-      } catch {
-        // Reorder persists visually; server sync is best-effort
+      } catch (error) {
+        setLocalOrderedUuids(previousOrder)
+        toast.error(error instanceof Error ? error.message : t('reorderFailed'))
       }
     },
-    [assessment.assessment_uuid, refresh],
+    [assessment.assessment_uuid, localOrderedUuids, refresh, t],
   )
 
   const updateItemMetadata = useCallback(
@@ -269,12 +277,7 @@ export function NativeItemAuthor({
   const itemContentIssues = itemIssueList.filter(issue => issue.area === 'item-content' || issue.area === 'item-kind')
   const allIssues = dedupeIssues([...validationIssues, ...assessmentIssues])
 
-  const TAB_CONFIG: {
-    id: StudioTab
-    label: string
-    icon: typeof Settings2
-    issueCount?: number
-  }[] = [
+  const navItems: AssessmentWorkspaceNavItem[] = [
     { id: 'SETUP', label: tTabs('setup'), icon: Settings2 },
     {
       id: 'BUILDER',
@@ -292,44 +295,9 @@ export function NativeItemAuthor({
     },
   ]
 
-  return (
-    <div className="flex flex-col">
-      {/* ── Tab Navigation ─────────────────────────────────────── */}
-      <div className="bg-card/80 sticky top-[61px] z-20 border-b backdrop-blur">
-        <div className="flex items-center gap-1 px-4 py-1.5 md:px-6">
-          {TAB_CONFIG.map(({ id, label, icon: Icon, issueCount }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              className={cn(
-                'relative flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
-                activeTab === id
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span>{label}</span>
-              {issueCount ? (
-                <span
-                  className={cn(
-                    'ml-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold',
-                    activeTab === id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                  )}
-                >
-                  {issueCount > 9 ? '9+' : issueCount}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Tab Content ───────────────────────────────────────── */}
-      {activeTab === 'SETUP' && (
+  const renderView = (view: StudioTab) => (
+    <>
+      {view === 'SETUP' && (
         <GeneralSettingsTab
           state={assessmentState}
           saveState={assessmentSaveState}
@@ -339,7 +307,7 @@ export function NativeItemAuthor({
         />
       )}
 
-      {activeTab === 'BUILDER' && (
+      {view === 'BUILDER' && (
         <BuilderCanvasTab
           assessmentUuid={assessment.assessment_uuid}
           items={orderedItems}
@@ -378,7 +346,7 @@ export function NativeItemAuthor({
         />
       )}
 
-      {activeTab === 'PUBLISH' && (
+      {view === 'PUBLISH' && (
         <PublishDashboardTab
           assessmentUuid={assessment.assessment_uuid}
           lifecycle={assessment.lifecycle}
@@ -390,24 +358,24 @@ export function NativeItemAuthor({
           canSchedule={assessment.lifecycle !== 'ARCHIVED'}
           canArchive={assessment.lifecycle !== 'ARCHIVED'}
           onSwitchToBuilder={itemUuid => {
-            setActiveTab('BUILDER')
+            setActiveView('BUILDER')
             if (itemUuid) setSelectedItemUuid(itemUuid)
           }}
           onLifecycleChange={setLifecycle}
         />
       )}
 
-      {activeTab === 'ACCESS' && (
-        <AccessManagementTab assessmentUuid={assessment.assessment_uuid} disabled={!isEditable} />
-      )}
+      {view === 'ACCESS' && <AccessManagementTab assessmentUuid={assessment.assessment_uuid} disabled={!isEditable} />}
 
-      {activeTab === 'RESULTS' && (
+      {view === 'RESULTS' && (
         <ResultsReviewTab
           assessmentUuid={assessment.assessment_uuid}
           activityUuid={assessment.activity_uuid}
           courseUuid={assessment.course_uuid ?? null}
         />
       )}
-    </div>
+    </>
   )
+
+  return <AssessmentWorkspaceShell navItems={navItems} renderView={view => renderView(view)} />
 }

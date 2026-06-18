@@ -8801,6 +8801,11 @@
           "descriptionLabel": "Description",
           "failedToSaveSettings": "Failed to save assessment settings",
           "failedToSaveItem": "Failed to save {itemNoun}",
+          "reorderFailed": "Question order could not be saved. The previous order was restored.",
+          "saveLedger": {
+            "assessment": "Assessment",
+            "item": "Selected item"
+          },
           "defaultItemTitle": "Untitled item",
           "copyOf": "{title} copy",
           "Form": {
@@ -8841,6 +8846,21 @@
           "access": "Access",
           "results": "Results",
           "publish": "Review & Publish"
+        },
+        "Workspace": {
+          "workspace": "Workspace",
+          "navigator": "Assessment workspace navigation",
+          "mainArea": "Assessment workspace",
+          "currentView": "Current view",
+          "allSaved": "All changes saved",
+          "retrySave": "Retry saving {label}",
+          "readinessRail": "Readiness and publish blockers",
+          "readiness": "Readiness",
+          "blocked": "Blocked",
+          "ready": "Ready",
+          "blockerCount": "{count} blockers",
+          "zeroBlockers": "0 blockers",
+          "noIssues": "No publish blockers."
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Details & Description",

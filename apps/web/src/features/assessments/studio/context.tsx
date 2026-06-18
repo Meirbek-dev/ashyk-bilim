@@ -12,22 +12,35 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import ErrorUI from '@/components/Objects/Elements/Error/Error'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import type { AssessmentStudioDetail, StudioReadinessPayload } from './utils'
+import { toWorkspaceReadinessIssues } from './utils'
+import type { AssessmentWorkspaceView, WorkspaceReadinessIssue } from './studioTypes'
+import type { SaveLedgerEntry, SaveLedgerSummary } from './workspace/saveLedger'
+import { summarizeSaveLedger } from './workspace/saveLedger'
+import { readAssessmentWorkspaceUrlState, writeAssessmentWorkspaceUrlState } from './workspace/urlState'
 
 export interface AssessmentStudioContextValue {
   activityUuid: string
   assessment: AssessmentStudioDetail
   items: AssessmentItem[]
+  activeView: AssessmentWorkspaceView
+  setActiveView: (view: AssessmentWorkspaceView) => void
   selectedItemUuid: string | null
   setSelectedItemUuid: (uuid: string | null) => void
+  selectedIssueCode: string | null
+  setSelectedIssueCode: (code: string | null) => void
   refresh: () => Promise<void>
   isEditable: boolean
   totalPoints: number
   validationIssues: ValidationIssue[]
+  readinessIssues: WorkspaceReadinessIssue[]
+  saveLedger: SaveLedgerSummary
+  setSaveLedgerEntry: (entry: Omit<SaveLedgerEntry, 'updatedAt'>) => void
+  clearSaveLedgerEntry: (id: string) => void
 }
 
 const AssessmentStudioContext = createContext<AssessmentStudioContextValue | null>(null)
 
-export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorProps & { children: ReactNode }) {
+export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuthorProps & { children: ReactNode }) {
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '')
   const queryClient = useQueryClient()
   const {
@@ -42,7 +55,20 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     }),
   )
 
-  const [selectedItemUuid, setSelectedItemUuid] = useState<string | null>(null)
+  const [activeView, setActiveViewState] = useState<AssessmentWorkspaceView>(() => {
+    if (typeof globalThis.window === 'undefined') return 'BUILDER'
+    return readAssessmentWorkspaceUrlState(globalThis.location.search).view
+  })
+  const [selectedItemUuid, setSelectedItemUuidState] = useState<string | null>(() => {
+    if (typeof globalThis.window === 'undefined') return null
+    return readAssessmentWorkspaceUrlState(globalThis.location.search).selectedItemUuid
+  })
+  const [selectedIssueCode, setSelectedIssueCodeState] = useState<string | null>(() => {
+    if (typeof globalThis.window === 'undefined') return null
+    return readAssessmentWorkspaceUrlState(globalThis.location.search).selectedIssueCode
+  })
+  const [saveLedgerEntries, setSaveLedgerEntries] = useState<SaveLedgerEntry[]>([])
+
   const readinessQuery = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
@@ -54,14 +80,44 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
 
   useEffect(() => {
     if (!assessment?.items?.length) {
-      setSelectedItemUuid(null)
+      setSelectedItemUuidState(null)
       return
     }
 
     if (!selectedItemUuid || !assessment.items.some(item => item.item_uuid === selectedItemUuid)) {
-      setSelectedItemUuid(assessment.items[0]?.item_uuid ?? null)
+      setSelectedItemUuidState(assessment.items[0]?.item_uuid ?? null)
     }
   }, [assessment?.items, selectedItemUuid])
+
+  const replaceUrlState = useCallback((patch: Parameters<typeof writeAssessmentWorkspaceUrlState>[1]) => {
+    if (typeof globalThis.window === 'undefined') return
+    const nextUrl = writeAssessmentWorkspaceUrlState(globalThis.location.href, patch)
+    globalThis.history.replaceState(null, '', nextUrl)
+  }, [])
+
+  const setActiveView = useCallback(
+    (view: AssessmentWorkspaceView) => {
+      setActiveViewState(view)
+      replaceUrlState({ view })
+    },
+    [replaceUrlState],
+  )
+
+  const setSelectedItemUuid = useCallback(
+    (uuid: string | null) => {
+      setSelectedItemUuidState(uuid)
+      replaceUrlState({ selectedItemUuid: uuid })
+    },
+    [replaceUrlState],
+  )
+
+  const setSelectedIssueCode = useCallback(
+    (code: string | null) => {
+      setSelectedIssueCodeState(code)
+      replaceUrlState({ selectedIssueCode: code })
+    },
+    [replaceUrlState],
+  )
 
   const refresh = useCallback(async () => {
     if (!assessment) return
@@ -93,12 +149,39 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
 
   const validationIssues = useMemo(() => {
     if (!readinessQuery.data?.issues) return []
-    return readinessQuery.data.issues.map((issue: { code: string; message: string; item_uuid?: string | null }) => ({
+    return readinessQuery.data.issues.map(issue => ({
       code: issue.code,
       message: issue.message,
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
+      ...(issue.field ? { field: issue.field } : {}),
     }))
   }, [readinessQuery.data?.issues])
+
+  const readinessIssues = useMemo(() => toWorkspaceReadinessIssues(readinessQuery.data), [readinessQuery.data])
+
+  const saveLedger = useMemo(() => summarizeSaveLedger(saveLedgerEntries), [saveLedgerEntries])
+
+  const setSaveLedgerEntry = useCallback((entry: Omit<SaveLedgerEntry, 'updatedAt'>) => {
+    setSaveLedgerEntries(current => {
+      const nextEntry: SaveLedgerEntry = { ...entry, updatedAt: Date.now() }
+      const withoutCurrent = current.filter(candidate => candidate.id !== entry.id)
+      return [...withoutCurrent, nextEntry]
+    })
+  }, [])
+
+  const clearSaveLedgerEntry = useCallback((id: string) => {
+    setSaveLedgerEntries(current => current.filter(entry => entry.id !== id))
+  }, [])
+
+  useEffect(() => {
+    if (!saveLedger.hasBlockingSaveState) return
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    globalThis.addEventListener('beforeunload', handleBeforeUnload)
+    return () => globalThis.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [saveLedger.hasBlockingSaveState])
 
   const studioContextValue = useMemo<AssessmentStudioContextValue | null>(() => {
     if (!assessment) return null
@@ -106,19 +189,49 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
       activityUuid: normalizedActivityUuid,
       assessment,
       items,
+      activeView,
+      setActiveView,
       selectedItemUuid,
       setSelectedItemUuid,
+      selectedIssueCode,
+      setSelectedIssueCode,
       refresh,
       isEditable,
       totalPoints,
       validationIssues,
+      readinessIssues,
+      saveLedger,
+      setSaveLedgerEntry,
+      clearSaveLedgerEntry,
     }
-  }, [normalizedActivityUuid, assessment, items, selectedItemUuid, refresh, isEditable, totalPoints, validationIssues])
+  }, [
+    normalizedActivityUuid,
+    assessment,
+    items,
+    activeView,
+    setActiveView,
+    selectedItemUuid,
+    setSelectedItemUuid,
+    selectedIssueCode,
+    setSelectedIssueCode,
+    refresh,
+    isEditable,
+    totalPoints,
+    validationIssues,
+    readinessIssues,
+    saveLedger,
+    setSaveLedgerEntry,
+    clearSaveLedgerEntry,
+  ])
 
   if (error) return <ErrorUI message={t('errorLoading')} />
   if (isLoading || !assessment) return <PageLoading />
 
   return <AssessmentStudioContext.Provider value={studioContextValue}>{children}</AssessmentStudioContext.Provider>
+}
+
+export function NativeItemStudioProvider(props: KindAuthorProps & { children: ReactNode }) {
+  return <AssessmentWorkspaceProvider {...props} />
 }
 
 export function useAssessmentStudioContext() {

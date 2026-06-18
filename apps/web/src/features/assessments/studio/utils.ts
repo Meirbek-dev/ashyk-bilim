@@ -1,14 +1,32 @@
 import type { AssessmentItem, AssessmentItemMetadata, UnifiedItemKind } from '@/features/assessments/domain/items'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice'
-import type { AssessmentEditorState, EditableItem } from './studioTypes'
+import type {
+  AssessmentEditorState,
+  AssessmentWorkspaceView,
+  EditableItem,
+  WorkspaceReadinessIssue,
+} from './studioTypes'
 
 export type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 export type StudioMode = 'exam'
 export type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
 
 export interface StudioReadinessPayload {
-  issues: { code: string; message: string; item_uuid?: string | null }[]
+  issues: {
+    code: string
+    message: string
+    item_uuid?: string | null
+    severity?: 'blocker' | 'warning' | 'advice' | 'audit'
+    area?: 'details' | 'questions' | 'policy' | 'audience' | 'results' | 'publish' | 'system'
+    view?: 'settings' | 'questions' | 'audience' | 'results' | 'publish'
+    field?: string | null
+    why?: string | null
+    action_label?: string | null
+  }[]
+  blocker_count?: number
+  warning_count?: number
+  contract_version?: number
 }
 
 export interface AssessmentPolicyDetail {
@@ -414,6 +432,33 @@ export function createFormField() {
 
 export function normalizeRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
+}
+
+export function toWorkspaceReadinessIssues(payload: StudioReadinessPayload | undefined): WorkspaceReadinessIssue[] {
+  return (payload?.issues ?? []).map(issue => {
+    const mapped: WorkspaceReadinessIssue = {
+      code: issue.code,
+      message: issue.message,
+      severity: issue.severity ?? 'blocker',
+      area: issue.area ?? 'publish',
+      view: readinessViewToWorkspaceView(issue.view),
+    }
+    if (issue.item_uuid) mapped.itemUuid = issue.item_uuid
+    if (issue.field) mapped.field = issue.field
+    if (issue.why) mapped.why = issue.why
+    if (issue.action_label) mapped.actionLabel = issue.action_label
+    return mapped
+  })
+}
+
+export function readinessViewToWorkspaceView(
+  view: StudioReadinessPayload['issues'][number]['view'],
+): AssessmentWorkspaceView {
+  if (view === 'settings') return 'SETUP'
+  if (view === 'questions') return 'BUILDER'
+  if (view === 'audience') return 'ACCESS'
+  if (view === 'results') return 'RESULTS'
+  return 'PUBLISH'
 }
 
 export function serializeAssessmentState(state: AssessmentEditorState) {

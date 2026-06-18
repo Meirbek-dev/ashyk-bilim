@@ -8271,6 +8271,11 @@
           "descriptionLabel": "Сипаттамасы",
           "failedToSaveSettings": "Бағалау параметрлерін сақтау сәтсіз аяқталды",
           "failedToSaveItem": "{itemNoun} сақтау сәтсіз аяқталды",
+          "reorderFailed": "Сұрақтар тәртібін сақтау мүмкін болмады. Алдыңғы тәртіп қалпына келтірілді.",
+          "saveLedger": {
+            "assessment": "Бағалау",
+            "item": "Таңдалған элемент"
+          },
           "defaultItemTitle": "Тақырыпсыз элемент",
           "copyOf": "{title} көшірмесі",
           "Form": {
@@ -8311,6 +8316,21 @@
           "access": "Қолжетімділік",
           "results": "Нәтижелер",
           "publish": "Тексеру және жариялау"
+        },
+        "Workspace": {
+          "workspace": "Жұмыс аймағы",
+          "navigator": "Бағалау жұмыс аймағының навигациясы",
+          "mainArea": "Бағалау жұмыс аймағы",
+          "currentView": "Ағымдағы бөлім",
+          "allSaved": "Барлық өзгерістер сақталды",
+          "retrySave": "{label} сақтауды қайталау",
+          "readinessRail": "Дайындық және жариялау бөгеттері",
+          "readiness": "Дайындық",
+          "blocked": "Бөгеттер бар",
+          "ready": "Дайын",
+          "blockerCount": "{count} бөгет",
+          "zeroBlockers": "0 бөгет",
+          "noIssues": "Жариялауға бөгет жоқ."
         },
         "GeneralSettingsTab": {
           "detailsTitle": "Толықтырулар мен сипаттама",

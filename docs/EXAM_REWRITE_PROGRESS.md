@@ -52,3 +52,27 @@ Tests and checks:
 Assumptions and deviations:
 
 - Per-student time-limit override is not persisted by the current `student_policy_override` table. Phase 1 now rejects non-null `time_limit_override_seconds` with 422 instead of silently accepting it; Phase 5 will introduce the accommodations model.
+
+## Phase 2 - Workspace Shell
+
+Status: completed.
+
+What changed:
+
+- Added `AssessmentWorkspaceProvider` behind the existing `NativeItemStudioProvider` registry slot.
+- Added workspace URL state for `view`, selected `item`, and selected `issue`; legacy `tab` query params are read and normalized to `view`.
+- Added a global save ledger with persistent summary state, retry callbacks, an `aria-live` save-status region, and a `beforeunload` guard while dirty/saving/error states exist.
+- Added `AssessmentWorkspaceShell` with a persistent navigator, main work area, save status bar, and readiness rail.
+- Routed the existing setup, builder, access, results, and publish screens through the new shell for feature parity.
+- Readiness issues now retain backend navigation metadata and issue clicks switch to the target view and item.
+- Reorder failures now roll back the optimistic local order and show a persistent error path instead of being silently swallowed.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/workspace-state.test.ts` passed: 5 tests.
+- `vp check apps/web/src/features/assessments/studio/context.tsx apps/web/src/features/assessments/studio/components/NativeItemAuthor.tsx apps/web/src/features/assessments/studio/studioTypes.ts apps/web/src/features/assessments/studio/utils.ts apps/web/src/features/assessments/studio/workspace/AssessmentWorkspaceShell.tsx apps/web/src/features/assessments/studio/workspace/saveLedger.ts apps/web/src/features/assessments/studio/workspace/urlState.ts apps/web/src/tests/assessments/workspace-state.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 45 files, 369 tests.
+
+Assumptions and deviations:
+
+- Phase 2 intentionally hosts the existing screens inside the new workspace shell instead of redesigning their internals; the detailed builder/policy/audience/result redesigns remain scoped to Phases 3-7.
