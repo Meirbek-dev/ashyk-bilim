@@ -185,3 +185,30 @@ Assumptions and deviations:
 
 - High-stakes is defined conservatively in code because the institution-level definition is still an open decision.
 - Student preview scenarios are instructor-side simulations in the publish gate. They verify visible policy consequences before lifecycle change without creating real student submissions.
+
+## Phase 7 - Operate And Results
+
+Status: completed.
+
+What changed:
+
+- Reworked the results tab into an assessment operations view with an embedded submission queue.
+- Added server-backed queue controls for status filter, learner search, late-only filter, score/submitted/attempt sorting, sort direction, and pagination.
+- Added selected-submission batch actions by integrating the existing review bulk action bar inside the assessment workspace.
+- Added release-state visibility, integrity-event badges, CSV export, and direct links to the submission review route.
+- Added operations cards for regrade workflow, integrity review, and question action prompts.
+- Reworked item analytics into action prompts for low discrimination, too-easy, and too-hard questions, with a local regrade candidate queue.
+- Added integrity event summary from submission metadata in the current queue window.
+- Added `operateViewUtils.ts` for queue URL construction, analytics prompts, and integrity event summaries.
+- Added localized operate/results copy in English, Russian, and Kazakh.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/operate-view-utils.test.ts` passed: 3 tests.
+- `vp check apps/web/src/features/assessments/studio/tabs/ResultsReviewTab.tsx apps/web/src/features/assessments/studio/tabs/operateViewUtils.ts apps/web/src/tests/assessments/operate-view-utils.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 50 files, 386 tests.
+
+Assumptions and deviations:
+
+- No backend regrade endpoint exists in the current assessment contract. Phase 7 exposes a regrade candidate workflow marker and routes teachers back to affected submissions; a persisted regrade job is left for a future backend contract.
+- Integrity review uses existing submission metadata violations. It does not introduce real proctoring or new integrity telemetry.
