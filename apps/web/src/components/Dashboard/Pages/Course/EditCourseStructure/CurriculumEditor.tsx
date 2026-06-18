@@ -5,19 +5,19 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
+  closestCorners,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
-import { AlertTriangle, BookOpen, CheckCircle2, Hexagon, Loader2 } from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, GripVertical, Hexagon, Loader2 } from 'lucide-react'
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CourseEditorSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { useCourse } from '@components/Contexts/CourseContext'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
@@ -33,7 +33,11 @@ type DndItemType = 'chapter' | 'activity'
 interface DndData {
   type: DndItemType
   chapterUuid?: string
+  chapter?: AppChapter
+  activity?: AppActivity
 }
+
+type ActiveDragData = { type: 'chapter'; chapter: AppChapter } | { type: 'activity'; activity: AppActivity }
 
 const CurriculumEditor = () => {
   const t = useTranslations('CourseEdit.Structure')
@@ -50,13 +54,36 @@ const CurriculumEditor = () => {
 
   const [structureStatus, setStructureStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [activeDragType, setActiveDragType] = useState<DndItemType | null>(null)
+  const [activeDragData, setActiveDragData] = useState<ActiveDragData | null>(null)
+
+  // ── Local optimistic structure ────────────────────────────────────────────
+  // Mirrors course_structure but updated eagerly in handleDragOver for live
+  // cross-chapter activity preview. Re-syncs from the server after each drag.
+  const [localStructure, _setLocalStructure] = useState<AppCourse>(course_structure)
+  const localStructureRef = useRef<AppCourse>(course_structure)
+  const isDraggingRef = useRef(false)
+
+  // Stable setter that keeps the ref and React state in sync
+  const setLocalStructure = useCallback((updater: ((prev: AppCourse) => AppCourse) | AppCourse) => {
+    const next = typeof updater === 'function' ? updater(localStructureRef.current) : updater
+    localStructureRef.current = next
+    _setLocalStructure(next)
+  }, [])
+
+  // Sync from server only when not dragging (prevents reverting an in-flight drag)
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setLocalStructure(course_structure)
+    }
+  }, [course_structure, setLocalStructure])
+  // ─────────────────────────────────────────────────────────────────────────
 
   const chapterIds = useMemo(
     () =>
-      course_structure.chapters
+      (localStructure.chapters ?? [])
         .map((chapter: AppChapter) => chapter.chapter_uuid)
         .filter((uuid): uuid is string => Boolean(uuid)),
-    [course_structure.chapters],
+    [localStructure.chapters],
   )
 
   const sensors = useSensors(
@@ -74,7 +101,6 @@ const CurriculumEditor = () => {
 
   useEffect(() => {
     if (structureStatus !== 'saved') return
-
     const timer = setTimeout(() => setStructureStatus('idle'), 3000)
     return () => clearTimeout(timer)
   }, [structureStatus])
@@ -140,29 +166,6 @@ const CurriculumEditor = () => {
       })),
   })
 
-  const findChapterByActivityUuid = (activityUuid: string) => {
-    return course_structure.chapters.find((chapter: AppChapter) =>
-      (chapter.activities ?? []).some((activity: AppActivity) => activity.activity_uuid === activityUuid),
-    )
-  }
-
-  const findActivityLocation = (activityUuid: string) => {
-    for (const chapter of course_structure.chapters) {
-      const activityIndex = (chapter.activities ?? []).findIndex(
-        (activity: AppActivity) => activity.activity_uuid === activityUuid,
-      )
-
-      if (activityIndex !== -1) {
-        return {
-          chapterUuid: chapter.chapter_uuid,
-          activityIndex,
-        }
-      }
-    }
-
-    return null
-  }
-
   const saveStructure = async (newCourseStructure: AppCourse) => {
     const payload = buildPayload(newCourseStructure)
 
@@ -178,19 +181,93 @@ const CurriculumEditor = () => {
 
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current as DndData | undefined
+    isDraggingRef.current = true
     setActiveDragType(data?.type ?? null)
+
+    if (data?.type === 'chapter' && data.chapter) {
+      setActiveDragData({ type: 'chapter', chapter: data.chapter })
+    } else if (data?.type === 'activity' && data.activity) {
+      setActiveDragData({ type: 'activity', activity: data.activity })
+    }
   }
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // Keep this intentionally empty unless you want optimistic cross-chapter preview.
-    // Persisting on dragEnd is simpler and avoids mutating server-backed course context locally.
+  // Handles live optimistic preview for cross-chapter activity moves only.
+  // Same-chapter reordering and chapter reordering are shown via dnd-kit's own
+  // CSS transforms and are committed to state in handleDragEnd.
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+
+    const activeData = active.data.current as DndData | undefined
+    const overData = over.data.current as DndData | undefined
+
+    if (activeData?.type !== 'activity') return
+
+    // Find where this activity currently lives (may have already moved in a prior dragOver)
+    const sourceChapter = (localStructureRef.current.chapters ?? []).find((c: AppChapter) =>
+      (c.activities ?? []).some((a: AppActivity) => a.activity_uuid === activeId),
+    )
+    if (!sourceChapter) return
+
+    // Determine the destination chapter
+    let destChapterUuid: string | undefined
+    if (overData?.type === 'chapter') {
+      destChapterUuid = overId
+    } else if (overData?.type === 'activity') {
+      const overChapter = (localStructureRef.current.chapters ?? []).find((c: AppChapter) =>
+        (c.activities ?? []).some((a: AppActivity) => a.activity_uuid === overId),
+      )
+      destChapterUuid = overChapter?.chapter_uuid
+    }
+
+    // Same chapter — skip. dnd-kit CSS transforms already provide the visual
+    // feedback; we commit the final order in handleDragEnd via arrayMove.
+    if (!destChapterUuid || sourceChapter.chapter_uuid === destChapterUuid) return
+
+    // Cross-chapter move: update local structure for live visual preview
+    setLocalStructure(prev => {
+      const next = structuredClone(prev)
+
+      const src = (next.chapters ?? []).find((c: AppChapter) => c.chapter_uuid === sourceChapter.chapter_uuid)
+      const dst = (next.chapters ?? []).find((c: AppChapter) => c.chapter_uuid === destChapterUuid)
+      if (!src || !dst) return prev
+
+      src.activities ??= []
+      dst.activities ??= []
+
+      const srcIndex = src.activities.findIndex((a: AppActivity) => a.activity_uuid === activeId)
+      if (srcIndex === -1) return prev
+
+      const [moved] = src.activities.splice(srcIndex, 1)
+      if (!moved) return prev
+
+      // Insert before the hovered activity, or append when dropping on the chapter header
+      let dstIndex = dst.activities.length
+      if (overData?.type === 'activity') {
+        const overIndex = dst.activities.findIndex((a: AppActivity) => a.activity_uuid === overId)
+        if (overIndex !== -1) dstIndex = overIndex
+      }
+      dst.activities.splice(dstIndex, 0, moved)
+
+      return next
+    })
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    isDraggingRef.current = false
     setActiveDragType(null)
+    setActiveDragData(null)
 
     const { active, over } = event
-    if (!over) return
+
+    if (!over) {
+      // Dropped outside any droppable — revert to the last server state
+      setLocalStructure(course_structure)
+      return
+    }
 
     const activeId = String(active.id)
     const overId = String(over.id)
@@ -198,71 +275,54 @@ const CurriculumEditor = () => {
     if (activeId === overId) return
 
     const activeData = active.data.current as DndData | undefined
-    const overData = over.data.current as DndData | undefined
 
-    const newCourseStructure = structuredClone(course_structure)
+    // Work on a clone of the current local structure, which already has any
+    // cross-chapter activity moves applied by handleDragOver.
+    const finalStructure = structuredClone(localStructureRef.current)
 
     if (activeData?.type === 'chapter') {
-      const oldIndex = newCourseStructure.chapters.findIndex((chapter: AppChapter) => chapter.chapter_uuid === activeId)
-      const newIndex = newCourseStructure.chapters.findIndex((chapter: AppChapter) => chapter.chapter_uuid === overId)
+      // Apply chapter reordering using arrayMove (CSS transforms showed the preview)
+      const chapters = finalStructure.chapters ?? []
+      const oldIndex = chapters.findIndex((c: AppChapter) => c.chapter_uuid === activeId)
+      const newIndex = chapters.findIndex((c: AppChapter) => c.chapter_uuid === overId)
 
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
 
-      newCourseStructure.chapters = arrayMove(newCourseStructure.chapters, oldIndex, newIndex)
-      await saveStructure(newCourseStructure)
-      return
-    }
-
-    if (activeData?.type === 'activity') {
-      const sourceLocation = findActivityLocation(activeId)
-      if (!sourceLocation) return
-
-      const destinationChapterUuid =
-        overData?.type === 'chapter'
-          ? overId
-          : (overData?.chapterUuid ?? findChapterByActivityUuid(overId)?.chapter_uuid ?? sourceLocation.chapterUuid)
-
-      const sourceChapter = newCourseStructure.chapters.find(
-        (chapter: AppChapter) => chapter.chapter_uuid === sourceLocation.chapterUuid,
+      finalStructure.chapters = arrayMove(chapters, oldIndex, newIndex)
+    } else if (activeData?.type === 'activity') {
+      // Find where the activity currently is (may be different from origin after cross-chapter dragOver)
+      const finalChapters = finalStructure.chapters ?? []
+      const srcChapter = finalChapters.find((c: AppChapter) =>
+        (c.activities ?? []).some((a: AppActivity) => a.activity_uuid === activeId),
+      )
+      const dstChapter = finalChapters.find((c: AppChapter) =>
+        (c.activities ?? []).some((a: AppActivity) => a.activity_uuid === overId),
       )
 
-      const destinationChapter = newCourseStructure.chapters.find(
-        (chapter: AppChapter) => chapter.chapter_uuid === destinationChapterUuid,
-      )
+      if (srcChapter && dstChapter && srcChapter.chapter_uuid === dstChapter.chapter_uuid) {
+        // Same-chapter reorder: CSS transforms showed the preview; commit with arrayMove
+        srcChapter.activities ??= []
+        const srcIndex = srcChapter.activities.findIndex((a: AppActivity) => a.activity_uuid === activeId)
+        const dstIndex = srcChapter.activities.findIndex((a: AppActivity) => a.activity_uuid === overId)
 
-      if (!sourceChapter || !destinationChapter) return
-
-      sourceChapter.activities ??= []
-      destinationChapter.activities ??= []
-
-      const sourceIndex = sourceChapter.activities.findIndex(
-        (activity: AppActivity) => activity.activity_uuid === activeId,
-      )
-      if (sourceIndex === -1) return
-
-      const [movedActivity] = sourceChapter.activities.splice(sourceIndex, 1)
-      if (!movedActivity) return
-
-      let destinationIndex = destinationChapter.activities.length
-
-      if (overData?.type === 'activity') {
-        const overActivityIndex = destinationChapter.activities.findIndex(
-          (activity: AppActivity) => activity.activity_uuid === overId,
-        )
-
-        if (overActivityIndex !== -1) {
-          destinationIndex = overActivityIndex
+        if (srcIndex !== -1 && dstIndex !== -1 && srcIndex !== dstIndex) {
+          srcChapter.activities = arrayMove(srcChapter.activities, srcIndex, dstIndex)
         }
       }
-
-      destinationChapter.activities.splice(destinationIndex, 0, movedActivity)
-
-      await saveStructure(newCourseStructure)
+      // Cross-chapter: localStructure was already updated optimistically in
+      // handleDragOver — nothing more to do here before saving.
     }
+
+    setLocalStructure(finalStructure)
+    await saveStructure(finalStructure)
   }
 
   const handleDragCancel = () => {
+    isDraggingRef.current = false
     setActiveDragType(null)
+    setActiveDragData(null)
+    // Snap back to last known server state
+    setLocalStructure(course_structure)
   }
 
   if (!course) return null
@@ -291,7 +351,7 @@ const CurriculumEditor = () => {
         </Alert>
       )}
 
-      {course_structure.chapters.length === 0 && !showChapterInput ? (
+      {(localStructure.chapters ?? []).length === 0 && !showChapterInput ? (
         <div className="bg-muted/20 mb-4 flex flex-col items-center rounded-xl border border-dashed p-6 text-center">
           <div className="bg-muted mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
             <BookOpen className="text-muted-foreground h-6 w-6" />
@@ -303,7 +363,7 @@ const CurriculumEditor = () => {
         <DndContext
           id="curriculum-editor"
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={event => void handleDragEnd(event)}
@@ -312,22 +372,23 @@ const CurriculumEditor = () => {
         >
           <SortableContext items={chapterIds} strategy={verticalListSortingStrategy}>
             <div className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}>
-              {course_structure.chapters.map((chapter: AppChapter, index: number) => (
+              {(localStructure.chapters ?? []).map((chapter: AppChapter, index: number) => (
                 <ChapterElement
                   key={chapter.chapter_uuid}
                   chapterIndex={index}
                   course_uuid={course_uuid}
                   chapter={chapter as never}
+                  isDraggingActivity={activeDragType === 'activity'}
                 />
               ))}
             </div>
           </SortableContext>
 
           <DragOverlay dropAnimation={null}>
-            {activeDragType ? (
-              <div className="bg-card rounded-xl border px-4 py-3 text-sm font-medium shadow-2xl">
-                {activeDragType === 'chapter' ? t('chapter') : t('activity')}
-              </div>
+            {activeDragData?.type === 'chapter' ? (
+              <ChapterDragOverlay chapter={activeDragData.chapter} />
+            ) : activeDragData?.type === 'activity' ? (
+              <ActivityDragOverlay activity={activeDragData.activity} />
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -374,5 +435,29 @@ const CurriculumEditor = () => {
     </CourseEditorSection>
   )
 }
+
+// ── Drag overlay previews ─────────────────────────────────────────────────────
+// Purely presentational — no hooks, no mutations. Render a faithful clone of the
+// actual card so the user always sees what they're dragging.
+
+const ChapterDragOverlay = ({ chapter }: { chapter: AppChapter }) => (
+  <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-xl border px-4 py-3 opacity-95 shadow-2xl ring-2">
+    <GripVertical className="text-muted-foreground size-5 shrink-0" />
+    <div className="bg-muted shrink-0 rounded-lg p-2">
+      <Hexagon className="text-muted-foreground h-4 w-4" strokeWidth={2.5} />
+    </div>
+    <span className="text-foreground truncate text-sm font-medium">{chapter.name}</span>
+    <span className="bg-muted text-muted-foreground ml-auto rounded-full px-2 py-0.5 text-xs font-medium">
+      {(chapter.activities ?? []).length}
+    </span>
+  </div>
+)
+
+const ActivityDragOverlay = ({ activity }: { activity: AppActivity }) => (
+  <div className="bg-card ring-ring/20 flex cursor-grabbing items-center gap-3 rounded-lg border p-3 opacity-95 shadow-2xl ring-2">
+    <GripVertical className="text-muted-foreground size-5 shrink-0" />
+    <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
+  </div>
+)
 
 export default CurriculumEditor

@@ -9,7 +9,6 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { AlertTriangle, Check, GripVertical, Hexagon, Loader2, Pencil, Trash2, X as XIcon } from 'lucide-react'
@@ -59,6 +58,8 @@ interface ChapterElementProps {
   chapter: Chapter
   chapterIndex: number
   course_uuid: string
+  /** True while the user is dragging any activity — used to highlight drop zones */
+  isDraggingActivity?: boolean
 }
 
 interface SortableActivityElementProps {
@@ -87,10 +88,12 @@ const SortableActivityElement = ({
     <div
       ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
+        // CSS.Translate avoids the scaleX/Y artifacts that CSS.Transform includes
+        transform: CSS.Translate.toString(transform),
+        // Skip transition on the actively dragged item — it should snap instantly
+        transition: isDragging ? undefined : transition,
       }}
-      className={cn(isDragging && 'opacity-50')}
+      className={cn(isDragging && 'opacity-30')}
     >
       <ActivityElement
         course_uuid={course_uuid}
@@ -104,7 +107,12 @@ const SortableActivityElement = ({
   )
 }
 
-const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: ChapterElementProps) => {
+const ChapterElement = ({
+  chapter,
+  chapterIndex: _chapterIndex,
+  course_uuid,
+  isDraggingActivity,
+}: ChapterElementProps) => {
   const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true)
   const t = useTranslations('CourseEdit')
 
@@ -116,7 +124,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
 
   const activities = useMemo(() => chapter.activities ?? [], [chapter.activities])
 
-  const activityIds = useMemo(() => activities.map(activity => activity.activity_uuid), [activities])
+  // Filter out any activities without a valid uuid to prevent phantom sortable entries
+  const activityIds = useMemo(
+    () => activities.filter(a => Boolean(a.activity_uuid)).map(a => a.activity_uuid),
+    [activities],
+  )
 
   const publishedCount = activities.filter(activity => activity.published).length
   const draftCount = activities.length - publishedCount
@@ -133,13 +145,11 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     },
   })
 
-  const { setNodeRef: setActivitiesDroppableRef, isOver: isActivitiesOver } = useDroppable({
-    id: chapterUuid,
-    data: {
-      type: 'chapter',
-      chapterUuid,
-    },
-  })
+  // Note: useDroppable with the same chapterUuid is intentionally NOT used here.
+  // The useSortable above already registers this node as a droppable, and dual-
+  // registration with the same id would silently corrupt the droppable map.
+  // Cross-chapter activity drops are detected via overData.type === 'chapter'
+  // in CurriculumEditor's handleDragOver/handleDragEnd.
 
   const handleStartEdit = () => {
     setEditedName(chapterName)
@@ -207,8 +217,10 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
     <div
       ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
+        // CSS.Translate avoids the scaleX/Y artifacts from CSS.Transform
+        transform: CSS.Translate.toString(transform),
+        // Don't animate the item being actively dragged — it should appear fixed
+        transition: isDragging ? undefined : transition,
       }}
       className={cn(
         'mb-4 rounded-xl border bg-card shadow-sm transition-all duration-200',
@@ -343,8 +355,13 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
 
       <SortableContext items={activityIds} strategy={verticalListSortingStrategy}>
         <div
-          ref={setActivitiesDroppableRef}
-          className={cn('min-h-[80px] rounded-lg px-4 py-3 transition-colors', isActivitiesOver && 'bg-muted/50')}
+          className={cn(
+            'min-h-[80px] rounded-lg px-4 py-3 transition-colors',
+            // Subtle tint on the entire activities area while any activity is being
+            // dragged — signals this chapter is a valid drop target without needing
+            // a separate useDroppable registration.
+            isDraggingActivity && 'bg-muted/30',
+          )}
         >
           {activities.length > 0 ? (
             activities.map((activity, index) => (
