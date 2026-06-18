@@ -28,7 +28,7 @@ import {
   Video,
   X as XIcon,
 } from 'lucide-react'
-import { CourseStatusBadge, CourseWorkflowBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -133,7 +133,6 @@ const ActivityElement = ({
 
   const canUpdate = activity.can_update ?? false
   const canDelete = activity.can_delete ?? false
-  const isOwner = activity.is_owner ?? false
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -272,11 +271,6 @@ const ActivityElement = ({
           <div className="flex items-center gap-2">
             <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
             <CourseStatusBadge status={activity.published ? 'live' : 'draft'} />
-            {isOwner && (
-              <ToolTip content={t('ownerBadge')}>
-                <CourseWorkflowBadge tone="info">{t('ownerLabel')}</CourseWorkflowBadge>
-              </ToolTip>
-            )}
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
                 <Button

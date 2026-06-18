@@ -135,6 +135,9 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
       dueAt: null,
       maxAttempts: 3,
       timeLimitSeconds: null,
+      reviewVisibility: 'FULL',
+      resultReviewAllowed: true,
+      correctAnswersVisible: true,
       latePolicy: { penaltyPercent: 0 },
       antiCheat: {
         copyPasteProtection: false,
