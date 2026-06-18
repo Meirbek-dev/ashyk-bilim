@@ -1,14 +1,14 @@
 'use client'
 
-import { ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, SlidersHorizontal, Tags, Target, Timer } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import type { EditableItem } from '@/features/assessments/studio/studioTypes'
+import { splitMetadataList } from '@/features/assessments/studio/tabs/builderUtils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { MarkdownEditor } from '@/features/content-markdown'
 
 interface QuestionInspectorPanelProps {
   item: EditableItem
@@ -27,25 +27,6 @@ const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   hard: 'bg-red-100 text-red-800 ring-red-300 dark:bg-red-900/30 dark:text-red-300',
 }
 
-/** Extracts explanation from CHOICE or MATCHING item bodies. */
-function getExplanation(item: EditableItem): string {
-  if (item.body.kind === 'CHOICE') return item.body.explanation ?? ''
-  if (item.body.kind === 'MATCHING') return item.body.explanation ?? ''
-  return ''
-}
-
-function setExplanation(item: EditableItem, value: string): EditableItem {
-  if (item.body.kind === 'CHOICE') {
-    return { ...item, body: { ...item.body, explanation: value || null } }
-  }
-  if (item.body.kind === 'MATCHING') {
-    return { ...item, body: { ...item.body, explanation: value || null } }
-  }
-  return item
-}
-
-const SUPPORTS_EXPLANATION = new Set<string>(['CHOICE', 'MATCHING'])
-
 export default function QuestionInspectorPanel({
   item,
   isEditable,
@@ -54,10 +35,6 @@ export default function QuestionInspectorPanel({
   onChange,
 }: QuestionInspectorPanelProps) {
   const t = useTranslations('Features.Assessments.Studio.Inspector')
-
-  const explanation = getExplanation(item)
-  const supportsExplanation = SUPPORTS_EXPLANATION.has(item.kind)
-
   const difficulty: Difficulty = item.metadata.difficulty ?? 'medium'
 
   const setDifficulty = (d: Difficulty) => {
@@ -72,6 +49,7 @@ export default function QuestionInspectorPanel({
           type="button"
           variant="ghost"
           onClick={onToggle}
+          aria-label={t('open')}
           title={t('open')}
           className="bg-card hover:bg-muted flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border border-l px-1.5 py-3"
         >
@@ -101,6 +79,7 @@ export default function QuestionInspectorPanel({
                 size="icon"
                 className="size-7"
                 onClick={onToggle}
+                aria-label={t('close')}
                 title={t('close')}
               >
                 <ChevronRight className="size-4" />
@@ -156,23 +135,73 @@ export default function QuestionInspectorPanel({
                 <p className="text-muted-foreground text-[10px]">{t('difficultyNote')}</p>
               </div>
 
-              {/* Explanation */}
-              {supportsExplanation && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="inspector-explanation" className="text-xs font-medium">
-                    {t('explanationLabel')}
-                  </Label>
-                  <MarkdownEditor
-                    placeholder={t('explanationPlaceholder')}
-                    value={explanation}
-                    disabled={!isEditable}
-                    preset="explanation"
-                    minHeight={140}
-                    onChange={markdown => onChange(setExplanation(item, markdown))}
-                  />
-                  <p className="text-muted-foreground text-[10px]">{t('explanationDesc')}</p>
-                </div>
-              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="inspector-estimated-minutes" className="flex items-center gap-1.5 text-xs font-medium">
+                  <Timer className="size-3.5" />
+                  {t('estimatedMinutesLabel')}
+                </Label>
+                <Input
+                  id="inspector-estimated-minutes"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={item.metadata.estimated_minutes ?? ''}
+                  disabled={!isEditable}
+                  className="h-8 text-sm"
+                  onChange={event =>
+                    onChange({
+                      ...item,
+                      metadata: {
+                        ...item.metadata,
+                        estimated_minutes: event.target.value ? Number(event.target.value) : null,
+                      },
+                    })
+                  }
+                />
+                <p className="text-muted-foreground text-[10px]">{t('estimatedMinutesDesc')}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="inspector-tags" className="flex items-center gap-1.5 text-xs font-medium">
+                  <Tags className="size-3.5" />
+                  {t('tagsLabel')}
+                </Label>
+                <Input
+                  id="inspector-tags"
+                  value={item.metadata.tags.join(', ')}
+                  disabled={!isEditable}
+                  className="h-8 text-sm"
+                  placeholder={t('tagsPlaceholder')}
+                  onChange={event =>
+                    onChange({
+                      ...item,
+                      metadata: { ...item.metadata, tags: splitMetadataList(event.target.value) },
+                    })
+                  }
+                />
+                <p className="text-muted-foreground text-[10px]">{t('commaSeparated')}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="inspector-outcomes" className="flex items-center gap-1.5 text-xs font-medium">
+                  <Target className="size-3.5" />
+                  {t('outcomesLabel')}
+                </Label>
+                <Input
+                  id="inspector-outcomes"
+                  value={item.metadata.outcome_ids.join(', ')}
+                  disabled={!isEditable}
+                  className="h-8 text-sm"
+                  placeholder={t('outcomesPlaceholder')}
+                  onChange={event =>
+                    onChange({
+                      ...item,
+                      metadata: { ...item.metadata, outcome_ids: splitMetadataList(event.target.value) },
+                    })
+                  }
+                />
+                <p className="text-muted-foreground text-[10px]">{t('outcomesDesc')}</p>
+              </div>
             </div>
           </>
         )}

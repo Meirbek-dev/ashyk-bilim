@@ -76,3 +76,32 @@ Tests and checks:
 Assumptions and deviations:
 
 - Phase 2 intentionally hosts the existing screens inside the new workspace shell instead of redesigning their internals; the detailed builder/policy/audience/result redesigns remain scoped to Phases 3-7.
+
+## Phase 3 - Question Builder Redesign
+
+Status: completed.
+
+What changed:
+
+- Added `builderUtils.ts` for canonical builder behaviors: keyboard reorder ordering, large-outline windowing, issue focus targets, and metadata list normalization.
+- Reworked the builder outline with compact bulk actions for applying points, difficulty, and tags across all questions.
+- Added explicit up/down keyboard reorder buttons to each outline item while preserving the existing drag-and-drop path.
+- Added outline windowing for large item lists so the builder stays responsive without changing the full persisted order.
+- Wired selected readiness issues to focus the matching builder target: title, points, or item content.
+- Moved rich answer feedback for choice and matching items from the narrow inspector into the main canvas.
+- Added a live item preview for choice, matching, form, and open-text items.
+- Reworked the inspector into compact contextual metadata: points, difficulty, estimated time, tags, and outcome IDs.
+- Tightened create, duplicate, delete, and bulk-save async paths so failed responses surface response messages and unexpected failures are logged.
+- Added localized strings for the new builder and inspector controls in English, Russian, and Kazakh.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/builder-utils.test.ts` passed: 5 tests.
+- `vp check apps/web/src/features/assessments/studio/tabs/BuilderCanvasTab.tsx apps/web/src/features/assessments/studio/tabs/QuestionInspectorPanel.tsx apps/web/src/features/assessments/studio/tabs/builderUtils.ts apps/web/src/tests/assessments/builder-utils.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 46 files, 374 tests.
+- Started the web app with `vp run dev:web`; `http://localhost:3000/ru` and `http://localhost:3000/ru/dash/courses` both returned HTTP 200.
+
+Assumptions and deviations:
+
+- Bulk operations apply to all questions in the current assessment. The plan did not define a multi-select contract, so Phase 3 avoids adding an unplanned selection model.
+- Authenticated manual studio interaction was not performed because this thread has no attached authenticated browser session or known seeded studio record. The route-level app smoke check passed.
