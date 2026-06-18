@@ -220,8 +220,10 @@ async def api_list_access_eligible_learners(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> list[AssessmentAccessUserRead]:
-    return await list_assessment_access_eligible_users(assessment_uuid, current_user, db_session)
+    return await list_assessment_access_eligible_users(assessment_uuid, current_user, db_session, query=q, limit=limit)
 
 
 @router.get(
@@ -232,8 +234,16 @@ async def api_list_access_eligible_usergroups(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> list[AssessmentAccessUserGroupRead]:
-    return await list_assessment_access_eligible_usergroups(assessment_uuid, current_user, db_session)
+    return await list_assessment_access_eligible_usergroups(
+        assessment_uuid,
+        current_user,
+        db_session,
+        query=q,
+        limit=limit,
+    )
 
 
 # ── Items CRUD ─────────────────────────────────────────────────────────────────

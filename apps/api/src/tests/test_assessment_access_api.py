@@ -225,6 +225,75 @@ def test_course_author_can_test_after_previous_attempt_when_access_restricted(
         assert "MAX_ATTEMPTS_REACHED" not in disabled_action_reasons
 
 
+def test_eligible_learners_are_server_searchable_and_limited(
+    db_session_factory: Callable[[], Session], api_client: TestClient
+) -> None:
+    assessment_uuid, _activity_id = _seed_assessment(db_session_factory)
+
+    response = api_client.get(
+        f"/assessments/{assessment_uuid}/access/eligible-learners",
+        params={"q": "student", "limit": 1},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["username"] == "student.allowed"
+
+    response = api_client.get(
+        f"/assessments/{assessment_uuid}/access/eligible-learners",
+        params={"q": "blocked", "limit": 10},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [user["id"] for user in body] == [OTHER_ID]
+
+
+def test_eligible_usergroups_are_server_searchable_and_include_member_counts(
+    db_session_factory: Callable[[], Session], api_client: TestClient
+) -> None:
+    assessment_uuid, _activity_id = _seed_assessment(db_session_factory)
+    now = datetime.now(UTC)
+    with db_session_factory() as session:
+        session.add(
+            UserGroup(
+                id=801,
+                usergroup_uuid="group_physics",
+                name="Physics cohort",
+                description="Evening assessment group",
+                creator_id=TEACHER_ID,
+                creation_date=now,
+                update_date=now,
+            )
+        )
+        session.add(
+            UserGroup(
+                id=802,
+                usergroup_uuid="group_history",
+                name="History cohort",
+                description="Morning assessment group",
+                creator_id=TEACHER_ID,
+                creation_date=now,
+                update_date=now,
+            )
+        )
+        session.add(UserGroupUser(usergroup_id=801, user_id=STUDENT_ID))
+        session.add(UserGroupUser(usergroup_id=801, user_id=OTHER_ID))
+        session.commit()
+
+    response = api_client.get(
+        f"/assessments/{assessment_uuid}/access/eligible-usergroups",
+        params={"q": "physics", "limit": 1},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["name"] == "Physics cohort"
+    assert body[0]["member_count"] == 2
+
+
 def _seed_assessment(db_session_factory: Callable[[], Session]) -> tuple[str, int]:
     now = datetime.now(UTC)
     with db_session_factory() as session:

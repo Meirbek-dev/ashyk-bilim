@@ -130,3 +130,31 @@ Tests and checks:
 Assumptions and deviations:
 
 - Accessibility exceptions are surfaced as warnings and guidance in Phase 4 instead of a new persisted policy field because the plan assigns individual overrides/accommodations to Phase 5.
+
+## Phase 5 - Audience Builder And Accommodations
+
+Status: completed.
+
+What changed:
+
+- Reworked the access tab into a three-column audience operations surface: access mode and preview, server-searchable learners/groups, selected-audience drawer, and individual accommodations.
+- Replaced local-only filtering with backend `q` and `limit` query parameters on eligible learner and eligible group endpoints.
+- Added recoverable access-save and accommodation-save error states with retry actions and assertive live-region announcements.
+- Added effective audience preview, loaded-window exclusion counts, group expansion summaries, selected user/group removal, and visible accommodation badges.
+- Surfaced existing student policy override APIs in the instructor UI for selected learners: attempt limit, custom due date, late-penalty waiver, and internal note.
+- Added typed access-builder helpers for search URL construction, preview counts, and loaded-window exclusion math.
+- Regenerated `apps/api/openapi.json` and `apps/web/src/lib/api/generated/schema.ts` for the new eligible-audience query parameters.
+- Added localized access-builder and accommodation copy in English, Russian, and Kazakh.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/access-builder-utils.test.ts` passed: 3 tests.
+- `uv run --project apps/api python -m pytest apps/api/src/tests/test_assessment_access_api.py` passed: 4 tests.
+- `uv run --project apps/api ruff check apps/api/src/routers/assessments/unified.py apps/api/src/services/assessments/access_service.py apps/api/src/tests/test_assessment_access_api.py` passed.
+- `vp check apps/web/src/features/assessments/studio/tabs/AccessManagementTab.tsx apps/web/src/features/assessments/studio/tabs/accessBuilderUtils.ts apps/web/src/tests/assessments/access-builder-utils.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 48 files, 381 tests.
+
+Assumptions and deviations:
+
+- The current access contract has allowlists, not a separate persisted exclusion list. Phase 5 models exclusions as learners omitted from restricted access and shows the loaded-window exclusion count before save.
+- Student policy overrides are individual-only in the existing API. Group rows can expand and be included in the audience preview, but accommodations apply only to explicitly selected learners.

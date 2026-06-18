@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlmodel import Session, col, select
 
 from src.db.assessment_access import (
@@ -108,22 +109,43 @@ async def list_assessment_access_eligible_users(
     assessment_uuid: str,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    query: str | None = None,
+    limit: int = 50,
 ) -> list[AssessmentAccessUserRead]:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
-    users = db_session.exec(select(User).where(User.is_active)).all()
-    return [
-        _user_read(user)
-        for user in users
-        if user.id is not None and user_has_course_access(user.id, course, db_session)
-    ]
+    normalized_query = _normalize_search(query)
+    statement = select(User).where(User.is_active)
+    if normalized_query:
+        pattern = f"%{normalized_query}%"
+        statement = statement.where(
+            or_(
+                col(User.username).ilike(pattern),
+                col(User.first_name).ilike(pattern),
+                col(User.last_name).ilike(pattern),
+                col(User.email).ilike(pattern),
+            )
+        )
+    users = db_session.exec(statement.order_by(User.username).limit(max(limit * 4, limit))).all()
+    results: list[AssessmentAccessUserRead] = []
+    for user in users:
+        if user.id is None or not user_has_course_access(user.id, course, db_session):
+            continue
+        results.append(_user_read(user))
+        if len(results) >= limit:
+            break
+    return results
 
 
 async def list_assessment_access_eligible_usergroups(
     assessment_uuid: str,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    query: str | None = None,
+    limit: int = 50,
 ) -> list[AssessmentAccessUserGroupRead]:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
@@ -131,8 +153,18 @@ async def list_assessment_access_eligible_usergroups(
     eligible_ids = _eligible_usergroup_ids_for_course(course.course_uuid, db_session)
     if not eligible_ids:
         return []
-    groups = db_session.exec(select(UserGroup).where(col(UserGroup.id).in_(eligible_ids))).all()
-    return [_usergroup_read(group, db_session) for group in groups]
+    normalized_query = _normalize_search(query)
+    statement = select(UserGroup).where(col(UserGroup.id).in_(eligible_ids))
+    if normalized_query:
+        pattern = f"%{normalized_query}%"
+        statement = statement.where(or_(col(UserGroup.name).ilike(pattern), col(UserGroup.description).ilike(pattern)))
+    groups = db_session.exec(statement.order_by(UserGroup.name).limit(limit * 4)).all()
+    results: list[AssessmentAccessUserGroupRead] = []
+    for group in groups:
+        results.append(_usergroup_read(group, db_session))
+        if len(results) >= limit:
+            break
+    return results
 
 
 def _get_or_create_access_policy(
@@ -261,3 +293,7 @@ def _usergroup_read(
         description=group.description,
         member_count=len(member_count),
     )
+
+
+def _normalize_search(query: str | None) -> str:
+    return " ".join((query or "").strip().lower().split())

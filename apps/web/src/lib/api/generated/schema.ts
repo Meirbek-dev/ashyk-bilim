@@ -12704,7 +12704,10 @@ export interface operations {
     };
     api_list_access_eligible_learners_api_v1_assessments__assessment_uuid__access_eligible_learners_get: {
         parameters: {
-            query?: never;
+            query?: {
+                q?: string | null;
+                limit?: number;
+            };
             header?: never;
             path: {
                 assessment_uuid: string;
@@ -12744,7 +12747,10 @@ export interface operations {
     };
     api_list_access_eligible_usergroups_api_v1_assessments__assessment_uuid__access_eligible_usergroups_get: {
         parameters: {
-            query?: never;
+            query?: {
+                q?: string | null;
+                limit?: number;
+            };
             header?: never;
             path: {
                 assessment_uuid: string;
