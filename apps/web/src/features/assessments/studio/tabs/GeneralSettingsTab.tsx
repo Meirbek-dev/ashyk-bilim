@@ -1,9 +1,12 @@
 'use client'
 
 import {
+  AlertTriangle,
   CalendarClock,
+  Eye,
   GraduationCap,
   Info,
+  ListChecks,
   RefreshCcw,
   Shield,
   ShieldAlert,
@@ -28,6 +31,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { MarkdownEditor } from '@/features/content-markdown'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
+import { applyResultReleasePolicy, getPolicyWarningCodes, resultReleasePolicyFromState } from './policyWarnings'
+import type { PolicyWarningCode, ResultReleasePolicy } from './policyWarnings'
 
 interface GeneralSettingsTabProps {
   state: AssessmentEditorState
@@ -37,7 +42,7 @@ interface GeneralSettingsTabProps {
   onChange: (nextState: AssessmentEditorState) => void
 }
 
-const ANTI_CHEAT_FEATURES: {
+const INTEGRITY_CONTROLS: {
   key: keyof Pick<
     AssessmentEditorState,
     'copyPasteProtection' | 'tabSwitchDetection' | 'devtoolsDetection' | 'rightClickDisable' | 'fullscreenEnforcement'
@@ -83,6 +88,8 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
   const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
 
   const hasIssue = (field: string) => issues.some(issue => issue.field === field)
+  const releasePolicy = resultReleasePolicyFromState(state)
+  const warningCodes = getPolicyWarningCodes(state)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-6">
@@ -90,6 +97,9 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
       <div className="flex items-center justify-end">
         <SaveStateBadge state={saveState} />
       </div>
+
+      <PolicyImpactSummary state={state} releasePolicy={releasePolicy} />
+      {warningCodes.length > 0 ? <PolicyWarningList codes={warningCodes} /> : null}
 
       {/* Details Card */}
       <SettingsCard icon={GraduationCap} title={tSetup('detailsTitle')} description={tSetup('detailsDescription')}>
@@ -289,25 +299,14 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
         title={tSetup('resultReviewTitle')}
         description={tSetup('resultReviewDescription')}
       >
-        <div className="space-y-3">
-          <ToggleFeatureRow
-            label={t('allowResultReviewLabel')}
-            description={tSetup('allowResultReviewDesc')}
-            checked={state.allowResultReview}
-            disabled={disabled}
-            onChange={checked => onChange({ ...state, allowResultReview: checked })}
-          />
-          <ToggleFeatureRow
-            label={t('showCorrectAnswersLabel')}
-            description={tSetup('showCorrectAnswersDesc')}
-            checked={state.showCorrectAnswers}
-            disabled={disabled}
-            onChange={checked => onChange({ ...state, showCorrectAnswers: checked })}
-          />
-        </div>
+        <ReviewVisibilityControl
+          value={releasePolicy}
+          disabled={disabled}
+          onChange={nextPolicy => onChange(applyResultReleasePolicy(state, nextPolicy))}
+        />
       </SettingsCard>
 
-      {/* Anti-Cheat / Integrity Suite */}
+      {/* Integrity controls */}
       <SettingsCard
         icon={ShieldAlert}
         title={tSetup('integrityTitle')}
@@ -325,7 +324,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
         }
       >
         <div className="grid gap-3 sm:grid-cols-2">
-          {ANTI_CHEAT_FEATURES.map(({ key, icon: Icon, labelKey, descKey }) => (
+          {INTEGRITY_CONTROLS.map(({ key, icon: Icon, labelKey, descKey }) => (
             <div
               key={key}
               className={cn(
@@ -378,7 +377,121 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             </Tooltip>
           </div>
         </div>
+
+        <div className="bg-muted/40 mt-4 rounded-xl border p-4">
+          <div className="flex items-start gap-3">
+            <ListChecks className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">{tSetup('accessibilityExceptionsTitle')}</p>
+              <p className="text-muted-foreground mt-1 text-xs">{tSetup('accessibilityExceptionsDescription')}</p>
+            </div>
+          </div>
+        </div>
       </SettingsCard>
+    </div>
+  )
+}
+
+function PolicyImpactSummary({
+  state,
+  releasePolicy,
+}: {
+  state: AssessmentEditorState
+  releasePolicy: ResultReleasePolicy
+}) {
+  const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
+  const timing = state.timeLimitMinutes
+    ? tSetup('summaryTimed', { minutes: state.timeLimitMinutes })
+    : tSetup('summaryUntimed')
+  const attempts = state.maxAttempts
+    ? tSetup('summaryAttempts', { count: state.maxAttempts })
+    : tSetup('summaryUnlimitedAttempts')
+  const release = tSetup(`releasePolicy.${releasePolicy}.summary`)
+  const integrityEnabled =
+    state.copyPasteProtection ||
+    state.tabSwitchDetection ||
+    state.devtoolsDetection ||
+    state.rightClickDisable ||
+    state.fullscreenEnforcement
+
+  return (
+    <section className="bg-card rounded-2xl border p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <ListChecks className="text-muted-foreground size-4" />
+        <h3 className="text-sm font-semibold">{tSetup('impactTitle')}</h3>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <ImpactPill label={tSetup('impactTiming')} value={timing} />
+        <ImpactPill label={tSetup('impactAttempts')} value={attempts} />
+        <ImpactPill label={tSetup('impactRelease')} value={release} />
+        <ImpactPill
+          label={tSetup('impactIntegrity')}
+          value={integrityEnabled ? tSetup('summaryIntegrityOn') : tSetup('summaryIntegrityOff')}
+        />
+      </div>
+    </section>
+  )
+}
+
+function ImpactPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-muted/40 rounded-xl border px-3 py-2">
+      <p className="text-muted-foreground text-[11px] font-medium uppercase">{label}</p>
+      <p className="mt-1 text-sm font-medium">{value}</p>
+    </div>
+  )
+}
+
+function PolicyWarningList({ codes }: { codes: PolicyWarningCode[] }) {
+  const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
+  return (
+    <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+      <div className="mb-2 flex items-center gap-2">
+        <AlertTriangle className="size-4" />
+        <h3 className="text-sm font-semibold">{tSetup('warningsTitle')}</h3>
+      </div>
+      <ul className="space-y-1 text-sm">
+        {codes.map(code => (
+          <li key={code}>{tSetup(`warnings.${code}`)}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ReviewVisibilityControl({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: ResultReleasePolicy
+  disabled: boolean
+  onChange: (value: ResultReleasePolicy) => void
+}) {
+  const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
+  const options: ResultReleasePolicy[] = ['NONE', 'SCORE_ONLY', 'FULL']
+
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      {options.map(option => (
+        <button
+          key={option}
+          type="button"
+          disabled={disabled}
+          aria-pressed={value === option}
+          onClick={() => onChange(option)}
+          className={cn(
+            'rounded-xl border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            value === option ? 'border-primary bg-primary/10' : 'bg-card hover:bg-muted/50',
+          )}
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <Eye className="text-muted-foreground size-4" />
+            <p className="text-sm font-semibold">{tSetup(`releasePolicy.${option}.title`)}</p>
+          </div>
+          <p className="text-muted-foreground text-xs">{tSetup(`releasePolicy.${option}.description`)}</p>
+        </button>
+      ))}
     </div>
   )
 }

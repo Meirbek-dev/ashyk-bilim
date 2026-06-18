@@ -38,6 +38,10 @@ export interface PolicyView {
   maxAttempts: number | null
   /** Time limit in seconds. null = unlimited. */
   timeLimitSeconds: number | null
+  /** What students may see after submission/release. */
+  reviewVisibility: 'NONE' | 'SCORE_ONLY' | 'FULL'
+  resultReviewAllowed: boolean
+  correctAnswersVisible: boolean
   latePolicy: LatePolicy
   antiCheat: AntiCheatPolicy
 }
@@ -62,6 +66,8 @@ export interface AssessmentCanonicalPolicyDTO {
   max_attempts?: number | null
   time_limit_seconds?: number | null
   due_at?: string | null
+  passing_score?: number | null
+  review_visibility?: 'NONE' | 'SCORE_ONLY' | 'FULL' | null
   late_policy?: Record<string, unknown> | null
   integrity?: AssessmentIntegrityPolicyDTO | null
   delivery?: AssessmentDeliveryPolicyDTO | null
@@ -80,6 +86,9 @@ export const DEFAULT_POLICY_VIEW: PolicyView = {
   dueAt: null,
   maxAttempts: null,
   timeLimitSeconds: null,
+  reviewVisibility: 'FULL',
+  resultReviewAllowed: true,
+  correctAnswersVisible: true,
   latePolicy: { penaltyPercent: 0 },
   antiCheat: DEFAULT_ANTI_CHEAT_POLICY,
 }
@@ -91,6 +100,8 @@ export interface AssessmentPolicyDTO {
   late_policy_json?: Record<string, unknown> | null
   late_policy?: Record<string, unknown> | null
   anti_cheat_json?: Record<string, unknown> | null
+  settings_json?: Record<string, unknown> | null
+  review_visibility?: 'NONE' | 'SCORE_ONLY' | 'FULL' | null
   canonical_policy?: AssessmentCanonicalPolicyDTO | null
 }
 
@@ -110,11 +121,15 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
   if (canonical) {
     const integrity = canonical.integrity ?? {}
     const latePolicy = canonical.late_policy ?? {}
+    const reviewVisibility = normalizeReviewVisibility(canonical.review_visibility)
 
     return {
       dueAt: canonical.due_at ?? null,
       maxAttempts: typeof canonical.max_attempts === 'number' ? canonical.max_attempts : null,
       timeLimitSeconds: typeof canonical.time_limit_seconds === 'number' ? canonical.time_limit_seconds : null,
+      reviewVisibility,
+      resultReviewAllowed: reviewVisibility !== 'NONE',
+      correctAnswersVisible: reviewVisibility === 'FULL',
       latePolicy: {
         penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
       },
@@ -130,11 +145,15 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
   }
   const antiCheat = policy.anti_cheat_json ?? {}
   const latePolicy = policy.late_policy_json ?? policy.late_policy ?? {}
+  const reviewVisibility = reviewVisibilityFromLegacyPolicy(policy)
 
   return {
     dueAt: policy.due_at ?? null,
     maxAttempts: typeof policy.max_attempts === 'number' ? policy.max_attempts : null,
     timeLimitSeconds: typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
+    reviewVisibility,
+    resultReviewAllowed: reviewVisibility !== 'NONE',
+    correctAnswersVisible: reviewVisibility === 'FULL',
     latePolicy: {
       penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
     },
@@ -147,4 +166,20 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
       violationThreshold: typeof antiCheat.violation_threshold === 'number' ? antiCheat.violation_threshold : null,
     },
   }
+}
+
+function normalizeReviewVisibility(value: unknown): PolicyView['reviewVisibility'] {
+  return value === 'NONE' || value === 'SCORE_ONLY' || value === 'FULL' ? value : 'FULL'
+}
+
+function reviewVisibilityFromLegacyPolicy(policy: AssessmentPolicyDTO): PolicyView['reviewVisibility'] {
+  const direct = normalizeReviewVisibility(policy.review_visibility)
+  if (direct !== 'FULL' || policy.review_visibility === 'FULL') return direct
+
+  const settings = policy.settings_json ?? {}
+  const settingsVisibility = normalizeReviewVisibility(settings.review_visibility)
+  if (settingsVisibility !== 'FULL' || settings.review_visibility === 'FULL') return settingsVisibility
+  if (settings.allow_result_review === false) return 'NONE'
+  if (settings.show_correct_answers === false) return 'SCORE_ONLY'
+  return 'FULL'
 }

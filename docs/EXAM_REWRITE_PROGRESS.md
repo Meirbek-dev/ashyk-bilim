@@ -105,3 +105,28 @@ Assumptions and deviations:
 
 - Bulk operations apply to all questions in the current assessment. The plan did not define a multi-select contract, so Phase 3 avoids adding an unplanned selection model.
 - Authenticated manual studio interaction was not performed because this thread has no attached authenticated browser session or known seeded studio record. The route-level app smoke check passed.
+
+## Phase 4 - Policy And Integrity Redesign
+
+Status: completed.
+
+What changed:
+
+- Reworked the policy editor around student-facing consequences: time, attempts, result release, and integrity controls are summarized before the detailed fields.
+- Replaced the two result-review toggles with a single release policy control: hidden, score-only, or full review.
+- Added inline warnings for risky combinations: strict integrity controls without accommodations, one-violation auto-submit, very short timers, and high pass thresholds combined with negative marking.
+- Renamed the editor copy from anti-cheat/proctoring language to integrity deterrent controls.
+- Added accessibility accommodation guidance without adding a non-canonical exception field; individual exceptions remain scoped to the Phase 5 accommodations model.
+- Extended the shared runtime `PolicyView` with `reviewVisibility`, `resultReviewAllowed`, and `correctAnswersVisible`, preferring `canonical_policy.review_visibility` before legacy settings.
+- Added result-release policy messaging to the attempt entry screen so runtime consumes and explains the same policy contract.
+- Added localized policy and runtime copy in English, Russian, and Kazakh.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/policy-redesign.test.ts` passed: 4 tests.
+- `vp check apps/web/src/features/assessments/domain/policy.ts apps/web/src/features/assessments/studio/tabs/GeneralSettingsTab.tsx apps/web/src/features/assessments/studio/tabs/policyWarnings.ts apps/web/src/features/assessments/shell/AttemptEntryCard.tsx apps/web/src/tests/assessments/policy-redesign.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 47 files, 378 tests.
+
+Assumptions and deviations:
+
+- Accessibility exceptions are surfaced as warnings and guidance in Phase 4 instead of a new persisted policy field because the plan assigns individual overrides/accommodations to Phase 5.

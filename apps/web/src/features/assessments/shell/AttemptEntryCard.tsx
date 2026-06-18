@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { AlertTriangle, BookOpen, Clock, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react'
+import { AlertTriangle, BookOpen, Clock, Eye, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -112,6 +112,18 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
             />
           </div>
 
+          <div className="rounded-lg border p-4">
+            <div className="flex items-start gap-3">
+              <Eye className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+              <div>
+                <div className="text-sm font-medium">{releasePolicyTitle(policy.reviewVisibility, t)}</div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {releasePolicyDescription(policy.reviewVisibility, t)}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {questionCount === 0 ? (
             <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
               <AlertTriangle className="size-4" />
@@ -159,6 +171,18 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
       </div>
     </section>
   )
+}
+
+function releasePolicyTitle(reviewVisibility: string, t: ReturnType<typeof useTranslations>): string {
+  if (reviewVisibility === 'NONE') return t('releaseHidden')
+  if (reviewVisibility === 'SCORE_ONLY') return t('releaseScoreOnly')
+  return t('releaseFull')
+}
+
+function releasePolicyDescription(reviewVisibility: string, t: ReturnType<typeof useTranslations>): string {
+  if (reviewVisibility === 'NONE') return t('releaseHiddenDescription')
+  if (reviewVisibility === 'SCORE_ONLY') return t('releaseScoreOnlyDescription')
+  return t('releaseFullDescription')
 }
 
 function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
