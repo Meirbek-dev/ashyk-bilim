@@ -557,7 +557,38 @@ def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
 
 
 def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
-    return _get_items_raw(assessment, db_session)
+    items = _get_items_raw(assessment, db_session)
+    if not items and assessment.kind == AssessmentType.CODE_CHALLENGE and assessment.id is not None:
+        now = datetime.now(UTC)
+        default_body = {
+            "kind": "CODE",
+            "prompt": assessment.description or "",
+            "input_spec": "",
+            "output_spec": "",
+            "constraints": [],
+            "languages": [],
+            "starter_code": {},
+            "reference_solutions": {},
+            "tests": [],
+            "time_limit_seconds": 5,
+            "memory_limit_mb": 256,
+        }
+        item = AssessmentItem(
+            item_uuid=f"item_{ULID()}",
+            assessment_id=assessment.id,
+            order=1,
+            kind="CODE",
+            title=assessment.title,
+            body_json=default_body,
+            metadata_json={},
+            max_score=100.0,
+            created_at=now,
+            updated_at=now,
+        )
+        db_session.add(item)
+        db_session.flush()
+        items = [item]
+    return items
 
 
 def _get_items_raw(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
@@ -1444,13 +1475,34 @@ def _get_policy_for_assessment(
     assessment: Assessment,
     db_session: Session,
 ) -> AssessmentPolicy | None:
+    policy = None
     if assessment.policy_id is not None:
         policy = db_session.get(AssessmentPolicy, assessment.policy_id)
+
+    if policy is None and assessment.activity_id is not None:
+        policy = db_session.exec(
+            select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
+        ).first()
         if policy is not None:
-            return policy
-    return db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
-    ).first()
+            assessment.policy_id = policy.id
+            db_session.add(assessment)
+            db_session.flush()
+
+    if policy is None and assessment.activity_id is not None:
+        now = datetime.now(UTC)
+        policy = _get_or_create_policy(
+            activity_id=assessment.activity_id,
+            kind=assessment.kind,
+            patch=None,
+            db_session=db_session,
+            now=now,
+        )
+        db_session.flush()
+        assessment.policy_id = policy.id
+        db_session.add(assessment)
+        db_session.flush()
+
+    return policy
 
 
 def _build_canonical_policy(

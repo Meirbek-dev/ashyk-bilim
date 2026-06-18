@@ -53,10 +53,10 @@ def validate_and_parse(
     if missing_items:
         from src.db.assessments import (
             ChoiceItemAnswer,
-            OpenTextItemAnswer,
-            FormItemAnswer,
             CodeItemAnswer,
+            FormItemAnswer,
             MatchingItemAnswer,
+            OpenTextItemAnswer,
         )
 
         for item_uuid in missing_items:

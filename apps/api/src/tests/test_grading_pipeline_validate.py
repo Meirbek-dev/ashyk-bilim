@@ -42,8 +42,8 @@ def test_open_text_answer_max_chars_is_enforced() -> None:
 def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
     from src.db.assessments import (
         ChoiceItemBody,
-        FormItemBody,
         CodeItemBody,
+        FormItemBody,
         MatchingItemBody,
     )
 

@@ -963,3 +963,46 @@ def test_policy_preset_manual_assessment_has_defaults(
     assert data["completion_rule"] == "PASSED"
     assert data["grade_release_mode"] == "BATCH"
     assert data["review_visibility"] == "SCORE_ONLY"
+
+
+@pytest.mark.anyio
+async def test_update_published_activity_does_not_trigger_readiness_checks(
+    db_session_factory: Callable[[], Session],
+    teacher_user: PublicUser,
+) -> None:
+    """Updating fields on an already published activity should not trigger readiness validation."""
+    from unittest.mock import MagicMock
+
+    from fastapi import Request
+
+    from src.db.courses.activities import ActivityUpdate
+    from src.services.courses.activities.activities import update_activity
+
+    assessment_uuid = _seed_published_assessment(db_session_factory)
+
+    with db_session_factory() as session:
+        assessment = session.exec(select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)).one()
+
+        # Delete all items under this assessment to make it NOT ready for publishing.
+        items = session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
+        for item in items:
+            session.delete(item)
+        session.commit()
+
+    request_mock = MagicMock(spec=Request)
+
+    with db_session_factory() as session:
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_published_authoring")).one()
+        assert activity.published is True
+
+        # Call update_activity service
+        update_obj = ActivityUpdate(name="Renamed Published Activity")
+        updated_activity = await update_activity(
+            request=request_mock,
+            activity_object=update_obj,
+            activity_uuid="activity_published_authoring",
+            current_user=teacher_user,
+            db_session=session,
+        )
+
+        assert updated_activity.name == "Renamed Published Activity"

@@ -146,6 +146,8 @@ async def update_activity(
     checker = PermissionChecker(db_session)
     checker.require(current_user.id, "activity:update", resource_owner_id=activity.creator_id)
 
+    was_published = bool(activity.published)
+
     update_data = activity_object.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if value is not None:
@@ -157,7 +159,7 @@ async def update_activity(
             else:
                 setattr(activity, field, value)
 
-    _sync_assessment_lifecycle(activity, update_data, db_session)
+    _sync_assessment_lifecycle(activity, update_data, db_session, was_published=was_published)
 
     activity.update_date = datetime.now(tz=UTC)
 
@@ -179,6 +181,7 @@ def _sync_assessment_lifecycle(
     activity: Activity,
     update_data: dict[str, object],
     db_session: Session,
+    was_published: bool,
 ) -> None:
     if activity.activity_type not in {
         ActivityTypeEnum.TYPE_EXAM,
@@ -250,7 +253,10 @@ def _sync_assessment_lifecycle(
     if activity.id is not None:
         assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
         if assessment is not None:
-            if lifecycle == AssessmentLifecycleStatus.PUBLISHED:
+            if (
+                lifecycle == AssessmentLifecycleStatus.PUBLISHED
+                and not was_published
+            ):
                 from src.services.assessments.core import build_readiness
 
                 readiness = build_readiness(assessment, db_session)

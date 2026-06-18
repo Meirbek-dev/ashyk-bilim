@@ -9,7 +9,6 @@ import logging
 from threading import Lock
 
 from cachebox import TTLCache
-
 from config.config import get_settings
 
 logger = logging.getLogger(__name__)

@@ -4,10 +4,10 @@ import json
 import logging
 from threading import Lock
 
-from cachebox import TTLCache
 from openai import AsyncOpenAI
 from openai.types import CreateEmbeddingResponse
 
+from cachebox import TTLCache
 from config.config import get_settings, secret_value
 from src.services.ai.chunking import count_tokens_for_model
 from src.services.ai.exceptions import RetrievalError

@@ -10,9 +10,9 @@ from typing import cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
-from cachebox import TTLCache
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
+from cachebox import TTLCache
 from config.config import LinkPreviewConfig, get_settings
 from src.services.cache.redis_client import get_async_redis_client
 

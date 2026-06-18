@@ -161,8 +161,10 @@ export default defineConfig({
       'unicorn',
     ],
     rules: {
+      // 'react/react-compiler': 'error',
       'no-shadow': 'warn',
       'typescript/no-explicit-any': 'warn',
+      'prefer-named-capture-group': 'off',
       'arrow-body-style': 'off',
       'capitalized-comments': 'off',
       complexity: 'off',
