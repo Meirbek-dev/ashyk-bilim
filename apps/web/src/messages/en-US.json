@@ -9312,6 +9312,8 @@
     },
     "ActivityWorkspace": {
       "questions": "Questions",
+      "readyToStart": "Ready to Start",
+      "readyToStartSubtitle": "Review details and start the exam when you're ready.",
       "timeLimit": "Time limit",
       "unlimited": "Unlimited",
       "attempts": "Attempts",

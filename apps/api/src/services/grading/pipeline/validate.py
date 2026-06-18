@@ -39,8 +39,6 @@ def validate_and_parse(
         _raise_invalid("Тело ответов должно быть объектом")
 
     answers_by_item_uuid = _extract_canonical_answers(answers_payload)
-    if not answers_by_item_uuid:
-        _raise_invalid("В отправке должны быть канонические ответы", code="empty_answers")
 
     item_by_uuid = {item.item_uuid: item for item in items}
     unknown_items = sorted(set(answers_by_item_uuid) - set(item_by_uuid))
@@ -53,11 +51,28 @@ def validate_and_parse(
 
     missing_items = sorted(set(item_by_uuid) - set(answers_by_item_uuid))
     if missing_items:
-        _raise_invalid(
-            "В отправке отсутствуют ответы для обязательных элементов оценивания",
-            code="missing_item",
-            extra={"item_uuids": missing_items},
+        from src.db.assessments import (
+            ChoiceItemAnswer,
+            OpenTextItemAnswer,
+            FormItemAnswer,
+            CodeItemAnswer,
+            MatchingItemAnswer,
         )
+        for item_uuid in missing_items:
+            item = item_by_uuid[item_uuid]
+            if item.kind == "CHOICE":
+                answers_by_item_uuid[item_uuid] = ChoiceItemAnswer(selected=[])
+            elif item.kind == "OPEN_TEXT":
+                answers_by_item_uuid[item_uuid] = OpenTextItemAnswer(text="")
+            elif item.kind == "FORM":
+                answers_by_item_uuid[item_uuid] = FormItemAnswer(values={})
+            elif item.kind == "CODE":
+                default_lang = 0
+                if hasattr(item.body, "languages") and item.body.languages:
+                    default_lang = item.body.languages[0]
+                answers_by_item_uuid[item_uuid] = CodeItemAnswer(language=default_lang, source="")
+            elif item.kind == "MATCHING":
+                answers_by_item_uuid[item_uuid] = MatchingItemAnswer(matches=[])
 
     for item_uuid, answer in answers_by_item_uuid.items():
         item = item_by_uuid[item_uuid]
@@ -88,6 +103,15 @@ def validate_and_parse(
                     },
                 )
 
+    # Convert and write back the canonicalized answers dictionary to raw_payload for persistence
+    serialized_answers: dict[str, object] = {}
+    for k, v in answers_by_item_uuid.items():
+        if hasattr(v, "model_dump"):
+            serialized_answers[k] = v.model_dump(mode="json")
+        else:
+            serialized_answers[k] = v
+    answers_payload["answers"] = serialized_answers
+
     return ParsedAnswers(
         answers_by_item_uuid=answers_by_item_uuid,
         raw_payload=answers_payload,
@@ -103,6 +127,8 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, object]:
         _raise_invalid("Тело ответов должно быть объектом")
 
     raw_answers = answers_payload.get("answers")
+    if raw_answers is None:
+        raw_answers = {}
 
     # Format 1: dict keyed by item_uuid
     if isinstance(raw_answers, dict):
@@ -156,6 +182,6 @@ def _raise_invalid(
     if extra:
         detail.update(extra)
     raise HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         detail=detail,
     )

@@ -9324,6 +9324,8 @@
     },
     "ActivityWorkspace": {
       "questions": "Вопросы",
+      "readyToStart": "Готовы начать",
+      "readyToStartSubtitle": "Просмотрите детали и начните тест, когда будете готовы.",
       "timeLimit": "Ограничение по времени",
       "unlimited": "Без ограничений",
       "attempts": "Попытки",

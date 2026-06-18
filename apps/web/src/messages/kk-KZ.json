@@ -9497,6 +9497,8 @@
     },
     "ActivityWorkspace": {
       "questions": "Сұрақтар",
+      "readyToStart": "Бастауға дайын",
+      "readyToStartSubtitle": "Толық ақпаратты қарап шығыңыз және дайын болғанда емтиханды бастаңыз.",
       "timeLimit": "Уақыт шегі",
       "unlimited": "Шексіз",
       "attempts": "Әрекеттер",
