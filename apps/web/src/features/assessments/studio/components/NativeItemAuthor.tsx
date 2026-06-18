@@ -247,7 +247,7 @@ export function NativeItemAuthor({
   )
 
   const setLifecycle = useCallback(
-    async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null) => {
+    async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => {
       try {
         const response = await apiFetch(`assessments/${assessment.assessment_uuid}/lifecycle`, {
           method: 'POST',
@@ -255,6 +255,7 @@ export function NativeItemAuthor({
           body: JSON.stringify({
             to: lifecycle,
             scheduled_at: scheduledAt ?? null,
+            audit_note: auditNote?.trim() || null,
           }),
         })
         if (!response.ok) throw new Error(await responseError(response, 'Failed to update lifecycle'))

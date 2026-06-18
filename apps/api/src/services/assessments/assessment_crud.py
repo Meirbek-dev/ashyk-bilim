@@ -326,12 +326,38 @@ async def transition_assessment_lifecycle(
     assessment.updated_at = now
     activity.update_date = now
     sync_activity_lifecycle(assessment, activity)
+    _append_lifecycle_audit_note(activity, target, payload.audit_note, current_user.id, now)
 
     db_session.add(assessment)
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(assessment)
     return _build_assessment_read(assessment, db_session, current_user=current_user)
+
+
+def _append_lifecycle_audit_note(
+    activity: Activity,
+    target: AssessmentLifecycle,
+    audit_note: str | None,
+    user_id: int | None,
+    created_at: datetime,
+) -> None:
+    note = (audit_note or "").strip()
+    if not note:
+        return
+    details = dict(activity.details or {})
+    raw_entries = details.get("assessment_lifecycle_audit")
+    entries = raw_entries if isinstance(raw_entries, list) else []
+    entries.append(
+        {
+            "to": target.value,
+            "note": note,
+            "user_id": user_id,
+            "created_at": created_at.isoformat(),
+        }
+    )
+    details["assessment_lifecycle_audit"] = entries[-25:]
+    activity.details = details
 
 
 # ── Items ─────────────────────────────────────────────────────────────────────

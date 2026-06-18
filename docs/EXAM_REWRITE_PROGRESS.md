@@ -158,3 +158,30 @@ Assumptions and deviations:
 
 - The current access contract has allowlists, not a separate persisted exclusion list. Phase 5 models exclusions as learners omitted from restricted access and shows the loaded-window exclusion count before save.
 - Student policy overrides are individual-only in the existing API. Group rows can expand and be included in the audience preview, but accommodations apply only to explicitly selected learners.
+
+## Phase 6 - Preview And Publish Gate
+
+Status: completed.
+
+What changed:
+
+- Added a student preview gate to the publish view with scenarios for generic learner, specific learner, expired timer, retake blocked, late attempt, restricted access, and result view.
+- Added conservative high-stakes detection in `publishGateUtils.ts`: timed, single-attempt, or integrity-deterrent exams require at least one successful preview before publish or schedule confirmation.
+- Replaced direct publish/schedule actions with confirmation dialogs that summarize affected learners, questions, points, time limit, attempts, preview count, and schedule time.
+- Added high-stakes audit note capture in the confirmation dialog.
+- Extended the lifecycle API contract with optional `audit_note` and persisted notes to `Activity.details.assessment_lifecycle_audit`.
+- Regenerated `apps/api/openapi.json` and `apps/web/src/lib/api/generated/schema.ts`.
+- Added localized publish-gate copy in English, Russian, and Kazakh.
+
+Tests and checks:
+
+- `vp test apps/web/src/tests/assessments/publish-gate-utils.test.ts` passed: 2 tests.
+- `uv run --project apps/api python -m pytest apps/api/src/tests/test_assessment_authoring_lifecycle.py` passed: 21 tests.
+- `uv run --project apps/api ruff check apps/api/src/db/assessments.py apps/api/src/services/assessments/assessment_crud.py apps/api/src/tests/test_assessment_authoring_lifecycle.py` passed.
+- `vp check apps/web/src/features/assessments/studio/tabs/PublishDashboardTab.tsx apps/web/src/features/assessments/studio/tabs/publishGateUtils.ts apps/web/src/features/assessments/studio/components/NativeItemAuthor.tsx apps/web/src/tests/assessments/publish-gate-utils.test.ts apps/web/src/messages/en-US.json apps/web/src/messages/ru-RU.json apps/web/src/messages/kk-KZ.json` passed.
+- `vp test` passed: 49 files, 383 tests.
+
+Assumptions and deviations:
+
+- High-stakes is defined conservatively in code because the institution-level definition is still an open decision.
+- Student preview scenarios are instructor-side simulations in the publish gate. They verify visible policy consequences before lifecycle change without creating real student submissions.

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
+  Eye,
   ExternalLink,
   GitCompareArrows,
   ListTodo,
@@ -17,16 +18,31 @@ import {
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
+import { useQuery } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
+import { apiFetcher } from '@/lib/api-client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
+import { PREVIEW_SCENARIOS, canConfirmLifecycleChange, isHighStakesAssessment } from './publishGateUtils'
+import type { PreviewScenarioId } from './publishGateUtils'
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
@@ -49,11 +65,15 @@ interface PublishDashboardTabProps {
   canSchedule: boolean
   canArchive: boolean
   onSwitchToBuilder: (itemUuid?: string) => void
-  onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null) => void
+  onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => void
+}
+
+interface AccessRead {
+  effective_user_count: number
 }
 
 export default function PublishDashboardTab({
-  assessmentUuid: _assessmentUuid,
+  assessmentUuid,
   lifecycle,
   items,
   totalPoints,
@@ -68,7 +88,17 @@ export default function PublishDashboardTab({
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
+  const [pendingAction, setPendingAction] = useState<'publish' | 'schedule' | null>(null)
+  const [auditNote, setAuditNote] = useState('')
+  const [activeScenario, setActiveScenario] = useState<PreviewScenarioId>('genericLearner')
+  const [previewedScenarios, setPreviewedScenarios] = useState<Set<PreviewScenarioId>>(new Set())
+  const [specificLearner, setSpecificLearner] = useState('')
   const [isPending, startTransition] = useTransition()
+  const accessQuery = useQuery({
+    queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
+    queryFn: () => apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
+    staleTime: 30_000,
+  })
 
   // Compute all validation issues (assessment-level + item-level)
   const classifiedIssues = dedupeIssues(validationIssues).map(classifyValidationIssue)
@@ -88,18 +118,26 @@ export default function PublishDashboardTab({
   const timeLimitMinutes = assessmentState.timeLimitMinutes ? Number(assessmentState.timeLimitMinutes) : null
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
+  const highStakes = isHighStakesAssessment(assessmentState)
+  const canConfirmGate = canConfirmLifecycleChange({
+    blockerCount: classifiedIssues.length,
+    highStakes,
+    successfulPreviewCount: previewedScenarios.size,
+  })
 
   const handlePublish = () => {
     startTransition(() => {
-      onLifecycleChange('PUBLISHED')
+      onLifecycleChange('PUBLISHED', null, auditNote)
+      setPendingAction(null)
     })
   }
 
   const handleSchedule = () => {
     if (!scheduledAt) return
     startTransition(() => {
-      onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString())
+      onLifecycleChange('SCHEDULED', new Date(scheduledAt).toISOString(), auditNote)
       setScheduleOpen(false)
+      setPendingAction(null)
       setScheduledAt('')
     })
   }
@@ -167,7 +205,11 @@ export default function PublishDashboardTab({
             </Button>
           ) : (
             <>
-              <Button size="sm" disabled={isPending || hasIssues || !canPublish} onClick={handlePublish}>
+              <Button
+                size="sm"
+                disabled={isPending || hasIssues || !canPublish}
+                onClick={() => setPendingAction('publish')}
+              >
                 <Send className="size-4" />
                 {tPublish('publishNow')}
               </Button>
@@ -188,7 +230,10 @@ export default function PublishDashboardTab({
                     size="sm"
                     className="w-full"
                     disabled={isPending || !scheduledAt || !canSchedule}
-                    onClick={handleSchedule}
+                    onClick={() => {
+                      setPendingAction('schedule')
+                      setScheduleOpen(false)
+                    }}
                   >
                     <CalendarClock className="mr-1 size-4" />
                     {tPublish('schedule')}
@@ -199,6 +244,18 @@ export default function PublishDashboardTab({
           )}
         </div>
       </div>
+
+      <StudentPreviewPanel
+        activeScenario={activeScenario}
+        previewedScenarios={previewedScenarios}
+        specificLearner={specificLearner}
+        highStakes={highStakes}
+        onScenarioChange={setActiveScenario}
+        onSpecificLearnerChange={setSpecificLearner}
+        onRunPreview={() => {
+          setPreviewedScenarios(current => new Set(current).add(activeScenario))
+        }}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: Exam Metrics */}
@@ -309,6 +366,232 @@ export default function PublishDashboardTab({
           )}
         </div>
       </div>
+
+      <LifecycleConfirmationDialog
+        action={pendingAction}
+        open={pendingAction !== null}
+        scheduledAt={scheduledAt}
+        itemCount={items.length}
+        totalPoints={totalPoints}
+        timeLimitMinutes={timeLimitMinutes}
+        attemptLimit={assessmentState.maxAttempts || tPublish('unlimited')}
+        effectiveLearnerCount={accessQuery.data?.effective_user_count ?? null}
+        highStakes={highStakes}
+        previewCount={previewedScenarios.size}
+        canConfirm={canConfirmGate}
+        auditNote={auditNote}
+        onAuditNoteChange={setAuditNote}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={pendingAction === 'schedule' ? handleSchedule : handlePublish}
+      />
+    </div>
+  )
+}
+
+function StudentPreviewPanel({
+  activeScenario,
+  previewedScenarios,
+  specificLearner,
+  highStakes,
+  onScenarioChange,
+  onSpecificLearnerChange,
+  onRunPreview,
+}: {
+  activeScenario: PreviewScenarioId
+  previewedScenarios: Set<PreviewScenarioId>
+  specificLearner: string
+  highStakes: boolean
+  onScenarioChange: (scenario: PreviewScenarioId) => void
+  onSpecificLearnerChange: (value: string) => void
+  onRunPreview: () => void
+}) {
+  const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const scenario = PREVIEW_SCENARIOS.find(item => item.id === activeScenario) ?? {
+    id: 'genericLearner',
+    titleKey: 'previewScenarioGeneric',
+    descriptionKey: 'previewScenarioGenericDesc',
+    outcomeKey: 'previewOutcomeGeneric',
+  }
+  const currentScenarioComplete = previewedScenarios.has(activeScenario)
+
+  return (
+    <section className="bg-card rounded-lg border p-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="bg-muted rounded-md border p-2">
+            <Eye className="text-muted-foreground size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold">{tPublish('previewGateTitle')}</h2>
+            <p className="text-muted-foreground text-sm">
+              {highStakes ? tPublish('previewGateHighStakesDesc') : tPublish('previewGateDesc')}
+            </p>
+          </div>
+        </div>
+        <Badge variant={previewedScenarios.size > 0 ? 'success' : highStakes ? 'warning' : 'outline'}>
+          {tPublish('previewCompletedCount', { count: previewedScenarios.size })}
+        </Badge>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {PREVIEW_SCENARIOS.map(item => (
+            <Button
+              key={item.id}
+              type="button"
+              variant={activeScenario === item.id ? 'default' : 'outline'}
+              className="h-auto justify-start px-3 py-2 text-left"
+              onClick={() => onScenarioChange(item.id)}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{tPublish(item.titleKey)}</span>
+                <span className="block truncate text-xs opacity-80">{tPublish(item.descriptionKey)}</span>
+              </span>
+            </Button>
+          ))}
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold">{tPublish(scenario.titleKey)}</p>
+              <p className="text-muted-foreground mt-1 text-xs">{tPublish(scenario.outcomeKey)}</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="preview-specific-learner">{tPublish('specificLearnerLabel')}</Label>
+              <Input
+                id="preview-specific-learner"
+                value={specificLearner}
+                disabled={activeScenario !== 'specificLearner'}
+                placeholder={tPublish('specificLearnerPlaceholder')}
+                onChange={event => onSpecificLearnerChange(event.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={onRunPreview}>
+              <Eye className="size-4" />
+              {currentScenarioComplete ? tPublish('rerunPreview') : tPublish('runPreview')}
+            </Button>
+            <p className="text-muted-foreground text-xs" aria-live="polite">
+              {currentScenarioComplete ? tPublish('previewScenarioPassed') : tPublish('previewScenarioPending')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function LifecycleConfirmationDialog({
+  action,
+  open,
+  scheduledAt,
+  itemCount,
+  totalPoints,
+  timeLimitMinutes,
+  attemptLimit,
+  effectiveLearnerCount,
+  highStakes,
+  previewCount,
+  canConfirm,
+  auditNote,
+  onAuditNoteChange,
+  onCancel,
+  onConfirm,
+}: {
+  action: 'publish' | 'schedule' | null
+  open: boolean
+  scheduledAt: string
+  itemCount: number
+  totalPoints: number
+  timeLimitMinutes: number | null
+  attemptLimit: string
+  effectiveLearnerCount: number | null
+  highStakes: boolean
+  previewCount: number
+  canConfirm: boolean
+  auditNote: string
+  onAuditNoteChange: (value: string) => void
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const isSchedule = action === 'schedule'
+
+  return (
+    <Dialog open={open} onOpenChange={nextOpen => (!nextOpen ? onCancel() : null)}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{isSchedule ? tPublish('scheduleConfirmTitle') : tPublish('publishConfirmTitle')}</DialogTitle>
+          <DialogDescription>
+            {isSchedule ? tPublish('scheduleConfirmDesc') : tPublish('publishConfirmDesc')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <ImpactRow
+              label={tPublish('impactLearners')}
+              value={effectiveLearnerCount === null ? tPublish('unknown') : String(effectiveLearnerCount)}
+            />
+            <ImpactRow label={tPublish('impactQuestions')} value={String(itemCount)} />
+            <ImpactRow label={tPublish('impactPoints')} value={String(totalPoints)} />
+            <ImpactRow
+              label={tPublish('impactTimeLimit')}
+              value={
+                timeLimitMinutes ? tPublish('timeLimitValue', { minutes: timeLimitMinutes }) : tPublish('unlimited')
+              }
+            />
+            <ImpactRow label={tPublish('impactAttempts')} value={attemptLimit} />
+            <ImpactRow label={tPublish('impactPreviews')} value={String(previewCount)} />
+            {isSchedule ? (
+              <ImpactRow
+                label={tPublish('impactSchedule')}
+                value={scheduledAt ? new Date(scheduledAt).toLocaleString() : tPublish('unknown')}
+              />
+            ) : null}
+          </div>
+
+          {highStakes ? (
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label htmlFor="publish-audit-note">{tPublish('auditNoteLabel')}</Label>
+              <Textarea
+                id="publish-audit-note"
+                value={auditNote}
+                maxLength={1000}
+                placeholder={tPublish('auditNotePlaceholder')}
+                onChange={event => onAuditNoteChange(event.target.value)}
+              />
+              <p className="text-muted-foreground text-xs">{tPublish('auditNoteDesc')}</p>
+            </div>
+          ) : null}
+
+          {!canConfirm ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+              {highStakes && previewCount === 0
+                ? tPublish('previewRequiredBeforePublish')
+                : tPublish('blockersRequiredBeforePublish')}
+            </div>
+          ) : null}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            {tPublish('cancel')}
+          </Button>
+          <Button disabled={!canConfirm} onClick={onConfirm}>
+            {isSchedule ? tPublish('confirmSchedule') : tPublish('confirmPublish')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ImpactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border px-3 py-2">
+      <p className="text-muted-foreground text-xs">{label}</p>
+      <p className="text-sm font-medium">{value}</p>
     </div>
   )
 }

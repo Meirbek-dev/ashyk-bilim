@@ -5310,6 +5310,8 @@ export interface components {
         AssessmentLifecycle: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
         /** AssessmentLifecycleTransition */
         AssessmentLifecycleTransition: {
+            /** Audit Note */
+            audit_note?: string | null;
             /** Scheduled At */
             scheduled_at?: string | null;
             to: components["schemas"]["AssessmentLifecycle"];

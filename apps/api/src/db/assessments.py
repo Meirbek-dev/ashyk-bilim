@@ -525,6 +525,7 @@ class AssessmentUpdate(PydanticStrictBaseModel):
 class AssessmentLifecycleTransition(PydanticStrictBaseModel):
     to: AssessmentLifecycle
     scheduled_at: datetime | None = None
+    audit_note: str | None = Field(default=None, max_length=1000)
 
     @field_validator("to", mode="before")
     @classmethod

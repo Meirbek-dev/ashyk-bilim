@@ -751,12 +751,18 @@ def test_lifecycle_transition_draft_to_published(
 
     response = api_client.post(
         f"/assessments/{assessment_uuid}/lifecycle",
-        json={"to": "PUBLISHED"},
+        json={"to": "PUBLISHED", "audit_note": "High-stakes preview completed by instructor."},
     )
 
     assert response.status_code == 200
     assert response.json()["lifecycle"] == "PUBLISHED"
     assert response.json()["published_at"] is not None
+    with db_session_factory() as session:
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == response.json()["activity_uuid"])).one()
+        audit_entries = (activity.details or {}).get("assessment_lifecycle_audit")
+        assert isinstance(audit_entries, list)
+        assert audit_entries[-1]["to"] == "PUBLISHED"
+        assert audit_entries[-1]["note"] == "High-stakes preview completed by instructor."
 
 
 def test_lifecycle_transition_published_to_archived(

@@ -2883,6 +2883,18 @@
       },
       "AssessmentLifecycleTransition": {
         "properties": {
+          "audit_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Note"
+          },
           "scheduled_at": {
             "anyOf": [
               {
