@@ -72,7 +72,7 @@
     "dompurify": "^3.4.11",
     "emoji-picker-react": "^4.19.1",
     "katex": "^0.17.0",
-    "lucide-react": "^1.20.0",
+    "lucide-react": "^1.21.0",
     "monaco-editor": "^0.55.1",
     "motion": "^12.40.0",
     "next": "^16.2.9",
@@ -138,6 +138,6 @@
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
-    "vite-plus": "^0.2.0"
+    "vite-plus": "^0.2.1"
   }
 }

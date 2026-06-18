@@ -71,6 +71,9 @@ export interface AssessmentStudioDetail {
   title: string
   description: string
   lifecycle: AssessmentLifecycle
+  scheduled_at?: string | null
+  published_at?: string | null
+  archived_at?: string | null
   grading_type: 'NUMERIC' | 'PERCENTAGE'
   items: AssessmentItem[]
   assessment_policy?: AssessmentPolicyDetail | null

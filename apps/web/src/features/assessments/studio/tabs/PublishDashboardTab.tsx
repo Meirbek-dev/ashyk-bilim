@@ -17,7 +17,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
@@ -64,6 +64,9 @@ interface PublishDashboardTabProps {
   canPublish: boolean
   canSchedule: boolean
   canArchive: boolean
+  scheduledAt?: string | null
+  publishedAt?: string | null
+  archivedAt?: string | null
   onSwitchToBuilder: (itemUuid?: string) => void
   onLifecycleChange: (lifecycle: AssessmentLifecycle, scheduledAt?: string | null, auditNote?: string | null) => void
 }
@@ -82,6 +85,9 @@ export default function PublishDashboardTab({
   canPublish,
   canSchedule,
   canArchive: _canArchive,
+  scheduledAt: persistedScheduledAt,
+  publishedAt,
+  archivedAt,
   onSwitchToBuilder,
   onLifecycleChange,
 }: PublishDashboardTabProps) {
@@ -257,6 +263,13 @@ export default function PublishDashboardTab({
         }}
       />
 
+      <LifecycleAuditTimeline
+        lifecycle={lifecycle}
+        scheduledAt={persistedScheduledAt ?? null}
+        publishedAt={publishedAt ?? null}
+        archivedAt={archivedAt ?? null}
+      />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: Exam Metrics */}
         <div className="space-y-4 lg:col-span-1">
@@ -388,6 +401,53 @@ export default function PublishDashboardTab({
   )
 }
 
+function LifecycleAuditTimeline({
+  lifecycle,
+  scheduledAt,
+  publishedAt,
+  archivedAt,
+}: {
+  lifecycle: AssessmentLifecycle
+  scheduledAt: string | null
+  publishedAt: string | null
+  archivedAt: string | null
+}) {
+  const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
+  const locale = useLocale()
+  const entries = [
+    { key: 'draft', label: tPublish('auditDraft'), value: tPublish('auditPresent') },
+    scheduledAt
+      ? { key: 'scheduled', label: tPublish('auditScheduled'), value: formatAuditDate(scheduledAt, locale) }
+      : null,
+    publishedAt
+      ? { key: 'published', label: tPublish('auditPublished'), value: formatAuditDate(publishedAt, locale) }
+      : null,
+    archivedAt
+      ? { key: 'archived', label: tPublish('auditArchived'), value: formatAuditDate(archivedAt, locale) }
+      : null,
+  ].filter((entry): entry is { key: string; label: string; value: string } => entry !== null)
+
+  return (
+    <section className="bg-card rounded-lg border p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold">{tPublish('auditTimelineTitle')}</h2>
+          <p className="text-muted-foreground text-sm">{tPublish('auditTimelineDesc')}</p>
+        </div>
+        <Badge variant="outline">{tPublish(`auditLifecycle.${lifecycle}`)}</Badge>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        {entries.map(entry => (
+          <div key={entry.key} className="rounded-md border p-3">
+            <p className="text-muted-foreground text-xs">{entry.label}</p>
+            <p className="mt-1 text-sm font-medium">{entry.value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function StudentPreviewPanel({
   activeScenario,
   previewedScenarios,
@@ -479,6 +539,13 @@ function StudentPreviewPanel({
       </div>
     </section>
   )
+}
+
+function formatAuditDate(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 function LifecycleConfirmationDialog({

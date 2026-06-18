@@ -8549,6 +8549,19 @@
           "cancel": "Бас тарту",
           "confirmPublish": "Емтиханды жариялау",
           "confirmSchedule": "Емтиханды жоспарлау",
+          "auditTimelineTitle": "Аудит уақыты",
+          "auditTimelineDesc": "Оқытушылар жариялау алдында күйді тексеруі үшін өмірлік цикл оқиғалары осы жерде көрсетіледі.",
+          "auditDraft": "Нобай жасалды",
+          "auditScheduled": "Жоспарланды",
+          "auditPublished": "Жарияланды",
+          "auditArchived": "Мұрағатталды",
+          "auditPresent": "Ағымдағы жазба",
+          "auditLifecycle": {
+            "DRAFT": "Нобай",
+            "SCHEDULED": "Жоспарланған",
+            "PUBLISHED": "Жарияланған",
+            "ARCHIVED": "Мұрағатталған"
+          },
           "archiveTitle": "Мұрағаттау",
           "archiveDesc": "Емтихан студенттерге қолжетімді болмайды."
         },
@@ -8709,6 +8722,8 @@
         },
         "lifecycleChanged": "Кезең {state} күйіне ауысты",
         "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
+        "rewriteDisabledTitle": "Жаңа бағалау студиясы өшірулі",
+        "rewriteDisabledDescription": "{title} оқуға қолжетімді болып қалады. Жаңа студияда өңдеу үшін NEXT_PUBLIC_ASSESSMENT_REWRITE қосыңыз.",
         "breadcrumb": {
           "curriculum": "Оқу жоспары",
           "studio": "Студия"

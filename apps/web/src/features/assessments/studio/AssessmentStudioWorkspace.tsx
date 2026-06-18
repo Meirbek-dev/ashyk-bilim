@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from '@components/ui/AppLink'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { isAssessmentRewriteEnabled } from './rollout'
 
 interface AssessmentStudioWorkspaceProps {
   courseUuid: string
@@ -76,6 +77,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm
   const previewHref = `/assessments/${studio.assessmentUuid}`
+  const rewriteEnabled = isAssessmentRewriteEnabled({ courseUuid })
 
   const archiveAssessment = () => {
     startTransition(async () => {
@@ -161,7 +163,13 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
       </header>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      {Author ? (
+      {!rewriteEnabled ? (
+        <LegacyStudioFallback
+          title={studio.title}
+          previewHref={previewHref}
+          lifecycleLabel={lifecycleLabels[studio.lifecycle]}
+        />
+      ) : Author ? (
         <Provider {...slotProps}>
           <Author {...slotProps} />
         </Provider>
@@ -172,5 +180,32 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
         </div>
       )}
     </div>
+  )
+}
+
+function LegacyStudioFallback({
+  title,
+  previewHref,
+  lifecycleLabel,
+}: {
+  title: string
+  previewHref: string
+  lifecycleLabel: string
+}) {
+  const t = useTranslations('Features.Assessments.Studio')
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-10">
+      <div className="bg-card rounded-lg border p-6">
+        <Badge variant="outline">{lifecycleLabel}</Badge>
+        <h2 className="mt-4 text-xl font-semibold">{t('rewriteDisabledTitle')}</h2>
+        <p className="text-muted-foreground mt-2 text-sm">{t('rewriteDisabledDescription', { title })}</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button nativeButton={false} render={<Link href={previewHref} target="_blank" />}>
+            <Eye className="size-4" />
+            {t('preview')}
+          </Button>
+        </div>
+      </div>
+    </main>
   )
 }

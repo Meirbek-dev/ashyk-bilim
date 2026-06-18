@@ -8671,6 +8671,8 @@
         },
         "lifecycleChanged": "Lifecycle changed to {state}",
         "updateLifecycleFailed": "Failed to update lifecycle",
+        "rewriteDisabledTitle": "Assessment rewrite is disabled",
+        "rewriteDisabledDescription": "{title} remains readable. Enable NEXT_PUBLIC_ASSESSMENT_REWRITE for editing in the new studio.",
         "breadcrumb": {
           "curriculum": "Curriculum",
           "studio": "Studio"
@@ -9079,6 +9081,19 @@
           "cancel": "Cancel",
           "confirmPublish": "Publish exam",
           "confirmSchedule": "Schedule exam",
+          "auditTimelineTitle": "Audit timeline",
+          "auditTimelineDesc": "Lifecycle events are shown here so instructors can verify rollout state before publishing.",
+          "auditDraft": "Draft created",
+          "auditScheduled": "Scheduled",
+          "auditPublished": "Published",
+          "auditArchived": "Archived",
+          "auditPresent": "Current record",
+          "auditLifecycle": {
+            "DRAFT": "Draft",
+            "SCHEDULED": "Scheduled",
+            "PUBLISHED": "Published",
+            "ARCHIVED": "Archived"
+          },
           "archiveTitle": "Archive",
           "archiveDesc": "This exam will no longer be accessible to students."
         },

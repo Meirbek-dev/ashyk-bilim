@@ -8157,6 +8157,8 @@
         },
         "lifecycleChanged": "Этап изменён на {state}",
         "updateLifecycleFailed": "Не удалось обновить этап",
+        "rewriteDisabledTitle": "Новая студия оценивания отключена",
+        "rewriteDisabledDescription": "{title} остается доступным для чтения. Включите NEXT_PUBLIC_ASSESSMENT_REWRITE для редактирования в новой студии.",
         "breadcrumb": {
           "curriculum": "Учебный план",
           "studio": "Студия"
@@ -8566,6 +8568,19 @@
           "cancel": "Отмена",
           "confirmPublish": "Опубликовать экзамен",
           "confirmSchedule": "Запланировать экзамен",
+          "auditTimelineTitle": "Аудит-таймлайн",
+          "auditTimelineDesc": "События жизненного цикла показаны здесь, чтобы преподаватели могли проверить состояние перед публикацией.",
+          "auditDraft": "Черновик создан",
+          "auditScheduled": "Запланировано",
+          "auditPublished": "Опубликовано",
+          "auditArchived": "Архивировано",
+          "auditPresent": "Текущая запись",
+          "auditLifecycle": {
+            "DRAFT": "Черновик",
+            "SCHEDULED": "Запланировано",
+            "PUBLISHED": "Опубликовано",
+            "ARCHIVED": "Архивировано"
+          },
           "archiveTitle": "Архивировать",
           "archiveDesc": "Экзамен больше не будет доступен студентам."
         },

@@ -358,6 +358,9 @@ export function NativeItemAuthor({
           canPublish={items.length > 0 && allIssues.length === 0}
           canSchedule={assessment.lifecycle !== 'ARCHIVED'}
           canArchive={assessment.lifecycle !== 'ARCHIVED'}
+          scheduledAt={assessment.scheduled_at ?? null}
+          publishedAt={assessment.published_at ?? null}
+          archivedAt={assessment.archived_at ?? null}
           onSwitchToBuilder={itemUuid => {
             setActiveView('BUILDER')
             if (itemUuid) setSelectedItemUuid(itemUuid)

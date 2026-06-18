@@ -60,7 +60,7 @@ from src.db.grading.progress import (
     GradeReleaseMode,
     LatePolicyNone,
 )
-from src.db.grading.submissions import AssessmentType, Submission
+from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.resource_authors import ResourceAuthor
 from src.db.usergroups import UserGroup
 from src.db.users import PublicUser, User
@@ -595,6 +595,55 @@ def test_update_item_title(api_client: TestClient, db_session_factory: Callable[
     data = response.json()
     assert data["item_uuid"] == "item_published_authoring_1"
     assert data["title"] == "Updated question title"
+
+
+def test_locked_published_assessment_rejects_scoring_item_edits(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """Published assessments with submitted attempts reject scoring-field edits."""
+    assessment_uuid = _seed_published_assessment(db_session_factory)
+    now = datetime.now(UTC)
+    with db_session_factory() as session:
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_published_authoring")).one()
+        policy = session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).one()
+        student = User(
+            id=STUDENT_ID,
+            user_uuid="user_student_authoring",
+            username="student.authoring",
+            first_name="Student",
+            middle_name="",
+            last_name="Authoring",
+            email="student.authoring@example.com",
+            hashed_password="hashed",
+            is_active=True,
+            is_superuser=False,
+            is_verified=True,
+        )
+        session.add(student)
+        session.add(
+            Submission(
+                submission_uuid="submission_locked_authoring",
+                assessment_type=AssessmentType.EXAM,
+                activity_id=activity.id,
+                assessment_policy_id=policy.id,
+                user_id=STUDENT_ID,
+                status=SubmissionStatus.PENDING,
+                attempt_number=1,
+                answers_json={"answers": {"item_published_authoring_1": {"kind": "CHOICE", "selected": ["A"]}}},
+                started_at=now,
+                submitted_at=now,
+            )
+        )
+        session.commit()
+
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/items/item_published_authoring_1",
+        json={"max_score": 50},
+    )
+
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["code"] == "PUBLISHED_ASSESSMENT_HAS_SUBMISSIONS"
 
 
 def test_delete_item_removes_from_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
