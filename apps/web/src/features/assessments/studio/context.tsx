@@ -154,6 +154,7 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
       message: issue.message,
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
       ...(issue.field ? { field: issue.field } : {}),
+      ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
     }))
   }, [readinessQuery.data?.issues])
 

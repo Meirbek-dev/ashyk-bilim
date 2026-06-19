@@ -1982,6 +1982,7 @@ def _normalize_readiness_issue(issue: ReadinessIssue) -> ReadinessIssue:
     area: Literal["details", "questions", "policy", "audience", "results", "publish", "system"] = issue.area
     view: Literal["settings", "questions", "audience", "results", "publish"] = issue.view
     field = issue.field
+    action_label = issue.action_label
 
     if code.startswith("assessment.title"):
         area = "details"
@@ -1990,12 +1991,42 @@ def _normalize_readiness_issue(issue: ReadinessIssue) -> ReadinessIssue:
     elif code.startswith("assessment.empty"):
         area = "questions"
         view = "questions"
+        field = field or "items"
+        action_label = action_label or "Добавить элемент"
     elif code.startswith(("policy.", "schedule.")):
         area = "policy"
         view = "settings"
     elif code.startswith(("item.", "choice.", "matching.", "code.", "form.", "open_text.")):
         area = "questions"
         view = "questions"
+
+    if field is None:
+        if code.endswith(".prompt_missing"):
+            field = "prompt"
+        elif code in {"choice.options_missing", "choice.option_text_missing", "choice.option_duplicate"}:
+            field = "options"
+        elif code in {"choice.correct_missing", "choice.too_many_correct"}:
+            field = "correct_options"
+        elif code in {"matching.pairs_missing", "matching.pair_value_missing"}:
+            field = "pairs"
+        elif code.endswith(".title_missing"):
+            field = "title"
+        elif code.endswith(".max_score_invalid"):
+            field = "max_score"
+
+    if action_label is None:
+        if field == "prompt":
+            action_label = "Заполнить вопрос"
+        elif field == "options":
+            action_label = "Заполнить варианты"
+        elif field == "correct_options":
+            action_label = "Отметить ответ"
+        elif field == "pairs":
+            action_label = "Заполнить пары"
+        elif field == "title":
+            action_label = "Заполнить название"
+        elif field == "max_score":
+            action_label = "Исправить баллы"
 
     return ReadinessIssue(
         code=issue.code,
@@ -2006,6 +2037,6 @@ def _normalize_readiness_issue(issue: ReadinessIssue) -> ReadinessIssue:
         why=issue.why or issue.message,
         field=field,
         view=view,
-        action_label=issue.action_label,
+        action_label=action_label,
         auto_fix=issue.auto_fix,
     )

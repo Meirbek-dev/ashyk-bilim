@@ -22,6 +22,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
+import type { ClassifiedValidationIssue } from '@/features/assessments/domain/readiness'
 import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes'
 import { apiFetcher } from '@/lib/api-client'
@@ -111,6 +112,7 @@ export default function PublishDashboardTab({
   const hasIssues = classifiedIssues.length > 0
   const assessmentLevelIssues = classifiedIssues.filter(issue => !issue.itemUuid)
   const itemLevelIssues = classifiedIssues.filter(issue => Boolean(issue.itemUuid))
+  const itemIssueRows = buildItemIssueRows(itemLevelIssues, items, tPublish)
 
   // Metrics
   const kindCounts = items.reduce(
@@ -343,32 +345,29 @@ export default function PublishDashboardTab({
                         key={i}
                         message={issue.message}
                         onNavigate={() => onSwitchToBuilder()}
-                        navigateLabel={tPublish('goToSetup')}
+                        navigateLabel={issue.actionLabel ?? (issue.code === 'assessment.empty' ? tPublish('goToQuestions') : tPublish('goToSetup'))}
                       />
                     ))}
                   </div>
                 </div>
               ) : null}
 
-              {itemLevelIssues.length > 0 ? (
+              {itemIssueRows.length > 0 ? (
                 <div className="bg-card rounded-lg border p-4 shadow-sm">
                   <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {tPublish('questionIssues')}
                   </p>
                   <div className="space-y-2">
-                    {itemLevelIssues.map((issue, i) => {
-                      const itemIndex = issue.itemUuid ? items.findIndex(item => item.item_uuid === issue.itemUuid) : -1
-                      const itemTitle = itemIndex >= 0 ? `Q${itemIndex + 1}: ${items[itemIndex]?.title || '—'}` : null
-                      return (
-                        <ChecklistItem
-                          key={i}
-                          message={issue.message}
-                          {...(itemTitle === null ? {} : { context: itemTitle })}
-                          {...(issue.itemUuid ? { onNavigate: () => onSwitchToBuilder(issue.itemUuid) } : {})}
-                          navigateLabel={tPublish('goToQuestion')}
-                        />
-                      )
-                    })}
+                    {itemIssueRows.map(row => (
+                      <ChecklistItem
+                        key={row.key}
+                        message={row.message}
+                        context={row.context}
+                        details={row.details}
+                        onNavigate={() => onSwitchToBuilder(row.itemUuid)}
+                        navigateLabel={row.actionLabel}
+                      />
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -672,14 +671,58 @@ function MetricCard({ icon: Icon, label, value }: { icon: typeof BookOpen; label
   )
 }
 
+interface PublishChecklistRow {
+  key: string
+  itemUuid: string
+  context: string
+  message: string
+  details: string[]
+  actionLabel: string
+}
+
+function buildItemIssueRows(
+  issues: ClassifiedValidationIssue[],
+  items: AssessmentItem[],
+  tPublish: ReturnType<typeof useTranslations<'Features.Assessments.Studio.PublishDashboard'>>,
+): PublishChecklistRow[] {
+  const rows = new Map<string, ClassifiedValidationIssue[]>()
+  for (const issue of issues) {
+    if (!issue.itemUuid) continue
+    const current = rows.get(issue.itemUuid) ?? []
+    current.push(issue)
+    rows.set(issue.itemUuid, current)
+  }
+
+  return [...rows.entries()].map(([itemUuid, itemIssues]) => {
+    const itemIndex = items.findIndex(item => item.item_uuid === itemUuid)
+    const itemTitle = itemIndex >= 0 ? items[itemIndex]?.title || tPublish('untitledQuestion') : tPublish('unknownQuestion')
+    const context = itemIndex >= 0 ? tPublish('questionContext', { number: itemIndex + 1, title: itemTitle }) : itemTitle
+    const firstIssue = itemIssues[0]
+
+    return {
+      key: itemUuid,
+      itemUuid,
+      context,
+      message:
+        itemIssues.length === 1
+          ? (firstIssue?.message ?? tPublish('questionIssueSummary', { count: itemIssues.length }))
+          : tPublish('questionIssueSummary', { count: itemIssues.length }),
+      details: itemIssues.map(issue => issue.message),
+      actionLabel: firstIssue?.actionLabel ?? tPublish('goToQuestion'),
+    }
+  })
+}
+
 function ChecklistItem({
   message,
   context,
+  details,
   onNavigate,
   navigateLabel,
 }: {
   message: string
   context?: string
+  details?: string[]
   onNavigate?: () => void
   navigateLabel?: string
 }) {
@@ -689,6 +732,13 @@ function ChecklistItem({
       <div className="min-w-0 flex-1">
         {context ? <p className="text-[10px] font-medium text-yellow-700 dark:text-yellow-300">{context}</p> : null}
         <p className="text-xs text-yellow-900 dark:text-yellow-200">{message}</p>
+        {details && details.length > 1 ? (
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-yellow-800 dark:text-yellow-200/90">
+            {details.slice(0, 3).map(detail => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
       {onNavigate ? (
         <Button

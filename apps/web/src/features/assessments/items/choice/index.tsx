@@ -169,7 +169,12 @@ export function ChoiceItemAttempt({
   )
 }
 
-export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) {
+export function ChoiceItemAuthor({
+  value,
+  disabled,
+  onChange,
+  invalidFields,
+}: ItemAuthorProps<ChoiceAuthorValue> & { invalidFields?: ReadonlySet<string> }) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
   const setKind = (kind: ChoiceItemKind) => {
@@ -231,12 +236,13 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
-        <div className="space-y-2">
+        <div id="choice-prompt-field" tabIndex={-1} className="space-y-2 rounded-md focus-visible:outline-none">
           <Label>{t('prompt')}</Label>
           <MarkdownEditor
             value={value.prompt}
             placeholder={t('promptPlaceholder')}
             preset="questionPrompt"
+            className={invalidFields?.has('prompt') ? 'border-destructive' : ''}
             {...(disabled !== undefined ? { disabled } : {})}
             onChange={md => onChange({ ...value, prompt: md })}
           />
@@ -260,7 +266,12 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       {value.kind === 'MATCHING' ? (
         <MatchingAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
       ) : (
-        <OptionsAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
+        <OptionsAuthor
+          value={value}
+          disabled={disabled ?? false}
+          invalidFields={invalidFields}
+          onChange={onChange}
+        />
       )}
     </div>
   )
@@ -269,11 +280,16 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
 function OptionsAuthor({
   value,
   disabled,
+  invalidFields,
   onChange,
-}: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>>) {
+}: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>> & {
+  invalidFields?: ReadonlySet<string>
+}) {
   const t = useTranslations('Features.Assessments.Items.Choice')
   const isMultiple = value.kind === 'CHOICE_MULTIPLE'
   const isTrueFalse = value.kind === 'TRUE_FALSE'
+  const hasOptionTextIssue = invalidFields?.has('options') === true
+  const hasCorrectOptionIssue = invalidFields?.has('correct_options') === true
 
   const toggleCorrect = (index: number) => {
     const options = value.options.map((option, candidateIndex) =>
@@ -293,7 +309,12 @@ function OptionsAuthor({
   }
 
   return (
-    <div className="space-y-2">
+    <div
+      id="choice-options-field"
+      tabIndex={-1}
+      className="space-y-2 rounded-md focus-visible:outline-none"
+      aria-invalid={hasOptionTextIssue || hasCorrectOptionIssue}
+    >
       {value.options.map((option, index) => (
         <div
           key={String(option.id)}
@@ -301,7 +322,9 @@ function OptionsAuthor({
             'group relative flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all duration-200',
             option.isCorrect
               ? 'border-emerald-400 bg-emerald-50/60 shadow-sm dark:border-emerald-700 dark:bg-emerald-950/20'
-              : 'border-border bg-card hover:border-border/80 hover:bg-muted/30',
+              : hasOptionTextIssue
+                ? 'border-destructive/70 bg-destructive/5'
+                : 'border-border bg-card hover:border-border/80 hover:bg-muted/30',
           )}
         >
           {/* Correct toggle button */}
@@ -310,10 +333,13 @@ function OptionsAuthor({
             disabled={disabled}
             onClick={() => toggleCorrect(index)}
             aria-label={t('toggleCorrectAnswer')}
+            aria-pressed={option.isCorrect === true}
             className={cn(
               'flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
               option.isCorrect
                 ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-600 dark:bg-emerald-600'
+                : hasCorrectOptionIssue
+                  ? 'border-destructive text-destructive hover:bg-destructive/10'
                 : 'border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600',
               disabled && 'cursor-not-allowed opacity-60',
             )}

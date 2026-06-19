@@ -17,11 +17,16 @@ export interface ClassifiedValidationIssue extends ValidationIssue {
 
 export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValidationIssue {
   if (issue.code.startsWith('assessment.')) {
+    const isEmptyAssessment = issue.code === 'assessment.empty'
     return {
       ...issue,
       severity: 'blocker',
-      area: 'assessment-metadata',
-      ...(issue.code === 'assessment.title_missing' ? { field: 'title' } : {}),
+      area: isEmptyAssessment ? 'item-content' : 'assessment-metadata',
+      ...(isEmptyAssessment
+        ? { field: issue.field ?? 'items' }
+        : issue.code === 'assessment.title_missing'
+          ? { field: issue.field ?? 'title' }
+          : {}),
     }
   }
 
@@ -47,7 +52,7 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
       ...issue,
       severity: 'blocker',
       area: 'item-metadata',
-      field: issue.code === 'item.title_missing' ? 'title' : 'max_score',
+      field: issue.field ?? (issue.code === 'item.title_missing' ? 'title' : 'max_score'),
     }
   }
 
@@ -63,6 +68,7 @@ export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValid
     ...issue,
     severity: 'blocker',
     area: 'item-content',
+    field: issue.field ?? readinessFieldForIssueCode(issue.code),
   }
 }
 
@@ -90,18 +96,20 @@ export function localItemValidationIssues(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = []
   if (!item.title.trim()) {
-    issues.push({
-      code: 'item.title_missing',
-      message: 'Item title is required.',
-      itemUuid: item.item_uuid,
-    })
+      issues.push({
+        code: 'item.title_missing',
+        message: 'Item title is required.',
+        itemUuid: item.item_uuid,
+        field: 'title',
+      })
   }
   if (!Number.isFinite(item.max_score) || item.max_score <= 0) {
-    issues.push({
-      code: 'item.max_score_invalid',
-      message: 'Item points must be greater than zero.',
-      itemUuid: item.item_uuid,
-    })
+      issues.push({
+        code: 'item.max_score_invalid',
+        message: 'Item points must be greater than zero.',
+        itemUuid: item.item_uuid,
+        field: 'max_score',
+      })
   }
 
   if (item.body.kind === 'CHOICE') {
@@ -110,6 +118,7 @@ export function localItemValidationIssues(
         code: 'choice.prompt_missing',
         message: 'Choice prompt is required.',
         itemUuid: item.item_uuid,
+        field: 'prompt',
       })
     }
     if (item.body.options.length < 2) {
@@ -117,6 +126,7 @@ export function localItemValidationIssues(
         code: 'choice.options_missing',
         message: 'Choice items need at least two options.',
         itemUuid: item.item_uuid,
+        field: 'options',
       })
     }
     const normalizedOptions = item.body.options.map(option => option.text.trim()).filter(Boolean)
@@ -125,6 +135,7 @@ export function localItemValidationIssues(
         code: 'choice.option_text_missing',
         message: 'Every option needs visible text.',
         itemUuid: item.item_uuid,
+        field: 'options',
       })
     }
     if (new Set(normalizedOptions.map(option => option.toLowerCase())).size !== normalizedOptions.length) {
@@ -132,6 +143,7 @@ export function localItemValidationIssues(
         code: 'choice.option_duplicate',
         message: 'Choice options should be unique.',
         itemUuid: item.item_uuid,
+        field: 'options',
       })
     }
     const correctCount = item.body.options.filter(option => option.is_correct).length
@@ -140,6 +152,7 @@ export function localItemValidationIssues(
         code: 'choice.correct_missing',
         message: 'Mark at least one correct choice.',
         itemUuid: item.item_uuid,
+        field: 'correct_options',
       })
     }
     if (!item.body.multiple && correctCount > 1) {
@@ -147,6 +160,7 @@ export function localItemValidationIssues(
         code: 'choice.too_many_correct',
         message: 'Single-choice items can only have one correct option.',
         itemUuid: item.item_uuid,
+        field: 'correct_options',
       })
     }
   }
@@ -157,6 +171,7 @@ export function localItemValidationIssues(
         code: 'matching.prompt_missing',
         message: 'Matching prompt is required.',
         itemUuid: item.item_uuid,
+        field: 'prompt',
       })
     }
     if (!item.body.pairs.length) {
@@ -164,6 +179,7 @@ export function localItemValidationIssues(
         code: 'matching.pairs_missing',
         message: 'Matching items need at least one pair.',
         itemUuid: item.item_uuid,
+        field: 'pairs',
       })
     }
     if (item.body.pairs.some(pair => !pair.left.trim() || !pair.right.trim())) {
@@ -171,6 +187,7 @@ export function localItemValidationIssues(
         code: 'matching.pair_value_missing',
         message: 'Every pair needs both left and right values.',
         itemUuid: item.item_uuid,
+        field: 'pairs',
       })
     }
     const leftValues = item.body.pairs.map(pair => pair.left.trim()).filter(Boolean)
@@ -180,6 +197,7 @@ export function localItemValidationIssues(
         code: 'matching.left_duplicate',
         message: 'Left-side prompts should be unique.',
         itemUuid: item.item_uuid,
+        field: 'pairs',
       })
     }
     if (new Set(rightValues.map(value => value.toLowerCase())).size !== rightValues.length) {
@@ -187,6 +205,7 @@ export function localItemValidationIssues(
         code: 'matching.right_duplicate',
         message: 'Right-side answers should be unique.',
         itemUuid: item.item_uuid,
+        field: 'pairs',
       })
     }
   }
@@ -241,6 +260,23 @@ export function localItemValidationIssues(
   }
 
   return dedupeIssues(issues)
+}
+
+function readinessFieldForIssueCode(code: string): string | undefined {
+  if (code.endsWith('.prompt_missing')) return 'prompt'
+  if (code === 'choice.options_missing' || code === 'choice.option_text_missing' || code === 'choice.option_duplicate') {
+    return 'options'
+  }
+  if (code === 'choice.correct_missing' || code === 'choice.too_many_correct') return 'correct_options'
+  if (
+    code === 'matching.pairs_missing' ||
+    code === 'matching.pair_value_missing' ||
+    code === 'matching.left_duplicate' ||
+    code === 'matching.right_duplicate'
+  ) {
+    return 'pairs'
+  }
+  return undefined
 }
 
 export function dedupeIssues(issues: ValidationIssue[]): ValidationIssue[] {

@@ -62,6 +62,9 @@ export function getIssueFocusTargetId(issue: Pick<ValidationIssue, 'code' | 'fie
   if (!issue) return 'canvas-item-content'
   if (issue.field === 'title' || issue.code === 'item.title_missing') return 'canvas-item-title'
   if (issue.field === 'max_score' || issue.code === 'item.max_score_invalid') return 'canvas-item-points'
+  if (issue.field === 'prompt') return 'choice-prompt-field'
+  if (issue.field === 'options' || issue.field === 'correct_options') return 'choice-options-field'
+  if (issue.field === 'pairs') return 'choice-options-field'
   return 'canvas-item-content'
 }
 

@@ -144,6 +144,7 @@ export interface ValidationIssue {
   severity?: 'blocker' | 'advisory'
   area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind'
   field?: string
+  actionLabel?: string
 }
 
 /**
