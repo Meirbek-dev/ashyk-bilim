@@ -1,31 +1,6 @@
-import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('apps/web/src', import.meta.url)),
-      '@components': fileURLToPath(new URL('apps/web/src/components', import.meta.url)),
-      '@editor': fileURLToPath(new URL('apps/web/src/components/Objects/Editor', import.meta.url)),
-      '@hooks': fileURLToPath(new URL('apps/web/src/hooks', import.meta.url)),
-      '@images': fileURLToPath(new URL('apps/web/public/img', import.meta.url)),
-      '@public': fileURLToPath(new URL('apps/web/public', import.meta.url)),
-      '@services': fileURLToPath(new URL('apps/web/src/services', import.meta.url)),
-      '@styles': fileURLToPath(new URL('apps/web/src/styles', import.meta.url)),
-      'next/navigation': 'next/dist/client/components/navigation.js',
-    },
-  },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    include: ['apps/web/src/tests/**/*.test.{ts,tsx}'],
-    setupFiles: ['./apps/web/src/tests/setup.ts'],
-    server: {
-      deps: {
-        inline: ['next-intl'],
-      },
-    },
-  },
   fmt: {
     printWidth: 120,
     tabWidth: 2,
@@ -221,7 +196,6 @@ export default defineConfig({
       'import/no-default-export': 'off',
       'import/no-named-export': 'off',
       'import/no-unassigned-import': 'off',
-      'import/no-nodejs-modules': 'off',
       'import/prefer-default-export': 'off',
       'import/group-exports': 'off',
       'import/exports-last': 'off',
