@@ -150,19 +150,30 @@ interface AuthoringEditorProps {
 
 export function AuthoringEditor(props: AuthoringEditorProps) {
   const t = useTranslations('DashPage.Editor.Editor')
+  const latestContentRef = useRef(props.content)
 
   const courseUuid = props.course.course_uuid.slice(7)
   const activityUuid = props.activity.activity_uuid.slice(9)
+
+  useEffect(() => {
+    latestContentRef.current = props.content
+  }, [props.content])
 
   // onAIToggle is a stable no-op passed to EditorCore. EditorCore manages its
   // own isAIOpen state internally so that toggling the AI panel does not cause
   // AuthoringEditor to re-render the editor subtree (Requirement 2.1).
   const onAIToggle = useCallback(() => {}, [])
 
+  const handleContentChange = useCallback(
+    (content: unknown) => {
+      latestContentRef.current = content
+      props.onContentChange(content)
+    },
+    [props.onContentChange],
+  )
+
   function handleContentSave() {
-    // The editor keeps the parent in sync via onContentChange on every update.
-    // On explicit save, we pass the last known content back through setContent.
-    props.setContent(props.content)
+    props.setContent(latestContentRef.current)
   }
 
   return (
@@ -186,7 +197,7 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
               <EditorCore
                 activity={props.activity}
                 content={props.content}
-                onUpdate={props.onContentChange}
+                onUpdate={handleContentChange}
                 onAIToggle={onAIToggle}
               />
             </EditorShell>

@@ -4,6 +4,8 @@
  * Uses CSS custom properties from the shadcn/ui design system.
  */
 
+@import 'prosemirror-view/style/prosemirror.css';
+
 /* ── Base ──────────────────────────────────────────────────────── */
 
 .ProseMirror {
