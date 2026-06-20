@@ -43,13 +43,13 @@ stop-slop/
 
 Rate 1-10 on each dimension:
 
-| Dimension | Question |
-|-----------|----------|
-| Directness | Statements or announcements? |
-| Rhythm | Varied or metronomic? |
-| Trust | Respects reader intelligence? |
-| Authenticity | Sounds human? |
-| Density | Anything cuttable? |
+| Dimension    | Question                      |
+| ------------ | ----------------------------- |
+| Directness   | Statements or announcements?  |
+| Rhythm       | Varied or metronomic?         |
+| Trust        | Respects reader intelligence? |
+| Authenticity | Sounds human?                 |
+| Density      | Anything cuttable?            |
 
 Below 35/50: revise.
 
