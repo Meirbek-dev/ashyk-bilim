@@ -143,7 +143,7 @@ export interface ValidationIssue {
   itemUuid?: string
   severity?: 'blocker' | 'advisory'
   area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind'
-  field?: string
+  field?: string | undefined
   actionLabel?: string
 }
 

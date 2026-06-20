@@ -58,6 +58,8 @@ export interface EmbedProvider {
   requiresEmbedUrl?: boolean
   /** Named export from `@icons-pack/react-simple-icons`, e.g. `'SiYoutube'`. */
   iconName?: string
+  exampleUrl?: string
+  helpUrl?: string
 }
 
 export const EMBED_PROVIDERS = [
@@ -70,6 +72,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['figma.com', 'www.figma.com'],
     defaultHeight: 560,
     iconName: 'SiFigma',
+    exampleUrl: 'https://www.figma.com/file/LKQ4gTR757PVMMsrr73g9g/UTK-Web-Design-System',
+    helpUrl: 'https://help.figma.com/hc/en-us/articles/360039824474-Embed-files-and-prototypes',
   },
   {
     type: 'canva',
@@ -78,6 +82,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['canva.com', 'www.canva.com'],
     defaultHeight: 560,
     iconName: 'SiCanva',
+    exampleUrl: 'https://www.canva.com/design/DAF-x2Y2F2Q/view',
+    helpUrl: 'https://www.canva.com/help/embed-designs/',
   },
   {
     type: 'miro',
@@ -86,6 +92,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['miro.com', 'www.miro.com'],
     defaultHeight: 560,
     iconName: 'SiMiro',
+    exampleUrl: 'https://miro.com/app/board/uXjVP479xCE=/',
+    helpUrl: 'https://help.miro.com/hc/en-us/articles/360016335640-Embed-boards-into-websites',
   },
   {
     type: 'excalidraw',
@@ -94,6 +102,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['excalidraw.com'],
     defaultHeight: 520,
     iconName: 'SiExcalidraw',
+    exampleUrl: 'https://excalidraw.com/#room=c62706dbb2ba05273be4,t7oFk_0X_Y12398457',
+    helpUrl: 'https://plus.excalidraw.com/blog/how-to-embed',
   },
   {
     type: 'tldraw',
@@ -102,6 +112,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['tldraw.com'],
     defaultHeight: 520,
     iconName: 'SiTldraw',
+    exampleUrl: 'https://tldraw.com/r/lms_math_geometry_demo',
+    helpUrl: 'https://tldraw.dev/',
   },
   {
     type: 'mural',
@@ -166,6 +178,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['docs.google.com'],
     defaultHeight: 560,
     iconName: 'SiGoogleslides',
+    exampleUrl: 'https://docs.google.com/presentation/d/1yN_t3v8gJd4p7uFv_W8t45H7g9_K0E3S4f4u_8p7q-o/edit',
+    helpUrl: 'https://support.google.com/docs/answer/37579',
   },
   {
     type: 'powerpoint',
@@ -218,6 +232,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['codepen.io'],
     defaultHeight: 460,
     iconName: 'SiCodepen',
+    exampleUrl: 'https://codepen.io/sdras/pen/gWWQGb',
+    helpUrl: 'https://blog.codepen.io/documentation/features/embedded-pens/',
   },
   {
     type: 'replit',
@@ -335,6 +351,8 @@ export const EMBED_PROVIDERS = [
     defaultHeight: 420,
     allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
     iconName: 'SiYoutube',
+    exampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    helpUrl: 'https://support.google.com/youtube/answer/171780',
   },
   {
     type: 'vimeo',
@@ -376,6 +394,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['open.spotify.com', 'spotify.com'],
     defaultHeight: 352,
     iconName: 'SiSpotify',
+    exampleUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX10zKzsJ2jva',
+    helpUrl: 'https://developer.spotify.com/documentation/widgets/guides/sharing-spotify-content/',
   },
   {
     type: 'soundcloud',
@@ -516,6 +536,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['docs.google.com'],
     defaultHeight: 640,
     iconName: 'SiGoogleforms',
+    exampleUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSf2_RUXS8yvK1q0M-5lE9g7U8M1_W3T6u-W5x6g7M3k8u8g/viewform',
+    helpUrl: 'https://support.google.com/docs/answer/37579',
   },
   {
     type: 'tally',
@@ -638,6 +660,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['docs.google.com'],
     defaultHeight: 560,
     iconName: 'SiGooglesheets',
+    exampleUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvAHSDuXn22Z0dQ2n219yqTFS51M/edit',
+    helpUrl: 'https://support.google.com/docs/answer/37579',
   },
   {
     type: 'trello',
@@ -713,6 +737,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['docs.google.com'],
     defaultHeight: 640,
     iconName: 'SiGoogledocs',
+    exampleUrl: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvAHSDuXn22Z0dQ2n219yqTFS51M/edit',
+    helpUrl: 'https://support.google.com/docs/answer/37579',
   },
 
   // ─── ACADEMIC ────────────────────────────────────────────────────────────────
@@ -723,6 +749,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['desmos.com', 'www.desmos.com'],
     defaultHeight: 520,
     iconName: 'SiDesmos',
+    exampleUrl: 'https://www.desmos.com/calculator/28v0s8h138',
+    helpUrl: 'https://desmos.helpscoutdocs.com/article/30-sharing-graphs',
   },
   {
     type: 'geogebra',
@@ -731,6 +759,8 @@ export const EMBED_PROVIDERS = [
     hostnames: ['geogebra.org', 'www.geogebra.org'],
     defaultHeight: 560,
     iconName: 'SiGeogebra',
+    exampleUrl: 'https://www.geogebra.org/m/xc7eq7zc',
+    helpUrl: 'https://www.geogebra.org/manual/en/Embedding_GeoGebra_Applets',
   },
   {
     type: 'wolfram-alpha',

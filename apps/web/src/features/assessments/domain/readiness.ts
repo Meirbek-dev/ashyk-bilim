@@ -12,7 +12,7 @@ export type ValidationArea =
 export interface ClassifiedValidationIssue extends ValidationIssue {
   severity: ValidationSeverity
   area: ValidationArea
-  field?: string
+  field?: string | undefined
 }
 
 export function classifyValidationIssue(issue: ValidationIssue): ClassifiedValidationIssue {
@@ -96,20 +96,20 @@ export function localItemValidationIssues(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = []
   if (!item.title.trim()) {
-      issues.push({
-        code: 'item.title_missing',
-        message: 'Item title is required.',
-        itemUuid: item.item_uuid,
-        field: 'title',
-      })
+    issues.push({
+      code: 'item.title_missing',
+      message: 'Item title is required.',
+      itemUuid: item.item_uuid,
+      field: 'title',
+    })
   }
   if (!Number.isFinite(item.max_score) || item.max_score <= 0) {
-      issues.push({
-        code: 'item.max_score_invalid',
-        message: 'Item points must be greater than zero.',
-        itemUuid: item.item_uuid,
-        field: 'max_score',
-      })
+    issues.push({
+      code: 'item.max_score_invalid',
+      message: 'Item points must be greater than zero.',
+      itemUuid: item.item_uuid,
+      field: 'max_score',
+    })
   }
 
   if (item.body.kind === 'CHOICE') {
@@ -264,7 +264,11 @@ export function localItemValidationIssues(
 
 function readinessFieldForIssueCode(code: string): string | undefined {
   if (code.endsWith('.prompt_missing')) return 'prompt'
-  if (code === 'choice.options_missing' || code === 'choice.option_text_missing' || code === 'choice.option_duplicate') {
+  if (
+    code === 'choice.options_missing' ||
+    code === 'choice.option_text_missing' ||
+    code === 'choice.option_duplicate'
+  ) {
     return 'options'
   }
   if (code === 'choice.correct_missing' || code === 'choice.too_many_correct') return 'correct_options'

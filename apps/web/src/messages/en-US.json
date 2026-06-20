@@ -4705,6 +4705,7 @@
         "youtubeVideo": "YouTube video"
       },
       "EmbedPanel": {
+        "embed": "embed",
         "title": "Insert Embed",
         "editTitle": "Edit Embed",
         "description": "Choose a trusted service, then paste a share or embed URL.",
@@ -4749,26 +4750,36 @@
         "cancelButton": "Cancel",
         "editButton": "Edit",
         "deleteButton": "Delete",
+        "useExample": "Use Example Link",
+        "howToGetLink": "How to get the link:",
+        "viewDocs": "Official Documentation",
+        "urlValid": "URL is valid and ready.",
+        "defaultInstructions": "1. Open the content in the service.\n2. Click the Share or Embed button.\n3. Copy the URL and paste it here.",
         "providers": {
           "figma": {
             "label": "Figma",
-            "description": "Live design files and clickable prototypes."
+            "description": "Live design files and clickable prototypes.",
+            "instructions": "1. Open your design file or prototype in Figma.\n2. Click the **Share** button in the top right.\n3. Set permissions to **Anyone with the link**.\n4. Click **Copy link**."
           },
           "canva": {
             "label": "Canva",
-            "description": "Posters, infographics, presentations, and design assets."
+            "description": "Posters, infographics, presentations, and design assets.",
+            "instructions": "1. Open your design in Canva.\n2. Click the **Share** button in the top right.\n3. Select **More** and find **Embed**.\n4. Copy the **Smart Embed Link**."
           },
           "miro": {
             "label": "Miro",
-            "description": "Collaborative workshops, mapping, and group boards."
+            "description": "Collaborative workshops, mapping, and group boards.",
+            "instructions": "1. Open your Miro board.\n2. Click the **Share** button in the top right.\n3. Set access to **Anyone with the link can view**.\n4. Click **Copy board link**."
           },
           "excalidraw": {
             "label": "Excalidraw",
-            "description": "Hand-drawn diagrams and brainstorming boards."
+            "description": "Hand-drawn diagrams and brainstorming boards.",
+            "instructions": "1. Create or open your drawing in Excalidraw.\n2. Click the **Collaboration** (live share) icon in the toolbar.\n3. Click **Start session** and copy the share link."
           },
           "tldraw": {
             "label": "tldraw",
-            "description": "Fast infinite canvas for sketches and visual thinking."
+            "description": "Fast infinite canvas for sketches and visual thinking.",
+            "instructions": "1. Create or open your canvas on tldraw.com.\n2. Copy the URL directly from your browser's address bar."
           },
           "mural": {
             "label": "Mural",
@@ -4800,7 +4811,8 @@
           },
           "google-slides": {
             "label": "Google Slides",
-            "description": "Cloud-based presentations with real-time collaboration."
+            "description": "Cloud-based presentations with real-time collaboration.",
+            "instructions": "1. Open your presentation in Google Slides.\n2. Click **File -> Share -> Publish to web**.\n3. Select the **Link** or **Embed** tab.\n4. Click **Publish** and copy the URL."
           },
           "powerpoint": {
             "label": "PowerPoint Online",
@@ -4824,7 +4836,8 @@
           },
           "codepen": {
             "label": "CodePen",
-            "description": "Visual front-end demos and interactive pens."
+            "description": "Visual front-end demos and interactive pens.",
+            "instructions": "1. Open the Pen on CodePen.\n2. Click the **Embed** button in the footer.\n3. Copy the URL from the iframe code, or just copy the regular Pen URL."
           },
           "replit": {
             "label": "Replit",
@@ -4880,7 +4893,8 @@
           },
           "youtube": {
             "label": "YouTube",
-            "description": "Educational videos, lectures, and screencasts."
+            "description": "Educational videos, lectures, and screencasts.",
+            "instructions": "1. Open the video on YouTube.\n2. Click the **Share** button below the video.\n3. Copy the URL."
           },
           "vimeo": {
             "label": "Vimeo",
@@ -4900,7 +4914,8 @@
           },
           "spotify": {
             "label": "Spotify",
-            "description": "Podcasts and curated study playlists."
+            "description": "Podcasts and curated study playlists.",
+            "instructions": "1. Click the **three dots** (...) next to the album, song, or playlist.\n2. Choose **Share -> Copy link**."
           },
           "soundcloud": {
             "label": "SoundCloud",
@@ -4964,7 +4979,8 @@
           },
           "google-forms": {
             "label": "Google Forms",
-            "description": "Quick data-driven quizzes and course surveys."
+            "description": "Quick data-driven quizzes and course surveys.",
+            "instructions": "1. Open your form in Google Forms.\n2. Click **Send** in the top right.\n3. Select the Link or Embed tab, and copy the URL."
           },
           "tally": {
             "label": "Tally",
@@ -5024,7 +5040,8 @@
           },
           "google-sheets": {
             "label": "Google Sheets",
-            "description": "Live tables, datasets, and charts."
+            "description": "Live tables, datasets, and charts.",
+            "instructions": "1. Open your sheet in Google Sheets.\n2. Click **File -> Share -> Publish to web**.\n3. Under the **Link** or **Embed** tab, click **Publish**.\n4. Copy the link."
           },
           "trello": {
             "label": "Trello",
@@ -5060,15 +5077,18 @@
           },
           "google-docs": {
             "label": "Google Docs",
-            "description": "Collaborative word processing and document editing."
+            "description": "Collaborative word processing and document editing.",
+            "instructions": "1. Open your document in Google Docs.\n2. Click **File -> Share -> Publish to web**.\n3. Under the **Link** or **Embed** tab, click **Publish**.\n4. Copy the link."
           },
           "desmos": {
             "label": "Desmos",
-            "description": "Interactive graphing calculator for math."
+            "description": "Interactive graphing calculator for math.",
+            "instructions": "1. Open your graph on Desmos.\n2. Click the **Share Graph** button in the top right.\n3. Copy the URL."
           },
           "geogebra": {
             "label": "GeoGebra",
-            "description": "Geometry, graphing, and 3D math simulations."
+            "description": "Geometry, graphing, and 3D math simulations.",
+            "instructions": "1. Open the material on GeoGebra.\n2. Click **Share** and copy the link."
           },
           "wolfram-alpha": {
             "label": "Wolfram Alpha",

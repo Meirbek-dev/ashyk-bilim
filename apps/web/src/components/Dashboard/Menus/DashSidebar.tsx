@@ -17,7 +17,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { BarChart3, BookCopy, Home, LogOut, Moon, Settings, ShieldCheck, Sun, Users } from 'lucide-react'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
-import appLogo from '@public/app_logo.svg'
 import appLogoLight from '@public/app_logo_light.svg'
 import { useTheme } from '@/components/providers/theme-provider'
 import { logout } from '@services/auth/auth'
@@ -170,8 +169,8 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
 const DashSidebar = ({ className }: SidebarProps) => {
   const { user } = useSession()
   const { state, toggleSidebar } = useSidebar()
-  const { resolvedTheme, isDark, toggleMode } = useTheme()
-  const logoSrc = resolvedTheme === 'dark' ? appLogo : appLogoLight
+  const { isDark, toggleMode } = useTheme()
+  const logoSrc = appLogoLight
   const t = useTranslations('SidebarMenu')
   const tThemeSelector = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector')
   const navigationItems = useNavigationItems()

@@ -86,7 +86,11 @@ function readViolations(value: unknown): { kind: string; count?: number }[] {
       if (!item || typeof item !== 'object' || !('kind' in item)) return null
       const kind = String((item as { kind: unknown }).kind)
       const rawCount = 'count' in item ? Number((item as { count?: unknown }).count) : undefined
-      return { kind, ...(Number.isFinite(rawCount) ? { count: rawCount } : {}) }
+      const res: { kind: string; count?: number } = { kind }
+      if (typeof rawCount === 'number' && Number.isFinite(rawCount)) {
+        res.count = rawCount
+      }
+      return res
     })
     .filter((item): item is { kind: string; count?: number } => item !== null && item.kind.length > 0)
 }

@@ -67,7 +67,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
 const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { type } = props.node.attrs
   const provider = getEmbedProvider(type)
-  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects')
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
 
   const renderSubView = () => {
     switch (type) {

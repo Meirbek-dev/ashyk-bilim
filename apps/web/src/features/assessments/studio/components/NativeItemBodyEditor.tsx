@@ -43,9 +43,7 @@ export function NativeItemBodyEditor({ item, disabled, issues, onChange }: Nativ
       issue => issue.code === code || (code.endsWith('.prompt_missing') && issue.code === 'item.prompt_missing'),
     )
   const invalidFields = new Set(
-    issues
-      .map(issue => issue.field)
-      .filter((field): field is string => typeof field === 'string' && field.length > 0),
+    issues.map(issue => issue.field).filter((field): field is string => typeof field === 'string' && field.length > 0),
   )
 
   if (item.body.kind === 'CHOICE' || item.body.kind === 'MATCHING') {

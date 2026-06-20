@@ -3,7 +3,6 @@
 import pathlib
 import sys
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
 
 import pytest
 from sqlmodel import Session, SQLModel

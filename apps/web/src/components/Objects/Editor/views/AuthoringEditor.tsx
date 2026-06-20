@@ -17,7 +17,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
 
@@ -164,12 +164,14 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   // AuthoringEditor to re-render the editor subtree (Requirement 2.1).
   const onAIToggle = useCallback(() => {}, [])
 
+  const onContentChange = useEffectEvent(props.onContentChange)
+
   const handleContentChange = useCallback(
     (content: unknown) => {
       latestContentRef.current = content
-      props.onContentChange(content)
+      onContentChange(content)
     },
-    [props.onContentChange],
+    [],
   )
 
   function handleContentSave() {

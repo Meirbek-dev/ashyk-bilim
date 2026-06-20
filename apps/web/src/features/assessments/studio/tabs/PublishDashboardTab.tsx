@@ -345,7 +345,10 @@ export default function PublishDashboardTab({
                         key={i}
                         message={issue.message}
                         onNavigate={() => onSwitchToBuilder()}
-                        navigateLabel={issue.actionLabel ?? (issue.code === 'assessment.empty' ? tPublish('goToQuestions') : tPublish('goToSetup'))}
+                        navigateLabel={
+                          issue.actionLabel ??
+                          (issue.code === 'assessment.empty' ? tPublish('goToQuestions') : tPublish('goToSetup'))
+                        }
                       />
                     ))}
                   </div>
@@ -695,8 +698,10 @@ function buildItemIssueRows(
 
   return [...rows.entries()].map(([itemUuid, itemIssues]) => {
     const itemIndex = items.findIndex(item => item.item_uuid === itemUuid)
-    const itemTitle = itemIndex >= 0 ? items[itemIndex]?.title || tPublish('untitledQuestion') : tPublish('unknownQuestion')
-    const context = itemIndex >= 0 ? tPublish('questionContext', { number: itemIndex + 1, title: itemTitle }) : itemTitle
+    const itemTitle =
+      itemIndex !== -1 ? items[itemIndex]?.title || tPublish('untitledQuestion') : tPublish('unknownQuestion')
+    const context =
+      itemIndex !== -1 ? tPublish('questionContext', { number: itemIndex + 1, title: itemTitle }) : itemTitle
     const firstIssue = itemIssues[0]
 
     return {

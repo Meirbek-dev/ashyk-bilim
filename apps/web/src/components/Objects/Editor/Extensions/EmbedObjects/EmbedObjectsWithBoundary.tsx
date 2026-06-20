@@ -13,7 +13,7 @@ import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodevie
  * in place of the node and does NOT crash or unmount the editor.
  */
 const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
-  const t = useTranslations('DashPage.CourseManagement.Dashboard.EmbedObjects')
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
   return (
     <EmbedObjectsErrorBoundary title={t('embeddedContent')} message={t('embeddedBlockRenderError')}>
       <EmbedObjectsComponent {...props} />

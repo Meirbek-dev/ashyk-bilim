@@ -174,7 +174,7 @@ export function ChoiceItemAuthor({
   disabled,
   onChange,
   invalidFields,
-}: ItemAuthorProps<ChoiceAuthorValue> & { invalidFields?: ReadonlySet<string> }) {
+}: ItemAuthorProps<ChoiceAuthorValue> & { invalidFields?: ReadonlySet<string> | undefined }) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
   const setKind = (kind: ChoiceItemKind) => {
@@ -266,12 +266,7 @@ export function ChoiceItemAuthor({
       {value.kind === 'MATCHING' ? (
         <MatchingAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
       ) : (
-        <OptionsAuthor
-          value={value}
-          disabled={disabled ?? false}
-          invalidFields={invalidFields}
-          onChange={onChange}
-        />
+        <OptionsAuthor value={value} disabled={disabled ?? false} invalidFields={invalidFields} onChange={onChange} />
       )}
     </div>
   )
@@ -283,7 +278,7 @@ function OptionsAuthor({
   invalidFields,
   onChange,
 }: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>> & {
-  invalidFields?: ReadonlySet<string>
+  invalidFields?: ReadonlySet<string> | undefined
 }) {
   const t = useTranslations('Features.Assessments.Items.Choice')
   const isMultiple = value.kind === 'CHOICE_MULTIPLE'
@@ -340,7 +335,7 @@ function OptionsAuthor({
                 ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-600 dark:bg-emerald-600'
                 : hasCorrectOptionIssue
                   ? 'border-destructive text-destructive hover:bg-destructive/10'
-                : 'border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600',
+                  : 'border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600',
               disabled && 'cursor-not-allowed opacity-60',
             )}
           >
