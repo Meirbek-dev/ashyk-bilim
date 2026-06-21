@@ -30,7 +30,7 @@ import { useSession } from '@/hooks/useSession'
 import type { Permission, RoleAuditEvent, RoleWithPermissions } from '@/types/permissions'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import DataTable from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
@@ -47,12 +47,19 @@ type RoleDialogMode = 'create' | 'edit' | 'clone'
 const EMPTY_ROLES: RoleWithPermissions[] = []
 const EMPTY_PERMISSIONS: Permission[] = []
 
+const emptySubscribe = () => () => {}
+
 export default function RBACAdminClient() {
   const session = useSession()
   const { can } = session
   const t = useTranslations('Components.Roles')
   const router = useRouter()
 
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
   const [roles, setRoles] = useState<RoleWithPermissions[]>([])
   const [activeTab, setActiveTab] = useState('roles')
 
@@ -427,7 +434,7 @@ export default function RBACAdminClient() {
     setPendingResourceToggles([])
   }
 
-  const loading = loadingRoles || permissionsLoading
+  const loading = !isMounted || loadingRoles || permissionsLoading
 
   const roleColumns = useMemo(
     () =>
