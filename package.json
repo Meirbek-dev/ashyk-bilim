@@ -17,6 +17,7 @@
     "checktypes": "turbo run checktypes",
     "format": "turbo run format",
     "lint": "turbo run lint",
+    "audit:errors": "bun run --cwd apps/api audit:errors && bun run --cwd apps/web audit:errors",
     "test": "turbo run test",
     "taze": "taze -r -w -u -i",
     "deploy": "bash ./extra/deploy.sh"

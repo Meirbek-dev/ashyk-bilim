@@ -15,7 +15,7 @@ import { extractStreakInfo } from '@/types/gamification/profile'
 import { getServerAPIUrl } from '@/services/config/config'
 import type { components } from '@/lib/api/generated'
 import { revalidateTag } from 'next/cache'
-import { apiFetch } from '@/lib/api-client'
+import { apiFetch, apiJson } from '@/lib/api-client'
 
 type ApiDashboardResponse = components['schemas']['DashboardRead']
 type ApiLeaderboardResponse = components['schemas']['LeaderboardRead']
@@ -242,33 +242,29 @@ export async function awardXPOnServer(payload: XPAwardRequest): Promise<XPAwardR
     ...(payload.amount !== undefined ? { custom_amount: payload.amount } : {}),
     ...(payload.idempotency_key !== undefined ? { idempotency_key: payload.idempotency_key } : {}),
   }
-  const res = await apiFetch('gamification/xp', {
+  const json = await apiJson<ApiXPAwardResponse>('gamification/xp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`Failed to award XP: ${res.status}`)
-  const json = (await res.json()) as ApiXPAwardResponse
   await revalidateGamificationTags()
   return normalizeAwardXpResponse(json)
 }
 
 export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<StreakUpdate> {
-  const res = await apiFetch(`gamification/streaks/${encodeURIComponent(type)}`, { method: 'POST' })
-  if (!res.ok) throw new Error(`Failed to update streak: ${res.status}`)
-  const json = (await res.json()) as ApiStreakUpdateResponse
+  const json = await apiJson<ApiStreakUpdateResponse>(`gamification/streaks/${encodeURIComponent(type)}`, {
+    method: 'POST',
+  })
   await revalidateGamificationTags()
   return normalizeStreakUpdate(json)
 }
 
 export async function updatePreferencesOnServer(preferences: Record<string, any>) {
-  const res = await apiFetch('gamification/preferences', {
+  const json = await apiJson('gamification/preferences', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferences),
   })
-  if (!res.ok) throw new Error(`Failed to update preferences: ${res.status}`)
-  const json = await res.json()
   await revalidateGamificationTags()
   return json
 }

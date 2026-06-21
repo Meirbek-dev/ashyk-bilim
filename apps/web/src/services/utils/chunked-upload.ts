@@ -6,6 +6,7 @@
  */
 
 import { apiFetch } from '@/lib/api-client'
+import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 
 // Default chunk size: 2MB (small enough to bypass most nginx configs)
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024
@@ -70,7 +71,9 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
 
   try {
     if (typeOfDir === 'users' && !uuid) {
-      throw new Error('uuid is required when typeOfDir is "users"')
+      throw clientApiError('INVALID_CLIENT_REQUEST', 'uuid is required when typeOfDir is "users"', {
+        path: 'uploads/initiate',
+      })
     }
 
     // Split file into chunks
@@ -96,14 +99,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     })
 
     if (!initiateResponse.ok) {
-      const body = await initiateResponse.json().catch(() => null)
-      console.error('Failed to initiate chunked upload', {
-        status: initiateResponse.status,
-        body,
-      })
-      throw new Error(
-        body?.detail ? JSON.stringify(body.detail) : `Failed to initiate upload (status ${initiateResponse.status})`,
-      )
+      throw await parseApiError(initiateResponse, 'uploads/initiate')
     }
 
     const { upload_uuid: upload_id } = await initiateResponse.json()
@@ -113,7 +109,9 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     for (let i = 0; i < chunks.length; i += 1) {
       const chunk = chunks[i]
       if (!chunk) {
-        throw new Error(`Chunk ${i} is undefined`)
+        throw clientApiError('CLIENT_INVARIANT_VIOLATION', `Chunk ${i} is undefined`, {
+          path: 'uploads/chunk',
+        })
       }
 
       const chunkFormData = new FormData()
@@ -128,14 +126,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
       })
 
       if (!chunkResponse.ok) {
-        const body = await chunkResponse.json().catch(() => null)
-        console.error(`Failed to upload chunk ${i}`, {
-          status: chunkResponse.status,
-          body,
-        })
-        throw new Error(
-          body?.detail ? JSON.stringify(body.detail) : `Failed to upload chunk ${i} (status ${chunkResponse.status})`,
-        )
+        throw await parseApiError(chunkResponse, 'uploads/chunk')
       }
 
       uploadedBytes += chunk.size
@@ -168,14 +159,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     })
 
     if (!completeResponse.ok) {
-      const body = await completeResponse.json().catch(() => null)
-      console.error('Failed to complete upload', {
-        status: completeResponse.status,
-        body,
-      })
-      throw new Error(
-        body?.detail ? JSON.stringify(body.detail) : `Failed to complete upload (status ${completeResponse.status})`,
-      )
+      throw await parseApiError(completeResponse, 'uploads/complete')
     }
 
     const result = await completeResponse.json()
@@ -188,7 +172,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
       message: result.message,
     }
   } catch (error) {
-    console.error('Chunked upload error:', error)
     if (onError) {
       onError(error as Error)
     }

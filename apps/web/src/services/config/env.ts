@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+import { clientApiError } from '@/lib/api/assertSuccess'
+
 const NonEmptyStringSchema = v.pipe(v.string(), v.trim(), v.minLength(1))
 const UrlSchema = v.pipe(NonEmptyStringSchema, v.url())
 
@@ -47,6 +49,13 @@ type ServerEnv = v.InferOutput<typeof ServerEnvSchema>
 type ResolutionResult<T> =
   | { success: true; config: T; errors: [] }
   | { success: false; config: null; errors: ConfigIssue[] }
+
+const configIssueDetails = (issues: ConfigIssue[]) =>
+  issues.map(issue => ({
+    key: issue.key,
+    message: issue.message,
+    scope: issue.scope,
+  }))
 
 const getOptionalEnvValue = (value: string | undefined): string | undefined => {
   if (value === undefined) return undefined
@@ -139,7 +148,9 @@ const buildPublicConfig = (env: PublicEnv): PublicConfig => {
 const buildServerConfig = (env: ServerEnv): ServerConfig => {
   const resolvedAppUrl = env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL
   if (!resolvedAppUrl) {
-    throw new Error('APP_URL or NEXT_PUBLIC_SITE_URL must be configured')
+    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'APP_URL or NEXT_PUBLIC_SITE_URL must be configured', {
+      path: 'config/server',
+    })
   }
 
   const appUrl = new URL(resolvedAppUrl).toString()
@@ -229,7 +240,10 @@ export const getPublicConfig = (): PublicConfig => {
 
   const result = resolvePublicConfig()
   if (!result.success) {
-    throw new Error(result.errors.map(error => `${error.key}: ${error.message}`).join('; '))
+    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'Public configuration is invalid', {
+      details: configIssueDetails(result.errors),
+      path: 'config/public',
+    })
   }
 
   publicConfigCache = result.config
@@ -241,7 +255,10 @@ export const getServerConfig = (): ServerConfig => {
 
   const result = resolveServerConfig()
   if (!result.success) {
-    throw new Error(result.errors.map(error => `${error.key}: ${error.message}`).join('; '))
+    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'Server configuration is invalid', {
+      details: configIssueDetails(result.errors),
+      path: 'config/server',
+    })
   }
 
   serverConfigCache = result.config
@@ -253,7 +270,10 @@ export const getAppConfig = (): AppConfig => {
 
   const result = getAppConfigResult()
   if (!result.success) {
-    throw new Error(result.errors.map(error => `${error.scope}.${error.key}: ${error.message}`).join('; '))
+    throw clientApiError('CLIENT_INVARIANT_VIOLATION', 'Application configuration is invalid', {
+      details: configIssueDetails(result.errors),
+      path: 'config/app',
+    })
   }
 
   appConfigCache = result.config

@@ -14,6 +14,7 @@ from sqlalchemy import desc, func, inspect as sqlalchemy_inspect
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.app.exceptions import ConflictAppError, ValidationAppError
 from src.db.assessment_access import (
     AssessmentAccessMode,
     AssessmentAccessPolicy,
@@ -1213,15 +1214,19 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     try:
         expected = int(raw)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
+        raise ValidationAppError(
+            code="INVALID_IF_MATCH_VERSION",
+            message="If-Match must contain the current numeric submission version",
+            details={"if_match": raw},
+            cause=exc,
         ) from exc
     if draft.draft_version != expected:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "message": "Конфликт версий черновика",
+        raise ConflictAppError(
+            code="VERSION_CONFLICT",
+            message="Draft version conflict",
+            details={
+                "expected": expected,
+                "actual": draft.draft_version,
                 "latest": SubmissionRead.model_validate(draft).model_dump(mode="json"),
             },
         )
@@ -1234,9 +1239,11 @@ def _parse_if_match_version(if_match: str | None) -> int | None:
     try:
         return int(raw)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
+        raise ValidationAppError(
+            code="INVALID_IF_MATCH_VERSION",
+            message="If-Match must contain the current numeric submission version",
+            details={"if_match": raw},
+            cause=exc,
         ) from exc
 
 

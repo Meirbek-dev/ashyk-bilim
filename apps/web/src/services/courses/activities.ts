@@ -1,6 +1,7 @@
 'use server'
 
 import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { clientApiError } from '@/lib/api/assertSuccess'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
 import { getAPIUrl } from '@services/config/config'
@@ -40,7 +41,9 @@ async function invalidateActivityCache(courseUuid?: string) {
 
 export async function createActivity(data: AppPayload, chapter_id: number, options?: ActivityInvalidationOptions) {
   if (!data || typeof data !== 'object') {
-    throw new Error('Activity payload is required')
+    throw clientApiError('INVALID_CLIENT_REQUEST', 'Activity payload is required', {
+      path: 'activities/',
+    })
   }
 
   if (!data.content) {

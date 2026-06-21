@@ -7,8 +7,8 @@
  * in the World-Class LMS plan Phases 1–5.
  */
 
-import { apiFetch, getResponseMetadata } from '@/lib/api-client'
-import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { apiFetch, apiJson, getResponseMetadata } from '@/lib/api-client'
+import { parseApiError } from '@/lib/api/assertSuccess'
 import { revalidateTag } from 'next/cache'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -211,15 +211,13 @@ export async function createStudentPolicyOverride(
   assessmentUuid: string,
   payload: StudentPolicyOverrideCreate,
 ): Promise<StudentPolicyOverride> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/overrides`, {
+  const response = await apiJson<StudentPolicyOverride>(`assessments/${assessmentUuid}/overrides`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to create override'))
   revalidateTag('overrides', 'max')
-  return meta.data as StudentPolicyOverride
+  return response
 }
 
 export async function updateStudentPolicyOverride(
@@ -227,23 +225,19 @@ export async function updateStudentPolicyOverride(
   userId: number,
   payload: StudentPolicyOverrideUpdate,
 ): Promise<StudentPolicyOverride> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, {
+  const response = await apiJson<StudentPolicyOverride>(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to update override'))
   revalidateTag('overrides', 'max')
-  return meta.data as StudentPolicyOverride
+  return response
 }
 
 export async function deleteStudentPolicyOverride(assessmentUuid: string, userId: number): Promise<void> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, {
+  await apiJson<void>(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'DELETE',
   })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to delete override'))
   revalidateTag('overrides', 'max')
 }
 
@@ -274,10 +268,9 @@ export async function saveGradingDraft(
     throw new StaleGradeError(latest ?? ({ submission_uuid: submissionUuid } as never))
   }
 
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to save grading draft'))
+  if (!res.ok) throw await parseApiError(res, `assessments/${assessmentUuid}/submissions/${submissionUuid}/grade`)
   revalidateTag('submissions', 'max')
-  return meta.data
+  return res.json()
 }
 
 // ── Code challenge runtime ─────────────────────────────────────────────────────
@@ -291,12 +284,10 @@ export async function runCodeItem(
   itemUuid: string,
   payload: CodeRunRequest,
 ): Promise<CodeRunResponse> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/items/${itemUuid}/runs`, {
+  const response = await apiJson<CodeRunResponse>(`assessments/${assessmentUuid}/items/${itemUuid}/runs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to run code'))
-  return meta.data as CodeRunResponse
+  return response
 }

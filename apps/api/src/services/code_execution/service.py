@@ -9,17 +9,18 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from http import HTTPStatus
 from typing import Protocol, override, runtime_checkable
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 import httpx
-from fastapi import HTTPException, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
 import judge0
 from config.config import get_settings, secret_value
 from judge0.clients import __version__ as JUDGE0_SDK_VERSION  # noqa: N812
+from src.app.exceptions import AppError, ConflictAppError, dependency_unavailable
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.utils.circuit_breaker import CircuitBreaker
@@ -338,10 +339,7 @@ class CodeExecutionService:
             return await asyncio.to_thread(self._list_languages_sync)
         except Exception as exc:
             logger.warning("ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Judge0 is unavailable; code execution languages could not be loaded",
-            ) from exc
+            raise dependency_unavailable("judge0", "list_languages", retry_after=30, cause=exc)
 
     def close(self) -> None:
         close = getattr(self._client_factory, "close", None)
@@ -627,22 +625,28 @@ class CodeExecutionService:
     def _validate_payload(self, *, source_code: str, custom_input: str | None) -> None:
         settings = get_settings().integrations.judge0
         if len(source_code.encode()) > settings.max_source_bytes:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="Source code exceeds the configured size limit",
+            raise AppError.from_status(
+                status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                code="SOURCE_CODE_TOO_LARGE",
+                message="Source code exceeds the configured size limit",
+                details={"max_source_bytes": settings.max_source_bytes},
             )
         if custom_input is not None and len(custom_input.encode()) > settings.max_stdin_bytes:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="Custom input exceeds the configured size limit",
+            raise AppError.from_status(
+                status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                code="CUSTOM_INPUT_TOO_LARGE",
+                message="Custom input exceeds the configured size limit",
+                details={"max_stdin_bytes": settings.max_stdin_bytes},
             )
 
     def _validate_language(self, language_id: int) -> None:
         settings = get_settings().integrations.judge0
         if settings.allowed_language_ids and language_id not in settings.allowed_language_ids:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Language is not allowed for code execution",
+            raise AppError.from_status(
+                status_code=HTTPStatus.BAD_REQUEST,
+                code="CODE_LANGUAGE_NOT_ALLOWED",
+                message="Language is not allowed for code execution",
+                details={"language_id": language_id, "allowed_language_ids": settings.allowed_language_ids},
             )
 
     def _find_idempotent_run(
@@ -674,9 +678,10 @@ class CodeExecutionService:
             or existing.stdin_sha256 != stdin_sha256
             or existing.language_id != language_id
         ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Idempotency key was already used for a different code run",
+            raise ConflictAppError(
+                code="CODE_RUN_IDEMPOTENCY_CONFLICT",
+                message="Idempotency key was already used for a different code run",
+                details={"run_uuid": existing.run_uuid, "item_uuid": item_uuid},
             )
         if existing.status not in _IDEMPOTENT_REUSE_STATUSES:
             existing.idempotency_key = None

@@ -3,7 +3,7 @@
 import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
-import type { ApiErrorLike } from '@/types/shared'
+import { parseApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
 
@@ -243,9 +243,7 @@ async function fetchCourses(
   })
 
   if (!result.ok) {
-    const error: ApiErrorLike = new Error(result.statusText || 'Request failed')
-    error.status = result.status
-    throw error
+    throw await parseApiError(result, `courses/page/${page}/limit/${limit}`)
   }
 
   const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
@@ -304,9 +302,7 @@ async function fetchEditableCourses(
   }
 
   if (!result.ok) {
-    const error: ApiErrorLike = new Error(result.statusText || 'Request failed')
-    error.status = result.status
-    throw error
+    throw await parseApiError(result, `courses/lms/page/${page}/limit/${limit}`)
   }
 
   const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>

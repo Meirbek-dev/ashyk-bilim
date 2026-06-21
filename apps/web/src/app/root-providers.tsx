@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { ThemeProvider, useTheme } from '@/components/providers/theme-provider'
 import { ValibotProvider } from '@/components/providers/valibot-provider'
+import { BrowserErrorReporter } from '@/components/providers/browser-error-reporter'
 import { ReactQueryProvider } from '@/lib/react-query/providers'
 import type { Session } from '@/lib/auth/types'
 import type { ThemeMode } from '@/lib/themes'
@@ -43,6 +44,7 @@ function TopLoaderWithTheme({ children }: { children: ReactNode }) {
 export default function RootProviders({ children, initialSession, initialThemeMode }: RootProvidersProps) {
   return (
     <ReactQueryProvider>
+      <BrowserErrorReporter />
       <SessionProvider {...(initialSession === undefined ? {} : { initialSession })}>
         <ThemeProvider
           defaultThemeName={initialSession?.user.theme ?? 'modern-minimal'}

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { apiFetch } from '@/lib/api-client'
+import { apiFetch, apiJson } from '@/lib/api-client'
+import { APIError, isApiError } from '@/lib/api/assertSuccess'
 
 // Mock the config and auth redirect to avoid side effects
 vi.mock('@services/config/config', () => ({
@@ -52,7 +53,10 @@ describe('apiFetch timeout', () => {
     // Move forward by 31 seconds (DEFAULT_TIMEOUT_MS is 30s)
     vi.advanceTimersByTime(31000)
 
-    await expect(promise).rejects.toThrow(/aborted/)
+    await expect(promise).rejects.toMatchObject({
+      code: 'CLIENT_TIMEOUT',
+      status: 0,
+    })
 
     const lastCall = (global.fetch as any).mock.calls[0]
     const signal = lastCall[1].signal
@@ -95,5 +99,66 @@ describe('apiFetch timeout', () => {
     expect(first.status).toBe(200)
     expect(second.status).toBe(200)
     expect(calls.filter(call => call.startsWith('/api/auth/refresh'))).toHaveLength(1)
+  })
+
+  it('throws APIError with backend envelope metadata for non-2xx JSON responses', async () => {
+    ;(global.fetch as any).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'COURSE_NOT_FOUND',
+          message: 'Course was not found',
+          details: { course_uuid: 'course_123' },
+          field_errors: [],
+          request_id: 'req-course',
+        }),
+        {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-ID': 'req-course',
+          },
+        },
+      ),
+    )
+
+    await expect(apiJson('courses/course_123')).rejects.toMatchObject({
+      code: 'COURSE_NOT_FOUND',
+      message: 'Course was not found',
+      requestId: 'req-course',
+      status: 404,
+    })
+  })
+
+  it('throws typed network errors when fetch rejects before a response exists', async () => {
+    ;(global.fetch as any).mockRejectedValue(new TypeError('fetch failed'))
+
+    await expect(apiFetch('network-down', { timeoutMs: false })).rejects.toMatchObject({
+      code: 'NETWORK_UNAVAILABLE',
+      status: 0,
+    })
+  })
+
+  it('uses APIError instances for typed request failures', async () => {
+    ;(global.fetch as any).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'RATE_LIMITED',
+          message: 'Too many requests',
+          details: null,
+          field_errors: [],
+          request_id: 'req-rate',
+        }),
+        { status: 429, headers: { 'X-Request-ID': 'req-rate' } },
+      ),
+    )
+
+    try {
+      await apiJson('rate-limited')
+      throw new Error('Expected apiJson to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(APIError)
+      expect(isApiError(error)).toBe(true)
+      expect(error).toMatchObject({ code: 'RATE_LIMITED', requestId: 'req-rate' })
+    }
   })
 })

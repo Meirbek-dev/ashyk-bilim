@@ -27,6 +27,13 @@ function getBodyString(body: Record<string, unknown>, key: string): string | und
   return typeof value === 'string' ? value : undefined
 }
 
+function getBodyLogValue(body: Record<string, unknown>, key: string): string | undefined {
+  const value = body[key]
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return undefined
+}
+
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
@@ -89,17 +96,23 @@ export async function POST(request: NextRequest) {
 
     const isProd = IS_PRODUCTION
     const url = getBodyString(body, 'url') ?? request.url
-    const errorMessage = getBodyString(body, 'error')
+    const errorMessage = getBodyLogValue(body, 'error')
     const digest = getBodyString(body, 'digest')
+    const eventId = getBodyString(body, 'eventId')
     const page = getBodyString(body, 'page')
+    const requestId = getBodyString(body, 'requestId') ?? getBodyString(body, 'request_id')
+    const scope = getBodyString(body, 'scope')
 
     console.error('[CLIENT ERROR LOG]', {
+      eventId,
       timestamp: new Date().toISOString(),
       url,
+      scope,
       // Do not log full user-agent in production to avoid PII leakage in logs.
       userAgent: isProd ? undefined : request.headers.get('user-agent'),
       error: errorMessage?.slice(0, 1000),
       digest,
+      requestId,
       // Component stacks can contain source paths and PII — strip in production.
       componentStack: isProd ? undefined : body.componentStack,
       page,

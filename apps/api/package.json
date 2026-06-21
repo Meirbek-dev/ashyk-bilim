@@ -7,6 +7,7 @@
     "migrate": "uv run --no-sync alembic upgrade head",
     "format": "uv run ruff format .",
     "lint": "uv run ruff check . --fix --unsafe-fixes && uv run python scripts/lint_response_models.py",
+    "audit:errors": "uv run python scripts/audit_errors.py",
     "lint:response-models": "uv run python scripts/lint_response_models.py",
     "pyrefly": "uv run pyrefly check",
     "pyright": "uv run basedpyright .",

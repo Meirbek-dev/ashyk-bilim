@@ -8,11 +8,21 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import HTTPException, status
 from sqlalchemy import func, or_
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.app.exceptions import (
+    AppError,
+    ConflictAppError,
+    NotFoundAppError,
+    PermissionAppError,
+    ValidationAppError,
+    activity_not_found,
+    course_not_found,
+    submission_not_found,
+    version_conflict,
+)
 from src.db.courses.activities import (
     Activity,
     ActivitySubTypeEnum,
@@ -67,6 +77,72 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _file_submission_not_found(
+    *,
+    file_submission_uuid: str | None = None,
+    activity_uuid: str | None = None,
+) -> NotFoundAppError:
+    details: dict[str, object] = {}
+    if file_submission_uuid is not None:
+        details["file_submission_uuid"] = file_submission_uuid
+    if activity_uuid is not None:
+        details["activity_uuid"] = activity_uuid
+    return NotFoundAppError(
+        code="FILE_SUBMISSION_NOT_FOUND",
+        message="File submission was not found",
+        details=details,
+    )
+
+
+def _file_submission_file_not_found(*, attempt_file_uuid: str | None = None) -> NotFoundAppError:
+    return NotFoundAppError(
+        code="FILE_SUBMISSION_FILE_NOT_FOUND",
+        message="Submitted file was not found",
+        details={"attempt_file_uuid": attempt_file_uuid} if attempt_file_uuid is not None else {},
+    )
+
+
+def _upload_not_found(*, upload_uuid: str | None = None) -> NotFoundAppError:
+    return NotFoundAppError(
+        code="UPLOAD_NOT_FOUND",
+        message="Upload was not found",
+        details={"upload_uuid": upload_uuid} if upload_uuid is not None else {},
+    )
+
+
+def _upload_bytes_not_found(*, upload_uuid: str | None = None) -> NotFoundAppError:
+    return NotFoundAppError(
+        code="UPLOAD_BYTES_NOT_FOUND",
+        message="Upload bytes were not found",
+        details={"upload_uuid": upload_uuid} if upload_uuid is not None else {},
+    )
+
+
+def _upload_not_finalized(*, upload_uuid: str | None = None, current_status: str | None = None) -> ConflictAppError:
+    details: dict[str, object] = {}
+    if upload_uuid is not None:
+        details["upload_uuid"] = upload_uuid
+    if current_status is not None:
+        details["current_status"] = current_status
+    return ConflictAppError(
+        code="UPLOAD_NOT_FINALIZED",
+        message="Upload is not finalized",
+        details=details,
+    )
+
+
+def _attempt_limit_reached(file_submission: FileSubmissionActivity, completed_attempts: int) -> AppError:
+    return ConflictAppError(
+        code="FILE_SUBMISSION_ATTEMPT_LIMIT_REACHED",
+        message="The maximum number of attempts has been reached",
+        details={
+            "file_submission_uuid": file_submission.file_submission_uuid,
+            "completed_attempts": completed_attempts,
+            "max_attempts": file_submission.max_attempts,
+        },
+    )
+
+
 async def create_file_submission(
     payload: FileSubmissionCreate,
     current_user: PublicUser,
@@ -75,7 +151,11 @@ async def create_file_submission(
     course = _get_course_or_404(payload.course_id, db_session)
     chapter = _get_chapter_or_404(payload.chapter_id, db_session)
     if chapter.course_id != course.id:
-        raise HTTPException(status_code=400, detail="Глава не принадлежит курсу")
+        raise ValidationAppError(
+            code="CHAPTER_COURSE_MISMATCH",
+            message="Chapter does not belong to the selected course",
+            details={"chapter_id": chapter.id, "course_id": course.id},
+        )
     _require_author(current_user, course, db_session)
 
     now = _now()
@@ -193,9 +273,17 @@ async def publish_file_submission(
     file_submission, activity, course = _get_context(file_submission_uuid, db_session)
     _require_author(current_user, course, db_session)
     if not activity.name.strip():
-        raise HTTPException(status_code=422, detail="Требуется название")
+        raise ValidationAppError(
+            code="FILE_SUBMISSION_TITLE_REQUIRED",
+            message="File submission title is required",
+            field_errors=[{"loc": ["title"], "msg": "Title is required", "type": "missing"}],
+        )
     if not file_submission.instructions.strip():
-        raise HTTPException(status_code=422, detail="Требуются инструкции")
+        raise ValidationAppError(
+            code="FILE_SUBMISSION_INSTRUCTIONS_REQUIRED",
+            message="File submission instructions are required",
+            field_errors=[{"loc": ["instructions"], "msg": "Instructions are required", "type": "missing"}],
+        )
 
     now = _now()
     file_submission.lifecycle = FileSubmissionLifecycle.PUBLISHED
@@ -243,7 +331,7 @@ async def start_file_submission_draft(
 
     completed_attempts = _count_completed_attempts(file_submission, current_user.id, db_session)
     if file_submission.max_attempts is not None and completed_attempts >= file_submission.max_attempts:
-        raise HTTPException(status_code=409, detail="Достигнут лимит попыток")
+        raise _attempt_limit_reached(file_submission, completed_attempts)
 
     now = _now()
     attempt = FileSubmissionAttempt(
@@ -309,7 +397,11 @@ async def submit_file_submission(
         _replace_attempt_files(draft, file_submission, payload.files, current_user, db_session)
     files = _attempt_files(draft, db_session)
     if not files:
-        raise HTTPException(status_code=422, detail="Требуется хотя бы один файл")
+        raise ValidationAppError(
+            code="FILE_REQUIRED",
+            message="At least one file is required",
+            field_errors=[{"loc": ["files"], "msg": "At least one file is required", "type": "missing"}],
+        )
 
     now = _now()
     late_penalty = _late_penalty(file_submission, now)
@@ -417,7 +509,11 @@ async def grade_file_submission_attempt(
     now = _now()
 
     if payload.status in {"GRADED", "PUBLISHED"} and payload.final_score is None:
-        raise HTTPException(status_code=422, detail="Требуется итоговый балл")
+        raise ValidationAppError(
+            code="FINAL_SCORE_REQUIRED",
+            message="Final score is required",
+            field_errors=[{"loc": ["final_score"], "msg": "Final score is required", "type": "missing"}],
+        )
 
     attempt.final_score = payload.final_score
     attempt.feedback_json = {"feedback": payload.feedback, "rubric": payload.rubric}
@@ -544,16 +640,16 @@ async def get_file_submission_attempt_file_upload(
         select(FileSubmissionAttemptFile).where(FileSubmissionAttemptFile.attempt_file_uuid == attempt_file_uuid)
     ).first()
     if attempt_file is None:
-        raise HTTPException(status_code=404, detail="Отправленный файл не найден")
+        raise _file_submission_file_not_found(attempt_file_uuid=attempt_file_uuid)
     attempt = db_session.get(FileSubmissionAttempt, attempt_file.attempt_id)
     if attempt is None:
-        raise HTTPException(status_code=404, detail="Попытка отправки не найдена")
+        raise submission_not_found()
     file_submission = db_session.get(FileSubmissionActivity, attempt.file_submission_id)
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
+        raise _file_submission_not_found()
     activity = db_session.get(Activity, attempt.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Активность не найдена")
+        raise activity_not_found()
     course = _get_course_for_activity(activity, db_session)
 
     if attempt.user_id == current_user.id:
@@ -563,16 +659,16 @@ async def get_file_submission_attempt_file_upload(
 
     upload = db_session.get(Upload, attempt_file.upload_id)
     if upload is None:
-        raise HTTPException(status_code=404, detail="Загрузка не найдена")
+        raise _upload_not_found()
     if upload.status != UploadStatus.FINALIZED:
-        raise HTTPException(status_code=409, detail="Загрузка не завершена")
+        raise _upload_not_finalized(upload_uuid=upload.upload_uuid, current_status=str(upload.status))
     return upload
 
 
 def read_file_submission_upload_bytes(upload: Upload, db_session: Session) -> bytes:
     body = _read_upload_bytes(upload, db_session)
     if body is None:
-        raise HTTPException(status_code=404, detail="Байты файла не найдены")
+        raise _upload_bytes_not_found(upload_uuid=upload.upload_uuid)
     return body
 
 
@@ -618,7 +714,7 @@ async def _create_draft_without_commit(
 ) -> FileSubmissionAttempt:
     completed_attempts = _count_completed_attempts(file_submission, current_user.id, db_session)
     if file_submission.max_attempts is not None and completed_attempts >= file_submission.max_attempts:
-        raise HTTPException(status_code=409, detail="Достигнут лимит попыток")
+        raise _attempt_limit_reached(file_submission, completed_attempts)
     now = _now()
     draft = FileSubmissionAttempt(
         attempt_uuid=f"filesub_attempt_{ULID()}",
@@ -644,24 +740,55 @@ def _replace_attempt_files(
     db_session: Session,
 ) -> None:
     if len(files) > file_submission.max_files:
-        raise HTTPException(status_code=422, detail="Слишком много файлов")
+        raise ValidationAppError(
+            code="FILE_COUNT_EXCEEDED",
+            message="Too many files were attached",
+            details={"max_files": file_submission.max_files, "actual_files": len(files)},
+            field_errors=[{"loc": ["files"], "msg": "Too many files were attached", "type": "value_error"}],
+        )
     seen: set[str] = set()
     uploads: list[Upload] = []
     for file_ref in files:
         if file_ref.upload_uuid in seen:
-            raise HTTPException(status_code=422, detail="Дублирующаяся загрузка файла")
+            raise ValidationAppError(
+                code="DUPLICATE_FILE_UPLOAD",
+                message="The same file upload was attached more than once",
+                details={"upload_uuid": file_ref.upload_uuid},
+                field_errors=[{"loc": ["files"], "msg": "Duplicate file upload", "type": "value_error"}],
+            )
         seen.add(file_ref.upload_uuid)
         upload = db_session.exec(select(Upload).where(Upload.upload_uuid == file_ref.upload_uuid)).first()
         if upload is None or upload.user_id != current_user.id or upload.status != UploadStatus.FINALIZED:
-            raise HTTPException(status_code=422, detail="Загрузка не завершена")
+            raise ValidationAppError(
+                code="UPLOAD_NOT_FINALIZED",
+                message="The uploaded file is not ready to attach",
+                details={"upload_uuid": file_ref.upload_uuid},
+                field_errors=[{"loc": ["files"], "msg": "Upload is not finalized", "type": "value_error"}],
+            )
         if file_submission.allowed_mime_types and upload.content_type not in file_submission.allowed_mime_types:
-            raise HTTPException(status_code=422, detail="Тип файла не разрешен")
+            raise ValidationAppError(
+                code="FILE_TYPE_NOT_ALLOWED",
+                message="This file type is not allowed",
+                details={
+                    "content_type": upload.content_type,
+                    "allowed_mime_types": file_submission.allowed_mime_types,
+                },
+                field_errors=[{"loc": ["files"], "msg": "File type is not allowed", "type": "value_error"}],
+            )
         if (
             file_submission.max_file_size_mb is not None
             and upload.size_bytes is not None
             and upload.size_bytes > file_submission.max_file_size_mb * 1024 * 1024
         ):
-            raise HTTPException(status_code=422, detail="Файл слишком большой")
+            raise ValidationAppError(
+                code="FILE_TOO_LARGE",
+                message="The uploaded file is too large",
+                details={
+                    "size_bytes": upload.size_bytes,
+                    "max_file_size_mb": file_submission.max_file_size_mb,
+                },
+                field_errors=[{"loc": ["files"], "msg": "File is too large", "type": "value_error"}],
+            )
         uploads.append(upload)
 
     for existing in _attempt_files(attempt, db_session):
@@ -766,7 +893,11 @@ def _late_penalty(file_submission: FileSubmissionActivity, submitted_at: datetim
     if file_submission.due_at is None or submitted_at <= file_submission.due_at:
         return 0.0
     if not file_submission.allow_late:
-        raise HTTPException(status_code=409, detail="Поздние отправки закрыты")
+        raise ConflictAppError(
+            code="LATE_SUBMISSION_CLOSED",
+            message="Late submissions are closed",
+            details={"due_at": file_submission.due_at.isoformat(), "submitted_at": submitted_at.isoformat()},
+        )
     policy = deserialize_late_policy(file_submission.late_policy_json)
     return float(policy.apply(submitted_at, file_submission.due_at))
 
@@ -782,10 +913,10 @@ def _get_context(
         select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == normalized)
     ).first()
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
+        raise _file_submission_not_found(file_submission_uuid=normalized)
     activity = db_session.get(Activity, file_submission.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Активность не найдена")
+        raise activity_not_found()
     course = _get_course_for_activity(activity, db_session)
     return file_submission, activity, course
 
@@ -799,7 +930,7 @@ def _get_context_by_activity_uuid(
         select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
     ).first()
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
+        raise _file_submission_not_found(activity_uuid=activity_uuid)
     return file_submission, activity, _get_course_for_activity(activity, db_session)
 
 
@@ -811,7 +942,7 @@ def _build_file_submission_read(
 ) -> FileSubmissionRead:
     activity = db_session.get(Activity, file_submission.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Активность не найдена")
+        raise activity_not_found()
     course = _get_course_for_activity(activity, db_session)
     attempts: list[FileSubmissionAttemptRead] = []
     current_attempt = None
@@ -971,7 +1102,7 @@ def _get_attempt_or_404(
         )
     ).first()
     if attempt is None:
-        raise HTTPException(status_code=404, detail="Отправка не найдена")
+        raise submission_not_found(attempt_uuid)
     return attempt
 
 
@@ -995,14 +1126,18 @@ def _check_version(attempt: FileSubmissionAttempt, if_match: str | None) -> None
     try:
         expected = int(if_match)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Некорректный заголовок If-Match")
+        raise ValidationAppError(
+            code="INVALID_IF_MATCH_VERSION",
+            message="If-Match must contain a numeric version",
+            details={"if_match": if_match},
+        )
     if expected != attempt.version:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "VERSION_CONFLICT",
+        raise version_conflict(
+            {
+                "expected": expected,
+                "actual": attempt.version,
                 "latest": _build_attempt_read_no_files(attempt),
-            },
+            }
         )
 
 
@@ -1018,12 +1153,20 @@ def _build_attempt_read_no_files(attempt: FileSubmissionAttempt) -> JsonObject:
 def _require_published(file_submission: FileSubmissionActivity, activity: Activity) -> None:
     if activity.published and FileSubmissionLifecycle(file_submission.lifecycle) == FileSubmissionLifecycle.PUBLISHED:
         return
-    raise HTTPException(status_code=409, detail="Файловая отправка не опубликована")
+    raise ConflictAppError(
+        code="FILE_SUBMISSION_NOT_PUBLISHED",
+        message="File submission is not published",
+        details={"file_submission_uuid": file_submission.file_submission_uuid, "activity_uuid": activity.activity_uuid},
+    )
 
 
 def _ensure_authorable(file_submission: FileSubmissionActivity) -> None:
     if FileSubmissionLifecycle(file_submission.lifecycle) == FileSubmissionLifecycle.ARCHIVED:
-        raise HTTPException(status_code=409, detail="Архивные отправки доступны только для чтения")
+        raise ConflictAppError(
+            code="FILE_SUBMISSION_ARCHIVED",
+            message="Archived file submissions are read-only",
+            details={"file_submission_uuid": file_submission.file_submission_uuid},
+        )
 
 
 def _get_course_for_activity(activity: Activity, db_session: Session) -> Course:
@@ -1036,20 +1179,24 @@ def _get_course_for_activity(activity: Activity, db_session: Session) -> Course:
         course = db_session.get(Course, chapter.course_id)
         if course is not None:
             return course
-    raise HTTPException(status_code=404, detail="Курс не найден")
+    raise course_not_found()
 
 
 def _get_course_or_404(course_id: int, db_session: Session) -> Course:
     course = db_session.get(Course, course_id)
     if course is None:
-        raise HTTPException(status_code=404, detail="Курс не найден")
+        raise course_not_found()
     return course
 
 
 def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     chapter = db_session.get(Chapter, chapter_id)
     if chapter is None:
-        raise HTTPException(status_code=404, detail="Глава не найдена")
+        raise NotFoundAppError(
+            code="CHAPTER_NOT_FOUND",
+            message="Chapter was not found",
+            details={"chapter_id": chapter_id},
+        )
     return chapter
 
 
@@ -1086,7 +1233,11 @@ def _require_submit_access(
     db_session: Session,
 ) -> None:
     if not user_has_course_access(user.id, course, db_session):
-        raise HTTPException(status_code=403, detail="Требуется зачисление на курс")
+        raise PermissionAppError(
+            code="COURSE_ENROLLMENT_REQUIRED",
+            message="Course enrollment is required",
+            details={"course_uuid": course.course_uuid},
+        )
     checker = PermissionChecker(db_session)
     checker.require(
         user.id,

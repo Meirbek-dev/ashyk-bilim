@@ -1,5 +1,6 @@
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import { apiFetch, apiJson, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
+import { clientApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 
 export type FileSubmissionAttemptStatus = 'DRAFT' | 'SUBMITTED' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
@@ -91,23 +92,6 @@ export interface FileSubmissionReviewQueue {
   page_size: number
 }
 
-async function readJsonOrThrow<T>(response: Response): Promise<T> {
-  if (response.ok) return (await response.json()) as T
-  let message = response.statusText || 'Request failed'
-  try {
-    const payload = await response.json()
-    message =
-      typeof payload?.detail === 'string'
-        ? payload.detail
-        : typeof payload?.detail?.message === 'string'
-          ? payload.detail.message
-          : message
-  } catch {
-    // keep fallback
-  }
-  throw new Error(message)
-}
-
 export async function getFileSubmissionByActivity(activityUuid: string): Promise<FileSubmissionActivity> {
   const response = await apiFetch(`file-submissions/activity/${activityUuid}`, {
     baseUrl: getAPIUrl(),
@@ -142,28 +126,25 @@ export async function updateFileSubmissionActivity(
   fileSubmissionUuid: string,
   payload: FileSubmissionUpdatePayload,
 ): Promise<FileSubmissionActivity> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}`, {
+  return apiJson<FileSubmissionActivity>(`file-submissions/${fileSubmissionUuid}`, {
     method: 'PATCH',
     baseUrl: getAPIUrl(),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  return readJsonOrThrow<FileSubmissionActivity>(response)
 }
 
 export async function publishFileSubmissionActivity(fileSubmissionUuid: string): Promise<FileSubmissionActivity> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/publish`, {
+  return apiJson<FileSubmissionActivity>(`file-submissions/${fileSubmissionUuid}/publish`, {
     method: 'POST',
     baseUrl: getAPIUrl(),
   })
-  return readJsonOrThrow<FileSubmissionActivity>(response)
 }
 
 export async function startFileSubmissionDraft(fileSubmissionUuid: string): Promise<FileSubmissionAttempt> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/draft`, {
+  return apiJson<FileSubmissionAttempt>(`file-submissions/${fileSubmissionUuid}/draft`, {
     method: 'POST',
   })
-  return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 
 export async function saveFileSubmissionDraft(
@@ -171,7 +152,7 @@ export async function saveFileSubmissionDraft(
   files: { upload_uuid: string; display_name?: string }[],
   version?: number | null,
 ): Promise<FileSubmissionAttempt> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/draft`, {
+  return apiJson<FileSubmissionAttempt>(`file-submissions/${fileSubmissionUuid}/draft`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -179,7 +160,6 @@ export async function saveFileSubmissionDraft(
     },
     body: JSON.stringify({ files }),
   })
-  return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 
 export async function submitFileSubmission(
@@ -187,7 +167,7 @@ export async function submitFileSubmission(
   files: { upload_uuid: string; display_name?: string }[],
   version?: number | null,
 ): Promise<FileSubmissionAttempt> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/submit`, {
+  return apiJson<FileSubmissionAttempt>(`file-submissions/${fileSubmissionUuid}/submit`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -195,7 +175,6 @@ export async function submitFileSubmission(
     },
     body: JSON.stringify({ files }),
   })
-  return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 
 export async function uploadSubmissionFile(file: File): Promise<{ upload_uuid: string; filename: string }> {
@@ -210,7 +189,10 @@ export async function uploadSubmissionFileWithProgress(
   file: File,
   onProgress?: (loaded: number, total: number) => void,
 ): Promise<{ upload_uuid: string; filename: string }> {
-  const createResponse = await apiFetch('uploads', {
+  const created = await apiJson<{
+    upload_uuid: string
+    put_url: string
+  }>('uploads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -219,10 +201,6 @@ export async function uploadSubmissionFileWithProgress(
       size: file.size,
     }),
   })
-  const created = await readJsonOrThrow<{
-    upload_uuid: string
-    put_url: string
-  }>(createResponse)
 
   // Use XHR for progress events on the large-binary PUT step
   await new Promise<void>((resolve, reject) => {
@@ -237,26 +215,24 @@ export async function uploadSubmissionFileWithProgress(
     }
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve()
-      else reject(new Error(`Upload failed: ${xhr.statusText || xhr.status}`))
+      else reject(clientApiError('NETWORK_UNAVAILABLE', `Upload failed: ${xhr.statusText || xhr.status}`))
     })
-    xhr.addEventListener('error', () => reject(new Error('Upload network error')))
-    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')))
+    xhr.addEventListener('error', () => reject(clientApiError('NETWORK_UNAVAILABLE', 'Upload network error')))
+    xhr.addEventListener('abort', () => reject(clientApiError('REQUEST_ABORTED', 'Upload aborted')))
     xhr.send(file)
   })
 
   const digest = await sha256(file)
-  const finalizeResponse = await apiFetch(`uploads/${created.upload_uuid}/finalize`, {
+  const finalized = await apiJson<{ upload_uuid: string }>(`uploads/${created.upload_uuid}/finalize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sha256: digest, content_type: file.type }),
   })
-  const finalized = await readJsonOrThrow<{ upload_uuid: string }>(finalizeResponse)
   return { upload_uuid: finalized.upload_uuid, filename: file.name }
 }
 
 export async function getFileSubmissionReviewQueue(fileSubmissionUuid: string): Promise<FileSubmissionReviewQueue> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/submissions`)
-  return readJsonOrThrow<FileSubmissionReviewQueue>(response)
+  return apiJson<FileSubmissionReviewQueue>(`file-submissions/${fileSubmissionUuid}/submissions`)
 }
 
 export async function getFileSubmissionFileUrl(attemptFileUuid: string): Promise<{
@@ -265,8 +241,7 @@ export async function getFileSubmissionFileUrl(attemptFileUuid: string): Promise
   get_url: string
   expires_at: string
 }> {
-  const response = await apiFetch(`file-submissions/files/${attemptFileUuid}/url`)
-  return readJsonOrThrow(response)
+  return apiJson(`file-submissions/files/${attemptFileUuid}/url`)
 }
 
 export function fileSubmissionExportUrl(fileSubmissionUuid: string): string {
@@ -284,7 +259,7 @@ export async function gradeFileSubmissionAttempt(
   },
   version?: number | null,
 ): Promise<FileSubmissionAttempt> {
-  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}/grade`, {
+  return apiJson<FileSubmissionAttempt>(`file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}/grade`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -297,7 +272,6 @@ export async function gradeFileSubmissionAttempt(
       status: payload.status,
     }),
   })
-  return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 
 async function sha256(file: File): Promise<string> {

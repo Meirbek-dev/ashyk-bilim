@@ -1,8 +1,8 @@
 'use server'
 
 import type { BulkPublishGradesResponse, Submission, TeacherGradeInput } from '@/types/grading'
-import { apiFetch, getResponseMetadata } from '@/lib/api-client'
-import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { apiFetch, apiJson, getResponseMetadata } from '@/lib/api-client'
+import { parseApiError } from '@/lib/api/assertSuccess'
 import { revalidateTag } from 'next/cache'
 import { StaleGradeError } from './errors'
 
@@ -47,26 +47,23 @@ export async function saveGrade(
     throw new StaleGradeError(latest ?? ({ submission_uuid: submissionUuid } as Submission))
   }
 
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to save grade'))
+  if (!res.ok) throw await parseApiError(res, endpoint)
 
   revalidateTag('submissions', 'max')
-  return meta.data as Submission
+  return (await res.json()) as Submission
 }
 
 export async function publishAssessmentGrades(assessmentUuid: string): Promise<BulkPublishGradesResponse> {
-  const res = await apiFetch(`assessments/${assessmentUuid}/publish-grades`, {
+  const response = await apiJson<BulkPublishGradesResponse>(`assessments/${assessmentUuid}/publish-grades`, {
     method: 'POST',
   })
-  const meta = await getResponseMetadata(res)
-  if (!meta.success) throw new Error(getApiErrorMessage(meta.data, 'Failed to publish grades'))
 
   revalidateTag('submissions', 'max')
-  return meta.data as BulkPublishGradesResponse
+  return response
 }
 
 export async function exportGradesCSV(assessmentUuid: string): Promise<string> {
   const res = await apiFetch(`assessments/${assessmentUuid}/submissions/export`)
-  if (!res.ok) return ''
+  if (!res.ok) throw await parseApiError(res, `assessments/${assessmentUuid}/submissions/export`)
   return res.text()
 }

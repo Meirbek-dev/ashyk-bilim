@@ -13,6 +13,20 @@ from src.app.errors import api_error_response
 from src.infra.settings import AppSettings
 
 _STATIC_CACHE_HEADER = "public, max-age=31536000, immutable"
+_MAX_REQUEST_ID_LENGTH = 128
+
+
+def _safe_request_id(value: str | None) -> str:
+    if value and 0 < len(value) <= _MAX_REQUEST_ID_LENGTH and all(ch.isprintable() for ch in value):
+        return value
+    return str(uuid.uuid4())
+
+
+def _safe_correlation_id(request: Request, request_id: str) -> str:
+    header_value = request.headers.get("X-Correlation-ID") or request.headers.get("traceparent")
+    if header_value and 0 < len(header_value) <= _MAX_REQUEST_ID_LENGTH and all(ch.isprintable() for ch in header_value):
+        return header_value
+    return request_id
 
 
 class CachedStaticFiles(StaticFiles):
@@ -46,10 +60,13 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        req_id = _safe_request_id(request.headers.get("X-Request-ID"))
+        correlation_id = _safe_correlation_id(request, req_id)
         request.state.request_id = req_id
+        request.state.correlation_id = correlation_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
 
     @app.middleware("http")

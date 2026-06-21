@@ -2,7 +2,7 @@
  * Unified RBAC service - single file for all permission and role API calls.
  *
  * Every RBAC-related fetch in the frontend should go through this module.
- * No inline fetch() calls for roles/permissions anywhere else.
+ * No inline network calls for roles/permissions anywhere else.
  */
 
 import type {
@@ -14,7 +14,7 @@ import type {
   UserBasic,
   UserRoleAssignment,
 } from '@/types/permissions'
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
 
 // ============================================================================
 // Internal helpers
@@ -24,18 +24,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers)
   headers.set('Content-Type', 'application/json')
 
-  const res = await apiFetch(path, {
+  return apiJson<T>(path, {
     headers,
     ...(options?.method ? { method: options.method } : {}),
     ...(options?.body !== undefined ? { body: options.body } : {}),
   })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `RBAC API error: ${res.status}`)
-  }
-
-  return res.json()
 }
 
 // ============================================================================

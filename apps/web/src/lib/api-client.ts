@@ -12,8 +12,7 @@
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
 import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
-import { getApiErrorMessage, parseApiErrorEnvelope } from '@/lib/api/assertSuccess'
-import type { ApiErrorLike } from '@/types/shared'
+import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 
 type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   /** Override which base URL to use (defaults to environment-aware selection). */
@@ -78,6 +77,21 @@ function createTimeoutReason(timeoutMs: number): Error {
   const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`)
   error.name = 'TimeoutError'
   return error
+}
+
+function createFrontendRequestId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'TimeoutError'
 }
 
 function combineAbortSignals(signals: AbortSignal[]): {
@@ -181,6 +195,12 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     cache: fetchInit.cache ?? defaultCache,
   }
 
+  const normalizedHeaders = new Headers(options.headers ?? {})
+  if (!normalizedHeaders.has('X-Request-ID')) {
+    normalizedHeaders.set('X-Request-ID', createFrontendRequestId())
+  }
+  options.headers = Object.fromEntries(normalizedHeaders.entries())
+
   // Server: forward cookies from the incoming request.
   if (isServer) {
     const existingHeaders = new Headers(options.headers ?? {})
@@ -209,10 +229,35 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   const combinedSignal = abortSignals.length > 0 ? combineAbortSignals(abortSignals) : null
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
-    })
+    let response: Response
+    try {
+      response = await fetch(url, {
+        ...options,
+        ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
+      })
+    } catch (error) {
+      const abortedReason = combinedSignal?.signal.aborted ? combinedSignal.signal.reason : undefined
+      const cause = abortedReason ?? error
+      if (isTimeoutError(cause)) {
+        throw clientApiError('CLIENT_TIMEOUT', cause.message, {
+          cause,
+          path: url,
+          requestId: normalizedHeaders.get('X-Request-ID'),
+        })
+      }
+      if (isAbortError(error) || combinedSignal?.signal.aborted) {
+        throw clientApiError('REQUEST_ABORTED', 'Request was aborted', {
+          cause,
+          path: url,
+          requestId: normalizedHeaders.get('X-Request-ID'),
+        })
+      }
+      throw clientApiError('NETWORK_UNAVAILABLE', 'Network request failed', {
+        cause: error,
+        path: url,
+        requestId: normalizedHeaders.get('X-Request-ID'),
+      })
+    }
 
     if (!isServer && response.status === 401) {
       const refreshed = await recoverBrowserSessionFrom401()
@@ -234,6 +279,39 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
 export const apiFetcher = async <T = unknown>(url: string): Promise<T> => {
   const response = await apiFetch(url, { method: 'GET' })
   return errorHandling<T>(response)
+}
+
+export async function apiJson<T = unknown>(path: string, init: ApiFetchInit = {}): Promise<T> {
+  const response = await apiFetch(path, init)
+  if (!response.ok) {
+    throw await parseApiError(response, path)
+  }
+  if (response.status === 204) {
+    return undefined as T
+  }
+  return (await response.json()) as T
+}
+
+export async function apiResult<T = unknown>(
+  path: string,
+  init: ApiFetchInit = {},
+  parse?: (data: unknown) => T,
+): Promise<{ data: T; headers: Record<string, string>; requestId: string | null }> {
+  const response = await apiFetch(path, init)
+  if (!response.ok) {
+    throw await parseApiError(response, path)
+  }
+  const rawData = response.status === 204 ? undefined : await response.json()
+  const data = parse ? parse(rawData) : (rawData as T)
+  const headers: Record<string, string> = {}
+  for (const [key, value] of response.headers.entries()) {
+    headers[key.toLowerCase()] = value
+  }
+  return {
+    data,
+    headers,
+    requestId: response.headers.get('x-request-id'),
+  }
 }
 
 export async function apiStreamFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
@@ -258,9 +336,7 @@ export const apiFetcherWithHeaders = async (
     method: 'GET',
   })
   if (!response.ok) {
-    const error: ApiErrorLike = new Error(response.statusText || 'Request failed')
-    error.status = response.status
-    throw error
+    throw await parseApiError(response, url)
   }
   const data = (await response.json()) as unknown
   const resHeaders: Record<string, string> = {}
@@ -272,24 +348,7 @@ export const apiFetcherWithHeaders = async (
 
 export async function errorHandling<T = unknown>(res: Response): Promise<T> {
   if (!res.ok) {
-    let data: unknown
-    try {
-      data = await res.json()
-    } catch {
-      data = null
-    }
-
-    const envelope = parseApiErrorEnvelope(data)
-    const dataRecord = data && typeof data === 'object' ? (data as Record<string, unknown>) : null
-    const error: ApiErrorLike = new Error(getApiErrorMessage(data, res.statusText || 'Request failed'))
-    error.status = res.status
-    error.data = data
-    if (envelope) {
-      error.code = envelope.code
-    }
-    error.detail = envelope?.details ?? dataRecord?.detail
-    error.requestId = envelope?.request_id ?? null
-    throw error
+    throw await parseApiError(res)
   }
   return res.json() as Promise<T>
 }

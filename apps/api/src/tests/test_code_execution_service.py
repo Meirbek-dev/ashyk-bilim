@@ -3,7 +3,6 @@ import sys
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -16,6 +15,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from collections.abc import Generator
 from typing import Never, cast
 
+from src.app.exceptions import AppError
 from src.db.assessments import CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.code_execution.service import (
@@ -405,19 +405,21 @@ async def test_code_execution_language_discovery_reports_service_unavailable() -
 
     service = CodeExecutionService(client_factory=Factory())
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(AppError) as exc_info:
         await service.list_languages()
 
     assert exc_info.value.status_code == 503
+    assert exc_info.value.code == "JUDGE0_UNAVAILABLE"
 
 
 def test_code_execution_rejects_disallowed_language() -> None:
     service = CodeExecutionService(client_factory=FakeFactory())
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(AppError) as exc_info:
         service._validate_language(999)
 
     assert exc_info.value.status_code == 400
+    assert exc_info.value.code == "CODE_LANGUAGE_NOT_ALLOWED"
 
 
 def test_judge0_configured_client_returns_fresh_retry_strategy() -> None:

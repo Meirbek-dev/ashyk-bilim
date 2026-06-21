@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api-client'
+import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 import type { components } from '@/lib/api/generated'
-import type { ApiErrorLike } from '@/types/shared'
 import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload'
 
 type ActivityRead = components['schemas']['ActivityRead']
@@ -87,20 +87,7 @@ async function uploadFormData(
   })
 
   if (!result.ok) {
-    let detail = `Upload failed with status ${result.status}`
-    try {
-      const errorData = await result.json()
-      if (typeof errorData?.detail === 'string') {
-        ;({ detail } = errorData)
-      }
-    } catch {
-      // Ignore JSON parse failures and preserve the generic message.
-    }
-
-    const error: ApiErrorLike = new Error(detail)
-    error.status = result.status
-    error.detail = detail
-    throw error
+    throw await parseApiError(result, path)
   }
 
   const json = (await result.json()) as ActivityRead
@@ -152,7 +139,9 @@ async function createVideoActivityChunked(
   const courseUuid = data.course_uuid
 
   if (!courseUuid) {
-    throw new Error('Missing course_uuid for chunked upload')
+    throw clientApiError('INVALID_CLIENT_REQUEST', 'Missing course_uuid for chunked upload', {
+      path: 'activities/video',
+    })
   }
 
   const tempActivityUuid = `activity_temp_${Date.now()}`
@@ -195,20 +184,7 @@ async function createVideoActivityChunked(
   })
 
   if (!result.ok) {
-    let detail = `Failed to create activity: ${result.status}`
-    try {
-      const errorData = await result.json()
-      if (typeof errorData?.detail === 'string') {
-        ;({ detail } = errorData)
-      }
-    } catch {
-      // Ignore JSON parse failures and preserve the generic message.
-    }
-
-    const error: ApiErrorLike = new Error(detail)
-    error.status = result.status
-    error.detail = detail
-    throw error
+    throw await parseApiError(result, 'activities/video')
   }
 
   return (await result.json()) as ActivityRead
@@ -243,7 +219,9 @@ async function createPdfActivityChunked(
   const courseUuid = data.course_uuid
 
   if (!courseUuid) {
-    throw new Error('Missing course_uuid for chunked upload')
+    throw clientApiError('INVALID_CLIENT_REQUEST', 'Missing course_uuid for chunked upload', {
+      path: 'activities/documentpdf',
+    })
   }
 
   const tempActivityUuid = `activity_temp_${Date.now()}`
@@ -296,5 +274,8 @@ export async function createFileActivity(
     return createPdfActivityStandard(file, data, chapterId, options, onProgress)
   }
 
-  throw new Error(`Unsupported file activity type: ${type}`)
+  throw clientApiError('INVALID_CLIENT_REQUEST', `Unsupported file activity type: ${type}`, {
+    details: { type },
+    path: 'activities',
+  })
 }

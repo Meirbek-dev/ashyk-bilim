@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { apiFetch } from '@/lib/api-client'
+import { apiJson } from '@/lib/api-client'
+import { isApiError } from '@/lib/api/assertSuccess'
 import type { components } from '@/lib/api/generated/schema'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -38,21 +39,24 @@ function answersFromSubmission(submission: AssessmentSubmissionRead | null | und
   return answers && typeof answers === 'object' ? (answers as Record<string, ItemAnswer>) : {}
 }
 
-async function readJsonOrThrow(response: Response) {
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    const message =
-      typeof payload?.detail === 'string'
-        ? payload.detail
-        : typeof payload?.detail?.message === 'string'
-          ? payload.detail.message
-          : response.statusText || 'Request failed'
-    const error = new Error(message) as Error & { status?: number; payload?: unknown }
-    error.status = response.status
-    error.payload = payload
-    throw error
-  }
-  return payload
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
+}
+
+function latestSubmissionFromConflict(error: unknown): AssessmentSubmissionRead | null {
+  if (!isApiError(error)) return null
+  const details = asRecord(error.details)
+  const directLatest = details?.latest
+  if (directLatest && typeof directLatest === 'object') return directLatest as AssessmentSubmissionRead
+
+  const legacyDetail = asRecord(asRecord(error.data)?.detail)
+  const legacyLatest = legacyDetail?.latest
+  return legacyLatest && typeof legacyLatest === 'object' ? (legacyLatest as AssessmentSubmissionRead) : null
+}
+
+function isOfflineRecoverable(error: unknown): boolean {
+  if (!isApiError(error)) return false
+  return error.status === 0 || error.code === 'CLIENT_TIMEOUT' || error.code === 'NETWORK_UNAVAILABLE'
 }
 
 export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
@@ -87,8 +91,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       queryOptions({
         queryKey: queryKeys.assessments.draft(assessmentUuid),
         queryFn: async () => {
-          const response = await apiFetch(`assessments/${assessmentUuid}/draft`)
-          return (await readJsonOrThrow(response)) as DraftRead
+          return apiJson<DraftRead>(`assessments/${assessmentUuid}/draft`)
         },
       }),
     [assessmentUuid],
@@ -119,8 +122,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     ...queryOptions({
       queryKey: submissionsQueryKey,
       queryFn: async () => {
-        const response = await apiFetch(`assessments/${assessmentUuid}/me`)
-        return (await readJsonOrThrow(response)) as AssessmentSubmissionRead[]
+        return apiJson<AssessmentSubmissionRead[]>(`assessments/${assessmentUuid}/me`)
       },
       enabled: Boolean(assessmentUuid),
     }),
@@ -186,7 +188,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const saveMutation = useMutation({
     mutationFn: async (answers: Record<string, ItemAnswer>) => {
       if (!assessmentUuid) throw new Error('Assessment is not ready')
-      const response = await apiFetch(`assessments/${assessmentUuid}/draft`, {
+      return apiJson<AssessmentSubmissionRead>(`assessments/${assessmentUuid}/draft`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +201,6 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           })),
         }),
       })
-      return (await readJsonOrThrow(response)) as AssessmentSubmissionRead
     },
     onMutate: () => setSaveState('saving'),
     onSuccess: async latest => {
@@ -210,11 +211,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       setSaveState('saved')
       await invalidateAssessmentState()
     },
-    onError: (error: Error & { status?: number; payload?: unknown }) => {
-      if (error.status === 409) {
-        const payload = error.payload as Record<string, unknown> | undefined
-        const detail = payload?.detail as Record<string, unknown> | undefined
-        const latest = detail?.latest as AssessmentSubmissionRead | undefined
+    onError: (error: unknown) => {
+      if (isApiError(error) && error.status === 409) {
+        const latest = latestSubmissionFromConflict(error)
         if (latest) {
           draftVersionRef.current = latest.draft_version
           versionRef.current = latest.version
@@ -231,12 +230,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
         return
       }
-      if (error.status === 429) {
+      if (isApiError(error) && error.status === 429) {
         setSaveState('dirty')
         return
       }
-      // Gentle offline recovery support
-      if (!error.status || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      if (isOfflineRecoverable(error)) {
         setSaveState('dirty')
         return
       }
@@ -245,9 +243,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         scope: 'assessment-flow',
         phase: 'save-draft',
         assessmentUuid,
-        error: error.message || 'Failed to save draft',
+        error: error instanceof Error ? error.message : 'Failed to save draft',
+        ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
       }).catch(() => undefined)
-      toast.error(error.message || 'Failed to save draft')
+      toast.error(error instanceof Error ? error.message : 'Failed to save draft')
     },
   })
 
@@ -270,7 +269,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         params.set('auto_submit', 'true')
       }
       const suffix = params.size > 0 ? `?${params.toString()}` : ''
-      const response = await apiFetch(`assessments/${assessmentUuid}/submit${suffix}`, {
+      return apiJson<AssessmentSubmissionRead>(`assessments/${assessmentUuid}/submit${suffix}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -283,7 +282,6 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           })),
         }),
       })
-      return (await readJsonOrThrow(response)) as AssessmentSubmissionRead
     },
     onSuccess: async latest => {
       draftVersionRef.current = latest.draft_version
@@ -295,11 +293,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         await invalidateAssessmentState()
       }
     },
-    onError: (error: Error & { status?: number; payload?: unknown }) => {
-      if (error.status === 409) {
-        const payload = error.payload as Record<string, unknown> | undefined
-        const detail = payload?.detail as Record<string, unknown> | undefined
-        const latest = detail?.latest as AssessmentSubmissionRead | undefined
+    onError: (error: unknown) => {
+      if (isApiError(error) && error.status === 409) {
+        const latest = latestSubmissionFromConflict(error)
         if (latest) {
           draftVersionRef.current = latest.draft_version
           versionRef.current = latest.version
@@ -309,22 +305,23 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         return
       }
       setSaveState('error')
-      if (error.status !== 429) {
+      if (!isApiError(error) || error.status !== 429) {
         void reportClientError({
           scope: 'assessment-flow',
           phase: 'submit-assessment',
           assessmentUuid,
-          error: error.message || 'Failed to submit assessment',
+          error: error instanceof Error ? error.message : 'Failed to submit assessment',
+          ...(isApiError(error) ? { code: error.code, requestId: error.requestId } : {}),
         }).catch(() => undefined)
       }
-      toast.error(error.message || t('submitFailed'))
+      toast.error(error instanceof Error ? error.message : t('submitFailed'))
     },
   })
 
   useEffect(() => {
     const loadError = draftQuery.error ?? submissionsQuery.error
     if (!loadError) return
-    const errorStatus = (loadError as { status?: number })?.status
+    const errorStatus = isApiError(loadError) ? loadError.status : undefined
     if (errorStatus === 429) return
     const { message } = loadError
     const key = `${assessmentUuid ?? 'missing'}:${message}`
@@ -335,6 +332,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       phase: 'load-submission-state',
       assessmentUuid,
       error: message,
+      ...(isApiError(loadError) ? { code: loadError.code, requestId: loadError.requestId } : {}),
     }).catch(() => undefined)
   }, [assessmentUuid, draftQuery.error, reportedLoadError, submissionsQuery.error])
 
@@ -418,8 +416,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
       },
       onError: (error: unknown) => {
-        const err = error as { status?: number }
-        if (err?.status === 429) {
+        if (isApiError(error) && error.status === 429) {
           lastSaveTimeRef.current = 0
           setSaveState('dirty')
           if (!nextSaveTimeoutRef.current) {

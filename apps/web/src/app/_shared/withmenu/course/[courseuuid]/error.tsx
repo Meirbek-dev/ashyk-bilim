@@ -1,11 +1,15 @@
-'use client' // Error components must be Client Components
-import { useEffect } from 'react'
+'use client'
 
-export default function Error({ error, reset: _reset }: { error: Error; reset: () => void }) {
-  useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error)
-  }, [error])
+import { RouteErrorState } from '@/components/ui/route-error-state'
 
-  return <div />
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return (
+    <RouteErrorState
+      description="This course could not be loaded. Retry the request or use the support reference if it keeps failing."
+      error={error}
+      reset={reset}
+      scope="shared-course-route"
+      title="Course failed to load"
+    />
+  )
 }

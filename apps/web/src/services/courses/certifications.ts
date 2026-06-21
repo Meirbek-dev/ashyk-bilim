@@ -74,9 +74,9 @@ export async function deleteCertification(certification_uuid: string, options?: 
 }
 
 export async function getCertificateByUuid(user_certification_uuid: string) {
-  const result = await fetch(
-    `${(await import('@services/config/config')).getAPIUrl()}certifications/certificate/${user_certification_uuid}`,
-    { method: 'GET', headers: { 'Content-Type': 'application/json' } },
-  )
+  const result = await apiFetch(`certifications/certificate/${user_certification_uuid}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
   return getResponseMetadata<AppCertification>(result)
 }

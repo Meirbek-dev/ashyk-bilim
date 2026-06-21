@@ -15,6 +15,7 @@ import { normalizeToUIMessage, stream } from '@tanstack/ai-client'
 import { EventType } from '@ag-ui/core'
 import type { TextPart } from '@tanstack/ai-client'
 import { apiStreamFetch } from '@/lib/api-client'
+import { parseApiError } from '@/lib/api/assertSuccess'
 import { generateUUID } from '@/lib/utils'
 
 /** Maximum buffer size (64 KB) to guard against a pathological server sending partial lines. */
@@ -338,7 +339,7 @@ export function createActivityChatAdapter({
       signal,
     })
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      throw await parseApiError(response, url)
     }
 
     const runId = generateUUID()

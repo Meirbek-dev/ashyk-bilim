@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint": "vp lint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
+    "audit:errors": "node scripts/audit-error-handling.mjs",
     "lint:fix": "eslint --fix . --cache",
     "lint:empty-folders": "node scripts/check-empty-folders.mjs",
     "format": "vp fmt --write",

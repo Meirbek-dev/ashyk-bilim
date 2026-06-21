@@ -13,8 +13,8 @@ import type {
   SavedAnalyticsViewListResponse,
   SavedAnalyticsViewRow,
 } from '@/types/analytics'
-import { apiFetch } from '@/lib/api-client'
-import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import { apiFetch, apiJson } from '@/lib/api-client'
+import { parseApiError } from '@/lib/api/assertSuccess'
 import { getAPIUrl } from '@services/config/config'
 
 export interface TeacherInterventionCreate {
@@ -75,19 +75,7 @@ const getOptionalInteger = (value: string | undefined): number | undefined => {
 }
 
 async function analyticsRequest<T>(path: string, query?: AnalyticsQuery, init?: RequestInit): Promise<T> {
-  const response = await apiFetch(`analytics/${path}${buildQueryString(query)}`, init)
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null)
-    const message = getApiErrorMessage(payload, `Analytics request failed (${response.status})`)
-    throw new Error(message)
-  }
-
-  if (response.status === 204) {
-    return undefined as T
-  }
-
-  return response.json()
+  return apiJson<T>(`analytics/${path}${buildQueryString(query)}`, init)
 }
 
 export function normalizeAnalyticsQuery(searchParams: Record<string, string | string[] | undefined>): AnalyticsQuery {
@@ -196,7 +184,7 @@ export async function downloadAnalyticsExport(exportUrl: string): Promise<{ blob
   const response = await apiFetch(exportUrl)
 
   if (!response.ok) {
-    throw new Error(`Analytics export failed (${response.status})`)
+    throw await parseApiError(response, exportUrl)
   }
 
   const pathWithoutQuery = exportUrl.split('?').shift() ?? exportUrl

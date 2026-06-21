@@ -1,12 +1,14 @@
 import logging
 import uuid
 from collections.abc import Mapping
+from typing import cast
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
+from src.app.exceptions import AppError
 from src.db.strict_base_model import PydanticStrictBaseModel
 
 logger = logging.getLogger(__name__)
@@ -39,10 +41,75 @@ def _get_request_id(request: Request) -> str:
     return str(uuid.uuid4())
 
 
+def _get_correlation_id(request: Request) -> str | None:
+    correlation_id = getattr(request.state, "correlation_id", None)
+    if isinstance(correlation_id, str) and correlation_id:
+        return correlation_id
+
+    header_correlation_id = request.headers.get("X-Correlation-ID")
+    if header_correlation_id:
+        return header_correlation_id
+
+    traceparent = request.headers.get("traceparent")
+    if traceparent:
+        return traceparent
+
+    return None
+
+
 def _response_headers(request_id: str, headers: Mapping[str, str] | None = None) -> dict[str, str]:
     response_headers = dict(headers or {})
     response_headers["X-Request-ID"] = request_id
     return response_headers
+
+
+def _response_headers_for_request(
+    request: Request,
+    request_id: str,
+    headers: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    response_headers = _response_headers(request_id, headers)
+    correlation_id = _get_correlation_id(request)
+    if correlation_id:
+        response_headers["X-Correlation-ID"] = correlation_id
+    return response_headers
+
+
+def _app_error_headers(exc: AppError) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    if exc.retry_after is not None:
+        headers["Retry-After"] = str(exc.retry_after)
+    return headers
+
+
+def _app_error_field_errors(exc: AppError) -> list[ApiFieldError]:
+    field_errors: list[ApiFieldError] = []
+    for field_error in exc.field_errors:
+        if isinstance(field_error, ApiFieldError):
+            field_errors.append(field_error)
+        elif isinstance(field_error, Mapping):
+            field_errors.append(ApiFieldError.model_validate(dict(field_error)))
+        else:
+            field_errors.append(ApiFieldError(message=str(field_error)))
+    return field_errors
+
+
+def _log_app_error(request: Request, exc: AppError, request_id: str) -> None:
+    if exc.status_code < 500 and exc.log_level not in {"error", "critical"}:
+        return
+
+    log = getattr(logger, exc.log_level, logger.error)
+    log(
+        "Application request error",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "error_code": exc.code,
+            "status_code": exc.status_code,
+        },
+        exc_info=exc.__cause__ is not None,
+    )
 
 
 def api_error_response(
@@ -66,7 +133,7 @@ def api_error_response(
     return JSONResponse(
         status_code=status_code,
         content=envelope.model_dump(mode="json"),
-        headers=_response_headers(request_id, headers),
+        headers=_response_headers_for_request(request, request_id, headers),
     )
 
 
@@ -201,6 +268,20 @@ def register_exception_handlers(app: FastAPI) -> None:
         ),
     }
 
+    @app.exception_handler(AppError)
+    def app_error_handler(request: Request, exc: AppError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        request_id = _get_request_id(request)
+        _log_app_error(request, exc, request_id)
+        return api_error_response(
+            request,
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            details=exc.public_details,
+            field_errors=_app_error_field_errors(exc),
+            headers=_app_error_headers(exc),
+        )
+
     @app.exception_handler(HTTPException)
     def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
         detail: object = exc.detail
@@ -213,7 +294,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 code=code,
                 message=message,
                 details=details,
-                headers=exc.headers,
+                headers=cast("Mapping[str, str] | None", exc.headers),
             )
 
         code, message, details = _normalize_http_detail(detail)
@@ -223,7 +304,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=code,
             message=message,
             details=details,
-            headers=exc.headers,
+            headers=cast("Mapping[str, str] | None", exc.headers),
         )
 
     @app.exception_handler(RequestValidationError)

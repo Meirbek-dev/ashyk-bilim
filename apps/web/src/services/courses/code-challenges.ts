@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api-client'
+import { APIError, parseApiError } from '@/lib/api/assertSuccess'
 import type {
   SubmissionStatus as CanonicalSubmissionStatus,
   Submission as GradingSubmission,
@@ -77,6 +78,20 @@ interface CanonicalRunRecord {
 interface CanonicalMetadata {
   judge0_state?: string
   latest_run?: CanonicalRunRecord | null
+}
+
+async function ensureOk(response: Response, path: string): Promise<void> {
+  if (!response.ok) {
+    throw await parseApiError(response, path)
+  }
+}
+
+function serviceError(code: string, message: string, status = 0): APIError {
+  return new APIError({
+    code,
+    message,
+    status,
+  })
 }
 
 interface CanonicalSubmissionRead {
@@ -241,9 +256,7 @@ function normalizeActivityUuid(activityUuid: string) {
 
 export async function getJudge0Languages(): Promise<Judge0Language[]> {
   const response = await apiFetch('code-execution/languages')
-  if (!response.ok) {
-    throw new Error('Failed to fetch code execution languages')
-  }
+  await ensureOk(response, 'code-execution/languages')
   return (await response.json()) as Judge0Language[]
 }
 
@@ -254,9 +267,7 @@ async function loadCodeAssessment(activityUuid: string): Promise<CodeAssessmentR
     return null
   }
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch code challenge assessment')
-  }
+  await ensureOk(response, `assessments/activity/${normalizeActivityUuid(activityUuid)}`)
 
   return (await response.json()) as CodeAssessmentRead
 }
@@ -449,10 +460,7 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.detail || 'Failed to update code challenge item')
-    }
+    await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`)
     return
   }
 
@@ -461,10 +469,7 @@ async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.detail || 'Failed to create code challenge item')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items`)
 }
 
 function normalizeJudge0State(
@@ -520,7 +525,7 @@ export async function saveCodeChallengeSettings(
 ): Promise<CodeChallengeSettings> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
-    throw new Error('Code challenge assessment not found')
+    throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
   const response = await apiFetch(`assessments/${assessment.assessment_uuid}`, {
@@ -536,16 +541,13 @@ export async function saveCodeChallengeSettings(
     }),
   })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.detail || 'Failed to save code challenge settings')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}`)
 
   await upsertCodeItem(assessment, settings)
 
   const refreshed = await loadCodeAssessment(activityUuid)
   if (!refreshed) {
-    throw new Error('Failed to reload code challenge settings')
+    throw serviceError('CODE_CHALLENGE_RELOAD_FAILED', 'Failed to reload code challenge settings')
   }
   return toCodeChallengeSettings(refreshed, getCodeAssessmentItem(refreshed))
 }
@@ -557,12 +559,12 @@ export async function submitCode(
 ): Promise<CodeSubmission> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
-    throw new Error('Code challenge assessment not found')
+    throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
   const codeItem = getCodeAssessmentItem(assessment)
   if (!codeItem) {
-    throw new Error('Code challenge item is not configured')
+    throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
   const response = await apiFetch(`assessments/${assessment.assessment_uuid}/submit`, {
@@ -582,10 +584,7 @@ export async function submitCode(
     }),
   })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.detail || 'Failed to submit code')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}/submit`)
 
   return mapCanonicalCodeSubmission((await response.json()) as GradingSubmission)
 }
@@ -597,12 +596,12 @@ export async function runTests(
 ): Promise<{ results: TestCaseResult[] }> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
-    throw new Error('Code challenge assessment not found')
+    throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
   const codeItem = getCodeAssessmentItem(assessment)
   if (!codeItem) {
-    throw new Error('Code challenge item is not configured')
+    throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
   const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
@@ -615,14 +614,11 @@ export async function runTests(
     }),
   })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.detail?.message || error.detail || 'Failed to run code challenge tests')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`)
 
   const run = (await response.json()) as CanonicalCodeRunResponse
   if (run.status === 'DEGRADED') {
-    throw new Error(run.error_message || 'Code runner is temporarily unavailable')
+    throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
 
   return {
@@ -646,12 +642,12 @@ export async function runCustomTest(
 }> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
-    throw new Error('Code challenge assessment not found')
+    throw serviceError('CODE_CHALLENGE_NOT_FOUND', 'Code challenge assessment not found', 404)
   }
 
   const codeItem = getCodeAssessmentItem(assessment)
   if (!codeItem) {
-    throw new Error('Code challenge item is not configured')
+    throw serviceError('CODE_CHALLENGE_ITEM_NOT_CONFIGURED', 'Code challenge item is not configured', 422)
   }
 
   const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
@@ -671,14 +667,11 @@ export async function runCustomTest(
     }),
   })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.detail?.message || error.detail || 'Failed to run custom test')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`)
 
   const run = (await response.json()) as CanonicalCodeRunResponse
   if (run.status === 'DEGRADED') {
-    throw new Error(run.error_message || 'Code runner is temporarily unavailable')
+    throw serviceError('JUDGE0_UNAVAILABLE', run.error_message || 'Code runner is temporarily unavailable', 503)
   }
 
   return {
@@ -696,7 +689,7 @@ export async function getSubmission(activityUuid: string, submissionUuid: string
   const submissions = await getSubmissions(activityUuid)
   const submission = submissions.find(item => item.submission_uuid === submissionUuid || item.uuid === submissionUuid)
   if (!submission) {
-    throw new Error('Failed to fetch submission')
+    throw serviceError('SUBMISSION_NOT_FOUND', 'Submission was not found', 404)
   }
   return submission
 }
@@ -709,9 +702,7 @@ export async function getSubmissions(activityUuid: string): Promise<CodeSubmissi
 
   const response = await apiFetch(`assessments/${assessment.assessment_uuid}/me`)
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch submissions')
-  }
+  await ensureOk(response, `assessments/${assessment.assessment_uuid}/me`)
 
   return ((await response.json()) as CanonicalSubmissionRead[] as unknown as GradingSubmission[]).map(
     mapCanonicalCodeSubmission,
