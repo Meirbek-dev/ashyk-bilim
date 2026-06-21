@@ -80,7 +80,7 @@ function createTimeoutReason(timeoutMs: number): Error {
 }
 
 function createFrontendRequestId(): string {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
+  if (typeof window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
   }
   return `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`
