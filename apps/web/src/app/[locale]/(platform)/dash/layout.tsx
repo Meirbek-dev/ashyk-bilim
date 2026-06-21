@@ -1,8 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
-import { SessionProvider } from '@/components/providers/session-provider'
-import { requireSession } from '@/lib/auth/session'
 import DashShell from './dash-shell'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,12 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function PlatformDashLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireSession()
-
-  return (
-    <SessionProvider initialSession={session}>
-      <DashShell>{children}</DashShell>
-    </SessionProvider>
-  )
+export default function PlatformDashLayout({ children }: { children: React.ReactNode }) {
+  return <DashShell>{children}</DashShell>
 }
