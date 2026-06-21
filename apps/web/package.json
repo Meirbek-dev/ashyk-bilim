@@ -63,6 +63,7 @@
     "@tiptap/pm": "^3.27.1",
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
+    "prosemirror-view": "^1.41.9",
     "@valibot/i18n": "^1.2.0",
     "artplayer": "^5.4.0",
     "canvas-confetti": "^1.9.4",
