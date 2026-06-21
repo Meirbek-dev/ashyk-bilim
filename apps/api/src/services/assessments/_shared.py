@@ -4,6 +4,7 @@ All private helpers used across multiple assessment service modules live here.
 """
 
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Literal, TypedDict, assert_never, cast
 
@@ -560,16 +561,16 @@ def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentIt
     items = _get_items_raw(assessment, db_session)
     if not items and assessment.kind == AssessmentType.CODE_CHALLENGE and assessment.id is not None:
         now = datetime.now(UTC)
-        default_body = {
+        default_body: dict[str, object] = {
             "kind": "CODE",
             "prompt": assessment.description or "",
             "input_spec": "",
             "output_spec": "",
-            "constraints": [],
-            "languages": [],
-            "starter_code": {},
-            "reference_solutions": {},
-            "tests": [],
+            "constraints": list[str](),
+            "languages": list[int](),
+            "starter_code": dict[str, str](),
+            "reference_solutions": dict[str, str](),
+            "tests": list[dict[str, object]](),
             "time_limit_seconds": 5,
             "memory_limit_mb": 256,
         }
@@ -577,7 +578,7 @@ def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentIt
             item_uuid=f"item_{ULID()}",
             assessment_id=assessment.id,
             order=1,
-            kind="CODE",
+            kind=ItemKind.CODE,
             title=assessment.title,
             body_json=default_body,
             metadata_json={},
@@ -1479,19 +1480,18 @@ def _get_policy_for_assessment(
     if assessment.policy_id is not None:
         policy = db_session.get(AssessmentPolicy, assessment.policy_id)
 
-    if policy is None and assessment.activity_id is not None:
-        policy = db_session.exec(
-            select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
-        ).first()
+    activity_id = assessment.activity_id
+    if policy is None and activity_id:
+        policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
         if policy is not None:
             assessment.policy_id = policy.id
             db_session.add(assessment)
             db_session.flush()
 
-    if policy is None and assessment.activity_id is not None:
+    if policy is None and activity_id:
         now = datetime.now(UTC)
         policy = _get_or_create_policy(
-            activity_id=assessment.activity_id,
+            activity_id=activity_id,
             kind=assessment.kind,
             patch=None,
             db_session=db_session,
@@ -1549,7 +1549,7 @@ def _build_canonical_policy(
     )
 
 
-def _review_visibility(settings: dict[str, object]) -> AssessmentReviewVisibility:
+def _review_visibility(settings: Mapping[str, object]) -> AssessmentReviewVisibility:
     value = settings.get("review_visibility")
     if value in {"NONE", "SCORE_ONLY", "FULL"}:
         return cast("AssessmentReviewVisibility", value)
@@ -1560,11 +1560,11 @@ def _review_visibility(settings: dict[str, object]) -> AssessmentReviewVisibilit
     return "FULL"
 
 
-def _bool_setting(payload: dict[str, object], *keys: str) -> bool:
+def _bool_setting(payload: Mapping[str, object], *keys: str) -> bool:
     return any(payload.get(key) is True for key in keys)
 
 
-def _int_setting(payload: dict[str, object], key: str) -> int | None:
+def _int_setting(payload: Mapping[str, object], key: str) -> int | None:
     value = payload.get(key)
     if isinstance(value, bool):
         return None
@@ -1575,7 +1575,7 @@ def _int_setting(payload: dict[str, object], key: str) -> int | None:
     return None
 
 
-def _float_setting(payload: dict[str, object], key: str) -> float | None:
+def _float_setting(payload: Mapping[str, object], key: str) -> float | None:
     value = payload.get(key)
     if isinstance(value, bool):
         return None

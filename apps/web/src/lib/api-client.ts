@@ -120,12 +120,12 @@ function combineAbortSignals(signals: AbortSignal[]): {
   }
 }
 
-function getBrowserReturnTo(): string {
+export function getBrowserReturnTo(): string {
   const { pathname, search } = globalThis.location
   return `${pathname}${search}` || '/'
 }
 
-async function refreshBrowserSession(returnTo: string): Promise<boolean> {
+export async function refreshBrowserSession(returnTo: string): Promise<boolean> {
   authRefreshPromise ??= fetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
     method: 'GET',
     headers: {
@@ -145,10 +145,23 @@ async function refreshBrowserSession(returnTo: string): Promise<boolean> {
   return authRefreshPromise
 }
 
-function redirectBrowserToLogin(returnTo: string): void {
+export function redirectBrowserToLogin(returnTo: string): void {
   if (authRedirectPending) return
   authRedirectPending = true
   globalThis.location.assign(buildLoginRedirect(returnTo))
+}
+
+export async function recoverBrowserSessionFrom401(returnTo = getBrowserReturnTo()): Promise<boolean> {
+  if (typeof globalThis.window === 'undefined' || isAuthRoute(globalThis.location.pathname)) {
+    return false
+  }
+
+  const refreshed = await refreshBrowserSession(returnTo)
+  if (!refreshed) {
+    redirectBrowserToLogin(returnTo)
+  }
+
+  return refreshed
 }
 
 export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
@@ -202,17 +215,12 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     })
 
     if (!isServer && response.status === 401) {
-      const returnTo = getBrowserReturnTo()
-      if (!isAuthRoute(globalThis.location.pathname)) {
-        const refreshed = await refreshBrowserSession(returnTo)
-        if (refreshed) {
-          return fetch(url, {
-            ...options,
-            ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
-          })
-        }
-
-        redirectBrowserToLogin(returnTo)
+      const refreshed = await recoverBrowserSessionFrom401()
+      if (refreshed) {
+        return fetch(url, {
+          ...options,
+          ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
+        })
       }
     }
 
@@ -226,6 +234,14 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
 export const apiFetcher = async <T = unknown>(url: string): Promise<T> => {
   const response = await apiFetch(url, { method: 'GET' })
   return errorHandling<T>(response)
+}
+
+export async function apiStreamFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
+  return apiFetch(path, {
+    ...init,
+    cache: init.cache ?? 'no-store',
+    timeoutMs: init.timeoutMs ?? false,
+  })
 }
 
 export const fetchResponseMetadata = async <T = unknown>(url: string): Promise<CustomResponseTyping<T>> => {

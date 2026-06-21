@@ -5,7 +5,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "turbo run build",
+    "build": "bun run --cwd apps/web build",
     "start": "turbo run start",
     "dev": "bun run services && turbo run dev",
     "dev:web": "cd apps/web && bun run dev",

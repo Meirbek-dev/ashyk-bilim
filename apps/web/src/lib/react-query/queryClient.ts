@@ -3,7 +3,7 @@
 import { MutationCache, QueryCache, QueryClient, environmentManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Query } from '@tanstack/react-query'
-import { isAuthRoute } from '@/lib/auth/redirect'
+import { recoverBrowserSessionFrom401 } from '@/lib/api-client'
 
 const FIVE_MINUTES = 5 * 60 * 1000
 
@@ -14,9 +14,7 @@ function handle401(error: unknown): void {
       : undefined
   if (status !== 401 || environmentManager.isServer()) return
   const { pathname, search } = globalThis.location
-  if (!isAuthRoute(pathname)) {
-    globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`)
-  }
+  void recoverBrowserSessionFrom401(`${pathname}${search}`).catch(() => undefined)
 }
 
 function shouldRetry(failureCount: number, error: unknown) {

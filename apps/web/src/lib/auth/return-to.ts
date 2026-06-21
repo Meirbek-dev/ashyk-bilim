@@ -3,7 +3,7 @@ import { getPathInfo, isAuthRoute } from './routes'
 function containsUnsafeCharacters(value: string): boolean {
   for (let i = 0; i < value.length; i += 1) {
     const code = value.charCodeAt(i)
-    if (code <= 0x1F || code === 0x7F || code === 0x5C) {
+    if (code <= 0x1f || code === 0x7f || code === 0x5c) {
       return true
     }
   }

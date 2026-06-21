@@ -127,9 +127,9 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, object]:
     if not isinstance(answers_payload, dict):
         _raise_invalid("Тело ответов должно быть объектом")
 
-    raw_answers = answers_payload.get("answers")
+    raw_answers: object = answers_payload.get("answers")
     if raw_answers is None:
-        raw_answers = {}
+        raw_answers = dict[str, object]()
 
     # Format 1: dict keyed by item_uuid
     if isinstance(raw_answers, dict):

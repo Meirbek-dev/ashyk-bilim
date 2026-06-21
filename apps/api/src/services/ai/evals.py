@@ -59,7 +59,7 @@ def evaluate_hint_ladder_safety(*, artifact: HintLadder) -> AIEvalCheckResult:
         reason="Hints preserve progressive disclosure."
         if passed
         else "Hint ladder reveals the solution before the final step.",
-        details={"revealing_steps": revealing_steps},
+        details={"revealing_steps": list(revealing_steps)},
     )
 
 

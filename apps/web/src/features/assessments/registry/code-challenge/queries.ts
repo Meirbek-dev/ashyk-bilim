@@ -10,10 +10,10 @@ import {
 } from '@/services/courses/code-challenges'
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 
-export function codeChallengeSettingsQueryOptions<TSettings = CodeChallengeSettings>(activityUuid: string) {
+export function codeChallengeSettingsQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.settings(activityUuid),
-    queryFn: async () => (await getCodeChallengeSettings(activityUuid)) as TSettings | null,
+    queryFn: async (): Promise<CodeChallengeSettings | null> => getCodeChallengeSettings(activityUuid),
     refetchOnWindowFocus: false,
   })
 }

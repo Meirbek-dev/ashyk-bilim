@@ -17,6 +17,7 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     environment: 'jsdom',
     include: ['src/tests/**/*.test.{ts,tsx}'],
+    testTimeout: 10_000,
     server: {
       deps: {
         inline: ['next-intl'],

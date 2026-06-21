@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { UseQueryResult } from '@tanstack/react-query'
 import {
   runCodeChallengeTestsMutationOptions,
   runCustomTestMutationOptions,
@@ -13,12 +14,13 @@ import {
   codeChallengeSubmissionsQueryOptions,
   judge0LanguagesQueryOptions,
 } from './queries'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 
-function codeChallengeSettingsHookOptions<TSettings = unknown>(activityUuid: string | null | undefined) {
+function codeChallengeSettingsHookOptions(activityUuid: string | null | undefined) {
   const normalizedActivityUuid = activityUuid ?? ''
 
   return queryOptions({
-    ...codeChallengeSettingsQueryOptions<TSettings>(normalizedActivityUuid),
+    ...codeChallengeSettingsQueryOptions(normalizedActivityUuid),
     enabled: Boolean(activityUuid),
   })
 }
@@ -47,8 +49,10 @@ function codeChallengeSubmissionHookOptions(
   })
 }
 
-export function useCodeChallengeSettings<TSettings = unknown>(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid))
+export function useCodeChallengeSettings(
+  activityUuid: string | null | undefined,
+): UseQueryResult<CodeChallengeSettings | null> {
+  return useQuery(codeChallengeSettingsHookOptions(activityUuid))
 }
 
 export function useJudge0Languages() {

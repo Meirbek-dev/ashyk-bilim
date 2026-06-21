@@ -23,7 +23,7 @@ function appendIfPresent(targetHeaders: Headers, key: string, value: string | nu
   }
 }
 
-export function buildTrustedForwardedHeaders(sourceHeaders: HeaderSource): Headers {
+export function buildForwardedRequestMetadataHeaders(sourceHeaders: HeaderSource): Headers {
   const forwardedHeaders = new Headers()
 
   appendIfPresent(forwardedHeaders, 'user-agent', sourceHeaders.get('user-agent'))
@@ -37,6 +37,8 @@ export function buildTrustedForwardedHeaders(sourceHeaders: HeaderSource): Heade
 
   return forwardedHeaders
 }
+
+export const buildTrustedForwardedHeaders = buildForwardedRequestMetadataHeaders
 
 export async function getServerAuthCookieHeader(): Promise<string> {
   const cookieStore = await cookies()
@@ -60,7 +62,7 @@ export function getRequestAuthCookieHeader(request: NextRequest): string {
 export async function serverAuthFetch(path: string, init: ServerAuthFetchInit = {}): Promise<Response> {
   const { includeAuthCookies, ...fetchInit } = init
   const requestHeaders = await headers()
-  const forwardedHeaders = buildTrustedForwardedHeaders(requestHeaders)
+  const forwardedHeaders = buildForwardedRequestMetadataHeaders(requestHeaders)
   const providedHeaders = new Headers(fetchInit.headers)
 
   providedHeaders.forEach((value, key) => {
@@ -87,7 +89,7 @@ export function serverAuthFetchForRequest(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const forwardedHeaders = buildTrustedForwardedHeaders(request.headers)
+  const forwardedHeaders = buildForwardedRequestMetadataHeaders(request.headers)
   const providedHeaders = new Headers(init.headers)
 
   providedHeaders.forEach((value, key) => {

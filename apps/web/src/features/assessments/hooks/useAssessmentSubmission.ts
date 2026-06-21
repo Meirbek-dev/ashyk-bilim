@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { apiFetch } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated/schema'
+import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'
 import type { ItemAnswer } from '../domain/items'
@@ -505,11 +506,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 }
 
 function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemAnswer> {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(answers)
-  }
-  // Fallback for environments without structuredClone (e.g. older Safari/Node)
-  return structuredClone(answers)
+  return cloneJsonValue(answers)
 }
 
 function areAnswersEqual(left: Record<string, ItemAnswer>, right: Record<string, ItemAnswer>): boolean {

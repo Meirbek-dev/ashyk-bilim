@@ -44,6 +44,16 @@ _INTENT_TO_KIND: dict[AIIntent, ArtifactKind] = {
     AIIntent.TEACHER_INTERVENTION: ArtifactKind.TEACHER_INTERVENTION,
 }
 
+type ArtifactAgentOutput = (
+    TutorAnswer
+    | FlashcardSet
+    | HintLadder
+    | CodeReviewHint
+    | AuthoringPatch
+    | RubricFeedbackExplanation
+    | TeacherInterventionDraft
+)
+
 _ARTIFACT_OUTPUT_TYPES = [
     TutorAnswer,
     FlashcardSet,
@@ -54,7 +64,7 @@ _ARTIFACT_OUTPUT_TYPES = [
     TeacherInterventionDraft,
 ]
 
-_ARTIFACT_AGENT = Agent(
+_ARTIFACT_AGENT: Agent[AgentDependencies, ArtifactAgentOutput] = Agent(
     system_prompt=_ARTIFACT_SYSTEM_PROMPT,
     deps_type=AgentDependencies,
     output_type=_ARTIFACT_OUTPUT_TYPES,
@@ -118,17 +128,6 @@ def _validate_artifact_for_intent(artifact: AIArtifact, intent: AIIntent) -> Non
         raise ModelRetry("Teacher intervention drafts must include privacy notes.")
 
 
-ArtifactAgentOutput = (
-    TutorAnswer
-    | FlashcardSet
-    | HintLadder
-    | CodeReviewHint
-    | AuthoringPatch
-    | RubricFeedbackExplanation
-    | TeacherInterventionDraft
-)
-
-
 @_ARTIFACT_AGENT.output_validator
 def _validate_artifact_output(ctx: RunContext[AgentDependencies], artifact: ArtifactAgentOutput) -> ArtifactAgentOutput:
     return cast("ArtifactAgentOutput", validate_artifact_output_for_deps(ctx.deps, artifact))
@@ -163,7 +162,7 @@ async def generate_structured_artifact(
     retrieved_chunks: list[RetrievedChunk],
 ) -> AIArtifact:
     if intent == AIIntent.FREEFORM:
-        return build_artifact_for_intent(intent=intent, answer=answer, retrieved_chunks=retrieved_chunks)
+        return build_artifact_for_intent(intent=intent, answer=answer, retrieved_chunks=list(retrieved_chunks))
 
     prompt = build_artifact_prompt(question=question, answer=answer, intent=intent)
     try:
@@ -176,4 +175,4 @@ async def generate_structured_artifact(
         return result.output
     except Exception:
         logger.exception("Structured artifact generation failed; falling back to deterministic artifact builder")
-        return build_artifact_for_intent(intent=intent, answer=answer, retrieved_chunks=retrieved_chunks)
+        return build_artifact_for_intent(intent=intent, answer=answer, retrieved_chunks=list(retrieved_chunks))

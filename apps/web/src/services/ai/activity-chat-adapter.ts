@@ -13,8 +13,8 @@
 
 import { normalizeToUIMessage, stream } from '@tanstack/ai-client'
 import { EventType } from '@ag-ui/core'
-import { getAPIUrl } from '@services/config/config'
 import type { TextPart } from '@tanstack/ai-client'
+import { apiStreamFetch } from '@/lib/api-client'
 import { generateUUID } from '@/lib/utils'
 
 /** Maximum buffer size (64 KB) to guard against a pathological server sending partial lines. */
@@ -316,9 +316,7 @@ export function createActivityChatAdapter({
     // Route to the correct endpoint based on whether we have an active session.
     const sessionUuid = readUuid()
     const intent = getIntent?.() ?? undefined
-    const url = sessionUuid
-      ? `${getAPIUrl()}ai/send/activity_chat_message_stream`
-      : `${getAPIUrl()}ai/start/activity_chat_session_stream`
+    const url = sessionUuid ? 'ai/send/activity_chat_message_stream' : 'ai/start/activity_chat_session_stream'
     const body = sessionUuid
       ? { aichat_uuid: sessionUuid, message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
       : { message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
@@ -333,11 +331,10 @@ export function createActivityChatAdapter({
       headers['X-Locale'] = activeLocale
     }
 
-    const response = await fetch(url, {
+    const response = await apiStreamFetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      credentials: 'include',
       signal,
     })
     if (!response.ok) {

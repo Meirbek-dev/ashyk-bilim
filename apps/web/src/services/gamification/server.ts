@@ -89,7 +89,7 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
   const entries = payload?.entries ?? []
   return {
     entries: entries.map((data, index) => {
-      return {
+      const entry: PlatformLeaderboard['entries'][number] = {
         user_id: numberOr(data.user_id),
         total_xp: Math.max(0, numberOr(data.total_xp)),
         level: Math.max(1, numberOr(data.level, 1)),
@@ -98,8 +98,11 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
         first_name: 'first_name' in data ? (data.first_name ?? null) : null,
         last_name: 'last_name' in data ? (data.last_name ?? null) : null,
         avatar_url: 'avatar_url' in data ? (data.avatar_url ?? null) : null,
-        ...(typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {}),
       }
+      if (typeof data.rank_change === 'number') {
+        entry.rank_change = data.rank_change
+      }
+      return entry
     }),
     total_participants: Math.max(0, numberOr(payload?.total_participants)),
     last_updated: fallbackDate,

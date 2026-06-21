@@ -1,5 +1,4 @@
 import { routing } from '@/i18n/routing'
-import { getSession } from '@/lib/auth/session'
 import { DEFAULT_THEME_MODE, THEME_MODE_STORAGE_KEY } from '@/lib/themes'
 import type { ThemeMode } from '@/lib/themes'
 import RootProviders from '../root-providers'
@@ -19,7 +18,7 @@ function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
 }
 
 /**
- * All dynamic API access in this layout (params, cookies, getSession) is
+ * All dynamic API access in this layout (params, cookies) is
  * covered by the <Suspense> in the root layout (app/layout.tsx), which is
  * the fully-static ancestor that owns the boundary for cacheComponents mode.
  */
@@ -32,15 +31,13 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   setRequestLocale(locale)
 
-  const [cookieStore, initialSession, messages] = await Promise.all([cookies(), getSession(), getMessages()])
+  const [cookieStore, messages] = await Promise.all([cookies(), getMessages()])
   const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value)
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <HtmlLangSync locale={locale} />
-      <RootProviders initialSession={initialSession} initialThemeMode={initialThemeMode}>
-        {children}
-      </RootProviders>
+      <RootProviders initialThemeMode={initialThemeMode}>{children}</RootProviders>
     </NextIntlClientProvider>
   )
 }

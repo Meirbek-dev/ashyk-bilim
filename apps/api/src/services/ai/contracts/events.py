@@ -16,7 +16,6 @@ def utc_now() -> datetime:
 
 class V2EventBase(PydanticStrictBaseModel):
     version: Literal[2] = 2
-    type: str
     event_id: str
     run_id: str
     thread_id: str

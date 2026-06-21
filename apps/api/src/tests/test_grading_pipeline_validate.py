@@ -36,7 +36,9 @@ def test_open_text_answer_max_chars_is_enforced() -> None:
         validate_and_parse(payload, items=[item])
 
     assert exc_info.value.status_code == 422
-    assert exc_info.value.detail["code"] == "open_text_too_long"
+    detail = exc_info.value.detail
+    assert isinstance(detail, dict)
+    assert detail["code"] == "open_text_too_long"
 
 
 def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
@@ -86,7 +88,7 @@ def test_validate_and_parse_populates_defaults_for_missing_items() -> None:
     ]
 
     # Empty payload
-    payload = {}
+    payload: dict[str, object] = {}
 
     parsed = validate_and_parse(payload, items=items)
 

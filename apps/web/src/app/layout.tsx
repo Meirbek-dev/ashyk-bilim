@@ -55,8 +55,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="relative" suppressHydrationWarning>
         <div className="relative isolate flex min-h-svh flex-col">
           {/*
-           * LocaleLayout (and all its children) awaits `params`, `cookies()`,
-           * and `getSession()` — all dynamic APIs in cacheComponents mode.
+           * LocaleLayout (and all its children) awaits `params` and `cookies()`,
+           * which are dynamic APIs in cacheComponents mode.
            * This Suspense in the fully-static root layout is the correct boundary:
            * the <html>/<head>/<body> shell is streamed immediately, then the
            * locale segment hydrates once its dynamic data resolves.

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 
+import { reportClientError } from '@/services/telemetry/client'
+
 // ── Persisted shape ───────────────────────────────────────────────────────────
 
 export interface PersistedAttemptData<T = unknown> {
@@ -168,13 +170,19 @@ export function useAssessmentAttempt<T = unknown>({
                 version: SCHEMA_VERSION,
               }),
             )
-          } catch {
-            // Quota still exceeded after purge — silently drop.
+          } catch (retryError) {
+            void reportClientError({
+              scope: 'assessment-flow',
+              phase: 'persist-local-attempt',
+              attemptUuid,
+              storageKeyPrefix,
+              error: retryError instanceof Error ? retryError.message : 'Local draft persistence failed after purge',
+            }).catch(() => undefined)
           }
         }
       }
     },
-    [attemptUuid, purgeExpired, storageKey],
+    [attemptUuid, purgeExpired, storageKey, storageKeyPrefix],
   )
 
   const saveAnswers = useCallback(

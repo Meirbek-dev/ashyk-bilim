@@ -1,5 +1,6 @@
 """Canonical assessment settings read/write path."""
 
+from collections.abc import Mapping
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
@@ -317,11 +318,11 @@ def _dump_settings(settings: AssessmentSettings) -> dict[str, object]:
     return settings.model_dump(mode="json")
 
 
-def _bool_setting(payload: dict[str, object], *keys: str) -> bool:
+def _bool_setting(payload: Mapping[str, object], *keys: str) -> bool:
     return any(payload.get(key) is True for key in keys)
 
 
-def _float_setting(payload: dict[str, object], key: str) -> float | None:
+def _float_setting(payload: Mapping[str, object], key: str) -> float | None:
     value = payload.get(key)
     if isinstance(value, bool):
         return None
