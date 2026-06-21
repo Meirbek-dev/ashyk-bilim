@@ -1,9 +1,10 @@
 import secrets
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.app.exceptions import ValidationAppError
 from src.db.users import User
 from src.services.auth.usernames import build_generated_username
 from src.services.users.users import ensure_user_has_default_role
@@ -24,7 +25,10 @@ async def find_or_create_google_user(
     """
     user_email = as_str(google_user_data.get("email", ""), field="email")
     if not user_email:
-        raise HTTPException(status_code=400, detail="No email address available from Google")
+        raise ValidationAppError(
+            code="GOOGLE_EMAIL_MISSING",
+            message="No email address was returned by Google",
+        )
 
     user = db_session.exec(select(User).where(User.email == user_email)).first()
 

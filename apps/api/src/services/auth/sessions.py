@@ -21,9 +21,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 import redis.asyncio
-from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
+from src.app.exceptions import DependencyAppError
 from src.db.auth_sessions import AuthSession
 from src.db.users import User
 from src.security.auth_lifetimes import (
@@ -464,10 +464,13 @@ async def create_auth_session(
     try:
         await _write_session_to_redis(data, REFRESH_SESSION_TTL)
     except Exception as exc:
-        logger.exception("Redis unavailable — cannot persist session")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication service temporarily unavailable",
+        logger.exception("Redis unavailable - cannot persist auth session")
+        raise DependencyAppError(
+            code="AUTH_SESSION_STORE_UNAVAILABLE",
+            message="Authentication service is temporarily unavailable",
+            details={"service": "redis", "operation": "create_auth_session"},
+            retry_after=30,
+            cause=exc,
         ) from exc
     await _fire_audit_create(data)
     return data, refresh_token

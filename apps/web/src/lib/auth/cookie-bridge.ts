@@ -18,14 +18,40 @@ interface ParsedSetCookie {
   value: string
 }
 
+interface SetCookieHeaderSource {
+  getSetCookie?: () => string[]
+  raw?: () => Record<string, string[] | undefined>
+}
+
 /**
  * Extract Set-Cookie header strings from a response.
  *
- * Uses the standard Headers.getSetCookie() API (available in Node 18+ and
- * Next.js 15+).  Returns an empty array when no cookies are present.
+ * Runtime header implementations differ here: modern undici exposes
+ * getSetCookie(), older server fetch shims expose raw(), and test/edge-like
+ * Headers may only expose a combined set-cookie value through get().
  */
 export function getSetCookieHeaders(responseHeaders: Headers): string[] {
-  return responseHeaders.getSetCookie()
+  const headerSource = responseHeaders as unknown as SetCookieHeaderSource
+
+  if (typeof headerSource.getSetCookie === 'function') {
+    const values = headerSource.getSetCookie().filter(Boolean)
+    if (values.length > 0) return values
+  }
+
+  if (typeof headerSource.raw === 'function') {
+    const rawSetCookies = headerSource.raw()['set-cookie']?.filter(Boolean) ?? []
+    if (rawSetCookies.length > 0) return rawSetCookies
+  }
+
+  const combinedSetCookie = responseHeaders.get('set-cookie')
+  return combinedSetCookie ? splitCombinedSetCookieHeader(combinedSetCookie) : []
+}
+
+function splitCombinedSetCookieHeader(header: string): string[] {
+  return header
+    .split(/,(?=\s*[!#$%&'*+\-.^_`|~0-9A-Za-z]+=)/)
+    .map(value => value.trim())
+    .filter(Boolean)
 }
 
 function parseSameSite(value: string): CookieMutationOptions['sameSite'] | undefined {

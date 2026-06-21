@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { loginAction, signupAction, logoutAction } from '@/app/actions/auth'
+import { getSetCookieHeaders } from '@/lib/auth/cookie-bridge'
 
 vi.mock('server-only', () => ({}))
 
@@ -49,12 +50,28 @@ describe('Frontend Auth Actions', () => {
     vi.restoreAllMocks()
   })
 
+  describe('cookie bridge', () => {
+    it('extracts cookies from a plain combined set-cookie header', () => {
+      const headers = {
+        get: (key: string) =>
+          key.toLowerCase() === 'set-cookie'
+            ? 'access_token_cookie=access.123; HttpOnly; Path=/, refresh_token_cookie=refresh.123; HttpOnly; Path=/api/auth/refresh; SameSite=Strict'
+            : null,
+      } as Headers
+
+      expect(getSetCookieHeaders(headers)).toEqual([
+        'access_token_cookie=access.123; HttpOnly; Path=/',
+        'refresh_token_cookie=refresh.123; HttpOnly; Path=/api/auth/refresh; SameSite=Strict',
+      ])
+    })
+  })
+
   describe('loginAction', () => {
     it('should successfully login and redirect', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({
-          'set-cookie': 'access_token=123; HttpOnly; Path=/',
+          'set-cookie': 'access_token_cookie=123; HttpOnly; Path=/',
         }),
       })
 
@@ -72,6 +89,14 @@ describe('Frontend Auth Actions', () => {
       expect(options.body).toBeInstanceOf(URLSearchParams)
       expect(options.body.get('username')).toBe('test@example.com')
       expect(options.body.get('password')).toBe('password123')
+      expect(mockCookies.set).toHaveBeenCalledWith(
+        'access_token_cookie',
+        '123',
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        }),
+      )
     })
 
     it('should return login_failed on 401', async () => {

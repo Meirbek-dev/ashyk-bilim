@@ -922,6 +922,7 @@
       "sessionRecoveryFailed": "We could not recover your session. Please sign in again.",
       "wrongCredentials": "Wrong email or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
+      "rateLimited": "Too many attempts. Please try again later.",
       "loginTitle": "Login",
       "noAccount": "Don't have an account?"
     },

@@ -70,7 +70,12 @@ const LoginClient = () => {
       })
 
       if (!response.ok) {
-        const message = response.reason === 'service_unavailable' ? t('serviceUnavailable') : t('wrongCredentials')
+        let message = t('wrongCredentials')
+        if (response.reason === 'service_unavailable') {
+          message = t('serviceUnavailable')
+        } else if (response.reason === 'rate_limited') {
+          message = t('rateLimited')
+        }
         return { error: message, fieldErrors: {} }
       }
 

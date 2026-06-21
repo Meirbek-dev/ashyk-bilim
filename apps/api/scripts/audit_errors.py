@@ -6,6 +6,7 @@ from pathlib import Path
 
 APP_ROOT = Path(__file__).resolve().parent.parent
 SRC_ROOT = APP_ROOT / "src"
+CLASSIFIED_BROAD_CATCH_MARKER = "audit: broad-exception="
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,9 @@ def _has_string_detail(node: ast.Call) -> bool:
 
 
 def _scan_file(path: Path) -> list[Finding]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    tree = ast.parse(text, filename=str(path))
     findings: list[Finding] = []
 
     for node in ast.walk(tree):
@@ -55,6 +58,18 @@ def _scan_file(path: Path) -> list[Finding]:
                 isinstance(node.type, ast.Name) and node.type.id in {"Exception", "BaseException"}
             )
             if catches_broad_exception:
+                source_line = lines[node.lineno - 1] if node.lineno - 1 < len(lines) else ""
+                if CLASSIFIED_BROAD_CATCH_MARKER in source_line:
+                    classification = source_line.split(CLASSIFIED_BROAD_CATCH_MARKER, 1)[1].strip()
+                    findings.append(
+                        Finding(
+                            path=path,
+                            line=node.lineno,
+                            code="CLASSIFIED_BROAD_EXCEPTION_CATCH",
+                            message=f"classified as {classification}",
+                        )
+                    )
+                    continue
                 findings.append(
                     Finding(
                         path=path,

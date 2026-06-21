@@ -20,7 +20,7 @@ interface SignupActionInput {
 
 interface AuthActionResult {
   ok: boolean
-  reason?: 'login_failed' | 'login_after_signup_failed' | 'signup_failed' | 'service_unavailable'
+  reason?: 'login_failed' | 'login_after_signup_failed' | 'signup_failed' | 'service_unavailable' | 'rate_limited'
   signupCode?: string
 }
 
@@ -78,7 +78,12 @@ export async function loginAction(input: LoginActionInput): Promise<AuthActionRe
   }
 
   if (!response.ok) {
-    const reason = response.status === 503 ? 'service_unavailable' : 'login_failed'
+    let reason: AuthActionResult['reason'] = 'login_failed'
+    if (response.status === 503) {
+      reason = 'service_unavailable'
+    } else if (response.status === 429) {
+      reason = 'rate_limited'
+    }
     return { ok: false, reason }
   }
 

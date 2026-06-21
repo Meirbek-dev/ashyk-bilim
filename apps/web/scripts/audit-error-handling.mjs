@@ -5,7 +5,14 @@ const root = process.cwd()
 const srcRoot = join(root, 'src')
 
 const ignoredDirs = new Set(['.next', 'coverage', 'dist', 'node_modules'])
-const allowedDirectFetch = ['src/lib/api-client.ts', 'src/app/api/', 'src/tests/', 'src/e2e/']
+const allowedDirectFetch = [
+  'src/lib/api-client.ts',
+  'src/lib/auth/server-auth-fetch.ts',
+  'src/lib/cache/revalidate.ts',
+  'src/app/api/',
+  'src/tests/',
+  'src/e2e/',
+]
 const allowedConsole = [
   'src/app/api/log-error/route.ts',
   'src/app/global-error.tsx',
