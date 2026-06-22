@@ -2,7 +2,7 @@ import { apiFetch } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
 
 export function createErrorEventId(): string {
-  if (typeof window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
+  if (typeof globalThis.window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
   }
   return `err_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`

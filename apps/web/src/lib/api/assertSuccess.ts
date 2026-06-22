@@ -183,7 +183,7 @@ function headersToRecord(headers: Headers): Record<string, string> {
 }
 
 export async function parseApiError(response: Response, path?: string): Promise<APIError> {
-  let data: unknown = null
+  let data: unknown
   try {
     data = await response.json()
   } catch {

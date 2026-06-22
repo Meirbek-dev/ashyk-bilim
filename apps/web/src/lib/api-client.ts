@@ -80,16 +80,16 @@ function createTimeoutReason(timeoutMs: number): Error {
 }
 
 let serverRequestCounter = 0
-const serverProcessId = typeof window === 'undefined' ? Math.random().toString(36).slice(2) : ''
+const serverProcessId = typeof globalThis.window === 'undefined' ? Math.random().toString(36).slice(2) : ''
 
 function createFrontendRequestId(): string {
-  if (typeof window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
+  if (typeof globalThis.window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
   }
   // Server-side: use a process-level prefix and an incrementing counter to avoid
   // calling dynamic APIs (Date.now(), Math.random(), etc.) during render. This
   // prevents Next.js prerender warnings and keeps static routes cacheable.
-  serverRequestCounter++
+  serverRequestCounter += 1
   return `web_${serverProcessId}_${serverRequestCounter}`
 }
 

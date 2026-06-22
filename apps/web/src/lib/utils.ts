@@ -1,6 +1,5 @@
-import { twMerge } from 'tailwind-merge'
-import type { ClassValue } from 'clsx'
-import { clsx } from 'clsx'
+import type { ClassValue } from 'cnfast'
+import { clsx, twMerge } from 'cnfast'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -11,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * and Node.js 14.17+). Falls back to a simple time-based id for ancient envs.
  */
 export function generateUUID(): string {
-  if (typeof window !== 'undefined' && typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (typeof globalThis.window !== 'undefined' && typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
   // Minimal fallback (RFC 4122 v4 shape) — no external dependency needed.
