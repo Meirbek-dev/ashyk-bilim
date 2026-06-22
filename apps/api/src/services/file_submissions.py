@@ -1132,13 +1132,11 @@ def _check_version(attempt: FileSubmissionAttempt, if_match: str | None) -> None
             details={"if_match": if_match},
         )
     if expected != attempt.version:
-        raise version_conflict(
-            {
-                "expected": expected,
-                "actual": attempt.version,
-                "latest": _build_attempt_read_no_files(attempt),
-            }
-        )
+        raise version_conflict({
+            "expected": expected,
+            "actual": attempt.version,
+            "latest": _build_attempt_read_no_files(attempt),
+        })
 
 
 def _build_attempt_read_no_files(attempt: FileSubmissionAttempt) -> JsonObject:

@@ -311,43 +311,6 @@ async def list_sessions(
     current_user: CurrentActiveUser,
 ) -> list[AuthSessionRead]:
     sessions = await get_user_active_sessions(current_user.id)
-
-    await clear_login_failures(email)
-    return await _build_login_response(request, user, user_manager)
-
-
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(
-    request: Request,
-    db_session: Annotated[Session, Depends(get_db_session)],
-) -> Response:
-    refresh_token = request.cookies.get(REFRESH_COOKIE_KEY)
-    if refresh_token:
-        inspection = await inspect_refresh_session(db_session, refresh_token)
-        if inspection.status == "active" and inspection.session and inspection.user_id:
-            await revoke_session(inspection.session.session_id, inspection.user_id)
-        elif inspection.status == "reused" and inspection.token_family_id and inspection.user_id:
-            await revoke_token_family(inspection.token_family_id, inspection.user_id)
-
-    response = await auth_backend.transport.get_logout_response()
-    clear_auth_cookies(response)
-    return response
-
-
-@router.get("/me", response_model=UserSession)
-def get_me(
-    request: Request,
-    db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: CurrentActiveUser,
-) -> UserSession:
-    return get_user_session(request, db_session, current_user)
-
-
-@router.get("/sessions", response_model=list[AuthSessionRead])
-async def list_sessions(
-    current_user: CurrentActiveUser,
-) -> list[AuthSessionRead]:
-    sessions = await get_user_active_sessions(current_user.id)
     return [AuthSessionRead.model_validate(s) for s in sessions]
 
 
@@ -460,7 +423,7 @@ async def google_callback(
     try:
         if state:
             frontend_callback = get_frontend_callback_from_state(state) or "/"
-    except (HTTPException, AppError):
+    except HTTPException, AppError:
         pass
 
     if error:

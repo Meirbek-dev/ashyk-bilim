@@ -57,7 +57,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   # Lint / Format
-  "ruff==0.15.16",
+  "ruff==0.15.18",
   # Type Checking
   "basedpyright>=1.39.8",
   "mypy>=2.1.0",
@@ -197,9 +197,10 @@ ignore = [
   "S105",
   "S106",
   "SLF001",
+  "PT003",
 ]
 
-"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106"]
+"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

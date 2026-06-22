@@ -155,7 +155,6 @@ def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]
             continue
 
 
-
 def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
     sanitized_errors: list[dict[str, object]] = []
     for error in exc.errors():

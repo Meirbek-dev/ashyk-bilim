@@ -24,7 +24,11 @@ def _safe_request_id(value: str | None) -> str:
 
 def _safe_correlation_id(request: Request, request_id: str) -> str:
     header_value = request.headers.get("X-Correlation-ID") or request.headers.get("traceparent")
-    if header_value and 0 < len(header_value) <= _MAX_REQUEST_ID_LENGTH and all(ch.isprintable() for ch in header_value):
+    if (
+        header_value
+        and 0 < len(header_value) <= _MAX_REQUEST_ID_LENGTH
+        and all(ch.isprintable() for ch in header_value)
+    ):
         return header_value
     return request_id
 

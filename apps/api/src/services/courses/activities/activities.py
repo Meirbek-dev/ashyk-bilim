@@ -253,10 +253,7 @@ def _sync_assessment_lifecycle(
     if activity.id is not None:
         assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
         if assessment is not None:
-            if (
-                lifecycle == AssessmentLifecycleStatus.PUBLISHED
-                and not was_published
-            ):
+            if lifecycle == AssessmentLifecycleStatus.PUBLISHED and not was_published:
                 from src.services.assessments.core import build_readiness
 
                 readiness = build_readiness(assessment, db_session)
