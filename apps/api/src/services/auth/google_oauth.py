@@ -173,14 +173,14 @@ def _decode_state(state: str) -> tuple[str, str]:
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_OAUTH_STATE_EXPIRED",
-            message="OAuth state has expired",
+            message="Состояние OAuth истекло",
             cause=exc,
         ) from exc
     except jwt.PyJWTError as exc:
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_OAUTH_STATE_INVALID",
-            message="Invalid OAuth state",
+            message="Некорректное состояние OAuth",
             cause=exc,
         ) from exc
 
@@ -188,7 +188,7 @@ def _decode_state(state: str) -> tuple[str, str]:
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_OAUTH_STATE_INVALID",
-            message="Invalid OAuth state type",
+            message="Некорректный тип состояния OAuth",
         )
     callback = payload.get("callback")
     jti = payload.get("jti")
@@ -196,7 +196,7 @@ def _decode_state(state: str) -> tuple[str, str]:
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_OAUTH_STATE_INVALID",
-            message="Invalid OAuth state",
+            message="Некорректное состояние OAuth",
         )
     return callback, jti or ""
 
@@ -221,7 +221,7 @@ async def _store_pkce_verifier(state_jti: str, code_verifier: str) -> None:
         # "session expired" error at callback time.
         raise DependencyAppError(
             code="AUTH_SESSION_STORE_UNAVAILABLE",
-            message="Authentication service is temporarily unavailable",
+            message="Сервис аутентификации временно недоступен",
             details={"service": "redis", "operation": "store_google_pkce"},
             retry_after=30,
         )
@@ -302,7 +302,7 @@ async def _get_google_userinfo(
         )
         raise DependencyAppError(
             code="GOOGLE_OAUTH_UNAVAILABLE",
-            message="Google OAuth is temporarily unavailable",
+            message="Сервис Google OAuth временно недоступен",
             details={"service": "google_oauth", "operation": "fetch_userinfo"},
             retry_after=30,
             cause=exc,
@@ -312,14 +312,14 @@ async def _get_google_userinfo(
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_USERINFO_FAILED",
-            message="Could not fetch Google user information",
+            message="Не удалось получить информацию о пользователе Google",
         )
     resp_json = response.json()
     if not isinstance(resp_json, dict):
         raise AppError.from_status(
             status_code=400,
             code="GOOGLE_USERINFO_INVALID_RESPONSE",
-            message="Google userinfo response is invalid",
+            message="Ответ с информацией о пользователе Google некорректен",
         )
     return cast("JsonObject", resp_json)
 
@@ -377,7 +377,7 @@ async def exchange_google_code(
             raise AppError.from_status(
                 status_code=400,
                 code="GOOGLE_OAUTH_SESSION_EXPIRED",
-                message="Google OAuth session has expired. Try again.",
+                message="Сессия Google OAuth истекла. Пожалуйста, попробуйте еще раз.",
             )
 
     async with _build_google_client(_TOKEN_TIMEOUT) as client:
@@ -418,7 +418,7 @@ async def exchange_google_code(
             raise AppError.from_status(
                 status_code=400,
                 code="GOOGLE_TOKEN_EXCHANGE_FAILED",
-                message="Could not exchange Google authorization code",
+                message="Не удалось обменять код авторизации Google",
                 cause=exc,
             ) from exc
         except httpx.HTTPError as exc:
@@ -432,7 +432,7 @@ async def exchange_google_code(
             )
             raise DependencyAppError(
                 code="GOOGLE_OAUTH_UNAVAILABLE",
-                message="Google OAuth is temporarily unavailable",
+                message="Сервис Google OAuth временно недоступен",
                 details={"service": "google_oauth", "operation": "exchange_token"},
                 retry_after=30,
                 cause=exc,
@@ -443,7 +443,7 @@ async def exchange_google_code(
             raise AppError.from_status(
                 status_code=400,
                 code="GOOGLE_TOKEN_INVALID_RESPONSE",
-                message="Google token response is invalid",
+                message="Ответ токена Google некорректен",
             )
         token = cast("JsonObject", token_json)
         access_token = token.get("access_token")
@@ -451,7 +451,7 @@ async def exchange_google_code(
             raise AppError.from_status(
                 status_code=400,
                 code="GOOGLE_ACCESS_TOKEN_MISSING",
-                message="Google token response did not include an access token",
+                message="Ответ токена Google не содержит токен доступа",
             )
         id_token = token.get("id_token")
         id_token_str = id_token if isinstance(id_token, str) else None

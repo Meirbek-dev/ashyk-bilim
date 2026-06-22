@@ -199,7 +199,7 @@ def _settings_for_activity(
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Assessment settings are not available for this activity type",
+        detail="Настройки оценивания недоступны для этого типа активности",
     )
 
 

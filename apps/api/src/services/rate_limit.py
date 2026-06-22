@@ -110,7 +110,7 @@ async def check_rate_limit(key: str, rule: RateLimitRule) -> None:
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail={
             "error_code": "RATE_LIMIT_EXCEEDED",
-            "message": "Too many requests. Please try again later.",
+            "message": "Слишком много запросов. Пожалуйста, попробуйте еще раз позже.",
             "retry_after": retry_after,
         },
         headers={"Retry-After": str(retry_after)},

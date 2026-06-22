@@ -93,7 +93,7 @@ def remove_platform_user(
     if not user_roles:
         raise HTTPException(
             status_code=404,
-            detail="User not found",
+            detail="Пользователь не найден",
         )
 
     admin_role = db_session.exec(select(Role).where(col(Role.slug).in_(list(ADMIN_ROLE_SLUGS)))).first()
@@ -108,14 +108,14 @@ def remove_platform_user(
     if len(admin_user_ids) == 1 and user_id in admin_user_ids:
         raise HTTPException(
             status_code=400,
-            detail="You can't remove the last admin of the platform",
+            detail="Вы не можете удалить последнего администратора платформы",
         )
 
     for role in user_roles:
         db_session.delete(role)
     db_session.commit()
 
-    return {"detail": "User removed from platform"}
+    return {"detail": "Пользователь удален с платформы"}
 
 
 def update_platform_user_role(
@@ -128,7 +128,7 @@ def update_platform_user_role(
 ) -> dict[str, str]:
     role = db_session.get(Role, role_id)
     if not role:
-        raise HTTPException(status_code=404, detail="Role not found")
+        raise HTTPException(status_code=404, detail="Роль не найдена")
 
     checker.require(current_user.id, "platform:update")
 
@@ -139,14 +139,14 @@ def update_platform_user_role(
         ur.user_id for ur in db_session.exec(select(UserRole).where(UserRole.role_id == admin_role_id)).all()
     }
     if not admin_user_ids:
-        raise HTTPException(status_code=400, detail="There is no admin in the platform")
+        raise HTTPException(status_code=400, detail="На платформе нет администраторов")
 
     if len(admin_user_ids) == 1 and user_id in admin_user_ids and role.slug not in ADMIN_ROLE_SLUGS:
-        raise HTTPException(status_code=400, detail="Platform must have at least one admin")
+        raise HTTPException(status_code=400, detail="На платформе должен быть как минимум один администратор")
 
     existing_roles = db_session.exec(select(UserRole).where(UserRole.user_id == user_id)).all()
     if not existing_roles:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     for user_role in existing_roles:
         db_session.delete(user_role)
@@ -155,4 +155,4 @@ def update_platform_user_role(
     checker.assign_role(user_id=user_id, role_id=require_persisted_id(role.id, model_name="Role"))
     db_session.commit()
 
-    return {"detail": "User role updated"}
+    return {"detail": "Роль пользователя обновлена"}

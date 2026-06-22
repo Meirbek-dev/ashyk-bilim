@@ -46,7 +46,7 @@ async def create_certification(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -90,7 +90,7 @@ async def get_certification(
     if not certification:
         raise HTTPException(
             status_code=404,
-            detail="Certification not found",
+            detail="Сертификация не найдена",
         )
 
     # Get course for RBAC check
@@ -100,7 +100,7 @@ async def get_certification(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -124,7 +124,7 @@ async def get_certifications_by_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -152,7 +152,7 @@ async def update_certification(
     if not certification:
         raise HTTPException(
             status_code=404,
-            detail="Certification not found",
+            detail="Сертификация не найдена",
         )
 
     # Get course for RBAC check
@@ -162,7 +162,7 @@ async def update_certification(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -206,7 +206,7 @@ async def delete_certification(
     if not certification:
         raise HTTPException(
             status_code=404,
-            detail="Certification not found",
+            detail="Сертификация не найдена",
         )
 
     # Get course for RBAC check
@@ -216,7 +216,7 @@ async def delete_certification(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -231,7 +231,7 @@ async def delete_certification(
     db_session.delete(certification)
     db_session.commit()
 
-    return {"detail": "Certification deleted successfully"}
+    return {"detail": "Сертификация успешно удалена"}
 
 
 ####################################################
@@ -276,7 +276,7 @@ async def create_certificate_user(
     if not certification:
         raise HTTPException(
             status_code=404,
-            detail="Certification not found",
+            detail="Сертификация не найдена",
         )
 
     # SECURITY: If current_user is provided, perform RBAC check
@@ -288,7 +288,7 @@ async def create_certificate_user(
         if not course:
             raise HTTPException(
                 status_code=404,
-                detail="Course not found",
+                detail="Курс не найден",
             )
 
         # Require course ownership or instructor role for creating certificates
@@ -321,7 +321,7 @@ async def create_certificate_user(
         if not user:
             raise HTTPException(
                 status_code=404,
-                detail="User not found",
+                detail="Пользователь не найден",
             )
 
         # Generate unique certificate UUID with better collision resistance and idempotency
@@ -411,7 +411,7 @@ async def create_certificate_user(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create certificate: {exc!s}",
+            detail=f"Не удалось создать сертификат: {exc!s}",
         ) from exc
 
 
@@ -433,7 +433,7 @@ async def get_user_certificates_for_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check with graceful fallback for learners retrieving their own certificates
@@ -673,7 +673,7 @@ async def get_certificate_by_user_certification_uuid(
     if not certificate_user:
         raise HTTPException(
             status_code=404,
-            detail="Certificate not found",
+            detail="Сертификат не найден",
         )
 
     # Get the associated certification
@@ -683,7 +683,7 @@ async def get_certificate_by_user_certification_uuid(
     if not certification:
         raise HTTPException(
             status_code=404,
-            detail="Certification not found",
+            detail="Сертификация не найдена",
         )
 
     # Get course information
@@ -693,7 +693,7 @@ async def get_certificate_by_user_certification_uuid(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # No RBAC check - allow anyone to access certificates by UUID

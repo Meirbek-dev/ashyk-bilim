@@ -172,7 +172,7 @@ def api_update_user_password(
     """
     # Password changes restricted to own account only
     if user_id != current_user.id:
-        raise ResourceAccessDenied(reason="You can only change your own password")
+        raise ResourceAccessDenied(reason="Вы можете изменять только собственный пароль")
 
     return update_user_password(request, db_session, current_user, user_id, form)
 
@@ -232,7 +232,7 @@ def api_delete_user(
 
     # Prevent self-deletion
     if user_id == current_user.id:
-        raise ResourceAccessDenied(reason="You cannot delete your own account through this endpoint")
+        raise ResourceAccessDenied(reason="Вы не можете удалить собственный аккаунт через этот эндпоинт")
 
     return delete_user_by_id(request, db_session, current_user, user_id)
 

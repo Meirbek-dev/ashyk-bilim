@@ -48,7 +48,7 @@ def _require_superuser(
     if not user.is_superuser:
         raise PermissionAppError(
             code="SUPERUSER_REQUIRED",
-            message="Superuser access is required",
+            message="Требуются права суперпользователя",
         )
     return user
 

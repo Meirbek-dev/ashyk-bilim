@@ -139,7 +139,7 @@ async def reset_password(
         raise AppError.from_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             code=ErrorCode.RESET_PASSWORD_BAD_TOKEN.value,
-            message="Invalid or expired password reset token",
+            message="Недействительный или истекший токен сброса пароля",
         )
     except exceptions.InvalidPasswordException as exc:
         raise AppError.from_status(
@@ -217,7 +217,7 @@ def _validate_callback_url(callback: str) -> None:
     raise AppError.from_status(
         status_code=status.HTTP_400_BAD_REQUEST,
         code="INVALID_CALLBACK_URL",
-        message="Invalid callback URL",
+        message="Некорректный callback URL",
         details={"callback": callback[:200]},
     )
 
@@ -238,7 +238,7 @@ def _build_google_error_redirect(callback: str, error_code: str) -> str:
 def _rate_limit_error(exc: RateLimitExceeded) -> RateLimitAppError:
     return RateLimitAppError(
         code="RATE_LIMITED",
-        message="Too many attempts. Try again later.",
+        message="Слишком много попыток. Пожалуйста, попробуйте позже.",
         details={"retry_after": exc.retry_after},
         retry_after=exc.retry_after,
     )
@@ -254,7 +254,7 @@ async def login(
     if await check_account_locked(email):
         raise RateLimitAppError(
             code="LOGIN_LOCKED",
-            message="Too many failed login attempts. Try again later.",
+            message="Слишком много неудачных попыток входа. Пожалуйста, попробуйте позже.",
             retry_after=900,
         )
     try:
@@ -272,8 +272,45 @@ async def login(
         raise AppError.from_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             code="LOGIN_BAD_CREDENTIALS",
-            message="Incorrect email or password",
+            message="Неверный адрес электронной почты или пароль",
         )
+
+    await clear_login_failures(email)
+    return await _build_login_response(request, user, user_manager)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    request: Request,
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> Response:
+    refresh_token = request.cookies.get(REFRESH_COOKIE_KEY)
+    if refresh_token:
+        inspection = await inspect_refresh_session(db_session, refresh_token)
+        if inspection.status == "active" and inspection.session and inspection.user_id:
+            await revoke_session(inspection.session.session_id, inspection.user_id)
+        elif inspection.status == "reused" and inspection.token_family_id and inspection.user_id:
+            await revoke_token_family(inspection.token_family_id, inspection.user_id)
+
+    response = await auth_backend.transport.get_logout_response()
+    clear_auth_cookies(response)
+    return response
+
+
+@router.get("/me", response_model=UserSession)
+def get_me(
+    request: Request,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: CurrentActiveUser,
+) -> UserSession:
+    return get_user_session(request, db_session, current_user)
+
+
+@router.get("/sessions", response_model=list[AuthSessionRead])
+async def list_sessions(
+    current_user: CurrentActiveUser,
+) -> list[AuthSessionRead]:
+    sessions = await get_user_active_sessions(current_user.id)
 
     await clear_login_failures(email)
     return await _build_login_response(request, user, user_manager)
@@ -325,7 +362,7 @@ async def refresh_token(
     if not token:
         raise AuthAppError(
             code="SESSION_EXPIRED",
-            message="Session has expired. Sign in again.",
+            message="Сессия истекла. Пожалуйста, войдите снова.",
         )
 
     inspection = await inspect_refresh_session(db_session, token)
@@ -333,7 +370,7 @@ async def refresh_token(
     if inspection.status == "rotated":
         raise ConflictAppError(
             code="REFRESH_TOKEN_ALREADY_ROTATED",
-            message="Refresh token was already rotated",
+            message="Refresh-токен уже был обновлен",
         )
 
     if inspection.status == "reused":
@@ -341,20 +378,19 @@ async def refresh_token(
             await revoke_token_family(inspection.token_family_id, inspection.user_id)
         raise AuthAppError(
             code="REFRESH_TOKEN_REUSED",
-            message="Refresh token reuse was detected. All sessions were revoked.",
+            message="Обнаружено повторное использование refresh-токена. Все сессии были аннулированы.",
         )
 
     if inspection.status != "active" or inspection.session is None or inspection.user_id is None:
         raise AuthAppError(
             code="SESSION_EXPIRED",
-            message="Session has expired. Sign in again.",
+            message="Сессия истекла. Пожалуйста, войдите снова.",
         )
 
     user = db_session.exec(select(User).where(User.id == inspection.user_id)).first()
     if not user or not user.is_active:
         raise AuthAppError(
             code="SESSION_EXPIRED",
-            message="Session has expired. Sign in again.",
         )
 
     ip = _client_ip(request)
@@ -390,7 +426,7 @@ async def google_authorize(
         raise AppError.from_status(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             code="GOOGLE_OAUTH_NOT_CONFIGURED",
-            message="Google OAuth is not configured",
+            message="Google OAuth не настроен",
             safe_details=False,
         )
 
@@ -457,7 +493,7 @@ async def google_callback(
             raise AppError.from_status(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 code="INVALID_CALLBACK_URL",
-                message="Invalid frontend callback URL",
+                message="Некорректный callback URL фронтенда",
             )
         frontend_callback = frontend_callback_value
 

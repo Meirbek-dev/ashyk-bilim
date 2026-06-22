@@ -154,6 +154,25 @@ def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]
             field_errors.append(ApiFieldError(message=str(error)))
             continue
 
+
+
+def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
+    sanitized_errors: list[dict[str, object]] = []
+    for error in exc.errors():
+        if isinstance(error, dict):
+            sanitized_errors.append({str(k): v for k, v in error.items() if k != "url"})
+        else:
+            sanitized_errors.append({"msg": str(error)})
+    return sanitized_errors
+
+
+def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]:
+    field_errors: list[ApiFieldError] = []
+    for error in exc.errors():
+        if not isinstance(error, dict):
+            field_errors.append(ApiFieldError(message=str(error)))
+            continue
+
         loc = error.get("loc")
         field = ".".join(str(part) for part in loc) if isinstance(loc, (list, tuple)) else None
         message = error.get("msg")
@@ -162,7 +181,7 @@ def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]
         field_errors.append(
             ApiFieldError(
                 field=field,
-                message=message if isinstance(message, str) else "Invalid value",
+                message=message if isinstance(message, str) else "Недопустимое значение",
                 code=code if isinstance(code, str) else "invalid",
                 details=ctx if isinstance(ctx, dict) else None,
             )
@@ -193,7 +212,7 @@ def _normalize_http_detail(detail: object) -> tuple[str, str, dict[str, object] 
         return "HTTP_ERROR", detail, None
 
     if isinstance(detail, list) and all(isinstance(item, dict) for item in detail):
-        return "HTTP_ERROR", "Request failed", [{str(k): v for k, v in item.items()} for item in detail]
+        return "HTTP_ERROR", "Ошибка запроса", [{str(k): v for k, v in item.items()} for item in detail]
 
     return "HTTP_ERROR", str(detail), None
 
@@ -250,7 +269,7 @@ def _install_openapi_error_schema(app: FastAPI) -> None:
                     response["content"] = _standard_error_response(response.get("description", "Error response"))[
                         "content"
                     ]
-                responses.setdefault("500", _standard_error_response("Internal server error"))
+                responses.setdefault("500", _standard_error_response("Внутренняя ошибка сервера"))
 
         app.openapi_schema = schema
         return schema
@@ -334,7 +353,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             request,
             status_code=500,
             code="INTERNAL_SERVER_ERROR",
-            message="Internal server error",
+            message="Внутренняя ошибка сервера",
         )
 
     _install_openapi_error_schema(app)

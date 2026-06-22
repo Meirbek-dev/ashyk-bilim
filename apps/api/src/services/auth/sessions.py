@@ -467,7 +467,7 @@ async def create_auth_session(
         logger.exception("Redis unavailable - cannot persist auth session")
         raise DependencyAppError(
             code="AUTH_SESSION_STORE_UNAVAILABLE",
-            message="Authentication service is temporarily unavailable",
+            message="Сервис аутентификации временно недоступен",
             details={"service": "redis", "operation": "create_auth_session"},
             retry_after=30,
             cause=exc,

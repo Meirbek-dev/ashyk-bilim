@@ -234,7 +234,7 @@ async def api_create_course(
     assert db_session is not None
     assert current_user is not None
     if name is None or public is None:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="name and public are required")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="name и public обязательны")
     course = CourseCreate(
         name=name,
         description=description,

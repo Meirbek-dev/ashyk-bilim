@@ -30,7 +30,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     @override
     async def validate_password(self, password: str, user: User | BaseUserCreate) -> None:
         if len(password) < MIN_PASSWORD_LENGTH:
-            raise InvalidPasswordException(reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
+            raise InvalidPasswordException(reason=f"Пароль должен содержать не менее {MIN_PASSWORD_LENGTH} символов")
 
     @override
     async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:

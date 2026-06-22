@@ -34,13 +34,13 @@ class RoleRepository:
     def get_or_404(self, role_id: int) -> Role:
         role = self.db.get(Role, role_id)
         if not role:
-            raise HTTPException(404, detail="Role not found")
+            raise HTTPException(404, detail="Роль не найдена")
         return role
 
     def get_permission_or_404(self, permission_id: int) -> Permission:
         perm = self.db.get(Permission, permission_id)
         if not perm:
-            raise HTTPException(404, detail="Permission not found")
+            raise HTTPException(404, detail="Разрешение не найдено")
         return perm
 
     def list_all(self) -> list[Role]:
@@ -130,7 +130,7 @@ class RoleRepository:
             .where(col(RolePermission.permission_id) == permission_id)
         ).first()
         if existing:
-            raise HTTPException(409, detail="Permission already assigned to role")
+            raise HTTPException(409, detail="Разрешение уже назначено этой роли")
         self.db.add(RolePermission(role_id=role_id, permission_id=permission_id))
         self.db.commit()
 
@@ -142,7 +142,7 @@ class RoleRepository:
             .where(col(RolePermission.permission_id) == permission_id)
         ).first()
         if not rp:
-            raise HTTPException(404, detail="Permission not assigned to this role")
+            raise HTTPException(404, detail="Разрешение не назначено этой роли")
         self.db.delete(rp)
         self.db.commit()
         # Return the Permission for the caller's audit log (still in identity map)

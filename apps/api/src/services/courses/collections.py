@@ -33,7 +33,7 @@ async def get_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Коллекция не существует")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -131,7 +131,7 @@ async def create_collection(
             except HTTPException:
                 raise HTTPException(
                     status_code=403,
-                    detail="You don't have permission to add courses to this collection",
+                    detail="У вас нет прав для добавления курсов в эту коллекцию",
                 )
 
             for course in found_courses:
@@ -173,7 +173,7 @@ async def update_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Коллекция не существует")
 
     # RBAC check
     if checker is None:
@@ -243,7 +243,7 @@ async def delete_collection(
     if not collection:
         raise HTTPException(
             status_code=404,
-            detail="Collection not found",
+            detail="Коллекция не найдена",
         )
 
     # RBAC check
@@ -259,7 +259,7 @@ async def delete_collection(
     db_session.delete(collection)
     db_session.commit()
 
-    return {"detail": "Collection deleted"}
+    return {"detail": "Коллекция удалена"}
 
 
 ####################################################

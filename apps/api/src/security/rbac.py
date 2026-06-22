@@ -358,7 +358,7 @@ class PermissionChecker:
         role = self.db.get(Role, role_id)
 
         if not role:
-            raise HTTPException(404, detail=f"Role not found: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не найдена: ID {role_id}")
 
         # Escalation prevention: assigner cannot grant a role with higher
         # priority than their own highest role.
@@ -368,7 +368,7 @@ class PermissionChecker:
             if role.priority > assigner_max_priority:
                 raise PermissionDenied(
                     permission="role:create",
-                    reason="Cannot assign a role with higher priority than your own",
+                    reason="Нельзя назначить роль с более высоким приоритетом, чем у вашей собственной роли",
                 )
 
         assert role.id is not None
@@ -406,14 +406,14 @@ class PermissionChecker:
         role = self.db.get(Role, role_id)
 
         if not role:
-            raise HTTPException(404, detail=f"Role not found: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не найдена: ID {role_id}")
 
         assert role.id is not None
         user_role = self.db.exec(
             select(UserRole).where(col(UserRole.user_id) == user_id).where(col(UserRole.role_id) == role.id)
         ).first()
         if not user_role:
-            raise HTTPException(404, detail=f"Role not assigned: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не назначена: ID {role_id}")
 
         self.db.delete(user_role)
         self.db.flush()

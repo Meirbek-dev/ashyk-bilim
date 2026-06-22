@@ -27,7 +27,7 @@ async def find_or_create_google_user(
     if not user_email:
         raise ValidationAppError(
             code="GOOGLE_EMAIL_MISSING",
-            message="No email address was returned by Google",
+            message="Google не вернул адрес электронной почты",
         )
 
     user = db_session.exec(select(User).where(User.email == user_email)).first()

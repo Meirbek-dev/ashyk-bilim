@@ -70,7 +70,7 @@ class ValidationAppError(AppError):
         self,
         *,
         code: str = "VALIDATION_ERROR",
-        message: str = "Request validation failed",
+        message: str = "Ошибка валидации запроса",
         details: ErrorDetails = None,
         field_errors: list[ErrorField] | None = None,
         cause: BaseException | None = None,
@@ -90,7 +90,7 @@ class AuthAppError(AppError):
         self,
         *,
         code: str = "AUTH_REQUIRED",
-        message: str = "Authentication is required",
+        message: str = "Требуется аутентификация",
         details: ErrorDetails = None,
         cause: BaseException | None = None,
     ) -> None:
@@ -108,7 +108,7 @@ class PermissionAppError(AppError):
         self,
         *,
         code: str = "PERMISSION_DENIED",
-        message: str = "You do not have permission to perform this action",
+        message: str = "У вас нет прав для выполнения этого действия",
         details: ErrorDetails = None,
         cause: BaseException | None = None,
     ) -> None:
@@ -144,7 +144,7 @@ class ConflictAppError(AppError):
         self,
         *,
         code: str = "VERSION_CONFLICT",
-        message: str = "The resource was changed by another operation",
+        message: str = "Ресурс был изменен другой операцией",
         details: ErrorDetails = None,
         cause: BaseException | None = None,
     ) -> None:
@@ -162,7 +162,7 @@ class RateLimitAppError(AppError):
         self,
         *,
         code: str = "RATE_LIMITED",
-        message: str = "Too many requests",
+        message: str = "Слишком много запросов",
         details: ErrorDetails = None,
         retry_after: int | None = None,
         cause: BaseException | None = None,
@@ -204,7 +204,7 @@ class InvariantAppError(AppError):
         self,
         *,
         code: str = "DATA_INVARIANT_VIOLATION",
-        message: str = "Internal data invariant violation",
+        message: str = "Нарушение внутреннего инварианта данных",
         details: ErrorDetails = None,
         cause: BaseException | None = None,
     ) -> None:
@@ -226,7 +226,7 @@ def _details(**values: object) -> dict[str, object]:
 def course_not_found(course_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="COURSE_NOT_FOUND",
-        message="Course was not found",
+        message="Курс не найден",
         details=_details(course_uuid=course_uuid),
     )
 
@@ -234,7 +234,7 @@ def course_not_found(course_uuid: str | None = None) -> NotFoundAppError:
 def activity_not_found(activity_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="ACTIVITY_NOT_FOUND",
-        message="Activity was not found",
+        message="Активность не найдена",
         details=_details(activity_uuid=activity_uuid),
     )
 
@@ -242,7 +242,7 @@ def activity_not_found(activity_uuid: str | None = None) -> NotFoundAppError:
 def submission_not_found(submission_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="SUBMISSION_NOT_FOUND",
-        message="Submission was not found",
+        message="Решение не найдено",
         details=_details(submission_uuid=submission_uuid),
     )
 
@@ -250,7 +250,7 @@ def submission_not_found(submission_uuid: str | None = None) -> NotFoundAppError
 def version_conflict(details: Mapping[str, object] | None = None) -> ConflictAppError:
     return ConflictAppError(
         code="VERSION_CONFLICT",
-        message="This resource was changed elsewhere. Review the latest version before saving.",
+        message="Этот ресурс был изменен в другом месте. Пожалуйста, проверьте последнюю версию перед сохранением.",
         details={str(key): value for key, value in (details or {}).items()},
     )
 
@@ -264,7 +264,7 @@ def dependency_unavailable(
 ) -> DependencyAppError:
     return DependencyAppError(
         code=f"{service.upper()}_UNAVAILABLE",
-        message=f"{service} is temporarily unavailable",
+        message=f"Сервис {service} временно недоступен",
         details=_details(service=service, operation=operation),
         retry_after=retry_after,
         cause=cause,
