@@ -75,11 +75,19 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
   }
 }
 
-export default async function PlatformHomePage() {
+interface PlatformHomePageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function PlatformHomePage({ searchParams }: PlatformHomePageProps) {
+  const resolvedParams = await searchParams
+  const pageParam = resolvedParams?.page
+  const page = typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) || 1 : 1
+
   return (
     <div className="w-full">
       <PageSuspense fallback={<CourseGridSkeleton />}>
-        <LandingContent />
+        <LandingContent page={page} />
       </PageSuspense>
     </div>
   )

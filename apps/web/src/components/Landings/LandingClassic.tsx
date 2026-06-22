@@ -24,6 +24,7 @@ interface LandingClassicProps {
   gamificationData?: DashboardData | null
   trailData: AppTrailData | null
   isAuthenticated: boolean
+  currentPage?: number
 }
 
 interface EmptyStateProps {
@@ -94,6 +95,7 @@ const LandingClassic = async ({
   gamificationData,
   trailData,
   isAuthenticated,
+  currentPage = 1,
 }: LandingClassicProps) => {
   const t = await getTranslations('HomePage')
   const gamificationProfile = gamificationData?.profile
@@ -124,7 +126,7 @@ const LandingClassic = async ({
                     initialCourses={courses}
                     initialTotal={totalCourses}
                     trailData={trailData}
-                    currentPage={1}
+                    currentPage={currentPage}
                     isAuthenticated={isAuthenticated}
                   />
                 ) : (

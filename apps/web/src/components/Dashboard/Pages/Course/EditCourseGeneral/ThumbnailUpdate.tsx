@@ -220,8 +220,10 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
           ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
           : '/empty_thumbnail.avif'
       }
-      return typeof course.courseStructure.thumbnail_video === 'string'
-        ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_video)
+      const thumbnailVideo =
+        typeof course.courseStructure.thumbnail_video === 'string' ? course.courseStructure.thumbnail_video.trim() : ''
+      return thumbnailVideo
+        ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, thumbnailVideo)
         : undefined
     },
     [course],

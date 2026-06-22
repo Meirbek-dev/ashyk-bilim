@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
   apiFetch: vi.fn(),
+  apiJson: vi.fn(),
+  apiResult: vi.fn(),
   getResponseMetadata: vi.fn(),
   revalidateTag: vi.fn(),
 }))
@@ -9,6 +11,25 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/api-client', () => ({
   apiFetch: mocks.apiFetch,
   getResponseMetadata: mocks.getResponseMetadata,
+  apiJson: async (path: string, init?: any) => {
+    const res = await mocks.apiFetch(path, init)
+    if (!res.ok) {
+      const err = new Error(res.statusText || 'API Error')
+      try {
+        const body = await res.json()
+        if (body && body.detail) {
+          err.message = body.detail
+        }
+      } catch {}
+      throw err
+    }
+    return res.json()
+  },
+  apiResult: async (path: string, init?: any) => {
+    const res = await mocks.apiFetch(path, init)
+    const data = await res.json()
+    return { data, headers: {}, requestId: null }
+  },
 }))
 
 vi.mock('next/cache', () => ({
@@ -54,7 +75,12 @@ function makeSubmission(overrides: Partial<Submission> = {}): Submission {
 }
 
 function mockSuccess(data: unknown) {
-  const response = {}
+  const response = {
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: () => Promise.resolve(data),
+  }
   mocks.apiFetch.mockResolvedValue(response)
   mocks.getResponseMetadata.mockResolvedValue({
     success: true,

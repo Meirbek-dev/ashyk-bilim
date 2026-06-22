@@ -538,7 +538,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
   const actionUrl = useMemo(() => actionLink || courseUrl, [actionLink, courseUrl])
 
-  const isEnrolled = hasMounted && Boolean(courseRun)
+  const isEnrolled = Boolean(courseRun)
   const titleId = `course-title-${cleanCourseUuid}`
 
   const currentUserId = currentUser?.id

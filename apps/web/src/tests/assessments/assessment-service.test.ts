@@ -19,6 +19,8 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 const mocks = vi.hoisted(() => ({
   apiFetch: vi.fn(),
+  apiJson: vi.fn(),
+  apiResult: vi.fn(),
   getResponseMetadata: vi.fn(),
   errorHandling: vi.fn(),
   revalidateTag: vi.fn(),
@@ -29,6 +31,25 @@ vi.mock('@/lib/api-client', () => ({
   apiFetch: mocks.apiFetch,
   getResponseMetadata: mocks.getResponseMetadata,
   errorHandling: mocks.errorHandling,
+  apiJson: async (path: string, init?: any) => {
+    const res = await mocks.apiFetch(path, init)
+    if (!res.ok) {
+      const err = new Error(res.statusText || 'API Error')
+      try {
+        const body = await res.json()
+        if (body && body.detail) {
+          err.message = body.detail
+        }
+      } catch {}
+      throw err
+    }
+    return res.json()
+  },
+  apiResult: async (path: string, init?: any) => {
+    const res = await mocks.apiFetch(path, init)
+    const data = await res.json()
+    return { data, headers: {}, requestId: null }
+  },
 }))
 
 vi.mock('next/cache', () => ({
@@ -89,8 +110,12 @@ function mockFetchNetworkError() {
 }
 
 function mockMetaSuccess(data: unknown) {
-  const mockResponse = {}
-  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.apiFetch.mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: () => Promise.resolve(data),
+  })
   mocks.getResponseMetadata.mockResolvedValue({
     success: true,
     data,
@@ -99,8 +124,12 @@ function mockMetaSuccess(data: unknown) {
 }
 
 function mockMetaFailure(detail = 'Operation failed') {
-  const mockResponse = {}
-  mocks.apiFetch.mockResolvedValue(mockResponse)
+  mocks.apiFetch.mockResolvedValue({
+    ok: false,
+    status: 400,
+    headers: new Headers(),
+    json: () => Promise.resolve({ detail }),
+  })
   mocks.getResponseMetadata.mockResolvedValue({
     success: false,
     data: { detail },

@@ -3,9 +3,23 @@ import { getPublicConfig } from '@services/config/env'
 import { resolveAvatarUrl } from './avatar'
 
 const getMediaUrl = () => getPublicConfig().mediaUrl
+const EMPTY_COURSE_THUMBNAIL_PATH = '/empty_thumbnail.avif'
+const EMPTY_COURSE_THUMBNAIL_FILE = EMPTY_COURSE_THUMBNAIL_PATH.slice(1)
 
-export function getCourseThumbnailMediaDirectory(courseUUID: string, fileId: string): string {
-  return `${getMediaUrl()}content/platform/courses/${courseUUID}/thumbnails/${fileId}`
+export function getCourseThumbnailMediaDirectory(courseUUID?: string | null, fileId?: string | null): string {
+  const normalizedCourseUUID = courseUUID?.trim()
+  const normalizedFileId = fileId?.trim()
+
+  if (
+    !normalizedCourseUUID ||
+    !normalizedFileId ||
+    normalizedFileId === EMPTY_COURSE_THUMBNAIL_FILE ||
+    normalizedFileId === EMPTY_COURSE_THUMBNAIL_PATH
+  ) {
+    return EMPTY_COURSE_THUMBNAIL_PATH
+  }
+
+  return `${getMediaUrl()}content/platform/courses/${normalizedCourseUUID}/thumbnails/${normalizedFileId}`
 }
 
 export function getLandingMediaDirectory(fileId: string): string {

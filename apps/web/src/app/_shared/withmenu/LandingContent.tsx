@@ -78,7 +78,7 @@ function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | n
   })
 }
 
-export async function LandingContent() {
+export async function LandingContent({ page = 1 }: { page?: number }) {
   try {
     // Fetch platform info with detailed error handling
     try {
@@ -103,7 +103,7 @@ export async function LandingContent() {
       : Promise.resolve(null)
 
     const [coursesData, collections, gamificationData, trailData] = await Promise.all([
-      getCourses(undefined, 1, 20).catch((error: unknown) => {
+      getCourses(undefined, page, 20).catch((error: unknown) => {
         logLandingFetchError('Courses fetch failed', error)
         return { courses: [], total: 0 }
       }),
@@ -127,6 +127,7 @@ export async function LandingContent() {
         gamificationData={gamificationData}
         trailData={trailData}
         isAuthenticated={Boolean(session)}
+        currentPage={page}
       />
     )
   } catch (error) {

@@ -101,14 +101,23 @@ function isTimeoutError(error: unknown): boolean {
   return error instanceof Error && error.name === 'TimeoutError'
 }
 
-function combineAbortSignals(signals: AbortSignal[]): {
+function combineAbortSignals(signals: (AbortSignal | undefined | null)[]): {
   signal: AbortSignal
   cleanup: () => void
 } {
-  const activeSignals = signals.filter(Boolean)
+  const activeSignals = signals.filter((s): s is AbortSignal => Boolean(s))
+
+  if (activeSignals.length === 0) {
+    const controller = new AbortController()
+    return { signal: controller.signal, cleanup: () => undefined }
+  }
 
   if (activeSignals.length === 1) {
     return { signal: activeSignals[0]!, cleanup: () => undefined }
+  }
+
+  if (typeof AbortSignal.any === 'function') {
+    return { signal: AbortSignal.any(activeSignals), cleanup: () => undefined }
   }
 
   const controller = new AbortController()
