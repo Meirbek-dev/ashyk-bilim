@@ -43,7 +43,7 @@ async def apply_course_contributor(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Check if course exists
@@ -53,7 +53,7 @@ async def apply_course_contributor(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # Check if user already has any authorship role for this course
@@ -69,7 +69,7 @@ async def apply_course_contributor(
     if existing_authorship:
         raise HTTPException(
             status_code=400,
-            detail="You already have an authorship role for this course",
+            detail="У вас уже есть роль автора для этого курса",
         )
 
     # Create pending contributor application
@@ -88,7 +88,7 @@ async def apply_course_contributor(
     db_session.refresh(resource_author)
 
     return {
-        "detail": "Contributor application submitted successfully",
+        "detail": "Заявка на соавторство успешно отправлена",
         "status": "pending",
     }
 
@@ -113,7 +113,7 @@ async def update_course_contributor(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Check if course exists
@@ -123,7 +123,7 @@ async def update_course_contributor(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require the same contributor-management capability exposed by
@@ -144,14 +144,14 @@ async def update_course_contributor(
     if not existing_authorship:
         raise HTTPException(
             status_code=404,
-            detail="Contributor not found for this course",
+            detail="Автор не найден для этого курса",
         )
 
     # SECURITY: Don't allow changing the role of the creator
     if existing_authorship.authorship == ResourceAuthorshipEnum.CREATOR:
         raise HTTPException(
             status_code=400,
-            detail="Cannot modify the role of the course creator",
+            detail="Нельзя изменить роль создателя курса",
         )
 
     # Update the contributor's role and status
@@ -163,7 +163,7 @@ async def update_course_contributor(
     db_session.commit()
     db_session.refresh(existing_authorship)
 
-    return {"detail": "Contributor updated successfully", "status": "success"}
+    return {"detail": "Соавтор успешно обновлен", "status": "success"}
 
 
 async def get_course_contributors(
@@ -185,7 +185,7 @@ async def get_course_contributors(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require read access to the course
@@ -232,7 +232,7 @@ async def add_bulk_course_contributors(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Check if course exists
@@ -242,7 +242,7 @@ async def add_bulk_course_contributors(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require the same contributor-management capability exposed by
@@ -277,7 +277,7 @@ async def add_bulk_course_contributors(
             if not user or user.id is None:
                 results["failed"].append({
                     "username": username,
-                    "reason": "User not found or invalid",
+                    "reason": "Пользователь не найден или недействителен",
                 })
                 continue
 
@@ -285,7 +285,7 @@ async def add_bulk_course_contributors(
             if user.id in existing_authorship_map:
                 results["failed"].append({
                     "username": username,
-                    "reason": "User already has an authorship role for this course",
+                    "reason": "Пользователь уже имеет роль автора для этого курса",
                 })
                 continue
 
@@ -330,7 +330,7 @@ async def remove_bulk_course_contributors(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Check if course exists
@@ -340,7 +340,7 @@ async def remove_bulk_course_contributors(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require the same contributor-management capability exposed by
@@ -373,7 +373,7 @@ async def remove_bulk_course_contributors(
             if not user or user.id is None:
                 results["failed"].append({
                     "username": username,
-                    "reason": "User not found or invalid",
+                    "reason": "Пользователь не найден или недействителен",
                 })
                 continue
 
@@ -383,7 +383,7 @@ async def remove_bulk_course_contributors(
             if not existing_authorship:
                 results["failed"].append({
                     "username": username,
-                    "reason": "User is not a contributor for this course",
+                    "reason": "Пользователь не является соавтором этого курса",
                 })
                 continue
 
@@ -391,7 +391,7 @@ async def remove_bulk_course_contributors(
             if existing_authorship.authorship == ResourceAuthorshipEnum.CREATOR:
                 results["failed"].append({
                     "username": username,
-                    "reason": "Cannot remove the course creator",
+                    "reason": "Нельзя удалить создателя курса",
                 })
                 continue
 
