@@ -29,16 +29,26 @@ const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondar
   ARCHIVED: 'destructive',
 }
 
+const FallbackProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>
+
 export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const t = useTranslations('Features.Assessments.Studio')
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid)
+  const [prevKind, setPrevKind] = useState<string | undefined>(undefined)
   const [kindModule, setKindModule] = useState<KindModule | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
 
+  if (vm?.kind !== prevKind) {
+    setPrevKind(vm?.kind)
+    setKindModule(null)
+  }
+
   useEffect(() => {
-    setIsMounted(true)
+    globalThis.setTimeout(() => {
+      setIsMounted(true)
+    }, 0)
   }, [])
 
   const lifecycleLabels: Record<AssessmentLifecycle, string> = {
@@ -51,7 +61,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   useEffect(() => {
     if (!vm?.kind) return
     let cancelled = false
-    setKindModule(null)
     void loadKindModule(vm.kind).then(module => {
       if (!cancelled) setKindModule(module)
       return module
@@ -98,7 +107,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   // Resolve slots
   const Author = kindModule?.Author
-  const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>)
+  const Provider = kindModule?.Provider ?? FallbackProvider
 
   const slotProps = { activityUuid, courseUuid }
 

@@ -12,7 +12,7 @@ import { Skeleton } from '@components/ui/skeleton'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from '@components/ui/AppLink'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 
@@ -215,9 +215,12 @@ const SearchPage = () => {
     }
   }
 
-  useEffect(() => {
+  const [prevQuery, setPrevQuery] = useState(query)
+
+  if (query !== prevQuery) {
+    setPrevQuery(query)
     setSearchQuery(query)
-  }, [query])
+  }
 
   const totalResults = searchResults.total_courses + searchResults.total_collections + searchResults.total_users
   const totalPages = Math.ceil(totalResults / perPage)

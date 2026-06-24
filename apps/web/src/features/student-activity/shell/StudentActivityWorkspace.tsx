@@ -71,11 +71,14 @@ export default function StudentActivityWorkspace({
     }
   }, [activityType])
 
-  useEffect(() => {
-    if (focusMode && isAttemptActive) {
-      setFocusMode(false)
-    }
-  }, [focusMode, isAttemptActive])
+  if (focusMode && isAttemptActive) {
+    setFocusMode(false)
+  }
+
+  if (focusMode && (aiOpen || outlineOpen)) {
+    setAiOpen(false)
+    setOutlineOpen(false)
+  }
 
   useEffect(() => {
     if (focusMode) {
@@ -87,12 +90,6 @@ export default function StudentActivityWorkspace({
 
     delete document.documentElement.dataset.activityFocus
     return undefined
-  }, [focusMode])
-
-  useEffect(() => {
-    if (!focusMode) return
-    setAiOpen(false)
-    setOutlineOpen(false)
   }, [focusMode])
 
   useEffect(() => {
@@ -233,10 +230,15 @@ function useContentReadCompletion({
     setComplete(nextComplete)
   }, [])
 
-  useEffect(() => {
+  const [prevResetKey, setPrevResetKey] = useState<string>(resetKey)
+  const [prevEnabled, setPrevEnabled] = useState<boolean>(enabled)
+
+  if (resetKey !== prevResetKey || enabled !== prevEnabled) {
+    setPrevResetKey(resetKey)
+    setPrevEnabled(enabled)
     completeRef.current = !enabled
     setComplete(!enabled)
-  }, [enabled, resetKey])
+  }
 
   useEffect(() => {
     if (!enabled) return

@@ -15,33 +15,15 @@ export default async function PlatformAnalyticsAdminPage(props: PageProps) {
   const query = normalizeAnalyticsQuery(resolvedSearchParams)
   const t = await getTranslations('TeacherAnalytics')
 
+  let overview: Awaited<ReturnType<typeof getTeacherOverview>>
+  let adminData: Awaited<ReturnType<typeof getAdminAnalyticsOverview>> | null
   try {
-    const [overview, adminData] = await Promise.all([
+    const [resOverview, resAdminData] = await Promise.all([
       getTeacherOverview(query),
       getAdminAnalyticsOverview(query).catch(() => null),
     ])
-
-    if (!adminData) {
-      const params = new URLSearchParams()
-      if (query.window) params.set('window', query.window)
-      if (query.compare) params.set('compare', query.compare)
-      if (query.bucket) params.set('bucket', query.bucket)
-      if (query.course_ids) params.set('course_ids', query.course_ids)
-      if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
-      if (query.teacher_user_id) params.set('teacher_user_id', String(query.teacher_user_id))
-      if (query.timezone) params.set('timezone', query.timezone)
-      const serialized = params.toString()
-      redirect({
-        href: `/dash/analytics/overview${serialized ? `?${serialized}` : ''}`,
-        locale: resolvedParams.locale,
-      })
-    }
-
-    return (
-      <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab="admin">
-        <AdminTab adminData={adminData!} />
-      </AnalyticsShell>
-    )
+    overview = resOverview
+    adminData = resAdminData
   } catch (error) {
     return (
       <AnalyticsEmptyState
@@ -50,4 +32,26 @@ export default async function PlatformAnalyticsAdminPage(props: PageProps) {
       />
     )
   }
+
+  if (!adminData) {
+    const params = new URLSearchParams()
+    if (query.window) params.set('window', query.window)
+    if (query.compare) params.set('compare', query.compare)
+    if (query.bucket) params.set('bucket', query.bucket)
+    if (query.course_ids) params.set('course_ids', query.course_ids)
+    if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
+    if (query.teacher_user_id) params.set('teacher_user_id', String(query.teacher_user_id))
+    if (query.timezone) params.set('timezone', query.timezone)
+    const serialized = params.toString()
+    redirect({
+      href: `/dash/analytics/overview${serialized ? `?${serialized}` : ''}`,
+      locale: resolvedParams.locale,
+    })
+  }
+
+  return (
+    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab="admin">
+      <AdminTab adminData={adminData!} />
+    </AnalyticsShell>
+  )
 }

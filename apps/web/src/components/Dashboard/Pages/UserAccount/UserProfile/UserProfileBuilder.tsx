@@ -3,7 +3,7 @@
 import { Loader2, Plus } from 'lucide-react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@components/ui/select'
 import { updateProfile } from '@/lib/users/client'
-import { useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSession } from '@/hooks/useSession'
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -46,40 +46,27 @@ const UserProfileBuilder = () => {
   const sectionIds = useMemo(() => profileData.sections.map(s => s.id), [profileData.sections])
   const announcements = useDndAnnouncements(sectionIds)
 
-  // Initialize profile data from user data
-  const fetchUserDataEvent = useEffectEvent(async () => {
-    if (!me) {
-      return
-    }
+  // Track the user we have initialized from.
+  const [prevMe, setPrevMe] = useState<any>(null)
 
-    try {
-      setIsLoading(true)
-      const userData = me
+  if (me && me !== prevMe) {
+    setPrevMe(me)
+    if (me.profile) {
+      try {
+        const profileSections = typeof me.profile === 'string' ? JSON.parse(me.profile).sections : me.profile.sections
 
-      if (userData.profile) {
-        try {
-          const profileSections =
-            typeof userData.profile === 'string' ? JSON.parse(userData.profile).sections : userData.profile.sections
-
-          setProfileData({
-            sections: profileSections || [],
-          })
-        } catch (error) {
-          console.error('Error parsing profile data:', error)
-          setProfileData({ sections: [] })
-        }
+        setProfileData({
+          sections: profileSections || [],
+        })
+      } catch (error) {
+        console.error('Error parsing profile data:', error)
+        setProfileData({ sections: [] })
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      toast.error(t('Errors.profileLoadFailed'))
-    } finally {
-      setIsLoading(false)
+    } else {
+      setProfileData({ sections: [] })
     }
-  })
-
-  useEffect(() => {
-    fetchUserDataEvent()
-  }, [me])
+    setIsLoading(false)
+  }
 
   const createEmptySection = (translateFn: AppTranslator, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
     const sectionTypesConfig = getSectionTypesConfig(translateFn)

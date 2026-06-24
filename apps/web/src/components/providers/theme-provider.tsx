@@ -49,8 +49,10 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     const effectiveThemeMode = getStoredThemeMode() || initialMode || getSystemThemeMode()
     const effectiveTheme = getTheme(effectiveThemeName, effectiveThemeMode)
 
-    setThemeState(effectiveTheme)
     applyTheme(effectiveTheme)
+    globalThis.setTimeout(() => {
+      setThemeState(effectiveTheme)
+    }, 0)
   }, [defaultThemeName, initialMode, userTheme])
 
   const setTheme = useCallback(

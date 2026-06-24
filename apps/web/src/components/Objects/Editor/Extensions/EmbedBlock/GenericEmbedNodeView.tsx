@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, createElement } from 'react'
 import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react'
 import * as Si from '@icons-pack/react-simple-icons'
 import { NodeViewWrapper } from '@tiptap/react'
@@ -43,13 +43,17 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
   }, [attrHeight, provider?.defaultHeight])
   const [displayHeight, setDisplayHeight] = useState(initialHeight)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const [prevInitialHeight, setPrevInitialHeight] = useState(initialHeight)
+  if (initialHeight !== prevInitialHeight) {
+    setPrevInitialHeight(initialHeight)
+    setDisplayHeight(initialHeight)
+  }
 
   useEffect(() => {
-    setDisplayHeight(initialHeight)
-  }, [initialHeight])
+    globalThis.setTimeout(() => {
+      setMounted(true)
+    }, 0)
+  }, [])
 
   const src = provider && url ? buildEmbedSrc(provider.type, url) : ''
   const providerLabel = provider ? t(`providers.${provider.type}.label`) : ''
@@ -124,7 +128,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
           <div className="bg-muted/30 flex h-full min-h-[240px] flex-col items-center justify-center gap-4 p-6 text-center">
             {Icon && (
               <div className="bg-background group-hover:bg-accent flex size-16 items-center justify-center rounded-2xl border shadow-sm transition-colors">
-                <Icon className="size-8" />
+                {createElement(Icon, { className: 'size-8' })}
               </div>
             )}
 

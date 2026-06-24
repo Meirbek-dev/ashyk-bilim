@@ -21,7 +21,9 @@ export function useCourseSectionDraft<TValue>({
   const [draft, setDraft] = useState(serverValue)
   const isDirty = !isEqual(draft, baseValue)
   const isDirtyRef = useRef(isDirty)
-  isDirtyRef.current = isDirty
+  useEffect(() => {
+    isDirtyRef.current = isDirty
+  })
 
   useSyncDirtySection(section, isDirty)
 

@@ -12,17 +12,15 @@ export default async function PlatformAnalyticsOperationsPage(props: PageProps) 
   const query = normalizeAnalyticsQuery(await props.searchParams)
   const t = await getTranslations('TeacherAnalytics')
 
+  let overview: Awaited<ReturnType<typeof getTeacherOverview>>
+  let adminData: Awaited<ReturnType<typeof getAdminAnalyticsOverview>> | null
   try {
-    const [overview, adminData] = await Promise.all([
+    const [resOverview, resAdminData] = await Promise.all([
       getTeacherOverview(query),
       getAdminAnalyticsOverview(query).catch(() => null),
     ])
-
-    return (
-      <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab="operations">
-        <OperationsTab query={query} data={overview} />
-      </AnalyticsShell>
-    )
+    overview = resOverview
+    adminData = resAdminData
   } catch (error) {
     return (
       <AnalyticsEmptyState
@@ -31,4 +29,10 @@ export default async function PlatformAnalyticsOperationsPage(props: PageProps) 
       />
     )
   }
+
+  return (
+    <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab="operations">
+      <OperationsTab query={query} data={overview} />
+    </AnalyticsShell>
+  )
 }

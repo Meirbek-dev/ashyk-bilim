@@ -79,6 +79,7 @@ function sortCoursesByProgress(courses: AppCourse[], trailData: AppTrailData | n
 }
 
 export async function LandingContent({ page = 1 }: { page?: number }) {
+  let coursesData, collections, gamificationData, trailData, session
   try {
     // Fetch platform info with detailed error handling
     try {
@@ -94,7 +95,7 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
     }
 
     // Only fetch gamification data if user is authenticated
-    const session = await getSession()
+    session = await getSession()
     const gamificationPromise = session
       ? getServerGamificationDashboard().catch((error: unknown) => {
           logLandingFetchError('Gamification fetch failed', error)
@@ -102,7 +103,7 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
         })
       : Promise.resolve(null)
 
-    const [coursesData, collections, gamificationData, trailData] = await Promise.all([
+    const [resCoursesData, resCollections, resGamificationData, resTrailData] = await Promise.all([
       getCourses(undefined, page, 20).catch((error: unknown) => {
         logLandingFetchError('Courses fetch failed', error)
         return { courses: [], total: 0 }
@@ -115,21 +116,10 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
       session ? getCurrentTrail().catch(() => null) : Promise.resolve(null),
     ])
 
-    const { courses } = coursesData
-    const totalCourses = coursesData.total
-    const sortedCourses = sortCoursesByProgress(courses, trailData)
-
-    return (
-      <LandingClassic
-        courses={sortedCourses}
-        totalCourses={totalCourses}
-        collections={collections}
-        gamificationData={gamificationData}
-        trailData={trailData}
-        isAuthenticated={Boolean(session)}
-        currentPage={page}
-      />
-    )
+    coursesData = resCoursesData
+    collections = resCollections
+    gamificationData = resGamificationData
+    trailData = resTrailData
   } catch (error) {
     if (isExpectedPrerenderCancellation(error)) {
       throw error
@@ -142,4 +132,20 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
     })
     throw error // Re-throw to be caught by error boundary
   }
+
+  const { courses } = coursesData
+  const totalCourses = coursesData.total
+  const sortedCourses = sortCoursesByProgress(courses, trailData)
+
+  return (
+    <LandingClassic
+      courses={sortedCourses}
+      totalCourses={totalCourses}
+      collections={collections}
+      gamificationData={gamificationData}
+      trailData={trailData}
+      isAuthenticated={Boolean(session)}
+      currentPage={page}
+    />
+  )
 }

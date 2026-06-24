@@ -82,6 +82,15 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   const resolverQueueRef = useRef<((value: string) => void)[]>([])
   const pendingIntentRef = useRef<AiIntent>('freeform')
 
+  const getSessionUuid = useCallback(() => sessionUuidRef.current, [sessionUuidRef])
+  const getIntent = useCallback(() => pendingIntentRef.current, [pendingIntentRef])
+  const setSessionUuid = useCallback(
+    (uuid: string | null) => {
+      sessionUuidRef.current = uuid
+    },
+    [sessionUuidRef],
+  )
+
   const adapter = useMemo(
     () =>
       createActivityChatAdapter({
@@ -108,15 +117,13 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
             }
           }
         },
-        getSessionUuid: () => sessionUuidRef.current,
-        getIntent: () => pendingIntentRef.current,
-        setSessionUuid: uuid => {
-          sessionUuidRef.current = uuid
-        },
+        getSessionUuid,
+        getIntent,
+        setSessionUuid,
       }),
     // Recreate adapter only when the activity changes — access token and
     // session UUID changes are handled inside the factory via getter/setter.
-    [activityUuid, tStatus],
+    [activityUuid, tStatus, getSessionUuid, getIntent, setSessionUuid],
   )
 
   // Keep the abort ref in sync whenever the adapter is recreated.
@@ -127,9 +134,12 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     }
   }, [adapter])
 
-  const settleNextPendingResponse = useCallback((value: string) => {
-    resolverQueueRef.current.shift()?.(value)
-  }, [])
+  const settleNextPendingResponse = useCallback(
+    (value: string) => {
+      resolverQueueRef.current.shift()?.(value)
+    },
+    [resolverQueueRef],
+  )
 
   const chat = useChat({
     connection: adapter.connection,
@@ -180,7 +190,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
 
   const abort = useCallback(() => {
     abortRef.current?.()
-  }, [])
+  }, [abortRef])
 
   const resetConversation = useCallback(() => {
     abort()
@@ -194,35 +204,53 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     while (resolverQueueRef.current.length) {
       resolverQueueRef.current.shift()?.('')
     }
-  }, [abort])
+  }, [
+    abort,
+    chatStopRef,
+    chatClearRef,
+    setStatusMessage,
+    setInputValue,
+    setRuntimeState,
+    sessionUuidRef,
+    resolverQueueRef,
+  ])
 
   const openModal = useCallback(() => {
     setIsModalOpen(true)
   }, [])
 
-  const sendMessageAndGetResponse = useCallback((message: string, intent: AiIntent = 'freeform'): Promise<string> => {
-    if (!message.trim()) {
-      return Promise.resolve('')
-    }
+  const sendMessageAndGetResponse = useCallback(
+    (message: string, intent: AiIntent = 'freeform'): Promise<string> => {
+      if (!message.trim()) {
+        return Promise.resolve('')
+      }
 
-    return new Promise(resolve => {
+      return new Promise(resolve => {
+        pendingIntentRef.current = intent
+        resolverQueueRef.current.push(resolve)
+        chatSendMessageRef.current(message)
+      })
+    },
+    [pendingIntentRef, resolverQueueRef, chatSendMessageRef],
+  )
+
+  const sendIntentMessage = useCallback(
+    (message: string, intent: AiIntent) => {
+      if (!message.trim()) {
+        return
+      }
       pendingIntentRef.current = intent
-      resolverQueueRef.current.push(resolve)
-      chatSendMessageRef.current(message)
-    })
-  }, [])
-
-  const sendIntentMessage = useCallback((message: string, intent: AiIntent) => {
-    if (!message.trim()) {
-      return
-    }
-    pendingIntentRef.current = intent
-    void chatSendMessageRef.current(message)
-  }, [])
+      void chatSendMessageRef.current(message)
+    },
+    [pendingIntentRef, chatSendMessageRef],
+  )
 
   useEffect(() => {
-    resetConversation()
-    setIsModalOpen(false)
+    const handle = requestAnimationFrame(() => {
+      resetConversation()
+      setIsModalOpen(false)
+    })
+    return () => cancelAnimationFrame(handle)
   }, [activityUuid, resetConversation])
 
   useEffect(() => {
@@ -233,16 +261,24 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
         pendingResolvers.shift()?.('')
       }
     }
-  }, [])
+  }, [resolverQueueRef])
 
   // Abort stream and clear input when the panel closes.
   useEffect(() => {
+    let handle: number | null = null
     if (!isModalOpen) {
       abort()
       chatStopRef.current()
-      setInputValue('')
+      handle = requestAnimationFrame(() => {
+        setInputValue('')
+      })
     }
-  }, [abort, isModalOpen])
+    return () => {
+      if (handle !== null) {
+        cancelAnimationFrame(handle)
+      }
+    }
+  }, [abort, isModalOpen, chatStopRef])
 
   const value = useMemo(
     () => ({

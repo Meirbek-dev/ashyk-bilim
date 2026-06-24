@@ -13,7 +13,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { useReducedData } from '@/hooks/use-reduced-data'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Award } from 'lucide-react'
 import { motion } from 'motion/react'
 
@@ -21,6 +21,12 @@ interface LevelUpCelebrationProps {
   newLevel: number
   onDismiss: () => void
   compact?: boolean
+}
+
+interface Particle {
+  xOffset: number
+  yOffset: number
+  delay: number
 }
 
 export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: LevelUpCelebrationProps) {
@@ -32,7 +38,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
   // Force compact mode on mobile or reduced data
   const shouldUseCompact = compact || isMobile || prefersReducedData
 
-  const compactParticlesRef = useRef(
+  const [compactParticles] = useState<Particle[]>(() =>
     Array.from({ length: 8 }, () => ({
       xOffset: (Math.random() - 0.5) * 100,
       yOffset: (Math.random() - 0.5) * 100,
@@ -40,16 +46,13 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
     })),
   )
 
-  const fullscreenParticlesRef = useRef(
+  const [fullscreenParticles] = useState<Particle[]>(() =>
     Array.from({ length: 30 }, () => ({
       xOffset: (Math.random() - 0.5) * 600,
       yOffset: (Math.random() - 0.5) * 600,
       delay: Math.random() * 0.8,
     })),
   )
-
-  const compactParticles = compactParticlesRef.current
-  const fullscreenParticles = fullscreenParticlesRef.current
 
   useEffect(() => {
     // Auto-dismiss after 4 seconds (3s on mobile for faster flow)

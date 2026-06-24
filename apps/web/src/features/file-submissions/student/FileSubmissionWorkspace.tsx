@@ -282,7 +282,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         })),
       ])
     },
-    [data, maxFiles, t, totalSelected],
+    [data, maxFiles, t, totalSelected, setSlots],
   )
 
   // ── Upload + save/submit ──────────────────────────────────────────────────
@@ -299,11 +299,13 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
       // Upload pending slots
       const uploaded: PendingFileSlot[] = []
-      for (const slot of slots) {
+
+      const uploadSlot = async (slot: PendingFileSlot) => {
         if (slot.upload_uuid) {
           uploaded.push(slot)
-          continue
+          return
         }
+        let errorMsg = ''
         setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'uploading', progress: 0 } : s)))
         try {
           const result = await uploadSubmissionFileWithProgress(slot.file, (loaded, total) => {
@@ -319,10 +321,14 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           setSlots(prev => prev.map(s => (s.id === slot.id ? done : s)))
           uploaded.push(done)
         } catch (error) {
-          const msg = error instanceof Error ? error.message : t('uploadFailed')
-          setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'failed', error: msg } : s)))
+          errorMsg = error instanceof Error ? error.message : t('uploadFailed')
+          setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'failed' as const, error: errorMsg } : s)))
           throw error
         }
+      }
+
+      for (const slot of slots) {
+        await uploadSlot(slot)
       }
 
       const files = [

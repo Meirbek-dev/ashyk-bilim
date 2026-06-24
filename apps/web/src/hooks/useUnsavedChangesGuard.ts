@@ -36,13 +36,24 @@ function createGuardHistoryState() {
 export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChangesGuardOptions) {
   const message = options?.message ?? ''
   const interceptInAppNavigation = options?.interceptInAppNavigation ?? false
-  const messageRef = useRef(message)
   const ignoreNextPopRef = useRef(false)
   const allowNavigationRef = useRef(false)
-  const guardInstanceIdRef = useRef(Symbol('unsaved-changes-guard'))
+  const sym = globalThis.Symbol
+  const guardInstanceIdRef = useRef(sym('unsaved-changes-guard'))
   const pendingLinkRef = useRef<HTMLAnchorElement | null>(null)
   const pendingNavigationRef = useRef<PendingNavigation | null>(null)
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null)
+
+  useEffect(() => {
+    if (!isDirty) {
+      tryReleasePromptOwnership(guardInstanceIdRef.current)
+      allowNavigationRef.current = false
+      ignoreNextPopRef.current = false
+      pendingLinkRef.current = null
+      pendingNavigationRef.current = null
+      setPendingNavigation(null)
+    }
+  }, [isDirty])
 
   const releasePromptOwnership = useCallback(() => {
     tryReleasePromptOwnership(guardInstanceIdRef.current)
@@ -64,25 +75,8 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
   }, [])
 
   useEffect(() => {
-    messageRef.current = message
-  }, [message])
-
-  useEffect(() => {
     pendingNavigationRef.current = pendingNavigation
   }, [pendingNavigation])
-
-  useEffect(() => {
-    if (isDirty) {
-      return
-    }
-
-    releasePromptOwnership()
-    allowNavigationRef.current = false
-    ignoreNextPopRef.current = false
-    pendingLinkRef.current = null
-    pendingNavigationRef.current = null
-    setPendingNavigation(null)
-  }, [isDirty, releasePromptOwnership])
 
   useEffect(() => {
     return () => {
@@ -246,6 +240,6 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
     cancelNavigation,
     confirmNavigation,
     isPromptOpen: pendingNavigation !== null,
-    promptMessage: messageRef.current || 'You have unsaved changes. Leave this page?',
+    promptMessage: message || 'У вас есть несохраненные изменения. Вы уверены, что хотите покинуть страницу?',
   }
 }

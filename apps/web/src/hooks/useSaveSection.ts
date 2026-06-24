@@ -3,7 +3,7 @@
 import type { CourseDirtySection } from '@/stores/courses/courseEditorStore'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
@@ -58,6 +58,10 @@ export function useSaveSection(options?: SaveSectionOptions) {
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const syncLastKnownUpdateDate = useCourseEditorStore(state => state.syncLastKnownUpdateDate)
 
+  const runSaveRef = useRef<
+    ((saveFn: () => Promise<SaveResponse>, invocationOptions?: SaveInvocationOptions) => Promise<void>) | null
+  >(null)
+
   const runSave = useCallback(
     async (saveFn: () => Promise<SaveResponse>, invocationOptions?: SaveInvocationOptions) => {
       setIsSaving(true)
@@ -70,7 +74,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
               serverVersion: response.data ?? null,
               message: getApiErrorMessage(response.data, ''),
               pendingSave: async () => {
-                await runSave(saveFn, invocationOptions)
+                await runSaveRef.current?.(saveFn, invocationOptions)
               },
             })
             return
@@ -105,7 +109,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
             serverVersion: (apiError.data as { update_date?: string | null } | null) ?? null,
             message: String(apiError.detail || apiError.message),
             pendingSave: async () => {
-              await runSave(saveFn, invocationOptions)
+              await runSaveRef.current?.(saveFn, invocationOptions)
             },
           })
           return
@@ -124,6 +128,8 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
     [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate],
   )
+
+  runSaveRef.current = runSave
 
   const save = useCallback(
     async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {

@@ -20,7 +20,9 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true)
+    globalThis.setTimeout(() => {
+      setMounted(true)
+    }, 0)
   }, [])
 
   if (!mounted || isLoading) {

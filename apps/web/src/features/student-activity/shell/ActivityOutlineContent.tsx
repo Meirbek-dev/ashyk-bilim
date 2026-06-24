@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { createElement } from 'react'
 import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
@@ -90,7 +91,7 @@ function ActivityOutlineItem({
           complete ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background',
         )}
       >
-        {complete ? <Check className="size-2.5" /> : <Icon className="size-2.5" />}
+        {complete ? <Check className="size-2.5" /> : createElement(Icon, { className: 'size-2.5' })}
       </span>
       <span className="min-w-0 flex-1 truncate">{item.title}</span>
       {current ? <span className="bg-primary size-1.5 shrink-0 rounded-full" /> : null}

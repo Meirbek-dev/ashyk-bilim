@@ -37,13 +37,15 @@ export default function UserGamificationSettings() {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const profile = useGamificationStore(s => s.profile)
 
+  const [prevProfile, setPrevProfile] = useState<typeof profile | null>(null)
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES)
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Load preferences from profile
-  useEffect(() => {
+
+  if (profile !== prevProfile) {
+    setPrevProfile(profile)
     if (profile?.preferences) {
       const prefs = profile.preferences as
         | {
@@ -59,7 +61,7 @@ export default function UserGamificationSettings() {
         animatedEffects: prefs?.display?.animatedEffects ?? DEFAULT_PREFERENCES.animatedEffects,
       })
     }
-  }, [profile])
+  }
 
   const handlePreferenceChange = (key: keyof GamificationPreferences, value: boolean) => {
     setPreferences(prev => ({ ...prev, [key]: value }))

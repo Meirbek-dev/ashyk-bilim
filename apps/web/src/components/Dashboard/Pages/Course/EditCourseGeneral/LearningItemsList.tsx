@@ -86,14 +86,17 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
 
   // Replace placeholder IDs with real UUIDs after mount to avoid SSR/hydration mismatch.
   useEffect(() => {
-    setItems(prev => {
-      const hasPlaceholders = prev.some(item => item.id.startsWith(PLACEHOLDER_ID_PREFIX))
-      if (!hasPlaceholders) return prev
-      return prev.map(item => ({
-        ...item,
-        id: item.id.startsWith(PLACEHOLDER_ID_PREFIX) ? generateUUID() : item.id,
-      }))
+    const handle = requestAnimationFrame(() => {
+      setItems(prev => {
+        const hasPlaceholders = prev.some(item => item.id.startsWith(PLACEHOLDER_ID_PREFIX))
+        if (!hasPlaceholders) return prev
+        return prev.map(item => ({
+          ...item,
+          id: item.id.startsWith(PLACEHOLDER_ID_PREFIX) ? generateUUID() : item.id,
+        }))
+      })
     })
+    return () => cancelAnimationFrame(handle)
   }, [])
 
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useId } from 'react'
+import { useId, createElement } from 'react'
 import { useTranslations } from 'next-intl'
 import { Globe2, Sparkles, BookOpen, ExternalLink, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react'
 import * as Si from '@icons-pack/react-simple-icons'
@@ -66,7 +66,11 @@ export function EmbedUrlForm({ type, url, onChange, error, onErrorChange }: Embe
       {provider && (
         <div className="flex items-start gap-3 border-b pb-4">
           <div className="bg-background flex size-12 shrink-0 items-center justify-center rounded-xl border shadow-sm">
-            {Icon ? <Icon className="size-6" /> : <FallbackIcon className="text-muted-foreground/60 size-6" />}
+            {Icon ? (
+              createElement(Icon, { className: 'size-6' })
+            ) : (
+              <FallbackIcon className="text-muted-foreground/60 size-6" />
+            )}
           </div>
           <div className="space-y-0.5">
             <h3 className="text-foreground text-sm font-semibold">{t(`providers.${provider.type}.label`)}</h3>

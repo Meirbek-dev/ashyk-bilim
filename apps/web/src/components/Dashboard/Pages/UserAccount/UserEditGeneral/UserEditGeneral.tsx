@@ -93,18 +93,12 @@ const UserEditGeneral = () => {
   }, [form, me])
 
   useEffect(() => {
-    if (!localAvatar) {
-      setAvatarPreviewUrl(null)
-      return
-    }
-
-    const previewUrl = URL.createObjectURL(localAvatar)
-    setAvatarPreviewUrl(previewUrl)
-
     return () => {
-      URL.revokeObjectURL(previewUrl)
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl)
+      }
     }
-  }, [localAvatar])
+  }, [avatarPreviewUrl])
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -139,6 +133,11 @@ const UserEditGeneral = () => {
       }
 
       setLocalAvatar(uploadFile)
+      const previewUrl = URL.createObjectURL(uploadFile)
+      setAvatarPreviewUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev)
+        return previewUrl
+      })
       const res = await updateUserAvatar(me.id, uploadFile)
       if (!res.success) {
         setError(res.HTTPmessage || t('avatarError'))

@@ -312,11 +312,17 @@ function CalendarDateTimePicker({
     },
   } as React.ComponentProps<typeof DayPicker>
 
-  React.useEffect(() => {
-    if (!open) return
-    setDraftDate(parsedValue ?? undefined)
-    setDraftTime(parsedValue ? formatTimeOnly(parsedValue) : '')
-  }, [open, parsedValue])
+  const [prevOpen, setPrevOpen] = React.useState(open)
+  const [prevParsedValue, setPrevParsedValue] = React.useState(parsedValue)
+
+  if (open !== prevOpen || parsedValue !== prevParsedValue) {
+    setPrevOpen(open)
+    setPrevParsedValue(parsedValue)
+    if (open) {
+      setDraftDate(parsedValue ?? undefined)
+      setDraftTime(parsedValue ? formatTimeOnly(parsedValue) : '')
+    }
+  }
 
   const commit = () => {
     if (!draftDate) return

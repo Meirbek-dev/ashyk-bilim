@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -112,15 +112,17 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     }),
   )
 
-  useEffect(() => {
-    if (!data) return
+  const [prevData, setPrevData] = useState<any>(null)
+
+  if (data && data !== prevData) {
+    setPrevData(data)
     setTitle(data.title)
     setInstructions(data.instructions)
     setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : '')
     setMaxFiles(data.max_files)
     setMaxFileSizeMb(data.max_file_size_mb ?? '')
     setAllowedMimeTypes(data.allowed_mime_types ?? [])
-  }, [data])
+  }
 
   const ALL_MIMES = MIME_PRESETS.flatMap(preset => preset.mimes)
   const allMimesSelected = ALL_MIMES.every(mime => allowedMimeTypes.includes(mime))

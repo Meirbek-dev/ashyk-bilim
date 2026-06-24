@@ -103,7 +103,9 @@ export const CourseProvider = ({
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    globalThis.setTimeout(() => {
+      setIsMounted(true)
+    }, 0)
   }, [])
 
   const {

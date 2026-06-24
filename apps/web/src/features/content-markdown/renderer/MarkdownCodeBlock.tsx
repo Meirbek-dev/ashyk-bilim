@@ -22,9 +22,17 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
   const displayName = getLanguageDisplayName(lang)
   const isDiff = lang === 'diff'
 
+  const [prevCode, setPrevCode] = useState(code)
+  const [prevLang, setPrevLang] = useState(lang)
+
+  if (code !== prevCode || lang !== prevLang) {
+    setPrevCode(code)
+    setPrevLang(lang)
+    setHighlighted(null)
+  }
+
   useEffect(() => {
     let cancelled = false
-    setHighlighted(null)
     highlightCode(code, lang)
       .then(html => {
         if (!cancelled) setHighlighted(html)
