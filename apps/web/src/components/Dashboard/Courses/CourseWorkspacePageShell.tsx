@@ -36,8 +36,12 @@ import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { cn } from '@/lib/utils'
+
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 interface CourseWorkspacePageShellProps {
   courseuuid: string
@@ -56,10 +60,7 @@ function CourseWorkspaceChrome({
   const t = useTranslations('DashPage.CourseManagement.Workspace')
   const course = useCourse()
   const { readiness } = course
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
   const dirtyGuard = useDirtyGuard({
     interceptInAppNavigation: true,
     message: t('unsavedChangesWarning'),

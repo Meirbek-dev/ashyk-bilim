@@ -12,12 +12,14 @@ import {
   Settings2,
 } from 'lucide-react'
 import { buildCourseWorkspacePath } from '@/lib/course-management'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import type { FC } from 'react'
 import { toast } from 'sonner'
 import { extractMarkdownSummary } from '@/features/content-markdown'
+
+const emptySubscribe = () => () => {}
 
 import {
   AlertDialog,
@@ -490,11 +492,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const locale = useLocale()
   const router = useRouter()
   const { user: currentUser, isAuthenticated } = useSession()
-  const [hasMounted, setHasMounted] = useState(false)
-
-  useEffect(() => {
-    setHasMounted(true)
-  }, [])
+  const hasMounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
   // Defensive: never show loading state for unauthenticated users even if
   // the parent accidentally passes trailLoading=true without trail data.

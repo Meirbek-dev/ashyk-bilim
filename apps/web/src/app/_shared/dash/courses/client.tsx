@@ -40,7 +40,7 @@ import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/c
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
 import { useSession } from '@/hooks/useSession'
-import { useCallback, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react'
+import { useCallback, useMemo, useOptimistic, useState, useTransition } from 'react'
 import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
@@ -183,9 +183,12 @@ const CoursesHome = ({
   const visibleCourseUuidSet = useMemo(() => new Set(visibleCourseUuids), [visibleCourseUuids])
   const selectedCourseUuidSet = useMemo(() => new Set(selectedCourseUuids), [selectedCourseUuids])
 
-  useEffect(() => {
+  const [prevVisibleCourseUuidSet, setPrevVisibleCourseUuidSet] = useState(visibleCourseUuidSet)
+
+  if (visibleCourseUuidSet !== prevVisibleCourseUuidSet) {
+    setPrevVisibleCourseUuidSet(visibleCourseUuidSet)
     setSelectedCourseUuids(current => current.filter(courseUuid => visibleCourseUuidSet.has(courseUuid)))
-  }, [visibleCourseUuidSet])
+  }
 
   const selectedCourses = useMemo(
     () => optimisticCourses.filter(course => selectedCourseUuidSet.has(course.course_uuid)),
@@ -206,7 +209,7 @@ const CoursesHome = ({
 
   const headerCheckboxState = allVisibleSelected ? true : someVisibleSelected ? ('indeterminate' as const) : false
 
-  const toggleCourseSelection = (courseUuid: string, checked: boolean) => {
+  const toggleCourseSelection = useCallback((courseUuid: string, checked: boolean) => {
     setSelectedCourseUuids(current => {
       if (checked) {
         if (current.includes(courseUuid)) {
@@ -216,7 +219,7 @@ const CoursesHome = ({
       }
       return current.filter(value => value !== courseUuid)
     })
-  }
+  }, [])
 
   const toggleAllVisibleCourses = useCallback(
     (checked: boolean) => {
@@ -512,6 +515,7 @@ const CoursesHome = ({
       selectedCourseUuidSet,
       t,
       toggleAllVisibleCourses,
+      toggleCourseSelection,
     ],
   )
 

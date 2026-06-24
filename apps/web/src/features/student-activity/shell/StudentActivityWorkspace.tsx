@@ -236,9 +236,12 @@ function useContentReadCompletion({
   if (resetKey !== prevResetKey || enabled !== prevEnabled) {
     setPrevResetKey(resetKey)
     setPrevEnabled(enabled)
-    completeRef.current = !enabled
     setComplete(!enabled)
   }
+
+  useEffect(() => {
+    completeRef.current = !enabled
+  }, [enabled, resetKey])
 
   useEffect(() => {
     if (!enabled) return

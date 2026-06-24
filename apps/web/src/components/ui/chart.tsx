@@ -5,6 +5,10 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
+
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const
 
@@ -46,16 +50,12 @@ function ChartContainer({
   const uniqueId = React.useId()
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, '')}`
 
-  const [isMounted, setIsMounted] = React.useState(false)
+  const isMounted = React.useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState<{
     width: number
     height: number
   } | null>(null)
-
-  React.useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   React.useEffect(() => {
     if (!isMounted || !containerRef.current) return

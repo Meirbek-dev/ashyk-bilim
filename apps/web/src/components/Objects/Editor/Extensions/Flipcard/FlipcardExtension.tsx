@@ -120,7 +120,10 @@ const ALIGNMENT_CONFIG = {
 
 function useClickOutside<T extends HTMLElement>(ref: React.RefObject<T | null>, handler: () => void, enabled = true) {
   const handlerRef = useRef(handler)
-  handlerRef.current = handler
+
+  useEffect(() => {
+    handlerRef.current = handler
+  }, [handler])
 
   useEffect(() => {
     if (!enabled) return

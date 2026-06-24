@@ -65,13 +65,14 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle')
   const [conflictState, setConflictState] = useState<ConflictState | null>(null)
-  const [reportedLoadError, setReportedLoadError] = useState<string | null>(null)
+  const reportedLoadErrorRef = useRef<string | null>(null)
   const localAnswersRef = useRef<Record<string, ItemAnswer>>({})
   const versionRef = useRef<number | undefined>(undefined)
   const draftVersionRef = useRef<number | undefined>(undefined)
   const lastSaveTimeRef = useRef<number>(0)
   const nextSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingAnswersRef = useRef<Record<string, ItemAnswer> | null>(null)
+  const saveRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     return () => {
@@ -325,8 +326,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     if (errorStatus === 429) return
     const { message } = loadError
     const key = `${assessmentUuid ?? 'missing'}:${message}`
-    if (reportedLoadError === key) return
-    setReportedLoadError(key)
+    if (reportedLoadErrorRef.current === key) return
+    reportedLoadErrorRef.current = key
     void reportClientError({
       scope: 'assessment-flow',
       phase: 'load-submission-state',
@@ -334,7 +335,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       error: message,
       ...(isApiError(loadError) ? { code: loadError.code, requestId: loadError.requestId } : {}),
     }).catch(() => undefined)
-  }, [assessmentUuid, draftQuery.error, reportedLoadError, submissionsQuery.error])
+  }, [assessmentUuid, draftQuery.error, submissionsQuery.error])
 
   useEffect(() => {
     if (!assessmentUuid) {
@@ -399,7 +400,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         nextSaveTimeoutRef.current = setTimeout(
           () => {
             nextSaveTimeoutRef.current = null
-            save()
+            saveRef.current()
           },
           Math.max(100, delay),
         )
@@ -412,7 +413,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       onSuccess: () => {
         lastSaveTimeRef.current = Date.now()
         if (pendingAnswersRef.current) {
-          save()
+          saveRef.current()
         }
       },
       onError: (error: unknown) => {
@@ -422,13 +423,17 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           if (!nextSaveTimeoutRef.current) {
             nextSaveTimeoutRef.current = setTimeout(() => {
               nextSaveTimeoutRef.current = null
-              save()
+              saveRef.current()
             }, 2000)
           }
         }
       },
     })
   }, [saveMutate, saveMutation.isPending])
+
+  useEffect(() => {
+    saveRef.current = save
+  }, [save])
 
   const submit = useCallback(
     (options?: SubmitOptions) =>

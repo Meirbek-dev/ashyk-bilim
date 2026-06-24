@@ -65,11 +65,13 @@ export function NativeItemAuthor({
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs')
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}`) : itemNoun
 
-  const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>([])
+  const [prevItems, setPrevItems] = useState(items)
+  const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>(() => items.map(item => item.item_uuid))
 
-  useEffect(() => {
+  if (items !== prevItems) {
+    setPrevItems(items)
     setLocalOrderedUuids(items.map(item => item.item_uuid))
-  }, [items])
+  }
 
   const orderedItems = localOrderedUuids
     .map(uuid => items.find(item => item.item_uuid === uuid))
@@ -77,6 +79,7 @@ export function NativeItemAuthor({
 
   const item = orderedItems.find(candidate => candidate.item_uuid === selectedItemUuid) ?? orderedItems[0] ?? null
 
+  const [prevAssessment, setPrevAssessment] = useState(assessment)
   const [assessmentState, setAssessmentState] = useState<AssessmentEditorState>(() =>
     toAssessmentEditorState(assessment),
   )
@@ -86,19 +89,43 @@ export function NativeItemAuthor({
   const lastSavedAssessmentRef = useRef('')
   const lastSavedItemRef = useRef('')
 
-  useEffect(() => {
+  if (assessment !== prevAssessment) {
+    setPrevAssessment(assessment)
     const nextAssessmentState = toAssessmentEditorState(assessment)
     setAssessmentState(nextAssessmentState)
-    lastSavedAssessmentRef.current = serializeAssessmentState(nextAssessmentState)
     setAssessmentSaveState('idle')
+  }
+
+  const [prevItemKey, setPrevItemKey] = useState(() => ({
+    uuid: item?.item_uuid,
+    updated_at: item?.updated_at,
+    item,
+  }))
+
+  const hasItemChanged =
+    item?.item_uuid !== prevItemKey.uuid ||
+    item?.updated_at !== prevItemKey.updated_at ||
+    item !== prevItemKey.item
+
+  if (hasItemChanged) {
+    setPrevItemKey({
+      uuid: item?.item_uuid,
+      updated_at: item?.updated_at,
+      item,
+    })
+    const nextItem = item ? toEditableItem(item) : null
+    setItemState(nextItem)
+    setItemSaveState('idle')
+  }
+
+  useEffect(() => {
+    lastSavedAssessmentRef.current = serializeAssessmentState(toAssessmentEditorState(assessment))
   }, [assessment])
 
   useEffect(() => {
     const nextItem = item ? toEditableItem(item) : null
-    setItemState(nextItem)
     lastSavedItemRef.current = nextItem ? serializeItemState(nextItem) : ''
-    setItemSaveState('idle')
-  }, [item?.item_uuid, item?.updated_at, item])
+  }, [item])
 
   const saveAssessment = useCallback(
     async (nextState: AssessmentEditorState) => {

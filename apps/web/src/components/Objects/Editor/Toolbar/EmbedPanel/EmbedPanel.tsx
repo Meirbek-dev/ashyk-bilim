@@ -48,13 +48,21 @@ export function EmbedPanel() {
   const titleId = useId()
   const descriptionId = useId()
 
-  useEffect(() => {
-    if (!isOpen) return
-    setSelectedType(initialType ?? DEFAULT_EMBED_TYPE)
-    setUrl(initialUrl)
-    setTypeError(null)
-    setUrlError(null)
-  }, [initialType, initialUrl, isOpen])
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
+  const [prevInitialType, setPrevInitialType] = useState(initialType)
+  const [prevInitialUrl, setPrevInitialUrl] = useState(initialUrl)
+
+  if (isOpen !== prevIsOpen || initialType !== prevInitialType || initialUrl !== prevInitialUrl) {
+    setPrevIsOpen(isOpen)
+    setPrevInitialType(initialType)
+    setPrevInitialUrl(initialUrl)
+    if (isOpen) {
+      setSelectedType(initialType ?? DEFAULT_EMBED_TYPE)
+      setUrl(initialUrl)
+      setTypeError(null)
+      setUrlError(null)
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return

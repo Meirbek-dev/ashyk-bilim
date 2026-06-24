@@ -3,7 +3,7 @@
 import type { SubmissionStatus } from '@/features/grading/domain/types'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { submissionsQueryOptions } from '@/features/grading/queries/grading.query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export interface UseSubmissionsOptions {
   activityId: number | null
@@ -49,10 +49,12 @@ export function useSubmissions({
   pageSize = 25,
 }: UseSubmissionsOptions) {
   const [page, setPage] = useState(1)
+  const [prevActivityId, setPrevActivityId] = useState(activityId)
 
-  useEffect(() => {
+  if (activityId !== prevActivityId) {
+    setPrevActivityId(activityId)
     setPage(1)
-  }, [activityId])
+  }
 
   const queryParams = {
     assessmentUuid: assessmentUuid ?? '',

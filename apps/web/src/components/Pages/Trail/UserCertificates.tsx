@@ -5,8 +5,10 @@ import { getAbsoluteUrl } from '@services/config/config'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
 import Link from '@components/ui/AppLink'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import type React from 'react'
+
+const emptySubscribe = () => () => {}
 
 const UserCertificates: React.FC = () => {
   const format = useFormatter()
@@ -14,10 +16,7 @@ const UserCertificates: React.FC = () => {
 
   const { data: certificates, error, isLoading } = useUserCertificates()
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
   if (!mounted || isLoading) {
     return (

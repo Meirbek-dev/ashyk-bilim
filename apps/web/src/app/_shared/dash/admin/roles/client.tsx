@@ -49,6 +49,16 @@ const EMPTY_PERMISSIONS: Permission[] = []
 
 const emptySubscribe = () => () => {}
 
+const loadRoleWithPermissions = async (roleId: number): Promise<RoleWithPermissions> => {
+  const [role, rolePermissions] = await Promise.all([apiGetRole(roleId), getRolePermissions(roleId)])
+
+  return {
+    ...role,
+    permissions: rolePermissions,
+    permissions_count: rolePermissions.length,
+  }
+}
+
 export default function RBACAdminClient() {
   const session = useSession()
   const { can } = session
@@ -60,7 +70,6 @@ export default function RBACAdminClient() {
     () => true,
     () => false,
   )
-  const [roles, setRoles] = useState<RoleWithPermissions[]>([])
   const [activeTab, setActiveTab] = useState('roles')
 
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
@@ -98,6 +107,32 @@ export default function RBACAdminClient() {
     error: rolesError,
     refetch: refetchRoles,
   } = useRoles()
+
+  const [prevFetchedRoles, setPrevFetchedRoles] = useState(fetchedRoles)
+  const [roles, setRoles] = useState<RoleWithPermissions[]>(() =>
+    fetchedRoles
+      .toSorted((a, b) => {
+        const aSystem = a.is_system ? 0 : 1
+        const bSystem = b.is_system ? 0 : 1
+        if (aSystem !== bSystem) return aSystem - bSystem
+        return (b.priority ?? 0) - (a.priority ?? 0)
+      })
+      .map(role => Object.assign(role, { permissions: [] })),
+  )
+
+  if (fetchedRoles !== prevFetchedRoles) {
+    setPrevFetchedRoles(fetchedRoles)
+    setRoles(
+      fetchedRoles
+        .toSorted((a, b) => {
+          const aSystem = a.is_system ? 0 : 1
+          const bSystem = b.is_system ? 0 : 1
+          if (aSystem !== bSystem) return aSystem - bSystem
+          return (b.priority ?? 0) - (a.priority ?? 0)
+        })
+        .map(role => Object.assign(role, { permissions: [] })),
+    )
+  }
   const auditLogQuery = useRoleAuditLog(auditPage, 20, {
     enabled: activeTab === 'audit',
   })
@@ -133,17 +168,7 @@ export default function RBACAdminClient() {
     if (!session.user) toast.warning(t('sessionRefreshWarning'))
   }, [router, session.user, t])
 
-  const loadRoleWithPermissions = async (roleId: number): Promise<RoleWithPermissions> => {
-    const [role, rolePermissions] = await Promise.all([apiGetRole(roleId), getRolePermissions(roleId)])
-
-    return {
-      ...role,
-      permissions: rolePermissions,
-      permissions_count: rolePermissions.length,
-    }
-  }
-
-  const mergeRole = (updated: RoleWithPermissions) => {
+  const mergeRole = useCallback((updated: RoleWithPermissions) => {
     setRoles(prev =>
       prev.map(role =>
         role.id === updated.id
@@ -156,20 +181,7 @@ export default function RBACAdminClient() {
           : role,
       ),
     )
-  }
-
-  useEffect(() => {
-    const sortedRoles = fetchedRoles
-      .toSorted((a, b) => {
-        const aSystem = a.is_system ? 0 : 1
-        const bSystem = b.is_system ? 0 : 1
-        if (aSystem !== bSystem) return aSystem - bSystem
-        return (b.priority ?? 0) - (a.priority ?? 0)
-      })
-      .map(role => Object.assign(role, { permissions: [] }))
-
-    setRoles(sortedRoles)
-  }, [fetchedRoles])
+  }, [])
 
   useEffect(() => {
     if (permissionsError) {
@@ -424,7 +436,7 @@ export default function RBACAdminClient() {
         setIsPermissionsDialogLoading(false)
       }
     },
-    [t],
+    [t, mergeRole],
   )
 
   const resetPermissionsDialogState = () => {

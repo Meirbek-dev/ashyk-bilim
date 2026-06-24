@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -22,9 +22,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
  */
 export function TimerRing({ remainingSeconds, className }: TimerRingProps) {
   // Capture total seconds on first render so the ring knows the full arc.
-  const totalRef = useRef<number>(remainingSeconds)
+  const [totalSeconds] = useState(remainingSeconds)
 
-  const fraction = totalRef.current > 0 ? Math.max(0, remainingSeconds / totalRef.current) : 0
+  const fraction = totalSeconds > 0 ? Math.max(0, remainingSeconds / totalSeconds) : 0
   const dashOffset = CIRCUMFERENCE * (1 - fraction)
 
   const isUrgent = remainingSeconds <= 60

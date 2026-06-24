@@ -55,8 +55,20 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   const [pdf, setPDF] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [blockObject, setblockObject] = useState(props.node.attrs.blockObject)
+  const [prevBlockObject, setPrevBlockObject] = useState(props.node.attrs.blockObject)
+  if (props.node.attrs.blockObject !== prevBlockObject) {
+    setPrevBlockObject(props.node.attrs.blockObject)
+    setblockObject(props.node.attrs.blockObject)
+  }
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [size, setSize] = useState(() => normalizeSize(props.node.attrs.size))
+  const [prevNodeSize, setPrevNodeSize] = useState(props.node.attrs.size)
+  if (props.node.attrs.size !== prevNodeSize) {
+    setPrevNodeSize(props.node.attrs.size)
+    setSize(normalizeSize(props.node.attrs.size))
+  }
+
   const [availableWidth, setAvailableWidth] = useState<number | null>(null)
   const nodeSize = props.node.attrs.size
   const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
@@ -70,14 +82,8 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   const syncPanelsRafRef = useRef<number | null>(null)
 
   useEffect(() => {
-    const nextSize = normalizeSize(nodeSize)
-    sizeRef.current = nextSize
-    setSize(nextSize)
-  }, [nodeSize])
-
-  useEffect(() => {
-    setblockObject(props.node.attrs.blockObject)
-  }, [props.node.attrs.blockObject])
+    sizeRef.current = size
+  }, [size])
 
   useEffect(() => {
     if (!containerRef.current) return

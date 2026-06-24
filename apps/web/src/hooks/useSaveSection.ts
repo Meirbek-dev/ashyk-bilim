@@ -3,7 +3,7 @@
 import type { CourseDirtySection } from '@/stores/courses/courseEditorStore'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useCourseEditorStore } from '@/stores/courses'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 
@@ -129,7 +129,9 @@ export function useSaveSection(options?: SaveSectionOptions) {
     [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate],
   )
 
-  runSaveRef.current = runSave
+  useEffect(() => {
+    runSaveRef.current = runSave
+  }, [runSave])
 
   const save = useCallback(
     async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {

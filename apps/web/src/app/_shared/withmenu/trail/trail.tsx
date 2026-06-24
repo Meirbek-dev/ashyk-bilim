@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed'
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
 import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard'
@@ -12,6 +12,8 @@ import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/use
 import { useTranslations } from 'next-intl'
 import type { XPTransaction } from '@/types/gamification'
 import { BookOpen } from 'lucide-react'
+
+const emptySubscribe = () => () => {}
 
 const EMPTY_RECENT_TRANSACTIONS: XPTransaction[] = []
 
@@ -46,10 +48,7 @@ const Trail = () => {
 
   const { data: trail, isLoading: isTrailLoading } = useTrailCurrent()
 
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const recentTransactions = useGamificationStore(

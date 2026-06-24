@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import type { Viewport } from 'next'
 
 import { ErrorState } from '@/components/ui/error-state'
 import { reportClientError } from '@/services/telemetry/client'
 import { ERROR_MESSAGES, detectLocale } from '@/lib/error-i18n'
-import type { SupportedLocale } from '@/lib/error-i18n'
+
+const emptySubscribe = () => () => {}
+const getLocaleSnapshot = () => detectLocale()
+const getServerLocaleSnapshot = () => 'ru-RU' as const
 
 /**
  * Viewport export is required in global-error.tsx because this component
@@ -19,11 +22,9 @@ export const viewport: Viewport = {
 }
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
+  const locale = useSyncExternalStore(emptySubscribe, getLocaleSnapshot, getServerLocaleSnapshot)
 
   useEffect(() => {
-    setLocale(detectLocale())
-
     void reportClientError({
       digest: error.digest,
       error: {

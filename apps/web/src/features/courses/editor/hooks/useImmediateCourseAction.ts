@@ -2,7 +2,7 @@
 
 import { getApiErrorMessage } from '@/lib/api/assertSuccess'
 import { useCourseEditorStore } from '@/stores/courses'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface UseImmediateCourseActionOptions {
@@ -14,6 +14,7 @@ interface UseImmediateCourseActionOptions {
 export function useImmediateCourseAction(options?: UseImmediateCourseActionOptions) {
   const [isPending, setIsPending] = useState(false)
   const setConflict = useCourseEditorStore(state => state.setConflict)
+  const runRef = useRef<any>(null)
 
   const run = useCallback(
     async (action: () => Promise<unknown>, invocationOptions?: UseImmediateCourseActionOptions) => {
@@ -32,7 +33,7 @@ export function useImmediateCourseAction(options?: UseImmediateCourseActionOptio
             serverVersion: (apiError.data as { update_date?: string | null } | null) ?? null,
             message: String(apiError.detail || apiError.message || ''),
             pendingSave: async () => {
-              await run(action, invocationOptions)
+              await runRef.current?.(action, invocationOptions)
             },
           })
           return undefined
@@ -49,6 +50,10 @@ export function useImmediateCourseAction(options?: UseImmediateCourseActionOptio
     },
     [options, setConflict],
   )
+
+  useEffect(() => {
+    runRef.current = run
+  }, [run])
 
   return { isPending, run }
 }

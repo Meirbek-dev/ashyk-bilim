@@ -44,6 +44,8 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const codeAnswer = savedAnswer?.kind === 'CODE' ? savedAnswer : undefined
   const initialCode = primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : ''
   const isConfigured = Boolean(settings?.allowed_languages?.length)
+  const vmTitle = vm?.title
+  const vmDescription = vm?.description
   const problem = useMemo(
     () =>
       codeItem && settings
@@ -51,11 +53,11 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
             activityUuid: normalizedActivityUuid,
             item: codeItem,
             settings,
-            ...(vm?.title !== undefined ? { title: vm.title } : {}),
-            ...(vm?.description !== undefined ? { description: vm.description } : {}),
+            ...(vmTitle !== undefined ? { title: vmTitle } : {}),
+            ...(vmDescription !== undefined ? { description: vmDescription } : {}),
           })
         : null,
-    [codeItem, normalizedActivityUuid, settings, vm?.description, vm?.title],
+    [codeItem, normalizedActivityUuid, settings, vmDescription, vmTitle],
   )
 
   const shellControls = useMemo(() => {

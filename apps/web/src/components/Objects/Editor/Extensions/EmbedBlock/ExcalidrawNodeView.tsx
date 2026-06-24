@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import * as Si from '@icons-pack/react-simple-icons'
@@ -23,6 +23,8 @@ function clampExcalidrawHeight(raw: number): number {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, raw))
 }
 
+const emptySubscribe = () => () => {}
+
 // ── ExcalidrawNodeView ────────────────────────────────────────────────────────
 
 /**
@@ -44,48 +46,26 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { isEditable } = editor
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
   // ── Height state ───────────────────────────────────────────────────────────
+  const [prevAttrHeight, setPrevAttrHeight] = useState(attrHeight)
   const [height, setHeight] = useState<number>(() =>
     clampExcalidrawHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : DEFAULT_HEIGHT),
   )
 
-  // Keep local height in sync when node attrs change externally
-  useEffect(() => {
+  // Keep local height in sync when node attrs change externally (render-phase sync)
+  if (attrHeight !== prevAttrHeight) {
+    setPrevAttrHeight(attrHeight)
     if (typeof attrHeight === 'number' && attrHeight > 0) {
       setHeight(clampExcalidrawHeight(attrHeight))
     }
-  }, [attrHeight])
+  }
 
   // ── Resize drag logic ──────────────────────────────────────────────────────
   const dragStartY = useRef<number>(0)
   const dragStartHeight = useRef<number>(0)
   const isDragging = useRef<boolean>(false)
-
-  const handlePointerMove = useCallback((e: PointerEvent) => {
-    if (!isDragging.current) return
-    const delta = e.clientY - dragStartY.current
-    const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
-    setHeight(newHeight)
-  }, [])
-
-  const handlePointerUp = useCallback(
-    (e: PointerEvent) => {
-      if (!isDragging.current) return
-      isDragging.current = false
-      const delta = e.clientY - dragStartY.current
-      const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
-      setHeight(finalHeight)
-      updateAttributes({ height: finalHeight })
-      document.removeEventListener('pointermove', handlePointerMove)
-      document.removeEventListener('pointerup', handlePointerUp)
-    },
-    [handlePointerMove, updateAttributes],
-  )
 
   const handleResizeHandlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -94,10 +74,29 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
       isDragging.current = true
       dragStartY.current = e.clientY
       dragStartHeight.current = height
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        if (!isDragging.current) return
+        const delta = moveEvent.clientY - dragStartY.current
+        const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+        setHeight(newHeight)
+      }
+
+      const handlePointerUp = (upEvent: PointerEvent) => {
+        if (!isDragging.current) return
+        isDragging.current = false
+        const delta = upEvent.clientY - dragStartY.current
+        const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+        setHeight(finalHeight)
+        updateAttributes({ height: finalHeight })
+        document.removeEventListener('pointermove', handlePointerMove)
+        document.removeEventListener('pointerup', handlePointerUp)
+      }
+
       document.addEventListener('pointermove', handlePointerMove)
       document.addEventListener('pointerup', handlePointerUp)
     },
-    [height, handlePointerMove, handlePointerUp],
+    [height, updateAttributes],
   )
 
   // ── Embed Panel store ──────────────────────────────────────────────────────

@@ -36,6 +36,10 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
   const [activeId, setActiveId] = useState<string | null>(null)
   const visibleHeadings = useMemo(() => headings.filter(heading => heading.id && heading.text), [headings])
 
+  if (!activeId && visibleHeadings[0]?.id) {
+    setActiveId(visibleHeadings[0].id)
+  }
+
   useEffect(() => {
     if (visibleHeadings.length < minItems) return
     const elements = visibleHeadings
@@ -59,7 +63,6 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
     )
 
     elements.forEach(element => observer.observe(element))
-    setActiveId(current => current ?? elements[0]?.id ?? null)
     return () => observer.disconnect()
   }, [minItems, visibleHeadings])
 

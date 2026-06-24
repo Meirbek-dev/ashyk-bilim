@@ -43,6 +43,13 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
   const pendingLinkRef = useRef<HTMLAnchorElement | null>(null)
   const pendingNavigationRef = useRef<PendingNavigation | null>(null)
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null)
+  const [prevIsDirty, setPrevIsDirty] = useState(isDirty)
+  if (isDirty !== prevIsDirty) {
+    setPrevIsDirty(isDirty)
+    if (!isDirty) {
+      setPendingNavigation(null)
+    }
+  }
 
   useEffect(() => {
     if (!isDirty) {
@@ -51,7 +58,6 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
       ignoreNextPopRef.current = false
       pendingLinkRef.current = null
       pendingNavigationRef.current = null
-      setPendingNavigation(null)
     }
   }, [isDirty])
 

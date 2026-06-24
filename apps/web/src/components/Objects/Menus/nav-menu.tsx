@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -66,24 +66,25 @@ function useIsActive(href: string): boolean {
 // Layout-mode awareness — hides nav when data-layout-mode="active-attempt"
 // Uses MutationObserver so there is no localStorage or CustomEvent coupling.
 // ----------------------------------------------------------------------
+const getChromeHiddenSnapshot = () => {
+  if (typeof document === 'undefined') return false
+  return (
+    document.documentElement.dataset.layoutMode === 'active-attempt' ||
+    document.documentElement.dataset.activityFocus === 'true'
+  )
+}
+
+const subscribeChromeHidden = (onStoreChange: () => void) => {
+  const observer = new MutationObserver(onStoreChange)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-layout-mode', 'data-activity-focus'],
+  })
+  return () => observer.disconnect()
+}
+
 function useActivityChromeHidden(): boolean {
-  const [hidden, setHidden] = useState(false)
-
-  useEffect(() => {
-    const read = () =>
-      document.documentElement.dataset.layoutMode === 'active-attempt' ||
-      document.documentElement.dataset.activityFocus === 'true'
-    setHidden(read())
-
-    const observer = new MutationObserver(() => setHidden(read()))
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-layout-mode', 'data-activity-focus'],
-    })
-    return () => observer.disconnect()
-  }, [])
-
-  return hidden
+  return useSyncExternalStore(subscribeChromeHidden, getChromeHiddenSnapshot, () => false)
 }
 
 // ----------------------------------------------------------------------
@@ -206,10 +207,13 @@ export default function NavBar() {
 
   const visibleLinks = useMemo(() => NAV_LINKS.filter(l => !l.authRequired || isAuthenticated), [isAuthenticated])
 
-  // Auto-close the mobile sheet on route change
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname)
+
+  // Auto-close the mobile sheet on route change (render-phase sync)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
     setIsMenuOpen(false)
-  }, [pathname])
+  }
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), [])
 

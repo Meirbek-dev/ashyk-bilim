@@ -1,8 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
+
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 import * as Si from '@icons-pack/react-simple-icons'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
@@ -27,23 +31,21 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { isEditable } = editor
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
 
   // ── Height state (local during drag, persisted on commit) ──────────────────
   const initialHeight =
     typeof attrHeight === 'number' && attrHeight > 0 ? clampEmbedHeight(attrHeight) : TLDRAW_DEFAULT_HEIGHT
 
   const [displayHeight, setDisplayHeight] = useState(initialHeight)
+  const [prevAttrHeight, setPrevAttrHeight] = useState(attrHeight)
 
-  // Keep display height in sync when the node attribute changes externally
-  useEffect(() => {
+  if (attrHeight !== prevAttrHeight) {
+    setPrevAttrHeight(attrHeight)
     if (typeof attrHeight === 'number' && attrHeight > 0) {
       setDisplayHeight(clampEmbedHeight(attrHeight))
     }
-  }, [attrHeight])
+  }
 
   // ── Drag-handle resize ─────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)

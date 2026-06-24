@@ -44,12 +44,18 @@ export default function GradingReviewWorkspace({
   const [search, setSearch] = useState(searchFromUrl)
   const [sortBy, setSortBy] = useState(sortFromUrl)
 
-  // Sync state with URL changes
-  useEffect(() => {
+  const [prevFilterFromUrl, setPrevFilterFromUrl] = useState(filterFromUrl)
+  const [prevSearchFromUrl, setPrevSearchFromUrl] = useState(searchFromUrl)
+  const [prevSortFromUrl, setPrevSortFromUrl] = useState(sortFromUrl)
+
+  if (filterFromUrl !== prevFilterFromUrl || searchFromUrl !== prevSearchFromUrl || sortFromUrl !== prevSortFromUrl) {
+    setPrevFilterFromUrl(filterFromUrl)
+    setPrevSearchFromUrl(searchFromUrl)
+    setPrevSortFromUrl(sortFromUrl)
     setActiveFilter(filterFromUrl)
     setSearch(searchFromUrl)
     setSortBy(sortFromUrl)
-  }, [filterFromUrl, searchFromUrl, sortFromUrl])
+  }
 
   const updateUrl = useCallback(
     (updates: Partial<{ filter: StatusFilter; sort: string; q: string }>) => {
@@ -73,6 +79,12 @@ export default function GradingReviewWorkspace({
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null)
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())
 
+  const [prevInitialSubmissionUuid, setPrevInitialSubmissionUuid] = useState(initialSubmissionUuid)
+  if (initialSubmissionUuid !== prevInitialSubmissionUuid) {
+    setPrevInitialSubmissionUuid(initialSubmissionUuid)
+    setSelectedUuid(initialSubmissionUuid ?? null)
+  }
+
   const submissionOptions = {
     activityId,
     assessmentUuid: assessmentUuid ?? null,
@@ -85,21 +97,14 @@ export default function GradingReviewWorkspace({
   const { submissions, total, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
   const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid ?? null)
 
-  useEffect(() => {
-    if (initialSubmissionUuid) setSelectedUuid(initialSubmissionUuid)
-  }, [initialSubmissionUuid])
+  const hasSubmissions = submissions.length > 0
+  const firstSubmissionUuid = submissions[0]?.submission_uuid ?? null
+  const isSelectedUuidValid = selectedUuid && submissions.some(s => s.submission_uuid === selectedUuid)
+  const shouldSelectDefault = hasSubmissions && (!selectedUuid || (!isSelectedUuidValid && selectedUuid !== initialSubmissionUuid))
 
-  useEffect(() => {
-    if (!selectedUuid && submissions[0]) setSelectedUuid(submissions[0].submission_uuid)
-    if (
-      selectedUuid &&
-      selectedUuid !== initialSubmissionUuid &&
-      submissions.length > 0 &&
-      !submissions.some(submission => submission.submission_uuid === selectedUuid)
-    ) {
-      setSelectedUuid(submissions[0]?.submission_uuid ?? null)
-    }
-  }, [initialSubmissionUuid, selectedUuid, submissions])
+  if (shouldSelectDefault) {
+    setSelectedUuid(firstSubmissionUuid)
+  }
 
   const selectedSubmission = submissions.find(submission => submission.submission_uuid === selectedUuid) ?? null
   const selectedSubmissions = useMemo(

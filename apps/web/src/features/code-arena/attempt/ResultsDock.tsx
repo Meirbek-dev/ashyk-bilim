@@ -35,18 +35,18 @@ export function ResultsDock({
 }: ResultsDockProps) {
   const t = useTranslations('Activities.CodeChallenges')
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
+  const [prevResults, setPrevResults] = useState(results)
 
-  // Auto-expand the first failing test case when results change
-  useEffect(() => {
+  if (results !== prevResults) {
+    setPrevResults(results)
     if (results && results.length > 0) {
       const firstFail = results.find(r => !r.passed)
-      if (firstFail) {
-        setExpandedRows({ [firstFail.test_case_id]: true })
-      } else if (results[0]) {
-        setExpandedRows({ [results[0].test_case_id]: true })
+      const targetId = firstFail ? firstFail.test_case_id : results[0]?.test_case_id
+      if (targetId) {
+        setExpandedRows({ [targetId]: true })
       }
     }
-  }, [results])
+  }
 
   const toggleRow = (id: string) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))

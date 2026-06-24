@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { reportClientError } from '@/services/telemetry/client'
 import { ERROR_MESSAGES, detectLocale } from '@/lib/error-i18n'
 import { ErrorState } from '@/components/ui/error-state'
-import type { SupportedLocale } from '@/lib/error-i18n'
+
+const emptySubscribe = () => () => {}
+const getLocaleSnapshot = () => detectLocale()
+const getServerLocaleSnapshot = () => 'ru-RU' as const
 
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
+  const locale = useSyncExternalStore(emptySubscribe, getLocaleSnapshot, getServerLocaleSnapshot)
 
   useEffect(() => {
-    setLocale(detectLocale())
-
     void reportClientError({
       digest: error.digest,
       error: {
