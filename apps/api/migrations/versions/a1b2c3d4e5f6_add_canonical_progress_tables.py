@@ -17,6 +17,10 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
     op.create_table(
         "assessment_policy",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -65,23 +69,44 @@ def upgrade() -> None:
         "assessment_policy",
         ["assessment_type"],
     )
-    op.add_column(
-        "submission",
-        sa.Column("assessment_policy_id", sa.Integer(), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_submission_assessment_policy_id",
-        "submission",
-        "assessment_policy",
-        ["assessment_policy_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
-    op.create_index(
-        "idx_submission_policy_user_attempt",
-        "submission",
-        ["assessment_policy_id", "user_id", "attempt_number"],
-    )
+
+    # Only modify submission table if it already exists (it's a legacy unmanaged table).
+    if "submission" in existing_tables:
+        op.add_column(
+            "submission",
+            sa.Column("assessment_policy_id", sa.Integer(), nullable=True),
+        )
+        op.create_foreign_key(
+            "fk_submission_assessment_policy_id",
+            "submission",
+            "assessment_policy",
+            ["assessment_policy_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        op.create_index(
+            "idx_submission_policy_user_attempt",
+            "submission",
+            ["assessment_policy_id", "user_id", "attempt_number"],
+        )
+
+    # activity_progress FKs to submission — only add FK if submission exists.
+    activity_progress_fks = [
+        sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("activity_id", "user_id", name="uq_activity_progress_user"),
+    ]
+    if "submission" in existing_tables:
+        activity_progress_fks.insert(
+            2,
+            sa.ForeignKeyConstraint(["best_submission_id"], ["submission.id"], ondelete="SET NULL"),
+        )
+        activity_progress_fks.insert(
+            3,
+            sa.ForeignKeyConstraint(["latest_submission_id"], ["submission.id"], ondelete="SET NULL"),
+        )
 
     op.create_table(
         "activity_progress",
@@ -122,13 +147,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.func.now(),
         ),
-        sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["best_submission_id"], ["submission.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["latest_submission_id"], ["submission.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("activity_id", "user_id", name="uq_activity_progress_user"),
+        *activity_progress_fks,
     )
     op.create_index(
         "ix_activity_progress_course_user",
@@ -194,8 +213,8 @@ def upgrade() -> None:
     )
     op.create_index("ix_course_progress_course_user", "course_progress", ["course_id", "user_id"])
 
-    _backfill_assessment_policies()
-    _link_existing_submissions_to_policies()
+    _backfill_assessment_policies(existing_tables)
+    _link_existing_submissions_to_policies(existing_tables)
 
 
 def downgrade() -> None:
@@ -216,8 +235,9 @@ def downgrade() -> None:
     op.drop_table("assessment_policy")
 
 
-def _backfill_assessment_policies() -> None:
-    op.execute("""
+def _backfill_assessment_policies(existing_tables: set[str]) -> None:
+    if "assignment" in existing_tables:
+        op.execute("""
         INSERT INTO assessment_policy (
             policy_uuid,
             activity_id,
@@ -254,7 +274,8 @@ def _backfill_assessment_policies() -> None:
         ON CONFLICT (activity_id) DO NOTHING
     """)
 
-    op.execute(r"""
+    if "exam" in existing_tables:
+        op.execute(r"""
         INSERT INTO assessment_policy (
             policy_uuid,
             activity_id,
@@ -306,7 +327,8 @@ def _backfill_assessment_policies() -> None:
         ON CONFLICT (activity_id) DO NOTHING
     """)
 
-    op.execute(r"""
+    if "block" in existing_tables:
+        op.execute(r"""
         WITH latest_quiz_block AS (
             SELECT DISTINCT ON (block.activity_id)
                 block.id,
@@ -364,49 +386,61 @@ def _backfill_assessment_policies() -> None:
         ON CONFLICT (activity_id) DO NOTHING
     """)
 
-    op.execute(r"""
-        INSERT INTO assessment_policy (
-            policy_uuid,
-            activity_id,
-            assessment_type,
-            grading_mode,
-            completion_rule,
-            passing_score,
-            max_attempts,
-            time_limit_seconds,
-            due_at,
-            allow_late,
-            late_policy_json,
-            settings_json,
-            created_at,
-            updated_at
-        )
-        SELECT
-            'policy_code_challenge_' || activity.id::text,
-            activity.id,
-            'CODE_CHALLENGE',
-            'AUTO',
-            'PASSED',
-            60,
-            NULL,
-            CASE
-                WHEN (activity.details ->> 'time_limit') ~ '^[0-9]+$'
-                    THEN (activity.details ->> 'time_limit')::int
-                ELSE NULL
-            END,
-            NULLIF(activity.details ->> 'due_date', '')::timestamptz,
-            TRUE,
-            '{}'::json,
-            COALESCE(activity.details, '{}'::json),
-            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
-        FROM activity
-        WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
-        ON CONFLICT (activity_id) DO NOTHING
-    """)
+    if "activity" in existing_tables:
+        conn = op.get_bind()
+        # Only backfill if the activity table has the 'details' and 'activity_type' columns
+        # (they may not exist on older DB copies where this migration runs before those columns
+        # are added by other migrations).
+        activity_columns = {
+            col["name"]
+            for col in sa.inspect(conn).get_columns("activity")
+        }
+        if "details" in activity_columns and "activity_type" in activity_columns:
+            op.execute(r"""
+            INSERT INTO assessment_policy (
+                policy_uuid,
+                activity_id,
+                assessment_type,
+                grading_mode,
+                completion_rule,
+                passing_score,
+                max_attempts,
+                time_limit_seconds,
+                due_at,
+                allow_late,
+                late_policy_json,
+                settings_json,
+                created_at,
+                updated_at
+            )
+            SELECT
+                'policy_code_challenge_' || activity.id::text,
+                activity.id,
+                'CODE_CHALLENGE',
+                'AUTO',
+                'PASSED',
+                60,
+                NULL,
+                CASE
+                    WHEN (activity.details ->> 'time_limit') ~ '^[0-9]+$'
+                        THEN (activity.details ->> 'time_limit')::int
+                    ELSE NULL
+                END,
+                NULLIF(activity.details ->> 'due_date', '')::timestamptz,
+                TRUE,
+                '{}'::json,
+                COALESCE(activity.details, '{}'::json),
+                COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+                COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
+            FROM activity
+            WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
+            ON CONFLICT (activity_id) DO NOTHING
+        """)
 
 
-def _link_existing_submissions_to_policies() -> None:
+def _link_existing_submissions_to_policies(existing_tables: set[str]) -> None:
+    if "submission" not in existing_tables:
+        return
     op.execute("""
         UPDATE submission
         SET assessment_policy_id = assessment_policy.id

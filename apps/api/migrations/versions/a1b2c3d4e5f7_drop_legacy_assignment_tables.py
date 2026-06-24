@@ -101,7 +101,7 @@ def upgrade() -> None:
         op.drop_table("assignment")
 
     # ── 4. Strip legacy keys from submission.metadata_json ───────────────────
-    if _LEGACY_METADATA_KEYS:
+    if _LEGACY_METADATA_KEYS and "submission" in existing_tables:
         removal_expr = " ".join(f"- '{key}'" for key in _LEGACY_METADATA_KEYS)
 
         conn.execute(

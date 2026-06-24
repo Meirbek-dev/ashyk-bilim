@@ -24,6 +24,14 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    # Guard: skip entirely if the legacy assignment table was never created.
+    if "assignment" not in existing_tables:
+        return
+
     # ── assignment table ──────────────────────────────────────────────────────
 
     op.drop_column("assignment", "due_date")
@@ -49,24 +57,25 @@ def upgrade() -> None:
 
     # ── assignmenttask table ──────────────────────────────────────────────────
 
-    op.alter_column(
-        "assignmenttask",
-        "creation_date",
-        new_column_name="created_at",
-        existing_type=sa.Text(),
-        type_=sa.DateTime(timezone=True),
-        postgresql_using="creation_date::timestamptz",
-        nullable=False,
-    )
-    op.alter_column(
-        "assignmenttask",
-        "update_date",
-        new_column_name="updated_at",
-        existing_type=sa.Text(),
-        type_=sa.DateTime(timezone=True),
-        postgresql_using="update_date::timestamptz",
-        nullable=False,
-    )
+    if "assignmenttask" in existing_tables:
+        op.alter_column(
+            "assignmenttask",
+            "creation_date",
+            new_column_name="created_at",
+            existing_type=sa.Text(),
+            type_=sa.DateTime(timezone=True),
+            postgresql_using="creation_date::timestamptz",
+            nullable=False,
+        )
+        op.alter_column(
+            "assignmenttask",
+            "update_date",
+            new_column_name="updated_at",
+            existing_type=sa.Text(),
+            type_=sa.DateTime(timezone=True),
+            postgresql_using="update_date::timestamptz",
+            nullable=False,
+        )
 
 
 def downgrade() -> None:

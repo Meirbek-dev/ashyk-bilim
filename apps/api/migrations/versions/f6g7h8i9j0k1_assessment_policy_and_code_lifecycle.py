@@ -17,6 +17,10 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
     op.add_column(
         "assessment_policy",
         sa.Column(
@@ -47,43 +51,45 @@ def upgrade() -> None:
           AND assessment_policy.assessment_type = 'EXAM'
     """)
 
-    op.execute("""
-        UPDATE assignmenttask
-        SET contents = jsonb_set(
-            contents::jsonb,
-            '{settings}',
-            (
-                (COALESCE(contents::jsonb -> 'settings', '{}'::jsonb))
-                - 'prevent_copy'
-                - 'track_violations'
-                - 'max_violations'
-                - 'block_on_violations'
-            )
-        )::json
-        WHERE assignment_type = 'QUIZ'
-          AND contents IS NOT NULL
-          AND contents::jsonb ? 'settings'
-    """)
+    if "assignmenttask" in existing_tables:
+        op.execute("""
+            UPDATE assignmenttask
+            SET contents = jsonb_set(
+                contents::jsonb,
+                '{settings}',
+                (
+                    (COALESCE(contents::jsonb -> 'settings', '{}'::jsonb))
+                    - 'prevent_copy'
+                    - 'track_violations'
+                    - 'max_violations'
+                    - 'block_on_violations'
+                )
+            )::json
+            WHERE assignment_type = 'QUIZ'
+              AND contents IS NOT NULL
+              AND contents::jsonb ? 'settings'
+        """)
 
-    op.execute("""
-        UPDATE activity
-        SET details = (
-            COALESCE(details::jsonb, '{}'::jsonb)
-            || jsonb_build_object(
-                'lifecycle_status',
-                CASE
-                    WHEN EXISTS (
-                        SELECT 1
-                        FROM submission
-                        WHERE submission.activity_id = activity.id
-                    ) THEN 'PUBLISHED'
-                    ELSE 'DRAFT'
-                END
-            )
-        )::json
-        WHERE activity_type = 'TYPE_CODE_CHALLENGE'
-          AND NOT (COALESCE(details::jsonb, '{}'::jsonb) ? 'lifecycle_status')
-    """)
+    if "submission" in existing_tables:
+        op.execute("""
+            UPDATE activity
+            SET details = (
+                COALESCE(details::jsonb, '{}'::jsonb)
+                || jsonb_build_object(
+                    'lifecycle_status',
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM submission
+                            WHERE submission.activity_id = activity.id
+                        ) THEN 'PUBLISHED'
+                        ELSE 'DRAFT'
+                    END
+                )
+            )::json
+            WHERE activity_type = 'TYPE_CODE_CHALLENGE'
+              AND NOT (COALESCE(details::jsonb, '{}'::jsonb) ? 'lifecycle_status')
+        """)
 
 
 def downgrade() -> None:

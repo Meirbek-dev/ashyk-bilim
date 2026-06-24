@@ -478,6 +478,11 @@ def _delete_empty_assignment(conn: Connection, assignment: dict[str, Any]) -> No
 
 def upgrade() -> None:
     conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    if "assignment" not in existing_tables or "assignmenttask" not in existing_tables:
+        return
 
     quiz_assignments = _fetch_all(
         conn,

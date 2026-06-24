@@ -17,24 +17,29 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "activity",
-        sa.Column(
-            "settings",
-            sa.JSON(),
-            nullable=False,
-            server_default=sa.text("'{}'::json"),
-        ),
-    )
-    op.add_column(
-        "submission",
-        sa.Column(
-            "metadata_json",
-            sa.JSON(),
-            nullable=False,
-            server_default=sa.text("'{}'::json"),
-        ),
-    )
+    conn = op.get_bind()
+    activity_cols = {col["name"] for col in sa.inspect(conn).get_columns("activity")}
+    if "settings" not in activity_cols:
+        op.add_column(
+            "activity",
+            sa.Column(
+                "settings",
+                sa.JSON(),
+                nullable=False,
+                server_default=sa.text("'{}'::json"),
+            ),
+        )
+    submission_cols = {col["name"] for col in sa.inspect(conn).get_columns("submission")}
+    if "metadata_json" not in submission_cols:
+        op.add_column(
+            "submission",
+            sa.Column(
+                "metadata_json",
+                sa.JSON(),
+                nullable=False,
+                server_default=sa.text("'{}'::json"),
+            ),
+        )
 
     op.execute("""
         UPDATE activity

@@ -21,47 +21,57 @@ depends_on = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_columns = {col["name"] for col in inspector.get_columns("user")}
+
     # ── 1. Rename password -> hashed_password ────────────────────────────────
-    op.alter_column("user", "password", new_column_name="hashed_password")
+    # Guard against re-runs where column was already renamed.
+    if "password" in existing_columns and "hashed_password" not in existing_columns:
+        op.alter_column("user", "password", new_column_name="hashed_password")
 
     # ── 2. Add is_active (backfill True, then constrain) ─────────────────────
-    op.add_column(
-        "user",
-        sa.Column(
-            "is_active",
-            sa.Boolean(),
-            nullable=True,
-            server_default=sa.text("TRUE"),
-        ),
-    )
-    op.execute('UPDATE "user" SET is_active = TRUE WHERE is_active IS NULL')
-    op.alter_column("user", "is_active", nullable=False, server_default=None)
+    existing_columns = {col["name"] for col in inspector.get_columns("user")}
+    if "is_active" not in existing_columns:
+        op.add_column(
+            "user",
+            sa.Column(
+                "is_active",
+                sa.Boolean(),
+                nullable=True,
+                server_default=sa.text("TRUE"),
+            ),
+        )
+        op.execute('UPDATE "user" SET is_active = TRUE WHERE is_active IS NULL')
+        op.alter_column("user", "is_active", nullable=False, server_default=None)
 
     # ── 3. Add is_superuser ───────────────────────────────────────────────────
-    op.add_column(
-        "user",
-        sa.Column(
-            "is_superuser",
-            sa.Boolean(),
-            nullable=True,
-            server_default=sa.text("FALSE"),
-        ),
-    )
-    op.execute('UPDATE "user" SET is_superuser = FALSE WHERE is_superuser IS NULL')
-    op.alter_column("user", "is_superuser", nullable=False, server_default=None)
+    if "is_superuser" not in existing_columns:
+        op.add_column(
+            "user",
+            sa.Column(
+                "is_superuser",
+                sa.Boolean(),
+                nullable=True,
+                server_default=sa.text("FALSE"),
+            ),
+        )
+        op.execute('UPDATE "user" SET is_superuser = FALSE WHERE is_superuser IS NULL')
+        op.alter_column("user", "is_superuser", nullable=False, server_default=None)
 
     # ── 4. Add is_verified ────────────────────────────────────────────────────
-    op.add_column(
-        "user",
-        sa.Column(
-            "is_verified",
-            sa.Boolean(),
-            nullable=True,
-            server_default=sa.text("FALSE"),
-        ),
-    )
-    op.execute('UPDATE "user" SET is_verified = FALSE WHERE is_verified IS NULL')
-    op.alter_column("user", "is_verified", nullable=False, server_default=None)
+    if "is_verified" not in existing_columns:
+        op.add_column(
+            "user",
+            sa.Column(
+                "is_verified",
+                sa.Boolean(),
+                nullable=True,
+                server_default=sa.text("FALSE"),
+            ),
+        )
+        op.execute('UPDATE "user" SET is_verified = FALSE WHERE is_verified IS NULL')
+        op.alter_column("user", "is_verified", nullable=False, server_default=None)
 
 
 def downgrade() -> None:

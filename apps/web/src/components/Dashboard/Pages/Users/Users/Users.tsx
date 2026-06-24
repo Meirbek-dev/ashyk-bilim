@@ -222,9 +222,10 @@ const Users = () => {
         const isSelf = currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id
         const targetPriority = getRolePriority(user.role)
         const canManage = !isSelf && currentUserPriority > targetPriority
+        const isMainAdmin = currentUser?.id === 1
 
         if (isSelf) return <span className="text-muted-foreground text-xs">{t('cannotEditSelf')}</span>
-        if (currentUserPriority <= targetPriority) {
+        if (!isSelf && !isMainAdmin && currentUserPriority <= targetPriority) {
           return <span className="text-muted-foreground text-xs">{t('cannotManageHigherRole')}</span>
         }
         if (!canManage) return <span className="text-muted-foreground text-xs">{t('noActionsForAdministrators')}</span>

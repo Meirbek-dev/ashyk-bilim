@@ -24,28 +24,37 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     conn = op.get_bind()
 
-    # Re-add the column (nullable, no FK enforcement to avoid lock issues)
-    conn.execute(sa.text("ALTER TABLE activity ADD COLUMN IF NOT EXISTS course_id INTEGER"))
-
-    # Backfill from chapter.course_id
-    conn.execute(
-        sa.text(
-            """
-            UPDATE activity a
-            SET course_id = c.course_id
-            FROM chapter c
-            WHERE a.chapter_id = c.id
-              AND a.course_id IS NULL
-            """
-        )
-    )
-
-    # Add FK constraint (nullable, SET NULL on course delete)
+    # Guard: skip entirely if the activity table doesn't exist yet (fresh DB
+    # migrations run this root before the table is created).
     conn.execute(
         sa.text(
             """
             DO $$
             BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'activity'
+                ) THEN
+                    RETURN;  -- table not yet created; nothing to do
+                END IF;
+
+                -- Re-add the column (nullable, no FK enforcement to avoid lock issues)
+                ALTER TABLE activity ADD COLUMN IF NOT EXISTS course_id INTEGER;
+
+                -- Backfill from chapter.course_id (skip if chapter table doesn't exist
+                -- yet on an older DB copy — course_id is nullable so this is safe).
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'chapter'
+                ) THEN
+                    UPDATE activity a
+                    SET course_id = c.course_id
+                    FROM chapter c
+                    WHERE a.chapter_id = c.id
+                      AND a.course_id IS NULL;
+                END IF;
+
+                -- Add FK constraint (nullable, SET NULL on course delete)
                 IF NOT EXISTS (
                     SELECT 1 FROM pg_constraint
                     WHERE conrelid = 'activity'::regclass

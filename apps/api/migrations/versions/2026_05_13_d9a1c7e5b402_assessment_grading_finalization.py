@@ -517,53 +517,61 @@ def upgrade() -> None:
     _assert_no_unmapped_activity_types(conn)
     _assert_legacy_submissions_have_canonical_rows(conn)
 
-    op.add_column(
-        "submission",
-        sa.Column(
-            "raw_grading_json",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.execute(
-        sa.text(
-            """
-            UPDATE submission
-            SET raw_grading_json = COALESCE(grading_json, '{}'::json)
-            """
-        )
-    )
-
-    op.add_column(
-        "grading_entry",
-        sa.Column(
-            "raw_breakdown",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.add_column(
-        "grading_entry",
-        sa.Column(
-            "effective_breakdown",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.execute(
-        sa.text(
-            """
-            UPDATE grading_entry
-            SET raw_breakdown = COALESCE(breakdown, '{}'::json),
-                effective_breakdown = COALESCE(breakdown, '{}'::json)
-            """
-        )
-    )
-
     _strip_legacy_metadata_keys()
+
+    conn = op.get_bind()
+    submission_cols = {col["name"] for col in sa.inspect(conn).get_columns("submission")}
+    if "raw_grading_json" not in submission_cols:
+        op.add_column(
+            "submission",
+            sa.Column(
+                "raw_grading_json",
+                sa.JSON(),
+                server_default=sa.text("'{}'::json"),
+                nullable=False,
+            ),
+        )
+        op.execute(
+            sa.text(
+                """
+                UPDATE submission
+                SET raw_grading_json = COALESCE(grading_json, '{}'::json)
+                """
+            )
+        )
+
+    if _table_exists(conn, "grading_entry"):
+        grading_cols = {col["name"] for col in sa.inspect(conn).get_columns("grading_entry")}
+        if "raw_breakdown" not in grading_cols:
+            op.add_column(
+                "grading_entry",
+                sa.Column(
+                    "raw_breakdown",
+                    sa.JSON(),
+                    server_default=sa.text("'{}'::json"),
+                    nullable=False,
+                ),
+            )
+        if "effective_breakdown" not in grading_cols:
+            op.add_column(
+                "grading_entry",
+                sa.Column(
+                    "effective_breakdown",
+                    sa.JSON(),
+                    server_default=sa.text("'{}'::json"),
+                    nullable=False,
+                ),
+            )
+        if "breakdown" in grading_cols:
+            op.execute(
+                sa.text(
+                    """
+                    UPDATE grading_entry
+                    SET raw_breakdown = COALESCE(breakdown, '{}'::json),
+                        effective_breakdown = COALESCE(breakdown, '{}'::json)
+                    """
+                )
+            )
 
     for table_name in LEGACY_TABLES:
         op.execute(sa.text(f'DROP TABLE IF EXISTS "{table_name}" CASCADE'))

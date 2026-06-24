@@ -7,7 +7,7 @@ requires-python = ">=3.14.5,<3.15.0"
 dependencies = [
   # Framework
   "fastapi>=0.138.0",
-  "granian[reload,uvloop]>=2.7.6",
+  "granian[reload,uvloop]>=2.7.7",
 
   # Database
   "sqlalchemy>=2.0.51",
@@ -15,7 +15,7 @@ dependencies = [
   "alembic>=1.18.4",
   "psycopg[binary]>=3.3.4",
   "pgvector>=0.4.2",
-  "redis<=8.0.0",
+  "redis>=8.0.1",
 
   # Validation / Config
   "pydantic[email]>=2.13.4",
@@ -27,13 +27,13 @@ dependencies = [
 
   # AI
   "openai>=2.43.0",
-  "pydantic-ai-slim[logfire,openai]>=1.107.0",
+  "pydantic-ai-slim[logfire,openai]>=2.0.0",
   "tiktoken>=0.13.0",
 
   # Async / Jobs
   "taskiq>=0.12.4",
   "taskiq-fastapi>=0.5.0",
-  "taskiq-redis>=1.2.2",
+  "taskiq-redis>=1.2.3",
 
   # API
   "fastapi-pagination>=0.15.15",
@@ -57,7 +57,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   # Lint / Format
-  "ruff==0.15.18",
+  "ruff==0.15.19",
   # Type Checking
   "basedpyright>=1.39.8",
   "mypy>=2.1.0",
@@ -70,7 +70,7 @@ dev = [
   "uvicorn[standard]>=0.49.0",
   # Fixtures
   "faker>=40.23.0",
-  "ty>=0.0.51",
+  "ty>=0.0.53",
 ]
 
 [tool.ruff]
@@ -200,7 +200,16 @@ ignore = [
   "PT003",
 ]
 
-"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003"]
+"**/conftest.py" = [
+  "ARG001",
+  "ARG002",
+  "F401",
+  "F811",
+  "S101",
+  "S105",
+  "S106",
+  "PT003",
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

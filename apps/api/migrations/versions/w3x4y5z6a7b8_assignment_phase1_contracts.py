@@ -46,65 +46,79 @@ def _backfill_assignment_task_order() -> None:
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    # Guard: if the legacy assignment table doesn't exist (e.g. fresh DB where
+    # these tables were never created, or already cleaned up by a later migration),
+    # skip all DDL — it will be a no-op since a1b2c3d4e5f7 drops these tables anyway.
+    if "assignment" not in existing_tables:
+        return
+
     op.add_column(
         "assignment",
         sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
     )
 
-    op.add_column(
-        "assignmenttask",
-        sa.Column("order", sa.Integer(), server_default="0", nullable=True),
-    )
-    _backfill_assignment_task_order()
-    op.alter_column(
-        "assignmenttask",
-        "order",
-        existing_type=sa.Integer(),
-        nullable=False,
-        server_default="0",
-    )
+    if "assignmenttask" in existing_tables:
+        op.add_column(
+            "assignmenttask",
+            sa.Column("order", sa.Integer(), server_default="0", nullable=True),
+        )
+        _backfill_assignment_task_order()
+        op.alter_column(
+            "assignmenttask",
+            "order",
+            existing_type=sa.Integer(),
+            nullable=False,
+            server_default="0",
+        )
 
     op.create_index(
         "idx_assignment_activity_id",
         "assignment",
         ["activity_id"],
+        if_not_exists=True,
     )
-    op.create_unique_constraint(
-        "uq_assignmenttask_order",
-        "assignmenttask",
-        ["assignment_id", "order"],
-    )
-    op.create_unique_constraint(
-        "uq_assignmenttask_assignment_uuid",
-        "assignmenttask",
-        ["assignment_id", "assignment_task_uuid"],
-    )
-    op.create_index(
-        "idx_assignmenttask_assignment_order",
-        "assignmenttask",
-        ["assignment_id", "order"],
-    )
-    op.create_index(
-        "idx_assignmenttask_activity_id",
-        "assignmenttask",
-        ["activity_id"],
-    )
+    if "assignmenttask" in existing_tables:
+        op.create_unique_constraint(
+            "uq_assignmenttask_order",
+            "assignmenttask",
+            ["assignment_id", "order"],
+        )
+        op.create_unique_constraint(
+            "uq_assignmenttask_assignment_uuid",
+            "assignmenttask",
+            ["assignment_id", "assignment_task_uuid"],
+        )
+        op.create_index(
+            "idx_assignmenttask_assignment_order",
+            "assignmenttask",
+            ["assignment_id", "order"],
+        )
+        op.create_index(
+            "idx_assignmenttask_activity_id",
+            "assignmenttask",
+            ["activity_id"],
+        )
 
-    op.create_index(
-        "idx_submission_activity_status_submitted",
-        "submission",
-        ["activity_id", "status", "submitted_at"],
-    )
-    op.create_index(
-        "idx_submission_activity_status_late",
-        "submission",
-        ["activity_id", "status", "is_late"],
-    )
-    op.create_index(
-        "idx_submission_activity_user_status",
-        "submission",
-        ["activity_id", "user_id", "status"],
-    )
+    if "submission" in existing_tables:
+        op.create_index(
+            "idx_submission_activity_status_submitted",
+            "submission",
+            ["activity_id", "status", "submitted_at"],
+        )
+        op.create_index(
+            "idx_submission_activity_status_late",
+            "submission",
+            ["activity_id", "status", "is_late"],
+        )
+        op.create_index(
+            "idx_submission_activity_user_status",
+            "submission",
+            ["activity_id", "user_id", "status"],
+        )
 
 
 def downgrade() -> None:

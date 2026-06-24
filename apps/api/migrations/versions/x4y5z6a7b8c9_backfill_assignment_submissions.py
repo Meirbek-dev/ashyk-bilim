@@ -651,6 +651,13 @@ def _backfill_unified_assignment_submissions(conn: Connection) -> None:
 
 def upgrade() -> None:
     conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    # Guard: skip entirely if the legacy assignment table was never created.
+    if "assignment" not in existing_tables:
+        return
+
     _ensure_assignment_activities(conn)
     _backfill_due_at(conn)
     _backfill_task_order(conn)
@@ -664,4 +671,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint("uq_assignment_activity_id", "assignment", type_="unique")
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if "assignment" in inspector.get_table_names():
+        op.drop_constraint("uq_assignment_activity_id", "assignment", type_="unique")
