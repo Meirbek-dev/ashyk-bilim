@@ -10089,7 +10089,8 @@
     "scorePlaceholder": "0–100",
     "feedbackPlaceholder": "Feedback",
     "rubricScorePlaceholder": "0",
-    "downloadCsv": "Download CSV"
+    "downloadCsv": "Download CSV",
+    "csv": "CSV"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",

@@ -10107,7 +10107,8 @@
     "scorePlaceholder": "0–100",
     "feedbackPlaceholder": "Отзыв",
     "rubricScorePlaceholder": "0",
-    "downloadCsv": "Скачать CSV"
+    "downloadCsv": "Скачать CSV",
+    "csv": "CSV"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Загрузка студии отправки файлов",
