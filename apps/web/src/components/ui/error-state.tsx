@@ -1,4 +1,5 @@
 import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -12,11 +13,13 @@ interface SupportReferenceProps {
 }
 
 export function SupportReference({ error, reference }: SupportReferenceProps) {
+  const t = useTranslations('Errors')
   const supportReference = reference ?? getSupportReference(error)
   if (!supportReference) return null
   return (
     <p className="text-muted-foreground text-xs">
-      Reference <code className="bg-muted text-foreground rounded px-1.5 py-0.5">{supportReference}</code>
+      {t('reference')}{' '}
+      <code className="bg-muted text-foreground rounded px-1.5 py-0.5">{supportReference}</code>
     </p>
   )
 }

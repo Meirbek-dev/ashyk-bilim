@@ -302,6 +302,7 @@ export default defineConfig({
         {
           noStrings: true,
           allowedStrings: [
+            ' ',
             '•',
             '—',
             '×',

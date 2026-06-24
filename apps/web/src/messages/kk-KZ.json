@@ -6848,6 +6848,7 @@
   "Errors": {
     "errorLabel": "Қате:",
     "errorReference": "Қате сілтемесі:",
+    "reference": "Сілтеме",
     "pageRenderFailed": "Бетті көрсету мүмкін болмады. Қайтадан көріңіз немесе қате қайталанса, бетті қайта жүктеңіз.",
     "somethingWentWrong": "Бірдеңе дұрыс болмады!",
     "technicalDetails": "Техникалық мәліметтер:",
@@ -10002,6 +10003,7 @@
     "noCertificateAvailable": "Сертификат қолжетімді емес",
     "quitCourseButton": "Курстан шығу",
     "stepsLabel": "қадам",
+    "stepsProgress": "{completed} / {total} қадам",
     "viewCertificate": "Сертификатты қарау"
   },
   "TrailPage": {

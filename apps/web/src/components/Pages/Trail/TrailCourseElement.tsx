@@ -78,7 +78,10 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
         <div className="space-y-1.5">
           <div className="text-muted-foreground flex items-center justify-between text-xs">
             <span className="tabular-nums">
-              {course_completed_steps}&thinsp;/&thinsp;{course_total_steps} {t('stepsLabel')}
+              {t('stepsProgress', {
+                completed: course_completed_steps,
+                total: course_total_steps,
+              })}
             </span>
             <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
               {course_progress}%

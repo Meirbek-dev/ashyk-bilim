@@ -6833,6 +6833,7 @@
   "Errors": {
     "errorLabel": "Ошибка:",
     "errorReference": "Ссылка на ошибку:",
+    "reference": "Ссылка",
     "pageRenderFailed": "Страница не смогла отобразиться. Попробуйте снова или перезагрузите страницу, если ошибка повторяется.",
     "somethingWentWrong": "Что-то пошло не так!",
     "technicalDetails": "Технические детали:",
@@ -9837,6 +9838,7 @@
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
     "stepsLabel": "шагов",
+    "stepsProgress": "{completed} / {total} шагов",
     "viewCertificate": "Просмотреть сертификат"
   },
   "TrailPage": {

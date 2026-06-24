@@ -6830,6 +6830,7 @@
   "Errors": {
     "errorLabel": "Error:",
     "errorReference": "Error Reference:",
+    "reference": "Reference",
     "pageRenderFailed": "The page failed to render. You can retry, or reload if the error keeps returning.",
     "somethingWentWrong": "Something went wrong!",
     "technicalDetails": "Technical details:",
@@ -9819,6 +9820,7 @@
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
     "stepsLabel": "steps",
+    "stepsProgress": "{completed} / {total} steps",
     "viewCertificate": "View Certificate"
   },
   "TrailPage": {
