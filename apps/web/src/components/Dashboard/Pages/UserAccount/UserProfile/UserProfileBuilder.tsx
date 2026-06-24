@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@
 import { updateProfile } from '@/lib/users/client'
 import { useMemo, useState } from 'react'
 import { useSession } from '@/hooks/useSession'
+import type { SessionUser } from '@/lib/auth/types'
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -47,7 +48,7 @@ const UserProfileBuilder = () => {
   const announcements = useDndAnnouncements(sectionIds)
 
   // Track the user we have initialized from.
-  const [prevMe, setPrevMe] = useState<any>(null)
+  const [prevMe, setPrevMe] = useState<SessionUser | null>(null)
 
   if (me && me !== prevMe) {
     setPrevMe(me)

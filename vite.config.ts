@@ -136,7 +136,7 @@ export default defineConfig({
       'unicorn',
     ],
     rules: {
-      'react/react-compiler': 'off',
+      'react/react-compiler': 'warn',
       'no-shadow': 'warn',
       'typescript/no-explicit-any': 'warn',
       'prefer-named-capture-group': 'off',

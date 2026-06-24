@@ -19,6 +19,7 @@ import {
   publishFileSubmissionActivity,
   updateFileSubmissionActivity,
 } from '@/features/file-submissions/services/file-submissions'
+import type { FileSubmissionActivity } from '@/features/file-submissions/services/file-submissions'
 import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
@@ -112,7 +113,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     }),
   )
 
-  const [prevData, setPrevData] = useState<any>(null)
+  const [prevData, setPrevData] = useState<FileSubmissionActivity | null>(null)
 
   if (data && data !== prevData) {
     setPrevData(data)
