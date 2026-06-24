@@ -1,7 +1,6 @@
 import logging
 import uuid
 from collections.abc import Mapping
-from typing import cast
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -135,24 +134,6 @@ def api_error_response(
         content=envelope.model_dump(mode="json"),
         headers=_response_headers_for_request(request, request_id, headers),
     )
-
-
-def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
-    sanitized_errors: list[dict[str, object]] = []
-    for error in exc.errors():
-        if isinstance(error, dict):
-            sanitized_errors.append({str(k): v for k, v in error.items() if k != "url"})
-        else:
-            sanitized_errors.append({"msg": str(error)})
-    return sanitized_errors
-
-
-def _validation_field_errors(exc: RequestValidationError) -> list[ApiFieldError]:
-    field_errors: list[ApiFieldError] = []
-    for error in exc.errors():
-        if not isinstance(error, dict):
-            field_errors.append(ApiFieldError(message=str(error)))
-            continue
 
 
 def _serialize_validation_errors(exc: RequestValidationError) -> list[dict[str, object]]:
@@ -312,7 +293,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 code=code,
                 message=message,
                 details=details,
-                headers=cast("Mapping[str, str] | None", exc.headers),
+                headers=exc.headers,
             )
 
         code, message, details = _normalize_http_detail(detail)
@@ -322,7 +303,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=code,
             message=message,
             details=details,
-            headers=cast("Mapping[str, str] | None", exc.headers),
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)

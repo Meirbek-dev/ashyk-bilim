@@ -92,7 +92,13 @@ async def get_events_since(
     min_score = now - _REPLAY_WINDOW_SECONDS
 
     try:
-        raw_events: list[bytes] = await client.zrangebyscore(replay_key, min_score, "+inf")
+        raw_results = await client.zrangebyscore(replay_key, min_score, "+inf")
+        raw_events: list[bytes] = []
+        for r in raw_results:
+            if isinstance(r, bytes):
+                raw_events.append(r)
+            elif isinstance(r, str):
+                raw_events.append(r.encode())
     except Exception:
         logger.warning("Failed to fetch replay events", exc_info=True)
         return []

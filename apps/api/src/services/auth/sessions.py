@@ -285,7 +285,13 @@ async def _get_active_session_ids(user_id: int) -> list[str]:
     now = _now_ts()
     user_key = await _ensure_user_sessions_index(r, user_id)
     members = await r.zrangebyscore(user_key, now, "+inf")
-    return [m.decode() if isinstance(m, bytes) else m for m in members]
+    res: list[str] = []
+    for m in members:
+        if isinstance(m, bytes):
+            res.append(m.decode())
+        elif isinstance(m, str):
+            res.append(m)
+    return res
 
 
 # ── Background audit helpers (own DB session, non-blocking) ──────────────────

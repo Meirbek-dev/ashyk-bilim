@@ -140,7 +140,7 @@ def test_unhandled_exception_returns_safe_500_envelope() -> None:
     assert response.status_code == 500
     payload = response.json()
     _assert_envelope(payload, code="INTERNAL_SERVER_ERROR", request_id="req-boom")
-    assert payload["message"] == "Internal server error"
+    assert payload["message"] == "Внутренняя ошибка сервера"
     assert "secret database failure" not in response.text
 
 
