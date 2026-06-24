@@ -12,7 +12,6 @@ import jsxA11y from 'eslint-plugin-jsx-a11y'
 import next from '@next/eslint-plugin-next'
 import react from 'eslint-plugin-react'
 import pluginQuery from '@tanstack/eslint-plugin-query'
-import reactCompiler from 'eslint-plugin-react-compiler'
 
 /* -------------------------------------------------------------------------- */
 /* Shared rules                                                               */
@@ -23,9 +22,6 @@ const COMMON_RULES = {
   '@next/next/no-img-element': 'warn',
   '@next/next/no-sync-scripts': 'warn',
   '@next/next/no-page-custom-font': 'warn',
-
-  /* React Compiler */
-  'react-compiler/react-compiler': 'error',
 
   /* React */
   'react/prop-types': 'off',
@@ -403,7 +399,6 @@ export default defineConfig(
       '@typescript-eslint': tseslint.plugin,
       react,
       'react-hooks': /** @type {any} */ (reactHooks),
-      'react-compiler': reactCompiler,
       '@next/next': next,
       'unused-imports': unusedImports,
       'jsx-a11y': /** @type {any} */ (jsxA11y),
@@ -509,7 +504,6 @@ export default defineConfig(
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'tests/**/*.{ts,tsx}', 'src/tests/**/*.{ts,tsx}'],
     rules: {
       'i18next/no-literal-string': 'off',
-      'react-compiler/react-compiler': 'off',
       'react-hooks/rules-of-hooks': 'off',
     },
   },
@@ -523,7 +517,6 @@ export default defineConfig(
     files: ['e2e/**/*.{ts,tsx}'],
     rules: {
       'i18next/no-literal-string': 'off',
-      'react-compiler/react-compiler': 'off',
       'react-hooks/rules-of-hooks': 'off',
       'no-empty-pattern': 'off',
     },
