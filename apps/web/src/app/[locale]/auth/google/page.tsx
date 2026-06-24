@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from '@components/ui/AppLink'
 
 /**
@@ -20,18 +20,15 @@ import Link from '@components/ui/AppLink'
 const GoogleCallbackPage = () => {
   const searchParams = useSearchParams()
   const t = useTranslations('Auth.Login')
-  const [error, setError] = useState('')
+
+  const oauthError = searchParams.get('error')
+  const error = oauthError ? t('wrongCredentials') : ''
 
   useEffect(() => {
-    const oauthError = searchParams.get('error')
-
-    if (oauthError) {
-      setError(t('wrongCredentials'))
-      return
+    if (!oauthError) {
+      globalThis.location.href = '/redirect_from_auth'
     }
-
-    globalThis.location.href = '/redirect_from_auth'
-  }, [searchParams, t])
+  }, [oauthError])
 
   return (
     <AuthCard>

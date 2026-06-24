@@ -10,7 +10,7 @@ import {
   Loader2,
   Upload,
 } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NextImage from '@components/ui/NextImage'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
@@ -158,38 +158,42 @@ function useImageResize(initialWidth: number, onResize: (width: number) => void)
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(initialWidth)
   const [isResizing, setIsResizing] = useState(false)
+  const onResizeRef = useRef(onResize)
+  const widthRef = useRef(width)
 
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault()
-      setIsResizing(true)
+  useEffect(() => {
+    onResizeRef.current = onResize
+    widthRef.current = width
+  }, [onResize, width])
 
-      const startX = 'touches' in e ? (e.touches?.[0]?.clientX ?? 0) : e.clientX
-      const startWidth = width
+  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
 
-      const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-        const currentX = 'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX
-        const delta = currentX - startX
-        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta * 2)) // *2 because handle is centered
-        setWidth(newWidth)
-      }
+    const startX = 'touches' in e ? (e.touches?.[0]?.clientX ?? 0) : e.clientX
+    const startWidth = widthRef.current
 
-      const handleEnd = () => {
-        setIsResizing(false)
-        onResize(width)
-        document.removeEventListener('mousemove', handleMove)
-        document.removeEventListener('mouseup', handleEnd)
-        document.removeEventListener('touchmove', handleMove)
-        document.removeEventListener('touchend', handleEnd)
-      }
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const currentX = 'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX
+      const delta = currentX - startX
+      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta * 2)) // *2 because handle is centered
+      setWidth(newWidth)
+    }
 
-      document.addEventListener('mousemove', handleMove)
-      document.addEventListener('mouseup', handleEnd)
-      document.addEventListener('touchmove', handleMove)
-      document.addEventListener('touchend', handleEnd)
-    },
-    [width, onResize],
-  )
+    const handleEnd = () => {
+      setIsResizing(false)
+      onResizeRef.current(widthRef.current)
+      document.removeEventListener('mousemove', handleMove)
+      document.removeEventListener('mouseup', handleEnd)
+      document.removeEventListener('touchmove', handleMove)
+      document.removeEventListener('touchend', handleEnd)
+    }
+
+    document.addEventListener('mousemove', handleMove)
+    document.addEventListener('mouseup', handleEnd)
+    document.addEventListener('touchmove', handleMove)
+    document.addEventListener('touchend', handleEnd)
+  }
 
   return { containerRef, width, isResizing, handleResizeStart, setWidth }
 }

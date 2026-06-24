@@ -14,7 +14,9 @@ interface UseImmediateCourseActionOptions {
 export function useImmediateCourseAction(options?: UseImmediateCourseActionOptions) {
   const [isPending, setIsPending] = useState(false)
   const setConflict = useCourseEditorStore(state => state.setConflict)
-  const runRef = useRef<any>(null)
+  const runRef = useRef<
+    ((action: () => Promise<unknown>, invocationOptions?: UseImmediateCourseActionOptions) => Promise<unknown>) | null
+  >(null)
 
   const run = useCallback(
     async (action: () => Promise<unknown>, invocationOptions?: UseImmediateCourseActionOptions) => {

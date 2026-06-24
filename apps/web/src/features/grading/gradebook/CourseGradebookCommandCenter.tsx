@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -44,27 +44,16 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   })
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    setFilters(prev => {
-      const nextSavedFilter = normalizeSavedFilter(searchParams.get('filter'))
-      const nextSearch = searchParams.get('search') ?? ''
-      const nextActivityType = searchParams.get('activityType') ?? 'all'
-
-      if (
-        prev.savedFilter === nextSavedFilter &&
-        prev.search === nextSearch &&
-        prev.activityType === nextActivityType
-      ) {
-        return prev
-      }
-
-      return {
-        savedFilter: nextSavedFilter,
-        search: nextSearch,
-        activityType: nextActivityType,
-      }
+  const [prevParamsString, setPrevParamsString] = useState(() => searchParams.toString())
+  const currentParamsString = searchParams.toString()
+  if (currentParamsString !== prevParamsString) {
+    setPrevParamsString(currentParamsString)
+    setFilters({
+      savedFilter: normalizeSavedFilter(searchParams.get('filter')),
+      search: searchParams.get('search') ?? '',
+      activityType: searchParams.get('activityType') ?? 'all',
     })
-  }, [searchParams])
+  }
 
   const handleFiltersChange = useCallback(
     (newFilters: GradebookFilters) => {

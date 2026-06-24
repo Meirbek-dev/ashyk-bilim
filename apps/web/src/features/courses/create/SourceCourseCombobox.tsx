@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { CheckIcon, ChevronsUpDown } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -26,13 +26,15 @@ export function SourceCourseCombobox({ value, onSelect, initialSelectedName, id 
   const { query, options, state, search } = useSourceCourseSearch()
 
   // If there's a pre-selected value but we haven't resolved the name yet,
-  // try to find it once options load
-  useEffect(() => {
-    if (value && !selectedName && options.length > 0) {
-      const match = options.find(o => o.courseUuid === value)
-      if (match) setSelectedName(match.name)
+  // try to find it once options load (synchronized during render phase)
+  let currentSelectedName = selectedName
+  if (value && !currentSelectedName && options.length > 0) {
+    const match = options.find(o => o.courseUuid === value)
+    if (match) {
+      setSelectedName(match.name)
+      currentSelectedName = match.name
     }
-  }, [value, selectedName, options])
+  }
 
   const handleSelect = (option: SourceCourseOption) => {
     setSelectedName(option.name)
@@ -40,7 +42,7 @@ export function SourceCourseCombobox({ value, onSelect, initialSelectedName, id 
     setOpen(false)
   }
 
-  const displayValue = selectedName || value || ''
+  const displayValue = currentSelectedName || value || ''
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -103,9 +103,7 @@ export function NativeItemAuthor({
   }))
 
   const hasItemChanged =
-    item?.item_uuid !== prevItemKey.uuid ||
-    item?.updated_at !== prevItemKey.updated_at ||
-    item !== prevItemKey.item
+    item?.item_uuid !== prevItemKey.uuid || item?.updated_at !== prevItemKey.updated_at || item !== prevItemKey.item
 
   if (hasItemChanged) {
     setPrevItemKey({

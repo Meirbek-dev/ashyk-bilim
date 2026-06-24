@@ -16,7 +16,11 @@ const UserCertificates: React.FC = () => {
 
   const { data: certificates, error, isLoading } = useUserCertificates()
 
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   if (!mounted || isLoading) {
     return (

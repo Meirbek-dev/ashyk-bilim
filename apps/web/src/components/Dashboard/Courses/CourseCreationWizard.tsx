@@ -97,7 +97,9 @@ export default function CourseCreationWizard() {
   // Trigger initial load when outline panel opens
   useEffect(() => {
     if (template === 'outline' && sourceOptions.length === 0) {
-      handleSourceSearch('')
+      queueMicrotask(() => {
+        handleSourceSearch('')
+      })
     }
   }, [template, sourceOptions.length, handleSourceSearch])
 
@@ -105,16 +107,18 @@ export default function CourseCreationWizard() {
     const templateParam = searchParams.get('tpl')
     const sourceParam = searchParams.get('src')
 
-    if (templateParam === 'outline' || templateParam === 'starter' || templateParam === 'blank') {
-      form.setValue('template', templateParam)
-      setShowAdvancedOptions(templateParam !== 'blank')
-    }
+    queueMicrotask(() => {
+      if (templateParam === 'outline' || templateParam === 'starter' || templateParam === 'blank') {
+        form.setValue('template', templateParam)
+        setShowAdvancedOptions(templateParam !== 'blank')
+      }
 
-    if (sourceParam?.trim()) {
-      form.setValue('sourceCourseUuid', cleanCourseUuid(sourceParam))
-      form.setValue('template', 'outline')
-      setShowAdvancedOptions(true)
-    }
+      if (sourceParam?.trim()) {
+        form.setValue('sourceCourseUuid', cleanCourseUuid(sourceParam))
+        form.setValue('template', 'outline')
+        setShowAdvancedOptions(true)
+      }
+    })
   }, [form, searchParams])
 
   const canCreate =

@@ -24,13 +24,18 @@ export function useEditorPreferences() {
     if (!raw) return
     try {
       const parsed = JSON.parse(raw) as Partial<CodeEditorPreferences>
-      setPreferences({
+      const nextPrefs = {
         fontSize: typeof parsed.fontSize === 'number' ? parsed.fontSize : DEFAULT_PREFERENCES.fontSize,
         wordWrap: typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : DEFAULT_PREFERENCES.wordWrap,
         minimap: typeof parsed.minimap === 'boolean' ? parsed.minimap : DEFAULT_PREFERENCES.minimap,
+      }
+      queueMicrotask(() => {
+        setPreferences(nextPrefs)
       })
     } catch {
-      setPreferences(DEFAULT_PREFERENCES)
+      queueMicrotask(() => {
+        setPreferences(DEFAULT_PREFERENCES)
+      })
     }
   }, [])
 

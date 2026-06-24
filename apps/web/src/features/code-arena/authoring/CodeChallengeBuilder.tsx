@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckCircle2, ClipboardCheck, Code2, FileText, FlaskConical, Loader2, PlayCircle, Save } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 
@@ -75,22 +75,25 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const blockersCount = readiness.items.filter(item => !item.ok).length
   const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft])
 
-  useEffect(() => {
-    if (!settings) return
-    setDraft({
-      ...DEFAULT_SETTINGS,
-      ...settings,
-      title: settings.title ?? '',
-      prompt: settings.prompt ?? '',
-      input_spec: settings.input_spec ?? '',
-      output_spec: settings.output_spec ?? '',
-      constraints: settings.constraints ?? [],
-      visible_tests: settings.visible_tests ?? [],
-      hidden_tests: settings.hidden_tests ?? [],
-      starter_code: settings.starter_code ?? {},
-      reference_solutions: settings.reference_solutions ?? settings.solution_code ?? {},
-    })
-  }, [settings])
+  const [prevSettings, setPrevSettings] = useState(settings)
+  if (settings !== prevSettings) {
+    setPrevSettings(settings)
+    if (settings) {
+      setDraft({
+        ...DEFAULT_SETTINGS,
+        ...settings,
+        title: settings.title ?? '',
+        prompt: settings.prompt ?? '',
+        input_spec: settings.input_spec ?? '',
+        output_spec: settings.output_spec ?? '',
+        constraints: settings.constraints ?? [],
+        visible_tests: settings.visible_tests ?? [],
+        hidden_tests: settings.hidden_tests ?? [],
+        starter_code: settings.starter_code ?? {},
+        reference_solutions: settings.reference_solutions ?? settings.solution_code ?? {},
+      })
+    }
+  }
 
   const updateDraft = (patch: Partial<CodeChallengeSettings>) => {
     setDraft(current => ({ ...current, ...patch }))

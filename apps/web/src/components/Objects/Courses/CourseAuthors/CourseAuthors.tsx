@@ -331,7 +331,7 @@ const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true)
+    queueMicrotask(() => setMounted(true))
   }, [])
 
   if (!mounted || !updates || updates.length === 0) {

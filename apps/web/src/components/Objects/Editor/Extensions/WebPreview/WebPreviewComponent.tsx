@@ -171,13 +171,18 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
   useEffect(() => {
     if (!shouldAutoFetchPreview) return
 
-    if (previewQuery.data && node.attrs.url) {
-      applyPreviewData(node.attrs.url, previewQuery.data)
+    const url = node.attrs.url
+    if (previewQuery.data && url) {
+      queueMicrotask(() => {
+        applyPreviewData(url, previewQuery.data)
+      })
       return
     }
 
     if (previewQuery.error) {
-      setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'))
+      queueMicrotask(() => {
+        setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'))
+      })
     }
   }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t])
 
@@ -186,16 +191,32 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
       inputRef.current.focus()
     }
   }, [editing])
-  useEffect(() => {
+  const [prevAttrs, setPrevAttrs] = useState({
+    buttonLabel: node.attrs.buttonLabel,
+    showButton: node.attrs.showButton,
+    openInPopup: node.attrs.openInPopup,
+  })
+  if (
+    node.attrs.buttonLabel !== prevAttrs.buttonLabel ||
+    node.attrs.showButton !== prevAttrs.showButton ||
+    node.attrs.openInPopup !== prevAttrs.openInPopup
+  ) {
+    setPrevAttrs({
+      buttonLabel: node.attrs.buttonLabel,
+      showButton: node.attrs.showButton,
+      openInPopup: node.attrs.openInPopup,
+    })
     setButtonLabel(node.attrs.buttonLabel || t('visitSite'))
     setShowButton(node.attrs.showButton)
     setOpenInPopup(node.attrs.openInPopup)
-  }, [node.attrs.buttonLabel, node.attrs.showButton, node.attrs.openInPopup, t])
+  }
 
   useEffect(() => {
     if (!node.attrs.url) {
-      setEditing(true)
-      setModalOpen(true)
+      queueMicrotask(() => {
+        setEditing(true)
+        setModalOpen(true)
+      })
     }
   }, [node.attrs.url])
 

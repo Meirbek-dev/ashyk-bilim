@@ -100,7 +100,8 @@ export default function GradingReviewWorkspace({
   const hasSubmissions = submissions.length > 0
   const firstSubmissionUuid = submissions[0]?.submission_uuid ?? null
   const isSelectedUuidValid = selectedUuid && submissions.some(s => s.submission_uuid === selectedUuid)
-  const shouldSelectDefault = hasSubmissions && (!selectedUuid || (!isSelectedUuidValid && selectedUuid !== initialSubmissionUuid))
+  const shouldSelectDefault =
+    hasSubmissions && (!selectedUuid || (!isSelectedUuidValid && selectedUuid !== initialSubmissionUuid))
 
   if (shouldSelectDefault) {
     setSelectedUuid(firstSubmissionUuid)

@@ -92,8 +92,11 @@ export default function GradeForm({
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
 
-  useEffect(() => {
-    // Sync overall draft from server
+  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
+  const [prevSyncTrigger, setPrevSyncTrigger] = useState<string>('')
+
+  if (syncTrigger !== prevSyncTrigger) {
+    setPrevSyncTrigger(syncTrigger)
     setDraft({
       score:
         submission?.final_score !== null && submission?.final_score !== undefined ? String(submission.final_score) : '',
@@ -103,7 +106,6 @@ export default function GradeForm({
     setOverrideScore(false)
     setOverrideReason('')
 
-    // Sync per-item drafts from grading_json.items
     if (submission?.grading_json?.items) {
       const next: Record<string, ItemDraftEntry> = {}
       for (const item of submission.grading_json.items) {
@@ -116,7 +118,7 @@ export default function GradeForm({
     } else {
       setItemDrafts({})
     }
-  }, [submission?.final_score, submission?.grading_json, submission?.submission_uuid])
+  }
 
   const patchItemDraft = (itemId: string, field: keyof ItemDraftEntry, value: string) => {
     setItemDrafts(prev => ({
@@ -603,10 +605,13 @@ function KeyboardHint() {
 
   useEffect(() => {
     if (readLocalStorageString('grading-review-keyboard-hint-seen') === '1') return
-    setOpen(true)
     writeLocalStorageString('grading-review-keyboard-hint-seen', '1')
+    const openTimeout = globalThis.setTimeout(() => setOpen(true), 0)
     const timeout = globalThis.setTimeout(() => setOpen(false), 4500)
-    return () => globalThis.clearTimeout(timeout)
+    return () => {
+      globalThis.clearTimeout(openTimeout)
+      globalThis.clearTimeout(timeout)
+    }
   }, [])
 
   return (

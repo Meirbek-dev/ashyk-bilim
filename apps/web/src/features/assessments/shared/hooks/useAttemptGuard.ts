@@ -53,9 +53,11 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
   const expiredRef = useRef(false)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
+  const [prevInitialViolationCount, setPrevInitialViolationCount] = useState(options.initialViolationCount)
+  if (options.initialViolationCount !== prevInitialViolationCount) {
+    setPrevInitialViolationCount(options.initialViolationCount)
     setViolationCount(options.initialViolationCount ?? 0)
-  }, [options.initialViolationCount])
+  }
 
   useEffect(() => {
     violationCountRef.current = violationCount
@@ -104,7 +106,9 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
         countdownIntervalRef.current = null
       }
       onThresholdReachedRef.current?.('SECURITY_LIMIT_EXCEEDED', violationCountRef.current)
-      setSecurityCountdown(null)
+      queueMicrotask(() => {
+        setSecurityCountdown(null)
+      })
       return
     }
 
@@ -263,7 +267,9 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
         : null
 
     if (!endTs) {
-      setRemainingSeconds(null)
+      queueMicrotask(() => {
+        setRemainingSeconds(null)
+      })
       expiredRef.current = false
       return
     }

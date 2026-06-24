@@ -29,7 +29,7 @@ import CourseDiscussions from '@/components/discussions'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useRouter } from 'next/navigation'
 // Import UI components
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 // Import existing components and utilities
 import NextImage from '@components/ui/NextImage'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -49,9 +49,72 @@ interface CourseClientProps {
 
 type LearningItem = string | { emoji?: string; id?: number | string; link?: string; text: string }
 
+function normalizeLearningsHelper(input: unknown): LearningItem[] {
+  if (!input) return []
+
+  // Already an array
+  if (Array.isArray(input)) {
+    return input
+      .map(item => {
+        if (typeof item === 'string') {
+          const s = item.trim()
+          if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null
+          return s
+        }
+        if (item && typeof item === 'object') {
+          const record = item as Record<string, unknown>
+          // Keep shape but ensure text field exists if possible
+          const text = record.text ?? record.name ?? record.title
+          const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
+          if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
+            return null
+          return { text: learningText }
+        }
+        return null
+      })
+      .filter((item): item is LearningItem => Boolean(item))
+  }
+
+  // Object: maybe { learnings: [...] } or similar
+  if (input && typeof input === 'object') {
+    const obj = input as Record<string, unknown>
+    if (Array.isArray(obj.learnings)) return normalizeLearningsHelper(obj.learnings)
+    if (Array.isArray(obj.items)) return normalizeLearningsHelper(obj.items)
+    if (Array.isArray(obj.data)) return normalizeLearningsHelper(obj.data)
+    // Single object with text
+    const text = obj.text ?? obj.name ?? obj.title
+    if (text) return normalizeLearningsHelper([String(text)])
+    return []
+  }
+
+  // String: try JSON first if it looks like JSON, else split plain text
+  if (typeof input === 'string') {
+    const raw = input.trim()
+    if (!raw || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'undefined') return []
+    const looksJson = raw.startsWith('[') || raw.startsWith('{')
+    if (looksJson) {
+      try {
+        const parsed = JSON.parse(raw)
+        return normalizeLearningsHelper(parsed)
+      } catch {
+        // fall through to plain-text handling
+      }
+    }
+    // Legacy: plain text list. Prefer newlines/semicolons/bullets; avoid splitting on commas aggressively.
+    const parts = raw
+      .split(/\r?\n|\u2022|\u2023|\u25E6|;|\||·|–|—/)
+      .map(s => s.replace(/^[-*\s]+/, '').trim())
+      .filter(s => s.length > 0 && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined')
+    // If nothing split out meaningfully, keep as single item
+    if (parts.length === 0) return [raw]
+    return parts
+  }
+
+  return []
+}
+
 const CourseClient = (props: CourseClientProps) => {
   const t = useTranslations('CoursePage')
-  const [learnings, setLearnings] = useState<LearningItem[]>([])
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
@@ -65,81 +128,13 @@ const CourseClient = (props: CourseClientProps) => {
   }
 
   // Normalizes various formats of `course.learnings` into an array that the UI can render
-  const normalizedLearnings = useMemo(() => {
-    const normalize = (input: unknown): LearningItem[] => {
-      if (!input) return []
-
-      // Already an array
-      if (Array.isArray(input)) {
-        return input
-          .map(item => {
-            if (typeof item === 'string') {
-              const s = item.trim()
-              if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null
-              return s
-            }
-            if (item && typeof item === 'object') {
-              const record = item as Record<string, unknown>
-              // Keep shape but ensure text field exists if possible
-              const text = record.text ?? record.name ?? record.title
-              const learningText = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
-              if (!learningText || learningText.toLowerCase() === 'null' || learningText.toLowerCase() === 'undefined')
-                return null
-              return { text: learningText }
-            }
-            return null
-          })
-          .filter((item): item is LearningItem => Boolean(item))
-      }
-
-      // Object: maybe { learnings: [...] } or similar
-      if (input && typeof input === 'object') {
-        const obj = input as Record<string, unknown>
-        if (Array.isArray(obj.learnings)) return normalize(obj.learnings)
-        if (Array.isArray(obj.items)) return normalize(obj.items)
-        if (Array.isArray(obj.data)) return normalize(obj.data)
-        // Single object with text
-        const text = obj.text ?? obj.name ?? obj.title
-        if (text) return normalize([String(text)])
-        return []
-      }
-
-      // String: try JSON first if it looks like JSON, else split plain text
-      if (typeof input === 'string') {
-        const raw = input.trim()
-        if (!raw || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'undefined') return []
-        const looksJson = raw.startsWith('[') || raw.startsWith('{')
-        if (looksJson) {
-          try {
-            const parsed = JSON.parse(raw)
-            return normalize(parsed)
-          } catch {
-            // fall through to plain-text handling
-          }
-        }
-        // Legacy: plain text list. Prefer newlines/semicolons/bullets; avoid splitting on commas aggressively.
-        const parts = raw
-          .split(/\r?\n|\u2022|\u2023|\u25E6|;|\||·|–|—/)
-          .map(s => s.replace(/^[-*\s]+/, '').trim())
-          .filter(s => s.length > 0 && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined')
-        // If nothing split out meaningfully, keep as single item
-        if (parts.length === 0) return [raw]
-        return parts
-      }
-
-      return []
-    }
-
-    const src = course?.learnings as unknown
-    return normalize(src)
+  const learnings = useMemo(() => {
+    return normalizeLearningsHelper(course?.learnings)
   }, [course?.learnings])
 
-  useEffect(() => {
-    setLearnings(normalizedLearnings)
-  }, [normalizedLearnings])
-
-  useEffect(() => {
-    // Collapse chapters by default if more than 5 activities in total
+  const [prevCourse, setPrevCourse] = useState(course)
+  if (course !== prevCourse) {
+    setPrevCourse(course)
     if (course?.chapters) {
       const totalActivities = course.chapters.reduce(
         (sum: number, chapter: AppChapter) => sum + (chapter.activities?.length || 0),
@@ -147,14 +142,13 @@ const CourseClient = (props: CourseClientProps) => {
       )
       const defaultExpanded: Record<string, boolean> = {}
       for (const [idx, chapter] of course.chapters.entries()) {
-        // Always expand the first chapter
         if (chapter.chapter_uuid) {
           defaultExpanded[chapter.chapter_uuid] = idx === 0 ? true : totalActivities <= 5
         }
       }
       setExpandedChapters(defaultExpanded)
     }
-  }, [course])
+  }
 
   const getActivityTypeLabel = (activityType: string) => {
     switch (activityType) {

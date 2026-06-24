@@ -78,16 +78,19 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
     }),
   )
 
-  useEffect(() => {
+  const [prevItems, setPrevItems] = useState(assessment?.items)
+  const [prevSelectedUuid, setPrevSelectedUuid] = useState(selectedItemUuid)
+
+  if (assessment?.items !== prevItems || selectedItemUuid !== prevSelectedUuid) {
+    setPrevItems(assessment?.items)
+    setPrevSelectedUuid(selectedItemUuid)
+
     if (!assessment?.items?.length) {
       setSelectedItemUuidState(null)
-      return
-    }
-
-    if (!selectedItemUuid || !assessment.items.some(item => item.item_uuid === selectedItemUuid)) {
+    } else if (!selectedItemUuid || !assessment.items.some(item => item.item_uuid === selectedItemUuid)) {
       setSelectedItemUuidState(assessment.items[0]?.item_uuid ?? null)
     }
-  }, [assessment?.items, selectedItemUuid])
+  }
 
   const replaceUrlState = useCallback((patch: Parameters<typeof writeAssessmentWorkspaceUrlState>[1]) => {
     if (typeof globalThis.window === 'undefined') return
@@ -147,16 +150,17 @@ export function AssessmentWorkspaceProvider({ activityUuid, children }: KindAuth
 
   const isEditable = assessment ? isAssessmentEditable(assessment.lifecycle) : false
 
+  const issues = readinessQuery.data?.issues
   const validationIssues = useMemo(() => {
-    if (!readinessQuery.data?.issues) return []
-    return readinessQuery.data.issues.map(issue => ({
+    if (!issues) return []
+    return issues.map(issue => ({
       code: issue.code,
       message: issue.message,
       ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
       ...(issue.field ? { field: issue.field } : {}),
       ...(issue.action_label ? { actionLabel: issue.action_label } : {}),
     }))
-  }, [readinessQuery.data?.issues])
+  }, [issues])
 
   const readinessIssues = useMemo(() => toWorkspaceReadinessIssues(readinessQuery.data), [readinessQuery.data])
 

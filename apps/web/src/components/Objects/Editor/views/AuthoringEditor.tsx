@@ -169,7 +169,7 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   const handleContentChange = useCallback((content: unknown) => {
     latestContentRef.current = content
     onContentChange(content)
-  }, [onContentChange])
+  }, [])
 
   function handleContentSave() {
     props.setContent(latestContentRef.current)

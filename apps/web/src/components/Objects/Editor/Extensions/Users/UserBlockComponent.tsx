@@ -88,16 +88,20 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
     if (!userId) return
 
     if (userByIdQuery.data) {
-      setUserData(userByIdQuery.data)
-      setUsername(userByIdQuery.data.username)
-      setError(null)
+      queueMicrotask(() => {
+        setUserData(userByIdQuery.data)
+        setUsername(userByIdQuery.data.username)
+        setError(null)
+      })
       return
     }
 
     if (userByIdQuery.error) {
       console.error('Error fetching user by ID:', userByIdQuery.error)
-      setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
-      updateAttributes({ user_id: null })
+      queueMicrotask(() => {
+        setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
+        updateAttributes({ user_id: null })
+      })
     }
   }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId])
 
@@ -105,20 +109,24 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
     if (!submittedUsername) return
 
     if (userByUsernameQuery.data) {
-      setUserData(userByUsernameQuery.data)
-      setUsername(userByUsernameQuery.data.username)
-      setError(null)
-      updateAttributes({
-        user_id: userByUsernameQuery.data.id,
+      queueMicrotask(() => {
+        setUserData(userByUsernameQuery.data)
+        setUsername(userByUsernameQuery.data.username)
+        setError(null)
+        updateAttributes({
+          user_id: userByUsernameQuery.data.id,
+        })
+        setSubmittedUsername(null)
       })
-      setSubmittedUsername(null)
       return
     }
 
     if (userByUsernameQuery.error) {
       console.error('Error fetching user by username:', userByUsernameQuery.error)
-      setError(userByUsernameQuery.error instanceof Error ? userByUsernameQuery.error.message : t('errorNotFound'))
-      setSubmittedUsername(null)
+      queueMicrotask(() => {
+        setError(userByUsernameQuery.error instanceof Error ? userByUsernameQuery.error.message : t('errorNotFound'))
+        setSubmittedUsername(null)
+      })
     }
   }, [submittedUsername, t, updateAttributes, userByUsernameQuery.data, userByUsernameQuery.error])
 

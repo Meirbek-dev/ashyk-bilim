@@ -48,7 +48,11 @@ const Trail = () => {
 
   const { data: trail, isLoading: isTrailLoading } = useTrailCurrent()
 
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   const gamificationProfile = useGamificationStore(s => s.profile)
   const recentTransactions = useGamificationStore(

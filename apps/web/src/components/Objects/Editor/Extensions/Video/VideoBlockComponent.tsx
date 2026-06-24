@@ -98,18 +98,6 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   const [selectedSize, setSelectedSize] = useState<VideoSize>(initialBlockObject?.size || 'medium')
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Update block object when size changes
-  useEffect(() => {
-    if (blockObject && blockObject.size !== selectedSize) {
-      const newBlockObject = {
-        ...blockObject,
-        size: selectedSize,
-      }
-      setBlockObject(newBlockObject)
-      updateAttributes({ blockObject: newBlockObject })
-    }
-  }, [selectedSize, blockObject, updateAttributes])
-
   const isEditable = editorState?.isEditable
   const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
 
@@ -227,6 +215,14 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
 
   const handleSizeChange = (size: VideoSize) => {
     setSelectedSize(size)
+    if (blockObject) {
+      const newBlockObject = {
+        ...blockObject,
+        size,
+      }
+      setBlockObject(newBlockObject)
+      updateAttributes({ blockObject: newBlockObject })
+    }
   }
   // Clear pending timeouts or intervals on unmount
   useEffect(() => {

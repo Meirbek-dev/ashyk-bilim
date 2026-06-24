@@ -18,8 +18,7 @@ export function SupportReference({ error, reference }: SupportReferenceProps) {
   if (!supportReference) return null
   return (
     <p className="text-muted-foreground text-xs">
-      {t('reference')}{' '}
-      <code className="bg-muted text-foreground rounded px-1.5 py-0.5">{supportReference}</code>
+      {t('reference')} <code className="bg-muted text-foreground rounded px-1.5 py-0.5">{supportReference}</code>
     </p>
   )
 }

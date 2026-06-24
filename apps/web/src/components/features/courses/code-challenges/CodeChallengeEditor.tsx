@@ -152,7 +152,9 @@ export function CodeChallengeEditor({
   })
   const activeSubmission = activeSubmissionData as Submission | null | undefined
 
-  useEffect(() => {
+  const [prevAnswer, setPrevAnswer] = useState(answer)
+  if (answer?.source !== prevAnswer?.source || answer?.language !== prevAnswer?.language) {
+    setPrevAnswer(answer)
     if (answer?.source !== undefined && answer.source !== code) {
       setCode(answer.source)
       if (answer.language > 0) {
@@ -162,30 +164,31 @@ export function CodeChallengeEditor({
         }))
       }
     }
-  }, [answer?.language, answer?.source, code])
-
-  useEffect(() => {
     if (answer?.language !== undefined && answer.language !== selectedLanguageId) {
       setSelectedLanguageId(answer.language)
     }
-  }, [answer?.language, selectedLanguageId])
+  }
 
-  useEffect(() => {
-    if (selectedLanguageId !== 0 || availableLanguages.length === 0) return
-    setSelectedLanguageId(availableLanguages[0]!.id)
-  }, [availableLanguages, selectedLanguageId])
+  let currentLanguageId = selectedLanguageId
+  if (currentLanguageId === 0 && availableLanguages.length > 0) {
+    const firstLanguageId = availableLanguages[0]!.id
+    setSelectedLanguageId(firstLanguageId)
+    currentLanguageId = firstLanguageId
+  }
 
   // Handle submission completion
   useEffect(() => {
     if (!activeSubmission) return
     const status = normalizeCodeRunStatus(activeSubmission?.status)
     if (status === 'COMPLETED' || status === 'FAILED') {
-      setActiveSubmissionId(null)
-      setIsSubmitting(false)
-      setTestResults(activeSubmission.results || null)
-      setActiveTab('results')
-      refreshSubmissions()
-      onSubmissionComplete?.(activeSubmission)
+      queueMicrotask(() => {
+        setActiveSubmissionId(null)
+        setIsSubmitting(false)
+        setTestResults(activeSubmission.results || null)
+        setActiveTab('results')
+        refreshSubmissions()
+        onSubmissionComplete?.(activeSubmission)
+      })
 
       if (status === 'COMPLETED' && activeSubmission.score === (activeSubmission.max_score ?? 100)) {
         toast.success(t('allTestsPassed'))
@@ -198,62 +201,67 @@ export function CodeChallengeEditor({
   // Set initial code from starter template
   useEffect(() => {
     if (settings?.starter_code && !code) {
-      const starterCode = settings.starter_code[selectedLanguageId.toString()]
+      const starterCode = settings.starter_code[currentLanguageId.toString()]
       if (starterCode) {
-        setCode(starterCode)
-        setCodeByLanguage(current => ({
-          ...current,
-          [selectedLanguageId]: starterCode,
-        }))
-        if (answer?.latest_run === undefined) {
-          onAnswerChange?.({
-            kind: 'CODE',
-            language: selectedLanguageId,
-            source: starterCode,
-          })
-        } else {
-          onAnswerChange?.({
-            kind: 'CODE',
-            language: selectedLanguageId,
-            source: starterCode,
-            latest_run: answer.latest_run,
-          })
-        }
+        queueMicrotask(() => {
+          setCode(starterCode)
+          setCodeByLanguage(current => ({
+            ...current,
+            [currentLanguageId]: starterCode,
+          }))
+          if (answer?.latest_run === undefined) {
+            onAnswerChange?.({
+              kind: 'CODE',
+              language: currentLanguageId,
+              source: starterCode,
+            })
+          } else {
+            onAnswerChange?.({
+              kind: 'CODE',
+              language: currentLanguageId,
+              source: starterCode,
+              latest_run: answer.latest_run,
+            })
+          }
+        })
       }
     }
-  }, [answer?.latest_run, code, onAnswerChange, selectedLanguageId, settings])
+  }, [answer?.latest_run, code, onAnswerChange, currentLanguageId, settings])
+
+  const answerLatestRun = answer?.latest_run
+  const settingsStarterCode = settings?.starter_code
 
   const updateCode = useCallback(
     (nextCode: string) => {
       setCode(nextCode)
       setCodeByLanguage(current => ({
         ...current,
-        [selectedLanguageId]: nextCode,
+        [currentLanguageId]: nextCode,
       }))
-      if (answer?.latest_run === undefined) {
+      if (answerLatestRun === undefined) {
         onAnswerChange?.({
           kind: 'CODE',
-          language: selectedLanguageId,
+          language: currentLanguageId,
           source: nextCode,
         })
       } else {
         onAnswerChange?.({
           kind: 'CODE',
-          language: selectedLanguageId,
+          language: currentLanguageId,
           source: nextCode,
-          latest_run: answer.latest_run,
+          latest_run: answerLatestRun,
         })
       }
     },
-    [answer?.latest_run, onAnswerChange, selectedLanguageId],
+    [answerLatestRun, onAnswerChange, currentLanguageId],
   )
 
   const updateLanguage = useCallback(
     (nextLanguageId: number) => {
-      const nextSource = codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? ''
+      const nextSource = codeByLanguage[nextLanguageId] ?? settingsStarterCode?.[String(nextLanguageId)] ?? ''
       setSelectedLanguageId(nextLanguageId)
       setCode(nextSource)
-      if (answer?.latest_run === undefined) {
+      if (answerLatestRun === undefined) {
         onAnswerChange?.({
           kind: 'CODE',
           language: nextLanguageId,
@@ -264,11 +272,11 @@ export function CodeChallengeEditor({
           kind: 'CODE',
           language: nextLanguageId,
           source: nextSource,
-          latest_run: answer.latest_run,
+          latest_run: answerLatestRun,
         })
       }
     },
-    [answer?.latest_run, codeByLanguage, onAnswerChange, settings?.starter_code],
+    [codeByLanguage, onAnswerChange, settingsStarterCode, answerLatestRun],
   )
 
   // Run custom test

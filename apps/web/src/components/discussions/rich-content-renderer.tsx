@@ -27,7 +27,7 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    queueMicrotask(() => setIsMounted(true))
   }, [])
 
   const html = isMounted ? resolveToHtml(content) : ''

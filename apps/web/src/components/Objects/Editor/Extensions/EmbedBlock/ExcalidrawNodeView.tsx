@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import * as Si from '@icons-pack/react-simple-icons'
@@ -46,7 +46,11 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { isEditable } = editor
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   // ── Height state ───────────────────────────────────────────────────────────
   const [prevAttrHeight, setPrevAttrHeight] = useState(attrHeight)
@@ -66,38 +70,42 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const dragStartY = useRef<number>(0)
   const dragStartHeight = useRef<number>(0)
   const isDragging = useRef<boolean>(false)
+  const updateAttributesRef = useRef(updateAttributes)
+  const heightRef = useRef(height)
 
-  const handleResizeHandlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
-      isDragging.current = true
-      dragStartY.current = e.clientY
-      dragStartHeight.current = height
+  useEffect(() => {
+    updateAttributesRef.current = updateAttributes
+    heightRef.current = height
+  }, [updateAttributes, height])
 
-      const handlePointerMove = (moveEvent: PointerEvent) => {
-        if (!isDragging.current) return
-        const delta = moveEvent.clientY - dragStartY.current
-        const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
-        setHeight(newHeight)
-      }
+  const handleResizeHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.current = true
+    dragStartY.current = e.clientY
+    dragStartHeight.current = heightRef.current
 
-      const handlePointerUp = (upEvent: PointerEvent) => {
-        if (!isDragging.current) return
-        isDragging.current = false
-        const delta = upEvent.clientY - dragStartY.current
-        const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
-        setHeight(finalHeight)
-        updateAttributes({ height: finalHeight })
-        document.removeEventListener('pointermove', handlePointerMove)
-        document.removeEventListener('pointerup', handlePointerUp)
-      }
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isDragging.current) return
+      const delta = moveEvent.clientY - dragStartY.current
+      const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+      setHeight(newHeight)
+    }
 
-      document.addEventListener('pointermove', handlePointerMove)
-      document.addEventListener('pointerup', handlePointerUp)
-    },
-    [height, updateAttributes],
-  )
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      if (!isDragging.current) return
+      isDragging.current = false
+      const delta = upEvent.clientY - dragStartY.current
+      const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+      setHeight(finalHeight)
+      updateAttributesRef.current({ height: finalHeight })
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
+    }
+
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
+  }
 
   // ── Embed Panel store ──────────────────────────────────────────────────────
   const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit)

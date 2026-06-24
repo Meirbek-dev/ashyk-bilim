@@ -36,7 +36,7 @@ import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { removeUser } from '@/services/platform/platform'
 import { membersQueryOptions, userRoleAssignmentsQueryOptions } from '@/features/users/queries/users.query'
-import React, { useEffect, useState, useTransition, useSyncExternalStore } from 'react'
+import React, { useState, useTransition, useSyncExternalStore } from 'react'
 
 const emptySubscribe = () => () => {}
 import { useTranslations } from 'next-intl'
@@ -141,7 +141,13 @@ const Users = () => {
   })()
 
   const [currentPage, setCurrentPage] = useState(1)
-  const hasMounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const queryClient = useQueryClient()
+  const { data: usersData, isLoading } = useMembers(currentPage, USERS_PER_PAGE)
+  const hasMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   const totalUsers = usersData?.total ?? 0
   const totalPages = usersData?.total_pages ?? 1

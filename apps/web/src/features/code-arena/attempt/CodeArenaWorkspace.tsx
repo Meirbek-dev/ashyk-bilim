@@ -95,7 +95,9 @@ export function CodeArenaWorkspace({
   const isRunning = runCustom.isPending || runTests.isPending || isSubmitting
   const starterCode = normalizeStarterCode(settings, languageId)
 
-  useEffect(() => {
+  const [prevAnswer, setPrevAnswer] = useState(answer)
+  if (answer?.source !== prevAnswer?.source || answer?.language !== prevAnswer?.language) {
+    setPrevAnswer(answer)
     if (answer?.source !== undefined && answer.source !== code) {
       setCode(answer.source)
       setCodeByLanguage(current => ({
@@ -103,18 +105,19 @@ export function CodeArenaWorkspace({
         [answer.language]: answer.source,
       }))
     }
-  }, [answer?.language, answer?.source, code])
+  }
 
-  useEffect(() => {
-    if (languageId > 0 || languages.length === 0) return
+  if (languageId === 0 && languages.length > 0) {
     const nextLanguageId = languages[0]!.id
     setLanguageId(nextLanguageId)
     setCode(normalizeStarterCode(settings, nextLanguageId))
-  }, [languageId, languages, settings])
+  }
+
+  const answerLatestRun = answer?.latest_run
 
   const updateAnswer = useCallback(
     (nextLanguageId: number, nextCode: string) => {
-      if (answer?.latest_run === undefined) {
+      if (answerLatestRun === undefined) {
         onAnswerChange({
           kind: 'CODE',
           language: nextLanguageId,
@@ -127,10 +130,10 @@ export function CodeArenaWorkspace({
         kind: 'CODE',
         language: nextLanguageId,
         source: nextCode,
-        latest_run: answer.latest_run,
+        latest_run: answerLatestRun,
       })
     },
-    [answer?.latest_run, onAnswerChange],
+    [answerLatestRun, onAnswerChange],
   )
 
   const updateCode = useCallback(

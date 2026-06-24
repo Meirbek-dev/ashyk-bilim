@@ -4,7 +4,7 @@ import { getAnalyticsBucketLabel, getAnalyticsCompareLabel } from '@/lib/analyti
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { AnalyticsFilterOption, AnalyticsQuery } from '@/types/analytics'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -67,7 +67,18 @@ export default function TeacherFilterBar({
     sort_order: query.sort_order || 'desc',
   })
 
-  useEffect(() => {
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (
+    query.window !== prevQuery.window ||
+    query.compare !== prevQuery.compare ||
+    query.bucket !== prevQuery.bucket ||
+    query.course_ids !== prevQuery.course_ids ||
+    query.cohort_ids !== prevQuery.cohort_ids ||
+    query.timezone !== prevQuery.timezone ||
+    query.sort_by !== prevQuery.sort_by ||
+    query.sort_order !== prevQuery.sort_order
+  ) {
+    setPrevQuery(query)
     setFormState({
       window: query.window || '28d',
       compare: query.compare || 'previous_period',
@@ -78,16 +89,7 @@ export default function TeacherFilterBar({
       sort_by: query.sort_by || '',
       sort_order: query.sort_order || 'desc',
     })
-  }, [
-    query.window,
-    query.compare,
-    query.bucket,
-    query.course_ids,
-    query.cohort_ids,
-    query.timezone,
-    query.sort_by,
-    query.sort_order,
-  ])
+  }
 
   const sortOptions = [
     { value: '', label: t('filters.sortDefault') },
