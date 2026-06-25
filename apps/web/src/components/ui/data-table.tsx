@@ -4,15 +4,28 @@ import { useTranslations } from 'next-intl'
 import * as React from 'react'
 
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  tableFeatures,
+  columnVisibilityFeature,
+  columnFilteringFeature,
+  globalFilteringFeature,
+  rowSortingFeature,
+  rowPaginationFeature,
+  createFilteredRowModel,
+  createSortedRowModel,
+  createPaginatedRowModel,
+  filterFns,
+  sortFns,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Settings2 } from 'lucide-react'
-import type { ColumnDef, PaginationState, RowData, SortingState, VisibilityState } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  PaginationState,
+  RowData,
+  SortingState,
+  ColumnVisibilityState,
+  StockFeatures,
+} from '@tanstack/react-table'
 
 import {
   DropdownMenu,
@@ -30,7 +43,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData extends RowData, TValue> {
+  interface ColumnMeta<TFeatures, TData extends RowData, TValue> {
     label?: string
     exportable?: boolean
     exportValue?: (row: TData) => unknown
@@ -51,8 +64,8 @@ interface DataTableLabels {
   exportStarted?: string
 }
 
-interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[]
+interface DataTableProps<TData extends RowData> {
+  columns: ColumnDef<StockFeatures, TData>[]
   data: TData[]
   className?: string
   pageSize?: number
@@ -94,7 +107,20 @@ const escapeCsv = (value: unknown) => {
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
 
-export default function DataTable<TData>({
+const features = tableFeatures({
+  columnVisibilityFeature,
+  columnFilteringFeature,
+  globalFilteringFeature,
+  rowSortingFeature,
+  rowPaginationFeature,
+  filteredRowModel: createFilteredRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  filterFns,
+  sortFns,
+})
+
+export default function DataTable<TData extends RowData>({
   columns,
   data,
   className,
@@ -135,7 +161,7 @@ export default function DataTable<TData>({
 
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = React.useState('')
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({})
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: isServerPaginated ? data.length || pageSize : pageSize,
@@ -150,7 +176,7 @@ export default function DataTable<TData>({
       const parsed = JSON.parse(raw) as {
         sorting?: SortingState
         globalFilter?: string
-        columnVisibility?: VisibilityState
+        columnVisibility?: ColumnVisibilityState
         pagination?: PaginationState
       }
 
@@ -216,18 +242,15 @@ export default function DataTable<TData>({
     [onPaginationChangeProp],
   )
 
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data,
-    columns,
+    columns: columns as unknown as ColumnDef<typeof features, TData>[],
     state: { sorting, globalFilter, pagination, columnVisibility },
     onSortingChange: handleSortingChange,
     onGlobalFilterChange: handleGlobalFilterChange,
     onPaginationChange: handlePaginationChange,
     onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    ...(!isServerPaginated ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     // Server-side operation flags
     manualPagination: isServerPaginated,
     manualSorting: isServerSorted,
@@ -248,7 +271,7 @@ export default function DataTable<TData>({
   const totalFiltered = isServerPaginated
     ? (controlledPageCount ?? 1) * pagination.pageSize
     : table.getFilteredRowModel().rows.length
-  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const { pageIndex, pageSize: currentPageSize } = table.state.pagination
   const resolvedPageCount = table.getPageCount()
   const from = totalFiltered > 0 ? pageIndex * currentPageSize + 1 : 0
   const to = totalFiltered > 0 ? Math.min(from + rows.length - 1, totalFiltered) : 0
@@ -382,7 +405,7 @@ export default function DataTable<TData>({
                         className="-ml-2 h-8 px-2 text-left font-medium"
                         onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        <table.FlexRender header={header} />
                         {sortState === 'asc' ? (
                           <ArrowUp className="h-3.5 w-3.5" />
                         ) : sortState === 'desc' ? (
@@ -392,7 +415,7 @@ export default function DataTable<TData>({
                         )}
                       </Button>
                     ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
+                      <table.FlexRender header={header} />
                     )}
                   </TableHead>
                 )
@@ -406,7 +429,7 @@ export default function DataTable<TData>({
               <TableRow key={row.id}>
                 {row.getVisibleCells().map(cell => (
                   <TableCell key={cell.id} className="align-top whitespace-normal">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <table.FlexRender cell={cell} />
                   </TableCell>
                 ))}
               </TableRow>

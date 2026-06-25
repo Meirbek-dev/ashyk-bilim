@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups'
 import { useAllMembers, useUserGroupUsers } from '@/features/users/hooks/useUsers'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import DataTable from '@components/ui/data-table'
 import { Check, Plus, X } from 'lucide-react'
@@ -72,7 +72,7 @@ const ManageUsers = (props: ManageUsersProps) => {
   }
 
   const rows = platformUsersList(Users) as UserRow[]
-  const columns: ColumnDef<UserRow>[] = [
+  const columns: ColumnDef<StockFeatures, UserRow>[] = [
     {
       accessorFn: row =>
         [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username].filter(Boolean).join(' '),

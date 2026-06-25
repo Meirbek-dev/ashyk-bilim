@@ -1,12 +1,12 @@
 'use client'
 
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, RowData, StockFeatures } from '@tanstack/react-table'
 import { useTranslations } from 'next-intl'
 
 import DataTable from '@/components/ui/data-table'
 
-interface AnalyticsDataTableProps<TData> {
-  columns: ColumnDef<TData>[]
+interface AnalyticsDataTableProps<TData extends RowData> {
+  columns: ColumnDef<StockFeatures, TData>[]
   data: TData[]
   searchPlaceholder?: string
   emptyMessage?: string
@@ -22,7 +22,7 @@ interface AnalyticsDataTableProps<TData> {
   serverPaginated?: boolean
 }
 
-export default function AnalyticsDataTable<TData>({
+export default function AnalyticsDataTable<TData extends RowData>({
   columns,
   data,
   searchPlaceholder,

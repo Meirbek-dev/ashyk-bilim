@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { ChevronRight, Copy, Edit, Loader2, Lock, Pencil, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +24,7 @@ export function getRoleColumns({
   openEditDialog,
   handleDeleteRole,
   openPermissionsDialog,
-}: GetRoleColumnsParams): ColumnDef<RoleWithPermissions>[] {
+}: GetRoleColumnsParams): ColumnDef<StockFeatures, RoleWithPermissions>[] {
   return [
     {
       accessorFn: role => [role.name, role.slug, role.description].filter(Boolean).join(' '),
@@ -143,7 +143,7 @@ export function getRoleColumns({
   ]
 }
 
-export function getAuditColumns(t: AppTranslator): ColumnDef<RoleAuditEvent>[] {
+export function getAuditColumns(t: AppTranslator): ColumnDef<StockFeatures, RoleAuditEvent>[] {
   return [
     {
       accessorKey: 'timestamp',
@@ -175,7 +175,7 @@ export function getAuditColumns(t: AppTranslator): ColumnDef<RoleAuditEvent>[] {
   ]
 }
 
-export function getPermissionColumns(t: AppTranslator): ColumnDef<Permission>[] {
+export function getPermissionColumns(t: AppTranslator): ColumnDef<StockFeatures, Permission>[] {
   return [
     {
       accessorKey: 'resource_type',

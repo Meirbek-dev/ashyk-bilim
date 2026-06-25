@@ -1,5 +1,6 @@
 import logging
 
+import pytest
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, SQLModel, create_engine, select
@@ -11,7 +12,7 @@ from src.db.platform import Platform
 from src.services.setup.setup import ensure_bootstrap_state
 
 
-def test_ensure_bootstrap_state_seeds_platform_and_roles(monkeypatch) -> None:
+def test_ensure_bootstrap_state_seeds_platform_and_roles(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PLATFORM_CONTACT_EMAIL", "ops@school.edu")
     monkeypatch.delenv("PLATFORM_INITIAL_ADMIN_EMAIL", raising=False)
     monkeypatch.delenv("PLATFORM_INITIAL_ADMIN_PASSWORD", raising=False)
@@ -55,7 +56,7 @@ def test_ensure_bootstrap_state_seeds_platform_and_roles(monkeypatch) -> None:
         reload_platform_config_cache()
 
 
-def test_judge0_patcher_skips_when_languages_table_is_absent(caplog) -> None:
+def test_judge0_patcher_skips_when_languages_table_is_absent(caplog: pytest.LogCaptureFixture) -> None:
     engine = create_engine("sqlite://")
     factory = sessionmaker(bind=engine, class_=Session)
 

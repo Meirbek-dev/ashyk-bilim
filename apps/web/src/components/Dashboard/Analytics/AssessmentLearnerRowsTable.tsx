@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsStatusLabel } from '@/lib/analytics/labels'
 import type { AssessmentLearnerRow } from '@/types/analytics'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { useLocale, useTranslations } from 'next-intl'
 import DataTable from '@/components/ui/data-table'
 
@@ -16,7 +16,7 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
 
-  const columns: ColumnDef<AssessmentLearnerRow>[] = [
+  const columns: ColumnDef<StockFeatures, AssessmentLearnerRow>[] = [
     {
       accessorKey: 'user_display_name',
       header: t('pages.assessmentColLearner'),

@@ -4,7 +4,7 @@ import { getAnalyticsReasonCodeLabel, getAnalyticsRiskLevelLabel } from '@/lib/a
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AnalyticsQuery, AtRiskLearnerRow } from '@/types/analytics'
 import { createTeacherIntervention } from '@services/analytics/teacher'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -77,7 +77,7 @@ export default function AtRiskLearnersTable({
       setPendingKey(null)
     }
   }
-  const columns: ColumnDef<AtRiskLearnerRow>[] = [
+  const columns: ColumnDef<StockFeatures, AtRiskLearnerRow>[] = [
     {
       accessorKey: 'user_display_name',
       header: t('atRisk.colLearner'),

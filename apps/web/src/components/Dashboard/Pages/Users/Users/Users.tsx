@@ -29,7 +29,7 @@ import { Actions, Resources, Scopes } from '@/components/Security'
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
 import { useSession } from '@/hooks/useSession'
 import { useMembers } from '@/features/users/hooks/useUsers'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import DataTable from '@/components/ui/data-table'
 
 import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react'
@@ -186,7 +186,7 @@ const Users = () => {
   }
 
   const users = (usersData?.users ?? []) as UserRow[]
-  const columns: ColumnDef<UserRow>[] = [
+  const columns: ColumnDef<StockFeatures, UserRow>[] = [
     {
       accessorFn: row =>
         [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username, row.user.email]

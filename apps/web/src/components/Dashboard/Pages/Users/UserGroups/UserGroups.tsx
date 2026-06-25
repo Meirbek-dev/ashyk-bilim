@@ -22,7 +22,7 @@ import { deleteUserGroup } from '@services/usergroups/usergroups'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { useUserGroups } from '@/features/users/hooks/useUsers'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import DataTable from '@components/ui/data-table'
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
@@ -135,7 +135,7 @@ const UserGroups = () => {
   }
   if (error) return <div>{t('errorLoadingUserGroups')}</div>
 
-  const columns: ColumnDef<AppUserGroup>[] = [
+  const columns: ColumnDef<StockFeatures, AppUserGroup>[] = [
     {
       accessorKey: 'name',
       header: t('userGroupHeader'),
