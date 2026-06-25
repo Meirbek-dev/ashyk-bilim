@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Flag } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -13,6 +13,10 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 
@@ -63,67 +67,101 @@ export default function ExamSubmitDialog({
   const tQuestion = useTranslations('Features.Assessments.Shared.PostSubmissionFeedback')
   const unansweredCount = totalQuestions - answeredCount
   const hasWarning = unansweredCount > 0 || flaggedCount > 0
+  const completion = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
+  const statusLabel = hasWarning ? labels.reviewQuestions : labels.confirmAndSubmit
 
   return (
     <AlertDialog open={open} onOpenChange={nextOpen => !nextOpen && onCancel()}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogMedia>
-            {hasWarning ? (
-              <AlertTriangle className="size-6 text-amber-500" />
-            ) : (
-              <CheckCircle2 className="size-6 text-lime-600" />
-            )}
-          </AlertDialogMedia>
-          <AlertDialogTitle>{labels.confirmSubmission}</AlertDialogTitle>
-          <AlertDialogDescription>{labels.confirmSubmissionMessage}</AlertDialogDescription>
+      <AlertDialogContent className="max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden p-0">
+        <div className="flex min-h-0 flex-col gap-5 overflow-y-auto p-5">
+          <AlertDialogHeader className="grid-cols-[auto_1fr] grid-rows-[auto_auto] place-items-start gap-x-3 gap-y-1 text-start sm:grid-rows-[auto_auto]">
+            <AlertDialogMedia
+              className={cn(
+                'mb-0 row-span-2',
+                hasWarning ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary',
+              )}
+            >
+              {hasWarning ? <AlertCircle /> : <CheckCircle2 />}
+            </AlertDialogMedia>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <AlertDialogTitle className="col-start-auto">{labels.confirmSubmission}</AlertDialogTitle>
+              <Badge variant={hasWarning ? 'destructive' : 'secondary'}>{statusLabel}</Badge>
+            </div>
+            <AlertDialogDescription className="col-start-2">{labels.confirmSubmissionMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
 
-          {/* Summary stats */}
-          <div className="bg-muted rounded-lg border p-4 text-sm">
-            <SummaryRow label={labels.totalQuestions} value={totalQuestions} />
-            <SummaryRow label={labels.answered} value={answeredCount} variant="success" />
-            <SummaryRow
-              label={labels.unanswered}
-              value={unansweredCount}
-              variant={unansweredCount > 0 ? 'warning' : 'neutral'}
-            />
+          <div className="bg-muted/35 flex flex-col gap-3 rounded-lg border p-4">
+            <Progress value={completion} aria-label={labels.answered} className="gap-2">
+              <div className="flex w-full items-center justify-between gap-3">
+                <span className="text-sm font-medium">{labels.answered}</span>
+                <span className="text-muted-foreground text-sm tabular-nums">
+                  {answeredCount}/{totalQuestions}
+                </span>
+              </div>
+            </Progress>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <SummaryMetric label={labels.totalQuestions} value={totalQuestions} />
+              <SummaryMetric label={labels.answered} value={answeredCount} tone="positive" />
+              <SummaryMetric
+                label={labels.unanswered}
+                value={unansweredCount}
+                tone={unansweredCount > 0 ? 'risk' : 'muted'}
+              />
+            </div>
+
             {flaggedCount > 0 ? (
-              <SummaryRow label={labels.flaggedForReview} value={flaggedCount} variant="amber" />
+              <>
+                <Separator />
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                  <Flag className="text-current" />
+                  <span className="min-w-0">
+                    {labels.flaggedForReview}: <span className="text-foreground font-medium">{flaggedCount}</span>
+                  </span>
+                </div>
+              </>
             ) : null}
           </div>
 
-          {/* Unanswered question list with jump links */}
-          {unansweredQuestions.length > 0 && onNavigateTo ? (
-            <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
-              <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                {labels.unansweredQuestions}
-              </p>
-              {unansweredQuestions.map(q => (
-                <button
-                  key={q.id}
-                  type="button"
-                  onClick={() => onNavigateTo(q.index)}
-                  className="hover:bg-muted/80 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors"
-                >
-                  <span className="bg-muted-foreground/20 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
-                    {q.index + 1}
-                  </span>
-                  <span className="min-w-0 truncate text-xs">
-                    {q.question_text || tQuestion('questionNumber', { id: q.index + 1 })}
-                  </span>
-                </button>
-              ))}
+          {unansweredQuestions.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">{labels.unansweredQuestions}</p>
+                <Badge variant="outline">{unansweredCount}</Badge>
+              </div>
+              <div className="max-h-44 overflow-y-auto rounded-lg border">
+                {unansweredQuestions.map(q => {
+                  const questionLabel = q.question_text || tQuestion('questionNumber', { id: q.index + 1 })
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => onNavigateTo?.(q.index)}
+                      disabled={!onNavigateTo || isSubmitting}
+                      className="hover:bg-muted/70 focus-visible:bg-muted flex w-full items-center gap-3 border-b px-3 py-2.5 text-left text-sm transition-colors outline-none last:border-b-0 disabled:pointer-events-none disabled:opacity-60"
+                    >
+                      <span className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold tabular-nums">
+                        {q.index + 1}
+                      </span>
+                      <span className="min-w-0 truncate">{questionLabel}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           ) : null}
-        </AlertDialogHeader>
+        </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>{labels.reviewQuestions}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className={cn(hasWarning ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500' : '')}
-          >
+        <AlertDialogFooter className="mx-0 mb-0 grid grid-cols-1 rounded-none sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] [&_[data-slot=button]]:w-full [&_[data-slot=button]]:min-w-0 [&_[data-slot=button]]:whitespace-normal">
+          <AlertDialogCancel disabled={isSubmitting} variant="ghost">
+            {labels.reviewQuestions}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Spinner data-icon="inline-start" className="text-current" />
+            ) : (
+              hasWarning && <AlertCircle data-icon="inline-start" />
+            )}
             {isSubmitting ? labels.submitting : labels.confirmAndSubmit}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -132,22 +170,21 @@ export default function ExamSubmitDialog({
   )
 }
 
-type Variant = 'success' | 'warning' | 'amber' | 'neutral'
+type SummaryTone = 'positive' | 'risk' | 'muted'
 
-function SummaryRow({ label, value, variant = 'neutral' }: { label: string; value: number; variant?: Variant }) {
+function SummaryMetric({ label, value, tone = 'muted' }: { label: string; value: number; tone?: SummaryTone }) {
   return (
-    <div className="flex justify-between py-0.5">
-      <span className="text-muted-foreground">{label}:</span>
+    <div className="bg-background/80 ring-border/70 flex min-w-0 flex-col gap-1 rounded-md p-3 ring-1">
       <span
         className={cn(
-          'font-semibold',
-          variant === 'success' && 'text-lime-600 dark:text-lime-400',
-          variant === 'warning' && value > 0 && 'text-destructive',
-          variant === 'amber' && 'text-amber-600 dark:text-amber-400',
+          'text-xl font-semibold leading-none tabular-nums',
+          tone === 'positive' && 'text-primary',
+          tone === 'risk' && 'text-destructive',
         )}
       >
         {value}
       </span>
+      <span className="text-muted-foreground truncate text-xs">{label}</span>
     </div>
   )
 }

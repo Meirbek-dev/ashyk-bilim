@@ -187,16 +187,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     while (resolverQueueRef.current.length) {
       resolverQueueRef.current.shift()?.('')
     }
-  }, [
-    abort,
-    adapter,
-    chatStopRef,
-    chatClearRef,
-    setStatusMessage,
-    setInputValue,
-    setRuntimeState,
-    resolverQueueRef,
-  ])
+  }, [abort, adapter, chatStopRef, chatClearRef, setStatusMessage, setInputValue, setRuntimeState, resolverQueueRef])
 
   const openModal = useCallback(() => {
     setIsModalOpen(true)
