@@ -140,9 +140,8 @@ export default function FileSubmissionReviewWorkspace({
   const parsedCriteria = config?.rubric ? parseRubricCriteria(config.rubric) : []
 
   // Auto-fill score from rubric criterion scores
-  const rubricTotalScore = parsedCriteria.length === 0
-    ? null
-    : parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0)
+  const rubricTotalScore =
+    parsedCriteria.length === 0 ? null : parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0)
 
   function selectAttempt(attempt: FileSubmissionAttempt) {
     setSelectedUuid(attempt.attempt_uuid)

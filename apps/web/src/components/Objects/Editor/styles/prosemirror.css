@@ -316,6 +316,9 @@
 
 /* Resizable embed blocks manage their own dimensions. */
 .ProseMirror .embed-block iframe,
+.ProseMirror .embed-block-node-view iframe,
+.ProseMirror .youtube-node-view iframe,
+.ProseMirror lite-youtube iframe,
 .ProseMirror block-embed iframe,
 .ProseMirror .block-pdf iframe,
 .ProseMirror block-pdf iframe {

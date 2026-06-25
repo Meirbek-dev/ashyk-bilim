@@ -2,7 +2,7 @@
 
 import { useId, createElement } from 'react'
 import { useTranslations } from 'next-intl'
-import { Globe2, Sparkles, BookOpen, ExternalLink, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react'
+import { Globe2, BookOpen, ExternalLink, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react'
 import * as Si from '@icons-pack/react-simple-icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -148,7 +148,6 @@ export function EmbedUrlForm({ type, url, onChange, error, onErrorChange }: Embe
               }}
               className="text-primary hover:bg-primary/10 border-primary/20 bg-primary/5 inline-flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold transition-colors"
             >
-              <Sparkles className="size-3" />
               {t('useExample')}
             </button>
           )}
