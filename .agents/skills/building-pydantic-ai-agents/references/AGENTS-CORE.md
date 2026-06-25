@@ -66,7 +66,7 @@ Use YAML or JSON specs when configuration should live outside Python code.
 
 ```yaml
 model: anthropic:claude-opus-4-6
-instructions: 'You are helping {{user_name}} with research.'
+instructions: "You are helping {{user_name}} with research."
 capabilities:
   - WebSearch
   - Thinking:
@@ -123,7 +123,7 @@ from pydantic_ai import Agent, AgentStreamEvent, FunctionToolCallEvent, RunConte
 agent = Agent('openai:gpt-5.2')
 
 
-async def stream_handler(ctx: RunContext[None], events: AsyncIterable[AgentStreamEvent]):
+async def stream_handler(ctx: RunContext, events: AsyncIterable[AgentStreamEvent]):
     async for event in events:
         if isinstance(event, FunctionToolCallEvent):
             print(f'Calling {event.part.tool_name}...')

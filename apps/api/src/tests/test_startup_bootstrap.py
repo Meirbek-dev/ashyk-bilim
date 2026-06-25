@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import Session, SQLModel, create_engine, select
 
 from config.config import get_settings, reload_platform_config_cache
 from src.app.judge0_patch import apply_judge0_patches

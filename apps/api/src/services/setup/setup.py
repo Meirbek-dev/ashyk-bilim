@@ -29,7 +29,7 @@ def _lock_platform_table_for_bootstrap(db_session: Session) -> None:
         db_session.connection().execute(text("LOCK TABLE platform IN SHARE ROW EXCLUSIVE MODE"))
 
 
-def _bootstrap_platform_email(settings: "AppSettings") -> str:
+def _bootstrap_platform_email(settings: AppSettings) -> str:
     return str(
         settings.general_config.contact_email
         or settings.mailing_config.system_email_address
@@ -38,7 +38,7 @@ def _bootstrap_platform_email(settings: "AppSettings") -> str:
     )
 
 
-def ensure_bootstrap_state(settings: "AppSettings", db_session: Session) -> None:
+def ensure_bootstrap_state(settings: AppSettings, db_session: Session) -> None:
     """Install seed data required by an already-migrated application database."""
     created_roles = RoleRepository(db_session).seed_default_roles()
     if created_roles:
