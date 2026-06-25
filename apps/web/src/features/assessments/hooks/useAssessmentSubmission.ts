@@ -337,28 +337,36 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     }).catch(() => undefined)
   }, [assessmentUuid, draftQuery.error, submissionsQuery.error])
 
-  useEffect(() => {
-    if (!assessmentUuid) {
-      setLocalAnswers({})
-      setSaveState('idle')
-      setConflictState(null)
-      return
+  // Render-phase synchronization to avoid synchronous setState inside useEffect
+  const [lastAssessmentUuid, setLastAssessmentUuid] = useState<string | null | undefined>(undefined)
+  const [lastSyncedSubmissionId, setLastSyncedSubmissionId] = useState<string | null>(null)
+
+  if (assessmentUuid !== lastAssessmentUuid) {
+    setLastAssessmentUuid(assessmentUuid)
+    setLocalAnswers({})
+    setSaveState('idle')
+    setConflictState(null)
+    setLastSyncedSubmissionId(null)
+  } else if (
+    assessmentUuid &&
+    !draftQuery.isLoading &&
+    !submissionsQuery.isLoading &&
+    saveState !== 'dirty' &&
+    saveState !== 'conflict' &&
+    !saveMutation.isPending &&
+    !submitMutation.isPending
+  ) {
+    const currentSubmissionId = submission
+      ? `${submission.submission_uuid}:${submission.updated_at ?? submission.created_at ?? ''}`
+      : 'none'
+    if (currentSubmissionId !== lastSyncedSubmissionId) {
+      setLastSyncedSubmissionId(currentSubmissionId)
+      setLocalAnswers(answersFromSubmission(submission))
+      if (saveState === 'idle' || saveState === 'saved') {
+        setSaveState(submission ? 'saved' : 'idle')
+      }
     }
-    if (draftQuery.isLoading || submissionsQuery.isLoading) return
-    if (saveState === 'dirty' || saveState === 'conflict' || saveMutation.isPending || submitMutation.isPending) return
-    setLocalAnswers(answersFromSubmission(submission))
-    if (saveState === 'idle' || saveState === 'saved') {
-      setSaveState(submission ? 'saved' : 'idle')
-    }
-  }, [
-    assessmentUuid,
-    draftQuery.isLoading,
-    submissionsQuery.isLoading,
-    saveMutation.isPending,
-    saveState,
-    submission,
-    submitMutation.isPending,
-  ])
+  }
 
   const setItemAnswer = useCallback((itemUuid: string, answer: ItemAnswer) => {
     setLocalAnswers(current => ({ ...current, [itemUuid]: answer }))

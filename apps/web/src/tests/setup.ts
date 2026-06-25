@@ -3,7 +3,7 @@ import { vi } from 'vite-plus/test'
 
 // Polyfill process.env for browser environment
 if (typeof process === 'undefined') {
-  ;(globalThis as any).process = { env: {} }
+  ;(globalThis as Record<string, unknown>).process = { env: { NODE_ENV: 'test' } }
 }
 
 // Mock elementFromPoint for JSDOM which is missing it

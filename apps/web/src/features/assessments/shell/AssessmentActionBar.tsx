@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react'
 import type { AttemptTimerConfig } from '@/features/assessments/shared/hooks/useAttemptGuard'
@@ -253,13 +253,15 @@ export function SaveStateBadge({ state, status }: { state: AttemptSaveState; sta
 }
 
 function useStableAttemptShellRegistration(controls: AttemptShellRegistration): AttemptShellRegistration {
-  const stableRef = useRef(controls)
+  const [stableControls, setStableControls] = useState(controls)
 
-  if (!areAttemptShellRegistrationsEqual(stableRef.current, controls)) {
-    stableRef.current = controls
+  const hasChanged = !areAttemptShellRegistrationsEqual(stableControls, controls)
+  if (hasChanged) {
+    setStableControls(controls)
+    return controls
   }
 
-  return stableRef.current
+  return stableControls
 }
 
 function areAttemptShellRegistrationsEqual(left: AttemptShellRegistration, right: AttemptShellRegistration): boolean {

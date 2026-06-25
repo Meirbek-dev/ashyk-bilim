@@ -122,22 +122,19 @@ export default function NewActivityModal({
 
   const handleBack = useCallback(() => setSelectedView('home'), [])
 
-  const handleTypeSelect = useCallback(
-    async (view: Exclude<ViewType, 'home'>) => {
-      if (view !== 'dynamic' && view !== 'codechallenge') {
-        setSelectedView(view)
-        return
-      }
+  const handleTypeSelect = async (view: Exclude<ViewType, 'home'>) => {
+    if (view !== 'dynamic' && view !== 'codechallenge') {
+      setSelectedView(view)
+      return
+    }
 
-      setIsQuickCreating(view)
-      try {
-        await createAndOpenActivity(view)
-      } finally {
-        setIsQuickCreating(null)
-      }
-    },
-    [createAndOpenActivity],
-  )
+    setIsQuickCreating(view)
+    try {
+      await createAndOpenActivity(view)
+    } finally {
+      setIsQuickCreating(null)
+    }
+  }
 
   const sharedProps = { chapterId, course, closeModal }
 

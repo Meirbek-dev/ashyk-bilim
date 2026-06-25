@@ -166,10 +166,10 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
 
   const onContentChange = useEffectEvent(props.onContentChange)
 
-  const handleContentChange = useCallback((content: unknown) => {
+  const handleContentChange = (content: unknown) => {
     latestContentRef.current = content
     onContentChange(content)
-  }, [])
+  }
 
   function handleContentSave() {
     props.setContent(latestContentRef.current)
