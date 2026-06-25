@@ -198,16 +198,16 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
 function getKindLabel(kind: string): string {
   switch (kind) {
     case 'TYPE_EXAM': {
-      return 'Exam'
+      return 'Тест'
     }
     case 'TYPE_CUSTOM': {
-      return 'Quiz'
+      return 'Квиз'
     }
     case 'TYPE_CODE_CHALLENGE': {
-      return 'Coding Challenge'
+      return 'Задача по программированию'
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return 'File Submission'
+      return 'Отправка файла'
     }
     default: {
       return kind
