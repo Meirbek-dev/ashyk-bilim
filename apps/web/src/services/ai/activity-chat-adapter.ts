@@ -22,7 +22,7 @@ import { generateUUID } from '@/lib/utils'
 const MAX_BUFFER_BYTES = 65_536
 
 /** Request timeout in milliseconds. */
-const REQUEST_TIMEOUT_MS = 30_000
+const REQUEST_TIMEOUT_MS = 300_000
 
 /** Cookie carrying the active app locale. */
 const LOCALE_COOKIE_NAME = 'NEXT_LOCALE'

@@ -184,7 +184,7 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_AI_MAX_CONCURRENT_REQUESTS",
     )
     request_timeout: int = Field(
-        default=60,
+        default=120,
         validation_alias="PLATFORM_AI_REQUEST_TIMEOUT",
     )
     max_output_tokens: int = Field(
