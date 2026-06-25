@@ -190,6 +190,30 @@ def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def _column_names(conn: Connection, table_name: str) -> set[str]:
+    return {column["name"] for column in sa.inspect(conn).get_columns(table_name)}
+
+
+def _ensure_assignment_contract_columns(conn: Connection) -> None:
+    assignment_columns = _column_names(conn, "assignment")
+    if "due_at" not in assignment_columns:
+        op.add_column(
+            "assignment",
+            sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
+        )
+
+    inspector = sa.inspect(conn)
+    if "assignmenttask" not in inspector.get_table_names():
+        return
+
+    assignment_task_columns = _column_names(conn, "assignmenttask")
+    if "order" not in assignment_task_columns:
+        op.add_column(
+            "assignmenttask",
+            sa.Column("order", sa.Integer(), server_default="0", nullable=True),
+        )
+
+
 def _next_activity_order(conn, chapter_id: int) -> int:
     row = _fetch_one(
         conn,
@@ -658,6 +682,7 @@ def upgrade() -> None:
     if "assignment" not in existing_tables:
         return
 
+    _ensure_assignment_contract_columns(conn)
     _ensure_assignment_activities(conn)
     _backfill_due_at(conn)
     _backfill_task_order(conn)

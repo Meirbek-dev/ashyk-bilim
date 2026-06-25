@@ -88,6 +88,10 @@ class GeneralConfig(PlatformSectionSettings):
         default=False,
         validation_alias="PLATFORM_DEVELOPMENT_MODE",
     )
+    contact_email: EmailStr | None = Field(
+        default=None,
+        validation_alias="PLATFORM_CONTACT_EMAIL",
+    )
     logfire_enabled: bool = Field(
         default=False,
         validation_alias="PLATFORM_LOGFIRE_ENABLED",

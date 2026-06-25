@@ -1,7 +1,13 @@
+import logging
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlmodel import Session, select
 from ulid import ULID
 
+from config.config import secret_value
+from src.core.platform import PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION, PLATFORM_LABEL
 from src.core.timezone import utcnow
 from src.db.permission_enums import RoleSlug
 from src.db.platform import Platform, PlatformCreate
@@ -10,6 +16,70 @@ from src.repositories.role_repository import RoleRepository
 from src.security.rbac import PermissionChecker
 from src.security.security import security_hash_password
 from src.types import require_persisted_id
+
+if TYPE_CHECKING:
+    from src.infra.settings import AppSettings
+
+logger = logging.getLogger(__name__)
+
+
+def _lock_platform_table_for_bootstrap(db_session: Session) -> None:
+    bind = db_session.get_bind()
+    if bind.dialect.name == "postgresql":
+        db_session.connection().execute(text("LOCK TABLE platform IN SHARE ROW EXCLUSIVE MODE"))
+
+
+def _bootstrap_platform_email(settings: "AppSettings") -> str:
+    return str(
+        settings.general_config.contact_email
+        or settings.mailing_config.system_email_address
+        or settings.bootstrap.initial_admin_email
+        or "contact@example.com"
+    )
+
+
+def ensure_bootstrap_state(settings: "AppSettings", db_session: Session) -> None:
+    """Install seed data required by an already-migrated application database."""
+    created_roles = RoleRepository(db_session).seed_default_roles()
+    if created_roles:
+        logger.info("Seeded default roles: %s", ", ".join(created_roles))
+
+    _lock_platform_table_for_bootstrap(db_session)
+    platform_record = db_session.exec(select(Platform)).first()
+    if not platform_record:
+        platform_record = Platform(
+            name=PLATFORM_BRAND_NAME,
+            description=PLATFORM_DESCRIPTION,
+            about=f"{PLATFORM_BRAND_NAME} - online learning platform",
+            email=_bootstrap_platform_email(settings),
+            logo_image="",
+            thumbnail_image="",
+            label=PLATFORM_LABEL,
+            creation_date=utcnow(),
+            update_date=utcnow(),
+        )
+        db_session.add(platform_record)
+        db_session.commit()
+        logger.info("Created default platform row during startup bootstrap")
+
+    admin_email = settings.bootstrap.initial_admin_email
+    admin_password = secret_value(settings.bootstrap.initial_admin_password)
+    if not admin_email or not admin_password:
+        return
+
+    existing_admin = db_session.exec(select(User).where(User.email == str(admin_email))).first()
+    if existing_admin:
+        return
+
+    install_create_platform_user(
+        UserCreate(
+            username="Admin",
+            email=str(admin_email),
+            password=admin_password,
+        ),
+        db_session,
+    )
+    logger.info("Created initial admin user from bootstrap environment")
 
 
 # Install Default roles

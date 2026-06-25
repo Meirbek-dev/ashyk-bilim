@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
 
@@ -22,7 +22,14 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
     for attempt in range(1, max_retries + 1):
         try:
             with session_factory() as session:
-                # Check if languages table exists and contains the core rows.
+                table_exists = inspect(session.connection()).has_table("languages")
+                if not table_exists:
+                    logger.info(
+                        "Skipping Judge0 language patches: public.languages is not present in the application database."
+                    )
+                    return
+
+                # Check if languages table contains the core rows.
                 res = (
                     session
                     .connection()

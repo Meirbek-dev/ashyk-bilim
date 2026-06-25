@@ -46,6 +46,11 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextMa
         app.state.engine = engine
         app.state.session_factory = session_factory
 
+        from src.services.setup.setup import ensure_bootstrap_state
+
+        with session_factory() as session:
+            ensure_bootstrap_state(settings, session)
+
         with contextlib.suppress(Exception):
             removed_chunked = cleanup_stale_sessions()
             removed_assessment = cleanup_stale_assessment_uploads()
