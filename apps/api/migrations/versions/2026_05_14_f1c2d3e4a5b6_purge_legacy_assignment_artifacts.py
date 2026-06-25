@@ -47,7 +47,7 @@ def upgrade() -> None:
                 UPDATE activity
                 SET activity_type = 'TYPE_FILE_SUBMISSION',
                     activity_sub_type = 'SUBTYPE_FILE_SUBMISSION_STANDARD'
-                WHERE activity_type = 'TYPE_ASSIGNMENT'
+                WHERE activity_type::text = 'TYPE_ASSIGNMENT'
                 """
             )
         )

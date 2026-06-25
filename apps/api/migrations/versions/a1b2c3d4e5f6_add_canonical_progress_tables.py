@@ -337,7 +337,7 @@ def _backfill_assessment_policies(existing_tables: set[str]) -> None:
                 block.creation_date,
                 block.update_date
             FROM block
-            WHERE block.block_type = 'BLOCK_QUIZ'
+            WHERE block.block_type::text = 'BLOCK_QUIZ'
             ORDER BY block.activity_id, block.id DESC
         )
         INSERT INTO assessment_policy (
@@ -380,8 +380,8 @@ def _backfill_assessment_policies(existing_tables: set[str]) -> None:
             TRUE,
             '{}'::json,
             COALESCE(latest_quiz_block.content -> 'settings', '{}'::json),
-            COALESCE(NULLIF(latest_quiz_block.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(latest_quiz_block.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(latest_quiz_block.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(latest_quiz_block.update_date::text, '')::timestamptz, now())
         FROM latest_quiz_block
         ON CONFLICT (activity_id) DO NOTHING
     """)
@@ -433,7 +433,7 @@ def _backfill_assessment_policies(existing_tables: set[str]) -> None:
                 COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
                 COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
             FROM activity
-            WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
+            WHERE activity.activity_type::text = 'TYPE_CODE_CHALLENGE'
             ON CONFLICT (activity_id) DO NOTHING
         """)
 

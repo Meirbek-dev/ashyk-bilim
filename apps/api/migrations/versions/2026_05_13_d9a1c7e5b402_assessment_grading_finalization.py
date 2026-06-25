@@ -103,7 +103,7 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
             SELECT activity.id, activity.activity_uuid, activity.activity_type, COUNT(assessment.id) AS assessment_count
             FROM activity
             LEFT JOIN assessment ON assessment.activity_id = activity.id
-            WHERE activity.activity_type IN :activity_types
+            WHERE activity.activity_type::text IN :activity_types
             GROUP BY activity.id, activity.activity_uuid, activity.activity_type
             HAVING COUNT(assessment.id) <> 1
             LIMIT 20
@@ -311,8 +311,8 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
                 1.0,
                 'PERCENTAGE',
                 assessment_policy.id,
-                COALESCE(NULLIF(exam.creation_date, '')::timestamptz, now()),
-                COALESCE(NULLIF(exam.update_date, '')::timestamptz, now())
+                COALESCE(NULLIF(exam.creation_date::text, '')::timestamptz, now()),
+                COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, now())
             FROM exam
             LEFT JOIN assessment_policy
               ON assessment_policy.activity_id = exam.activity_id
@@ -355,12 +355,12 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
             1.0,
             'PERCENTAGE',
             assessment_policy.id,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         LEFT JOIN assessment_policy
           ON assessment_policy.activity_id = activity.id
-        WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
+        WHERE activity.activity_type::text = 'TYPE_CODE_CHALLENGE'
           AND NOT EXISTS (
               SELECT 1 FROM assessment WHERE assessment.activity_id = activity.id
           )
@@ -495,8 +495,8 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
                     THEN (activity.details ->> 'points')::float
                 ELSE 100.0
             END,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         JOIN assessment ON assessment.activity_id = activity.id
         WHERE assessment.kind = 'CODE_CHALLENGE'

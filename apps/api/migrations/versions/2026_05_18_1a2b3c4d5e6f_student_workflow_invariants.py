@@ -74,7 +74,7 @@ def _assert_no_deprecated_tables(conn: sa.Connection) -> None:
 def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
     if not _table_exists(conn, "activity"):
         return
-    count = conn.execute(sa.text("SELECT COUNT(*) FROM activity WHERE activity_type = 'TYPE_ASSIGNMENT'")).scalar_one()
+    count = conn.execute(sa.text("SELECT COUNT(*) FROM activity WHERE activity_type::text = 'TYPE_ASSIGNMENT'")).scalar_one()
     if count:
         msg = f"Deprecated TYPE_ASSIGNMENT activities remain: {count}"
         raise RuntimeError(msg)

@@ -137,13 +137,14 @@ def upgrade() -> None:
     )
 
     # ── 9. Set auth_provider for existing OAuth users (password = '') ─────────
-    op.execute(
-        """
-        UPDATE "user"
-        SET auth_provider = 'google', password = NULL
-        WHERE password = '' OR password IS NULL
-        """
-    )
+    if "password" in _cols("user"):
+        op.execute(
+            """
+            UPDATE "user"
+            SET auth_provider = 'google', password = NULL
+            WHERE password = '' OR password IS NULL
+            """
+        )
 
 
 def downgrade() -> None:

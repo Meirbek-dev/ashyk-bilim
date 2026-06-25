@@ -63,7 +63,7 @@ def upgrade() -> None:
                 FROM assessment
                 WHERE assessment.activity_id = activity.id
                   AND COALESCE(assessment.is_inline, false) IS TRUE
-                  AND activity.activity_type = 'TYPE_QUIZ'
+                  AND activity.activity_type::text = 'TYPE_QUIZ'
                 """
             )
         )
@@ -72,7 +72,7 @@ def upgrade() -> None:
         sa.text(
             """
             DELETE FROM block
-            WHERE block_type = 'BLOCK_QUIZ'
+            WHERE block_type::text = 'BLOCK_QUIZ'
             """
         )
     )
@@ -81,7 +81,7 @@ def upgrade() -> None:
         sa.text(
             """
             DELETE FROM activity
-            WHERE activity_type = 'TYPE_QUIZ'
+            WHERE activity_type::text = 'TYPE_QUIZ'
             """
         )
     )
