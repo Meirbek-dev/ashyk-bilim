@@ -107,12 +107,12 @@ def click_and_capture(x: int, y: int) -> ToolReturn:
 
 ## Control Tool Execution When an Output Tool Is Called
 
-When a model calls an output tool (structured output) in the *same* response as other tools, the agent's `end_strategy` controls how those calls run and which one becomes the final result. Most agents never need to touch this, since most responses don't mix an output tool with other tools.
+When a model calls an output tool (structured output) in the _same_ response as other tools, the agent's `end_strategy` controls how those calls run and which one becomes the final result. Most agents never need to touch this, since most responses don't mix an output tool with other tools.
 
 Three strategies (set on the agent, e.g. `Agent(..., end_strategy='exhaustive')`):
 
 - `'graceful'` (default): tools run in emission order; function tools always run (in parallel where possible); the first successful output tool wins, later output tools are skipped. Use when function tool side effects (logging, notifications) should still happen.
-- `'early'`: output tools run in emission order, stopping at the first success; function tools in the same response are skipped if an output succeeds, but run if *every* output fails. Fastest when you don't need those function tools once you have a result.
+- `'early'`: output tools run in emission order, stopping at the first success; function tools in the same response are skipped if an output succeeds, but run if _every_ output fails. Fastest when you don't need those function tools once you have a result.
 - `'exhaustive'`: every tool runs in parallel; the first valid output by emission order wins; other output tools still execute. Gives the model full visibility that each tool ran, at the cost of discarded output-tool side effects.
 
 Retry-wins (under `'graceful'` / `'exhaustive'`): if a function tool raises `ModelRetry` (or its args fail validation) in the same response as a successful output, the output result is suppressed so the model addresses the retry next round. Does not apply under `'early'`, nor when streaming (`run_stream` commits the first matching output immediately, behaving like `'early'`).

@@ -29,7 +29,7 @@ function TodoList() {
   const { data, fetchStatus, status } = useQuery({
     queryKey: ['todos'],
     queryFn: fetchTodos,
-    networkMode: 'online',  // Default - pauses when offline
+    networkMode: 'online', // Default - pauses when offline
   })
 
   // fetchStatus: 'fetching' | 'paused' | 'idle'
@@ -37,9 +37,7 @@ function TodoList() {
 
   return (
     <div>
-      {fetchStatus === 'paused' && (
-        <Banner>You're offline. Showing cached data.</Banner>
-      )}
+      {fetchStatus === 'paused' && <Banner>You're offline. Showing cached data.</Banner>}
       <TodoItems todos={data} />
     </div>
   )
@@ -56,14 +54,14 @@ const { data, error } = useQuery({
     // Try network first
     try {
       const todos = await fetchTodosFromServer()
-      await saveToLocalDB(todos)  // Sync to local
+      await saveToLocalDB(todos) // Sync to local
       return todos
     } catch (e) {
       // Fall back to local data
       return getFromLocalDB()
     }
   },
-  networkMode: 'always',  // Always runs queryFn, even offline
+  networkMode: 'always', // Always runs queryFn, even offline
 })
 
 // Or set globally
@@ -100,8 +98,8 @@ function TodoApp() {
 
   const addTodo = useMutation({
     mutationFn: createTodo,
-    networkMode: 'online',  // Pauses when offline
-    onMutate: async (newTodo) => {
+    networkMode: 'online', // Pauses when offline
+    onMutate: async newTodo => {
       // Optimistic update works offline
       await queryClient.cancelQueries({ queryKey: ['todos'] })
       const previous = queryClient.getQueryData(['todos'])
@@ -121,17 +119,11 @@ function TodoApp() {
     filters: { status: 'pending' },
   })
 
-  const pausedMutations = pendingMutations.filter(
-    m => m.state.isPaused
-  )
+  const pausedMutations = pendingMutations.filter(m => m.state.isPaused)
 
   return (
     <div>
-      {pausedMutations.length > 0 && (
-        <Banner>
-          {pausedMutations.length} changes waiting to sync
-        </Banner>
-      )}
+      {pausedMutations.length > 0 && <Banner>{pausedMutations.length} changes waiting to sync</Banner>}
       <TodoList />
     </div>
   )
@@ -140,11 +132,11 @@ function TodoApp() {
 
 ## Network Mode Comparison
 
-| Mode | Behavior | Use Case |
-|------|----------|----------|
-| `'online'` (default) | Pauses when offline, resumes when online | Most apps, show offline state |
-| `'always'` | Always runs queryFn regardless of network | Offline-first apps, local-only data |
-| `'offlineFirst'` | Tries once, then waits for network if fails | Best-effort offline |
+| Mode                 | Behavior                                    | Use Case                            |
+| -------------------- | ------------------------------------------- | ----------------------------------- |
+| `'online'` (default) | Pauses when offline, resumes when online    | Most apps, show offline state       |
+| `'always'`           | Always runs queryFn regardless of network   | Offline-first apps, local-only data |
+| `'offlineFirst'`     | Tries once, then waits for network if fails | Best-effort offline                 |
 
 ## Good Example: Online Status Detection
 
@@ -153,16 +145,9 @@ import { onlineManager } from '@tanstack/react-query'
 
 // React to online/offline changes
 function NetworkStatus() {
-  const isOnline = useSyncExternalStore(
-    onlineManager.subscribe,
-    () => onlineManager.isOnline(),
-  )
+  const isOnline = useSyncExternalStore(onlineManager.subscribe, () => onlineManager.isOnline())
 
-  return (
-    <div className={isOnline ? 'online' : 'offline'}>
-      {isOnline ? 'Connected' : 'Offline'}
-    </div>
-  )
+  return <div className={isOnline ? 'online' : 'offline'}>{isOnline ? 'Connected' : 'Offline'}</div>
 }
 
 // Manually override online detection (for testing)

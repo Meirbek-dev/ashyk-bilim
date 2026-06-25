@@ -175,9 +175,9 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           variant="outline"
           onClick={() => router.push(getAbsoluteUrl('/signup'))}
           aria-label={t('aria.signupToApply')}
-          className="w-full gap-2"
+          className="h-12 w-full gap-2 text-base"
         >
-          <UserPen className="size-4" />
+          <UserPen className="size-5" />
           {t('authenticateToContribute')}
         </Button>
       )
@@ -185,8 +185,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
     if (contributorStatus === 'ACTIVE') {
       return (
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 text-sm font-medium text-green-700">
-          <CheckCircle2 className="size-4" />
+        <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 px-4 text-sm font-medium text-emerald-800 shadow-xs dark:border-emerald-500/25 dark:from-emerald-500/10 dark:to-teal-500/5 dark:text-emerald-400 dark:shadow-sm dark:shadow-emerald-950/20">
+          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
           {t('youAreAContributor')}
         </div>
       )
@@ -194,8 +194,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
     if (contributorStatus === 'PENDING') {
       return (
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm font-medium text-amber-700">
-          <Clock className="size-4" />
+        <div className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-amber-200/60 bg-gradient-to-r from-amber-500/5 to-yellow-500/5 px-4 text-sm font-medium text-amber-800 shadow-xs dark:border-amber-500/25 dark:from-amber-500/10 dark:to-yellow-500/5 dark:text-amber-400 dark:shadow-sm dark:shadow-amber-950/20">
+          <Clock className="size-4 text-amber-600 dark:text-amber-400" />
           {t('contributorApplicationPending')}
         </div>
       )
@@ -207,13 +207,13 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         onClick={handleApplyToContribute}
         disabled={isContributeLoading}
         aria-label={t('aria.applyToBecome')}
-        className="w-full gap-2"
+        className="h-12 w-full gap-2 text-base"
       >
         {isContributeLoading ? (
-          <Loader2 className="size-4 animate-spin" />
+          <Loader2 className="size-5 animate-spin" />
         ) : (
           <>
-            <UserPen className="size-4" />
+            <UserPen className="size-5" />
             {t('applyToContribute')}
           </>
         )}

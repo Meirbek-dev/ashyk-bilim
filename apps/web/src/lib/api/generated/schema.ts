@@ -4205,9 +4205,7 @@ export interface components {
        */
       allow_late: boolean
       /** Anti Cheat Json */
-      anti_cheat_json?: {
-        [key: string]: unknown
-      }
+      anti_cheat_json?: Record<string, unknown>
       /** Assessment Type */
       assessment_type: string
       canonical_policy?: components['schemas']['AssessmentCanonicalPolicy']
@@ -4246,9 +4244,7 @@ export interface components {
        */
       review_visibility: string
       /** Settings Json */
-      settings_json?: {
-        [key: string]: unknown
-      }
+      settings_json?: Record<string, unknown>
       /** Time Limit Seconds */
       time_limit_seconds?: number | null
     }
@@ -4261,13 +4257,9 @@ export interface components {
       /** Chapter Id */
       chapter_id: number
       /** Content */
-      content?: {
-        [key: string]: unknown
-      }
+      content?: Record<string, unknown>
       /** Details */
-      details?: {
-        [key: string]: unknown
-      } | null
+      details?: Record<string, unknown> | null
       /** Name */
       name: string
       /**
@@ -4276,9 +4268,7 @@ export interface components {
        */
       published: boolean
       /** Settings */
-      settings?: {
-        [key: string]: unknown
-      }
+      settings?: Record<string, unknown>
     }
     /** ActivityDetailResponse */
     ActivityDetailResponse: {
@@ -4376,9 +4366,7 @@ export interface components {
       /** Chapter Id */
       chapter_id: number
       /** Content */
-      content?: {
-        [key: string]: unknown
-      }
+      content?: Record<string, unknown>
       /** Course Id */
       course_id?: number | null
       /**
@@ -4389,9 +4377,7 @@ export interface components {
       /** Creator Id */
       creator_id?: number | null
       /** Details */
-      details?: {
-        [key: string]: unknown
-      } | null
+      details?: Record<string, unknown> | null
       /** Id */
       id: number
       /** Name */
@@ -4407,9 +4393,7 @@ export interface components {
        */
       published: boolean
       /** Settings */
-      settings?: {
-        [key: string]: unknown
-      }
+      settings?: Record<string, unknown>
       /**
        * Update Date
        * Format: date-time
@@ -4433,9 +4417,7 @@ export interface components {
       /** Chapter Id */
       chapter_id: number
       /** Content */
-      content?: {
-        [key: string]: unknown
-      }
+      content?: Record<string, unknown>
       /** Course Id */
       course_id?: number | null
       /**
@@ -4446,9 +4428,7 @@ export interface components {
       /** Creator Id */
       creator_id?: number | null
       /** Details */
-      details?: {
-        [key: string]: unknown
-      } | null
+      details?: Record<string, unknown> | null
       /** Id */
       id: number
       /** Is Creator */
@@ -4468,9 +4448,7 @@ export interface components {
        */
       published: boolean
       /** Settings */
-      settings?: {
-        [key: string]: unknown
-      }
+      settings?: Record<string, unknown>
       /**
        * Update Date
        * Format: date-time
@@ -4509,21 +4487,15 @@ export interface components {
       activity_sub_type?: components['schemas']['ActivitySubTypeEnum'] | null
       activity_type?: components['schemas']['ActivityTypeEnum'] | null
       /** Content */
-      content?: {
-        [key: string]: unknown
-      } | null
+      content?: Record<string, unknown> | null
       /** Details */
-      details?: {
-        [key: string]: unknown
-      } | null
+      details?: Record<string, unknown> | null
       /** Name */
       name?: string | null
       /** Published */
       published?: boolean | null
       /** Settings */
-      settings?: {
-        [key: string]: unknown
-      } | null
+      settings?: Record<string, unknown> | null
     }
     /** AddPermissionBody */
     AddPermissionBody: {
@@ -4654,9 +4626,7 @@ export interface components {
        */
       confidence_level: 'low' | 'medium' | 'high'
       /** Courses Without Enough Data */
-      courses_without_enough_data: {
-        [key: string]: unknown
-      }[]
+      courses_without_enough_data: Record<string, unknown>[]
       /**
        * Excluded Preview Attempts
        * @default 0
@@ -4729,14 +4699,7 @@ export interface components {
       /** Code */
       code: string
       /** Details */
-      details:
-        | {
-            [key: string]: unknown
-          }
-        | {
-            [key: string]: unknown
-          }[]
-        | null
+      details: Record<string, unknown> | Record<string, unknown>[] | null
       /** Field Errors */
       field_errors: components['schemas']['ApiFieldError'][]
       /** Message */
@@ -4755,9 +4718,7 @@ export interface components {
        * Details
        * @default null
        */
-      details: {
-        [key: string]: unknown
-      } | null
+      details: Record<string, unknown> | null
       /**
        * Field
        * @default null
@@ -5195,9 +5156,7 @@ export interface components {
        */
       allow_late: boolean
       /** Anti Cheat Json */
-      anti_cheat_json?: {
-        [key: string]: unknown
-      }
+      anti_cheat_json?: Record<string, unknown>
       /** Attempts Remaining */
       attempts_remaining?: number | null
       /**
@@ -5211,15 +5170,11 @@ export interface components {
       /** @default IMMEDIATE */
       grade_release_mode: components['schemas']['GradeReleaseMode']
       /** Late Policy */
-      late_policy?: {
-        [key: string]: unknown
-      }
+      late_policy?: Record<string, unknown>
       /** Max Attempts */
       max_attempts?: number | null
       /** Settings Json */
-      settings_json?: {
-        [key: string]: unknown
-      }
+      settings_json?: Record<string, unknown>
       /** Time Limit Seconds */
       time_limit_seconds?: number | null
     }
@@ -5805,9 +5760,7 @@ export interface components {
       /** Recommended Action */
       recommended_action: string
       /** Risk Components */
-      risk_components?: {
-        [key: string]: number
-      }
+      risk_components?: Record<string, number>
       /**
        * Risk Level
        * @enum {string}
@@ -6017,9 +5970,7 @@ export interface components {
     /** BatchPermissionCheckResponse */
     BatchPermissionCheckResponse: {
       /** Results */
-      results: {
-        [key: string]: boolean
-      }
+      results: Record<string, boolean>
     }
     /**
      * BlockRead
@@ -6035,9 +5986,7 @@ export interface components {
       /** Chapter Id */
       chapter_id: number | null
       /** Content */
-      content?: {
-        [key: string]: unknown
-      }
+      content?: Record<string, unknown>
       /** Course Id */
       course_id: number
       /**
@@ -6322,9 +6271,7 @@ export interface components {
     /** CertificationCreate */
     CertificationCreate: {
       /** Config */
-      config?: {
-        [key: string]: unknown
-      }
+      config?: Record<string, unknown>
       /** Course Id */
       course_id: number
       /** Last Known Update Date */
@@ -6340,9 +6287,7 @@ export interface components {
       /** Certification Uuid */
       certification_uuid: string
       /** Config */
-      config: {
-        [key: string]: unknown
-      }
+      config: Record<string, unknown>
       /** Course Id */
       course_id: number
       /**
@@ -6361,9 +6306,7 @@ export interface components {
     /** CertificationUpdate */
     CertificationUpdate: {
       /** Config */
-      config?: {
-        [key: string]: unknown
-      } | null
+      config?: Record<string, unknown> | null
       /** Last Known Update Date */
       last_known_update_date?: string | null
     }
@@ -6619,9 +6562,7 @@ export interface components {
     /** CodeChallengeValidationResponse */
     CodeChallengeValidationResponse: {
       /** Results */
-      results: {
-        [key: string]: components['schemas']['CodeChallengeValidationResult']
-      }
+      results: Record<string, components['schemas']['CodeChallengeValidationResult']>
     }
     /** CodeChallengeValidationResult */
     CodeChallengeValidationResult: {
@@ -6689,9 +6630,7 @@ export interface components {
        */
       prompt: string
       /** Reference Solutions */
-      reference_solutions?: {
-        [key: string]: string
-      }
+      reference_solutions?: Record<string, string>
       /**
        * Scoring Strategy
        * @default PARTIAL_CREDIT
@@ -6699,9 +6638,7 @@ export interface components {
        */
       scoring_strategy: 'PARTIAL_CREDIT' | 'ALL_OR_NOTHING' | 'BEST_SUBMISSION' | 'LATEST_SUBMISSION'
       /** Starter Code */
-      starter_code?: {
-        [key: string]: string
-      }
+      starter_code?: Record<string, string>
       /** Tests */
       tests?: components['schemas']['CodeTestCase'][]
       /** Time Limit Seconds */
@@ -6797,9 +6734,7 @@ export interface components {
     /** CodeRunResult */
     CodeRunResult: {
       /** Details */
-      details?: {
-        [key: string]: unknown
-      }[]
+      details?: Record<string, unknown>[]
       /**
        * Passed
        * @default 0
@@ -7561,9 +7496,7 @@ export interface components {
       user_uuids: string[]
     }
     /** DevConfigResponse */
-    DevConfigResponse: {
-      [key: string]: unknown
-    }
+    DevConfigResponse: Record<string, unknown>
     /** DiscussionLikeRead */
     DiscussionLikeRead: {
       /**
@@ -7611,9 +7544,7 @@ export interface components {
       /** Generated At */
       generated_at: string
       /** Items */
-      items?: {
-        [key: string]: unknown
-      }[]
+      items?: Record<string, unknown>[]
       /**
        * Metric
        * @enum {string}
@@ -7628,11 +7559,7 @@ export interface components {
     /** ErrorModel */
     ErrorModel: {
       /** Detail */
-      detail:
-        | string
-        | {
-            [key: string]: string
-          }
+      detail: string | Record<string, string>
     }
     /** EvidenceCitation */
     EvidenceCitation: {
@@ -8069,9 +7996,7 @@ export interface components {
        */
       kind: 'FORM'
       /** Values */
-      values?: {
-        [key: string]: string
-      }
+      values?: Record<string, string>
     }
     /** FormItemBody */
     FormItemBody: {
@@ -8339,9 +8264,7 @@ export interface components {
     /** HealthStatusResponse */
     HealthStatusResponse: {
       /** Checks */
-      checks: {
-        [key: string]: components['schemas']['JsonObject']
-      }
+      checks: Record<string, components['schemas']['JsonObject']>
       /** Status */
       status: string
     }
@@ -8627,9 +8550,7 @@ export interface components {
      * @enum {string}
      */
     ItemKind: 'CHOICE' | 'OPEN_TEXT' | 'FORM' | 'CODE' | 'MATCHING'
-    JsonObject: {
-      [key: string]: components['schemas']['JsonValue']
-    }
+    JsonObject: Record<string, components['schemas']['JsonValue']>
     JsonValue: unknown
     /** Judge0LanguageRead */
     Judge0LanguageRead: {
@@ -9321,9 +9242,7 @@ export interface components {
       /** Name */
       name: string
       /** Query */
-      query?: {
-        [key: string]: unknown
-      }
+      query?: Record<string, unknown>
       /**
        * View Type
        * @default overview
@@ -9354,9 +9273,7 @@ export interface components {
       /** Name */
       name: string
       /** Query */
-      query: {
-        [key: string]: unknown
-      }
+      query: Record<string, unknown>
       /** Teacher User Id */
       teacher_user_id: number
       /**
@@ -10102,15 +10019,11 @@ export interface components {
       /** Content Health */
       content_health: components['schemas']['ContentHealthRow'][]
       /** Course */
-      course: {
-        [key: string]: number | string
-      }
+      course: Record<string, number | string>
       /** Engagement Trend */
       engagement_trend: components['schemas']['TimeSeriesPoint'][]
       /** Funnels */
-      funnels: {
-        [key: string]: components['schemas']['FunnelStep'][]
-      }
+      funnels: Record<string, components['schemas']['FunnelStep'][]>
       /** Generated At */
       generated_at: string
       summary: components['schemas']['TeacherCourseDetailSummary']
@@ -10237,9 +10150,7 @@ export interface components {
       /** Outcome */
       outcome?: string | null
       /** Payload */
-      payload?: {
-        [key: string]: unknown
-      }
+      payload?: Record<string, unknown>
       /**
        * Status
        * @default completed
@@ -11119,18 +11030,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RootResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11152,27 +11059,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11194,27 +11095,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11236,27 +11131,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11278,27 +11167,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11318,27 +11201,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityReadWithPermissions']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11358,27 +11235,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11402,27 +11273,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11444,27 +11309,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityAIChatSessionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11486,25 +11345,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11526,27 +11379,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ActivityAIChatSessionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11568,25 +11415,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11633,27 +11474,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AdminAnalyticsResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11700,27 +11535,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherAssessmentListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11770,27 +11599,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherAssessmentDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11837,27 +11660,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherCourseListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11906,27 +11723,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherCourseDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -11975,27 +11786,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherCourseDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12047,27 +11852,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DrillThroughResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12114,25 +11913,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12179,25 +11972,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12244,25 +12031,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12309,25 +12090,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12376,27 +12151,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherInterventionListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12447,27 +12216,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherInterventionRow']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12514,27 +12277,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AtRiskLearnersResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12581,27 +12338,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherOverviewResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12648,27 +12399,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SavedAnalyticsViewListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12719,27 +12464,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SavedAnalyticsViewRow']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12788,25 +12527,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12828,27 +12561,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12868,27 +12595,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12910,27 +12631,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['InlineQuizResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12950,27 +12665,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentPolicyPreset']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -12990,27 +12699,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13034,27 +12737,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13074,27 +12771,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAccessRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13118,27 +12809,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAccessRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13161,27 +12846,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAccessUserRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13204,27 +12883,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAccessUserGroupRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13244,27 +12917,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAttemptProjection']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13287,27 +12954,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentAuditTrailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13327,27 +12988,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CodeChallengeValidationResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13367,27 +13022,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentDraftRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13413,27 +13062,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13453,27 +13096,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13493,27 +13130,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ItemAnalytics'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13537,27 +13168,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentReadItem']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13578,27 +13203,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13623,27 +13242,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentReadItem']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13668,27 +13281,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CodeRunResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13710,27 +13317,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CodeRunResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13754,27 +13355,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentReadItem'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13798,27 +13393,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13838,27 +13427,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentSubmissionRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13878,27 +13461,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentPolicyOverrideRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13922,27 +13499,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       201: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentPolicyOverrideRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -13963,27 +13534,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14008,27 +13573,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentPolicyOverrideRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14048,27 +13607,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BulkPublishGradesResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14088,27 +13641,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AssessmentReadiness']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14128,27 +13675,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14176,27 +13717,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ReviewQueueRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14223,25 +13758,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14261,27 +13790,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SubmissionStats']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14302,27 +13825,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14349,27 +13866,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14396,27 +13907,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TeacherSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14445,27 +13950,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14487,27 +13986,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       202: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AuthActionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14527,25 +14020,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       307: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14567,25 +14054,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       307: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14607,27 +14088,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AuthLoginResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14645,16 +14120,12 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14672,18 +14143,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserSession']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14701,18 +14168,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AuthRefreshResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14734,36 +14197,28 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       201: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Bad Request */
       400: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14785,27 +14240,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AuthActionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14823,18 +14272,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AuthSessionRead'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14854,27 +14299,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14896,27 +14335,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14936,27 +14369,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -14978,27 +14405,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15018,27 +14439,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15060,27 +14475,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BlockRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15102,27 +14511,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CertificationRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15142,27 +14545,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PublicCertificateResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15182,27 +14579,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CertificationRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15220,18 +14611,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserCertificateResponse'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15251,27 +14638,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseCertificateResponse'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15291,27 +14672,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CertificationRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15335,27 +14710,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CertificationRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15377,27 +14746,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CertificationDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15419,27 +14782,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15463,27 +14820,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15503,27 +14854,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15543,27 +14888,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15587,27 +14926,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15632,27 +14965,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15676,27 +15003,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChapterRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15714,18 +15035,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['Judge0LanguageRead'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15747,27 +15064,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CollectionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15788,27 +15099,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CollectionReadWithPermissions'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15828,27 +15133,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CollectionReadWithPermissions']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15872,27 +15171,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CollectionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15912,27 +15205,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CollectionDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15954,27 +15241,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -15999,27 +15280,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseReadWithPermissions'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16040,27 +15315,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseReadWithPermissions'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16082,27 +15351,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16122,27 +15385,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16162,27 +15419,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16206,27 +15457,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16251,27 +15496,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentActivityRuntime']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16292,27 +15531,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StudentActivityRuntime']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16332,27 +15565,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseContributorApplicationResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16376,27 +15603,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseBulkContributorResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16420,27 +15641,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseBulkContributorResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16460,27 +15675,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseContributorResponse'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16504,27 +15713,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseContributorMutationResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16551,27 +15754,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseDiscussionReadWithPermissions'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16595,27 +15792,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseDiscussionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16640,27 +15831,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseDiscussionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16681,27 +15866,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DiscussionMessageResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16722,27 +15901,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DiscussionToggleResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16763,27 +15936,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DiscussionToggleResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16804,27 +15971,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DiscussionLikeRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16845,27 +16006,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DiscussionMessageResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16891,27 +16046,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseDiscussionRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16933,27 +16082,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FullCourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -16977,27 +16120,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17017,27 +16154,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseUserRightsResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17061,27 +16192,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17106,27 +16231,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseUpdateRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17147,27 +16266,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseUpdateDeleteResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17187,27 +16300,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseUpdateRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17231,27 +16338,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseUpdateRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17269,18 +16370,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DevConfigResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17302,27 +16399,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17342,27 +16433,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17382,25 +16467,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17420,27 +16499,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionFileUrlResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17460,27 +16533,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17504,27 +16571,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17544,27 +16605,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead'] | null
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17584,27 +16639,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17630,27 +16679,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17670,27 +16713,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17710,27 +16747,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17755,27 +16786,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionReviewQueue']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17799,25 +16824,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17837,25 +16856,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17882,27 +16895,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17928,27 +16935,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['FileSubmissionAttemptRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17966,18 +16967,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['DashboardRead']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -17998,27 +16995,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['LeaderboardRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18034,35 +17025,27 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': {
-          [key: string]: unknown
-        }
+        'application/json': Record<string, unknown>
       }
     }
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ProfileRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18080,18 +17063,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRankRead']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18111,27 +17090,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['StreakUpdateRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18153,27 +17126,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['XPAwardResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18197,27 +17164,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       202: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BulkActionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18237,27 +17198,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BulkPublishGradesResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18277,27 +17232,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BulkActionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18317,27 +17266,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseGradebookResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18360,27 +17303,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['GradebookCursorPage']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18400,25 +17337,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18442,27 +17373,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ItemFeedbackRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18489,27 +17414,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SubmissionListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18531,27 +17450,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BatchGradeResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18571,25 +17484,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18609,27 +17516,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SubmissionStats']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18649,27 +17550,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18696,27 +17591,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SubmissionRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18736,27 +17625,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ItemFeedbackRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18780,27 +17663,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ItemFeedbackRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18822,25 +17699,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18858,18 +17729,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['HealthStatusResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18887,18 +17754,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['HealthStatusResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18916,18 +17779,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['HealthStatusResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18949,27 +17808,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -18990,27 +17843,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PaginatedPlatformUsers']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19030,27 +17877,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19071,27 +17912,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19109,18 +17944,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformRead']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19142,27 +17973,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19184,27 +18009,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PermissionCheckResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19226,27 +18045,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['BatchPermissionCheckResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19264,18 +18077,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserPermissionsResponse']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19297,27 +18106,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleMutationResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19339,27 +18142,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleMutationResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19377,18 +18174,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRoleAssignmentResponse'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19406,18 +18199,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleRead'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19439,27 +18228,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19480,27 +18263,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleAuditListResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19518,18 +18295,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PermissionRead'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19549,27 +18322,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19593,27 +18360,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19633,27 +18394,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19673,27 +18428,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PermissionRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19717,27 +18466,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19758,27 +18501,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleActionResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19798,27 +18535,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['RoleUsersCountResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19840,27 +18571,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['SearchResult']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19882,27 +18607,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['PlatformDetailResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19920,18 +18639,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TrailRead']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19951,27 +18666,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TrailRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -19991,27 +18700,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TrailRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20031,27 +18734,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TrailRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20071,27 +18768,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['TrailRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20113,27 +18804,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['Trail']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20155,27 +18840,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UploadCreateResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20197,27 +18876,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChunkedUploadChunkResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20237,25 +18910,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20277,27 +18944,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChunkedUploadCompleteResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20319,27 +18980,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChunkedUploadInitiateResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20359,27 +19014,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ChunkedUploadStatusResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20399,25 +19048,19 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content?: never
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20437,27 +19080,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UploadRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20481,27 +19118,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UploadRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20521,27 +19152,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UploadUrlResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20559,18 +19184,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserGroupRead'][]
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20592,27 +19213,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserGroupRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20632,27 +19247,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserGroupRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20672,27 +19281,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserGroupRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20716,27 +19319,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserGroupRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20756,27 +19353,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20798,27 +19389,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20840,27 +19425,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20882,27 +19461,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20924,27 +19497,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -20964,27 +19531,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21006,27 +19567,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21050,27 +19605,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21090,27 +19639,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21132,27 +19675,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21174,27 +19711,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21212,18 +19743,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21241,18 +19768,14 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserSession']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21276,27 +19799,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21316,27 +19833,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': string
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21356,27 +19867,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21396,27 +19901,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21440,27 +19939,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['UserRead']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21483,27 +19976,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseRead'][]
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
@@ -21524,27 +20011,21 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['LinkPreviewResponse']
         }
       }
       /** @description Validation Error */
       422: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
       }
       /** @description Внутренняя ошибка сервера */
       500: {
-        headers: {
-          [name: string]: unknown
-        }
+        headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['ApiErrorEnvelope']
         }
