@@ -73,23 +73,9 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
   const [inputValue, setInputValue] = useState('')
   const [runtimeState, setRuntimeState] = useState(createInitialAiRuntimeState)
 
-  // Keep the session UUID in a ref so it survives React Fast Refresh and
-  // Strict-Mode double-mounts without starting a new backend session.
-  const sessionUuidRef = useRef<string | null>(null)
-
   // Store the adapter's abort function so we can cancel in-flight requests.
   const abortRef = useRef<(() => void) | null>(null)
   const resolverQueueRef = useRef<((value: string) => void)[]>([])
-  const pendingIntentRef = useRef<AiIntent>('freeform')
-
-  const getSessionUuid = useCallback(() => sessionUuidRef.current, [sessionUuidRef])
-  const getIntent = useCallback(() => pendingIntentRef.current, [pendingIntentRef])
-  const setSessionUuid = useCallback(
-    (uuid: string | null) => {
-      sessionUuidRef.current = uuid
-    },
-    [sessionUuidRef],
-  )
 
   const adapter = useMemo(
     () =>
@@ -117,13 +103,10 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
             }
           }
         },
-        getSessionUuid,
-        getIntent,
-        setSessionUuid,
       }),
     // Recreate adapter only when the activity changes — access token and
-    // session UUID changes are handled inside the factory via getter/setter.
-    [activityUuid, tStatus, getSessionUuid, getIntent, setSessionUuid],
+    // session UUID changes are handled inside the adapter.
+    [activityUuid, tStatus],
   )
 
   // Keep the abort ref in sync whenever the adapter is recreated.
@@ -164,7 +147,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     },
     onFinish: message => {
       setStatusMessage(null)
-      pendingIntentRef.current = 'freeform'
+      adapter.setIntent('freeform')
       const text = message.parts
         .filter((part): part is TextPart => part.type === 'text')
         .map(part => part.content)
@@ -173,7 +156,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     },
     onError: () => {
       setStatusMessage(null)
-      pendingIntentRef.current = 'freeform'
+      adapter.setIntent('freeform')
       settleNextPendingResponse('')
     },
   })
@@ -196,22 +179,22 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     abort()
     chatStopRef.current()
     chatClearRef.current()
+    adapter.resetSession()
     setStatusMessage(null)
     setInputValue('')
     setRuntimeState(createInitialAiRuntimeState())
-    sessionUuidRef.current = null
 
     while (resolverQueueRef.current.length) {
       resolverQueueRef.current.shift()?.('')
     }
   }, [
     abort,
+    adapter,
     chatStopRef,
     chatClearRef,
     setStatusMessage,
     setInputValue,
     setRuntimeState,
-    sessionUuidRef,
     resolverQueueRef,
   ])
 
@@ -226,12 +209,12 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       }
 
       return new Promise(resolve => {
-        pendingIntentRef.current = intent
+        adapter.setIntent(intent)
         resolverQueueRef.current.push(resolve)
         chatSendMessageRef.current(message)
       })
     },
-    [pendingIntentRef, resolverQueueRef, chatSendMessageRef],
+    [adapter, resolverQueueRef, chatSendMessageRef],
   )
 
   const sendIntentMessage = useCallback(
@@ -239,10 +222,10 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       if (!message.trim()) {
         return
       }
-      pendingIntentRef.current = intent
+      adapter.setIntent(intent)
       void chatSendMessageRef.current(message)
     },
-    [pendingIntentRef, chatSendMessageRef],
+    [adapter, chatSendMessageRef],
   )
 
   useEffect(() => {

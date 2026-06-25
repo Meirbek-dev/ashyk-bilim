@@ -2,8 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TeacherCourseRow } from '@/types/analytics'
-import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import AnalyticsDataTable from './AnalyticsDataTable'
+import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
@@ -23,7 +23,7 @@ type EnhancedTeacherCourseRow = TeacherCourseRow & {
 
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
-  const columns: ColumnDef<StockFeatures, TeacherCourseRow>[] = [
+  const columns: DataTableColumnDef<TeacherCourseRow>[] = [
     {
       accessorKey: 'course_name',
       header: t('courseHealth.colCourse'),

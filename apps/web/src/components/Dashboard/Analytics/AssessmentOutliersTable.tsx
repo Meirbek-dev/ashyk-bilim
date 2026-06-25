@@ -3,8 +3,8 @@
 import { getAnalyticsAssessmentTypeLabel, getAnalyticsReasonCodeLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AssessmentOutlierRow } from '@/types/analytics'
-import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import AnalyticsDataTable from './AnalyticsDataTable'
+import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
@@ -24,7 +24,7 @@ type EnhancedAssessmentOutlierRow = AssessmentOutlierRow & {
 
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
-  const columns: ColumnDef<StockFeatures, AssessmentOutlierRow>[] = [
+  const columns: DataTableColumnDef<AssessmentOutlierRow>[] = [
     {
       accessorKey: 'title',
       header: t('assessmentOutliers.colAssessment'),

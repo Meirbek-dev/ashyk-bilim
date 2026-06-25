@@ -44,10 +44,10 @@ import { useCallback, useMemo, useOptimistic, useState, useTransition } from 're
 import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
-import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 import DataTable from '@/components/ui/data-table'
+import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
 import { Input } from '@/components/ui/input'
@@ -407,7 +407,7 @@ const CoursesHome = ({
       </div>
     ) : null
 
-  const columns = useMemo<ColumnDef<StockFeatures, ManageableCourse>[]>(
+  const columns = useMemo<DataTableColumnDef<ManageableCourse>[]>(
     () => [
       {
         id: 'select',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { reportClientError } from '@/services/telemetry/client'
 
@@ -231,5 +231,8 @@ export function useAssessmentAttempt<T = unknown>({
     // Run once on mount only.
   }, [getRecoverableData])
 
-  return { saveAnswers, clearSavedAnswers, getRecoverableData }
+  return useMemo(
+    () => ({ saveAnswers, clearSavedAnswers, getRecoverableData }),
+    [clearSavedAnswers, getRecoverableData, saveAnswers],
+  )
 }

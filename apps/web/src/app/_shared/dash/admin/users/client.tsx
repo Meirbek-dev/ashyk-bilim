@@ -30,11 +30,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useSession } from '@/hooks/useSession'
 import { getUserAvatarMediaDirectory } from '@/services/media/media'
 import { useCallback, useMemo, useState } from 'react'
-import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Skeleton } from '@/components/ui/skeleton'
 import DataTable from '@/components/ui/data-table'
+import type { DataTableColumnDef } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -117,7 +117,7 @@ export default function UserRolesClient() {
     }
   }
 
-  const columns = useMemo<ColumnDef<StockFeatures, UserRoleAssignment>[]>(
+  const columns = useMemo<DataTableColumnDef<UserRoleAssignment>[]>(
     () => [
       {
         accessorFn: assignment =>

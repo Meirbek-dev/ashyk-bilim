@@ -2,12 +2,14 @@ import { ReactScan } from '@/components/providers/ReactScan'
 import { ThemeScript } from '@/components/providers/theme-script'
 import { defaultLocale } from '@/i18n/config'
 import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
+import { getPublicConfig } from '@/services/config/env'
 import {
   THEME_FONT_FAMILIES_ATTRIBUTE,
   THEME_FONT_LINK_ATTRIBUTE,
   getThemeFontStylesheetHref,
   resolveThemeFontFamilies,
 } from '@/lib/theme-fonts'
+import type { Metadata } from 'next'
 import type { CSSProperties } from 'react'
 import { Suspense } from 'react'
 
@@ -24,6 +26,10 @@ function getThemeStyle(theme: ReturnType<typeof getTheme>): CSSProperties {
 const initialTheme = getTheme(DEFAULT_THEME_NAME, DEFAULT_THEME_MODE)
 const initialThemeFontHref = getThemeFontStylesheetHref(initialTheme.tokens)
 const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens)
+
+export const metadata: Metadata = {
+  metadataBase: new URL(getPublicConfig().siteUrl),
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

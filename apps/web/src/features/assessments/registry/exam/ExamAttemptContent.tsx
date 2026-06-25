@@ -361,37 +361,44 @@ function ExamTakingContent({
     }
   }, [])
 
-  const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
-    attemptUuid: attempt.submission_uuid,
-    autoSaveInterval: 5000,
-    expirationHours: 24,
-    storageKeyPrefix: 'exam_answers_',
-    validate: (answers: unknown): boolean => {
-      if (!answers || typeof answers !== 'object') return false
-      const record = answers as Record<string, unknown>
-      for (const key of Object.keys(record)) {
-        const ans = record[key]
-        if (!ans || typeof ans !== 'object') return false
-        const itemAnswer = ans as Record<string, unknown>
-        const kind = itemAnswer.kind
-        if (typeof kind !== 'string' || !['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
-          return false
-        }
-        if (kind === 'CHOICE' && !Array.isArray(itemAnswer.selected)) return false
-        if (kind === 'OPEN_TEXT' && typeof itemAnswer.text !== 'string') return false
-        if (kind === 'FORM' && (!itemAnswer.values || typeof itemAnswer.values !== 'object')) return false
-        if (kind === 'CODE' && (typeof itemAnswer.language !== 'number' || typeof itemAnswer.source !== 'string'))
-          return false
-        if (kind === 'MATCHING' && !Array.isArray(itemAnswer.matches)) return false
+  const validateRecoveredAnswers = useCallback((answers: unknown): boolean => {
+    if (!answers || typeof answers !== 'object') return false
+    const record = answers as Record<string, unknown>
+    for (const key of Object.keys(record)) {
+      const ans = record[key]
+      if (!ans || typeof ans !== 'object') return false
+      const itemAnswer = ans as Record<string, unknown>
+      const kind = itemAnswer.kind
+      if (typeof kind !== 'string' || !['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
+        return false
       }
-      return true
-    },
-    onRestore: recovered => {
+      if (kind === 'CHOICE' && !Array.isArray(itemAnswer.selected)) return false
+      if (kind === 'OPEN_TEXT' && typeof itemAnswer.text !== 'string') return false
+      if (kind === 'FORM' && (!itemAnswer.values || typeof itemAnswer.values !== 'object')) return false
+      if (kind === 'CODE' && (typeof itemAnswer.language !== 'number' || typeof itemAnswer.source !== 'string'))
+        return false
+      if (kind === 'MATCHING' && !Array.isArray(itemAnswer.matches)) return false
+    }
+    return true
+  }, [])
+
+  const handleRestoreAnswers = useCallback(
+    (recovered: Record<string, ItemAnswer>) => {
       if (Object.keys(submissionState.answers).length === 0 && Object.keys(recovered).length > 0) {
         setRecoveredAnswers(recovered)
         setShowRecoveryDialog(true)
       }
     },
+    [submissionState.answers],
+  )
+
+  const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
+    attemptUuid: attempt.submission_uuid,
+    autoSaveInterval: 5000,
+    expirationHours: 24,
+    storageKeyPrefix: 'exam_answers_',
+    validate: validateRecoveredAnswers,
+    onRestore: handleRestoreAnswers,
   })
 
   const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions])

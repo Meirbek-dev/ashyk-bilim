@@ -83,7 +83,8 @@ export interface AttemptShellRegistration {
 // ── Context & registration hook ───────────────────────────────────────────────
 
 interface ActionBarContextValue {
-  registerControls: (controls: AttemptShellRegistration) => () => void
+  registerControls: (controls: AttemptShellRegistration) => void
+  resetControls: () => void
 }
 
 export const ActionBarContext = createContext<ActionBarContextValue | null>(null)
@@ -105,11 +106,15 @@ const DEFAULT_CONTROLS: Required<
  */
 export function useAttemptShellControls(controls: AttemptShellRegistration): void {
   const context = useContext(ActionBarContext)
-  const stableControls = useStableAttemptShellRegistration(controls)
+
+  useEffect(() => {
+    context?.registerControls(controls)
+  }, [context, controls])
+
   useEffect(() => {
     if (!context) return
-    return context.registerControls(stableControls)
-  }, [context, stableControls])
+    return context.resetControls
+  }, [context])
 }
 
 /** Returns the current registered controls. For use inside AssessmentLayout only. */
@@ -117,13 +122,20 @@ export function useActionBarState() {
   const [controls, setControls] = useState<AttemptShellRegistration>(DEFAULT_CONTROLS)
 
   const registerControls = useCallback((nextControls: AttemptShellRegistration) => {
-    setControls(current => ({ ...current, ...nextControls }))
-    return () => {
-      setControls(DEFAULT_CONTROLS)
-    }
+    setControls(current => {
+      const mergedControls = { ...current, ...nextControls }
+      return areAttemptShellRegistrationsEqual(current, mergedControls) ? current : mergedControls
+    })
   }, [])
 
-  const contextValue = useMemo<ActionBarContextValue>(() => ({ registerControls }), [registerControls])
+  const resetControls = useCallback(() => {
+    setControls(current => (areAttemptShellRegistrationsEqual(current, DEFAULT_CONTROLS) ? current : DEFAULT_CONTROLS))
+  }, [])
+
+  const contextValue = useMemo<ActionBarContextValue>(
+    () => ({ registerControls, resetControls }),
+    [registerControls, resetControls],
+  )
 
   return { controls, contextValue }
 }
@@ -250,18 +262,6 @@ export function SaveStateBadge({ state, status }: { state: AttemptSaveState; sta
       {t('saveStateSaved')}
     </Badge>
   )
-}
-
-function useStableAttemptShellRegistration(controls: AttemptShellRegistration): AttemptShellRegistration {
-  const [stableControls, setStableControls] = useState(controls)
-
-  const hasChanged = !areAttemptShellRegistrationsEqual(stableControls, controls)
-  if (hasChanged) {
-    setStableControls(controls)
-    return controls
-  }
-
-  return stableControls
 }
 
 function areAttemptShellRegistrationsEqual(left: AttemptShellRegistration, right: AttemptShellRegistration): boolean {

@@ -245,14 +245,13 @@ function readActiveLocale(): string | null {
 interface ActivityChatAdapterOptions {
   activityUuid: string
   getStatusMessage: (status: string) => string | null
-  getIntent?: () => string | null
   /**
    * Provides the current session UUID from an external store (e.g. a React
    * ref in ActivityAIChatProvider) so it survives provider remounts.
    */
   getSessionUuid?: () => string | null
   /** Persists the session UUID after the backend returns it. */
-  setSessionUuid?: (uuid: string) => void
+  setSessionUuid?: (uuid: string | null) => void
 }
 
 export interface ActivityChatAdapter {
@@ -260,6 +259,10 @@ export interface ActivityChatAdapter {
   connection: ReturnType<typeof stream>
   /** Aborts the current in-flight request (no-op if idle). */
   abort: () => void
+  /** Sets the intent for the next request. */
+  setIntent: (intent: string | null) => void
+  /** Clears the current backend session UUID. */
+  resetSession: () => void
 }
 
 /**
@@ -275,7 +278,6 @@ export interface ActivityChatAdapter {
 export function createActivityChatAdapter({
   activityUuid,
   getStatusMessage,
-  getIntent,
   getSessionUuid,
   setSessionUuid,
 }: ActivityChatAdapterOptions): ActivityChatAdapter {
@@ -284,7 +286,7 @@ export function createActivityChatAdapter({
   let _localSessionUuid: string | null = null
 
   const readUuid = (): string | null => (getSessionUuid ? getSessionUuid() : _localSessionUuid)
-  const writeUuid = (uuid: string) => {
+  const writeUuid = (uuid: string | null) => {
     if (setSessionUuid) {
       setSessionUuid(uuid)
     } else {
@@ -296,6 +298,13 @@ export function createActivityChatAdapter({
   let currentController: AbortController | null = null
 
   const abort = () => currentController?.abort()
+  let currentIntent: string | null = null
+  const setIntent = (intent: string | null) => {
+    currentIntent = intent
+  }
+  const resetSession = () => {
+    writeUuid(null)
+  }
 
   // Cast the factory to the parameter type expected by `stream()` so that
   // TypeScript does not try to unify our yield-inferred Zod objectOutputType
@@ -316,7 +325,7 @@ export function createActivityChatAdapter({
 
     // Route to the correct endpoint based on whether we have an active session.
     const sessionUuid = readUuid()
-    const intent = getIntent?.() ?? undefined
+    const intent = currentIntent ?? undefined
     const url = sessionUuid ? 'ai/send/activity_chat_message_stream' : 'ai/start/activity_chat_session_stream'
     const body = sessionUuid
       ? { aichat_uuid: sessionUuid, message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
@@ -600,5 +609,5 @@ export function createActivityChatAdapter({
     }
   } as Parameters<typeof stream>[0])
 
-  return { connection, abort }
+  return { connection, abort, setIntent, resetSession }
 }
