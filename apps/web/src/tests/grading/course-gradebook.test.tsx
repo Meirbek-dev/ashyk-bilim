@@ -10,6 +10,10 @@ const navigationMocks = vi.hoisted(() => ({
   replace: vi.fn(),
   searchParams: new URLSearchParams(),
 }))
+const gradingQueryMocks = vi.hoisted(() => ({
+  courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
+  courseGradebookExportUrl: vi.fn(() => '/api/grading/courses/course_gradebook/gradebook/export'),
+}))
 
 let gradebook: CourseGradebookResponse
 let queryState: {
@@ -25,7 +29,8 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
-  courseGradebookQueryOptions: vi.fn(() => ({ queryKey: ['gradebook'] })),
+  courseGradebookExportUrl: gradingQueryMocks.courseGradebookExportUrl,
+  courseGradebookQueryOptions: gradingQueryMocks.courseGradebookQueryOptions,
 }))
 
 vi.mock('@/features/assessments/registry', () => ({
@@ -185,6 +190,8 @@ describe('CourseGradebookCommandCenter', () => {
     navigationMocks.push.mockClear()
     navigationMocks.replace.mockClear()
     navigationMocks.searchParams = new URLSearchParams()
+    gradingQueryMocks.courseGradebookQueryOptions.mockClear()
+    gradingQueryMocks.courseGradebookExportUrl.mockClear()
   })
 
   it('renders matrix statuses from canonical activity progress cells', () => {
@@ -201,6 +208,22 @@ describe('CourseGradebookCommandCenter', () => {
     expect(within(table).getByText('states.returned')).toBeInTheDocument()
   })
 
+  it('requests a server-paginated gradebook using URL filters', () => {
+    navigationMocks.searchParams = new URLSearchParams(
+      'search=student&activityType=TYPE_DYNAMIC&filter=returned&page=2',
+    )
+
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    expect(gradingQueryMocks.courseGradebookQueryOptions).toHaveBeenCalledWith('course_gradebook', {
+      activityType: 'TYPE_DYNAMIC',
+      page: 2,
+      pageSize: 100,
+      savedFilter: 'returned',
+      search: 'student',
+    })
+  })
+
   it('filters learners by saved progress filters', () => {
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
@@ -213,6 +236,30 @@ describe('CourseGradebookCommandCenter', () => {
       '/dash/courses/course_gradebook/gradebook?filter=not_started',
       { scroll: false },
     )
+  })
+
+  it('updates the URL when moving between server pages', () => {
+    gradebook = {
+      ...gradebook,
+      page_info: {
+        page: 1,
+        page_size: 1,
+        total_students: 2,
+        total_activities: 2,
+        has_previous: false,
+        has_next: true,
+        activity_types: ['TYPE_DYNAMIC', 'TYPE_FILE_SUBMISSION'],
+      },
+    }
+    queryState.data = gradebook
+
+    render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'nextPage' }))
+
+    expect(navigationMocks.replace).toHaveBeenCalledWith('/dash/courses/course_gradebook/gradebook?page=2', {
+      scroll: false,
+    })
   })
 
   it('opens the shared review workspace from a clicked matrix cell', () => {

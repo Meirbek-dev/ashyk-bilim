@@ -1,6 +1,13 @@
 """Canonical quiz/exam item grading logic."""
 
-from src.db.assessments import ChoiceItemAnswer, ChoiceItemBody, MatchingItemAnswer, MatchingItemBody
+from src.db.assessments import (
+    ChoiceItemAnswer,
+    ChoiceItemBody,
+    FormItemBody,
+    MatchingItemAnswer,
+    MatchingItemBody,
+    OpenTextItemBody,
+)
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem
 from src.types.narrowing import as_json_value
@@ -27,13 +34,14 @@ def grade_canonical_choice_items(
     max_score: float = 100.0,
     negative_marking_percent: float = 0.0,
 ) -> tuple[float, GradingBreakdown]:
-    """Grade canonical CHOICE and MATCHING items from answers[item_uuid]."""
+    """Grade canonical CHOICE/MATCHING items and preserve manual-review items."""
     gradable_items = [item for item in items if isinstance(item.body, (ChoiceItemBody, MatchingItemBody))]
-    if not gradable_items:
+    manual_items = [item for item in items if isinstance(item.body, (OpenTextItemBody, FormItemBody))]
+    if not gradable_items and not manual_items:
         return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
-    total_defined_points = sum(float(item.max_score or 0) for item in gradable_items)
-    points_per_item = None if total_defined_points > 0 else max_score / len(gradable_items)
+    total_defined_points = sum(float(item.max_score or 0) for item in items)
+    points_per_item = None if total_defined_points > 0 else max_score / len(items)
 
     total_score = 0.0
     breakdown_items: list[GradedItem] = []
@@ -52,10 +60,34 @@ def grade_canonical_choice_items(
         total_score += graded.score
         breakdown_items.append(graded)
 
+    for item in manual_items:
+        item_points = (
+            (float(item.max_score or 0) / total_defined_points) * max_score
+            if total_defined_points > 0
+            else (points_per_item or 0.0)
+        )
+        breakdown_items.append(_manual_review_item(item, answers_by_item_uuid.get(item.item_uuid), item_points))
+
     return round(total_score, 2), GradingBreakdown(
         items=breakdown_items,
-        needs_manual_review=False,
+        needs_manual_review=bool(manual_items),
         auto_graded=True,
+    )
+
+
+def _manual_review_item(item: CanonicalAssessmentItem, raw_answer: object, points: float) -> GradedItem:
+    body = item.body
+    assert isinstance(body, (OpenTextItemBody, FormItemBody))
+    return GradedItem(
+        item_id=item.item_uuid,
+        item_text=item.title or body.prompt,
+        score=0.0,
+        max_score=round(points, 2),
+        correct=None,
+        feedback="",
+        needs_manual_review=True,
+        user_answer=as_json_value(raw_answer, field=f"answer:{item.item_uuid}"),
+        correct_answer=None,
     )
 
 

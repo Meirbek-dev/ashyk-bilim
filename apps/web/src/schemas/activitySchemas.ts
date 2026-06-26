@@ -15,7 +15,12 @@ export const activitySubTypeEnum = v.picklist([
   'SUBTYPE_VIDEO_YOUTUBE',
   'SUBTYPE_VIDEO_HOSTED',
   'SUBTYPE_DOCUMENT_PDF',
+  'SUBTYPE_DOCUMENT_DOC',
+  'SUBTYPE_EXAM_STANDARD',
+  'SUBTYPE_CODE_GENERAL',
+  'SUBTYPE_CODE_COMPETITIVE',
   'SUBTYPE_FILE_SUBMISSION_STANDARD',
+  'SUBTYPE_CUSTOM',
 ] as const)
 
 const activityCreateSchema = v.object({

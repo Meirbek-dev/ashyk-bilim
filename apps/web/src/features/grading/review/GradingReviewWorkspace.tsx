@@ -44,19 +44,6 @@ export default function GradingReviewWorkspace({
   const [search, setSearch] = useState(searchFromUrl)
   const [sortBy, setSortBy] = useState(sortFromUrl)
 
-  const [prevFilterFromUrl, setPrevFilterFromUrl] = useState(filterFromUrl)
-  const [prevSearchFromUrl, setPrevSearchFromUrl] = useState(searchFromUrl)
-  const [prevSortFromUrl, setPrevSortFromUrl] = useState(sortFromUrl)
-
-  if (filterFromUrl !== prevFilterFromUrl || searchFromUrl !== prevSearchFromUrl || sortFromUrl !== prevSortFromUrl) {
-    setPrevFilterFromUrl(filterFromUrl)
-    setPrevSearchFromUrl(searchFromUrl)
-    setPrevSortFromUrl(sortFromUrl)
-    setActiveFilter(filterFromUrl)
-    setSearch(searchFromUrl)
-    setSortBy(sortFromUrl)
-  }
-
   const updateUrl = useCallback(
     (updates: Partial<{ filter: StatusFilter; sort: string; q: string }>) => {
       const next = new URLSearchParams(searchParams.toString())
@@ -79,12 +66,6 @@ export default function GradingReviewWorkspace({
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null)
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())
 
-  const [prevInitialSubmissionUuid, setPrevInitialSubmissionUuid] = useState(initialSubmissionUuid)
-  if (initialSubmissionUuid !== prevInitialSubmissionUuid) {
-    setPrevInitialSubmissionUuid(initialSubmissionUuid)
-    setSelectedUuid(initialSubmissionUuid ?? null)
-  }
-
   const submissionOptions = {
     activityId,
     assessmentUuid: assessmentUuid ?? null,
@@ -100,20 +81,19 @@ export default function GradingReviewWorkspace({
   const hasSubmissions = submissions.length > 0
   const firstSubmissionUuid = submissions[0]?.submission_uuid ?? null
   const isSelectedUuidValid = selectedUuid && submissions.some(s => s.submission_uuid === selectedUuid)
-  const shouldSelectDefault =
+  const effectiveSelectedUuid =
     hasSubmissions && (!selectedUuid || (!isSelectedUuidValid && selectedUuid !== initialSubmissionUuid))
+      ? firstSubmissionUuid
+      : selectedUuid
 
-  if (shouldSelectDefault) {
-    setSelectedUuid(firstSubmissionUuid)
-  }
-
-  const selectedSubmission = submissions.find(submission => submission.submission_uuid === selectedUuid) ?? null
+  const selectedSubmission =
+    submissions.find(submission => submission.submission_uuid === effectiveSelectedUuid) ?? null
   const selectedSubmissions = useMemo(
     () => submissions.filter(submission => selectedUuids.has(submission.submission_uuid)),
     [selectedUuids, submissions],
   )
-  const selectedIndex = selectedUuid
-    ? submissions.findIndex(submission => submission.submission_uuid === selectedUuid)
+  const selectedIndex = effectiveSelectedUuid
+    ? submissions.findIndex(submission => submission.submission_uuid === effectiveSelectedUuid)
     : -1
 
   const refresh = useCallback(async () => {
@@ -184,7 +164,7 @@ export default function GradingReviewWorkspace({
           search={search}
           sortBy={sortBy}
           isLoading={isLoading}
-          selectedUuid={selectedUuid}
+          selectedUuid={effectiveSelectedUuid}
           selectedUuids={selectedUuids}
           onFilterChange={value => {
             setActiveFilter(value)
@@ -213,14 +193,14 @@ export default function GradingReviewWorkspace({
           }
         />
         <SubmissionInspector
-          selectedUuid={selectedUuid}
+          selectedUuid={effectiveSelectedUuid}
           fallbackSubmission={selectedSubmission}
           {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
           {...(activityUuid !== undefined ? { activityUuid } : {})}
           {...(kindModule?.ReviewDetail ? { ReviewDetail: kindModule.ReviewDetail } : {})}
         />
         <GradeForm
-          submissionUuid={selectedUuid}
+          submissionUuid={effectiveSelectedUuid}
           onSaved={refresh}
           navigation={navigation}
           {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}

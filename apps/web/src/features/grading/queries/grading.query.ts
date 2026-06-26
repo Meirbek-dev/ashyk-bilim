@@ -10,6 +10,7 @@ import type {
 } from '@/features/grading/domain'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+import { getAPIUrl } from '@services/config/config'
 
 export interface SubmissionListQueryParams {
   assessmentUuid: string
@@ -19,6 +20,14 @@ export interface SubmissionListQueryParams {
   sortBy: string
   sortDir: 'asc' | 'desc'
   status: SubmissionStatus | 'NEEDS_GRADING' | 'ALL'
+}
+
+export interface CourseGradebookQueryParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  activityType?: string
+  savedFilter?: string
 }
 
 function buildSubmissionsSearchParams(params: SubmissionListQueryParams) {
@@ -40,12 +49,28 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
   })
 }
 
-export function courseGradebookQueryOptions(courseUuid: string) {
+function buildCourseGradebookSearchParams(params?: CourseGradebookQueryParams) {
+  const searchParams = new URLSearchParams()
+  if (params?.page) searchParams.set('page', String(params.page))
+  if (params?.pageSize) searchParams.set('page_size', String(params.pageSize))
+  if (params?.search) searchParams.set('search', params.search)
+  if (params?.activityType && params.activityType !== 'all') searchParams.set('activity_type', params.activityType)
+  if (params?.savedFilter && params.savedFilter !== 'all') searchParams.set('saved_filter', params.savedFilter)
+  return searchParams.toString()
+}
+
+export function courseGradebookQueryOptions(courseUuid: string, params?: CourseGradebookQueryParams) {
+  const query = buildCourseGradebookSearchParams(params)
   return queryOptions({
-    queryKey: queryKeys.grading.gradebook(courseUuid),
-    queryFn: () => apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook`),
+    queryKey: [...queryKeys.grading.gradebook(courseUuid), params ?? {}] as const,
+    queryFn: () =>
+      apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
     staleTime: 5000,
   })
+}
+
+export function courseGradebookExportUrl(courseUuid: string) {
+  return `${getAPIUrl()}grading/courses/${courseUuid}/gradebook/export`
 }
 
 export function submissionStatsQueryOptions(assessmentUuid: string) {

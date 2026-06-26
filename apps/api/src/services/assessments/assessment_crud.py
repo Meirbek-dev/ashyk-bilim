@@ -77,8 +77,8 @@ logger = logging.getLogger(__name__)
 _SCORING_FIELDS: frozenset[str] = frozenset({"body", "body_json", "kind", "max_score"})
 
 _SUPPORTED_ITEM_KINDS_BY_ASSESSMENT: dict[AssessmentType, frozenset[ItemKind]] = {
-    AssessmentType.EXAM: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
-    AssessmentType.QUIZ: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
+    AssessmentType.EXAM: frozenset({ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}),
+    AssessmentType.QUIZ: frozenset({ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}),
     AssessmentType.CODE_CHALLENGE: frozenset({ItemKind.CODE}),
 }
 

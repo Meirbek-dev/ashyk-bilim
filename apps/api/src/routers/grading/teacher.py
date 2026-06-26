@@ -35,7 +35,7 @@ from src.services.grading.bulk import (
     create_deadline_extension_action,
     get_bulk_action,
 )
-from src.services.grading.gradebook import get_course_gradebook
+from src.services.grading.gradebook import export_course_gradebook_csv, get_course_gradebook
 from src.services.grading.gradebook_cursor import (
     GradebookCursorPage,
     get_gradebook_cursor,
@@ -58,12 +58,42 @@ async def api_get_course_gradebook(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
+    page: Annotated[int | None, Query(ge=1)] = None,
+    page_size: Annotated[int | None, Query(ge=1, le=500)] = None,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    activity_type: Annotated[str | None, Query()] = None,
+    saved_filter: Annotated[str | None, Query()] = None,
 ) -> CourseGradebookResponse:
     """Return the teacher's course-level gradebook matrix."""
     return await get_course_gradebook(
         course_uuid=course_uuid,
         current_user=current_user,
         db_session=db_session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        activity_type=activity_type,
+        saved_filter=saved_filter,
+    )
+
+
+@router.get("/courses/{course_uuid}/gradebook/export", response_class=StreamingResponse)
+async def api_export_course_gradebook_csv(
+    course_uuid: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> StreamingResponse:
+    """Export the full course gradebook matrix as CSV."""
+    data = await get_course_gradebook(
+        course_uuid=course_uuid,
+        current_user=current_user,
+        db_session=db_session,
+    )
+    filename = f"course-gradebook-{data.course_uuid}.csv"
+    return StreamingResponse(
+        export_course_gradebook_csv(data),
+        media_type="text/csv",
+        headers={"Content-Disposition": get_content_disposition_header(filename)},
     )
 
 

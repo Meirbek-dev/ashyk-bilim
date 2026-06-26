@@ -1473,9 +1473,9 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
 
 def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
     if kind == AssessmentType.EXAM:
-        return {ItemKind.CHOICE, ItemKind.MATCHING}
+        return {ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}
     if kind == AssessmentType.QUIZ:
-        return {ItemKind.CHOICE, ItemKind.MATCHING}
+        return {ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}
     return None
 
 
