@@ -66,7 +66,7 @@ Use YAML or JSON specs when configuration should live outside Python code.
 
 ```yaml
 model: anthropic:claude-opus-4-6
-instructions: 'You are helping {{user_name}} with research.'
+instructions: "You are helping {{user_name}} with research."
 capabilities:
   - WebSearch
   - Thinking:

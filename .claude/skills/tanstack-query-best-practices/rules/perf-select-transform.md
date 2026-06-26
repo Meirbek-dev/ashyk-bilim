@@ -18,8 +18,8 @@ function CompletedTodos() {
 
   // This filtering runs on every render
   const completedTodos = todos?.filter(todo => todo.completed) ?? []
-  const sortedTodos = [...completedTodos].sort(
-    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
+  const sortedTodos = [...completedTodos].sort((a, b) =>
+    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   )
 
   return <TodoList todos={sortedTodos} />
@@ -34,10 +34,12 @@ function CompletedTodos() {
   const { data: completedTodos } = useQuery({
     queryKey: ['todos'],
     queryFn: fetchTodos,
-    select: todos =>
+    select: (todos) =>
       todos
         .filter(todo => todo.completed)
-        .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()),
+        .sort((a, b) =>
+          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+        ),
   })
 
   return <TodoList todos={completedTodos ?? []} />
@@ -52,19 +54,19 @@ function TodoStats() {
   const { data: stats } = useQuery({
     queryKey: ['todos'],
     queryFn: fetchTodos,
-    select: todos => ({
+    select: (todos) => ({
       total: todos.length,
       completed: todos.filter(t => t.completed).length,
       pending: todos.filter(t => !t.completed).length,
-      completionRate: todos.length ? (todos.filter(t => t.completed).length / todos.length) * 100 : 0,
+      completionRate: todos.length
+        ? (todos.filter(t => t.completed).length / todos.length) * 100
+        : 0,
     }),
   })
 
   return (
     <div>
-      <span>
-        {stats?.completed} / {stats?.total} completed
-      </span>
+      <span>{stats?.completed} / {stats?.total} completed</span>
       <span>({stats?.completionRate.toFixed(1)}%)</span>
     </div>
   )
@@ -87,7 +89,7 @@ function FilteredTodos({ status }: { status: 'all' | 'active' | 'completed' }) {
           return todos
       }
     },
-    [status],
+    [status]
   )
 
   const { data: filteredTodos } = useQuery({
@@ -108,7 +110,7 @@ function useTodoById(id: number) {
   return useQuery({
     queryKey: ['todos'],
     queryFn: fetchTodos,
-    select: todos => todos.find(todo => todo.id === id),
+    select: (todos) => todos.find(todo => todo.id === id),
   })
 }
 
@@ -123,14 +125,14 @@ function TodoDetail({ id }: { id: number }) {
 
 ## When to Use Select
 
-| Scenario                            | Use Select?           |
-| ----------------------------------- | --------------------- |
-| Filtering list data                 | Yes                   |
-| Sorting data                        | Yes                   |
-| Computing derived values            | Yes                   |
-| Picking single item from list       | Yes                   |
-| Heavy transformations               | Yes (memoized)        |
-| Simple data pass-through            | No                    |
+| Scenario | Use Select? |
+|----------|-------------|
+| Filtering list data | Yes |
+| Sorting data | Yes |
+| Computing derived values | Yes |
+| Picking single item from list | Yes |
+| Heavy transformations | Yes (memoized) |
+| Simple data pass-through | No |
 | Transformation needs external state | Yes, with useCallback |
 
 ## Context

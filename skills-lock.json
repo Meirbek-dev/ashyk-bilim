@@ -5,13 +5,7 @@
       "source": "pydantic/skills",
       "sourceType": "github",
       "skillPath": "skills/building-pydantic-ai-agents/SKILL.md",
-      "computedHash": "5032918eefe713212272ae8c1c835545b4e5d2e612f68897dc3dd784bf958780"
-    },
-    "caveman": {
-      "source": "juliusbrussee/caveman",
-      "sourceType": "github",
-      "skillPath": "skills/caveman/SKILL.md",
-      "computedHash": "b0e7741886c0c32270cedc1a2fc21c2879d90964d3ce00f24952de7064613404"
+      "computedHash": "c570b062ad72a4cb2241669eeaa1a46f8929873e4fd6b6f70f7e4ed9c2c5af10"
     },
     "design-taste-frontend": {
       "source": "leonxlnx/taste-skill",
@@ -113,7 +107,7 @@
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
-      "computedHash": "c7ddcc95cc869b281b766df85bef629acf655bfb516cb32647d5b8215cab2f4e"
+      "computedHash": "20c0ed05adb01fde3db5bb1aeefd61d33db2471bdadfd9c9ce19d30dd54a12fd"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

@@ -18,7 +18,7 @@ function UserProfiles({ userIds }: { userIds: string[] }) {
     async function fetchAll() {
       const results = []
       for (const id of userIds) {
-        const user = await fetchUser(id) // Sequential!
+        const user = await fetchUser(id)  // Sequential!
         results.push(user)
       }
       setUsers(results)
@@ -33,12 +33,10 @@ function UserProfiles({ userIds }: { userIds: string[] }) {
 // Multiple useQuery calls - breaks rules of hooks
 function UserProfiles({ userIds }: { userIds: string[] }) {
   // Can't call hooks in a loop!
-  const queries = userIds.map(id =>
-    useQuery({
-      queryKey: ['user', id],
-      queryFn: () => fetchUser(id),
-    }),
-  )
+  const queries = userIds.map(id => useQuery({
+    queryKey: ['user', id],
+    queryFn: () => fetchUser(id),
+  }))
 }
 ```
 
@@ -83,7 +81,7 @@ function UserProfiles({ userIds }: { userIds: string[] }) {
       queryFn: () => fetchUser(id),
     })),
     // Combine results into single value
-    combine: results => ({
+    combine: (results) => ({
       data: results.map(r => r.data).filter(Boolean),
       isPending: results.some(r => r.isPending),
       isError: results.some(r => r.isError),
@@ -116,7 +114,7 @@ function PostsWithAuthors({ postIds }: { postIds: string[] }) {
     queries: authorIds.map(id => ({
       queryKey: ['users', id],
       queryFn: () => fetchUser(id),
-      enabled: posts.length > 0, // Wait for posts
+      enabled: posts.length > 0,  // Wait for posts
     })),
   })
 
