@@ -1,34 +1,5 @@
 {
   "Activities": {
-    "AIActivityAsk": {
-      "AI": "Ashyk Ai",
-      "aiSender": "Ashyk Ai",
-      "askAI": "Ashyk Ai-дан сұрау",
-      "closePanel": "Ashyk Ai панелін жабу",
-      "copy": "Көшіру",
-      "copied": "Көшірілді!",
-      "errorTitle": "Бірдеңе дұрыс болмады",
-      "examplesAbbr": "мысал.",
-      "hello": "Сәлеметсіз бе",
-      "howCanWeHelp": "қалай көмектесе аламын?",
-      "logoAlt": "Ashyk Ai логотипі",
-      "placeholder": "Осы дәріс туралы Ashyk Ai-дан сұраңыз",
-      "defaultUser": "Пайдаланушы",
-      "dismiss": "Жабу",
-      "questionAbout": "Бұл белсенділік не туралы?",
-      "questionExamples": "Осы белсенділікті практикалық мысалдармен түсіндіріңіз",
-      "questionFlashcards": "Осы белсенділік бойынша флеш-карталар жасаңыз",
-      "stopGeneration": "Генерацияны тоқтату",
-      "usernameComma": "{username},"
-    },
-    "AIStatus": {
-      "aborted": "Сұрау тоқтатылды.",
-      "analyzing": "Сұрағыңызды қосымша іздеусіз талдап жатырмыз.",
-      "generating": "Жауапты құрастырып жатырмыз.",
-      "processing": "Сұрағыңызды дайындап жатырмыз.",
-      "retrieving": "Курс контекстін іздеп жатырмыз.",
-      "working": "Сұрағыңызды өңдеп жатырмыз."
-    },
     "AiAssistantPanel": {
       "title": "ЖИ ассистенті",
       "suggestedPrompts": "Ұсынылатын сұраулар",
@@ -82,64 +53,6 @@
           "guidance": "Әрі қарай не істеу керектігі туралы нұсқау беріңіз"
         }
       }
-    },
-    "AICanvaToolkit": {
-      "aiIconAlt": "Ashyk Ai белгішесі",
-      "aiTitle": "Ashyk Ai",
-      "examplesAbbr": "Мыс.",
-      "examplesLabel": "Мысалдар",
-      "examplesPrompt": "Егер мүмкін болса, \\\"{selection}\\\" жақсырақ түсіну үшін мысалдар келтіріңіз, курс контексін ескере отырып.",
-      "examplesTooltip": "ЖИ көмегімен жақсырақ түсіну үшін мысалдар келтіріңіз",
-      "explainLabel": "Түсіндіру",
-      "explainPrompt": "Курс контексін ескере отырып, курстың осы бөлігін \\\"{selection}\\\" түсіндіріңіз.",
-      "explainTooltip": "Сөзді немесе сөйлемді ЖИ көмегімен түсіндіріңіз",
-      "summarizeLabel": "Қорытындылау",
-      "summarizePrompt": "Курс контексін ескере отырып, \\\"{selection}\\\" қорытындылаңыз.",
-      "summarizeTooltip": "Ұзын абзацты немесе мәтінді ЖИ көмегімен қорытындылаңыз",
-      "translateLabel": "Аудару",
-      "translatePrompt": "\\\"{selection}\\\" басқа тілге аударыңыз.",
-      "translateTooltip": "ЖИ көмегімен әртүрлі тілдерге аударыңыз"
-    },
-    "AIEditorToolkit": {
-      "ContinueWritingLabel": "Жазуды жалғастыру",
-      "CritisizeLabel": "Сын айту",
-      "GenerateQuizLabel": "Тест жасау",
-      "MakeLongerLabel": "Ұзарту",
-      "TranslateLabel": "Аудару",
-      "WriterLabel": "Жазушы",
-      "aiEditorTitle": "Ashyk Ai Редактор",
-      "aiIconAlt": "Ashyk Ai белгішесі",
-      "applicationPending": "Қатысушы өтініші қаралуда",
-      "applyToContribute": "Қатысуға өтініш беру",
-      "askAI": "Ashyk Ai-дан сұрау",
-      "closeToolkit": "Ashyk Ai құралдарын жабу",
-      "continuePlaceholder": "Жазуды жалғастыру үшін курсорды сөйлемнің соңына қойыңыз",
-      "critisizeLectureMissing": "Лекция бос, алдымен мәтін қосыңыз",
-      "critisizePlaceholder": "Мәтінді таңдаңыз немесе лекцияны толық сынаңыз",
-      "critisizeScopeLabel": "Сын бағыты",
-      "critisizeScopeLecture": "Толық лекция",
-      "critisizeScopeSelection": "Таңдалған мәтін",
-      "critisizeSelectionMissing": "Сын айту үшін абзацты таңдаңыз",
-      "dismissError": "Қатені жабу",
-      "errorTitle": "Бірдеңе дұрыс болмады",
-      "longerPlaceholder": "Ұзарту үшін мәтінді таңдаңыз",
-      "appLogoAlt": "Ashyk Bilim логотипі",
-      "processingRequest": "Сұранысыңызды өңдеп жатыр",
-      "prompt_continueWriting": "{selection} туралы жазуды жалғастыру",
-      "prompt_critisize": "Осы лекция бөлігін сынап, жақсарту ұсыныстарын бер: {selection}",
-      "prompt_critisizeLecture": "Бұл лекцияны тұтас сынап, жақсартулар ұсын: {selection}",
-      "prompt_makeLonger": "Бұл мәтінді ұзарту: {selection}",
-      "prompt_translateTo": "{language} тіліне аудару: {selection}",
-      "prompt_writer": "{selection} туралы жазу",
-      "sendMessage": "Хабарлама жіберу",
-      "thinking": "Ойланып жатыр...",
-      "translateExample": "Жапон, араб, неміс және т.б.",
-      "translatePlaceholder": "Таңдалған мәтінді мынаған аудару",
-      "translateToLanguageMissing": "Аудару үшін тілді енгізіңіз",
-      "typePromptBelow": "Сұрауыңызды төменде теріңіз",
-      "userInputPlaceholder": "Ashyk Ai-дан сұрау",
-      "stop": "Тоқтату",
-      "writerPlaceholder": "Мынау туралы жазу..."
     },
     "AiStudio": {
       "shellAriaLabel": "ЖИ оқыту студиясы",
@@ -4426,7 +4339,6 @@
         "searchEmojis": "Эмодзи іздеу..."
       },
       "Editor": {
-        "aiEditor": "Ashyk Ai Редактор",
         "mobileMessage1": "Редактор тек жұмыс үстелі құрылғысында қол жетімді.",
         "mobileMessage2": "Көру үшін жұмыс үстелі құрылғысына ауысыңыз.",
         "mobileTitle": "Тек жұмыс үстеліне арналған",
@@ -4642,7 +4554,6 @@
       "Toolbar": {
         "addColumnRight": "Оң жаққа баған қосу",
         "addRowBelow": "Төменге жол қосу",
-        "aiEditor": "Ashyk Ai редакторы",
         "aria": {
           "insertInteractiveScenarios": "Интерактивті сценарийлерді енгізу"
         },
@@ -10118,7 +10029,6 @@
   },
   "activity": "Белсенділік",
   "additionalSettings": "Қосымша параметрлер",
-  "aiEditor": "Ashyk Ai редакторы",
   "calendar": {
     "monthDropdown": "Ай",
     "next": "Келесі",

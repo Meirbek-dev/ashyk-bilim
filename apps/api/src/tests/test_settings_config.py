@@ -34,11 +34,9 @@ def test_secret_values_are_masked_in_model_dump(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("PLATFORM_SQL_CONNECTION_STRING", "sqlite://")
     monkeypatch.setenv("PLATFORM_REDIS_CONNECTION_STRING", "redis://localhost:6379/0")
     monkeypatch.setenv("PLATFORM_JWT_SECRET", "test-secret-at-least-32-bytes")
-    monkeypatch.setenv("PLATFORM_OPENAI_API_KEY", "sk-test-secret")
     reload_platform_config_cache()
 
     settings = get_settings()
     dumped = settings.model_dump()
 
     assert dumped["security_config"]["jwt_secret"] != "test-secret-at-least-32-bytes"
-    assert dumped["ai_config"]["openai_api_key"] != "sk-test-secret"

@@ -1,34 +1,5 @@
 {
   "Activities": {
-    "AIActivityAsk": {
-      "AI": "Ashyk Ai",
-      "aiSender": "Ashyk Ai",
-      "askAI": "Ask Ashyk Ai",
-      "closePanel": "Close Ashyk Ai panel",
-      "copy": "Copy",
-      "copied": "Copied!",
-      "errorTitle": "Something went wrong",
-      "examplesAbbr": "Ex.",
-      "hello": "Hello",
-      "howCanWeHelp": "how can I help?",
-      "logoAlt": "Ashyk Ai Logo",
-      "placeholder": "Ask Ashyk Ai About this Lecture",
-      "defaultUser": "User",
-      "dismiss": "Dismiss",
-      "questionAbout": "What is this Activity about?",
-      "questionExamples": "Explain this Activity in practical examples",
-      "questionFlashcards": "Generate flashcards about this Activity",
-      "stopGeneration": "Stop generation",
-      "usernameComma": "{username},"
-    },
-    "AIStatus": {
-      "aborted": "Request cancelled.",
-      "analyzing": "Analyzing your request without additional retrieval.",
-      "generating": "Generating the response.",
-      "processing": "Preparing your request.",
-      "retrieving": "Retrieving relevant course context.",
-      "working": "Working on your request."
-    },
     "AiAssistantPanel": {
       "title": "AI Assistant",
       "suggestedPrompts": "Suggested prompts",
@@ -82,64 +53,6 @@
           "guidance": "Give me guidance on how to approach this"
         }
       }
-    },
-    "AICanvaToolkit": {
-      "aiIconAlt": "Ashyk Ai Icon",
-      "aiTitle": "Ashyk Ai",
-      "examplesAbbr": "Ex",
-      "examplesLabel": "Examples",
-      "examplesPrompt": "Give examples to understand \\\"{selection}\\\" better, if possible give context in the course.",
-      "examplesTooltip": "Give examples to understand better with AI",
-      "explainLabel": "Explain",
-      "explainPrompt": "Explain this part of the course \\\"{selection}\\\" keep this course context in mind.",
-      "explainTooltip": "Explain a word or a sentence with AI",
-      "summarizeLabel": "Summarize",
-      "summarizePrompt": "Summarize this \\\"{selection}\\\" with the course context in mind.",
-      "summarizeTooltip": "Summarize a long paragraph or text with AI",
-      "translateLabel": "Translate",
-      "translatePrompt": "Translate \\\"{selection}\\\" to another language.",
-      "translateTooltip": "Translate to different languages with AI"
-    },
-    "AIEditorToolkit": {
-      "ContinueWritingLabel": "Continue Writing",
-      "CritisizeLabel": "Criticize",
-      "GenerateQuizLabel": "Generate Quiz",
-      "MakeLongerLabel": "Make Longer",
-      "TranslateLabel": "Translate",
-      "WriterLabel": "Writer",
-      "aiEditorTitle": "Ashyk Ai Editor",
-      "aiIconAlt": "Ashyk Ai Icon",
-      "applicationPending": "Contributor application pending",
-      "applyToContribute": "Apply to contribute",
-      "askAI": "Ask Ashyk Ai",
-      "closeToolkit": "Close Ashyk Ai toolkit",
-      "continuePlaceholder": "Place your cursor at the end of a sentence to continue writing",
-      "critisizeLectureMissing": "Lecture is empty, add some content first",
-      "critisizePlaceholder": "Select a passage or critique the entire lecture",
-      "critisizeScopeLabel": "Critique scope",
-      "critisizeScopeLecture": "Whole lecture",
-      "critisizeScopeSelection": "Selected text",
-      "critisizeSelectionMissing": "Select a paragraph to critique",
-      "dismissError": "Dismiss error",
-      "errorTitle": "Something wrong happened",
-      "longerPlaceholder": "Select text to make longer",
-      "appLogoAlt": "Ashyk Bilim logo",
-      "processingRequest": "Processing your request",
-      "prompt_continueWriting": "Continue writing about {selection}",
-      "prompt_critisize": "Critique this lecture section and suggest improvements: {selection}",
-      "prompt_critisizeLecture": "Critique this lecture overall and suggest improvements: {selection}",
-      "prompt_makeLonger": "Make this text longer: {selection}",
-      "prompt_translateTo": "Translate to {language}: {selection}",
-      "prompt_writer": "Write about {selection}",
-      "sendMessage": "Send message",
-      "thinking": "Thinking...",
-      "translateExample": "Japanese, Arabic, German, etc.",
-      "translatePlaceholder": "Translate selected text to",
-      "translateToLanguageMissing": "Please enter a language to translate to",
-      "typePromptBelow": "Type your prompt below",
-      "userInputPlaceholder": "Ask Ashyk Ai",
-      "stop": "Stop",
-      "writerPlaceholder": "Write about..."
     },
     "AiStudio": {
       "shellAriaLabel": "AI Learning Studio",
@@ -4408,7 +4321,6 @@
         "searchEmojis": "Search emojis..."
       },
       "Editor": {
-        "aiEditor": "Ashyk Ai Editor",
         "mobileMessage1": "The editor is only accessible from a desktop device.",
         "mobileMessage2": "Please switch to a desktop to view.",
         "mobileTitle": "Desktop Only",
@@ -4624,7 +4536,6 @@
       "Toolbar": {
         "addColumnRight": "Add column right",
         "addRowBelow": "Add row below",
-        "aiEditor": "Ashyk Ai Editor",
         "aria": {
           "insertInteractiveScenarios": "Insert interactive scenarios"
         },
@@ -9930,7 +9841,6 @@
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",
-  "aiEditor": "Ashyk Ai Editor",
   "calendar": {
     "monthDropdown": "Month",
     "next": "Next",

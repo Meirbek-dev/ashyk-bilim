@@ -167,13 +167,13 @@ describe('EditorToolbar accessibility (Requirement 12.1)', () => {
   })
 
   it('renders a toolbar element with role="toolbar"', () => {
-    render(<EditorToolbar onAIToggle={vi.fn()} />)
+    render(<EditorToolbar />)
     const toolbar = screen.getByRole('toolbar')
     expect(toolbar).toBeInTheDocument()
   })
 
   it('has a non-empty aria-label on the toolbar element', () => {
-    render(<EditorToolbar onAIToggle={vi.fn()} />)
+    render(<EditorToolbar />)
     const toolbar = screen.getByRole('toolbar')
     const label = toolbar.getAttribute('aria-label')
     expect(label).toBeTruthy()

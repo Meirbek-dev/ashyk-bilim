@@ -1,6 +1,5 @@
 'use client'
 
-import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { Tiptap } from '@tiptap/react'
@@ -10,40 +9,29 @@ import { EditorToolbar } from '../Toolbar/EditorToolbar'
 import { BubbleToolbar } from '../menus/BubbleToolbar'
 import { FloatingPlusButton } from '../menus/FloatingPlusButton'
 import { SlashCommandMenu } from '../Toolbar/SlashCommandMenu'
-import AIEditorToolkit from '../AI/AIEditorToolkit'
 import { EditorHeader, EditorShell } from '../chrome'
 import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
 
 // ── EditorCore ────────────────────────────────────────────────────────────────
 // Owns the editor instance and the <Tiptap> tree. Does NOT receive saveState
-// or isAIOpen as props so that changes to those values in the parent do not
-// cause EditorCore to re-render (Requirement 2.1).
+// or overlay state as props so parent updates do not cause EditorCore to
+// re-render (Requirement 2.1).
 
 interface EditorCoreProps {
   activity: ActivityRef
   content: unknown
   onUpdate: (json: object) => void
-  onAIToggle: () => void
 }
 
-function EditorCore({ activity, content, onUpdate, onAIToggle }: EditorCoreProps) {
+function EditorCore({ activity, content, onUpdate }: EditorCoreProps) {
   const closeEmbedPanel = useEmbedPanelStore(s => s.close)
-
-  // isAIOpen is managed inside EditorCore so that toggling it does not cause
-  // the parent (AuthoringEditor) to re-render the editor subtree (Requirement 2.1).
-  const [isAIOpen, setIsAIOpen] = useState(false)
-  const handleAIToggle = useCallback(() => {
-    setIsAIOpen(prev => !prev)
-    onAIToggle()
-  }, [onAIToggle])
-  const handleAIClose = useCallback(() => setIsAIOpen(false), [])
 
   // Close the embed panel when EditorCore unmounts (Requirement 2.1 / design cleanup).
   useEffect(() => {
@@ -89,7 +77,7 @@ function EditorCore({ activity, content, onUpdate, onAIToggle }: EditorCoreProps
       {/* Sticky toolbar */}
       <div className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
         <div className="px-3">
-          <EditorToolbar onAIToggle={handleAIToggle} />
+          <EditorToolbar />
         </div>
       </div>
 
@@ -117,11 +105,6 @@ function EditorCore({ activity, content, onUpdate, onAIToggle }: EditorCoreProps
           <Tiptap.Content />
         </div>
       </div>
-
-      {/* AIEditorToolkit is inside the <Tiptap> tree so it can access the editor
-          via useTiptap() (Requirement 1.5). isAIOpen is managed in EditorCore
-          so parent state changes don't re-render this subtree (Requirement 2.1). */}
-      <AIEditorToolkit activity={activity} isOpen={isAIOpen} onClose={handleAIClose} />
 
       {/* EmbedPanel is inside the <Tiptap> tree so it can access the editor via
           useTiptap(). It reads open state from EmbedPanelStore and has no props.
@@ -159,24 +142,12 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
     latestContentRef.current = props.content
   }, [props.content])
 
-  // onAIToggle is a stable no-op passed to EditorCore. EditorCore manages its
-  // own isAIOpen state internally so that toggling the AI panel does not cause
-  // AuthoringEditor to re-render the editor subtree (Requirement 2.1).
-  const onAIToggle = useCallback(() => {}, [])
-
   const onContentChange = useEffectEvent(props.onContentChange)
 
   const handleContentChange = (content: unknown) => {
     latestContentRef.current = content
     onContentChange(content)
   }
-
-  const getContextSnapshot = useCallback(() => {
-    const content = latestContentRef.current
-    return content && typeof content === 'object' && !Array.isArray(content)
-      ? (content as Record<string, unknown>)
-      : null
-  }, [])
 
   function handleContentSave() {
     props.setContent(latestContentRef.current)
@@ -185,30 +156,22 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   return (
     <DesktopOnlyGuard title={t('mobileTitle')} description={t('mobileMessage1')} supportingText={t('mobileMessage2')}>
       <CourseProvider courseuuid={props.course.course_uuid}>
-        <ActivityAIChatProvider activityUuid={props.activity.activity_uuid} getContextSnapshot={getContextSnapshot}>
-          <EditorOptionsProvider options={{ isEditable: true, mode: 'authoring' }}>
-            <EditorShell>
-              {/* Header — receives saveState from parent; does not affect EditorCore */}
-              <EditorHeader
-                courseName={props.course.name}
-                activityName={props.activity.name ?? ''}
-                courseUuid={courseUuid}
-                activityUuid={activityUuid}
-                saveState={props.saveState}
-                onSave={handleContentSave}
-              />
+        <EditorOptionsProvider options={{ isEditable: true, mode: 'authoring' }}>
+          <EditorShell>
+            {/* Header receives saveState from parent; it does not affect EditorCore. */}
+            <EditorHeader
+              courseName={props.course.name}
+              activityName={props.activity.name ?? ''}
+              courseUuid={courseUuid}
+              activityUuid={activityUuid}
+              saveState={props.saveState}
+              onSave={handleContentSave}
+            />
 
-              {/* EditorCore owns the editor instance and <Tiptap> tree.
-                  It does NOT receive saveState or isAIOpen (Requirement 2.1). */}
-              <EditorCore
-                activity={props.activity}
-                content={props.content}
-                onUpdate={handleContentChange}
-                onAIToggle={onAIToggle}
-              />
-            </EditorShell>
-          </EditorOptionsProvider>
-        </ActivityAIChatProvider>
+            {/* EditorCore owns the editor instance and <Tiptap> tree. */}
+            <EditorCore activity={props.activity} content={props.content} onUpdate={handleContentChange} />
+          </EditorShell>
+        </EditorOptionsProvider>
       </CourseProvider>
     </DesktopOnlyGuard>
   )

@@ -98,28 +98,3 @@ async def upload_reaper_tick() -> dict[str, int]:
         raise
 
 
-@broker.task(
-    task_name="scheduler:vector_ttl_sweep",
-    retry_on_error=True,
-    max_retries=1,
-    schedule=[{"cron": "0 * * * *", "schedule_id": "vector-ttl-sweep"}],
-)
-async def vector_ttl_sweep_tick() -> int:
-    """Remove expired AI document chunks past their retention window."""
-    from src.infra.settings import get_settings
-
-    settings = get_settings()
-    retention = settings.ai_config.collection_retention
-
-    try:
-        from src.services.ai.retrieval import delete_expired_chunks
-
-        removed: int = await asyncio.to_thread(delete_expired_chunks, retention)
-        if removed == -1:
-            logger.warning("vector_ttl_sweep skipped: table not found")
-        elif removed:
-            logger.info("vector_ttl_sweep removed=%d chunks", removed)
-        return removed
-    except Exception:
-        logger.exception("vector_ttl_sweep_tick failed")
-        raise

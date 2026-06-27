@@ -125,140 +125,6 @@ class SecurityConfig(PlatformSectionSettings):
         return stripped
 
 
-class AIConfig(PlatformSectionSettings):
-    """All AI-related configuration in one flat class.
-
-    Fields with no ``validation_alias`` use hardcoded defaults and are not
-    configurable via environment variables (intentional — they are tuning
-    knobs that rarely need to change per deployment).
-    """
-
-    openai_api_key: SecretStr | None = Field(
-        default=None,
-        validation_alias="PLATFORM_OPENAI_API_KEY",
-    )
-    openrouter_api_key: SecretStr | None = Field(
-        default=None,
-        validation_alias="PLATFORM_OPENROUTER_API_KEY",
-    )
-    openrouter_base_url: str = Field(
-        default="https://openrouter.ai/api/v1",
-        validation_alias="PLATFORM_OPENROUTER_BASE_URL",
-    )
-    app_url: str = Field(
-        default="https://cs-mooc.tou.edu.kz",
-        validation_alias="PLATFORM_APP_URL",
-    )
-    app_name: str = Field(
-        default="Ashyq Bilim",
-        validation_alias="PLATFORM_APP_NAME",
-    )
-    chat_model: str = Field(
-        default="gpt-5.4-nano",
-        validation_alias="PLATFORM_AI_CHAT_MODEL",
-    )
-    embedding_model: str = Field(
-        default="text-embedding-3-small",
-        validation_alias="PLATFORM_AI_EMBEDDING_MODEL",
-    )
-    moderation_enabled: bool = Field(
-        default=True,
-        validation_alias="PLATFORM_AI_MODERATION_ENABLED",
-    )
-    moderation_model: str = Field(
-        default="omni-moderation-latest",
-        validation_alias="PLATFORM_AI_MODERATION_MODEL",
-    )
-    embedding_dimensions: int = Field(
-        default=512,
-        validation_alias="PLATFORM_AI_EMBEDDING_DIMENSIONS",
-    )
-
-    # Performance
-    streaming_enabled: bool = Field(
-        default=True,
-        validation_alias="PLATFORM_AI_STREAMING_ENABLED",
-    )
-    max_concurrent_requests: int = Field(
-        default=50,
-        validation_alias="PLATFORM_AI_MAX_CONCURRENT_REQUESTS",
-    )
-    request_timeout: int = Field(
-        default=120,
-        validation_alias="PLATFORM_AI_REQUEST_TIMEOUT",
-    )
-    max_output_tokens: int = Field(
-        default=4000,
-        validation_alias="PLATFORM_AI_MAX_OUTPUT_TOKENS",
-    )
-
-    # Cache TTLs (seconds)
-    retrieval_cache_ttl: int = Field(
-        default=3600,
-        validation_alias="PLATFORM_AI_RETRIEVAL_CACHE_TTL",
-    )
-    response_cache_ttl: int = Field(
-        default=1800,
-        validation_alias="PLATFORM_AI_RESPONSE_CACHE_TTL",
-    )
-    embedding_cache_ttl: int = Field(
-        default=7200,
-        validation_alias="PLATFORM_AI_EMBEDDING_CACHE_TTL",
-    )
-
-    # Vector store
-    collection_retention: int = Field(
-        default=86400,
-        validation_alias="PLATFORM_AI_COLLECTION_RETENTION",
-    )
-    embedding_batch_size: int = Field(
-        default=128,
-        validation_alias="PLATFORM_AI_EMBEDDING_BATCH_SIZE",
-    )
-    embedding_batch_max_tokens: int = Field(
-        default=250_000,
-        validation_alias="PLATFORM_AI_EMBEDDING_BATCH_MAX_TOKENS",
-    )
-    retrieval_top_k: int = Field(
-        default=5,
-        validation_alias="PLATFORM_AI_RETRIEVAL_TOP_K",
-    )
-
-    # Chat history
-    history_window_size: int = Field(
-        default=10,
-        validation_alias="PLATFORM_AI_HISTORY_WINDOW_SIZE",
-    )
-    max_history_length: int = Field(
-        default=100,
-        validation_alias="PLATFORM_AI_MAX_HISTORY_LENGTH",
-    )
-    message_retention: int = Field(
-        default=86400,
-        validation_alias="PLATFORM_AI_MESSAGE_RETENTION",
-    )
-    chunk_size: int = Field(
-        default=1000,
-        validation_alias="PLATFORM_AI_CHUNK_SIZE",
-    )
-    chunk_overlap: int = Field(
-        default=200,
-        validation_alias="PLATFORM_AI_CHUNK_OVERLAP",
-    )
-
-    @field_validator(
-        "openai_api_key",
-        "openrouter_api_key",
-        "chat_model",
-        "embedding_model",
-        "moderation_model",
-        mode="before",
-    )
-    @classmethod
-    def normalize_optional_ai_strings(cls, value: SecretStr | str | None) -> str | None:
-        return _strip_optional_string(value)
-
-
 class HostingConfig(PlatformSectionSettings):
     domain: str = Field(validation_alias="PLATFORM_DOMAIN")
     ssl: bool = Field(default=False, validation_alias="PLATFORM_SSL")
@@ -574,7 +440,6 @@ class PlatformConfig(PydanticStrictBaseModel):
     database_config: DatabaseConfig
     redis_config: RedisConfig
     security_config: SecurityConfig
-    ai_config: AIConfig
     mailing_config: MailingConfig
 
     @model_validator(mode="after")
@@ -616,7 +481,6 @@ def get_settings() -> AppSettings:
         database_config=DatabaseConfig(),  # pyright: ignore[reportCallIssue]
         redis_config=RedisConfig(),  # pyright: ignore[reportCallIssue]
         security_config=SecurityConfig(),  # pyright: ignore[reportCallIssue]
-        ai_config=AIConfig(),
         mailing_config=MailingConfig(),
         bootstrap=BootstrapConfig(),
         integrations=IntegrationsConfig(judge0=Judge0Config()),

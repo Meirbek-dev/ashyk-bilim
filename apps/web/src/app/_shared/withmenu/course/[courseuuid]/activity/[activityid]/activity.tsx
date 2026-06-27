@@ -1,8 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
-import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import StudentActivityWorkspace from '@/features/student-activity/shell/StudentActivityWorkspace'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
@@ -19,28 +17,20 @@ interface ActivityClientProps {
 
 export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
   const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
-  const getContextSnapshot = useCallback(() => {
-    const content = activity?.content
-    return content && typeof content === 'object' && !Array.isArray(content)
-      ? (content as Record<string, unknown>)
-      : null
-  }, [activity])
 
   return (
     <CourseProvider courseuuid={course.course_uuid}>
-      <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''} getContextSnapshot={getContextSnapshot}>
-        <ActivityLayoutProvider>
-          <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={resolvedRuntime}>
-            <ActivityContentRenderer
-              activity={activity}
-              canView={resolvedRuntime.permissions.can_view}
-              course={course}
-              courseuuid={courseuuid}
-              isCourseEnd={activityid === 'end'}
-            />
-          </StudentActivityWorkspace>
-        </ActivityLayoutProvider>
-      </ActivityAIChatProvider>
+      <ActivityLayoutProvider>
+        <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={resolvedRuntime}>
+          <ActivityContentRenderer
+            activity={activity}
+            canView={resolvedRuntime.permissions.can_view}
+            course={course}
+            courseuuid={courseuuid}
+            isCourseEnd={activityid === 'end'}
+          />
+        </StudentActivityWorkspace>
+      </ActivityLayoutProvider>
     </CourseProvider>
   )
 }

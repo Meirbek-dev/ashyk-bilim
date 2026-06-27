@@ -167,13 +167,6 @@ async def update_activity(
     db_session.commit()
     db_session.refresh(activity)
 
-    try:
-        from src.services.ai.cache_manager import get_ai_cache_manager
-
-        get_ai_cache_manager().invalidate_activity_cache(activity_uuid)
-    except Exception as inv_err:
-        logger.warning("AI cache invalidation failed for %s: %s", activity_uuid, inv_err)
-
     return ActivityRead.model_validate(activity)
 
 
@@ -296,13 +289,6 @@ async def delete_activity(
 
     db_session.delete(activity)
     db_session.commit()
-
-    try:
-        from src.services.ai.cache_manager import get_ai_cache_manager
-
-        get_ai_cache_manager().invalidate_activity_cache(activity_uuid)
-    except Exception as inv_err:
-        logger.warning("AI cache invalidation failed for %s: %s", activity_uuid, inv_err)
 
     return {"detail": "Activity deleted"}
 

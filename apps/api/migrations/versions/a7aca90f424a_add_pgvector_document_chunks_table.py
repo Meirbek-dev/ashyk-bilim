@@ -16,7 +16,7 @@ down_revision: str | None = "t9u0v1w2x3y4"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# Dimension must match PLATFORM_AI_EMBEDDING_DIMENSIONS (default 512).
+# Historical embedding dimension used by the removed legacy AI runtime.
 # To change the dimension: drop and recreate the table with a new migration.
 _VECTOR_DIMS = 512
 

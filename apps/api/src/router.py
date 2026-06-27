@@ -19,7 +19,6 @@ from src.routers import (
     usergroups,
     users,
 )
-from src.routers.ai import ai
 from src.routers.assessments import unified as assessment_unified
 from src.routers.courses import (
     certifications,
@@ -96,8 +95,6 @@ v1_router.include_router(
 v1_router.include_router(grading_teacher_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_feedback_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_sse_router, prefix="/grading", tags=["grading"])
-
-v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 
 # Dev routes
 v1_router.include_router(

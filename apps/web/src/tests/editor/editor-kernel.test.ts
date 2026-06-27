@@ -12,7 +12,6 @@ describe('editor kernel', () => {
     expect(getEditorPresetDefinition('authoring')).toMatchObject({
       mode: 'authoring',
       isEditable: true,
-      supportsAI: true,
       requiresActivity: true,
     })
     expect(getEditorPresetDefinition('interactive')).toMatchObject({

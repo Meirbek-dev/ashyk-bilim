@@ -1,34 +1,5 @@
 {
   "Activities": {
-    "AIActivityAsk": {
-      "AI": "Ashyk Ai",
-      "aiSender": "Ashyk Ai",
-      "askAI": "Спросить Ashyk Ai",
-      "closePanel": "Закрыть панель Ashyk Ai",
-      "copy": "Копировать",
-      "copied": "Скопировано!",
-      "errorTitle": "Что-то пошло не так",
-      "examplesAbbr": "пр. ",
-      "hello": "Здравствуйте",
-      "howCanWeHelp": "чем могу помочь?",
-      "logoAlt": "Логотип Ashyk Ai",
-      "placeholder": "Спросите Ashyk Ai об этой лекции",
-      "defaultUser": "Пользователь",
-      "dismiss": "Закрыть",
-      "questionAbout": "О чём эта активность?",
-      "questionExamples": "Объясните эту активность на практических примерах",
-      "questionFlashcards": "Создайте карточки по этой активности",
-      "stopGeneration": "Остановить генерацию",
-      "usernameComma": "{username},"
-    },
-    "AIStatus": {
-      "aborted": "Запрос отменён.",
-      "analyzing": "Анализируем ваш запрос без дополнительного поиска.",
-      "generating": "Формируем ответ.",
-      "processing": "Подготавливаем ваш запрос.",
-      "retrieving": "Подбираем релевантный контекст курса.",
-      "working": "Обрабатываем ваш запрос."
-    },
     "AiAssistantPanel": {
       "title": "Ассистент ИИ",
       "suggestedPrompts": "Рекомендуемые запросы",
@@ -82,64 +53,6 @@
           "guidance": "Дайте мне рекомендации о том, как действовать"
         }
       }
-    },
-    "AICanvaToolkit": {
-      "aiIconAlt": "Иконка Ashyk Ai",
-      "aiTitle": "Ashyk Ai",
-      "examplesAbbr": "Пр. ",
-      "examplesLabel": "Примеры",
-      "examplesPrompt": "Приведите примеры, чтобы лучше понять \\\"{selection}\\\", если возможно, приведите контекст курса.",
-      "examplesTooltip": "Приведите примеры для лучшего понимания с помощью ИИ",
-      "explainLabel": "Объяснить",
-      "explainPrompt": "Объясните эту часть курса \\\"{selection}\\\", учитывая контекст курса.",
-      "explainTooltip": "Объясните слово или предложение с помощью ИИ",
-      "summarizeLabel": "Суммировать",
-      "summarizePrompt": "Суммируйте \\\"{selection}\\\", с учетом контекста курса.",
-      "summarizeTooltip": "Суммируйте длинный абзац или текст с помощью ИИ",
-      "translateLabel": "Перевести",
-      "translatePrompt": "Перевести \\\"{selection}\\\" на другой язык.",
-      "translateTooltip": "Переводите на разные языки с помощью ИИ"
-    },
-    "AIEditorToolkit": {
-      "ContinueWritingLabel": "Продолжить писать",
-      "CritisizeLabel": "Критика",
-      "GenerateQuizLabel": "Создать квиз",
-      "MakeLongerLabel": "Удлинить",
-      "TranslateLabel": "Перевести",
-      "WriterLabel": "Писатель",
-      "aiEditorTitle": "Ashyk Ai",
-      "aiIconAlt": "Иконка Ashyk Ai",
-      "applicationPending": "Заявка участника на рассмотрении",
-      "applyToContribute": "Подать заявку на участие",
-      "askAI": "Спросить Ashyk Ai",
-      "closeToolkit": "Закрыть инструменты Ashyk Ai",
-      "continuePlaceholder": "Поместите курсор в конец предложения, чтобы продолжить писать",
-      "critisizeLectureMissing": "Лекция пустая, добавьте контент",
-      "critisizePlaceholder": "Выберите часть лекции или критикуйте всю лекцию",
-      "critisizeScopeLabel": "Что критиковать",
-      "critisizeScopeLecture": "Вся лекция",
-      "critisizeScopeSelection": "Выделенный текст",
-      "critisizeSelectionMissing": "Выберите абзац для критики",
-      "dismissError": "Закрыть ошибку",
-      "errorTitle": "Что-то пошло не так",
-      "longerPlaceholder": "Выберите текст, чтобы сделать его длиннее",
-      "appLogoAlt": "Логотип",
-      "processingRequest": "Обрабатываю ваш запрос",
-      "prompt_continueWriting": "Продолжить писать о {selection}",
-      "prompt_critisize": "Раскритикуй этот фрагмент лекции и предложи улучшения: {selection}",
-      "prompt_critisizeLecture": "Раскритикуй лекцию целиком и предложи улучшения: {selection}",
-      "prompt_makeLonger": "Удлинить этот текст: {selection}",
-      "prompt_translateTo": "Перевести на {language}: {selection}",
-      "prompt_writer": "Написать о {selection}",
-      "sendMessage": "Отправить сообщение",
-      "thinking": "Думаю...",
-      "translateExample": "Японский, арабский, немецкий и т.д.",
-      "translatePlaceholder": "Перевести выделенный текст",
-      "translateToLanguageMissing": "Пожалуйста, введите язык для перевода",
-      "typePromptBelow": "Введите ваш запрос ниже",
-      "userInputPlaceholder": "Спросить Ashyk Ai",
-      "stop": "Остановить",
-      "writerPlaceholder": "Написать о..."
     },
     "AiStudio": {
       "shellAriaLabel": "Студия обучения ИИ",
@@ -4422,7 +4335,6 @@
         "searchEmojis": "Искать эмодзи..."
       },
       "Editor": {
-        "aiEditor": "Ashyk Ai",
         "mobileMessage1": "Редактор доступен только с настольного устройства.",
         "mobileMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра.",
         "mobileTitle": "Только для настольных ПК",
@@ -4638,7 +4550,6 @@
       "Toolbar": {
         "addColumnRight": "Добавить столбец справа",
         "addRowBelow": "Добавить строку ниже",
-        "aiEditor": "Ashyk Ai",
         "aria": {
           "insertInteractiveScenarios": "Вставить интерактивные сценарии"
         },
@@ -9947,7 +9858,6 @@
   },
   "activity": "Активность",
   "additionalSettings": "Дополнительные настройки",
-  "aiEditor": "Ashyk Ai",
   "calendar": {
     "monthDropdown": "Месяц",
     "next": "Далее",

@@ -27,10 +27,6 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }))
 
-vi.mock('@components/Contexts/AI/ActivityAIChatContext', () => ({
-  ActivityAIChatProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
 vi.mock('@components/Contexts/CourseContext', () => ({
   CourseProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
@@ -78,10 +74,6 @@ vi.mock('../../components/Objects/Editor/menus/BubbleToolbar', () => ({
 
 vi.mock('../../components/Objects/Editor/menus/FloatingPlusButton', () => ({
   FloatingPlusButton: () => null,
-}))
-
-vi.mock('../../components/Objects/Editor/AI/AIEditorToolkit', () => ({
-  default: () => null,
 }))
 
 vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanelStore', () => ({

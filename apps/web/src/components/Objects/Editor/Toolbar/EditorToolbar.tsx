@@ -2,12 +2,8 @@
 
 import { useTiptap, useTiptapState } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import Image from 'next/image'
 import { useRef } from 'react'
 import { Globe2 } from 'lucide-react'
-import { useTheme } from '@/components/providers/theme-provider'
-import appLogoDark from '@public/app_logo.svg'
-import appLogoLight from '@public/app_logo_light.svg'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -69,15 +65,8 @@ export function selectToolbarState(snap: ToolbarStateSnap) {
   }
 }
 
-interface EditorToolbarProps {
-  onAIToggle: () => void
-}
-
-export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
+export function EditorToolbar() {
   const t = useTranslations('DashPage.Editor.Toolbar')
-  const tCommon = useTranslations('Common')
-  const { resolvedTheme } = useTheme()
-  const logoSrc = resolvedTheme === 'dark' ? appLogoDark : appLogoLight
 
   // Access the editor instance from the <Tiptap> context (Requirement 1.1).
   const { editor } = useTiptap()
@@ -151,19 +140,6 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
           </Tooltip>
         </div>
       </TooltipProvider>
-
-      <div className="ml-auto flex shrink-0 items-center">
-        <button
-          type="button"
-          onClick={onAIToggle}
-          className="border-border bg-foreground text-background hover:bg-foreground/90 dark:hover:bg-foreground/90 flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-          title={t('aiEditor')}
-          aria-label={t('aiEditor')}
-        >
-          <Image width={18} height={18} src={logoSrc} alt={tCommon('appLogoAlt')} style={{ height: 'auto' }} />
-          <span>{t('aiEditor')}</span>
-        </button>
-      </div>
     </div>
   )
 }
