@@ -9430,6 +9430,7 @@ export interface components {
       activity_uuid: string
       /** Aichat Uuid */
       aichat_uuid: string
+      context_snapshot?: components['schemas']['JsonObject'] | null
       /** @default freeform */
       intent: components['schemas']['AIIntent']
       /** Message */
@@ -9439,6 +9440,7 @@ export interface components {
     StartActivityAIChatSession: {
       /** Activity Uuid */
       activity_uuid: string
+      context_snapshot?: components['schemas']['JsonObject'] | null
       /** @default freeform */
       intent: components['schemas']['AIIntent']
       /** Message */

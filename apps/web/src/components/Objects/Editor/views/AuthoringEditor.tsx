@@ -171,6 +171,13 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
     onContentChange(content)
   }
 
+  const getContextSnapshot = useCallback(() => {
+    const content = latestContentRef.current
+    return content && typeof content === 'object' && !Array.isArray(content)
+      ? (content as Record<string, unknown>)
+      : null
+  }, [])
+
   function handleContentSave() {
     props.setContent(latestContentRef.current)
   }
@@ -178,7 +185,7 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   return (
     <DesktopOnlyGuard title={t('mobileTitle')} description={t('mobileMessage1')} supportingText={t('mobileMessage2')}>
       <CourseProvider courseuuid={props.course.course_uuid}>
-        <ActivityAIChatProvider activityUuid={props.activity.activity_uuid}>
+        <ActivityAIChatProvider activityUuid={props.activity.activity_uuid} getContextSnapshot={getContextSnapshot}>
           <EditorOptionsProvider options={{ isEditable: true, mode: 'authoring' }}>
             <EditorShell>
               {/* Header — receives saveState from parent; does not affect EditorCore */}

@@ -35,12 +35,19 @@
       "currentActivity": "Текущая активность",
       "askPlaceholder": "Спросите о чем угодно по этой активности...",
       "aiComposerLabel": "Сообщение ИИ",
+      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
+      "closePanel": "Close AI assistant",
+      "composerHint": "Enter to send. Shift Enter for a new line.",
+      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
       "emptyStateTitle": "Спросить ИИ",
       "emptyStateDescription": "Использовать текущую активность в качестве контекста.",
       "errorStateTitle": "Сбой запроса ИИ",
       "defaultErrorMessage": "Сбой запроса ИИ. Попробуйте еще раз.",
       "retry": "Повторить",
       "dismiss": "Скрыть",
+      "sendMessage": "Send message",
+      "stopGeneration": "Stop generation",
+      "studentMode": "Student tutor",
       "suggestions": {
         "dynamic": {
           "summarize": "Кратко изложите эту страницу для меня",
@@ -160,6 +167,19 @@
       "approvalBoundaryDesc": "Изменения курса, вмешательства и действия по публикации требуют явного рассмотрения.",
       "artifactCanvasAria": "Холст артефакта",
       "artifactCanvasTitle": "Холст артефакта"
+    },
+    "AiArtifacts": {
+      "confidence": "{value}%",
+      "titles": {
+        "authoring_patch": "Authoring patch",
+        "code_review_hint": "Code mentor hint",
+        "flashcard_set": "Flashcards",
+        "hint_ladder": "Hint ladder",
+        "rubric_feedback": "Rubric feedback",
+        "safety_refusal": "Safety response",
+        "teacher_intervention": "Teacher intervention",
+        "tutor_answer": "Tutor answer"
+      }
     },
     "CodeChallenges": {
       "untitledChallenge": "Новая задача",
@@ -1351,11 +1371,13 @@
       "autoSubmitThreshold": "Порог автосдачи"
     },
     "AiChat": {
+      "assistantName": "Ashyk Ai",
       "placeholder": "Спросите Ashyk Ai…",
       "sendMessage": "Отправить сообщение",
       "stopGeneration": "Остановить генерацию",
       "copyResponse": "Копировать ответ",
-      "copied": "Скопировано"
+      "copied": "Скопировано",
+      "userName": "You"
     },
     "Spinner": {
       "loading": "Загрузка"

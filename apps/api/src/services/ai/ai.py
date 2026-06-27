@@ -83,6 +83,7 @@ async def ai_start_activity_chat_session(
             user_id=current_user.id,
             locale=current_user.locale,
             request=request,
+            context_snapshot=chat_session_object.context_snapshot,
             cancel_event=cancel_event,
         )
     except (AIServiceException, HTTPException) as exc:
@@ -114,6 +115,7 @@ async def ai_send_activity_chat_message(
             user_id=current_user.id,
             locale=current_user.locale,
             request=request,
+            context_snapshot=chat_session_object.context_snapshot,
             cancel_event=cancel_event,
         )
     except (AIServiceException, HTTPException) as exc:
@@ -145,6 +147,7 @@ async def ai_start_activity_chat_session_stream(
             user_id=current_user.id,
             locale=current_user.locale,
             request=request,
+            context_snapshot=chat_session_object.context_snapshot,
             cancel_event=cancel_event,
         ):
             yield format_sse_message(event)
@@ -172,6 +175,7 @@ async def ai_send_activity_chat_message_stream(
             user_id=current_user.id,
             locale=current_user.locale,
             request=request,
+            context_snapshot=chat_session_object.context_snapshot,
             cancel_event=cancel_event,
         ):
             yield format_sse_message(event)

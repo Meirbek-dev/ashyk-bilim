@@ -17,7 +17,6 @@ import langDiff from 'shiki/langs/diff.mjs'
 /**
  * Singleton Shiki highlighter shared by:
  * - MarkdownCodeBlock (renderer)
- * - AiMarkdownRenderer (streaming preview)
  * - tiptap-extension-code-block-shiki (editor)
  *
  * Uses shiki/bundle/web for optimal browser bundle size.

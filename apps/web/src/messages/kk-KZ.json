@@ -35,12 +35,19 @@
       "currentActivity": "Ағымдағы белсенділік",
       "askPlaceholder": "Осы белсенділік туралы кез келген нәрсені сұраңыз...",
       "aiComposerLabel": "ЖИ хабарламасы",
+      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
+      "closePanel": "Close AI assistant",
+      "composerHint": "Enter to send. Shift Enter for a new line.",
+      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
       "emptyStateTitle": "ЖИ-ден сұрау",
       "emptyStateDescription": "Ағымдағы әрекетті контекст ретінде пайдаланыңыз.",
       "errorStateTitle": "ЖИ сұрауы сәтсіз аяқталды",
       "defaultErrorMessage": "ЖИ сұрауы сәтсіз аяқталды. Қайталап көріңіз.",
       "retry": "Қайталау",
       "dismiss": "Елемеу",
+      "sendMessage": "Send message",
+      "stopGeneration": "Stop generation",
+      "studentMode": "Student tutor",
       "suggestions": {
         "dynamic": {
           "summarize": "Маған осы беттің қысқаша мазмұнын дайындап беріңіз",
@@ -160,6 +167,19 @@
       "approvalBoundaryDesc": "Курсты өңдеу, араласу және жариялау әрекеттері нақты қарауды қажет етеді.",
       "artifactCanvasAria": "Артефакт кенебі",
       "artifactCanvasTitle": "Артефакт кенебі"
+    },
+    "AiArtifacts": {
+      "confidence": "{value}%",
+      "titles": {
+        "authoring_patch": "Authoring patch",
+        "code_review_hint": "Code mentor hint",
+        "flashcard_set": "Flashcards",
+        "hint_ladder": "Hint ladder",
+        "rubric_feedback": "Rubric feedback",
+        "safety_refusal": "Safety response",
+        "teacher_intervention": "Teacher intervention",
+        "tutor_answer": "Tutor answer"
+      }
     },
     "CodeChallenges": {
       "untitledChallenge": "Атаусыз тапсырма",
@@ -1351,11 +1371,13 @@
       "autoSubmitThreshold": "Автоматты жіберу шегі"
     },
     "AiChat": {
+      "assistantName": "Ashyk Ai",
       "placeholder": "Ashyk Ai-дан сұраңыз…",
       "sendMessage": "Хабар жіберу",
       "stopGeneration": "Генерацияны тоқтату",
       "copyResponse": "Жауапты көшіру",
-      "copied": "Көшірілді"
+      "copied": "Көшірілді",
+      "userName": "You"
     },
     "Spinner": {
       "loading": "Жүктелуде"

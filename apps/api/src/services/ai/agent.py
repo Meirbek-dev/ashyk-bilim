@@ -25,11 +25,13 @@ _BASE_SYSTEM_PROMPT = (
 
 _MODE_INSTRUCTIONS = {
     "instructional": "Answer using the activity and course context when it helps. Prefer grounded explanations over generic ones.",
-    "editorial": "Treat the request as an editorial writing task. Focus on transforming or extending the user's provided text without inventing course facts unless explicitly requested.",
+    "editorial": "Treat the request as an editorial writing task. First use the visible activity context as the source text. If the user also supplied text, merge both sources carefully without inventing course facts.",
     "translation": "Treat the request as a translation task. Preserve meaning, tone, and formatting. Do not add explanation unless the user asks for it.",
     "critique": "Treat the request as a critique task. Provide constructive feedback, identify weaknesses precisely, and suggest concrete improvements.",
     "follow_up": "Treat the request as a conversational follow-up. Prefer the recent chat history and summarized prior context before reaching for general knowledge.",
 }
+
+_VISIBLE_CONTEXT_CHAR_LIMIT = 12000
 
 _AGENT = Agent(
     system_prompt=_BASE_SYSTEM_PROMPT,
@@ -42,7 +44,22 @@ _AGENT = Agent(
 
 @_AGENT.instructions
 def _build_instructions(ctx: RunContext[AgentDependencies]) -> str:
-    deps = ctx.deps
+    return build_agent_context_instructions(ctx.deps)
+
+
+def _render_visible_context(documents: list[str]) -> str | None:
+    rendered_documents = [document.strip() for document in documents if document.strip()]
+    if not rendered_documents:
+        return None
+
+    rendered_context = "\n\n".join(rendered_documents)
+    if len(rendered_context) <= _VISIBLE_CONTEXT_CHAR_LIMIT:
+        return rendered_context
+
+    return rendered_context[:_VISIBLE_CONTEXT_CHAR_LIMIT].rstrip() + "\n\n[Activity context truncated for prompt size.]"
+
+
+def build_agent_context_instructions(deps: AgentDependencies) -> str:
     context_blocks = [
         f"Course: {deps.course_name}",
         f"Activity: {deps.activity_name}",
@@ -59,11 +76,19 @@ def _build_instructions(ctx: RunContext[AgentDependencies]) -> str:
     if deps.conversation_summary:
         context_blocks.append("Earlier conversation summary:\n" + deps.conversation_summary)
 
+    visible_context = _render_visible_context(deps.documents)
+    if visible_context:
+        context_blocks.append("Visible activity context:\n" + visible_context)
+
     if deps.retrieved_chunks:
         rendered_chunks = []
         for index, chunk in enumerate(deps.retrieved_chunks, start=1):
             rendered_chunks.append(f"[{index}] {chunk.document}")
         context_blocks.append("Relevant context:\n" + "\n\n".join(rendered_chunks))
+    elif visible_context:
+        context_blocks.append(
+            "Relevant context: no additional retrieval was used; ground the answer in the visible activity context above."
+        )
     else:
         context_blocks.append(
             "Relevant context: none retrieved; use general knowledge cautiously and say that the answer is not grounded in lecture context."

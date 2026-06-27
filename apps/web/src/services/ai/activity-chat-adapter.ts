@@ -245,6 +245,7 @@ function readActiveLocale(): string | null {
 interface ActivityChatAdapterOptions {
   activityUuid: string
   getStatusMessage: (status: string) => string | null
+  getContextSnapshot?: () => Record<string, unknown> | null
   /**
    * Provides the current session UUID from an external store (e.g. a React
    * ref in ActivityAIChatProvider) so it survives provider remounts.
@@ -278,6 +279,7 @@ export interface ActivityChatAdapter {
 export function createActivityChatAdapter({
   activityUuid,
   getStatusMessage,
+  getContextSnapshot,
   getSessionUuid,
   setSessionUuid,
 }: ActivityChatAdapterOptions): ActivityChatAdapter {
@@ -326,10 +328,18 @@ export function createActivityChatAdapter({
     // Route to the correct endpoint based on whether we have an active session.
     const sessionUuid = readUuid()
     const intent = currentIntent ?? undefined
+    const contextSnapshot = getContextSnapshot?.() ?? null
+    const contextPayload = contextSnapshot ? { context_snapshot: contextSnapshot } : {}
     const url = sessionUuid ? 'ai/send/activity_chat_message_stream' : 'ai/start/activity_chat_session_stream'
     const body = sessionUuid
-      ? { aichat_uuid: sessionUuid, message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
-      : { message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}) }
+      ? {
+          aichat_uuid: sessionUuid,
+          message: text,
+          activity_uuid: activityUuid,
+          ...(intent ? { intent } : {}),
+          ...contextPayload,
+        }
+      : { message: text, activity_uuid: activityUuid, ...(intent ? { intent } : {}), ...contextPayload }
 
     // Compose user-abort + 30 s timeout into a single signal.
     currentController = new AbortController()

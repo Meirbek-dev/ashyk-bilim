@@ -1,7 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
+import { useCallback } from 'react'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
@@ -9,10 +8,6 @@ import StudentActivityWorkspace from '@/features/student-activity/shell/StudentA
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { ActivityLayoutProvider } from '@/features/assessments/shell/ActivityLayoutContext'
 import { ActivityContentRenderer } from './ActivityContentRenderer'
-
-const AIActivityAsk = dynamic(() => import('@components/Objects/Activities/AI/AIActivityAsk'), {
-  ssr: false,
-})
 
 interface ActivityClientProps {
   activityid: string
@@ -24,17 +19,18 @@ interface ActivityClientProps {
 
 export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
   const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
+  const getContextSnapshot = useCallback(() => {
+    const content = activity?.content
+    return content && typeof content === 'object' && !Array.isArray(content)
+      ? (content as Record<string, unknown>)
+      : null
+  }, [activity])
 
   return (
     <CourseProvider courseuuid={course.course_uuid}>
-      <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''}>
+      <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''} getContextSnapshot={getContextSnapshot}>
         <ActivityLayoutProvider>
-          <StudentActivityWorkspace
-            activity={activity}
-            courseUuid={courseuuid}
-            onAskAi={activity ? <AIActivityAsk activity={activity} /> : null}
-            runtime={resolvedRuntime}
-          >
+          <StudentActivityWorkspace activity={activity} courseUuid={courseuuid} runtime={resolvedRuntime}>
             <ActivityContentRenderer
               activity={activity}
               canView={resolvedRuntime.permissions.can_view}

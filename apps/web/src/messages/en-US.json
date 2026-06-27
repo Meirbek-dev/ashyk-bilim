@@ -35,12 +35,19 @@
       "currentActivity": "Current activity",
       "askPlaceholder": "Ask anything about this activity...",
       "aiComposerLabel": "AI message",
+      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
+      "closePanel": "Close AI assistant",
+      "composerHint": "Enter to send. Shift Enter for a new line.",
+      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
       "emptyStateTitle": "Ask AI",
       "emptyStateDescription": "Use the current activity as context.",
       "errorStateTitle": "AI request failed",
       "defaultErrorMessage": "The AI request failed. Try again.",
       "retry": "Retry",
       "dismiss": "Dismiss",
+      "sendMessage": "Send message",
+      "stopGeneration": "Stop generation",
+      "studentMode": "Student tutor",
       "suggestions": {
         "dynamic": {
           "summarize": "Summarize this page for me",
@@ -160,6 +167,19 @@
       "approvalBoundaryDesc": "Course edits, interventions, and publishing actions require explicit review.",
       "artifactCanvasAria": "Artifact canvas",
       "artifactCanvasTitle": "Artifact canvas"
+    },
+    "AiArtifacts": {
+      "confidence": "{value}%",
+      "titles": {
+        "authoring_patch": "Authoring patch",
+        "code_review_hint": "Code mentor hint",
+        "flashcard_set": "Flashcards",
+        "hint_ladder": "Hint ladder",
+        "rubric_feedback": "Rubric feedback",
+        "safety_refusal": "Safety response",
+        "teacher_intervention": "Teacher intervention",
+        "tutor_answer": "Tutor answer"
+      }
     },
     "CodeChallenges": {
       "untitledChallenge": "Untitled Challenge",
@@ -1348,11 +1368,13 @@
       "autoSubmitThreshold": "Auto-submit threshold"
     },
     "AiChat": {
+      "assistantName": "Ashyk Ai",
       "placeholder": "Ask Ashyk Ai…",
       "sendMessage": "Send message",
       "stopGeneration": "Stop generation",
       "copyResponse": "Copy response",
-      "copied": "Copied"
+      "copied": "Copied",
+      "userName": "You"
     },
     "Spinner": {
       "loading": "Loading"

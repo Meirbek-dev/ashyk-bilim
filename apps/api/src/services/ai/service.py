@@ -49,6 +49,7 @@ from src.services.courses.activities.utils import (
     serialize_activity_text_to_ai_comprehensible_text,
     structure_activity_content_by_type,
 )
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -369,7 +370,21 @@ async def _get_documents(
     activity_uuid: str,
     activity: ActivityRead,
     course: CourseRead,
+    context_snapshot: JsonObject | None = None,
 ) -> list[str]:
+    if context_snapshot:
+        snapshot_structured = await asyncio.to_thread(
+            structure_activity_content_by_type,
+            context_snapshot,
+        )
+        if snapshot_structured:
+            logger.debug(
+                "AI context snapshot used for activity %s with %d sections",
+                activity_uuid,
+                len(snapshot_structured),
+            )
+            return snapshot_structured
+
     cache_manager = get_ai_cache_manager()
     context_text_key = f"context_text_{activity_uuid}"
     cached_documents = cache_manager.db_cache.get(context_text_key)
@@ -403,9 +418,10 @@ async def build_chat_context(
     user_id: int | None,
     locale: str | None,
     request: Request | None,
+    context_snapshot: JsonObject | None = None,
 ) -> _ChatContext:
     activity, course = await _get_activity_data(activity_uuid, db_session)
-    documents = await _get_documents(activity_uuid, activity, course)
+    documents = await _get_documents(activity_uuid, activity, course, context_snapshot)
     session_window = await asyncio.to_thread(load_chat_session, aichat_uuid, user_id)
     request_id = request.headers.get("x-request-id") if request else None
     resolved_locale = _extract_request_locale(request) or _match_locale(locale) or _DEFAULT_LOCALE
@@ -709,6 +725,7 @@ async def run_activity_chat(
     user_id: int | None,
     locale: str | None,
     request: Request | None,
+    context_snapshot: JsonObject | None = None,
     cancel_event: asyncio.Event | None = None,
 ) -> ActivityAIChatSessionResponse:
     trace_start = time.perf_counter()
@@ -719,6 +736,7 @@ async def run_activity_chat(
         user_id=user_id,
         locale=locale,
         request=request,
+        context_snapshot=context_snapshot,
     )
     answer = await generate_chat_answer(ctx=ctx, question=message, intent=intent, cancel_event=cancel_event)
     logger.info(
@@ -745,6 +763,7 @@ async def run_activity_chat_stream(
     user_id: int | None,
     locale: str | None,
     request: Request | None,
+    context_snapshot: JsonObject | None = None,
     cancel_event: asyncio.Event | None = None,
 ) -> AsyncGenerator[SSEEvent]:
     ctx = await build_chat_context(
@@ -754,6 +773,7 @@ async def run_activity_chat_stream(
         user_id=user_id,
         locale=locale,
         request=request,
+        context_snapshot=context_snapshot,
     )
     async for event in stream_chat_answer(
         ctx=ctx,

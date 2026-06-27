@@ -1,11 +1,13 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Activity } from '@components/Contexts/CourseContext'
-import AiAssistantPanel from '@/features/ai-assistant/AiAssistantPanel'
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext'
+import { StudentAiLauncher } from '@/features/student-ai/components/StudentAiLauncher'
+import { useStudentAiAvailability } from '@/features/student-ai/hooks/useStudentAiAvailability'
 import { cn } from '@/lib/utils'
 import ActivityHeader from './ActivityHeader'
 import OutlineRail from './OutlineRail'
@@ -16,16 +18,20 @@ import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 
 const CONTENT_READ_TOLERANCE_PX = 24
 
+const StudentAiLayer = dynamic(
+  () => import('@/features/student-ai/components/StudentAiLayer').then(module => module.StudentAiLayer),
+  { ssr: false },
+)
+
 interface StudentActivityWorkspaceProps {
   activity: Activity | null
   children: React.ReactNode
   courseUuid: string
-  onAskAi?: React.ReactNode
   runtime: StudentActivityRuntime
 }
 
 export default function StudentActivityWorkspace({
-  activity: _activity,
+  activity,
   children,
   courseUuid,
   runtime,
@@ -35,6 +41,7 @@ export default function StudentActivityWorkspace({
   const [focusMode, setFocusMode] = useState(false)
   const { mode } = useActivityLayout()
   const isAttemptActive = mode === 'ACTIVE_ATTEMPT'
+  const focusModeActive = focusMode && !isAttemptActive
   const activityType = runtime.activity?.type ?? ''
   const activityUuid = runtime.activity?.uuid ?? 'course-end'
   const shouldRequireContentRead =
@@ -46,6 +53,11 @@ export default function StudentActivityWorkspace({
     enabled: shouldRequireContentRead,
     targetId: 'activity-main-content',
     resetKey: activityUuid,
+  })
+  const aiAvailability = useStudentAiAvailability({
+    hasActivity: Boolean(activity),
+    isAttemptActive,
+    runtime,
   })
 
   const contentFrameClassName = useMemo(() => {
@@ -71,17 +83,16 @@ export default function StudentActivityWorkspace({
     }
   }, [activityType])
 
-  if (focusMode && isAttemptActive) {
-    setFocusMode(false)
-  }
-
-  if (focusMode && (aiOpen || outlineOpen)) {
-    setAiOpen(false)
-    setOutlineOpen(false)
-  }
+  const toggleFocusMode = useCallback(() => {
+    if (!focusMode) {
+      setAiOpen(false)
+      setOutlineOpen(false)
+    }
+    setFocusMode(value => !value)
+  }, [focusMode])
 
   useEffect(() => {
-    if (focusMode) {
+    if (focusModeActive) {
       document.documentElement.dataset.activityFocus = 'true'
       return () => {
         delete document.documentElement.dataset.activityFocus
@@ -90,7 +101,7 @@ export default function StudentActivityWorkspace({
 
     delete document.documentElement.dataset.activityFocus
     return undefined
-  }, [focusMode])
+  }, [focusModeActive])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -106,12 +117,12 @@ export default function StudentActivityWorkspace({
         return
       }
 
-      if (focusMode) setFocusMode(false)
+      if (focusModeActive) setFocusMode(false)
     }
 
     globalThis.addEventListener('keydown', onKeyDown)
     return () => globalThis.removeEventListener('keydown', onKeyDown)
-  }, [focusMode, aiOpen, outlineOpen])
+  }, [aiOpen, focusModeActive, outlineOpen])
 
   useEffect(() => {
     if (isAttemptActive) return
@@ -121,7 +132,7 @@ export default function StudentActivityWorkspace({
         event.key.toLowerCase() === 'o' &&
         !event.ctrlKey &&
         !event.metaKey &&
-        !focusMode &&
+        !focusModeActive &&
         !isTypingTarget(event.target)
       ) {
         setOutlineOpen(value => !value)
@@ -134,39 +145,36 @@ export default function StudentActivityWorkspace({
         !event.altKey &&
         !isTypingTarget(event.target)
       ) {
-        setFocusMode(value => !value)
+        toggleFocusMode()
       }
     }
 
     globalThis.addEventListener('keydown', onKeyDown)
     return () => globalThis.removeEventListener('keydown', onKeyDown)
-  }, [focusMode, isAttemptActive])
+  }, [focusModeActive, isAttemptActive, toggleFocusMode])
 
   const isLocked = runtime.progress.state === 'locked' || runtime.progress.state === 'unavailable'
 
   return (
     <div
-      data-focus={focusMode ? 'true' : undefined}
+      data-focus={focusModeActive ? 'true' : undefined}
       className={cn(
         'bg-background text-foreground flex flex-col',
-        focusMode ? 'min-h-dvh' : 'min-h-[calc(100dvh-3.5rem)]',
+        focusModeActive ? 'min-h-dvh' : 'min-h-[calc(100dvh-3.5rem)]',
       )}
     >
-      {!isAttemptActive && !focusMode ? (
+      {!isAttemptActive && !focusModeActive ? (
         <OutlineRail runtime={runtime} open={outlineOpen} onClose={() => setOutlineOpen(false)} />
       ) : null}
-
-      <AiAssistantPanel open={aiOpen} onClose={() => setAiOpen(false)} runtime={runtime} />
 
       {!isAttemptActive ? (
         <ActivityHeader
           runtime={runtime}
-          focusMode={focusMode}
-          onToggleFocusMode={() => setFocusMode(value => !value)}
+          focusMode={focusModeActive}
+          onToggleFocusMode={toggleFocusMode}
           onToggleOutline={() => setOutlineOpen(value => !value)}
           outlineOpen={outlineOpen}
-          onToggleAi={() => setAiOpen(value => !value)}
-          aiOpen={aiOpen}
+          assistantSlot={<StudentAiLauncher availability={aiAvailability} open={aiOpen} onOpenChange={setAiOpen} />}
         />
       ) : null}
 
@@ -176,10 +184,10 @@ export default function StudentActivityWorkspace({
           className={cn(
             'min-w-0 flex-1 px-4 sm:px-6 lg:px-8',
             contentFrameClassName,
-            focusMode ? 'pb-10 pt-6' : 'pb-24 pt-4',
+            focusModeActive ? 'pb-10 pt-6' : 'pb-24 pt-4',
           )}
         >
-          {!isAttemptActive && !isLocked && !focusMode ? <InlineStatusStrip runtime={runtime} /> : null}
+          {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
         </main>
@@ -188,9 +196,13 @@ export default function StudentActivityWorkspace({
       <BottomActionBar
         courseUuid={courseUuid}
         contentReadComplete={!shouldRequireContentRead || contentReadComplete}
-        focusMode={focusMode}
+        focusMode={focusModeActive}
         runtime={runtime}
       />
+
+      {aiAvailability.state !== 'disabled' ? (
+        <StudentAiLayer availability={aiAvailability} open={aiOpen} onOpenChange={setAiOpen} runtime={runtime} />
+      ) : null}
 
       <KeyboardShortcutsModal />
     </div>

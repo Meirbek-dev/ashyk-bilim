@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Focus, HelpCircle, ListTree, PanelLeftClose, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { ChevronLeft, ChevronRight, Focus, ListTree, PanelLeftClose, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import Link from '@components/ui/AppLink'
@@ -23,8 +24,7 @@ export interface ActivityHeaderProps {
   onToggleFocusMode: () => void
   onToggleOutline: () => void
   outlineOpen: boolean
-  onToggleAi: () => void
-  aiOpen: boolean
+  assistantSlot?: ReactNode
 }
 
 export default function ActivityHeader({
@@ -33,8 +33,7 @@ export default function ActivityHeader({
   onToggleFocusMode,
   onToggleOutline,
   outlineOpen,
-  onToggleAi,
-  aiOpen,
+  assistantSlot,
 }: ActivityHeaderProps) {
   const t = useTranslations('ActivityPage')
   const tBreadcrumb = useTranslations('Components.Breadcrumb')
@@ -115,16 +114,7 @@ export default function ActivityHeader({
                 })}
               </span>
             ) : null}
-            <Button
-              type="button"
-              variant={aiOpen ? 'default' : 'ghost'}
-              size="icon"
-              onClick={onToggleAi}
-              aria-label={t('aiAssistant')}
-              title={t('aiAssistant')}
-            >
-              <HelpCircle className="size-4" />
-            </Button>
+            {assistantSlot}
             <Button
               type="button"
               variant="ghost"

@@ -1,12 +1,11 @@
 'use client'
 
 /**
- * Thin shared context that wraps a single useChat instance for all AI
- * components within an activity page (AIActivityAsk + AICanvaToolkit).
+ * Thin shared context that wraps a single useChat instance for activity-level
+ * AI workflows.
  *
- * Using a context allows AIActivityAsk and AICanvaToolkit — which live in
- * separate React subtrees — to share the same chat session and message list
- * without prop drilling.
+ * The student AI UI was removed while the runtime contract remains available
+ * for authoring flows and the future student experience rebuild.
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -66,7 +65,16 @@ const ActivityAIChatContext = createContext<ActivityAIChatContextValue | null>(n
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChildren<{ activityUuid: string }>) {
+interface ActivityAIChatProviderProps {
+  activityUuid: string
+  getContextSnapshot?: () => Record<string, unknown> | null
+}
+
+export function ActivityAIChatProvider({
+  activityUuid,
+  getContextSnapshot,
+  children,
+}: PropsWithChildren<ActivityAIChatProviderProps>) {
   const tStatus = useTranslations('Activities.AIStatus')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -81,6 +89,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
     () =>
       createActivityChatAdapter({
         activityUuid,
+        ...(getContextSnapshot ? { getContextSnapshot } : {}),
         getStatusMessage: status => {
           switch (status) {
             case 'processing': {
@@ -106,7 +115,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       }),
     // Recreate adapter only when the activity changes — access token and
     // session UUID changes are handled inside the adapter.
-    [activityUuid, tStatus],
+    [activityUuid, getContextSnapshot, tStatus],
   )
 
   // Keep the abort ref in sync whenever the adapter is recreated.

@@ -4,7 +4,7 @@ import pytest
 from pydantic_ai import ModelRetry
 from pydantic_ai.models.test import TestModel
 
-from src.services.ai.agent import get_agent
+from src.services.ai.agent import build_agent_context_instructions, get_agent
 from src.services.ai.artifact_agents import validate_artifact_output_for_deps
 from src.services.ai.contracts.intents import AIIntent, normalize_ai_intent
 from src.services.ai.contracts.outputs import (
@@ -108,6 +108,26 @@ def test_stream_event_factory_emits_ordered_v2_events() -> None:
     assert events[4].payload.artifact.kind == artifact.kind
 
 
+def test_agent_instructions_include_visible_activity_context_without_retrieval() -> None:
+    deps = AgentDependencies(
+        activity_uuid="activity-1",
+        activity_name="Lecture",
+        course_name="Course",
+        session_id="thread-1",
+        requested_intent=AIIntent.AUTHORING_PATCH.value,
+        request_mode="editorial",
+        retrieval_enabled=False,
+        documents=["Course: Course\nLecture: Lecture\n\nPhotosynthesis converts light energy into chemical energy."],
+        retrieved_chunks=[],
+    )
+
+    instructions = build_agent_context_instructions(deps)
+
+    assert "Visible activity context:" in instructions
+    assert "Photosynthesis converts light energy into chemical energy." in instructions
+    assert "none retrieved" not in instructions
+
+
 def test_structured_artifact_validation_accepts_matching_intent_and_citations() -> None:
     chunks = [RetrievedChunk(id="chunk-1", document="Photosynthesis uses light.", score=0.9)]
     artifact = build_artifact_for_intent(
@@ -178,7 +198,13 @@ async def test_student_agent_exposes_course_search_tool() -> None:
 def test_start_activity_ai_chat_session_validation_strict_mode() -> None:
     from src.services.ai.schemas.ai import StartActivityAIChatSession
 
-    data = {"activity_uuid": "some-uuid", "message": "Hello AI", "intent": "authoring_patch"}
+    data = {
+        "activity_uuid": "some-uuid",
+        "message": "Hello AI",
+        "intent": "authoring_patch",
+        "context_snapshot": {"type": "doc", "content": [{"type": "paragraph", "content": [{"text": "Live text"}]}]},
+    }
     # Validate with strict=True to simulate the developer/strict environment validation behavior.
     session = StartActivityAIChatSession.model_validate(data, strict=True)
     assert session.intent == AIIntent.AUTHORING_PATCH
+    assert session.context_snapshot is not None

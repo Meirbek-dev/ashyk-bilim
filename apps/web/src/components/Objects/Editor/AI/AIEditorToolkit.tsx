@@ -10,7 +10,6 @@ import {
   X,
 } from 'lucide-react'
 import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext'
-import { AiMarkdownRenderer } from '@components/Shared/AI/AiMarkdownRenderer'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import appLogo from '@public/app_logo.svg'
 import appLogoLight from '@public/app_logo_light.svg'
@@ -20,11 +19,14 @@ import type { TextPart } from '@tanstack/ai-client'
 import { Spinner } from '@components/ui/spinner'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
+import { Separator } from '@components/ui/separator'
 import type { Variants } from 'motion/react'
 import type { Editor } from '@tiptap/react'
 import { useTiptap } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from '@/components/providers/theme-provider'
+import { MarkdownContent } from '@/features/content-markdown'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -170,11 +172,11 @@ function AiEditorToolButton({ label, selectedTool, onSelect }: ToolButtonProps) 
       className={cn(
         'h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium',
         isSelected
-          ? 'bg-zinc-700 text-zinc-100 hover:bg-zinc-600'
-          : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+          ? 'bg-secondary text-secondary-foreground hover:bg-secondary/85'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
-      <Icon size={13} />
+      <Icon data-icon="inline-start" />
       <span className="hidden sm:inline">{t(`${label}Label`)}</span>
     </Button>
   )
@@ -218,22 +220,22 @@ function AiEditorActionScreen({
 
   if (error) {
     return (
-      <div className="flex w-full items-start gap-3 rounded-lg border border-red-900/50 bg-red-950/40 p-3">
-        <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />
+      <Alert variant="destructive" className="w-full">
+        <AlertTriangle className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-red-300">{t('errorTitle')}</p>
-          <p className="mt-0.5 text-xs text-red-400/80">{error.message}</p>
+          <AlertTitle>{t('errorTitle')}</AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onDismissError}
-          className="h-6 w-6 shrink-0 text-red-400 hover:bg-red-900/30 hover:text-red-300"
+          className="text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0"
           aria-label={t('dismissError')}
         >
-          <X size={12} />
+          <X />
         </Button>
-      </div>
+      </Alert>
     )
   }
 
@@ -241,15 +243,15 @@ function AiEditorActionScreen({
     return (
       <div className="flex w-full flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Spinner className="h-4 w-4 text-zinc-400" />
-          <p className="text-sm text-zinc-400">{t('thinking')}</p>
+          <Spinner className="text-muted-foreground h-4 w-4" />
+          <p className="text-muted-foreground text-sm">{t('thinking')}</p>
         </div>
         {streamingPreview && (
           // Plain div instead of ScrollArea: max-height alone doesn't give a
           // "definite" height for ScrollArea's internal height:100% viewport.
-          <div className="max-h-40 w-full overflow-y-auto rounded-md border border-zinc-700/60 bg-zinc-800/50">
+          <div className="border-border bg-muted/40 max-h-40 w-full overflow-y-auto rounded-md border">
             <div className="p-3">
-              <AiMarkdownRenderer content={streamingPreview} isStreaming />
+              <MarkdownContent content={streamingPreview} mode="compactRichText" streaming />
             </div>
           </div>
         )}
@@ -260,9 +262,9 @@ function AiEditorActionScreen({
   if (selectedTool === 'Writer') {
     return (
       <div className="flex flex-col items-center gap-2 text-center">
-        <Feather size={20} className="text-zinc-500" />
-        <p className="text-sm font-medium text-zinc-300">{t('writerPlaceholder')}</p>
-        <p className="text-xs text-zinc-500">{t('typePromptBelow')}</p>
+        <Feather className="text-muted-foreground size-5" />
+        <p className="text-foreground text-sm font-medium">{t('writerPlaceholder')}</p>
+        <p className="text-muted-foreground text-xs">{t('typePromptBelow')}</p>
       </div>
     )
   }
@@ -271,7 +273,7 @@ function AiEditorActionScreen({
     return (
       <div className="flex flex-col items-center gap-3 text-center">
         <Button size="sm" onClick={onExecute} className="gap-2">
-          <FastForward size={13} />
+          <FastForward data-icon="inline-start" />
           {t('continuePlaceholder')}
         </Button>
       </div>
@@ -282,7 +284,7 @@ function AiEditorActionScreen({
     return (
       <div className="flex flex-col items-center gap-3 text-center">
         <Button size="sm" onClick={onExecute} className="gap-2">
-          <FileStack size={13} />
+          <FileStack data-icon="inline-start" />
           {t('longerPlaceholder')}
         </Button>
       </div>
@@ -292,9 +294,9 @@ function AiEditorActionScreen({
   if (selectedTool === 'Critisize') {
     if (hasAiResponse) {
       return (
-        <div className="max-h-48 w-full overflow-y-auto rounded-md border border-zinc-700/60 bg-zinc-800/50">
+        <div className="border-border bg-muted/40 max-h-48 w-full overflow-y-auto rounded-md border">
           <div className="p-3">
-            <AiMarkdownRenderer content={lastAiResponse} />
+            <MarkdownContent content={lastAiResponse} mode="compactRichText" />
           </div>
         </div>
       )
@@ -303,7 +305,7 @@ function AiEditorActionScreen({
     return (
       <div className="flex w-full flex-col items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500">{t('critisizeScopeLabel')}:</span>
+          <span className="text-muted-foreground text-xs">{t('critisizeScopeLabel')}:</span>
           {/* eslint-disable-next-line i18next/no-literal-string -- internal scope tokens */}
           {(['selection', 'lecture'] as const).map(scope => (
             <Button
@@ -314,7 +316,9 @@ function AiEditorActionScreen({
               aria-pressed={critisizeScope === scope}
               className={cn(
                 'h-7 rounded-md px-2.5 text-xs',
-                critisizeScope === scope ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200',
+                critisizeScope === scope
+                  ? 'bg-secondary text-secondary-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {t(scope === 'selection' ? 'critisizeScopeSelection' : 'critisizeScopeLecture')}
@@ -322,7 +326,7 @@ function AiEditorActionScreen({
           ))}
         </div>
         <Button size="sm" onClick={onExecute} className="gap-2">
-          <Lightbulb size={13} />
+          <Lightbulb data-icon="inline-start" />
           {t('critisizePlaceholder')}
         </Button>
       </div>
@@ -336,10 +340,9 @@ function AiEditorActionScreen({
           value={chatInputValue}
           onChange={(e: ChangeEvent<HTMLInputElement>) => onInputChange(e.target.value)}
           placeholder={t('translateExample')}
-          className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
         />
         <Button size="sm" onClick={onExecute} className="gap-2">
-          <Languages size={13} />
+          <Languages data-icon="inline-start" />
           {t('translatePlaceholder')}
         </Button>
       </div>
@@ -534,7 +537,7 @@ function UserFeedbackModal({
       className="fixed bottom-24 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-[600px] -translate-x-1/2"
       style={{ pointerEvents: 'auto' }}
     >
-      <div className="rounded-xl border border-zinc-700/60 bg-zinc-900 p-4 shadow-xl">
+      <div className="border-border bg-popover text-popover-foreground rounded-xl border p-4 shadow-xl">
         {/* Header */}
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -546,7 +549,7 @@ function UserFeedbackModal({
               className="rounded-sm"
               style={{ height: 'auto' }}
             />
-            <span className="text-sm font-semibold text-zinc-100">{t('aiEditorTitle')}</span>
+            <span className="text-foreground text-sm font-semibold">{t('aiEditorTitle')}</span>
           </div>
           {/* Cancel button — visible while generating */}
           {isLoading && (
@@ -554,17 +557,17 @@ function UserFeedbackModal({
               variant="ghost"
               size="sm"
               onClick={onCancel}
-              className="h-7 gap-1.5 px-2 text-xs text-zinc-500 hover:text-red-400"
+              className="text-muted-foreground hover:text-destructive h-7 gap-1.5 px-2 text-xs"
               aria-label={t('stop')}
             >
-              <Square size={11} className="fill-current" />
+              <Square data-icon="inline-start" className="fill-current" />
               {t('stop')}
             </Button>
           )}
         </div>
 
         {/* Content */}
-        <div className="mb-3 flex min-h-[80px] w-full items-center justify-center rounded-lg bg-zinc-800/50 p-4">
+        <div className="bg-muted/40 mb-3 flex min-h-[80px] w-full items-center justify-center rounded-lg p-4">
           <AiEditorActionScreen
             onExecute={handleSubmit}
             selectedTool={selectedTool}
@@ -590,7 +593,6 @@ function UserFeedbackModal({
               placeholder={t('askAI')}
               disabled={isLoading}
               aria-label={t('askAI')}
-              className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
             />
             <Button
               variant="ghost"
@@ -598,9 +600,9 @@ function UserFeedbackModal({
               onClick={handleSubmit}
               disabled={isLoading || !chatInputValue.trim()}
               aria-label={t('sendMessage')}
-              className="h-9 w-9 shrink-0 text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
+              className="text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 disabled:opacity-40"
             >
-              <BetweenHorizontalStart size={16} />
+              <BetweenHorizontalStart />
             </Button>
           </div>
         )}
@@ -723,7 +725,7 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
 
           {/* Toolbar */}
           <div className="fixed bottom-0 left-1/2 z-40 mb-5 -translate-x-1/2" style={{ pointerEvents: 'auto' }}>
-            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-700/60 bg-zinc-900 px-3 py-2 shadow-lg">
+            <div className="border-border bg-popover text-popover-foreground flex items-center gap-1.5 rounded-xl border px-3 py-2 shadow-lg">
               {/* Logo */}
               <div className="flex items-center gap-2 pr-1">
                 <Image
@@ -734,10 +736,10 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
                   className="rounded-sm"
                   style={{ height: 'auto' }}
                 />
-                <span className="hidden text-xs font-semibold text-zinc-300 sm:block">{t('aiEditorTitle')}</span>
+                <span className="text-foreground hidden text-xs font-semibold sm:block">{t('aiEditorTitle')}</span>
               </div>
 
-              <div className="h-5 w-px bg-zinc-700/60" />
+              <Separator orientation="vertical" className="h-5" />
 
               {/* Tools */}
               <div className="flex flex-wrap gap-1">
@@ -748,7 +750,7 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
                 <AiEditorToolButton label="Translate" selectedTool={selectedTool} onSelect={handleToolSelect} />
               </div>
 
-              <div className="h-5 w-px bg-zinc-700/60" />
+              <Separator orientation="vertical" className="h-5" />
 
               {/* Close */}
               <Button
@@ -756,9 +758,9 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
                 size="icon"
                 onClick={handleClose}
                 aria-label={t('closeToolkit')}
-                className="h-8 w-8 text-zinc-500 hover:bg-red-950/40 hover:text-red-400"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8"
               >
-                <X size={15} />
+                <X />
               </Button>
             </div>
           </div>

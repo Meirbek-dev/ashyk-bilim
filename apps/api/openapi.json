@@ -13643,6 +13643,16 @@
             "title": "Aichat Uuid",
             "type": "string"
           },
+          "context_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonObject"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "intent": {
             "$ref": "#/components/schemas/AIIntent",
             "default": "freeform"
@@ -13667,6 +13677,16 @@
           "activity_uuid": {
             "title": "Activity Uuid",
             "type": "string"
+          },
+          "context_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonObject"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "intent": {
             "$ref": "#/components/schemas/AIIntent",
