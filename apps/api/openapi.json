@@ -96,11 +96,7 @@
             "title": "Time Limit Seconds"
           }
         },
-        "required": [
-          "id",
-          "policy_uuid",
-          "assessment_type"
-        ],
+        "required": ["id", "policy_uuid", "assessment_type"],
         "title": "ActivityAssessmentPolicyRead",
         "type": "object"
       },
@@ -150,10 +146,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "name",
-          "chapter_id"
-        ],
+        "required": ["name", "chapter_id"],
         "title": "ActivityCreate",
         "type": "object"
       },
@@ -164,9 +157,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "ActivityDetailResponse",
         "type": "object"
       },
@@ -232,9 +223,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "position"
-        ],
+        "required": ["position"],
         "title": "ActivityOrderPayload",
         "type": "object"
       },
@@ -370,11 +359,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "activity_id",
-          "state"
-        ],
+        "required": ["user_id", "activity_id", "state"],
         "title": "ActivityProgressCell",
         "type": "object"
       },
@@ -748,9 +733,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "permission_id"
-        ],
+        "required": ["permission_id"],
         "title": "AddPermissionBody",
         "type": "object"
       },
@@ -795,12 +778,7 @@
             "title": "Retention Rate"
           }
         },
-        "required": [
-          "cohort_id",
-          "cohort_name",
-          "learners",
-          "retained_learners"
-        ],
+        "required": ["cohort_id", "cohort_name", "learners", "retained_learners"],
         "title": "AdminAnalyticsCohortRow",
         "type": "object"
       },
@@ -906,11 +884,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "program_name",
-          "course_count",
-          "learner_count"
-        ],
+        "required": ["program_name", "course_count", "learner_count"],
         "title": "AdminAnalyticsProgramRow",
         "type": "object"
       },
@@ -1082,11 +1056,7 @@
             "title": "Learner Count"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -1107,24 +1077,14 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "severity",
-          "title",
-          "body"
-        ],
+        "required": ["id", "type", "severity", "title", "body"],
         "title": "AlertItem",
         "type": "object"
       },
       "AnalyticsDataQuality": {
         "properties": {
           "confidence_level": {
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ],
+            "enum": ["low", "medium", "high"],
             "title": "Confidence Level",
             "type": "string"
           },
@@ -1177,21 +1137,12 @@
             "type": "array"
           },
           "mode": {
-            "enum": [
-              "live",
-              "rollup"
-            ],
+            "enum": ["live", "rollup"],
             "title": "Mode",
             "type": "string"
           }
         },
-        "required": [
-          "mode",
-          "confidence_level",
-          "missing_event_sources",
-          "courses_without_enough_data",
-          "issues"
-        ],
+        "required": ["mode", "confidence_level", "missing_event_sources", "courses_without_enough_data", "issues"],
         "title": "AnalyticsDataQuality",
         "type": "object"
       },
@@ -1206,10 +1157,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "label",
-          "value"
-        ],
+        "required": ["label", "value"],
         "title": "AnalyticsFilterOption",
         "type": "object"
       },
@@ -1301,11 +1249,7 @@
             "title": "Observed Value"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -1314,23 +1258,12 @@
             "type": "string"
           },
           "type": {
-            "enum": [
-              "engagement_drop",
-              "submission_spike",
-              "fast_quiz_completion",
-              "score_distribution_shift"
-            ],
+            "enum": ["engagement_drop", "submission_spike", "fast_quiz_completion", "score_distribution_shift"],
             "title": "Type",
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "severity",
-          "title",
-          "detail"
-        ],
+        "required": ["id", "type", "severity", "title", "detail"],
         "title": "AnomalyItem",
         "type": "object"
       },
@@ -1375,13 +1308,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message",
-          "details",
-          "field_errors",
-          "request_id"
-        ],
+        "required": ["code", "message", "details", "field_errors", "request_id"],
         "title": "ApiErrorEnvelope",
         "type": "object"
       },
@@ -1422,17 +1349,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "ApiFieldError",
         "type": "object"
       },
       "AssessmentAccessMode": {
-        "enum": [
-          "ALL_COURSE_LEARNERS",
-          "RESTRICTED"
-        ],
+        "enum": ["ALL_COURSE_LEARNERS", "RESTRICTED"],
         "title": "AssessmentAccessMode",
         "type": "string"
       },
@@ -1514,11 +1436,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "usergroup_uuid",
-          "name"
-        ],
+        "required": ["id", "usergroup_uuid", "name"],
         "title": "AssessmentAccessUserGroupRead",
         "type": "object"
       },
@@ -1563,12 +1481,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "user_uuid",
-          "username",
-          "email"
-        ],
+        "required": ["id", "user_uuid", "username", "email"],
         "title": "AssessmentAccessUserRead",
         "type": "object"
       },
@@ -1582,10 +1495,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "item_uuid",
-          "answer"
-        ],
+        "required": ["item_uuid", "answer"],
         "title": "AssessmentAnswerPatch",
         "type": "object"
       },
@@ -1718,12 +1628,7 @@
           },
           "release_state": {
             "default": "HIDDEN",
-            "enum": [
-              "HIDDEN",
-              "AWAITING_RELEASE",
-              "VISIBLE",
-              "RETURNED_FOR_REVISION"
-            ],
+            "enum": ["HIDDEN", "AWAITING_RELEASE", "VISIBLE", "RETURNED_FOR_REVISION"],
             "title": "Release State",
             "type": "string"
           },
@@ -1812,9 +1717,7 @@
             "title": "Timer Started At"
           }
         },
-        "required": [
-          "assessment_uuid"
-        ],
+        "required": ["assessment_uuid"],
         "title": "AssessmentAttemptProjection",
         "type": "object"
       },
@@ -1866,10 +1769,7 @@
             "type": "string"
           },
           "source": {
-            "enum": [
-              "grading_entry",
-              "bulk_action"
-            ],
+            "enum": ["grading_entry", "bulk_action"],
             "title": "Source",
             "type": "string"
           },
@@ -1900,13 +1800,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "source",
-          "action",
-          "occurred_at",
-          "summary"
-        ],
+        "required": ["id", "source", "action", "occurred_at", "summary"],
         "title": "AssessmentAuditEventRow",
         "type": "object"
       },
@@ -1932,12 +1826,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
+        "required": ["items", "total", "page", "page_size"],
         "title": "AssessmentAuditTrailResponse",
         "type": "object"
       },
@@ -2102,21 +1991,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "cohort_id",
-          "cohort_name"
-        ],
+        "required": ["cohort_id", "cohort_name"],
         "title": "AssessmentCohortRow",
         "type": "object"
       },
       "AssessmentCompletionRule": {
-        "enum": [
-          "VIEWED",
-          "SUBMITTED",
-          "GRADED",
-          "PASSED",
-          "TEACHER_VERIFIED"
-        ],
+        "enum": ["VIEWED", "SUBMITTED", "GRADED", "PASSED", "TEACHER_VERIFIED"],
         "title": "AssessmentCompletionRule",
         "type": "string"
       },
@@ -2162,12 +2042,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "kind",
-          "title",
-          "course_id",
-          "chapter_id"
-        ],
+        "required": ["kind", "title", "course_id", "chapter_id"],
         "title": "AssessmentCreate",
         "type": "object"
       },
@@ -2204,9 +2079,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "AssessmentDetailResponse",
         "type": "object"
       },
@@ -2312,9 +2185,7 @@
             ]
           }
         },
-        "required": [
-          "assessment_uuid"
-        ],
+        "required": ["assessment_uuid"],
         "title": "AssessmentDraftRead",
         "type": "object"
       },
@@ -2402,19 +2273,12 @@
         "type": "object"
       },
       "AssessmentGradingMode": {
-        "enum": [
-          "AUTO",
-          "MANUAL",
-          "AUTO_THEN_MANUAL"
-        ],
+        "enum": ["AUTO", "MANUAL", "AUTO_THEN_MANUAL"],
         "title": "AssessmentGradingMode",
         "type": "string"
       },
       "AssessmentGradingType": {
-        "enum": [
-          "NUMERIC",
-          "PERCENTAGE"
-        ],
+        "enum": ["NUMERIC", "PERCENTAGE"],
         "title": "AssessmentGradingType",
         "type": "string"
       },
@@ -2487,11 +2351,7 @@
             "type": "string"
           },
           "item_type": {
-            "enum": [
-              "workflow",
-              "question",
-              "test"
-            ],
+            "enum": ["workflow", "question", "test"],
             "title": "Item Type",
             "type": "string"
           },
@@ -2505,22 +2365,12 @@
             "type": "integer"
           },
           "signal": {
-            "enum": [
-              "healthy",
-              "watch",
-              "critical"
-            ],
+            "enum": ["healthy", "watch", "critical"],
             "title": "Signal",
             "type": "string"
           }
         },
-        "required": [
-          "item_key",
-          "item_label",
-          "item_type",
-          "signal",
-          "note"
-        ],
+        "required": ["item_key", "item_label", "item_type", "signal", "note"],
         "title": "AssessmentItemAnalyticsRow",
         "type": "object"
       },
@@ -2546,10 +2396,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind",
-          "body"
-        ],
+        "required": ["kind", "body"],
         "title": "AssessmentItemCreate",
         "type": "object"
       },
@@ -2558,11 +2405,7 @@
           "difficulty": {
             "anyOf": [
               {
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ],
+                "enum": ["easy", "medium", "hard"],
                 "type": "string"
               },
               {
@@ -2621,9 +2464,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "title": "AssessmentItemReorder",
         "type": "object"
       },
@@ -2638,10 +2479,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "item_uuid",
-          "order"
-        ],
+        "required": ["item_uuid", "order"],
         "title": "AssessmentItemReorderEntry",
         "type": "object"
       },
@@ -2773,21 +2611,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "user_display_name",
-          "attempts"
-        ],
+        "required": ["user_id", "user_display_name", "attempts"],
         "title": "AssessmentLearnerRow",
         "type": "object"
       },
       "AssessmentLifecycle": {
-        "enum": [
-          "DRAFT",
-          "SCHEDULED",
-          "PUBLISHED",
-          "ARCHIVED"
-        ],
+        "enum": ["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"],
         "title": "AssessmentLifecycle",
         "type": "string"
       },
@@ -2821,9 +2650,7 @@
             "$ref": "#/components/schemas/AssessmentLifecycle"
           }
         },
-        "required": [
-          "to"
-        ],
+        "required": ["to"],
         "title": "AssessmentLifecycleTransition",
         "type": "object"
       },
@@ -2852,12 +2679,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "is_canonical",
-          "cutover_ready",
-          "compatibility_mode",
-          "note"
-        ],
+        "required": ["is_canonical", "cutover_ready", "compatibility_mode", "note"],
         "title": "AssessmentMigrationStatus",
         "type": "object"
       },
@@ -2879,12 +2701,7 @@
             "type": "integer"
           },
           "assessment_type": {
-            "enum": [
-              "manual_assessment",
-              "quiz",
-              "exam",
-              "code_challenge"
-            ],
+            "enum": ["manual_assessment", "quiz", "exam", "code_challenge"],
             "title": "Assessment Type",
             "type": "string"
           },
@@ -3040,14 +2857,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "assessment_type",
-          "assessment_id",
-          "course_id",
-          "course_name",
-          "title",
-          "outlier_reason_codes"
-        ],
+        "required": ["assessment_type", "assessment_id", "course_id", "course_name", "title", "outlier_reason_codes"],
         "title": "AssessmentOutlierRow",
         "type": "object"
       },
@@ -3240,11 +3050,7 @@
           "review_visibility": {
             "anyOf": [
               {
-                "enum": [
-                  "NONE",
-                  "SCORE_ONLY",
-                  "FULL"
-                ],
+                "enum": ["NONE", "SCORE_ONLY", "FULL"],
                 "type": "string"
               },
               {
@@ -3601,17 +3407,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "item_uuid",
-          "order",
-          "kind",
-          "title",
-          "body",
-          "max_score",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "item_uuid", "order", "kind", "title", "body", "max_score", "created_at", "updated_at"],
         "title": "AssessmentReadItem",
         "type": "object"
       },
@@ -3644,9 +3440,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "ok"
-        ],
+        "required": ["ok"],
         "title": "AssessmentReadiness",
         "type": "object"
       },
@@ -3666,14 +3460,7 @@
           },
           "default_filter": {
             "default": "NEEDS_GRADING",
-            "enum": [
-              "ALL",
-              "NEEDS_GRADING",
-              "PENDING",
-              "GRADED",
-              "PUBLISHED",
-              "RETURNED"
-            ],
+            "enum": ["ALL", "NEEDS_GRADING", "PENDING", "GRADED", "PUBLISHED", "RETURNED"],
             "title": "Default Filter",
             "type": "string"
           },
@@ -3702,30 +3489,16 @@
             "type": "string"
           }
         },
-        "required": [
-          "assessment_uuid",
-          "activity_id",
-          "activity_uuid",
-          "title",
-          "kind"
-        ],
+        "required": ["assessment_uuid", "activity_id", "activity_uuid", "title", "kind"],
         "title": "AssessmentReviewProjection",
         "type": "object"
       },
       "AssessmentReviewSort": {
-        "enum": [
-          "submitted_at",
-          "final_score",
-          "attempt_number"
-        ],
+        "enum": ["submitted_at", "final_score", "attempt_number"],
         "type": "string"
       },
       "AssessmentReviewVisibility": {
-        "enum": [
-          "NONE",
-          "SCORE_ONLY",
-          "FULL"
-        ],
+        "enum": ["NONE", "SCORE_ONLY", "FULL"],
         "type": "string"
       },
       "AssessmentScoreProjection": {
@@ -3743,11 +3516,7 @@
           },
           "source": {
             "default": "none",
-            "enum": [
-              "teacher",
-              "auto",
-              "none"
-            ],
+            "enum": ["teacher", "auto", "none"],
             "title": "Source",
             "type": "string"
           }
@@ -3794,12 +3563,7 @@
             "type": "integer"
           },
           "status": {
-            "enum": [
-              "healthy",
-              "warning",
-              "breached",
-              "not_applicable"
-            ],
+            "enum": ["healthy", "warning", "breached", "not_applicable"],
             "title": "Status",
             "type": "string"
           },
@@ -3815,10 +3579,7 @@
             "title": "Target Hours"
           }
         },
-        "required": [
-          "status",
-          "note"
-        ],
+        "required": ["status", "note"],
         "title": "AssessmentSloSnapshot",
         "type": "object"
       },
@@ -3836,11 +3597,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -3849,11 +3606,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "severity",
-          "summary"
-        ],
+        "required": ["code", "severity", "summary"],
         "title": "AssessmentSupportAlertRow",
         "type": "object"
       },
@@ -3908,21 +3661,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "analytics_mode",
-          "cutover_blockers",
-          "alerts",
-          "note"
-        ],
+        "required": ["analytics_mode", "cutover_blockers", "alerts", "note"],
         "title": "AssessmentSupportDiagnostics",
         "type": "object"
       },
       "AssessmentType": {
-        "enum": [
-          "QUIZ",
-          "EXAM",
-          "CODE_CHALLENGE"
-        ],
+        "enum": ["QUIZ", "EXAM", "CODE_CHALLENGE"],
         "title": "AssessmentType",
         "type": "string"
       },
@@ -4000,11 +3744,7 @@
           },
           "confidence_level": {
             "default": "medium",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ],
+            "enum": ["low", "medium", "high"],
             "title": "Confidence Level",
             "type": "string"
           },
@@ -4122,11 +3862,7 @@
             "type": "object"
           },
           "risk_level": {
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ],
+            "enum": ["low", "medium", "high"],
             "title": "Risk Level",
             "type": "string"
           },
@@ -4147,13 +3883,7 @@
           },
           "risk_trend": {
             "default": "stable",
-            "enum": [
-              "newly_at_risk",
-              "worsening",
-              "improving",
-              "recovered",
-              "stable"
-            ],
+            "enum": ["newly_at_risk", "worsening", "improving", "recovered", "stable"],
             "title": "Risk Trend",
             "type": "string"
           },
@@ -4247,11 +3977,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "total",
-          "items"
-        ],
+        "required": ["generated_at", "total", "items"],
         "title": "AtRiskLearnersResponse",
         "type": "object"
       },
@@ -4298,15 +4024,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "event_uuid",
-          "event_type",
-          "target_kind",
-          "target_uuid",
-          "payload_json",
-          "created_at"
-        ],
+        "required": ["id", "event_uuid", "event_type", "target_kind", "target_uuid", "payload_json", "created_at"],
         "title": "AuditEventRead",
         "type": "object"
       },
@@ -4317,9 +4035,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "AuthActionResponse",
         "type": "object"
       },
@@ -4334,10 +4050,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "access_token",
-          "token_type"
-        ],
+        "required": ["access_token", "token_type"],
         "title": "AuthLoginResponse",
         "type": "object"
       },
@@ -4348,9 +4061,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "AuthRefreshResponse",
         "type": "object"
       },
@@ -4391,11 +4102,7 @@
             "title": "User Agent"
           }
         },
-        "required": [
-          "session_id",
-          "created_at",
-          "last_seen_at"
-        ],
+        "required": ["session_id", "created_at", "last_seen_at"],
         "title": "AuthSessionRead",
         "type": "object"
       },
@@ -4421,13 +4128,7 @@
             "$ref": "#/components/schemas/UserRead"
           }
         },
-        "required": [
-          "user",
-          "authorship",
-          "authorship_status",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["user", "authorship", "authorship_status", "creation_date", "update_date"],
         "title": "AuthorWithRole",
         "type": "object"
       },
@@ -4466,11 +4167,7 @@
             "title": "Item Feedback"
           },
           "status": {
-            "enum": [
-              "GRADED",
-              "PUBLISHED",
-              "RETURNED"
-            ],
+            "enum": ["GRADED", "PUBLISHED", "RETURNED"],
             "title": "Status",
             "type": "string"
           },
@@ -4479,11 +4176,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "submission_uuid",
-          "final_score",
-          "status"
-        ],
+        "required": ["submission_uuid", "final_score", "status"],
         "title": "BatchGradeItem",
         "type": "object"
       },
@@ -4500,9 +4193,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "grades"
-        ],
+        "required": ["grades"],
         "title": "BatchGradeRequest",
         "type": "object"
       },
@@ -4553,10 +4244,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "submission_uuid",
-          "success"
-        ],
+        "required": ["submission_uuid", "success"],
         "title": "BatchGradeResultItem",
         "type": "object"
       },
@@ -4570,9 +4258,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "checks"
-        ],
+        "required": ["checks"],
         "title": "BatchPermissionCheckRequest",
         "type": "object"
       },
@@ -4586,9 +4272,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "results"
-        ],
+        "required": ["results"],
         "title": "BatchPermissionCheckResponse",
         "type": "object"
       },
@@ -4642,25 +4326,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "course_id",
-          "chapter_id",
-          "activity_id",
-          "block_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["id", "course_id", "chapter_id", "activity_id", "block_uuid", "creation_date", "update_date"],
         "title": "BlockRead",
         "type": "object"
       },
       "BlockTypeEnum": {
-        "enum": [
-          "BLOCK_VIDEO",
-          "BLOCK_DOCUMENT_PDF",
-          "BLOCK_IMAGE",
-          "BLOCK_CUSTOM"
-        ],
+        "enum": ["BLOCK_VIDEO", "BLOCK_DOCUMENT_PDF", "BLOCK_IMAGE", "BLOCK_CUSTOM"],
         "title": "BlockTypeEnum",
         "type": "string"
       },
@@ -4831,10 +4502,7 @@
             "title": "Pdf Uploaded Path"
           }
         },
-        "required": [
-          "name",
-          "chapter_id"
-        ],
+        "required": ["name", "chapter_id"],
         "title": "Body_api_create_documentpdf_activity_api_v1_activities_documentpdf_post",
         "type": "object"
       },
@@ -4850,10 +4518,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "file_object",
-          "activity_uuid"
-        ],
+        "required": ["file_object", "activity_uuid"],
         "title": "Body_api_create_image_file_block_api_v1_blocks_image_post",
         "type": "object"
       },
@@ -4869,10 +4534,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "file_object",
-          "activity_uuid"
-        ],
+        "required": ["file_object", "activity_uuid"],
         "title": "Body_api_create_pdf_file_block_api_v1_blocks_pdf_post",
         "type": "object"
       },
@@ -4930,10 +4592,7 @@
             "title": "Video Uploaded Path"
           }
         },
-        "required": [
-          "name",
-          "chapter_id"
-        ],
+        "required": ["name", "chapter_id"],
         "title": "Body_api_create_video_activity_api_v1_activities_video_post",
         "type": "object"
       },
@@ -4949,10 +4608,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "file_object",
-          "activity_uuid"
-        ],
+        "required": ["file_object", "activity_uuid"],
         "title": "Body_api_create_video_file_block_api_v1_blocks_video_post",
         "type": "object"
       },
@@ -4964,9 +4620,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "logo_file"
-        ],
+        "required": ["logo_file"],
         "title": "Body_api_update_app_logo_api_v1_logo_put",
         "type": "object"
       },
@@ -4996,9 +4650,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "thumbnail_file"
-        ],
+        "required": ["thumbnail_file"],
         "title": "Body_api_update_platform_thumbnail_api_v1_thumbnail_put",
         "type": "object"
       },
@@ -5009,9 +4661,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_id"
-        ],
+        "required": ["upload_id"],
         "title": "Body_complete_chunked_upload_api_v1_uploads_complete_post",
         "type": "object"
       },
@@ -5023,9 +4673,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "title": "Body_forgot_password_api_v1_auth_forgot_password_post",
         "type": "object"
       },
@@ -5063,13 +4711,7 @@
             "title": "Uuid"
           }
         },
-        "required": [
-          "directory",
-          "type_of_dir",
-          "filename",
-          "total_chunks",
-          "file_size"
-        ],
+        "required": ["directory", "type_of_dir", "filename", "total_chunks", "file_size"],
         "title": "Body_initiate_chunked_upload_api_v1_uploads_initiate_post",
         "type": "object"
       },
@@ -5125,10 +4767,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "username",
-          "password"
-        ],
+        "required": ["username", "password"],
         "title": "Body_login_api_v1_auth_login_post",
         "type": "object"
       },
@@ -5143,10 +4782,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "token",
-          "password"
-        ],
+        "required": ["token", "password"],
         "title": "Body_reset_password_api_v1_auth_reset_password_post",
         "type": "object"
       },
@@ -5166,11 +4802,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_id",
-          "chunk_index",
-          "chunk"
-        ],
+        "required": ["upload_id", "chunk_index", "chunk"],
         "title": "Body_upload_chunk_api_v1_uploads_chunk_post",
         "type": "object"
       },
@@ -5249,23 +4881,12 @@
         "type": "object"
       },
       "BulkActionStatus": {
-        "enum": [
-          "PENDING",
-          "RUNNING",
-          "COMPLETED",
-          "FAILED"
-        ],
+        "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED"],
         "title": "BulkActionStatus",
         "type": "string"
       },
       "BulkActionType": {
-        "enum": [
-          "EXTEND_DEADLINE",
-          "RELEASE_GRADES",
-          "RETURN_ALL",
-          "OVERRIDE_SCORE",
-          "BATCH_GRADE"
-        ],
+        "enum": ["EXTEND_DEADLINE", "RELEASE_GRADES", "RETURN_ALL", "OVERRIDE_SCORE", "BATCH_GRADE"],
         "title": "BulkActionType",
         "type": "string"
       },
@@ -5285,11 +4906,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "activity_id",
-          "published_count",
-          "already_published_count"
-        ],
+        "required": ["activity_id", "published_count", "already_published_count"],
         "title": "BulkPublishGradesResponse",
         "type": "object"
       },
@@ -5337,10 +4954,7 @@
             "title": "Thumbnail Image"
           }
         },
-        "required": [
-          "course_uuid",
-          "name"
-        ],
+        "required": ["course_uuid", "name"],
         "title": "CertificateCourseSummary",
         "type": "object"
       },
@@ -5373,14 +4987,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "user_id",
-          "certification_id",
-          "user_certification_uuid",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "user_id", "certification_id", "user_certification_uuid", "created_at", "updated_at"],
         "title": "CertificateUserRead",
         "type": "object"
       },
@@ -5439,10 +5046,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "username",
-          "email"
-        ],
+        "required": ["username", "email"],
         "title": "CertificateUserSummary",
         "type": "object"
       },
@@ -5470,9 +5074,7 @@
             "title": "Last Known Update Date"
           }
         },
-        "required": [
-          "course_id"
-        ],
+        "required": ["course_id"],
         "title": "CertificationCreate",
         "type": "object"
       },
@@ -5483,9 +5085,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "CertificationDetailResponse",
         "type": "object"
       },
@@ -5519,14 +5119,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "certification_uuid",
-          "course_id",
-          "config",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["id", "certification_uuid", "course_id", "config", "creation_date", "update_date"],
         "title": "CertificationRead",
         "type": "object"
       },
@@ -5596,10 +5189,7 @@
             "title": "Thumbnail Image"
           }
         },
-        "required": [
-          "name",
-          "course_uuid"
-        ],
+        "required": ["name", "course_uuid"],
         "title": "ChapterCreateRequest",
         "type": "object"
       },
@@ -5610,9 +5200,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "ChapterDetailResponse",
         "type": "object"
       },
@@ -5630,10 +5218,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "chapter_uuid",
-          "activities_order_by_uuids"
-        ],
+        "required": ["chapter_uuid", "activities_order_by_uuids"],
         "title": "ChapterOrderByUuid",
         "type": "object"
       },
@@ -5645,9 +5230,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "position"
-        ],
+        "required": ["position"],
         "title": "ChapterOrderPayload",
         "type": "object"
       },
@@ -5727,15 +5310,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "course_id",
-          "id",
-          "activities",
-          "chapter_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["name", "course_id", "id", "activities", "chapter_uuid", "creation_date", "update_date"],
         "title": "ChapterRead",
         "type": "object"
       },
@@ -5816,15 +5391,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "course_id",
-          "id",
-          "activities",
-          "chapter_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["name", "course_id", "id", "activities", "chapter_uuid", "creation_date", "update_date"],
         "title": "ChapterReadWithPermissions",
         "type": "object"
       },
@@ -5889,9 +5456,7 @@
             "title": "Last Known Update Date"
           }
         },
-        "required": [
-          "chapter_order_by_uuids"
-        ],
+        "required": ["chapter_order_by_uuids"],
         "title": "ChapterUpdateOrder",
         "type": "object"
       },
@@ -5953,11 +5518,7 @@
           "variant": {
             "anyOf": [
               {
-                "enum": [
-                  "SINGLE_CHOICE",
-                  "MULTIPLE_CHOICE",
-                  "TRUE_FALSE"
-                ],
+                "enum": ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"],
                 "type": "string"
               },
               {
@@ -6017,14 +5578,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "success",
-          "upload_uuid",
-          "chunk_index",
-          "chunks_received",
-          "total_chunks",
-          "is_complete"
-        ],
+        "required": ["success", "upload_uuid", "chunk_index", "chunks_received", "total_chunks", "is_complete"],
         "title": "ChunkedUploadChunkResponse",
         "type": "object"
       },
@@ -6047,12 +5601,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "filename",
-          "file_size",
-          "message"
-        ],
+        "required": ["success", "filename", "file_size", "message"],
         "title": "ChunkedUploadCompleteResponse",
         "type": "object"
       },
@@ -6067,10 +5616,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid",
-          "message"
-        ],
+        "required": ["upload_uuid", "message"],
         "title": "ChunkedUploadInitiateResponse",
         "type": "object"
       },
@@ -6101,14 +5647,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid",
-          "filename",
-          "chunks_received",
-          "total_chunks",
-          "is_complete",
-          "file_size"
-        ],
+        "required": ["upload_uuid", "filename", "chunks_received", "total_chunks", "is_complete", "file_size"],
         "title": "ChunkedUploadStatusResponse",
         "type": "object"
       },
@@ -6163,9 +5702,7 @@
             "title": "Time"
           }
         },
-        "required": [
-          "passed"
-        ],
+        "required": ["passed"],
         "title": "CodeChallengeValidationDetail",
         "type": "object"
       },
@@ -6179,9 +5716,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "results"
-        ],
+        "required": ["results"],
         "title": "CodeChallengeValidationResponse",
         "type": "object"
       },
@@ -6265,10 +5800,7 @@
             "title": "Total"
           }
         },
-        "required": [
-          "ok",
-          "status"
-        ],
+        "required": ["ok", "status"],
         "title": "CodeChallengeValidationResult",
         "type": "object"
       },
@@ -6300,9 +5832,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "language"
-        ],
+        "required": ["language"],
         "title": "CodeItemAnswer",
         "type": "object"
       },
@@ -6374,12 +5904,7 @@
           },
           "scoring_strategy": {
             "default": "PARTIAL_CREDIT",
-            "enum": [
-              "PARTIAL_CREDIT",
-              "ALL_OR_NOTHING",
-              "BEST_SUBMISSION",
-              "LATEST_SUBMISSION"
-            ],
+            "enum": ["PARTIAL_CREDIT", "ALL_OR_NOTHING", "BEST_SUBMISSION", "LATEST_SUBMISSION"],
             "title": "Scoring Strategy",
             "type": "string"
           },
@@ -6446,10 +5971,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "language",
-          "source"
-        ],
+        "required": ["language", "source"],
         "title": "CodeRunRequest",
         "type": "object"
       },
@@ -6564,10 +6086,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "run_id",
-          "status"
-        ],
+        "required": ["run_id", "status"],
         "title": "CodeRunResponse",
         "type": "object"
       },
@@ -6721,10 +6240,7 @@
             "title": "Weight"
           }
         },
-        "required": [
-          "test_id",
-          "passed"
-        ],
+        "required": ["test_id", "passed"],
         "title": "CodeRunTestResult",
         "type": "object"
       },
@@ -6762,13 +6278,7 @@
           },
           "match_mode": {
             "default": "EXACT",
-            "enum": [
-              "EXACT",
-              "TRIMMED",
-              "IGNORE_WHITESPACE",
-              "NUMERIC_TOLERANCE",
-              "CUSTOM_CHECKER"
-            ],
+            "enum": ["EXACT", "TRIMMED", "IGNORE_WHITESPACE", "NUMERIC_TOLERANCE", "CUSTOM_CHECKER"],
             "title": "Match Mode",
             "type": "string"
           },
@@ -6811,11 +6321,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "name",
-          "public",
-          "courses"
-        ],
+        "required": ["name", "public", "courses"],
         "title": "CollectionCreate",
         "type": "object"
       },
@@ -6826,9 +6332,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "CollectionDetailResponse",
         "type": "object"
       },
@@ -6891,15 +6395,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "public",
-          "id",
-          "courses",
-          "collection_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["name", "public", "id", "courses", "collection_uuid", "creation_date", "update_date"],
         "title": "CollectionRead",
         "type": "object"
       },
@@ -7059,11 +6555,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "key",
-          "label",
-          "count"
-        ],
+        "required": ["key", "label", "count"],
         "title": "CommonFailureRow",
         "type": "object"
       },
@@ -7131,11 +6623,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -7190,11 +6678,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -7214,12 +6698,7 @@
             "title": "Value"
           }
         },
-        "required": [
-          "course_id",
-          "signal",
-          "severity",
-          "note"
-        ],
+        "required": ["course_id", "signal", "severity", "note"],
         "title": "ContentHealthRow",
         "type": "object"
       },
@@ -7292,9 +6771,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "username"
-        ],
+        "required": ["username"],
         "title": "CourseBulkContributorItem",
         "type": "object"
       },
@@ -7315,10 +6792,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "successful",
-          "failed"
-        ],
+        "required": ["successful", "failed"],
         "title": "CourseBulkContributorResponse",
         "type": "object"
       },
@@ -7341,10 +6815,7 @@
             "$ref": "#/components/schemas/CertificateCourseSummary"
           }
         },
-        "required": [
-          "certificate_user",
-          "course"
-        ],
+        "required": ["certificate_user", "course"],
         "title": "CourseCertificateResponse",
         "type": "object"
       },
@@ -7359,10 +6830,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail",
-          "status"
-        ],
+        "required": ["detail", "status"],
         "title": "CourseContributorApplicationResponse",
         "type": "object"
       },
@@ -7377,10 +6845,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail",
-          "status"
-        ],
+        "required": ["detail", "status"],
         "title": "CourseContributorMutationResponse",
         "type": "object"
       },
@@ -7410,14 +6875,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "authorship",
-          "authorship_status",
-          "creation_date",
-          "update_date",
-          "user"
-        ],
+        "required": ["user_id", "authorship", "authorship_status", "creation_date", "update_date", "user"],
         "title": "CourseContributorResponse",
         "type": "object"
       },
@@ -7428,9 +6886,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "CourseDetailResponse",
         "type": "object"
       },
@@ -7456,9 +6912,7 @@
             "default": "post"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "title": "CourseDiscussionCreate",
         "type": "object"
       },
@@ -8033,15 +7487,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "course_uuid",
-          "creation_date",
-          "update_date",
-          "name",
-          "public",
-          "open_to_contributors"
-        ],
+        "required": ["id", "course_uuid", "creation_date", "update_date", "name", "public", "open_to_contributors"],
         "title": "CourseRead",
         "type": "object"
       },
@@ -8200,15 +7646,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "course_uuid",
-          "creation_date",
-          "update_date",
-          "name",
-          "public",
-          "open_to_contributors"
-        ],
+        "required": ["id", "course_uuid", "creation_date", "update_date", "name", "public", "open_to_contributors"],
         "title": "CourseReadWithPermissions",
         "type": "object"
       },
@@ -8234,10 +7672,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "title",
-          "content"
-        ],
+        "required": ["title", "content"],
         "title": "CourseUpdateCreate",
         "type": "object"
       },
@@ -8248,9 +7683,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "CourseUpdateDeleteResponse",
         "type": "object"
       },
@@ -8298,15 +7731,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "content",
-          "course_id",
-          "courseupdate_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["id", "title", "content", "course_id", "courseupdate_uuid", "creation_date", "update_date"],
         "title": "CourseUpdateRead",
         "type": "object"
       },
@@ -8378,12 +7803,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "is_owner",
-          "is_creator",
-          "is_maintainer",
-          "is_contributor"
-        ],
+        "required": ["is_owner", "is_creator", "is_maintainer", "is_contributor"],
         "title": "CourseUserRightsOwnership",
         "type": "object"
       },
@@ -8479,14 +7899,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "course_uuid",
-          "user_id",
-          "is_anonymous",
-          "permissions",
-          "ownership",
-          "roles"
-        ],
+        "required": ["course_uuid", "user_id", "is_anonymous", "permissions", "ownership", "roles"],
         "title": "CourseUserRightsResponse",
         "type": "object"
       },
@@ -8509,12 +7922,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "is_admin",
-          "is_maintainer_role",
-          "is_instructor",
-          "is_user"
-        ],
+        "required": ["is_admin", "is_maintainer_role", "is_instructor", "is_user"],
         "title": "CourseUserRightsRoles",
         "type": "object"
       },
@@ -8553,10 +7961,7 @@
             "title": "User Rank"
           }
         },
-        "required": [
-          "profile",
-          "recent_transactions"
-        ],
+        "required": ["profile", "recent_transactions"],
         "title": "DashboardRead",
         "type": "object"
       },
@@ -8582,11 +7987,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -8606,12 +8007,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "severity",
-          "title",
-          "detail"
-        ],
+        "required": ["id", "severity", "title", "detail"],
         "title": "DataQualityIssue",
         "type": "object"
       },
@@ -8638,10 +8034,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "user_uuids",
-          "new_due_at"
-        ],
+        "required": ["user_uuids", "new_due_at"],
         "title": "DeadlineExtensionRequest",
         "type": "object"
       },
@@ -8671,12 +8064,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "discussion_id",
-          "user_id",
-          "creation_date"
-        ],
+        "required": ["id", "discussion_id", "user_id", "creation_date"],
         "title": "DiscussionLikeRead",
         "type": "object"
       },
@@ -8687,18 +8075,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "DiscussionMessageResponse",
         "type": "object"
       },
       "DiscussionStatusEnum": {
-        "enum": [
-          "active",
-          "hidden",
-          "deleted"
-        ],
+        "enum": ["active", "hidden", "deleted"],
         "title": "DiscussionStatusEnum",
         "type": "string"
       },
@@ -8725,21 +8107,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "message",
-          "is_liked",
-          "is_disliked",
-          "likes_count",
-          "dislikes_count"
-        ],
+        "required": ["message", "is_liked", "is_disliked", "likes_count", "dislikes_count"],
         "title": "DiscussionToggleResponse",
         "type": "object"
       },
       "DiscussionType": {
-        "enum": [
-          "post",
-          "reply"
-        ],
+        "enum": ["post", "reply"],
         "title": "DiscussionType",
         "type": "string"
       },
@@ -8758,12 +8131,7 @@
             "type": "array"
           },
           "metric": {
-            "enum": [
-              "active_learners",
-              "completion_rate",
-              "pass_rate",
-              "backlog"
-            ],
+            "enum": ["active_learners", "completion_rate", "pass_rate", "backlog"],
             "title": "Metric",
             "type": "string"
           },
@@ -8773,10 +8141,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "metric"
-        ],
+        "required": ["generated_at", "metric"],
         "title": "DrillThroughResponse",
         "type": "object"
       },
@@ -8797,9 +8162,7 @@
             "title": "Detail"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "ErrorModel",
         "type": "object"
       },
@@ -8828,12 +8191,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "uri",
-          "type",
-          "chapter_id"
-        ],
+        "required": ["name", "uri", "type", "chapter_id"],
         "title": "ExternalVideo",
         "type": "object"
       },
@@ -9019,24 +8377,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "attempt_uuid",
-          "status",
-          "attempt_number",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["attempt_uuid", "status", "attempt_number", "created_at", "updated_at"],
         "title": "FileSubmissionAttemptRead",
         "type": "object"
       },
       "FileSubmissionAttemptStatus": {
-        "enum": [
-          "DRAFT",
-          "SUBMITTED",
-          "GRADED",
-          "PUBLISHED",
-          "RETURNED"
-        ],
+        "enum": ["DRAFT", "SUBMITTED", "GRADED", "PUBLISHED", "RETURNED"],
         "title": "FileSubmissionAttemptStatus",
         "type": "string"
       },
@@ -9089,10 +8435,7 @@
           },
           "grade_release_mode": {
             "default": "IMMEDIATE",
-            "enum": [
-              "IMMEDIATE",
-              "BATCH"
-            ],
+            "enum": ["IMMEDIATE", "BATCH"],
             "title": "Grade Release Mode",
             "type": "string"
           },
@@ -9148,11 +8491,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "title",
-          "course_id",
-          "chapter_id"
-        ],
+        "required": ["title", "course_id", "chapter_id"],
         "title": "FileSubmissionCreate",
         "type": "object"
       },
@@ -9187,9 +8526,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid"
-        ],
+        "required": ["upload_uuid"],
         "title": "FileSubmissionFilePatch",
         "type": "object"
       },
@@ -9213,12 +8550,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "attempt_file_uuid",
-          "upload_uuid",
-          "get_url",
-          "expires_at"
-        ],
+        "required": ["attempt_file_uuid", "upload_uuid", "get_url", "expires_at"],
         "title": "FileSubmissionFileUrlResponse",
         "type": "object"
       },
@@ -9247,11 +8579,7 @@
           },
           "status": {
             "default": "GRADED",
-            "enum": [
-              "GRADED",
-              "PUBLISHED",
-              "RETURNED"
-            ],
+            "enum": ["GRADED", "PUBLISHED", "RETURNED"],
             "title": "Status",
             "type": "string"
           }
@@ -9260,11 +8588,7 @@
         "type": "object"
       },
       "FileSubmissionLifecycle": {
-        "enum": [
-          "DRAFT",
-          "PUBLISHED",
-          "ARCHIVED"
-        ],
+        "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"],
         "title": "FileSubmissionLifecycle",
         "type": "string"
       },
@@ -9461,20 +8785,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "total"
-        ],
+        "required": ["items", "total"],
         "title": "FileSubmissionReviewQueue",
         "type": "object"
       },
       "FileSubmissionScanStatus": {
-        "enum": [
-          "PENDING",
-          "CLEAN",
-          "FLAGGED",
-          "ERROR"
-        ],
+        "enum": ["PENDING", "CLEAN", "FLAGGED", "ERROR"],
         "title": "FileSubmissionScanStatus",
         "type": "string"
       },
@@ -9520,10 +8836,7 @@
           "grade_release_mode": {
             "anyOf": [
               {
-                "enum": [
-                  "IMMEDIATE",
-                  "BATCH"
-                ],
+                "enum": ["IMMEDIATE", "BATCH"],
                 "type": "string"
               },
               {
@@ -9686,11 +8999,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "username",
-          "email"
-        ],
+        "required": ["id", "username", "email"],
         "title": "FileSubmissionUserRead",
         "type": "object"
       },
@@ -9719,11 +9028,7 @@
             "title": "Assessment Type"
           },
           "confidence_level": {
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ],
+            "enum": ["low", "medium", "high"],
             "title": "Confidence Level",
             "type": "string"
           },
@@ -9791,11 +9096,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -9825,14 +9126,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "severity",
-          "title",
-          "prediction",
-          "confidence_level"
-        ],
+        "required": ["id", "type", "severity", "title", "prediction", "confidence_level"],
         "title": "ForecastItem",
         "type": "object"
       },
@@ -9840,12 +9134,7 @@
         "properties": {
           "field_type": {
             "default": "text",
-            "enum": [
-              "text",
-              "textarea",
-              "number",
-              "date"
-            ],
+            "enum": ["text", "textarea", "number", "date"],
             "title": "Field Type",
             "type": "string"
           },
@@ -10068,14 +9357,7 @@
             "title": "Update Date"
           }
         },
-        "required": [
-          "id",
-          "chapters",
-          "authors",
-          "name",
-          "public",
-          "open_to_contributors"
-        ],
+        "required": ["id", "chapters", "authors", "name", "public", "open_to_contributors"],
         "title": "FullCourseRead",
         "type": "object"
       },
@@ -10101,19 +9383,13 @@
             "title": "Pct Of Previous"
           }
         },
-        "required": [
-          "label",
-          "count"
-        ],
+        "required": ["label", "count"],
         "title": "FunnelStep",
         "type": "object"
       },
       "GradeReleaseMode": {
         "description": "Controls when a published grade becomes visible to the student.\n\nIMMEDIATE — grade is visible as soon as the teacher marks it PUBLISHED.\nBATCH     — grade is hidden until a teacher explicitly runs\n            POST /grading/activities/{uuid}/publish-grades, which stamps\n            GradingEntry.published_at for all PUBLISHED submissions at once.",
-        "enum": [
-          "IMMEDIATE",
-          "BATCH"
-        ],
+        "enum": ["IMMEDIATE", "BATCH"],
         "title": "GradeReleaseMode",
         "type": "string"
       },
@@ -10162,13 +9438,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "activity_uuid",
-          "name",
-          "activity_type",
-          "order"
-        ],
+        "required": ["id", "activity_uuid", "name", "activity_type", "order"],
         "title": "GradebookActivity",
         "type": "object"
       },
@@ -10241,14 +9511,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "page",
-          "page_size",
-          "total_students",
-          "total_activities",
-          "has_previous",
-          "has_next"
-        ],
+        "required": ["page", "page_size", "total_students", "total_activities", "has_previous", "has_next"],
         "title": "GradebookPageInfo",
         "type": "object"
       },
@@ -10293,12 +9556,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "user_uuid",
-          "username",
-          "email"
-        ],
+        "required": ["id", "user_uuid", "username", "email"],
         "title": "GradebookStudent",
         "type": "object"
       },
@@ -10390,9 +9648,7 @@
             "$ref": "#/components/schemas/JsonValue"
           }
         },
-        "required": [
-          "item_id"
-        ],
+        "required": ["item_id"],
         "title": "GradedItem",
         "type": "object"
       },
@@ -10451,14 +9707,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "course_id",
-          "course_name",
-          "assessment_id",
-          "assessment_type",
-          "title",
-          "awaiting_review"
-        ],
+        "required": ["course_id", "course_name", "assessment_id", "assessment_type", "title", "awaiting_review"],
         "title": "GradingBacklogItem",
         "type": "object"
       },
@@ -10569,10 +9818,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "checks"
-        ],
+        "required": ["status", "checks"],
         "title": "HealthStatusResponse",
         "type": "object"
       },
@@ -10587,10 +9833,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "label",
-          "count"
-        ],
+        "required": ["label", "count"],
         "title": "HistogramBucket",
         "type": "object"
       },
@@ -10607,9 +9850,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "activity_id"
-        ],
+        "required": ["activity_id"],
         "title": "InlineQuizCreate",
         "type": "object"
       },
@@ -10630,10 +9871,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "assessment_uuid",
-          "activity_id"
-        ],
+        "required": ["assessment_uuid", "activity_id"],
         "title": "InlineQuizResponse",
         "type": "object"
       },
@@ -10677,14 +9915,7 @@
             "type": "string"
           },
           "category": {
-            "enum": [
-              "risk",
-              "assessment",
-              "content",
-              "workload",
-              "completion",
-              "intervention"
-            ],
+            "enum": ["risk", "assessment", "content", "workload", "completion", "intervention"],
             "title": "Category",
             "type": "string"
           },
@@ -10730,11 +9961,7 @@
             "type": "integer"
           },
           "severity": {
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ],
+            "enum": ["info", "warning", "critical"],
             "title": "Severity",
             "type": "string"
           },
@@ -10743,14 +9970,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "category",
-          "severity",
-          "priority",
-          "title",
-          "body"
-        ],
+        "required": ["id", "category", "severity", "priority", "title", "body"],
         "title": "InsightFeedItem",
         "type": "object"
       },
@@ -10943,18 +10163,12 @@
             "title": "Score"
           }
         },
-        "required": [
-          "item_id"
-        ],
+        "required": ["item_id"],
         "title": "ItemFeedback",
         "type": "object"
       },
       "ItemFeedbackAnnotationType": {
-        "enum": [
-          "TEXT",
-          "HIGHLIGHT",
-          "AUDIO"
-        ],
+        "enum": ["TEXT", "HIGHLIGHT", "AUDIO"],
         "title": "ItemFeedbackAnnotationType",
         "type": "string"
       },
@@ -11033,9 +10247,7 @@
             "title": "Task Id"
           }
         },
-        "required": [
-          "item_ref"
-        ],
+        "required": ["item_ref"],
         "title": "ItemFeedbackCreate",
         "type": "object"
       },
@@ -11264,20 +10476,12 @@
             "title": "Score"
           }
         },
-        "required": [
-          "item_uuid"
-        ],
+        "required": ["item_uuid"],
         "title": "ItemGradeEntry",
         "type": "object"
       },
       "ItemKind": {
-        "enum": [
-          "CHOICE",
-          "OPEN_TEXT",
-          "FORM",
-          "CODE",
-          "MATCHING"
-        ],
+        "enum": ["CHOICE", "OPEN_TEXT", "FORM", "CODE", "MATCHING"],
         "title": "ItemKind",
         "type": "string"
       },
@@ -11308,11 +10512,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "monaco_language"
-        ],
+        "required": ["id", "name", "monaco_language"],
         "title": "Judge0LanguageRead",
         "type": "object"
       },
@@ -11352,9 +10552,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "cutoff_at"
-        ],
+        "required": ["cutoff_at"],
         "title": "LatePolicyCutoff",
         "type": "object"
       },
@@ -11392,10 +10590,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "percent_per_day",
-          "max_days"
-        ],
+        "required": ["percent_per_day", "max_days"],
         "title": "LatePolicyPenalty",
         "type": "object"
       },
@@ -11474,12 +10669,7 @@
             "title": "Username"
           }
         },
-        "required": [
-          "rank",
-          "user_id",
-          "total_xp",
-          "level"
-        ],
+        "required": ["rank", "user_id", "total_xp", "level"],
         "title": "LeaderboardEntryRead",
         "type": "object"
       },
@@ -11498,10 +10688,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "entries",
-          "total_participants"
-        ],
+        "required": ["entries", "total_participants"],
         "title": "LeaderboardRead",
         "type": "object"
       },
@@ -11599,10 +10786,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "left",
-          "right"
-        ],
+        "required": ["left", "right"],
         "title": "MatchPair",
         "type": "object"
       },
@@ -11617,10 +10801,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "left",
-          "right"
-        ],
+        "required": ["left", "right"],
         "title": "MatchingAnswerPair",
         "type": "object"
       },
@@ -11725,11 +10906,7 @@
             "title": "Delta Value"
           },
           "direction": {
-            "enum": [
-              "up",
-              "down",
-              "flat"
-            ],
+            "enum": ["up", "down", "flat"],
             "title": "Direction",
             "type": "string"
           },
@@ -11758,13 +10935,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "value",
-          "delta_value",
-          "delta_pct",
-          "direction",
-          "label"
-        ],
+        "required": ["value", "delta_value", "delta_pct", "direction", "label"],
         "title": "MetricCard",
         "type": "object"
       },
@@ -11851,13 +11022,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "users",
-          "total",
-          "page",
-          "per_page",
-          "total_pages"
-        ],
+        "required": ["users", "total", "page", "per_page", "total_pages"],
         "title": "PaginatedPlatformUsers",
         "type": "object"
       },
@@ -11894,10 +11059,7 @@
             "title": "Scope"
           }
         },
-        "required": [
-          "action",
-          "resource"
-        ],
+        "required": ["action", "resource"],
         "title": "PermissionCheckRequest",
         "type": "object"
       },
@@ -11912,10 +11074,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "granted",
-          "permission"
-        ],
+        "required": ["granted", "permission"],
         "title": "PermissionCheckResponse",
         "type": "object"
       },
@@ -11953,13 +11112,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "resource_type",
-          "action",
-          "scope"
-        ],
+        "required": ["id", "name", "resource_type", "action", "scope"],
         "title": "PermissionRead",
         "type": "object"
       },
@@ -11970,9 +11123,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "detail"
-        ],
+        "required": ["detail"],
         "title": "PlatformDetailResponse",
         "type": "object"
       },
@@ -12053,12 +11204,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "email",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["name", "email", "creation_date", "update_date"],
         "title": "PlatformRead",
         "type": "object"
       },
@@ -12135,10 +11281,7 @@
             "$ref": "#/components/schemas/UserRead"
           }
         },
-        "required": [
-          "user",
-          "role"
-        ],
+        "required": ["user", "role"],
         "title": "PlatformUser",
         "type": "object"
       },
@@ -12280,11 +11423,7 @@
             "$ref": "#/components/schemas/CertificateCourseSummary"
           }
         },
-        "required": [
-          "certificate_user",
-          "certification",
-          "course"
-        ],
+        "required": ["certificate_user", "certification", "course"],
         "title": "PublicCertificateResponse",
         "type": "object"
       },
@@ -12359,10 +11498,7 @@
             "title": "Weak Correct Pct"
           }
         },
-        "required": [
-          "question_id",
-          "question_label"
-        ],
+        "required": ["question_id", "question_label"],
         "title": "QuestionDifficultyRow",
         "type": "object"
       },
@@ -12381,15 +11517,7 @@
           },
           "area": {
             "default": "publish",
-            "enum": [
-              "details",
-              "questions",
-              "policy",
-              "audience",
-              "results",
-              "publish",
-              "system"
-            ],
+            "enum": ["details", "questions", "policy", "audience", "results", "publish", "system"],
             "title": "Area",
             "type": "string"
           },
@@ -12436,24 +11564,13 @@
           },
           "severity": {
             "default": "blocker",
-            "enum": [
-              "blocker",
-              "warning",
-              "advice",
-              "audit"
-            ],
+            "enum": ["blocker", "warning", "advice", "audit"],
             "title": "Severity",
             "type": "string"
           },
           "view": {
             "default": "publish",
-            "enum": [
-              "settings",
-              "questions",
-              "audience",
-              "results",
-              "publish"
-            ],
+            "enum": ["settings", "questions", "audience", "results", "publish"],
             "title": "View",
             "type": "string"
           },
@@ -12469,29 +11586,17 @@
             "title": "Why"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "ReadinessIssue",
         "type": "object"
       },
       "ResourceAuthorshipEnum": {
-        "enum": [
-          "CREATOR",
-          "CONTRIBUTOR",
-          "MAINTAINER",
-          "REPORTER"
-        ],
+        "enum": ["CREATOR", "CONTRIBUTOR", "MAINTAINER", "REPORTER"],
         "title": "ResourceAuthorshipEnum",
         "type": "string"
       },
       "ResourceAuthorshipStatusEnum": {
-        "enum": [
-          "ACTIVE",
-          "PENDING",
-          "INACTIVE"
-        ],
+        "enum": ["ACTIVE", "PENDING", "INACTIVE"],
         "title": "ResourceAuthorshipStatusEnum",
         "type": "string"
       },
@@ -12526,13 +11631,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size",
-          "pages"
-        ],
+        "required": ["items", "total", "page", "page_size", "pages"],
         "title": "ReviewQueueRead",
         "type": "object"
       },
@@ -12564,9 +11663,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "ok"
-        ],
+        "required": ["ok"],
         "title": "RoleActionResponse",
         "type": "object"
       },
@@ -12582,10 +11679,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "role_id"
-        ],
+        "required": ["user_id", "role_id"],
         "title": "RoleAssignmentRequest",
         "type": "object"
       },
@@ -12645,10 +11739,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "timestamp",
-          "action"
-        ],
+        "required": ["timestamp", "action"],
         "title": "RoleAuditEvent",
         "type": "object"
       },
@@ -12674,12 +11765,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
+        "required": ["items", "total", "page", "page_size"],
         "title": "RoleAuditListResponse",
         "type": "object"
       },
@@ -12710,10 +11796,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "slug",
-          "name"
-        ],
+        "required": ["slug", "name"],
         "title": "RoleCreate",
         "type": "object"
       },
@@ -12724,9 +11807,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "RoleMutationResponse",
         "type": "object"
       },
@@ -12786,13 +11867,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "slug", "name", "created_at", "updated_at"],
         "title": "RoleRead",
         "type": "object"
       },
@@ -12808,10 +11883,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "role_id"
-        ],
+        "required": ["user_id", "role_id"],
         "title": "RoleRevocationRequest",
         "type": "object"
       },
@@ -12861,9 +11933,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "count"
-        ],
+        "required": ["count"],
         "title": "RoleUsersCountResponse",
         "type": "object"
       },
@@ -12874,9 +11944,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "Message"
-        ],
+        "required": ["Message"],
         "title": "RootResponse",
         "type": "object"
       },
@@ -12907,9 +11975,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "criterion_id"
-        ],
+        "required": ["criterion_id"],
         "title": "RubricCriterion",
         "type": "object"
       },
@@ -12930,9 +11996,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "SavedAnalyticsViewCreate",
         "type": "object"
       },
@@ -12955,10 +12019,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "items"
-        ],
+        "required": ["generated_at", "items"],
         "title": "SavedAnalyticsViewListResponse",
         "type": "object"
       },
@@ -12996,15 +12057,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "teacher_user_id",
-          "name",
-          "view_type",
-          "query",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["id", "teacher_user_id", "name", "view_type", "query", "created_at", "updated_at"],
         "title": "SavedAnalyticsViewRow",
         "type": "object"
       },
@@ -13020,10 +12073,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "range",
-          "count"
-        ],
+        "required": ["range", "count"],
         "title": "ScoreDistributionBucket",
         "type": "object"
       },
@@ -13051,30 +12101,18 @@
             "type": "array"
           }
         },
-        "required": [
-          "courses",
-          "collections",
-          "users"
-        ],
+        "required": ["courses", "collections", "users"],
         "title": "SearchResult",
         "type": "object"
       },
       "StatusEnum": {
-        "enum": [
-          "STATUS_IN_PROGRESS",
-          "STATUS_COMPLETED",
-          "STATUS_PAUSED",
-          "STATUS_CANCELLED"
-        ],
+        "enum": ["STATUS_IN_PROGRESS", "STATUS_COMPLETED", "STATUS_PAUSED", "STATUS_CANCELLED"],
         "title": "StatusEnum",
         "type": "string"
       },
       "StreakType": {
         "description": "Streak types.",
-        "enum": [
-          "login",
-          "learning"
-        ],
+        "enum": ["login", "learning"],
         "title": "StreakType",
         "type": "string"
       },
@@ -13098,12 +12136,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "streak_type",
-          "current_count",
-          "longest_count",
-          "is_new_record"
-        ],
+        "required": ["streak_type", "current_count", "longest_count", "is_new_record"],
         "title": "StreakUpdateRead",
         "type": "object"
       },
@@ -13128,9 +12161,7 @@
             "$ref": "#/components/schemas/JsonObject"
           }
         },
-        "required": [
-          "command"
-        ],
+        "required": ["command"],
         "title": "StudentActivityActionRequest",
         "type": "object"
       },
@@ -13176,10 +12207,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "subtype"
-        ],
+        "required": ["type", "subtype"],
         "title": "StudentActivityContentRuntime",
         "type": "object"
       },
@@ -13202,12 +12230,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "uuid",
-          "title",
-          "public"
-        ],
+        "required": ["id", "uuid", "title", "public"],
         "title": "StudentActivityCourseHeader",
         "type": "object"
       },
@@ -13258,15 +12281,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "uuid",
-          "title",
-          "type",
-          "subtype",
-          "published",
-          "chapter_id"
-        ],
+        "required": ["id", "uuid", "title", "type", "subtype", "published", "chapter_id"],
         "title": "StudentActivityHeader",
         "type": "object"
       },
@@ -13321,13 +12336,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "uuid",
-          "title",
-          "type",
-          "published"
-        ],
+        "required": ["id", "uuid", "title", "type", "published"],
         "title": "StudentActivityNavItem",
         "type": "object"
       },
@@ -13353,11 +12362,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "index"
-        ],
+        "required": ["id", "title", "index"],
         "title": "StudentActivityOutlineChapter",
         "type": "object"
       },
@@ -13382,10 +12387,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "is_authenticated",
-          "can_view"
-        ],
+        "required": ["is_authenticated", "can_view"],
         "title": "StudentActivityPermissions",
         "type": "object"
       },
@@ -13547,9 +12549,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "state"
-        ],
+        "required": ["state"],
         "title": "StudentActivityProgressRuntime",
         "type": "object"
       },
@@ -13625,14 +12625,7 @@
             "$ref": "#/components/schemas/StudentActivityProgressRuntime"
           }
         },
-        "required": [
-          "course",
-          "activity",
-          "content",
-          "progress",
-          "permissions",
-          "primary_action"
-        ],
+        "required": ["course", "activity", "content", "progress", "permissions", "primary_action"],
         "title": "StudentActivityRuntime",
         "type": "object"
       },
@@ -13699,9 +12692,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "user_id"
-        ],
+        "required": ["user_id"],
         "title": "StudentPolicyOverrideCreate",
         "type": "object"
       },
@@ -13787,11 +12778,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "user_id",
-          "policy_id"
-        ],
+        "required": ["id", "user_id", "policy_id"],
         "title": "StudentPolicyOverrideRead",
         "type": "object"
       },
@@ -13916,10 +12903,7 @@
             "title": "Target Activity Uuid"
           }
         },
-        "required": [
-          "id",
-          "enabled"
-        ],
+        "required": ["id", "enabled"],
         "title": "StudentPrimaryAction",
         "type": "object"
       },
@@ -14041,12 +13025,7 @@
           },
           "release_state": {
             "default": "HIDDEN",
-            "enum": [
-              "HIDDEN",
-              "AWAITING_RELEASE",
-              "VISIBLE",
-              "RETURNED_FOR_REVISION"
-            ],
+            "enum": ["HIDDEN", "AWAITING_RELEASE", "VISIBLE", "RETURNED_FOR_REVISION"],
             "title": "Release State",
             "type": "string"
           },
@@ -14129,15 +13108,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "assessment_type",
-          "activity_id",
-          "user_id",
-          "id",
-          "submission_uuid",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["assessment_type", "activity_id", "user_id", "id", "submission_uuid", "created_at", "updated_at"],
         "title": "StudentSubmissionRead",
         "type": "object"
       },
@@ -14252,13 +13223,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size",
-          "pages"
-        ],
+        "required": ["items", "total", "page", "page_size", "pages"],
         "title": "SubmissionListResponse",
         "type": "object"
       },
@@ -14420,15 +13385,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "assessment_type",
-          "activity_id",
-          "user_id",
-          "id",
-          "submission_uuid",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["assessment_type", "activity_id", "user_id", "id", "submission_uuid", "created_at", "updated_at"],
         "title": "SubmissionRead",
         "type": "object"
       },
@@ -14481,25 +13438,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "total",
-          "graded_count",
-          "needs_grading_count",
-          "late_count",
-          "avg_score",
-          "pass_rate"
-        ],
+        "required": ["total", "graded_count", "needs_grading_count", "late_count", "avg_score", "pass_rate"],
         "title": "SubmissionStats",
         "type": "object"
       },
       "SubmissionStatus": {
-        "enum": [
-          "DRAFT",
-          "PENDING",
-          "GRADED",
-          "PUBLISHED",
-          "RETURNED"
-        ],
+        "enum": ["DRAFT", "PENDING", "GRADED", "PUBLISHED", "RETURNED"],
         "title": "SubmissionStatus",
         "type": "string"
       },
@@ -14574,11 +13518,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "username",
-          "email"
-        ],
+        "required": ["id", "username", "email"],
         "title": "SubmissionUser",
         "type": "object"
       },
@@ -14627,14 +13567,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "action_type",
-          "user_id",
-          "activity_id",
-          "submission_uuid",
-          "student_name",
-          "activity_name"
-        ],
+        "required": ["action_type", "user_id", "activity_id", "submission_uuid", "student_name", "activity_name"],
         "title": "TeacherAction",
         "type": "object"
       },
@@ -14645,12 +13578,7 @@
             "type": "integer"
           },
           "assessment_type": {
-            "enum": [
-              "manual_assessment",
-              "quiz",
-              "exam",
-              "code_challenge"
-            ],
+            "enum": ["manual_assessment", "quiz", "exam", "code_challenge"],
             "title": "Assessment Type",
             "type": "string"
           },
@@ -14866,10 +13794,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "eligible_learners",
-          "submitted_learners"
-        ],
+        "required": ["eligible_learners", "submitted_learners"],
         "title": "TeacherAssessmentDetailSummary",
         "type": "object"
       },
@@ -14916,10 +13841,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "items"
-        ],
+        "required": ["generated_at", "items"],
         "title": "TeacherAssessmentListResponse",
         "type": "object"
       },
@@ -15100,10 +14022,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "items"
-        ],
+        "required": ["generated_at", "items"],
         "title": "TeacherCourseListResponse",
         "type": "object"
       },
@@ -15271,9 +14190,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "final_score"
-        ],
+        "required": ["final_score"],
         "title": "TeacherGradeInput",
         "type": "object"
       },
@@ -15323,11 +14240,7 @@
           },
           "status": {
             "default": "completed",
-            "enum": [
-              "planned",
-              "completed",
-              "resolved"
-            ],
+            "enum": ["planned", "completed", "resolved"],
             "title": "Status",
             "type": "string"
           },
@@ -15336,11 +14249,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "course_id",
-          "intervention_type"
-        ],
+        "required": ["user_id", "course_id", "intervention_type"],
         "title": "TeacherInterventionCreate",
         "type": "object"
       },
@@ -15363,10 +14272,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "generated_at",
-          "items"
-        ],
+        "required": ["generated_at", "items"],
         "title": "TeacherInterventionListResponse",
         "type": "object"
       },
@@ -15524,10 +14430,7 @@
             "type": "array"
           },
           "compare": {
-            "enum": [
-              "previous_period",
-              "none"
-            ],
+            "enum": ["previous_period", "none"],
             "title": "Compare",
             "type": "string"
           },
@@ -15598,11 +14501,7 @@
             "$ref": "#/components/schemas/TeacherOverviewTrends"
           },
           "window": {
-            "enum": [
-              "7d",
-              "28d",
-              "90d"
-            ],
+            "enum": ["7d", "28d", "90d"],
             "title": "Window",
             "type": "string"
           },
@@ -15655,11 +14554,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "teacher_user_id",
-          "course_ids",
-          "cohort_ids"
-        ],
+        "required": ["teacher_user_id", "course_ids", "cohort_ids"],
         "title": "TeacherOverviewScope",
         "type": "object"
       },
@@ -15726,12 +14621,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "active_learners",
-          "completions",
-          "submissions",
-          "grading_completed"
-        ],
+        "required": ["active_learners", "completions", "submissions", "grading_completed"],
         "title": "TeacherOverviewTrends",
         "type": "object"
       },
@@ -15852,12 +14742,7 @@
           },
           "release_state": {
             "default": "HIDDEN",
-            "enum": [
-              "HIDDEN",
-              "AWAITING_RELEASE",
-              "VISIBLE",
-              "RETURNED_FOR_REVISION"
-            ],
+            "enum": ["HIDDEN", "AWAITING_RELEASE", "VISIBLE", "RETURNED_FOR_REVISION"],
             "title": "Release State",
             "type": "string"
           },
@@ -15918,15 +14803,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "assessment_type",
-          "activity_id",
-          "user_id",
-          "id",
-          "submission_uuid",
-          "created_at",
-          "updated_at"
-        ],
+        "required": ["assessment_type", "activity_id", "user_id", "id", "submission_uuid", "created_at", "updated_at"],
         "title": "TeacherSubmissionRead",
         "type": "object"
       },
@@ -15969,19 +14846,12 @@
             "type": "integer"
           }
         },
-        "required": [
-          "aging_buckets",
-          "backlog_by_manual_assessment"
-        ],
+        "required": ["aging_buckets", "backlog_by_manual_assessment"],
         "title": "TeacherWorkloadSummary",
         "type": "object"
       },
       "ThumbnailType": {
-        "enum": [
-          "image",
-          "video",
-          "both"
-        ],
+        "enum": ["image", "video", "both"],
         "title": "ThumbnailType",
         "type": "string"
       },
@@ -15996,10 +14866,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "bucket_start",
-          "value"
-        ],
+        "required": ["bucket_start", "value"],
         "title": "TimeSeriesPoint",
         "type": "object"
       },
@@ -16036,9 +14903,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id"
-        ],
+        "required": ["user_id"],
         "title": "Trail",
         "type": "object"
       },
@@ -16049,9 +14914,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id"
-        ],
+        "required": ["user_id"],
         "title": "TrailCreate",
         "type": "object"
       },
@@ -16115,10 +14978,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "runs"
-        ],
+        "required": ["user_id", "runs"],
         "title": "TrailRead",
         "type": "object"
       },
@@ -16200,10 +15060,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "course_total_steps",
-          "steps"
-        ],
+        "required": ["course_total_steps", "steps"],
         "title": "TrailRunRead",
         "type": "object"
       },
@@ -16291,15 +15148,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "complete",
-          "teacher_verified",
-          "trailrun_id",
-          "trail_id",
-          "activity_id",
-          "course_id",
-          "user_id"
-        ],
+        "required": ["complete", "teacher_verified", "trailrun_id", "trail_id", "activity_id", "course_id", "user_id"],
         "title": "TrailStepRead",
         "type": "object"
       },
@@ -16346,15 +15195,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "user_id",
-          "amount",
-          "source",
-          "triggered_level_up",
-          "previous_level",
-          "created_at"
-        ],
+        "required": ["id", "user_id", "amount", "source", "triggered_level_up", "previous_level", "created_at"],
         "title": "TransactionRead",
         "type": "object"
       },
@@ -16384,9 +15225,7 @@
             "title": "Size"
           }
         },
-        "required": [
-          "filename"
-        ],
+        "required": ["filename"],
         "title": "UploadCreate",
         "type": "object"
       },
@@ -16406,11 +15245,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid",
-          "put_url",
-          "expires_at"
-        ],
+        "required": ["upload_uuid", "put_url", "expires_at"],
         "title": "UploadCreateResponse",
         "type": "object"
       },
@@ -16428,9 +15263,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "sha256"
-        ],
+        "required": ["sha256"],
         "title": "UploadFinalize",
         "type": "object"
       },
@@ -16502,23 +15335,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid",
-          "filename",
-          "content_type",
-          "status",
-          "expires_at"
-        ],
+        "required": ["upload_uuid", "filename", "content_type", "status", "expires_at"],
         "title": "UploadRead",
         "type": "object"
       },
       "UploadStatus": {
-        "enum": [
-          "CREATED",
-          "RECEIVING",
-          "FINALIZED",
-          "CANCELLED"
-        ],
+        "enum": ["CREATED", "RECEIVING", "FINALIZED", "CANCELLED"],
         "title": "UploadStatus",
         "type": "string"
       },
@@ -16538,11 +15360,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_uuid",
-          "get_url",
-          "expires_at"
-        ],
+        "required": ["upload_uuid", "get_url", "expires_at"],
         "title": "UploadUrlResponse",
         "type": "object"
       },
@@ -16568,11 +15386,7 @@
             ]
           }
         },
-        "required": [
-          "certificate_user",
-          "certification",
-          "course"
-        ],
+        "required": ["certificate_user", "certification", "course"],
         "title": "UserCertificateResponse",
         "type": "object"
       },
@@ -16682,11 +15496,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "username",
-          "email",
-          "password"
-        ],
+        "required": ["username", "email", "password"],
         "title": "UserCreate",
         "type": "object"
       },
@@ -16701,10 +15511,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "description"
-        ],
+        "required": ["name", "description"],
         "title": "UserGroupCreate",
         "type": "object"
       },
@@ -16748,14 +15555,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "description",
-          "id",
-          "usergroup_uuid",
-          "creation_date",
-          "update_date"
-        ],
+        "required": ["name", "description", "id", "usergroup_uuid", "creation_date", "update_date"],
         "title": "UserGroupRead",
         "type": "object"
       },
@@ -16804,10 +15604,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "roles",
-          "permissions"
-        ],
+        "required": ["roles", "permissions"],
         "title": "UserPermissionsResponse",
         "type": "object"
       },
@@ -16829,9 +15626,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id"
-        ],
+        "required": ["user_id"],
         "title": "UserRankRead",
         "type": "object"
       },
@@ -16963,14 +15758,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "username",
-          "first_name",
-          "last_name",
-          "email",
-          "id",
-          "user_uuid"
-        ],
+        "required": ["username", "first_name", "last_name", "email", "id", "user_uuid"],
         "title": "UserRead",
         "type": "object"
       },
@@ -17006,13 +15794,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "user_id",
-          "role_id",
-          "assigned_at",
-          "user",
-          "role"
-        ],
+        "required": ["user_id", "role_id", "assigned_at", "user", "role"],
         "title": "UserRoleAssignmentResponse",
         "type": "object"
       },
@@ -17050,13 +15832,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "slug",
-          "is_system",
-          "priority"
-        ],
+        "required": ["id", "name", "slug", "is_system", "priority"],
         "title": "UserRoleSummary",
         "type": "object"
       },
@@ -17113,10 +15889,7 @@
             "$ref": "#/components/schemas/UserRead"
           }
         },
-        "required": [
-          "user",
-          "roles"
-        ],
+        "required": ["user", "roles"],
         "title": "UserSession",
         "type": "object"
       },
@@ -17126,9 +15899,7 @@
             "$ref": "#/components/schemas/RoleRead"
           }
         },
-        "required": [
-          "role"
-        ],
+        "required": ["role"],
         "title": "UserSessionRole",
         "type": "object"
       },
@@ -17191,11 +15962,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "email",
-          "username"
-        ],
+        "required": ["id", "email", "username"],
         "title": "UserSummary",
         "type": "object"
       },
@@ -17335,10 +16102,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "old_password",
-          "new_password"
-        ],
+        "required": ["old_password", "new_password"],
         "title": "UserUpdatePassword",
         "type": "object"
       },
@@ -17374,11 +16138,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       },
@@ -17456,9 +16216,7 @@
             "title": "Source Id"
           }
         },
-        "required": [
-          "source"
-        ],
+        "required": ["source"],
         "title": "XPAwardRequest",
         "type": "object"
       },
@@ -17484,13 +16242,7 @@
             "$ref": "#/components/schemas/TransactionRead"
           }
         },
-        "required": [
-          "transaction",
-          "profile",
-          "level_up_occurred",
-          "previous_level",
-          "is_new_transaction"
-        ],
+        "required": ["transaction", "profile", "level_up_occurred", "previous_level", "is_new_transaction"],
         "title": "XPAwardResponse",
         "type": "object"
       },
@@ -17606,9 +16358,7 @@
           }
         ],
         "summary": "Api Create Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       }
     },
     "/api/v1/activities/documentpdf": {
@@ -17662,9 +16412,7 @@
           }
         ],
         "summary": "Api Create Documentpdf Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       }
     },
     "/api/v1/activities/external_video": {
@@ -17718,9 +16466,7 @@
           }
         ],
         "summary": "Api Create External Video Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       }
     },
     "/api/v1/activities/video": {
@@ -17774,9 +16520,7 @@
           }
         ],
         "summary": "Api Create Video Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       }
     },
     "/api/v1/activities/{activity_uuid}": {
@@ -17831,9 +16575,7 @@
           }
         ],
         "summary": "Api Delete Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       },
       "get": {
         "operationId": "api_get_activity_api_v1_activities__activity_uuid__get",
@@ -17886,9 +16628,7 @@
           }
         ],
         "summary": "Api Get Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       },
       "patch": {
         "operationId": "api_update_activity_api_v1_activities__activity_uuid__patch",
@@ -17951,9 +16691,7 @@
           }
         ],
         "summary": "Api Update Activity",
-        "tags": [
-          "activities"
-        ]
+        "tags": ["activities"]
       }
     },
     "/api/v1/analytics/admin/overview": {
@@ -17966,11 +16704,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -17981,10 +16715,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -17995,10 +16726,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -18119,14 +16847,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -18142,10 +16863,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -18189,9 +16907,7 @@
           }
         ],
         "summary": "Admin Analytics Overview Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/assessments": {
@@ -18204,11 +16920,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -18219,10 +16931,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -18233,10 +16942,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -18357,14 +17063,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -18380,10 +17079,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -18427,9 +17123,7 @@
           }
         ],
         "summary": "Teacher Assessments Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/assessments/{assessment_type}/{assessment_id}": {
@@ -18460,11 +17154,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -18475,10 +17165,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -18489,10 +17176,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -18613,14 +17297,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -18636,10 +17313,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -18683,9 +17357,7 @@
           }
         ],
         "summary": "Teacher Assessment Detail Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/courses": {
@@ -18698,11 +17370,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -18713,10 +17381,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -18727,10 +17392,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -18851,14 +17513,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -18874,10 +17529,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -18921,9 +17573,7 @@
           }
         ],
         "summary": "Teacher Courses Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/courses/by-uuid/{course_uuid}": {
@@ -18945,11 +17595,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -18960,10 +17606,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -18974,10 +17617,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -19098,14 +17738,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -19121,10 +17754,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -19168,9 +17798,7 @@
           }
         ],
         "summary": "Teacher Course Detail By Uuid Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/courses/{course_id}": {
@@ -19192,11 +17820,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -19207,10 +17831,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -19221,10 +17842,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -19345,14 +17963,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -19368,10 +17979,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -19415,9 +18023,7 @@
           }
         ],
         "summary": "Teacher Course Detail Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/drill-through/{metric}": {
@@ -19429,12 +18035,7 @@
             "name": "metric",
             "required": true,
             "schema": {
-              "enum": [
-                "active_learners",
-                "completion_rate",
-                "pass_rate",
-                "backlog"
-              ],
+              "enum": ["active_learners", "completion_rate", "pass_rate", "backlog"],
               "title": "Metric",
               "type": "string"
             }
@@ -19493,11 +18094,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -19508,10 +18105,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -19522,10 +18116,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -19646,14 +18237,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -19669,10 +18253,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -19716,9 +18297,7 @@
           }
         ],
         "summary": "Teacher Drillthrough Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/exports/assessment-outcomes.csv": {
@@ -19731,11 +18310,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -19746,10 +18321,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -19760,10 +18332,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -19884,14 +18453,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -19907,10 +18469,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -19947,9 +18506,7 @@
           }
         ],
         "summary": "Teacher Assessment Outcomes Export Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/exports/at-risk.csv": {
@@ -19962,11 +18519,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -19977,10 +18530,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -19991,10 +18541,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -20115,14 +18662,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -20138,10 +18678,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -20178,9 +18715,7 @@
           }
         ],
         "summary": "Teacher At Risk Export Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/exports/course-progress.csv": {
@@ -20193,11 +18728,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -20208,10 +18739,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -20222,10 +18750,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -20346,14 +18871,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -20369,10 +18887,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -20409,9 +18924,7 @@
           }
         ],
         "summary": "Teacher Course Progress Export Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/exports/grading-backlog.csv": {
@@ -20424,11 +18937,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -20439,10 +18948,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -20453,10 +18959,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -20577,14 +19080,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -20600,10 +19096,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -20640,9 +19133,7 @@
           }
         ],
         "summary": "Teacher Grading Backlog Export Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/interventions": {
@@ -20687,11 +19178,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -20702,10 +19189,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -20716,10 +19200,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -20840,14 +19321,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -20863,10 +19337,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -20910,9 +19381,7 @@
           }
         ],
         "summary": "Teacher Interventions Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       },
       "post": {
         "operationId": "create_teacher_intervention_platform_api_v1_analytics_teacher_interventions_post",
@@ -20923,11 +19392,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -20938,10 +19403,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -20952,10 +19414,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -21076,14 +19535,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -21099,10 +19551,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -21156,9 +19605,7 @@
           }
         ],
         "summary": "Create Teacher Intervention Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/learners/at-risk": {
@@ -21171,11 +19618,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -21186,10 +19629,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -21200,10 +19640,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -21324,14 +19761,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -21347,10 +19777,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -21394,9 +19821,7 @@
           }
         ],
         "summary": "Teacher At Risk Learners Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/overview": {
@@ -21409,11 +19834,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -21424,10 +19845,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -21438,10 +19856,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -21562,14 +19977,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -21585,10 +19993,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -21632,9 +20037,7 @@
           }
         ],
         "summary": "Teacher Overview Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/saved-views": {
@@ -21647,11 +20050,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -21662,10 +20061,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -21676,10 +20072,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -21800,14 +20193,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -21823,10 +20209,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -21870,9 +20253,7 @@
           }
         ],
         "summary": "Teacher Saved Views Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       },
       "post": {
         "operationId": "save_teacher_saved_view_platform_api_v1_analytics_teacher_saved_views_post",
@@ -21883,11 +20264,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -21898,10 +20275,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -21912,10 +20286,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -22036,14 +20407,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -22059,10 +20423,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -22116,9 +20477,7 @@
           }
         ],
         "summary": "Save Teacher Saved View Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/analytics/teacher/saved-views/{view_id}": {
@@ -22140,11 +20499,7 @@
             "required": false,
             "schema": {
               "default": "28d",
-              "enum": [
-                "7d",
-                "28d",
-                "90d"
-              ],
+              "enum": ["7d", "28d", "90d"],
               "title": "Window",
               "type": "string"
             }
@@ -22155,10 +20510,7 @@
             "required": false,
             "schema": {
               "default": "previous_period",
-              "enum": [
-                "previous_period",
-                "none"
-              ],
+              "enum": ["previous_period", "none"],
               "title": "Compare",
               "type": "string"
             }
@@ -22169,10 +20521,7 @@
             "required": false,
             "schema": {
               "default": "day",
-              "enum": [
-                "day",
-                "week"
-              ],
+              "enum": ["day", "week"],
               "title": "Bucket",
               "type": "string"
             }
@@ -22293,14 +20642,7 @@
                   "type": "string"
                 },
                 {
-                  "enum": [
-                    "title",
-                    "submission",
-                    "pass",
-                    "difficulty",
-                    "latency",
-                    "signals"
-                  ],
+                  "enum": ["title", "submission", "pass", "difficulty", "latency", "signals"],
                   "type": "string"
                 },
                 {
@@ -22316,10 +20658,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "title": "Sort Order",
               "type": "string"
             }
@@ -22356,9 +20695,7 @@
           }
         ],
         "summary": "Delete Teacher Saved View Platform",
-        "tags": [
-          "analytics"
-        ]
+        "tags": ["analytics"]
       }
     },
     "/api/v1/assessments": {
@@ -22412,9 +20749,7 @@
           }
         ],
         "summary": "Api Create Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/activity/{activity_uuid}": {
@@ -22469,9 +20804,7 @@
           }
         ],
         "summary": "Api Get Assessment By Activity",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/inline-quiz": {
@@ -22526,9 +20859,7 @@
           }
         ],
         "summary": "Api Create Inline Quiz",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/policy-preset/{kind}": {
@@ -22584,9 +20915,7 @@
           }
         ],
         "summary": "Api Get Policy Preset",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}": {
@@ -22641,9 +20970,7 @@
           }
         ],
         "summary": "Api Get Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "patch": {
         "operationId": "api_update_assessment_api_v1_assessments__assessment_uuid__patch",
@@ -22706,9 +21033,7 @@
           }
         ],
         "summary": "Api Update Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/access": {
@@ -22763,9 +21088,7 @@
           }
         ],
         "summary": "Api Get Access",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "put": {
         "operationId": "api_update_access_api_v1_assessments__assessment_uuid__access_put",
@@ -22828,9 +21151,7 @@
           }
         ],
         "summary": "Api Update Access",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/access/eligible-learners": {
@@ -22919,9 +21240,7 @@
           }
         ],
         "summary": "Api List Access Eligible Learners",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/access/eligible-usergroups": {
@@ -23010,9 +21329,7 @@
           }
         ],
         "summary": "Api List Access Eligible Usergroups",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/attempt-state": {
@@ -23068,9 +21385,7 @@
           }
         ],
         "summary": "Api Get Attempt State",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/audit": {
@@ -23149,9 +21464,7 @@
           }
         ],
         "summary": "Api Get Audit Trail",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/code-challenge/validate": {
@@ -23207,9 +21520,7 @@
           }
         ],
         "summary": "Api Validate Code Challenge",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/draft": {
@@ -23264,9 +21575,7 @@
           }
         ],
         "summary": "Api Get Draft",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "patch": {
         "operationId": "api_save_draft_api_v1_assessments__assessment_uuid__draft_patch",
@@ -23345,9 +21654,7 @@
           }
         ],
         "summary": "Api Save Draft",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/duplicate": {
@@ -23403,9 +21710,7 @@
           }
         ],
         "summary": "Api Duplicate Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/item-analytics": {
@@ -23465,9 +21770,7 @@
           }
         ],
         "summary": "Api Get Item Analytics",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/items": {
@@ -23532,9 +21835,7 @@
           }
         ],
         "summary": "Api Create Item",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}": {
@@ -23598,9 +21899,7 @@
           }
         ],
         "summary": "Api Delete Item",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "patch": {
         "operationId": "api_update_item_api_v1_assessments__assessment_uuid__items__item_uuid__patch",
@@ -23672,9 +21971,7 @@
           }
         ],
         "summary": "Api Update Item",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs": {
@@ -23749,9 +22046,7 @@
           }
         ],
         "summary": "Api Run Code Item",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs/{run_uuid}": {
@@ -23825,9 +22120,7 @@
           }
         ],
         "summary": "Api Get Code Item Run",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/items:reorder": {
@@ -23896,9 +22189,7 @@
           }
         ],
         "summary": "Api Reorder Items",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/lifecycle": {
@@ -23963,9 +22254,7 @@
           }
         ],
         "summary": "Api Transition Lifecycle",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/me": {
@@ -24024,9 +22313,7 @@
           }
         ],
         "summary": "Api Get My Submissions",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/overrides": {
@@ -24086,9 +22373,7 @@
           }
         ],
         "summary": "Api List Overrides",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "post": {
         "description": "Создать индивидуальное исключение политики для студента (продление срока, лимит попыток и т. д.).",
@@ -24152,9 +22437,7 @@
           }
         ],
         "summary": "Api Create Override",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/overrides/{user_id}": {
@@ -24218,9 +22501,7 @@
           }
         ],
         "summary": "Api Delete Override",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "patch": {
         "operationId": "api_update_override_api_v1_assessments__assessment_uuid__overrides__user_id__patch",
@@ -24292,9 +22573,7 @@
           }
         ],
         "summary": "Api Update Override",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/publish-grades": {
@@ -24349,9 +22628,7 @@
           }
         ],
         "summary": "Api Publish Grades",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/readiness": {
@@ -24406,9 +22683,7 @@
           }
         ],
         "summary": "Api Check Readiness",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/start": {
@@ -24463,9 +22738,7 @@
           }
         ],
         "summary": "Api Start Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submissions": {
@@ -24605,9 +22878,7 @@
           }
         ],
         "summary": "Api Get Submissions",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submissions/export": {
@@ -24711,9 +22982,7 @@
           }
         ],
         "summary": "Api Export Assessment Submissions Csv",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submissions/stats": {
@@ -24768,9 +23037,7 @@
           }
         ],
         "summary": "Api Get Submission Stats",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submissions/{submission_uuid}": {
@@ -24834,9 +23101,7 @@
           }
         ],
         "summary": "Api Get Submission",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       },
       "patch": {
         "operationId": "api_save_grade_api_v1_assessments__assessment_uuid__submissions__submission_uuid__patch",
@@ -24924,9 +23189,7 @@
           }
         ],
         "summary": "Api Save Grade",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submissions/{submission_uuid}/grade": {
@@ -25017,9 +23280,7 @@
           }
         ],
         "summary": "Api Save Grading Draft",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/assessments/{assessment_uuid}/submit": {
@@ -25128,9 +23389,7 @@
           }
         ],
         "summary": "Api Submit Assessment",
-        "tags": [
-          "assessments"
-        ]
+        "tags": ["assessments"]
       }
     },
     "/api/v1/auth/forgot-password": {
@@ -25179,9 +23438,7 @@
           }
         },
         "summary": "Forgot Password",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/google/authorize": {
@@ -25225,9 +23482,7 @@
           }
         },
         "summary": "Google Authorize",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/google/callback": {
@@ -25310,9 +23565,7 @@
           }
         },
         "summary": "Google Callback",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/login": {
@@ -25361,9 +23614,7 @@
           }
         },
         "summary": "Login",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/logout": {
@@ -25385,9 +23636,7 @@
           }
         },
         "summary": "Logout",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/me": {
@@ -25421,9 +23670,7 @@
           }
         ],
         "summary": "Get Me",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/refresh": {
@@ -25453,9 +23700,7 @@
           }
         },
         "summary": "Refresh Token",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/register": {
@@ -25514,9 +23759,7 @@
           }
         },
         "summary": "Register:Register",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/reset-password": {
@@ -25565,9 +23808,7 @@
           }
         },
         "summary": "Reset Password",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/auth/sessions": {
@@ -25605,9 +23846,7 @@
           }
         ],
         "summary": "List Sessions",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/blocks/image": {
@@ -25663,9 +23902,7 @@
           }
         ],
         "summary": "Api Get Image File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       },
       "post": {
         "description": "Create new image file.",
@@ -25718,9 +23955,7 @@
           }
         ],
         "summary": "Api Create Image File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       }
     },
     "/api/v1/blocks/pdf": {
@@ -25776,9 +24011,7 @@
           }
         ],
         "summary": "Api Get Pdf File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       },
       "post": {
         "description": "Create new pdf file.",
@@ -25831,9 +24064,7 @@
           }
         ],
         "summary": "Api Create Pdf File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       }
     },
     "/api/v1/blocks/video": {
@@ -25889,9 +24120,7 @@
           }
         ],
         "summary": "Api Get Video File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       },
       "post": {
         "description": "Create new video file.",
@@ -25944,9 +24173,7 @@
           }
         ],
         "summary": "Api Create Video File Block",
-        "tags": [
-          "blocks"
-        ]
+        "tags": ["blocks"]
       }
     },
     "/api/v1/certifications": {
@@ -26001,9 +24228,7 @@
           }
         ],
         "summary": "Api Create Certification",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/certifications/certificate/{user_certification_uuid}": {
@@ -26054,9 +24279,7 @@
           }
         },
         "summary": "Api Get Certificate By User Certification Uuid",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/certifications/course/{course_uuid}": {
@@ -26116,9 +24339,7 @@
           }
         ],
         "summary": "Api Get Certifications By Course",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/certifications/user/all": {
@@ -26157,9 +24378,7 @@
           }
         ],
         "summary": "Api Get All User Certificates",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/certifications/user/course/{course_uuid}": {
@@ -26219,9 +24438,7 @@
           }
         ],
         "summary": "Api Get User Certificates For Course",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/certifications/{certification_uuid}": {
@@ -26294,9 +24511,7 @@
           }
         ],
         "summary": "Api Delete Certification",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       },
       "get": {
         "description": "Get single certification by certification_id.",
@@ -26350,9 +24565,7 @@
           }
         ],
         "summary": "Api Get Certification",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       },
       "put": {
         "description": "Update certification by certification_id.",
@@ -26416,9 +24629,7 @@
           }
         ],
         "summary": "Api Update Certification",
-        "tags": [
-          "certifications"
-        ]
+        "tags": ["certifications"]
       }
     },
     "/api/v1/chapters": {
@@ -26472,9 +24683,7 @@
           }
         ],
         "summary": "Api Create Coursechapter",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       }
     },
     "/api/v1/chapters/course/{course_uuid}/order": {
@@ -26540,9 +24749,7 @@
           }
         ],
         "summary": "Api Reorder Chapters And Activities",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       }
     },
     "/api/v1/chapters/{chapter_uuid}": {
@@ -26597,9 +24804,7 @@
           }
         ],
         "summary": "Api Delete Coursechapter",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       },
       "get": {
         "operationId": "api_get_coursechapter_api_v1_chapters__chapter_uuid__get",
@@ -26652,9 +24857,7 @@
           }
         ],
         "summary": "Api Get Coursechapter",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       },
       "patch": {
         "operationId": "api_update_coursechapter_api_v1_chapters__chapter_uuid__patch",
@@ -26717,9 +24920,7 @@
           }
         ],
         "summary": "Api Update Coursechapter",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       }
     },
     "/api/v1/chapters/{chapter_uuid}/activities/{activity_uuid}/order": {
@@ -26794,9 +24995,7 @@
           }
         ],
         "summary": "Api Move Activity To Order",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       }
     },
     "/api/v1/chapters/{chapter_uuid}/order": {
@@ -26862,9 +25061,7 @@
           }
         ],
         "summary": "Api Move Chapter To Order",
-        "tags": [
-          "chapters"
-        ]
+        "tags": ["chapters"]
       }
     },
     "/api/v1/code-execution/languages": {
@@ -26902,9 +25099,7 @@
           }
         ],
         "summary": "Api Get Code Execution Languages",
-        "tags": [
-          "code-execution"
-        ]
+        "tags": ["code-execution"]
       }
     },
     "/api/v1/collections": {
@@ -26959,9 +25154,7 @@
           }
         ],
         "summary": "Api Create Collection",
-        "tags": [
-          "collections"
-        ]
+        "tags": ["collections"]
       }
     },
     "/api/v1/collections/page/{page}/limit/{limit}": {
@@ -27030,9 +25223,7 @@
           }
         ],
         "summary": "Api Get Platform Collections",
-        "tags": [
-          "collections"
-        ]
+        "tags": ["collections"]
       }
     },
     "/api/v1/collections/{collection_uuid}": {
@@ -27088,9 +25279,7 @@
           }
         ],
         "summary": "Api Delete Collection",
-        "tags": [
-          "collections"
-        ]
+        "tags": ["collections"]
       },
       "get": {
         "description": "Get single collection by ID with permission metadata.",
@@ -27144,9 +25333,7 @@
           }
         ],
         "summary": "Api Get Collection",
-        "tags": [
-          "collections"
-        ]
+        "tags": ["collections"]
       },
       "put": {
         "description": "Update collection by ID.",
@@ -27210,9 +25397,7 @@
           }
         ],
         "summary": "Api Update Collection",
-        "tags": [
-          "collections"
-        ]
+        "tags": ["collections"]
       }
     },
     "/api/v1/courses": {
@@ -27266,9 +25451,7 @@
           }
         ],
         "summary": "Api Create Course",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/editable/page/{page}/limit/{limit}": {
@@ -27386,9 +25569,7 @@
           }
         ],
         "summary": "Api Get Platform Editable Courses",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/page/{page}/limit/{limit}": {
@@ -27456,9 +25637,7 @@
           }
         ],
         "summary": "Api Get Platform Courses",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/search": {
@@ -27537,9 +25716,7 @@
           }
         ],
         "summary": "Api Search Platform Courses",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}": {
@@ -27595,9 +25772,7 @@
           }
         ],
         "summary": "Api Delete Course",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       },
       "get": {
         "description": "Get single Course by course_uuid.",
@@ -27651,9 +25826,7 @@
           }
         ],
         "summary": "Api Get Course",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/access": {
@@ -27718,9 +25891,7 @@
           }
         ],
         "summary": "Api Update Course Access",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/actions": {
@@ -27794,9 +25965,7 @@
           }
         ],
         "summary": "Api Run Student Activity Action",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/runtime": {
@@ -27860,9 +26029,7 @@
           }
         ],
         "summary": "Api Get Student Activity Runtime",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/apply-contributor": {
@@ -27918,9 +26085,7 @@
           }
         ],
         "summary": "Api Apply Course Contributor",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/bulk-add-contributors": {
@@ -27990,9 +26155,7 @@
           }
         ],
         "summary": "Api Add Bulk Course Contributors",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/bulk-remove-contributors": {
@@ -28062,9 +26225,7 @@
           }
         ],
         "summary": "Api Remove Bulk Course Contributors",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/contributors": {
@@ -28124,9 +26285,7 @@
           }
         ],
         "summary": "Api Get Course Contributors",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/contributors/{contributor_user_id}": {
@@ -28207,9 +26366,7 @@
           }
         ],
         "summary": "Api Update Course Contributor",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/discussions": {
@@ -28306,9 +26463,7 @@
           }
         ],
         "summary": "Api Get Course Discussions",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       },
       "post": {
         "description": "Create new Course Discussion.",
@@ -28372,9 +26527,7 @@
           }
         ],
         "summary": "Api Create Course Discussion",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       }
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}": {
@@ -28439,9 +26592,7 @@
           }
         ],
         "summary": "Api Delete Course Discussion",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       },
       "put": {
         "description": "Update Course Discussion by discussion_uuid.",
@@ -28514,9 +26665,7 @@
           }
         ],
         "summary": "Api Update Course Discussion",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       }
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/dislike": {
@@ -28581,9 +26730,7 @@
           }
         ],
         "summary": "Api Toggle Course Discussion Dislike",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       }
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/like": {
@@ -28648,9 +26795,7 @@
           }
         ],
         "summary": "Api Unlike Course Discussion",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       },
       "post": {
         "description": "Like a Course Discussion.",
@@ -28713,9 +26858,7 @@
           }
         ],
         "summary": "Api Like Course Discussion",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       },
       "put": {
         "description": "Toggle like status for a Course Discussion (like if not liked, unlike if liked).",
@@ -28778,9 +26921,7 @@
           }
         ],
         "summary": "Api Toggle Course Discussion Like",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       }
     },
     "/api/v1/courses/{course_uuid}/discussions/{discussion_uuid}/replies": {
@@ -28874,9 +27015,7 @@
           }
         ],
         "summary": "Api Get Discussion Replies",
-        "tags": [
-          "discussions"
-        ]
+        "tags": ["discussions"]
       }
     },
     "/api/v1/courses/{course_uuid}/meta": {
@@ -28942,9 +27081,7 @@
           }
         ],
         "summary": "Api Get Course Meta",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/metadata": {
@@ -29009,9 +27146,7 @@
           }
         ],
         "summary": "Api Update Course Metadata",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/rights": {
@@ -29067,9 +27202,7 @@
           }
         ],
         "summary": "Api Get Course User Rights",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/thumbnail": {
@@ -29134,9 +27267,7 @@
           }
         ],
         "summary": "Api Create Course Thumbnail",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/update/{courseupdate_uuid}": {
@@ -29201,9 +27332,7 @@
           }
         ],
         "summary": "Api Delete Course Update",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       },
       "put": {
         "description": "Update Course Update by courseupdate_uuid.",
@@ -29276,9 +27405,7 @@
           }
         ],
         "summary": "Api Update Course Update",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/courses/{course_uuid}/updates": {
@@ -29338,9 +27465,7 @@
           }
         ],
         "summary": "Api Get Course Updates",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       },
       "post": {
         "description": "Create new Course Update.",
@@ -29404,9 +27529,7 @@
           }
         ],
         "summary": "Api Create Course Update",
-        "tags": [
-          "courses"
-        ]
+        "tags": ["courses"]
       }
     },
     "/api/v1/dev/config": {
@@ -29435,9 +27558,7 @@
           }
         },
         "summary": "Config",
-        "tags": [
-          "dev"
-        ]
+        "tags": ["dev"]
       }
     },
     "/api/v1/file-submissions": {
@@ -29491,9 +27612,7 @@
           }
         ],
         "summary": "Api Create File Submission",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/activity/{activity_uuid}": {
@@ -29548,9 +27667,7 @@
           }
         ],
         "summary": "Api Get File Submission By Activity",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/files/{attempt_file_uuid}/download": {
@@ -29598,9 +27715,7 @@
           }
         ],
         "summary": "Api Download File Submission File",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/files/{attempt_file_uuid}/url": {
@@ -29655,9 +27770,7 @@
           }
         ],
         "summary": "Api Get File Submission File Url",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}": {
@@ -29712,9 +27825,7 @@
           }
         ],
         "summary": "Api Get File Submission",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       },
       "patch": {
         "operationId": "api_update_file_submission_api_v1_file_submissions__file_submission_uuid__patch",
@@ -29777,9 +27888,7 @@
           }
         ],
         "summary": "Api Update File Submission",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/draft": {
@@ -29842,9 +27951,7 @@
           }
         ],
         "summary": "Api Get File Submission Draft",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       },
       "patch": {
         "operationId": "api_save_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_patch",
@@ -29923,9 +28030,7 @@
           }
         ],
         "summary": "Api Save File Submission Draft",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       },
       "post": {
         "operationId": "api_start_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_post",
@@ -29978,9 +28083,7 @@
           }
         ],
         "summary": "Api Start File Submission Draft",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/me": {
@@ -30039,9 +28142,7 @@
           }
         ],
         "summary": "Api List My File Submission Attempts",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/publish": {
@@ -30096,9 +28197,7 @@
           }
         ],
         "summary": "Api Publish File Submission",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/submissions": {
@@ -30208,9 +28307,7 @@
           }
         ],
         "summary": "Api List File Submission Submissions",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/submissions/download": {
@@ -30268,9 +28365,7 @@
           }
         ],
         "summary": "Api Download File Submission Zip",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/submissions/export": {
@@ -30318,9 +28413,7 @@
           }
         ],
         "summary": "Api Export File Submission Csv",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/submissions/{attempt_uuid}/grade": {
@@ -30410,9 +28503,7 @@
           }
         ],
         "summary": "Api Grade File Submission Attempt",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/file-submissions/{file_submission_uuid}/submit": {
@@ -30500,9 +28591,7 @@
           }
         ],
         "summary": "Api Submit File Submission",
-        "tags": [
-          "file-submissions"
-        ]
+        "tags": ["file-submissions"]
       }
     },
     "/api/v1/gamification/": {
@@ -30537,9 +28626,7 @@
           }
         ],
         "summary": "Get Unified Dashboard",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/gamification/leaderboard": {
@@ -30608,9 +28695,7 @@
           }
         ],
         "summary": "Get Leaderboard",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/gamification/preferences": {
@@ -30666,9 +28751,7 @@
           }
         ],
         "summary": "Update Preferences",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/gamification/rank": {
@@ -30703,9 +28786,7 @@
           }
         ],
         "summary": "Get User Rank",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/gamification/streaks/{streak_type}": {
@@ -30759,9 +28840,7 @@
           }
         ],
         "summary": "Update Streak",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/gamification/xp": {
@@ -30816,9 +28895,7 @@
           }
         ],
         "summary": "Award Xp",
-        "tags": [
-          "gamification"
-        ]
+        "tags": ["gamification"]
       }
     },
     "/api/v1/grading/activities/{activity_id}/extend-deadline": {
@@ -30884,9 +28961,7 @@
           }
         ],
         "summary": "Api Extend Deadline",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/activities/{activity_id}/publish-grades": {
@@ -30942,9 +29017,7 @@
           }
         ],
         "summary": "Api Bulk Publish Grades",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/bulk-actions/{action_uuid}": {
@@ -31000,9 +29073,7 @@
           }
         ],
         "summary": "Api Get Bulk Action",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/courses/{course_uuid}/gradebook": {
@@ -31142,9 +29213,7 @@
           }
         ],
         "summary": "Api Get Course Gradebook",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/courses/{course_uuid}/gradebook/cursor": {
@@ -31228,9 +29297,7 @@
           }
         ],
         "summary": "Api Get Course Gradebook Cursor",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/courses/{course_uuid}/gradebook/export": {
@@ -31279,9 +29346,7 @@
           }
         ],
         "summary": "Api Export Course Gradebook Csv",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/feedback/{feedback_id}": {
@@ -31329,9 +29394,7 @@
           }
         ],
         "summary": "Api Delete Item Feedback",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       },
       "patch": {
         "operationId": "api_update_item_feedback_api_v1_grading_feedback__feedback_id__patch",
@@ -31394,9 +29457,7 @@
           }
         ],
         "summary": "Api Update Item Feedback",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions": {
@@ -31537,9 +29598,7 @@
           }
         ],
         "summary": "Api List Submissions",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/batch": {
@@ -31594,9 +29653,7 @@
           }
         ],
         "summary": "Api Batch Grade Submissions",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/export": {
@@ -31645,9 +29702,7 @@
           }
         ],
         "summary": "Api Export Submissions Csv",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/stats": {
@@ -31703,9 +29758,7 @@
           }
         ],
         "summary": "Api Get Submission Stats",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/{submission_uuid}": {
@@ -31761,9 +29814,7 @@
           }
         ],
         "summary": "Api Get Submission",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       },
       "patch": {
         "description": "Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.\n\nPermission is checked in save_grade via the activity's creator_id.\n\nSupply `If-Match: <version>` to enable optimistic concurrency control and\nprevent silent overwrites when two teachers grade the same submission.",
@@ -31845,9 +29896,7 @@
           }
         ],
         "summary": "Api Save Grade",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/{submission_uuid}/feedback": {
@@ -31906,9 +29955,7 @@
           }
         ],
         "summary": "Api List Item Feedback",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       },
       "post": {
         "operationId": "api_create_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_post",
@@ -31971,9 +30018,7 @@
           }
         ],
         "summary": "Api Create Item Feedback",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/grading/submissions/{submission_uuid}/feedback-stream": {
@@ -32038,9 +30083,7 @@
           }
         ],
         "summary": "Api Feedback Stream",
-        "tags": [
-          "grading"
-        ]
+        "tags": ["grading"]
       }
     },
     "/api/v1/health": {
@@ -32069,9 +30112,7 @@
           }
         },
         "summary": "Health",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/v1/health/live": {
@@ -32100,9 +30141,7 @@
           }
         },
         "summary": "Health Live",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/v1/health/ready": {
@@ -32131,9 +30170,7 @@
           }
         },
         "summary": "Health Ready",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/v1/logo": {
@@ -32188,9 +30225,7 @@
           }
         ],
         "summary": "Api Update App Logo",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/members": {
@@ -32256,9 +30291,7 @@
           }
         ],
         "summary": "Api Get Platform Users",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/members/{user_id}": {
@@ -32314,9 +30347,7 @@
           }
         ],
         "summary": "Api Remove User From Platform",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/members/{user_id}/role/{role_id}": {
@@ -32381,9 +30412,7 @@
           }
         ],
         "summary": "Api Update Platform User Role",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/platform": {
@@ -32413,9 +30442,7 @@
           }
         },
         "summary": "Api Get Platform",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       },
       "put": {
         "description": "Update the platform.\n\n**Required Permission**: `platform:update`",
@@ -32468,9 +30495,7 @@
           }
         ],
         "summary": "Api Update Platform",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/rbac/check": {
@@ -32524,9 +30549,7 @@
           }
         ],
         "summary": "Check Permission",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/rbac/check/batch": {
@@ -32580,9 +30603,7 @@
           }
         ],
         "summary": "Check Permissions Batch",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/rbac/me/permissions": {
@@ -32616,9 +30637,7 @@
           }
         ],
         "summary": "Get My Permissions",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/rbac/roles/assign": {
@@ -32673,9 +30692,7 @@
           }
         ],
         "summary": "Assign Role",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/rbac/roles/revoke": {
@@ -32730,9 +30747,7 @@
           }
         ],
         "summary": "Revoke Role",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/rbac/user-roles": {
@@ -32771,9 +30786,7 @@
           }
         ],
         "summary": "List User Roles",
-        "tags": [
-          "rbac"
-        ]
+        "tags": ["rbac"]
       }
     },
     "/api/v1/roles": {
@@ -32812,9 +30825,7 @@
           }
         ],
         "summary": "List Roles",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       },
       "post": {
         "description": "Create a new custom role.",
@@ -32867,9 +30878,7 @@
           }
         ],
         "summary": "Create Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/audit-log": {
@@ -32938,9 +30947,7 @@
           }
         ],
         "summary": "Get Role Audit Log",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/permissions/all": {
@@ -32979,9 +30986,7 @@
           }
         ],
         "summary": "List All Permissions",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/{role_id}": {
@@ -33037,9 +31042,7 @@
           }
         ],
         "summary": "Delete Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       },
       "get": {
         "description": "Get a single role by ID.",
@@ -33093,9 +31096,7 @@
           }
         ],
         "summary": "Get Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       },
       "put": {
         "description": "Update a role's name, description, or priority.",
@@ -33159,9 +31160,7 @@
           }
         ],
         "summary": "Update Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/{role_id}/permissions": {
@@ -33221,9 +31220,7 @@
           }
         ],
         "summary": "Get Role Permissions",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       },
       "post": {
         "description": "Add a permission to a role.",
@@ -33287,9 +31284,7 @@
           }
         ],
         "summary": "Add Permission To Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/{role_id}/permissions/{permission_id}": {
@@ -33354,9 +31349,7 @@
           }
         ],
         "summary": "Remove Permission From Role",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/roles/{role_id}/users/count": {
@@ -33411,9 +31404,7 @@
           }
         ],
         "summary": "Get Role Users Count",
-        "tags": [
-          "roles"
-        ]
+        "tags": ["roles"]
       }
     },
     "/api/v1/search": {
@@ -33488,9 +31479,7 @@
           }
         ],
         "summary": "Api Search Platform Content",
-        "tags": [
-          "search"
-        ]
+        "tags": ["search"]
       }
     },
     "/api/v1/thumbnail": {
@@ -33545,9 +31534,7 @@
           }
         ],
         "summary": "Api Update Platform Thumbnail",
-        "tags": [
-          "platform"
-        ]
+        "tags": ["platform"]
       }
     },
     "/api/v1/trail": {
@@ -33582,9 +31569,7 @@
           }
         ],
         "summary": "Api Get User Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/trail/add_activity/{activity_uuid}": {
@@ -33640,9 +31625,7 @@
           }
         ],
         "summary": "Api Add Activity To Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/trail/add_course/{course_uuid}": {
@@ -33698,9 +31681,7 @@
           }
         ],
         "summary": "Api Add Course To Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/trail/remove_activity/{activity_uuid}": {
@@ -33756,9 +31737,7 @@
           }
         ],
         "summary": "Api Remove Activity From Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/trail/remove_course/{course_uuid}": {
@@ -33814,9 +31793,7 @@
           }
         ],
         "summary": "Api Remove Course To Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/trail/start": {
@@ -33871,9 +31848,7 @@
           }
         ],
         "summary": "Api Start Trail",
-        "tags": [
-          "trail"
-        ]
+        "tags": ["trail"]
       }
     },
     "/api/v1/uploads": {
@@ -33927,9 +31902,7 @@
           }
         ],
         "summary": "Create Assessment Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/chunk": {
@@ -33984,9 +31957,7 @@
           }
         ],
         "summary": "Upload Chunk",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/chunked/{upload_id}": {
@@ -34035,9 +32006,7 @@
           }
         ],
         "summary": "Cancel Chunked Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/complete": {
@@ -34092,9 +32061,7 @@
           }
         ],
         "summary": "Complete Chunked Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/initiate": {
@@ -34149,9 +32116,7 @@
           }
         ],
         "summary": "Initiate Chunked Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/status/{upload_id}": {
@@ -34207,9 +32172,7 @@
           }
         ],
         "summary": "Get Upload Status",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/{upload_id}": {
@@ -34258,9 +32221,7 @@
           }
         ],
         "summary": "Delete Assessment Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/{upload_id}/bytes": {
@@ -34315,9 +32276,7 @@
           }
         ],
         "summary": "Put Assessment Upload Bytes",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/{upload_id}/finalize": {
@@ -34382,9 +32341,7 @@
           }
         ],
         "summary": "Finalize Assessment Upload",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/uploads/{upload_id}/url": {
@@ -34440,9 +32397,7 @@
           }
         ],
         "summary": "Get Assessment Upload Url",
-        "tags": [
-          "uploads"
-        ]
+        "tags": ["uploads"]
       }
     },
     "/api/v1/usergroups": {
@@ -34481,10 +32436,7 @@
           }
         ],
         "summary": "Api Get Usergroups",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       },
       "post": {
         "description": "Create UserGroup.\n\n**Required Permission**: `usergroup:create:platform`",
@@ -34537,10 +32489,7 @@
           }
         ],
         "summary": "Api Create Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/resource/{resource_uuid}": {
@@ -34600,10 +32549,7 @@
           }
         ],
         "summary": "Api Get Usergroupsby Resource",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}": {
@@ -34660,10 +32606,7 @@
           }
         ],
         "summary": "Api Delete Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       },
       "get": {
         "description": "Get UserGroup.",
@@ -34717,10 +32660,7 @@
           }
         ],
         "summary": "Api Get Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       },
       "put": {
         "description": "Update UserGroup.\n\n**Required Permission**: `usergroup:update:platform` or `usergroup:update:own`",
@@ -34784,10 +32724,7 @@
           }
         ],
         "summary": "Api Update Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}/add_resources": {
@@ -34853,10 +32790,7 @@
           }
         ],
         "summary": "Api Add Resources To Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}/add_users": {
@@ -34922,10 +32856,7 @@
           }
         ],
         "summary": "Api Add Users To Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}/remove_resources": {
@@ -34991,10 +32922,7 @@
           }
         ],
         "summary": "Api Delete Resources From Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}/remove_users": {
@@ -35060,10 +32988,7 @@
           }
         ],
         "summary": "Api Delete Users From Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/usergroups/{usergroup_id}/users": {
@@ -35123,10 +33048,7 @@
           }
         ],
         "summary": "Api Get Users Linked To Usergroup",
-        "tags": [
-          "usergroups",
-          "usergroups"
-        ]
+        "tags": ["usergroups", "usergroups"]
       }
     },
     "/api/v1/users": {
@@ -35181,10 +33103,7 @@
           }
         ],
         "summary": "Api Create User Without Platform",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/change_password/{user_id}": {
@@ -35250,10 +33169,7 @@
           }
         ],
         "summary": "Api Update User Password",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/id/{user_id}": {
@@ -35309,10 +33225,7 @@
           }
         ],
         "summary": "Api Get User By Id",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/preferences/locale/{user_id}": {
@@ -35377,10 +33290,7 @@
           }
         ],
         "summary": "Api Update User Locale",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/preferences/theme/{user_id}": {
@@ -35445,10 +33355,7 @@
           }
         ],
         "summary": "Api Update User Theme",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/profile": {
@@ -35483,9 +33390,7 @@
           }
         ],
         "summary": "Api Get Public User",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/session": {
@@ -35520,9 +33425,7 @@
           }
         ],
         "summary": "Api Get Public User Session",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/update_avatar/{user_id}": {
@@ -35587,10 +33490,7 @@
           }
         ],
         "summary": "Api Update Avatar User",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/user_id/{user_id}": {
@@ -35647,10 +33547,7 @@
           }
         ],
         "summary": "Api Delete User",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/username/{username}": {
@@ -35706,10 +33603,7 @@
           }
         ],
         "summary": "Api Get User By Username",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/uuid/{user_uuid}": {
@@ -35765,10 +33659,7 @@
           }
         ],
         "summary": "Api Get User By Uuid",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/{user_id}": {
@@ -35834,10 +33725,7 @@
           }
         ],
         "summary": "Api Update User",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/users/{user_id}/courses": {
@@ -35917,10 +33805,7 @@
           }
         ],
         "summary": "Api Get User Courses",
-        "tags": [
-          "users",
-          "users"
-        ]
+        "tags": ["users", "users"]
       }
     },
     "/api/v1/utils/link-preview": {
@@ -35972,9 +33857,7 @@
           }
         },
         "summary": "Link Preview",
-        "tags": [
-          "utils"
-        ]
+        "tags": ["utils"]
       }
     }
   }

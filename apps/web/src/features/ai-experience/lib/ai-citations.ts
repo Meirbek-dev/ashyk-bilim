@@ -1,4 +1,4 @@
-export type AICitation = {
+export interface AICitation {
   citation_id: string
   label: string
   source_type: string

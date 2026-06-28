@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-type AIStreamingTextProps = {
+interface AIStreamingTextProps {
   text: string
   streaming?: boolean
   className?: string

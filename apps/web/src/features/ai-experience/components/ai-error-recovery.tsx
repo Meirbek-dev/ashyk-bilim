@@ -5,7 +5,7 @@ import { RotateCcwIcon, TriangleAlertIcon } from 'lucide-react'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 
-type AIErrorRecoveryProps = {
+interface AIErrorRecoveryProps {
   message: string
   onRetry?: () => void
 }

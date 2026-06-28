@@ -5,7 +5,7 @@ import type { AICitation } from '@/features/ai-experience'
 
 import type { CourseAnalysis } from '../api/use-course-analysis'
 
-type CourseAnalysisResultShellProps = {
+interface CourseAnalysisResultShellProps {
   analysis: CourseAnalysis
   onPublish?: () => void
   publishing?: boolean

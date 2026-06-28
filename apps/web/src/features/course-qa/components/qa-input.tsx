@@ -6,7 +6,7 @@ import { SendIcon } from 'lucide-react'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
 
-type QAInputProps = {
+interface QAInputProps {
   pending?: boolean
   onSubmit: (question: string) => void
 }

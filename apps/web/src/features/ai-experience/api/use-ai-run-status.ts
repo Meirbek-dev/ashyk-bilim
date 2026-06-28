@@ -4,7 +4,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher } from '@/lib/api-client'
 
-export type AIRunStatusPayload = {
+export interface AIRunStatusPayload {
   run_uuid: string
   status: string
   model_name?: string | null

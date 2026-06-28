@@ -7,7 +7,7 @@ import { AI_STATE_LABELS } from '../lib/ai-copy'
 import { aiStateProgress, buildAIStages } from '../lib/ai-run-state'
 import type { AIWorkState } from '../lib/ai-run-state'
 
-type AIRunTimelineProps = {
+interface AIRunTimelineProps {
   state: AIWorkState
   className?: string
 }

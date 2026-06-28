@@ -7,7 +7,7 @@ import { AICitationLink } from './ai-citation-link'
 import { confidenceLabel } from '../lib/ai-citations'
 import type { AICitation } from '../lib/ai-citations'
 
-type AIEvidencePanelProps = {
+interface AIEvidencePanelProps {
   citations: AICitation[]
 }
 

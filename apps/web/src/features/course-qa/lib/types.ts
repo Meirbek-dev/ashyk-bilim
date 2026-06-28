@@ -1,4 +1,4 @@
-export type QAMessage = {
+export interface QAMessage {
   message_uuid: string
   role: 'user' | 'assistant' | string
   content: string
@@ -7,7 +7,7 @@ export type QAMessage = {
   created_at: string
 }
 
-export type CourseQAResponse = {
+export interface CourseQAResponse {
   thread_uuid: string
   user_message: QAMessage
   assistant_message: QAMessage

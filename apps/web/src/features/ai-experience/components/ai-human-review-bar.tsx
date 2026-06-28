@@ -4,7 +4,7 @@ import { CheckIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
-type AIHumanReviewBarProps = {
+interface AIHumanReviewBarProps {
   onApprove: () => void
   onReject?: () => void
   disabled?: boolean

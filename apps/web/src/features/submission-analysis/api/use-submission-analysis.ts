@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
-export type SubmissionAnalysis = {
+export interface SubmissionAnalysis {
   analysis_uuid: string
   gap_count: number
   status: string

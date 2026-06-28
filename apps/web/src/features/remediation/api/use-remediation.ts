@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
-export type RemediationSession = {
+export interface RemediationSession {
   session_uuid: string
   status: string
   gate_mode: boolean

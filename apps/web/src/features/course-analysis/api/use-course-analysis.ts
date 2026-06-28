@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
-export type CourseAnalysis = {
+export interface CourseAnalysis {
   analysis_uuid: string
   public_score: number
   status: string

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { citationHref } from '../lib/ai-citations'
 import type { AICitation } from '../lib/ai-citations'
 
-type AICitationLinkProps = {
+interface AICitationLinkProps {
   citation: AICitation
 }
 

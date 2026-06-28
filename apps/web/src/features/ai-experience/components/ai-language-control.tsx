@@ -3,7 +3,7 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 
-type AILanguageControlProps = {
+interface AILanguageControlProps {
   value: string
   onValueChange: (value: string) => void
 }

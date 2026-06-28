@@ -6,7 +6,7 @@ import { apiStreamFetch } from '@/lib/api-client'
 
 import type { AIWorkState } from '../lib/ai-run-state'
 
-export type AIRunStreamEvent = {
+export interface AIRunStreamEvent {
   state: AIWorkState
   message?: string
   payload?: unknown

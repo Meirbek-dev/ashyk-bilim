@@ -151,74 +151,74 @@ Need deterministic, fast tests?
 
 ### Output Mode Comparison
 
-| Scenario | Mode |
-|----------|------|
-| Need structured data and want maximum provider compatibility | `ToolOutput` (default) — works with all providers, supports streaming |
-| Want the provider to natively enforce JSON schema compliance | `NativeOutput` — OpenAI, Anthropic, Google only; limited streaming |
-| Provider doesn't support tools or JSON mode | `PromptedOutput` — works everywhere as a fallback |
-| LLM returns non-JSON structured text (markdown, YAML, domain-specific) | `TextOutput` — custom parsing function |
+| Scenario                                                               | Mode                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Need structured data and want maximum provider compatibility           | `ToolOutput` (default) — works with all providers, supports streaming |
+| Want the provider to natively enforce JSON schema compliance           | `NativeOutput` — OpenAI, Anthropic, Google only; limited streaming    |
+| Provider doesn't support tools or JSON mode                            | `PromptedOutput` — works everywhere as a fallback                     |
+| LLM returns non-JSON structured text (markdown, YAML, domain-specific) | `TextOutput` — custom parsing function                                |
 
 ### Model Provider Prefixes
 
-| Provider | Prefix | Example |
-|----------|--------|---------|
-| OpenAI | `openai:` | `openai:gpt-5.2` |
-| Anthropic | `anthropic:` | `anthropic:claude-sonnet-4-6` |
-| Google (Gemini API) | `google:` | `google:gemini-3-pro-preview` |
-| Google Cloud | `google-cloud:` | `google-cloud:gemini-3-pro-preview` |
-| Groq | `groq:` | `groq:llama-3.3-70b-versatile` |
-| Mistral | `mistral:` | `mistral:mistral-large-latest` |
-| Cohere | `cohere:` | `cohere:command-r-plus-08-2024` |
-| AWS Bedrock | `bedrock:` | `bedrock:anthropic.claude-sonnet-4-6` |
-| Azure | `azure:` | `azure:gpt-5.2` |
-| OpenRouter | `openrouter:` | `openrouter:anthropic/claude-sonnet-4-6` |
-| xAI | `xai:` | `xai:grok-4.3` |
-| DeepSeek | `deepseek:` | `deepseek:deepseek-chat` |
-| Fireworks | `fireworks:` | `fireworks:accounts/fireworks/models/llama-v3p3-70b-instruct` |
-| Together | `together:` | `together:meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` |
-| Ollama (local) | `ollama:` | `ollama:llama3.2` |
-| GitHub Models | `github:` | `github:openai/gpt-5.2` |
-| Hugging Face | `huggingface:` | `huggingface:meta-llama/Llama-3.3-70B-Instruct` |
-| Cerebras | `cerebras:` | `cerebras:llama-4-scout-17b-16e-instruct` |
-| Heroku | `heroku:` | `heroku:claude-sonnet-4-6` |
+| Provider            | Prefix          | Example                                                       |
+| ------------------- | --------------- | ------------------------------------------------------------- |
+| OpenAI              | `openai:`       | `openai:gpt-5.2`                                              |
+| Anthropic           | `anthropic:`    | `anthropic:claude-sonnet-4-6`                                 |
+| Google (Gemini API) | `google:`       | `google:gemini-3-pro-preview`                                 |
+| Google Cloud        | `google-cloud:` | `google-cloud:gemini-3-pro-preview`                           |
+| Groq                | `groq:`         | `groq:llama-3.3-70b-versatile`                                |
+| Mistral             | `mistral:`      | `mistral:mistral-large-latest`                                |
+| Cohere              | `cohere:`       | `cohere:command-r-plus-08-2024`                               |
+| AWS Bedrock         | `bedrock:`      | `bedrock:anthropic.claude-sonnet-4-6`                         |
+| Azure               | `azure:`        | `azure:gpt-5.2`                                               |
+| OpenRouter          | `openrouter:`   | `openrouter:anthropic/claude-sonnet-4-6`                      |
+| xAI                 | `xai:`          | `xai:grok-4.3`                                                |
+| DeepSeek            | `deepseek:`     | `deepseek:deepseek-chat`                                      |
+| Fireworks           | `fireworks:`    | `fireworks:accounts/fireworks/models/llama-v3p3-70b-instruct` |
+| Together            | `together:`     | `together:meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo`       |
+| Ollama (local)      | `ollama:`       | `ollama:llama3.2`                                             |
+| GitHub Models       | `github:`       | `github:openai/gpt-5.2`                                       |
+| Hugging Face        | `huggingface:`  | `huggingface:meta-llama/Llama-3.3-70B-Instruct`               |
+| Cerebras            | `cerebras:`     | `cerebras:llama-4-scout-17b-16e-instruct`                     |
+| Heroku              | `heroku:`       | `heroku:claude-sonnet-4-6`                                    |
 
 **Additional prefixes:** `litellm:`, `nebius:`, `ovhcloud:`, `alibaba:`, `sambanova:`, `vercel:`, `moonshotai:`. For truly custom providers, subclass `Model` or use `OpenAIChatModel` with a custom `base_url`.
 
 ### Tool Decorator Comparison
 
-| Scenario | Decorator |
-|----------|-----------|
-| Tool needs access to deps, usage stats, messages, or retry info | `@agent.tool` — `RunContext` as required first param |
-| Pure function, no agent context needed | `@agent.tool_plain` |
-| Tools defined in a separate module or shared across agents | `Tool(fn)` — pass to agent constructor via `tools=[...]` |
+| Scenario                                                        | Decorator                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------- |
+| Tool needs access to deps, usage stats, messages, or retry info | `@agent.tool` — `RunContext` as required first param     |
+| Pure function, no agent context needed                          | `@agent.tool_plain`                                      |
+| Tools defined in a separate module or shared across agents      | `Tool(fn)` — pass to agent constructor via `tools=[...]` |
 
 ### Built-in Capabilities
 
-| Capability | What it provides | Usable in YAML Specs |
-|---|---|:---:|
-| `Thinking` | Model thinking/reasoning at configurable effort | Yes |
-| `Hooks` | Decorator-based lifecycle hook registration | No |
-| `WebSearch` | Web search — native when supported, local fallback | Yes |
-| `WebFetch` | URL fetching — native when supported, custom fallback | Yes |
-| `ImageGeneration` | Image generation — native when supported, custom fallback | Yes |
-| `MCP` | MCP server — native when supported, direct connection | Yes |
-| `PrepareTools` | Filters or modifies tool definitions per step | No |
-| `PrefixTools` | Wraps a capability and prefixes its tool names | Yes |
-| `NativeTool` | Registers a provider-native tool with the agent | Yes |
-| `Toolset` | Wraps an `AbstractToolset` | No |
-| `ProcessHistory` | Wraps a history processor function — a thin wrapper over the `before_model_request` hook | No |
+| Capability        | What it provides                                                                         | Usable in YAML Specs |
+| ----------------- | ---------------------------------------------------------------------------------------- | :------------------: |
+| `Thinking`        | Model thinking/reasoning at configurable effort                                          |         Yes          |
+| `Hooks`           | Decorator-based lifecycle hook registration                                              |          No          |
+| `WebSearch`       | Web search — native when supported, local fallback                                       |         Yes          |
+| `WebFetch`        | URL fetching — native when supported, custom fallback                                    |         Yes          |
+| `ImageGeneration` | Image generation — native when supported, custom fallback                                |         Yes          |
+| `MCP`             | MCP server — native when supported, direct connection                                    |         Yes          |
+| `PrepareTools`    | Filters or modifies tool definitions per step                                            |          No          |
+| `PrefixTools`     | Wraps a capability and prefixes its tool names                                           |         Yes          |
+| `NativeTool`      | Registers a provider-native tool with the agent                                          |         Yes          |
+| `Toolset`         | Wraps an `AbstractToolset`                                                               |          No          |
+| `ProcessHistory`  | Wraps a history processor function — a thin wrapper over the `before_model_request` hook |          No          |
 
 ### When to Use Each Agent Method
 
-| Scenario | Method |
-|----------|--------|
+| Scenario                                                                                 | Method                                                                                 |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Building a chatbot or assistant that shows tool calls, progress, and output in real-time | `agent.run(event_stream_handler=...)` — streams all events while running to completion |
-| Running an autonomous agent, batch job, or background task | `agent.run()` |
-| Writing a CLI tool, script, or Jupyter notebook (no async) | `agent.run_sync()` |
-| Streaming final text word-by-word to a UI | `agent.run_stream()` |
-| Synchronous streaming for CLI tools or scripts (no async) | `agent.run_stream_sync()` |
-| Receiving an async iterable of typed events (tool calls, results, final output) | `agent.run_stream_events()` |
-| Inspecting or modifying state between agent steps, human-in-the-loop approval | `agent.iter()` |
+| Running an autonomous agent, batch job, or background task                               | `agent.run()`                                                                          |
+| Writing a CLI tool, script, or Jupyter notebook (no async)                               | `agent.run_sync()`                                                                     |
+| Streaming final text word-by-word to a UI                                                | `agent.run_stream()`                                                                   |
+| Synchronous streaming for CLI tools or scripts (no async)                                | `agent.run_stream_sync()`                                                              |
+| Receiving an async iterable of typed events (tool calls, results, final output)          | `agent.run_stream_events()`                                                            |
+| Inspecting or modifying state between agent steps, human-in-the-loop approval            | `agent.iter()`                                                                         |
 
 See [Run Methods and Streaming](./AGENTS-CORE.md#run-methods-and-streaming) for `event_stream_handler` details.
 

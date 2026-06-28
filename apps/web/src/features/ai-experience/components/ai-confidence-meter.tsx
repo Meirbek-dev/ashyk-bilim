@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 
-type AIConfidenceMeterProps = {
+interface AIConfidenceMeterProps {
   confidence?: 'low' | 'medium' | 'high' | string | null | undefined
 }
 

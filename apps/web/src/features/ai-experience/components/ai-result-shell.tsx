@@ -12,7 +12,7 @@ import { AI_STATE_LABELS, modelAuditLabel } from '../lib/ai-copy'
 import type { AICitation } from '../lib/ai-citations'
 import type { AIWorkState } from '../lib/ai-run-state'
 
-type AIResultShellContextValue = {
+interface AIResultShellContextValue {
   title: string
   description?: string
   state: AIWorkState

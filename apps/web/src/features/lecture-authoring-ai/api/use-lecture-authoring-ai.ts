@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
-export type LectureReview = {
+export interface LectureReview {
   review_uuid: string
   status: string
   language: string

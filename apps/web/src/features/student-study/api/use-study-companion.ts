@@ -6,7 +6,7 @@ import { apiJson } from '@/lib/api-client'
 
 export type StudyCompanionMode = 'explain' | 'practice' | 'flashcards' | 'summarize' | 'deepen'
 
-export type StudyCompanionAnswer = {
+export interface StudyCompanionAnswer {
   mode: StudyCompanionMode
   answer_markdown: string
   confidence?: string

@@ -265,15 +265,15 @@ Proposed response envelope:
 
 ```ts
 interface TeacherAiRun {
-  runId: string;
-  mode: TeacherAiMode;
-  surface: TeacherAiSurface;
-  state: 'streaming' | 'complete' | 'failed' | 'cancelled';
-  sources: TeacherAiSource[];
-  safety: TeacherAiSafetyState;
-  output: TeacherAiOutput;
-  approvals: TeacherAiApprovalAction[];
-  followUps: TeacherAiFollowUp[];
+  runId: string
+  mode: TeacherAiMode
+  surface: TeacherAiSurface
+  state: 'streaming' | 'complete' | 'failed' | 'cancelled'
+  sources: TeacherAiSource[]
+  safety: TeacherAiSafetyState
+  output: TeacherAiOutput
+  approvals: TeacherAiApprovalAction[]
+  followUps: TeacherAiFollowUp[]
 }
 ```
 

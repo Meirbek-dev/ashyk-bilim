@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { apiFetcher } from '@/lib/api-client'
 
-export type AIUsageSummary = {
+export interface AIUsageSummary {
   total_runs: number
   input_tokens: number
   output_tokens: number

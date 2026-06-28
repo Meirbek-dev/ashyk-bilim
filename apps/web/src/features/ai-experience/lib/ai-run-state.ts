@@ -10,7 +10,7 @@ export type AIWorkState =
   | 'failed'
   | 'cancelled'
 
-export type AIStage = {
+export interface AIStage {
   state: AIWorkState
   label: string
   complete: boolean
@@ -27,7 +27,7 @@ export function aiStateProgress(state: AIWorkState) {
   if (state === 'failed' || state === 'cancelled') return 100
   if (state === 'needs_human_review') return 92
   const index = ORDERED_STATES.indexOf(state)
-  return index < 0 ? 0 : Math.round(((index + 1) / ORDERED_STATES.length) * 100)
+  return index === -1 ? 0 : Math.round(((index + 1) / ORDERED_STATES.length) * 100)
 }
 
 export function buildAIStages(current: AIWorkState, labels: Record<AIWorkState, string>): AIStage[] {
@@ -36,6 +36,6 @@ export function buildAIStages(current: AIWorkState, labels: Record<AIWorkState, 
     state,
     label: labels[state],
     complete:
-      current === 'complete' || current === 'needs_human_review' || (currentIndex >= 0 && index <= currentIndex),
+      current === 'complete' || current === 'needs_human_review' || (currentIndex !== -1 && index <= currentIndex),
   }))
 }

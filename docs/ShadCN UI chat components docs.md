@@ -58,7 +58,15 @@ npx shadcn@latest add button
 ## Usage
 
 ```tsx
-import { Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentTitle } from '@/components/ui/attachment';
+import {
+  Attachment,
+  AttachmentAction,
+  AttachmentActions,
+  AttachmentContent,
+  AttachmentDescription,
+  AttachmentMedia,
+  AttachmentTitle,
+} from '@/components/ui/attachment'
 ```
 
 ```tsx
@@ -342,7 +350,7 @@ npx shadcn@latest add bubble
 ## Usage
 
 ```tsx showLineNumbers
-import { Bubble, BubbleContent, BubbleReactions } from '@/components/ui/bubble';
+import { Bubble, BubbleContent, BubbleReactions } from '@/components/ui/bubble'
 ```
 
 ```tsx showLineNumbers
@@ -453,14 +461,14 @@ You can turn a bubble into a link or button by using the `render` prop on `Bubbl
 />
 
 ```tsx showLineNumbers
-import { Bubble, BubbleContent } from '@/components/ui/bubble';
+import { Bubble, BubbleContent } from '@/components/ui/bubble'
 
 export function BubbleLinkDemo() {
   return (
     <Bubble variant="muted">
       <BubbleContent render={<button />}>Click here</BubbleContent>
     </Bubble>
-  );
+  )
 }
 ```
 
@@ -639,7 +647,7 @@ npx shadcn@latest add marker
 ## Usage
 
 ```tsx showLineNumbers
-import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker';
+import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 ```
 
 ```tsx showLineNumbers
@@ -748,14 +756,14 @@ Turn a marker into a link or button with the `render` prop on `Marker`.
 />
 
 ```tsx showLineNumbers
-import { Marker, MarkerContent } from '@/components/ui/marker';
+import { Marker, MarkerContent } from '@/components/ui/marker'
 
 export function MarkerLinkDemo() {
   return (
     <Marker render={<a href="#" />}>
       <MarkerContent>View the pull request</MarkerContent>
     </Marker>
-  );
+  )
 }
 ```
 
@@ -917,9 +925,9 @@ npx shadcn@latest add message
 ## Usage
 
 ```tsx showLineNumbers
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bubble, BubbleContent } from '@/components/ui/bubble';
-import { Message, MessageAvatar, MessageContent } from '@/components/ui/message';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Bubble, BubbleContent } from '@/components/ui/bubble'
+import { Message, MessageAvatar, MessageContent } from '@/components/ui/message'
 ```
 
 ```tsx showLineNumbers
@@ -1221,8 +1229,15 @@ npm install @shadcn/react
 ## Usage
 
 ```tsx
-import { Message } from '@/components/ui/message';
-import { MessageScroller, MessageScrollerButton, MessageScrollerContent, MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport } from '@/components/ui/message-scroller';
+import { Message } from '@/components/ui/message'
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from '@/components/ui/message-scroller'
 ```
 
 ```tsx
@@ -1230,7 +1245,7 @@ import { MessageScroller, MessageScrollerButton, MessageScrollerContent, Message
   <MessageScroller>
     <MessageScrollerViewport>
       <MessageScrollerContent>
-        {messages.map((message) => (
+        {messages.map(message => (
           <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === 'user'}>
             <Message />
           </MessageScrollerItem>
@@ -1453,7 +1468,7 @@ the assistant reply stream into a regular row below it. Start the user row below
 its final position so it feels like it rises from the live edge of the viewport.
 
 ```tsx
-const MotionMessageScrollerItem = motion.create(MessageScrollerItem);
+const MotionMessageScrollerItem = motion.create(MessageScrollerItem)
 ```
 
 <ComponentPreview
@@ -1476,11 +1491,11 @@ in any component inside the provider, including controls rendered outside the
 `MessageScroller` frame.
 
 ```tsx
-import { useMessageScroller } from '@/components/ui/message-scroller';
+import { useMessageScroller } from '@/components/ui/message-scroller'
 ```
 
 ```tsx
-const { scrollToMessage, scrollToEnd, scrollToStart } = useMessageScroller();
+const { scrollToMessage, scrollToEnd, scrollToStart } = useMessageScroller()
 ```
 
 <ComponentPreview
@@ -1507,11 +1522,11 @@ conversation. A common example is a table-of-contents or a jump menu that
 highlights the current anchored turn.
 
 ```tsx
-import { useMessageScrollerVisibility } from '@/components/ui/message-scroller';
+import { useMessageScrollerVisibility } from '@/components/ui/message-scroller'
 ```
 
 ```tsx
-const { currentAnchorId, visibleMessageIds } = useMessageScrollerVisibility();
+const { currentAnchorId, visibleMessageIds } = useMessageScrollerVisibility()
 ```
 
 <ComponentPreview
@@ -1539,11 +1554,11 @@ edges the viewport can still scroll toward; "at the start/end" is the negation
 scroller itself, prefer the `data-scrollable` attribute.
 
 ```tsx
-import { useMessageScrollerScrollable } from '@/components/ui/message-scroller';
+import { useMessageScrollerScrollable } from '@/components/ui/message-scroller'
 ```
 
 ```tsx
-const { start, end } = useMessageScrollerScrollable();
+const { start, end } = useMessageScrollerScrollable()
 ```
 
 <ComponentPreview
@@ -1587,19 +1602,19 @@ When a transcript is large enough to need virtualization, use
 rows.
 
 ```tsx showLineNumbers
-import * as React from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import * as React from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 
 function VirtualizedTranscript({ messages }: { messages: Array<{ id: string; content: React.ReactNode }> }) {
-  const viewportRef = React.useRef<HTMLDivElement>(null);
+  const viewportRef = React.useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => viewportRef.current,
     estimateSize: () => 86,
-    getItemKey: (index) => messages[index]?.id ?? index,
+    getItemKey: index => messages[index]?.id ?? index,
     overscan: 8,
-  });
+  })
 
   return (
     <MessageScrollerProvider>
@@ -1607,11 +1622,11 @@ function VirtualizedTranscript({ messages }: { messages: Array<{ id: string; con
         <MessageScrollerViewport ref={viewportRef}>
           <MessageScrollerContent className="block min-h-full">
             <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
-              {virtualizer.getVirtualItems().map((virtualItem) => {
-                const message = messages[virtualItem.index];
+              {virtualizer.getVirtualItems().map(virtualItem => {
+                const message = messages[virtualItem.index]
 
                 if (!message) {
-                  return null;
+                  return null
                 }
 
                 return (
@@ -1626,7 +1641,7 @@ function VirtualizedTranscript({ messages }: { messages: Array<{ id: string; con
                   >
                     <Message>{message.content}</Message>
                   </div>
-                );
+                )
               })}
             </div>
           </MessageScrollerContent>
@@ -1634,7 +1649,7 @@ function VirtualizedTranscript({ messages }: { messages: Array<{ id: string; con
         <MessageScrollerButton />
       </MessageScroller>
     </MessageScrollerProvider>
-  );
+  )
 }
 ```
 
