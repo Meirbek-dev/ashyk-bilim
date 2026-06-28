@@ -45,7 +45,7 @@ def _get_course_for_activity_or_404(activity: Activity, db_session: Session) -> 
             if course:
                 return course
 
-    raise HTTPException(status_code=404, detail="Course not found")
+    raise HTTPException(status_code=404, detail="Курс не найден")
 
 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:

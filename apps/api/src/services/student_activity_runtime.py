@@ -51,7 +51,7 @@ async def get_student_activity_runtime(
 ) -> StudentActivityRuntime:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
 
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
@@ -144,7 +144,7 @@ async def run_student_activity_action(
 ) -> StudentActivityRuntime:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
@@ -160,7 +160,7 @@ async def run_student_activity_action(
     else:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Command '{action.command}' is owned by the activity-specific runtime.",
+            detail=f"Команда '{action.command}' принадлежит специфическому рантайму активности.",
         )
 
     return await get_student_activity_runtime(request, course_uuid, activity_uuid, current_user, db_session)

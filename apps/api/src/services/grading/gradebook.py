@@ -202,7 +202,7 @@ def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
     if course is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found",
+            detail="Курс не найден",
         )
     return course
 

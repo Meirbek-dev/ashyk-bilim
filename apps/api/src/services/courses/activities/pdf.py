@@ -28,13 +28,13 @@ def validate_pdf_file(pdf_file: UploadFile | None) -> str:
     if not pdf_file or not pdf_file.filename:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Pdf : No pdf file provided",
+            detail="PDF: Файл PDF не предоставлен",
         )
 
     if "." not in pdf_file.filename:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Pdf : No pdf file provided",
+            detail="PDF: Файл PDF не предоставлен",
         )
 
     validate_upload(pdf_file, ["document"], max_size=MAX_DOCUMENT_PDF_SIZE)
@@ -50,34 +50,34 @@ def validate_uploaded_pdf_path(pdf_uploaded_path: str) -> tuple[str, Path]:
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pdf : Invalid upload path",
+            detail="PDF: Некорректный путь загрузки",
         ) from exc
 
     if not uploaded_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pdf : Uploaded pdf not found",
+            detail="PDF: Загруженный PDF не найден",
         )
 
     pdf_format = uploaded_path.suffix.lstrip(".").lower()
     if pdf_format != "pdf":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Pdf : Wrong pdf format",
+            detail="PDF: Неверный формат PDF",
         )
 
     file_size = uploaded_path.stat().st_size
     if file_size > MAX_DOCUMENT_PDF_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large ({file_size / 1024 / 1024:.1f}MB > {MAX_DOCUMENT_PDF_SIZE / 1024 / 1024:.1f}MB)",
+            detail=f"Файл слишком большой ({file_size / 1024 / 1024:.1f}МБ > {MAX_DOCUMENT_PDF_SIZE / 1024 / 1024:.1f}МБ)",
         )
 
     with uploaded_path.open("rb") as uploaded_pdf:
         if uploaded_pdf.read(5) != b"%PDF-":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Pdf : Wrong pdf format",
+                detail="PDF: Неверный формат PDF",
             )
 
     return pdf_format, uploaded_path
@@ -101,11 +101,11 @@ async def create_documentpdf_activity(
 ) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
     course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
@@ -117,7 +117,7 @@ async def create_documentpdf_activity(
     elif pdf_uploaded_path:
         pdf_format, temp_path = validate_uploaded_pdf_path(pdf_uploaded_path)
     else:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Pdf : No pdf file provided")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PDF: Файл PDF не предоставлен")
 
     activity_uuid = f"activity_{ULID()}"
     now = datetime.now(UTC)

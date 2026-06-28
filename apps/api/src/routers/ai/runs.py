@@ -24,7 +24,7 @@ async def api_get_ai_run(
 ) -> AIRun:
     run = db_session.exec(select(AIRun).where(AIRun.run_uuid == run_uuid)).first()
     if run is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI run not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запуск ИИ не найден")
     return run
 
 
@@ -35,7 +35,7 @@ async def api_cancel_ai_run(
 ) -> AIRun:
     run = db_session.exec(select(AIRun).where(AIRun.run_uuid == run_uuid)).first()
     if run is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI run not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запуск ИИ не найден")
     if run.status in {AIRunStatus.FINISHED.value, AIRunStatus.ERROR.value, AIRunStatus.ABORTED.value}:
         return run
     from src.db.ai_runtime import utc_now

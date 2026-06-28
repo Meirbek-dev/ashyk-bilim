@@ -10,11 +10,12 @@ async def analyze_submission(
     submission_context: str,
     *,
     language: str = "auto",
+    locale: str | None = None,
 ) -> tuple[SubmissionAnalysisReport, str]:
     prompt = f"Language: {language}\n\nSubmission context:\n{clipped(submission_context)}"
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("submission_analysis.md"),
+            instructions=load_prompt("submission_analysis.md", locale=locale),
             prompt=prompt,
             output_type=SubmissionAnalysisReport,
         )

@@ -16,11 +16,12 @@ async def answer_study_prompt(
     *,
     mode: StudyMode,
     language: str = "auto",
+    locale: str | None = None,
 ) -> tuple[StudyCompanionAnswer, str]:
     prompt = f"Mode: {mode}\nLanguage: {language}\nStudent question: {question}\n\nCourse context:\n{clipped(course_context)}"
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("study_companion.md"),
+            instructions=load_prompt("study_companion.md", locale=locale),
             prompt=prompt,
             output_type=StudyCompanionAnswer,
         )

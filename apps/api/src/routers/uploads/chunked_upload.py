@@ -332,9 +332,9 @@ async def initiate_chunked_upload(
     """
     assert current_user is not None
     if type_of_dir not in {"platform", "users"}:
-        raise HTTPException(status_code=400, detail="type_of_dir must be 'platform' or 'users'")
+        raise HTTPException(status_code=400, detail="Параметр type_of_dir должен быть 'platform' или 'users'")
     if type_of_dir == "users" and (uuid is None or uuid == ""):
-        raise HTTPException(status_code=400, detail="uuid is required")
+        raise HTTPException(status_code=400, detail="Параметр uuid обязателен")
     upload_dir_type: Literal["platform", "users"] = "platform" if type_of_dir == "platform" else "users"
     upload_id = create_upload_session(
         directory=directory,

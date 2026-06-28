@@ -62,7 +62,7 @@ class ChunkedUploadSession:
         if chunk_index in self.chunks_received:
             raise HTTPException(
                 status_code=400,
-                detail=f"Chunk {chunk_index} already received",
+                detail=f"Часть {chunk_index} уже получена",
             )
 
         chunk_path = self.get_chunk_path(chunk_index)
@@ -76,7 +76,7 @@ class ChunkedUploadSession:
         if not self.is_complete():
             raise HTTPException(
                 status_code=400,
-                detail=f"Not all chunks received. Got {len(self.chunks_received)}/{self.total_chunks}",
+                detail=f"Получены не все части. Получено {len(self.chunks_received)}/{self.total_chunks}",
             )
 
         # Assemble chunks in order
@@ -87,7 +87,7 @@ class ChunkedUploadSession:
             if not await path.exists():
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Chunk {i} missing during assembly",
+                    detail=f"Часть {i} отсутствует при сборке",
                 )
 
             assembled_data.extend(await path.read_bytes())
@@ -96,7 +96,7 @@ class ChunkedUploadSession:
         if len(assembled_data) != self.file_size:
             raise HTTPException(
                 status_code=400,
-                detail=f"Assembled file size mismatch. Expected {self.file_size}, got {len(assembled_data)}",
+                detail=f"Несоответствие размера собранного файла. Ожидалось {self.file_size}, получено {len(assembled_data)}",
             )
 
         return bytes(assembled_data)
@@ -144,7 +144,7 @@ def get_upload_session(upload_id: str) -> ChunkedUploadSession:
     if not session:
         raise HTTPException(
             status_code=404,
-            detail=f"Upload session {upload_id} not found",
+            detail=f"Сессия загрузки {upload_id} не найдена",
         )
     return session
 
@@ -179,7 +179,7 @@ async def complete_upload(upload_id: str) -> tuple[bytes, ChunkedUploadSession]:
     if not session.is_complete():
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot complete upload. Received {len(session.chunks_received)}/{session.total_chunks} chunks",
+            detail=f"Не удалось завершить загрузку. Получено {len(session.chunks_received)}/{session.total_chunks} частей",
         )
 
     # Assemble chunks

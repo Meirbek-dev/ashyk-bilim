@@ -12,11 +12,12 @@ async def answer_course_question(
     *,
     role: str,
     language: str = "auto",
+    locale: str | None = None,
 ) -> tuple[CourseQAAnswer, str]:
     prompt = f"Role: {role}\nLanguage: {language}\nQuestion: {question}\n\nCourse context:\n{clipped(course_context)}"
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("course_qa.md"),
+            instructions=load_prompt("course_qa.md", locale=locale),
             prompt=prompt,
             output_type=CourseQAAnswer,
         )

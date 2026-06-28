@@ -85,7 +85,7 @@ def enforce_attempt_limit(
     if completed_attempt_count >= effective.max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({effective.max_attempts}) reached",
+            detail=f"Достигнуто максимальное количество попыток ({effective.max_attempts})",
         )
 
 
@@ -108,7 +108,7 @@ def enforce_time_limit(
     if elapsed > effective.time_limit_seconds + SUBMIT_GRACE_SECONDS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Time limit ({effective.time_limit_seconds}s) exceeded",
+            detail=f"Лимит времени ({effective.time_limit_seconds} сек) превышен",
         )
 
 
@@ -126,7 +126,7 @@ def enforce_late_submission(
     if now > effective.due_at and not effective.allow_late:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Late submissions are not allowed for this activity",
+            detail="Поздние решения не разрешены для этой активности",
         )
 
 

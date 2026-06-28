@@ -158,8 +158,8 @@ def _prevent_grading_entry_update(mapper: object, connection: object, target: Gr
             statement=None,
             params=None,
             orig=Exception(
-                f"GradingEntry is immutable. Attempted to modify: {sorted(changed_fields)}. "
-                "Create a new GradingEntry instead."
+                f"GradingEntry неизменяем. Попытка изменить: {sorted(changed_fields)}. "
+                "Вместо этого создайте новый GradingEntry."
             ),
         )
 
@@ -171,7 +171,7 @@ def _prevent_grading_entry_delete(mapper: object, connection: object, target: Gr
         statement=None,
         params=None,
         orig=Exception(
-            f"GradingEntry (id={target.id}, uuid={target.entry_uuid}) cannot be deleted. "
-            "The grading ledger is append-only."
+            f"GradingEntry (id={target.id}, uuid={target.entry_uuid}) не может быть удален. "
+            "Журнал оценивания доступен только для добавления."
         ),
     )

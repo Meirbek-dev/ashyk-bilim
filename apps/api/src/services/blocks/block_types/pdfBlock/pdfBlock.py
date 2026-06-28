@@ -58,6 +58,6 @@ async def get_pdf_block(
     block = db_session.exec(statement).first()
 
     if not block:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF file does not exist")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF-файл не существует")
 
     return BlockRead.model_validate(block)

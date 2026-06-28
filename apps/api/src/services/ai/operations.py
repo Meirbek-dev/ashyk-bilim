@@ -78,21 +78,21 @@ def _require_enabled(feature_flag: str) -> None:
     if not bool(getattr(config, feature_flag)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"AI feature '{feature_flag}' is disabled",
+            detail=f"Функция ИИ '{feature_flag}' отключена",
         )
 
 
 def _course_or_404(db_session: Session, course_uuid: str) -> Course:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     return course
 
 
 def _submission_or_404(db_session: Session, submission_uuid: str) -> Submission:
     submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if submission is None or submission.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Решение не найдено")
     return submission
 
 
@@ -213,7 +213,7 @@ async def run_course_analysis(
         db_session, user=user, role=AIThreadRole.TEACHER.value, kind="course_analysis", course_id=course.id
     )
     try:
-        report, model_name = await analyze_course(provider, context, language=language)
+        report, model_name = await analyze_course(provider, context, language=language, locale=user.locale)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
@@ -269,7 +269,7 @@ async def run_submission_analysis(
         metadata=metadata,
     )
     try:
-        report, model_name = await analyze_submission(provider, context, language=language)
+        report, model_name = await analyze_submission(provider, context, language=language, locale=user.locale)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
@@ -334,7 +334,9 @@ async def run_remediation_generation(
         metadata=metadata,
     )
     try:
-        bundle, model_name = await generate_remediation(provider, context, analysis_report, language=language)
+        bundle, model_name = await generate_remediation(
+            provider, context, analysis_report, language=language, locale=user.locale
+        )
         artifact = _safe_artifact(bundle.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in bundle.citations])
         questions = _redact_json([question.model_dump(mode="json") for question in bundle.practice_questions])
@@ -388,7 +390,9 @@ async def run_study_companion(
         db_session, user=user, role=AIThreadRole.STUDENT.value, kind="study_companion", course_id=course.id
     )
     try:
-        answer, model_name = await answer_study_prompt(provider, context, question, mode=mode, language=language)
+        answer, model_name = await answer_study_prompt(
+            provider, context, question, mode=mode, language=language, locale=user.locale
+        )
         artifact = _safe_artifact(answer.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
@@ -437,7 +441,7 @@ async def run_lecture_review(
         activity_id=activity.id if activity else None,
     )
     try:
-        report, model_name = await critique_lecture(provider, context, language=language)
+        report, model_name = await critique_lecture(provider, context, language=language, locale=user.locale)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
@@ -514,7 +518,9 @@ async def ask_course_question(
     db_session.add(user_message)
     run = _create_run(db_session, user=user, role=role, kind="course_qa", course_id=course.id)
     try:
-        answer, model_name = await answer_course_question(provider, context, question, role=role, language=language)
+        answer, model_name = await answer_course_question(
+            provider, context, question, role=role, language=language, locale=user.locale
+        )
         artifact = _safe_artifact(answer.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
@@ -554,10 +560,10 @@ async def ask_course_question(
 def publish_course_analysis(db_session: Session, analysis_uuid: str, user: PublicUser) -> AICourseAnalysis:
     analysis = db_session.exec(select(AICourseAnalysis).where(AICourseAnalysis.analysis_uuid == analysis_uuid)).first()
     if analysis is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Анализ не найден")
     course = db_session.get(Course, analysis.course_id)
     if course is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     _require_course_update(db_session, course, user)
     analysis.status = "published"
     analysis.published_at = utc_now()

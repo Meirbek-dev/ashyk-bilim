@@ -473,7 +473,7 @@ def _ensure_course_is_current(course: Course, last_known_update_date: datetime |
     if current_update_date != expected_update_date:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Course has changed since you opened this editor. Reload and try again.",
+            detail="Курс был изменен с тех пор, как вы открыли этот редактор. Перезагрузите страницу и попробуйте снова.",
         )
 
 
@@ -510,7 +510,7 @@ async def get_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     if not course.public:
@@ -553,7 +553,7 @@ async def get_course_by_id(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     if not course.public:
@@ -599,7 +599,7 @@ async def get_course_meta(
     if not resolved_course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # Get course with authors in a single query using joins
@@ -1098,7 +1098,7 @@ async def update_course_thumbnail(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -1133,7 +1133,7 @@ async def update_course_thumbnail(
     else:
         raise HTTPException(
             status_code=400,
-            detail="No thumbnail file provided",
+            detail="Файл миниатюры не предоставлен",
         )
 
     # Complete the course object
@@ -1187,7 +1187,7 @@ async def update_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require course ownership or admin role for updating courses
@@ -1232,7 +1232,7 @@ async def update_course(
         if not (is_course_owner or admin_or_maintainer):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"You must be the course owner (CREATOR or MAINTAINER) or have admin role to change access settings: {', '.join(sensitive_fields_updated)}",
+                detail=f"Вы должны быть владельцем курса (CREATOR или MAINTAINER) или иметь роль администратора для изменения настроек доступа: {', '.join(sensitive_fields_updated)}",
             )
 
     # Update only the fields that were passed in
@@ -1261,7 +1261,7 @@ async def update_course_metadata(
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -1299,7 +1299,7 @@ async def update_course_access(
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -1346,7 +1346,7 @@ async def delete_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -1376,7 +1376,7 @@ async def get_user_courses(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Get all resource authors for the user
@@ -1689,7 +1689,7 @@ async def get_course_user_rights(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # Initialize rights sub-dicts with explicit types for mutation safety

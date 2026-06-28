@@ -50,12 +50,12 @@ def validate_video_file(video_file: UploadFile | None) -> str:
     if not video_file:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : No video file provided",
+            detail="Видео: Файл видео не предоставлен",
         )
     if video_file.content_type not in {"video/mp4", "video/webm", "video/x-matroska"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : Wrong video format",
+            detail="Видео: Неверный формат видео",
         )
     video_format = (
         video_file.filename.rsplit(".", 1)[-1] if video_file.filename and "." in video_file.filename else None
@@ -63,7 +63,7 @@ def validate_video_file(video_file: UploadFile | None) -> str:
     if not video_format:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : No video file provided or invalid filename",
+            detail="Видео: Файл видео не предоставлен или имя файла неверно",
         )
     return video_format
 
@@ -88,11 +88,11 @@ async def create_video_activity(
 ) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
     course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
@@ -108,7 +108,7 @@ async def create_video_activity(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either video_file or video_uploaded_path must be provided",
+            detail="Необходимо предоставить video_file или video_uploaded_path",
         )
 
     now = datetime.now(tz=UTC)
@@ -206,11 +206,11 @@ async def create_external_video_activity(
 ) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == data.chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
     course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)

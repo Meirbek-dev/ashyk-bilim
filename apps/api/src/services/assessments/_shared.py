@@ -1216,14 +1216,14 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     except ValueError as exc:
         raise ValidationAppError(
             code="INVALID_IF_MATCH_VERSION",
-            message="If-Match must contain the current numeric submission version",
+            message="If-Match должен содержать текущую числовую версию решения",
             details={"if_match": raw},
             cause=exc,
         ) from exc
     if draft.draft_version != expected:
         raise ConflictAppError(
             code="VERSION_CONFLICT",
-            message="Draft version conflict",
+            message="Конфликт версий черновика",
             details={
                 "expected": expected,
                 "actual": draft.draft_version,
@@ -1241,7 +1241,7 @@ def _parse_if_match_version(if_match: str | None) -> int | None:
     except ValueError as exc:
         raise ValidationAppError(
             code="INVALID_IF_MATCH_VERSION",
-            message="If-Match must contain the current numeric submission version",
+            message="If-Match должен содержать текущую числовую версию решения",
             details={"if_match": raw},
             cause=exc,
         ) from exc

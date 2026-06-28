@@ -60,4 +60,4 @@ async def get_image_block(
     if block:
         return BlockRead.model_validate(block)
 
-    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Image block does not exist")
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Блок изображения не существует")

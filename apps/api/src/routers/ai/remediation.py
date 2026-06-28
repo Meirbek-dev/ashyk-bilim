@@ -47,7 +47,7 @@ async def api_get_remediation_session(
         select(AIRemediationSession).where(AIRemediationSession.session_uuid == session_uuid)
     ).first()
     if session is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Remediation session not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сессия восполнения пробелов не найдена")
     return session
 
 
@@ -76,10 +76,10 @@ async def api_complete_remediation(
         select(AIRemediationSession).where(AIRemediationSession.session_uuid == session_uuid)
     ).first()
     if session is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Remediation session not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сессия восполнения пробелов не найдена")
     if session.student_user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot complete another student's remediation"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Невозможно завершить восполнение пробелов другого студента"
         )
     session.score = payload.score
     session.status = "passed" if payload.score >= 70 else "failed"

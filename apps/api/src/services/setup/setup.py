@@ -146,7 +146,7 @@ def install_create_platform_user(user_object: UserCreate, db_session: Session) -
 
     admin_role = db_session.exec(select(Role).where(Role.slug == RoleSlug.ADMIN)).first()
     if not admin_role:
-        raise HTTPException(500, detail="Admin role not found")
+        raise HTTPException(500, detail="Роль администратора не найдена")
 
     # Link user to platform by assigning admin role
     checker = PermissionChecker(db_session)

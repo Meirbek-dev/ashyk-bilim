@@ -115,7 +115,7 @@ class PermissionDenied(HTTPException):
         *,
         reason: str | None = None,
     ) -> None:
-        message = f"Permission denied: {permission}" if permission else "Permission denied"
+        message = f"Доступ запрещен: {permission}" if permission else "Доступ запрещен"
         detail = {
             "error_code": "PERMISSION_DENIED",
             "message": message,
@@ -131,7 +131,7 @@ class AuthenticationRequired(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "AUTHENTICATION_REQUIRED",
-            "message": reason or "Not authenticated",
+            "message": reason or "Не авторизован",
         }
         super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
 
@@ -142,7 +142,7 @@ class FeatureDisabled(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "FEATURE_DISABLED",
-            "message": reason or "Feature is disabled",
+            "message": reason or "Функция отключена",
         }
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
@@ -153,7 +153,7 @@ class ResourceAccessDenied(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "ACCESS_DENIED",
-            "message": reason or "Access denied",
+            "message": reason or "Доступ запрещен",
         }
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 

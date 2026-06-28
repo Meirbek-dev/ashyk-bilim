@@ -61,7 +61,7 @@ async def api_dismiss_lecture_suggestion(
 ) -> AILectureReview:
     review = db_session.exec(select(AILectureReview).where(AILectureReview.review_uuid == review_uuid)).first()
     if review is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lecture review not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обзор лекции не найден")
     dismissed: JsonObject = dict(review.dismissed_json or {})
     dismissed[payload.suggestion_id] = True
     review.dismissed_json = dismissed

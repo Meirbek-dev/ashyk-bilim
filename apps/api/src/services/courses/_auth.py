@@ -78,7 +78,7 @@ def require_course_permission(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
+            detail="Требуется аутентификация.",
         )
 
     is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
@@ -104,7 +104,7 @@ def require_course_action(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
+            detail="Требуется аутентификация.",
         )
 
     resolved_is_owner = (

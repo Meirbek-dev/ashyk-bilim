@@ -6,12 +6,12 @@ from src.services.ai.schemas import AICitation, AIRecommendation, CourseQualityR
 
 
 async def analyze_course(
-    provider: ModelProvider, course_context: str, *, language: str = "auto"
+    provider: ModelProvider, course_context: str, *, language: str = "auto", locale: str | None = None
 ) -> tuple[CourseQualityReport, str]:
     prompt = f"Language: {language}\n\nCourse context:\n{clipped(course_context)}"
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("course_analysis.md"),
+            instructions=load_prompt("course_analysis.md", locale=locale),
             prompt=prompt,
             output_type=CourseQualityReport,
         )

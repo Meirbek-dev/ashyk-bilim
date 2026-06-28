@@ -269,7 +269,7 @@ def _validate_transition(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
                 f"Нельзя перейти из {current_status} в {requested_status}. "
-                f"Allowed transitions: {[s.value for s in allowed]}"
+                f"Разрешенные переходы: {[s.value for s in allowed]}"
             ),
         )
 
@@ -323,5 +323,5 @@ def _enforce_attempt_limit_from_policy(
     if completed_count >= max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({max_attempts}) reached",
+            detail=f"Достигнуто максимальное количество попыток ({max_attempts})",
         )

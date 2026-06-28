@@ -400,13 +400,15 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
         },
         items=[
             {
-                "kind": ItemKind.OPEN_TEXT,
-                "title": "Essay",
+                "kind": ItemKind.CODE,
+                "title": "Write code",
                 "max_score": 10,
                 "body_json": {
-                    "kind": "OPEN_TEXT",
-                    "prompt": "Explain the theorem.",
-                    "min_words": 50,
+                    "kind": "CODE",
+                    "prompt": "Write Python code.",
+                    "languages": [71],
+                    "starter_code": {"71": "pass"},
+                    "tests": [],
                 },
             },
         ],
@@ -444,20 +446,22 @@ def test_exam_item_create_rejects_unsupported_runtime_kind(
     response = api_client.post(
         f"/assessments/{assessment.assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
-            "title": "Essay",
+            "kind": "CODE",
+            "title": "Write code",
             "max_score": 10,
             "body": {
-                "kind": "OPEN_TEXT",
-                "prompt": "Explain the theorem.",
-                "min_words": 50,
+                "kind": "CODE",
+                "prompt": "Write Python code.",
+                "languages": [71],
+                "starter_code": {"71": "pass"},
+                "tests": [],
             },
         },
     )
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "ITEM_KIND_UNSUPPORTED"
-    assert response.json()["detail"]["supported_kinds"] == ["CHOICE", "MATCHING"]
+    assert response.json()["detail"]["supported_kinds"] == ["CHOICE", "FORM", "MATCHING", "OPEN_TEXT"]
 
 
 def test_item_metadata_is_persisted_on_create_and_patch(

@@ -53,11 +53,11 @@ async def create_activity(
 ) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == activity_object.chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
     course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
@@ -200,7 +200,7 @@ def _sync_assessment_lifecycle(
     try:
         lifecycle = AssessmentLifecycleStatus(str(lifecycle_raw))
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid lifecycle_status")
+        raise HTTPException(status_code=422, detail="Неверный статус жизненного цикла")
 
     details["lifecycle_status"] = lifecycle.value
     if lifecycle == AssessmentLifecycleStatus.PUBLISHED:

@@ -29,7 +29,7 @@ async def upload_file_and_return_file_object(
         allowed_types.append("document")
 
     if not allowed_types:
-        raise HTTPException(status_code=400, detail="No valid file types specified")
+        raise HTTPException(status_code=400, detail="Не указаны допустимые типы файлов")
 
     # Upload file
     filename = await upload_file(

@@ -18,5 +18,5 @@ async def upload_thumbnail(thumbnail_file: UploadFile, name_in_disk: str, course
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail="There was an error uploading the file",
+            detail="Произошла ошибка при загрузке файла",
         ) from exc

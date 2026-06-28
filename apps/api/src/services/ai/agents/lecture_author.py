@@ -12,11 +12,12 @@ async def critique_lecture(
     course_context: str,
     *,
     language: str = "auto",
+    locale: str | None = None,
 ) -> tuple[LectureReviewReport, str]:
     prompt = f"Language: {language}\n\nLecture context:\n{clipped(course_context)}"
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("lecture_critique.md"),
+            instructions=load_prompt("lecture_critique.md", locale=locale),
             prompt=prompt,
             output_type=LectureReviewReport,
         )

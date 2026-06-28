@@ -74,12 +74,12 @@ async def upload_content(
     if allowed_formats and file_format not in allowed_formats:
         raise HTTPException(
             status_code=400,
-            detail=f"File format {file_format} not allowed",
+            detail=f"Формат файла {file_format} не разрешен",
         )
 
     if type_of_dir == "users":
         if not uuid:
-            raise HTTPException(status_code=400, detail="user uuid is required")
+            raise HTTPException(status_code=400, detail="Параметр user uuid обязателен")
         storage_root = f"content/users/{uuid}"
     else:
         storage_root = "content/platform"

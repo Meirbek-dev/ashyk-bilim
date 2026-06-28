@@ -124,7 +124,7 @@ async def _get_google_metadata() -> JsonObject:
             response.raise_for_status()
             resp_json = response.json()
             if not isinstance(resp_json, dict):
-                raise TypeError("Metadata response must be a dictionary")
+                raise TypeError("Ответ метаданных должен быть словарем")
             metadata = _validate_google_metadata(cast("JsonObject", resp_json))
     except (httpx.HTTPError, ValueError, TypeError) as exc:
         if _metadata_cache:

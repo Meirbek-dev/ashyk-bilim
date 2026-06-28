@@ -64,12 +64,12 @@ async def update_update(
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Update does not exist")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Обновление не существует")
     # RBAC check
     checker = PermissionChecker(db_session)
     update_course = db_session.get(Course, update.course_id) if update.course_id else None
     if not update_course:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     require_course_permission("course:update", current_user, update_course, checker)
 
     for key, value in update_object.model_dump(exclude_unset=True).items():
@@ -95,7 +95,7 @@ async def delete_update(
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Update does not exist")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Обновление не существует")
 
     # RBAC check
     checker = PermissionChecker(db_session)

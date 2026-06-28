@@ -90,7 +90,7 @@ async def create_user_trail(
     if trail:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Trail already exists",
+            detail="Учебный трек уже существует",
         )
 
     trail = Trail.model_validate(trail_object.model_dump())
@@ -117,7 +117,7 @@ async def get_user_trails(
     trail = db_session.exec(statement).first()
 
     if not trail:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Учебный трек не найден")
 
     return _hydrate_trail(trail, user.id, db_session)
 
@@ -254,7 +254,7 @@ async def remove_activity_from_trail(
     trail = db_session.exec(trail_stmt).first()
 
     if not trail:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Учебный трек не найден")
 
     # Delete the trail step for this activity
     step_stmt = select(TrailStep).where(
@@ -282,14 +282,14 @@ async def add_course_to_trail(
     course = db_session.exec(course_stmt).first()
 
     if not course:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
 
     # check if run already exists
     run_stmt = select(TrailRun).where(TrailRun.course_id == course.id, TrailRun.user_id == user.id)
     trailrun = db_session.exec(run_stmt).first()
 
     if trailrun:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="TrailRun already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Запуск учебного трека уже существует")
 
     trail = await check_trail_presence(
         user_id=user.id,
@@ -331,13 +331,13 @@ async def remove_course_from_trail(
     course = db_session.exec(course_stmt).first()
 
     if not course:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
 
     trail_stmt = select(Trail).where(Trail.user_id == user.id)
     trail = db_session.exec(trail_stmt).first()
 
     if not trail:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Учебный трек не найден")
 
     run_stmt = select(TrailRun).where(
         TrailRun.trail_id == trail.id,

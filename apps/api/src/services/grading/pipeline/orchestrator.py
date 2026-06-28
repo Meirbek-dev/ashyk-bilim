@@ -110,7 +110,7 @@ async def submit_assessment(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail={
                 "code": "GRADING_TIMEOUT",
-                "message": "Grading pipeline did not complete within the allowed time.",
+                "message": "Конвейер проверки не завершился в отведенное время.",
             },
         )
     except HTTPException:
@@ -125,7 +125,7 @@ async def submit_assessment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "code": "GRADING_ERROR",
-                "message": "An unexpected error occurred during grading.",
+                "message": "Произошла непредвиденная ошибка во время проверки.",
             },
         )
 
@@ -311,7 +311,7 @@ def _get_or_create_draft(
         if draft.status != SubmissionStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Submission is not a DRAFT (current status: {draft.status})",
+                detail=f"Отправка не является черновиком (текущий статус: {draft.status})",
             )
         return draft
 
@@ -327,7 +327,7 @@ def _get_or_create_draft(
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="No active draft found. Call /assessments/{uuid}/start first.",
+        detail="Активный черновик не найден. Сначала вызовите /assessments/{uuid}/start.",
     )
 
 
@@ -394,14 +394,14 @@ async def _run_final_code_answers(
         if answer is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Missing CODE answer for item {item.item_uuid}",
+                detail=f"Отсутствует ответ CODE для элемента {item.item_uuid}",
             )
         if body.languages and answer.language not in body.languages:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "LANGUAGE_NOT_ALLOWED",
-                    "message": f"Language {answer.language} is not allowed.",
+                    "message": f"Язык программирования {answer.language} не разрешен.",
                     "allowed_languages": body.languages,
                 },
             )
@@ -425,7 +425,7 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
                     "code": "CODE_RUNNER_DEGRADED",
-                    "message": result.error_message or "Code runner temporarily unavailable.",
+                    "message": result.error_message or "Сервис выполнения кода временно недоступен.",
                     "is_retryable": True,
                 },
             )
@@ -434,7 +434,7 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "code": "COMPILE_ERROR",
-                    "message": "Source code failed to compile.",
+                    "message": "Не удалось скомпилировать исходный код.",
                     "compile_output": (
                         result.grading_details()[0].get("compile_output") if result.grading_details() else None
                     ),

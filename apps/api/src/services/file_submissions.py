@@ -89,7 +89,7 @@ def _file_submission_not_found(
         details["activity_uuid"] = activity_uuid
     return NotFoundAppError(
         code="FILE_SUBMISSION_NOT_FOUND",
-        message="File submission was not found",
+        message="Файловое решение не найдено",
         details=details,
     )
 
@@ -97,7 +97,7 @@ def _file_submission_not_found(
 def _file_submission_file_not_found(*, attempt_file_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="FILE_SUBMISSION_FILE_NOT_FOUND",
-        message="Submitted file was not found",
+        message="Отправленный файл не найден",
         details={"attempt_file_uuid": attempt_file_uuid} if attempt_file_uuid is not None else {},
     )
 
@@ -105,7 +105,7 @@ def _file_submission_file_not_found(*, attempt_file_uuid: str | None = None) -> 
 def _upload_not_found(*, upload_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="UPLOAD_NOT_FOUND",
-        message="Upload was not found",
+        message="Загрузка не найдена",
         details={"upload_uuid": upload_uuid} if upload_uuid is not None else {},
     )
 
@@ -113,7 +113,7 @@ def _upload_not_found(*, upload_uuid: str | None = None) -> NotFoundAppError:
 def _upload_bytes_not_found(*, upload_uuid: str | None = None) -> NotFoundAppError:
     return NotFoundAppError(
         code="UPLOAD_BYTES_NOT_FOUND",
-        message="Upload bytes were not found",
+        message="Байты загрузки не найдены",
         details={"upload_uuid": upload_uuid} if upload_uuid is not None else {},
     )
 
@@ -126,7 +126,7 @@ def _upload_not_finalized(*, upload_uuid: str | None = None, current_status: str
         details["current_status"] = current_status
     return ConflictAppError(
         code="UPLOAD_NOT_FINALIZED",
-        message="Upload is not finalized",
+        message="Загрузка не завершена",
         details=details,
     )
 
@@ -134,7 +134,7 @@ def _upload_not_finalized(*, upload_uuid: str | None = None, current_status: str
 def _attempt_limit_reached(file_submission: FileSubmissionActivity, completed_attempts: int) -> AppError:
     return ConflictAppError(
         code="FILE_SUBMISSION_ATTEMPT_LIMIT_REACHED",
-        message="The maximum number of attempts has been reached",
+        message="Достигнуто максимальное количество попыток",
         details={
             "file_submission_uuid": file_submission.file_submission_uuid,
             "completed_attempts": completed_attempts,
@@ -153,7 +153,7 @@ async def create_file_submission(
     if chapter.course_id != course.id:
         raise ValidationAppError(
             code="CHAPTER_COURSE_MISMATCH",
-            message="Chapter does not belong to the selected course",
+            message="Глава не принадлежит выбранному курсу",
             details={"chapter_id": chapter.id, "course_id": course.id},
         )
     _require_author(current_user, course, db_session)
@@ -275,14 +275,14 @@ async def publish_file_submission(
     if not activity.name.strip():
         raise ValidationAppError(
             code="FILE_SUBMISSION_TITLE_REQUIRED",
-            message="File submission title is required",
-            field_errors=[{"loc": ["title"], "msg": "Title is required", "type": "missing"}],
+            message="Название файлового решения обязательно",
+            field_errors=[{"loc": ["title"], "msg": "Название обязательно", "type": "missing"}],
         )
     if not file_submission.instructions.strip():
         raise ValidationAppError(
             code="FILE_SUBMISSION_INSTRUCTIONS_REQUIRED",
-            message="File submission instructions are required",
-            field_errors=[{"loc": ["instructions"], "msg": "Instructions are required", "type": "missing"}],
+            message="Инструкции к файловому решению обязательны",
+            field_errors=[{"loc": ["instructions"], "msg": "Инструкции обязательны", "type": "missing"}],
         )
 
     now = _now()
@@ -399,8 +399,8 @@ async def submit_file_submission(
     if not files:
         raise ValidationAppError(
             code="FILE_REQUIRED",
-            message="At least one file is required",
-            field_errors=[{"loc": ["files"], "msg": "At least one file is required", "type": "missing"}],
+            message="Требуется загрузить хотя бы один файл",
+            field_errors=[{"loc": ["files"], "msg": "Требуется хотя бы один файл", "type": "missing"}],
         )
 
     now = _now()
@@ -511,8 +511,8 @@ async def grade_file_submission_attempt(
     if payload.status in {"GRADED", "PUBLISHED"} and payload.final_score is None:
         raise ValidationAppError(
             code="FINAL_SCORE_REQUIRED",
-            message="Final score is required",
-            field_errors=[{"loc": ["final_score"], "msg": "Final score is required", "type": "missing"}],
+            message="Итоговая оценка обязательна",
+            field_errors=[{"loc": ["final_score"], "msg": "Итоговая оценка обязательна", "type": "missing"}],
         )
 
     attempt.final_score = payload.final_score
@@ -742,9 +742,9 @@ def _replace_attempt_files(
     if len(files) > file_submission.max_files:
         raise ValidationAppError(
             code="FILE_COUNT_EXCEEDED",
-            message="Too many files were attached",
+            message="Прикреплено слишком много файлов",
             details={"max_files": file_submission.max_files, "actual_files": len(files)},
-            field_errors=[{"loc": ["files"], "msg": "Too many files were attached", "type": "value_error"}],
+            field_errors=[{"loc": ["files"], "msg": "Прикреплено слишком много файлов", "type": "value_error"}],
         )
     seen: set[str] = set()
     uploads: list[Upload] = []
@@ -752,28 +752,28 @@ def _replace_attempt_files(
         if file_ref.upload_uuid in seen:
             raise ValidationAppError(
                 code="DUPLICATE_FILE_UPLOAD",
-                message="The same file upload was attached more than once",
+                message="Один и тот же загруженный файл прикреплен более одного раза",
                 details={"upload_uuid": file_ref.upload_uuid},
-                field_errors=[{"loc": ["files"], "msg": "Duplicate file upload", "type": "value_error"}],
+                field_errors=[{"loc": ["files"], "msg": "Дублирование файла загрузки", "type": "value_error"}],
             )
         seen.add(file_ref.upload_uuid)
         upload = db_session.exec(select(Upload).where(Upload.upload_uuid == file_ref.upload_uuid)).first()
         if upload is None or upload.user_id != current_user.id or upload.status != UploadStatus.FINALIZED:
             raise ValidationAppError(
                 code="UPLOAD_NOT_FINALIZED",
-                message="The uploaded file is not ready to attach",
+                message="Загруженный файл не готов к прикреплению",
                 details={"upload_uuid": file_ref.upload_uuid},
-                field_errors=[{"loc": ["files"], "msg": "Upload is not finalized", "type": "value_error"}],
+                field_errors=[{"loc": ["files"], "msg": "Загрузка не завершена", "type": "value_error"}],
             )
         if file_submission.allowed_mime_types and upload.content_type not in file_submission.allowed_mime_types:
             raise ValidationAppError(
                 code="FILE_TYPE_NOT_ALLOWED",
-                message="This file type is not allowed",
+                message="Этот тип файла недопустим",
                 details={
                     "content_type": upload.content_type,
                     "allowed_mime_types": file_submission.allowed_mime_types,
                 },
-                field_errors=[{"loc": ["files"], "msg": "File type is not allowed", "type": "value_error"}],
+                field_errors=[{"loc": ["files"], "msg": "Тип файла недопустим", "type": "value_error"}],
             )
         if (
             file_submission.max_file_size_mb is not None
@@ -782,12 +782,12 @@ def _replace_attempt_files(
         ):
             raise ValidationAppError(
                 code="FILE_TOO_LARGE",
-                message="The uploaded file is too large",
+                message="Загруженный файл слишком большой",
                 details={
                     "size_bytes": upload.size_bytes,
                     "max_file_size_mb": file_submission.max_file_size_mb,
                 },
-                field_errors=[{"loc": ["files"], "msg": "File is too large", "type": "value_error"}],
+                field_errors=[{"loc": ["files"], "msg": "Файл слишком большой", "type": "value_error"}],
             )
         uploads.append(upload)
 
@@ -895,7 +895,7 @@ def _late_penalty(file_submission: FileSubmissionActivity, submitted_at: datetim
     if not file_submission.allow_late:
         raise ConflictAppError(
             code="LATE_SUBMISSION_CLOSED",
-            message="Late submissions are closed",
+            message="Прием поздних решений закрыт",
             details={"due_at": file_submission.due_at.isoformat(), "submitted_at": submitted_at.isoformat()},
         )
     policy = deserialize_late_policy(file_submission.late_policy_json)
@@ -1128,7 +1128,7 @@ def _check_version(attempt: FileSubmissionAttempt, if_match: str | None) -> None
     except ValueError:
         raise ValidationAppError(
             code="INVALID_IF_MATCH_VERSION",
-            message="If-Match must contain a numeric version",
+            message="If-Match должен содержать числовую версию",
             details={"if_match": if_match},
         )
     if expected != attempt.version:
@@ -1153,7 +1153,7 @@ def _require_published(file_submission: FileSubmissionActivity, activity: Activi
         return
     raise ConflictAppError(
         code="FILE_SUBMISSION_NOT_PUBLISHED",
-        message="File submission is not published",
+        message="Файловое решение не опубликовано",
         details={"file_submission_uuid": file_submission.file_submission_uuid, "activity_uuid": activity.activity_uuid},
     )
 
@@ -1162,7 +1162,7 @@ def _ensure_authorable(file_submission: FileSubmissionActivity) -> None:
     if FileSubmissionLifecycle(file_submission.lifecycle) == FileSubmissionLifecycle.ARCHIVED:
         raise ConflictAppError(
             code="FILE_SUBMISSION_ARCHIVED",
-            message="Archived file submissions are read-only",
+            message="Архивные файловые решения доступны только для чтения",
             details={"file_submission_uuid": file_submission.file_submission_uuid},
         )
 
@@ -1192,7 +1192,7 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     if chapter is None:
         raise NotFoundAppError(
             code="CHAPTER_NOT_FOUND",
-            message="Chapter was not found",
+            message="Глава не найдена",
             details={"chapter_id": chapter_id},
         )
     return chapter
@@ -1233,7 +1233,7 @@ def _require_submit_access(
     if not user_has_course_access(user.id, course, db_session):
         raise PermissionAppError(
             code="COURSE_ENROLLMENT_REQUIRED",
-            message="Course enrollment is required",
+            message="Требуется зачисление на курс",
             details={"course_uuid": course.course_uuid},
         )
     checker = PermissionChecker(db_session)

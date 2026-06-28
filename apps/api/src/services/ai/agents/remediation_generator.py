@@ -11,6 +11,7 @@ async def generate_remediation(
     analysis: SubmissionAnalysisReport,
     *,
     language: str = "auto",
+    locale: str | None = None,
 ) -> tuple[RemediationBundle, str]:
     gap_text = "\n".join(f"- {gap.concept}: {gap.remediation_goal}" for gap in analysis.knowledge_gaps)
     prompt = (
@@ -18,7 +19,7 @@ async def generate_remediation(
     )
     try:
         result = await provider.run_structured(
-            instructions=load_prompt("remediation_lecture.md"),
+            instructions=load_prompt("remediation_lecture.md", locale=locale),
             prompt=prompt,
             output_type=RemediationBundle,
         )

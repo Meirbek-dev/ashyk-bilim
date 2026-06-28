@@ -54,7 +54,7 @@ def get_bulk_action(
     if action is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bulk action not found",
+            detail="Групповое действие не найдено",
         )
 
     activity = db_session.get(Activity, action.activity_id)
@@ -87,7 +87,7 @@ def create_deadline_extension_action(
     if new_due_at <= datetime.now(UTC):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="new_due_at must be in the future",
+            detail="new_due_at должен быть в будущем",
         )
 
     activity = db_session.get(Activity, activity_id)
@@ -106,7 +106,7 @@ def create_deadline_extension_action(
     if policy is None or policy.id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     users = db_session.exec(select(User).where(col(User.user_uuid).in_(user_uuids))).all()
@@ -115,7 +115,7 @@ def create_deadline_extension_action(
     if missing:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"message": "Unknown user UUIDs", "user_uuids": missing},
+            detail={"message": "Неизвестные UUID пользователей", "user_uuids": missing},
         )
 
     target_user_ids = [user.id for user in users if user.id is not None]

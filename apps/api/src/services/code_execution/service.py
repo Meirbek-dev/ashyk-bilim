@@ -628,14 +628,14 @@ class CodeExecutionService:
             raise AppError.from_status(
                 status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 code="SOURCE_CODE_TOO_LARGE",
-                message="Source code exceeds the configured size limit",
+                message="Исходный код превышает настроенное ограничение размера",
                 details={"max_source_bytes": settings.max_source_bytes},
             )
         if custom_input is not None and len(custom_input.encode()) > settings.max_stdin_bytes:
             raise AppError.from_status(
                 status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 code="CUSTOM_INPUT_TOO_LARGE",
-                message="Custom input exceeds the configured size limit",
+                message="Пользовательский ввод превышает настроенное ограничение размера",
                 details={"max_stdin_bytes": settings.max_stdin_bytes},
             )
 
@@ -645,7 +645,7 @@ class CodeExecutionService:
             raise AppError.from_status(
                 status_code=HTTPStatus.BAD_REQUEST,
                 code="CODE_LANGUAGE_NOT_ALLOWED",
-                message="Language is not allowed for code execution",
+                message="Язык программирования не разрешен для выполнения кода",
                 details={"language_id": language_id, "allowed_language_ids": settings.allowed_language_ids},
             )
 
@@ -680,7 +680,7 @@ class CodeExecutionService:
         ):
             raise ConflictAppError(
                 code="CODE_RUN_IDEMPOTENCY_CONFLICT",
-                message="Idempotency key was already used for a different code run",
+                message="Ключ idempotency уже использовался для другого запуска кода",
                 details={"run_uuid": existing.run_uuid, "item_uuid": item_uuid},
             )
         if existing.status not in _IDEMPOTENT_REUSE_STATUSES:

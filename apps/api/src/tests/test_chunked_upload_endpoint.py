@@ -79,7 +79,7 @@ def test_users_initiate_requires_uuid(client: TestClient) -> None:
     }
     response = client.post("/uploads/initiate", data=data)
     assert response.status_code == 400
-    assert response.json()["detail"] == "uuid is required"
+    assert response.json()["detail"] == "Параметр uuid обязателен"
 
     # Also check when it is completely missing
     data_missing = {
@@ -91,4 +91,4 @@ def test_users_initiate_requires_uuid(client: TestClient) -> None:
     }
     response_missing = client.post("/uploads/initiate", data=data_missing)
     assert response_missing.status_code == 400
-    assert response_missing.json()["detail"] == "uuid is required"
+    assert response_missing.json()["detail"] == "Параметр uuid обязателен"

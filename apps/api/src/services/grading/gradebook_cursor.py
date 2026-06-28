@@ -44,7 +44,7 @@ def decode_cursor(cursor: str) -> tuple[int, int]:
     except (json.JSONDecodeError, KeyError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid cursor",
+            detail="Неверный курсор",
         ) from exc
 
 
@@ -130,7 +130,7 @@ def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
     normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
     course = db_session.exec(select(Course).where(Course.course_uuid == normalized)).first()
     if course is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     return course
 
 

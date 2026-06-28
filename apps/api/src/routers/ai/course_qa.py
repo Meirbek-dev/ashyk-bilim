@@ -80,7 +80,7 @@ async def api_get_course_qa_thread(
         select(AIThread).where(AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id)
     ).first()
     if thread is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Q&A thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
     return list(
         db_session.exec(
             select(AIQAMessage).where(AIQAMessage.thread_id == thread.id).order_by(col(AIQAMessage.created_at))
@@ -99,6 +99,6 @@ async def api_delete_course_qa_thread(
         select(AIThread).where(AIThread.thread_uuid == thread_uuid, AIThread.user_id == current_user.id)
     ).first()
     if thread is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Q&A thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
     db_session.delete(thread)
     db_session.commit()

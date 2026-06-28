@@ -35,7 +35,7 @@ async def create_discussion(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required to create discussions",
+            detail="Требуется аутентификация для создания обсуждений",
         )
 
     # Check if course exists
@@ -62,7 +62,7 @@ async def create_discussion(
         if not parent_discussion:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Parent discussion not found",
+                detail="Родительское обсуждение не найдено",
             )
 
     # Generate UUID
@@ -223,7 +223,7 @@ async def get_discussion_with_details(
     result = db_session.exec(discussion_query).first()
 
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     discussion, user = result
 
@@ -276,13 +276,13 @@ async def update_discussion(
 ) -> CourseDiscussionRead:
     """Update a discussion."""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется аутентификация")
 
     statement = select(CourseDiscussion).where(CourseDiscussion.discussion_uuid == discussion_uuid)
     discussion = db_session.exec(statement).first()
 
     if not discussion or discussion.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не существует")
 
     # Author can edit own discussion; moderators can edit any
     if discussion.user_id != current_user.id:
@@ -316,13 +316,13 @@ async def delete_discussion(
 ) -> dict[str, str]:
     """Delete a discussion."""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется аутентификация")
 
     statement = select(CourseDiscussion).where(CourseDiscussion.discussion_uuid == discussion_uuid)
     discussion = db_session.exec(statement).first()
 
     if not discussion or discussion.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не существует")
 
     # Author can delete own discussion; moderators can delete any
     if discussion.user_id != current_user.id:
@@ -349,7 +349,7 @@ async def like_discussion(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required to like discussions",
+            detail="Требуется аутентификация, чтобы поставить лайк",
         )
 
     # Find the discussion
@@ -360,7 +360,7 @@ async def like_discussion(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     # Check if user already liked this discussion
     existing_like = select(DiscussionLike).where(
@@ -372,7 +372,7 @@ async def like_discussion(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="You have already liked this discussion",
+            detail="Вы уже поставили лайк этому обсуждению",
         )
 
     # Create like
@@ -402,7 +402,7 @@ async def unlike_discussion(
 ) -> dict[str, str]:
     """Unlike a discussion."""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется аутентификация")
 
     # Find the discussion
     statement = select(CourseDiscussion).where(
@@ -412,7 +412,7 @@ async def unlike_discussion(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     # Find the like
     like_statement = select(DiscussionLike).where(
@@ -424,7 +424,7 @@ async def unlike_discussion(
     if not like:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="You haven't liked this discussion",
+            detail="Вы не ставили лайк этому обсуждению",
         )
 
     # Remove like
@@ -449,7 +449,7 @@ async def toggle_discussion_like(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required to like discussions",
+            detail="Требуется аутентификация, чтобы поставить лайк",
         )
 
     # Find the discussion
@@ -460,7 +460,7 @@ async def toggle_discussion_like(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     # Check if user already liked this discussion
     existing_like_statement = select(DiscussionLike).where(
@@ -522,7 +522,7 @@ async def toggle_discussion_dislike(
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required to dislike discussions",
+            detail="Требуется аутентификация, чтобы поставить дизлайк",
         )
 
     # Find the discussion
@@ -533,7 +533,7 @@ async def toggle_discussion_dislike(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     # Check if user already disliked this discussion
     existing_dislike_statement = select(DiscussionDislike).where(
@@ -602,7 +602,7 @@ async def get_discussion_replies(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обсуждение не найдено")
 
     # RBAC check for course access
     course_statement = select(Course).where(Course.id == discussion.course_id)
