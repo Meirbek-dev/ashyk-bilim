@@ -1,0 +1,40 @@
+import { Badge } from '@/components/ui/badge'
+import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
+import type { AICitation } from '@/features/ai-experience'
+
+import type { LectureReview } from '../api/use-lecture-authoring-ai'
+
+export function LectureReviewPanel({ review }: { review: LectureReview }) {
+  const citations = (review.suggestions_json.citations ?? []) as AICitation[]
+  const dismissed = review.dismissed_json ?? {}
+  const suggestions = (review.suggestions_json.suggestions ?? []).filter(item => !dismissed[item.suggestion_id])
+  return (
+    <AIResultShell.Provider
+      value={{
+        title: 'Lecture review',
+        description: review.suggestions_json.summary ?? 'Persistent lecture suggestions are ready.',
+        state: suggestions.length > 0 ? 'needs_human_review' : 'complete',
+        citations,
+      }}
+    >
+      <AIResultShell.Frame>
+        <AIResultShell.Header />
+        <AIResultShell.Body>
+          <div className="flex flex-col gap-2">
+            {suggestions.map(suggestion => (
+              <article key={suggestion.suggestion_id} className="rounded-lg border p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-medium">{suggestion.title}</h3>
+                  <Badge variant="secondary">{suggestion.priority}</Badge>
+                  <span className="text-muted-foreground text-xs">{suggestion.location}</span>
+                </div>
+                <p className="text-muted-foreground mt-1 text-sm">{suggestion.rationale}</p>
+              </article>
+            ))}
+          </div>
+          <AIEvidencePanel citations={citations} />
+        </AIResultShell.Body>
+      </AIResultShell.Frame>
+    </AIResultShell.Provider>
+  )
+}

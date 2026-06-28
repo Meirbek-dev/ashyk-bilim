@@ -2,6 +2,12 @@ from importlib import import_module
 
 ORM_MODEL_MODULES: tuple[str, ...] = (
     "src.db.ai_runtime",
+    "src.db.ai_course_analysis",
+    "src.db.ai_lecture_review",
+    "src.db.ai_qa_thread",
+    "src.db.ai_remediation",
+    "src.db.ai_student_memory",
+    "src.db.ai_submission_analysis",
     "src.db.analytics",
     "src.db.assessment_access",
     "src.db.assessments",

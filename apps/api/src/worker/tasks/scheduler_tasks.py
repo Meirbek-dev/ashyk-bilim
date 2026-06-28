@@ -96,5 +96,3 @@ async def upload_reaper_tick() -> dict[str, int]:
     except Exception:
         logger.exception("upload_reaper_tick failed")
         raise
-
-

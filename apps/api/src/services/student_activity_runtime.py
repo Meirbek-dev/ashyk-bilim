@@ -31,6 +31,7 @@ from src.db.student_activity_runtime import (
 )
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
+from src.services.ai.operations import active_remediation_gate
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 from src.services.progress.submissions import (
     mark_manual_activity_complete,
@@ -86,6 +87,21 @@ async def get_student_activity_runtime(
         can_update=can_update,
     )
 
+    primary_action = _derive_primary_action(
+        activity=activity,
+        can_view=can_view,
+        is_authenticated=is_authenticated,
+        next_item=next_item,
+        progress=progress,
+    )
+    if (
+        is_authenticated
+        and activity.id is not None
+        and active_remediation_gate(db_session, user_id=current_user.id, activity_id=activity.id) is not None
+    ):
+        progress.status_reason = "remediation_required"
+        primary_action = StudentPrimaryAction(id="review_policy", enabled=False, reason="remediation_required")
+
     return StudentActivityRuntime(
         course=StudentActivityCourseHeader(
             id=course.id,
@@ -112,13 +128,7 @@ async def get_student_activity_runtime(
         progress=progress,
         policy=policy,
         permissions=permissions,
-        primary_action=_derive_primary_action(
-            activity=activity,
-            can_view=can_view,
-            is_authenticated=is_authenticated,
-            next_item=next_item,
-            progress=progress,
-        ),
+        primary_action=primary_action,
         previous=previous_item,
         next=next_item,
     )

@@ -19,6 +19,7 @@ from src.routers import (
     usergroups,
     users,
 )
+from src.routers.ai.router import router as ai_router
 from src.routers.assessments import unified as assessment_unified
 from src.routers.courses import (
     certifications,
@@ -85,6 +86,7 @@ v1_router.include_router(
     tags=["gamification"],
 )
 v1_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+v1_router.include_router(ai_router, prefix="/ai", tags=["ai"])
 v1_router.include_router(
     code_execution.router,
     prefix="/code-execution",

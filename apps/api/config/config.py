@@ -434,6 +434,59 @@ class LinkPreviewConfig(PlatformSectionSettings):
         return stripped or "AshyqBilim-LinkPreview/1.0"
 
 
+class AIConfig(PlatformSectionSettings):
+    openai_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="PLATFORM_OPENAI_API_KEY",
+    )
+    openai_model: str = Field(default="gpt-5.5-turbo", validation_alias="PLATFORM_OPENAI_MODEL")
+    openrouter_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="PLATFORM_OPENROUTER_API_KEY",
+    )
+    openrouter_model: str = Field(
+        default="deepseek/deepseek-v4",
+        validation_alias="PLATFORM_OPENROUTER_MODEL",
+    )
+    openrouter_base_url: str = Field(
+        default="https://openrouter.ai/api/v1",
+        validation_alias="PLATFORM_OPENROUTER_BASE_URL",
+    )
+    max_tokens_per_request: int = Field(default=16_000, validation_alias="PLATFORM_AI_MAX_TOKENS_PER_REQUEST")
+    max_output_tokens: int = Field(default=8_000, validation_alias="PLATFORM_AI_MAX_OUTPUT_TOKENS")
+    monthly_token_budget: int = Field(default=5_000_000, validation_alias="PLATFORM_AI_MONTHLY_TOKEN_BUDGET")
+    ai_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_ENABLED")
+    course_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_COURSE_ANALYSIS_ENABLED")
+    submission_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SUBMISSION_ANALYSIS_ENABLED")
+    remediation_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_REMEDIATION_ENABLED")
+    semantic_memory_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SEMANTIC_MEMORY_ENABLED")
+    analysis_requests_per_hour_per_user: int = Field(
+        default=10,
+        validation_alias="PLATFORM_AI_ANALYSIS_REQUESTS_PER_HOUR_PER_USER",
+    )
+    remediation_requests_per_hour_per_user: int = Field(
+        default=20,
+        validation_alias="PLATFORM_AI_REMEDIATION_REQUESTS_PER_HOUR_PER_USER",
+    )
+
+    @field_validator("openai_api_key", "openrouter_api_key", mode="before")
+    @classmethod
+    def normalize_api_key(cls, value: SecretStr | str | None) -> str | None:
+        return _strip_optional_string(value)
+
+    @field_validator("openai_model", "openrouter_model", "openrouter_base_url", mode="before")
+    @classmethod
+    def normalize_ai_string(cls, value: object) -> str:
+        if not isinstance(value, str):
+            msg = f"Expected str, got {type(value).__name__}: {value!r}"
+            raise TypeError(msg)
+        stripped = value.strip()
+        if not stripped:
+            msg = "AI configuration strings must not be empty"
+            raise ValueError(msg)
+        return stripped.rstrip("/") if stripped.startswith("http") else stripped
+
+
 class PlatformConfig(PydanticStrictBaseModel):
     general_config: GeneralConfig
     hosting_config: HostingConfig
@@ -463,6 +516,7 @@ class PlatformConfig(PydanticStrictBaseModel):
 
 
 class IntegrationsConfig(PydanticStrictBaseModel):
+    ai: AIConfig = Field(default_factory=AIConfig)
     judge0: Judge0Config = Field(default_factory=Judge0Config)
     link_preview: LinkPreviewConfig = Field(default_factory=LinkPreviewConfig)
 
