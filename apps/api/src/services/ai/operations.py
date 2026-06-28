@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from uuid import uuid4
 
 from fastapi import HTTPException, status
@@ -30,9 +31,39 @@ from src.services.ai.token_budget import TokenBudgetExceeded, TokenBudgetService
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 from src.types import JsonObject
 
+SECRET_PATTERNS = (
+    re.compile(r"\bsk-(?:proj-|or-v1-)?[A-Za-z0-9_-]{16,}\b"),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b", re.IGNORECASE),
+)
+
 
 def _new_uuid(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex}"
+
+
+def _redact_text(value: str) -> str:
+    redacted = value
+    for pattern in SECRET_PATTERNS:
+        redacted = pattern.sub("[REDACTED_SECRET]", redacted)
+    return redacted
+
+
+def _redact_json(value: object) -> object:
+    if isinstance(value, str):
+        return _redact_text(value)
+    if isinstance(value, list):
+        return [_redact_json(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _redact_json(item) for key, item in value.items()}
+    return value
+
+
+def _safe_artifact(value: JsonObject) -> JsonObject:
+    return _redact_json(value)  # type: ignore[return-value]
+
+
+def _safe_citations(citations: list[JsonObject]) -> list[JsonObject]:
+    return _redact_json(citations)  # type: ignore[return-value]
 
 
 def _settings_provider() -> tuple[ModelProvider, TokenBudgetService]:
@@ -122,6 +153,8 @@ def _finish_run(
     citations: list[JsonObject],
     input_tokens: int,
 ) -> None:
+    artifact = _safe_artifact(artifact)
+    citations = _safe_citations(citations)
     run.status = AIRunStatus.FINISHED.value
     run.model_name = model_name
     run.input_tokens = input_tokens
@@ -181,14 +214,15 @@ async def run_course_analysis(
     )
     try:
         report, model_name = await analyze_course(provider, context, language=language)
-        artifact = report.model_dump(mode="json")
+        artifact = _safe_artifact(report.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="course_analysis",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in report.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         assert run.id is not None
@@ -201,7 +235,7 @@ async def run_course_analysis(
             language=report.language,
             public_score=report.public_score,
             report_json=artifact,
-            evidence_json={"citations": [citation.model_dump(mode="json") for citation in report.citations]},
+            evidence_json={"citations": citations},
             model_name=model_name,
         )
         db_session.add(analysis)
@@ -236,14 +270,15 @@ async def run_submission_analysis(
     )
     try:
         report, model_name = await analyze_submission(provider, context, language=language)
-        artifact = report.model_dump(mode="json")
+        artifact = _safe_artifact(report.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="submission_analysis",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in report.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         assert submission.id is not None
@@ -256,7 +291,7 @@ async def run_submission_analysis(
             language=report.language,
             gap_count=len(report.knowledge_gaps),
             analysis_json=artifact,
-            evidence_json={"citations": [citation.model_dump(mode="json") for citation in report.citations]},
+            evidence_json={"citations": citations},
             model_name=model_name,
         )
         db_session.add(analysis)
@@ -300,14 +335,16 @@ async def run_remediation_generation(
     )
     try:
         bundle, model_name = await generate_remediation(provider, context, analysis_report, language=language)
-        artifact = bundle.model_dump(mode="json")
+        artifact = _safe_artifact(bundle.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in bundle.citations])
+        questions = _redact_json([question.model_dump(mode="json") for question in bundle.practice_questions])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="remediation",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in bundle.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         assert submission.id is not None
@@ -322,7 +359,7 @@ async def run_remediation_generation(
             gate_mode=gate_mode,
             language=bundle.language,
             lecture_json=artifact,
-            test_json={"questions": [question.model_dump(mode="json") for question in bundle.practice_questions]},
+            test_json={"questions": questions},
         )
         db_session.add(session)
         db_session.commit()
@@ -352,14 +389,15 @@ async def run_study_companion(
     )
     try:
         answer, model_name = await answer_study_prompt(provider, context, question, mode=mode, language=language)
-        artifact = answer.model_dump(mode="json")
+        artifact = _safe_artifact(answer.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="study_companion",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in answer.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         db_session.commit()
@@ -400,14 +438,15 @@ async def run_lecture_review(
     )
     try:
         report, model_name = await critique_lecture(provider, context, language=language)
-        artifact = report.model_dump(mode="json")
+        artifact = _safe_artifact(report.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="lecture_review",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in report.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         assert run.id is not None
@@ -476,14 +515,15 @@ async def ask_course_question(
     run = _create_run(db_session, user=user, role=role, kind="course_qa", course_id=course.id)
     try:
         answer, model_name = await answer_course_question(provider, context, question, role=role, language=language)
-        artifact = answer.model_dump(mode="json")
+        artifact = _safe_artifact(answer.model_dump(mode="json"))
+        citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
             db_session,
             run,
             model_name=model_name,
             kind="course_qa",
             artifact=artifact,
-            citations=[citation.model_dump(mode="json") for citation in answer.citations],
+            citations=citations,
             input_tokens=input_tokens,
         )
         assistant_message = AIQAMessage(
@@ -492,9 +532,9 @@ async def ask_course_question(
             course_id=course.id,
             user_id=user.id,
             role="assistant",
-            content=answer.answer_markdown,
+            content=str(artifact.get("answer_markdown") or ""),
             confidence=answer.confidence,
-            citations_json={"citations": [citation.model_dump(mode="json") for citation in answer.citations]},
+            citations_json={"citations": citations},
             message_metadata={"model_name": model_name, "out_of_scope": answer.out_of_scope},
         )
         thread.updated_at = utc_now()

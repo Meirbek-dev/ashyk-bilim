@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { AuthoringEditor } from './views'
 
 import type { Platform } from '@/types/platform'
+import { LectureAIEntry } from '@/features/lecture-authoring-ai'
 
 interface EditorWrapperProps {
   content: unknown
@@ -62,6 +63,9 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
         saveState={activityAutosave.saveStatus}
         setContent={setContent}
       />
+      <div className="mx-auto w-full max-w-[72rem] px-4 py-6">
+        <LectureAIEntry courseUuid={props.course.course_uuid} activityUuid={props.activity.activity_uuid} />
+      </div>
     </PlatformContextProvider>
   )
 }

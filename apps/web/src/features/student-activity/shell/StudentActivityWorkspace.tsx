@@ -12,6 +12,7 @@ import BottomActionBar from './BottomActionBar'
 import InlineStatusStrip from './InlineStatusStrip'
 import LockStateCard from './LockStateCard'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
+import { CourseAIHub } from '@/features/course-qa'
 
 const CONTENT_READ_TOLERANCE_PX = 24
 
@@ -169,6 +170,11 @@ export default function StudentActivityWorkspace({
           {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
+          {!isAttemptActive && !isLocked && !focusModeActive ? (
+            <div className="mt-8">
+              <CourseAIHub courseUuid={courseUuid} />
+            </div>
+          ) : null}
         </main>
       </div>
 

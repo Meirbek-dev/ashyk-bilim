@@ -8,6 +8,7 @@ from src.db.assessments import Assessment, AssessmentItem
 from src.db.courses.activities import Activity
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
+from src.db.grading.progress import AssessmentPolicy
 from src.db.grading.submissions import Submission
 from src.types import JsonObject
 
@@ -54,6 +55,10 @@ def assemble_course_context(db_session: Session, course: Course, *, include_unpu
         if activity.id is not None:
             assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
             if assessment is not None and assessment.id is not None:
+                policy = (
+                    db_session.get(AssessmentPolicy, assessment.policy_id) if assessment.policy_id is not None else None
+                )
+                settings_json = policy.settings_json if policy is not None else {}
                 items = db_session.exec(
                     select(AssessmentItem)
                     .where(AssessmentItem.assessment_id == assessment.id)
@@ -61,7 +66,7 @@ def assemble_course_context(db_session: Session, course: Course, *, include_unpu
                 ).all()
                 lines.extend([
                     f"Assessment: {assessment.title or assessment.assessment_uuid}",
-                    f"Assessment settings: {_json_snippet(assessment.settings_json)}",
+                    f"Assessment settings: {_json_snippet(settings_json)}",
                 ])
                 lines.extend(
                     f"Assessment item: {item.title} {item.kind} {_json_snippet(item.body_json, limit=700)}"

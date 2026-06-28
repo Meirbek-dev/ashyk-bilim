@@ -38,6 +38,7 @@ import { useTranslations } from 'next-intl'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
+import { CourseAIHub } from '@/features/course-qa'
 
 interface CourseClientProps {
   course: AppCourse
@@ -488,6 +489,8 @@ const CourseClient = (props: CourseClientProps) => {
                     })}
                   </div>
                 </div>
+
+                <CourseAIHub courseUuid={course.course_uuid} />
 
                 {/* Discussions */}
                 <CourseDiscussions

@@ -1,6 +1,21 @@
 import { defineConfig } from 'vite-plus'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./apps/web/src', import.meta.url)),
+      '@components': fileURLToPath(new URL('./apps/web/src/components', import.meta.url)),
+      '@hooks': fileURLToPath(new URL('./apps/web/src/hooks', import.meta.url)),
+      '@services': fileURLToPath(new URL('./apps/web/src/services', import.meta.url)),
+      '@styles': fileURLToPath(new URL('./apps/web/src/styles', import.meta.url)),
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    exclude: ['**/node_modules/**', '**/.next/**', '**/dist/**', '**/e2e/**'],
+    include: ['apps/web/src/tests/**/*.{test,spec}.{ts,tsx}'],
+  },
   fmt: {
     printWidth: 120,
     tabWidth: 2,

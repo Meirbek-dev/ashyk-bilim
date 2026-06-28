@@ -38,3 +38,14 @@ export function useRunCourseAnalysis(courseUuid: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-analysis', courseUuid] }),
   })
 }
+
+export function usePublishCourseAnalysis(courseUuid: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (analysisUuid: string) =>
+      apiJson<CourseAnalysis>(`ai/course-analysis/${analysisUuid}/publish`, {
+        method: 'POST',
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-analysis', courseUuid] }),
+  })
+}

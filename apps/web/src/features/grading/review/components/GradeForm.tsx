@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { MarkdownEditor } from '@/features/content-markdown'
+import { SubmissionAIEntry } from '@/features/submission-analysis'
 import type { ReviewNavigationState } from '../types'
 import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage'
 
@@ -578,6 +579,10 @@ export default function GradeForm({
           </div>
         </>
       )}
+
+      <div className="border-t pt-4">
+        <SubmissionAIEntry submissionUuid={submissionUuid} />
+      </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}
       <div className="border-t pt-3">

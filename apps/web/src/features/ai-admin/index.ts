@@ -1,4 +1,5 @@
 export * from './api/use-ai-usage'
+export * from './components/ai-admin-panel'
 export * from './components/budget-status'
 export * from './components/token-usage-chart'
 export * from './components/ai-feature-toggles'

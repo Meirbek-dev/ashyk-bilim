@@ -4,6 +4,7 @@ import { ChevronRight, Shield, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Link } from '@/i18n/navigation'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
+import { AIAdminPanel } from '@/features/ai-admin'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('DashPage.Admin.Index')
@@ -66,6 +67,7 @@ export default async function PlatformAdminPage() {
             ))}
           </div>
         </div>
+        <AIAdminPanel />
       </main>
     </div>
   )
