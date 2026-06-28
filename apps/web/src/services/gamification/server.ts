@@ -259,7 +259,7 @@ export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<
   return normalizeStreakUpdate(json)
 }
 
-export async function updatePreferencesOnServer(preferences: Record<string, any>) {
+export async function updatePreferencesOnServer(preferences: Record<string, unknown>) {
   const json = await apiJson('gamification/preferences', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,7 @@
 'use client'
 
 import { BrainCircuit, RefreshCw, Route } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +12,7 @@ import { useLatestSubmissionAnalysis, useRunSubmissionAnalysis } from '../api/us
 import { SubmissionAnalysisResultShell } from './submission-analysis-result-shell'
 
 export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string | null }) {
+  const t = useTranslations('AiExperience.submissionAIEntry')
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
   const run = useRunSubmissionAnalysis(submissionUuid ?? '')
   const remediation = useGenerateRemediation(submissionUuid ?? '')
@@ -26,13 +28,13 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <BrainCircuit className="size-4" />
-              AI submission insight
+              {t('title')}
             </CardTitle>
-            <CardDescription>Knowledge gaps, evidence, and optional adaptive remediation.</CardDescription>
+            <CardDescription>{t('description')}</CardDescription>
           </div>
           <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate('auto')}>
             <RefreshCw className="size-4" />
-            Analyze
+            {t('analyze')}
           </Button>
         </div>
       </CardHeader>
@@ -46,7 +48,7 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
           onClick={() => remediation.mutate({ gate_mode: true, language: 'auto' })}
         >
           <Route className="size-4" />
-          Generate remediation gate
+          {t('generateGate')}
         </Button>
         {remediation.data ? <RemediationResultShell session={remediation.data} /> : null}
         {remediation.error ? <AIErrorRecovery message={remediation.error.message} /> : null}

@@ -1,16 +1,17 @@
 import { ShieldCheckIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-import { studentSafeVisibility } from '../lib/ai-permissions'
 import type { AIRole } from '../lib/ai-permissions'
 
-export function AIPrivacyNotice({ role }: { role: AIRole }) {
+export function AIPrivacyNotice({ aiRole }: { aiRole: AIRole }) {
+  const t = useTranslations('AiExperience.privacyNotice')
   return (
     <Alert>
       <ShieldCheckIcon aria-hidden="true" />
-      <AlertTitle>Data scope</AlertTitle>
-      <AlertDescription>{studentSafeVisibility(role)}</AlertDescription>
+      <AlertTitle>{t('title')}</AlertTitle>
+      <AlertDescription>{aiRole === 'student' ? t('studentScope') : t('teacherScope')}</AlertDescription>
     </Alert>
   )
 }

@@ -1,3 +1,6 @@
+import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+
 import { Badge } from '@/components/ui/badge'
 import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
@@ -5,18 +8,33 @@ import type { AICitation } from '@/features/ai-experience'
 import type { SubmissionAnalysis } from '../api/use-submission-analysis'
 
 export function SubmissionAnalysisResultShell({ analysis }: { analysis: SubmissionAnalysis }) {
-  const citations = (analysis.analysis_json.citations ?? []) as AICitation[]
+  const t = useTranslations('AiExperience.submissionAnalysisResultShell')
+  const citations = useMemo(
+    () => (analysis.analysis_json.citations ?? []) as AICitation[],
+    [analysis.analysis_json.citations],
+  )
+
+  const contextValue = useMemo(
+    () => ({
+      title: t('title', { count: analysis.gap_count }),
+      description: analysis.analysis_json.summary ?? t('defaultDescription'),
+      state: 'complete' as const,
+      confidence: analysis.analysis_json.confidence,
+      modelName: analysis.model_name,
+      citations,
+    }),
+    [
+      analysis.gap_count,
+      analysis.analysis_json.summary,
+      analysis.analysis_json.confidence,
+      analysis.model_name,
+      citations,
+      t,
+    ],
+  )
+
   return (
-    <AIResultShell.Provider
-      value={{
-        title: `${analysis.gap_count} knowledge gaps`,
-        description: analysis.analysis_json.summary ?? 'Submission analysis is ready.',
-        state: 'complete',
-        confidence: analysis.analysis_json.confidence,
-        modelName: analysis.model_name,
-        citations,
-      }}
-    >
+    <AIResultShell.Provider value={contextValue}>
       <AIResultShell.Frame>
         <AIResultShell.Header />
         <AIResultShell.Body>

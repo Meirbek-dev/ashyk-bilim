@@ -1,18 +1,21 @@
+import { useTranslations } from 'next-intl'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 import type { AIUsageSummary } from '../api/use-ai-usage'
 
 export function TokenUsageChart({ usage }: { usage: AIUsageSummary }) {
+  const t = useTranslations('AiExperience.tokenUsageChart')
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI usage</CardTitle>
-        <CardDescription>Token usage across AI runs.</CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Runs" value={usage.total_runs.toLocaleString()} />
-        <Metric label="Input tokens" value={usage.input_tokens.toLocaleString()} />
-        <Metric label="Output tokens" value={usage.output_tokens.toLocaleString()} />
+        <Metric label={t('metricRuns')} value={usage.total_runs.toLocaleString()} />
+        <Metric label={t('metricInput')} value={usage.input_tokens.toLocaleString()} />
+        <Metric label={t('metricOutput')} value={usage.output_tokens.toLocaleString()} />
       </CardContent>
     </Card>
   )

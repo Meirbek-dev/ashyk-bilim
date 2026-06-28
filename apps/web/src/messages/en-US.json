@@ -10070,5 +10070,140 @@
     "publishError": "Unable to publish file submission",
     "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
     "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
+  },
+  "AiExperience": {
+    "languageControl": {
+      "label": "Response language",
+      "auto": "Auto",
+      "kk": "Kazakh",
+      "ru": "Russian",
+      "en": "English",
+      "description": "The AI follows course language when set to auto."
+    },
+    "evidencePanel": {
+      "noCitationsTitle": "No citations yet",
+      "noCitationsDesc": "The result needs course evidence before it can be trusted.",
+      "title": "Evidence",
+      "description": "Sources the AI used for this result."
+    },
+    "errorRecovery": {
+      "title": "AI run failed",
+      "retry": "Retry"
+    },
+    "privacyNotice": {
+      "title": "Data scope",
+      "studentScope": "Published course material only",
+      "teacherScope": "Course drafts, rubrics, and teacher evidence when permitted"
+    },
+    "humanReviewBar": {
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "resultShell": {
+      "modelRecorded": "Model: {name}",
+      "modelNotRecorded": "Model: not recorded",
+      "citationsCount": "Citations: {count}"
+    },
+    "states": {
+      "labels": {
+        "idle": "Ready",
+        "confirming": "Confirm action",
+        "queued": "Queued",
+        "collecting_context": "Collecting context",
+        "running": "Analyzing",
+        "checking_evidence": "Checking evidence",
+        "complete": "Complete",
+        "needs_human_review": "Needs teacher review",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "lectureReview": {
+      "title": "Lecture review",
+      "defaultDescription": "Persistent lecture suggestions are ready."
+    },
+    "lectureAIEntry": {
+      "title": "AI lecture review",
+      "description": "Find unclear explanations, missing examples, and weak assessment alignment.",
+      "review": "Review",
+      "defaultStatus": "Run a review after saving the lecture draft. Suggestions stay in human-review state."
+    },
+    "qaInput": {
+      "label": "Question",
+      "ask": "Ask",
+      "description": "Answers are grounded in course material.",
+      "emptyTitle": "No questions yet",
+      "emptyDesc": "Ask about this course and the answer will cite course material."
+    },
+    "courseAIHub": {
+      "title": "AI learning support",
+      "description": "Course-grounded help for learners and teacher-reviewed quality checks.",
+      "tabStudy": "Study",
+      "tabQA": "Q&A",
+      "tabReview": "Review"
+    },
+    "courseAnalysisEntry": {
+      "title": "Course AI review",
+      "description": "Quality score, evidence, and remediation risks for this course.",
+      "rerun": "Rerun",
+      "analyze": "Analyze",
+      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance."
+    },
+    "courseAnalysisResultShell": {
+      "title": "Course quality score {score}",
+      "defaultDescription": "Course analysis is ready for review.",
+      "publishScore": "Publish score"
+    },
+    "submissionAIEntry": {
+      "title": "AI submission insight",
+      "description": "Knowledge gaps, evidence, and optional adaptive remediation.",
+      "analyze": "Analyze",
+      "generateGate": "Generate remediation gate"
+    },
+    "submissionAnalysisResultShell": {
+      "title": "{count} knowledge gaps",
+      "defaultDescription": "Submission analysis is ready."
+    },
+    "studyCompanion": {
+      "label": "Ask about this course",
+      "placeholder": "Ask for an explanation, summary, practice, or flashcards",
+      "send": "Send",
+      "description": "Answers cite course material and avoid assessment answers.",
+      "explain": "Explain",
+      "practice": "Practice",
+      "flashcards": "Flashcards",
+      "summarize": "Summarize",
+      "deepen": "Deepen"
+    },
+    "remediation": {
+      "title": "Adaptive remediation",
+      "activeGate": "Gate mode is active until the learner passes.",
+      "assigned": "Practice remediation is assigned."
+    },
+    "budgetStatus": {
+      "label": "Monthly AI token budget",
+      "used": "{percent}% used"
+    },
+    "aiAdminPanel": {
+      "title": "AI operations",
+      "featureFlags": "Feature flags",
+      "flagsDescription": "Read-only runtime view. Change flags in backend environment.",
+      "loading": "Loading AI usage."
+    },
+    "tokenUsageChart": {
+      "title": "AI usage",
+      "description": "Token usage across AI runs.",
+      "metricRuns": "Runs",
+      "metricInput": "Input tokens",
+      "metricOutput": "Output tokens"
+    },
+    "featureToggles": {
+      "description": "Managed by backend feature flags.",
+      "course-analysis": "Course analysis",
+      "submission-analysis": "Submission analysis",
+      "remediation": "Adaptive remediation",
+      "study-companion": "Study companion",
+      "course-qa": "Course Q&A"
+    }
   }
 }

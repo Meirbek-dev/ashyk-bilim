@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url'
 export default defineConfig({
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./apps/web/src', import.meta.url)),
-      '@components': fileURLToPath(new URL('./apps/web/src/components', import.meta.url)),
-      '@hooks': fileURLToPath(new URL('./apps/web/src/hooks', import.meta.url)),
-      '@services': fileURLToPath(new URL('./apps/web/src/services', import.meta.url)),
-      '@styles': fileURLToPath(new URL('./apps/web/src/styles', import.meta.url)),
+      '@': fileURLToPath(new URL('apps/web/src', import.meta.url)),
+      '@components': fileURLToPath(new URL('apps/web/src/components', import.meta.url)),
+      '@hooks': fileURLToPath(new URL('apps/web/src/hooks', import.meta.url)),
+      '@services': fileURLToPath(new URL('apps/web/src/services', import.meta.url)),
+      '@styles': fileURLToPath(new URL('apps/web/src/styles', import.meta.url)),
     },
   },
   test: {
@@ -127,6 +127,7 @@ export default defineConfig({
       'e2e/',
       'scripts/',
       'playwright.config.ts',
+      'vite.config.ts',
       'eslint.config.*',
       'src/components/providers/session-provider.tsx',
       'src/features/assessments/registry/code-challenge/hooks.ts',

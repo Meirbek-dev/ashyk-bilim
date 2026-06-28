@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AIErrorRecovery } from '@/features/ai-experience'
 
@@ -9,12 +11,13 @@ import { BudgetStatus } from './budget-status'
 import { TokenUsageChart } from './token-usage-chart'
 
 export function AIAdminPanel() {
+  const t = useTranslations('AiExperience.aiAdminPanel')
   const usage = useAIUsage()
 
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">AI operations</h2>
+        <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('title')}</h2>
       </div>
       {usage.error ? <AIErrorRecovery message={usage.error.message} /> : null}
       {usage.data ? (
@@ -25,8 +28,8 @@ export function AIAdminPanel() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Feature flags</CardTitle>
-              <CardDescription>Read-only runtime view. Change flags in backend environment.</CardDescription>
+              <CardTitle className="text-base">{t('featureFlags')}</CardTitle>
+              <CardDescription>{t('flagsDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <AIFeatureToggles />
@@ -34,7 +37,7 @@ export function AIAdminPanel() {
           </Card>
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">Loading AI usage.</p>
+        <p className="text-muted-foreground text-sm">{t('loading')}</p>
       )}
     </section>
   )

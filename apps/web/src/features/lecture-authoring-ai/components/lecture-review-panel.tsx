@@ -1,22 +1,33 @@
+import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+
 import { Badge } from '@/components/ui/badge'
 import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
-import type { AICitation } from '@/features/ai-experience'
+import type { AICitation, AIWorkState } from '@/features/ai-experience'
 
 import type { LectureReview } from '../api/use-lecture-authoring-ai'
 
 export function LectureReviewPanel({ review }: { review: LectureReview }) {
-  const citations = (review.suggestions_json.citations ?? []) as AICitation[]
+  const t = useTranslations('AiExperience.lectureReview')
+  const citations = useMemo(
+    () => (review.suggestions_json.citations ?? []) as AICitation[],
+    [review.suggestions_json.citations],
+  )
   const dismissed = review.dismissed_json ?? {}
   const suggestions = (review.suggestions_json.suggestions ?? []).filter(item => !dismissed[item.suggestion_id])
+
+  const contextValue = useMemo(
+    () => ({
+      title: t('title'),
+      description: review.suggestions_json.summary ?? t('defaultDescription'),
+      state: (suggestions.length > 0 ? 'needs_human_review' : 'complete') as AIWorkState,
+      citations,
+    }),
+    [review.suggestions_json.summary, suggestions.length, citations, t],
+  )
+
   return (
-    <AIResultShell.Provider
-      value={{
-        title: 'Lecture review',
-        description: review.suggestions_json.summary ?? 'Persistent lecture suggestions are ready.',
-        state: suggestions.length > 0 ? 'needs_human_review' : 'complete',
-        citations,
-      }}
-    >
+    <AIResultShell.Provider value={contextValue}>
       <AIResultShell.Frame>
         <AIResultShell.Header />
         <AIResultShell.Body>

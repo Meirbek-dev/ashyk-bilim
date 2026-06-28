@@ -1,4 +1,5 @@
 import { BookOpenCheckIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,20 +13,21 @@ interface AIEvidencePanelProps {
 }
 
 export function AIEvidencePanel({ citations }: AIEvidencePanelProps) {
+  const t = useTranslations('AiExperience.evidencePanel')
   if (citations.length === 0) {
     return (
       <Alert>
         <BookOpenCheckIcon aria-hidden="true" />
-        <AlertTitle>No citations yet</AlertTitle>
-        <AlertDescription>The result needs course evidence before it can be trusted.</AlertDescription>
+        <AlertTitle>{t('noCitationsTitle')}</AlertTitle>
+        <AlertDescription>{t('noCitationsDesc')}</AlertDescription>
       </Alert>
     )
   }
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evidence</CardTitle>
-        <CardDescription>Sources the AI used for this result.</CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {citations.map(citation => (

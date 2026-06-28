@@ -1,6 +1,7 @@
 'use client'
 
 import { BrainCircuit, RefreshCw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,7 @@ import { useLatestCourseAnalysis, usePublishCourseAnalysis, useRunCourseAnalysis
 import { CourseAnalysisResultShell } from './course-analysis-result-shell'
 
 export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
+  const t = useTranslations('AiExperience.courseAnalysisEntry')
   const latest = useLatestCourseAnalysis(courseUuid)
   const run = useRunCourseAnalysis(courseUuid)
   const publish = usePublishCourseAnalysis(courseUuid)
@@ -22,18 +24,18 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <BrainCircuit className="size-4" />
-              Course AI review
+              {t('title')}
             </CardTitle>
-            <CardDescription>Quality score, evidence, and remediation risks for this course.</CardDescription>
+            <CardDescription>{t('description')}</CardDescription>
           </div>
           <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate('auto')}>
             <RefreshCw className="size-4" />
-            {latest.data ? 'Rerun' : 'Analyze'}
+            {latest.data ? t('rerun') : t('analyze')}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIPrivacyNotice role="teacher" />
+        <AIPrivacyNotice aiRole="teacher" />
         {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => run.mutate('auto')} /> : null}
         {analysis ? (
           <CourseAnalysisResultShell
@@ -42,9 +44,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
             onPublish={() => publish.mutate(analysis.analysis_uuid)}
           />
         ) : (
-          <p className="text-muted-foreground text-sm">
-            Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance.
-          </p>
+          <p className="text-muted-foreground text-sm">{t('defaultStatus')}</p>
         )}
       </CardContent>
     </Card>

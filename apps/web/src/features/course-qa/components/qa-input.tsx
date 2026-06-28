@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SendIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
@@ -12,10 +13,11 @@ interface QAInputProps {
 }
 
 export function QAInput({ pending, onSubmit }: QAInputProps) {
+  const t = useTranslations('AiExperience.qaInput')
   const [question, setQuestion] = useState('')
   return (
     <Field>
-      <FieldLabel htmlFor="course-qa-question">Question</FieldLabel>
+      <FieldLabel htmlFor="course-qa-question">{t('label')}</FieldLabel>
       <InputGroup>
         <InputGroupTextarea
           id="course-qa-question"
@@ -31,11 +33,11 @@ export function QAInput({ pending, onSubmit }: QAInputProps) {
             }}
           >
             <SendIcon data-icon="inline-start" />
-            Ask
+            {t('ask')}
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <FieldDescription>Answers are grounded in course material.</FieldDescription>
+      <FieldDescription>{t('description')}</FieldDescription>
     </Field>
   )
 }

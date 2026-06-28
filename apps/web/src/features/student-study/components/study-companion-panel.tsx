@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SendIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
@@ -12,6 +13,7 @@ import { useStudyCompanion } from '../api/use-study-companion'
 import type { StudyCompanionMode } from '../api/use-study-companion'
 
 export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
+  const t = useTranslations('AiExperience.studyCompanion')
   const [question, setQuestion] = useState('')
   const [mode, setMode] = useState<StudyCompanionMode>('explain')
   const mutation = useStudyCompanion(courseUuid)
@@ -20,13 +22,13 @@ export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
     <section className="flex flex-col gap-4">
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="study-question">Ask about this course</FieldLabel>
+          <FieldLabel htmlFor="study-question">{t('label')}</FieldLabel>
           <InputGroup>
             <InputGroupTextarea
               id="study-question"
               value={question}
               onChange={event => setQuestion(event.target.value)}
-              placeholder="Ask for an explanation, summary, practice, or flashcards"
+              placeholder={t('placeholder')}
             />
             <InputGroupAddon align="block-end">
               <InputGroupButton
@@ -34,19 +36,19 @@ export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
                 disabled={!question.trim() || mutation.isPending}
               >
                 <SendIcon data-icon="inline-start" />
-                Send
+                {t('send')}
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
-          <FieldDescription>Answers cite course material and avoid assessment answers.</FieldDescription>
+          <FieldDescription>{t('description')}</FieldDescription>
         </Field>
       </FieldGroup>
       <ToggleGroup value={[mode]} onValueChange={value => value[0] && setMode(value[0] as StudyCompanionMode)}>
-        <ToggleGroupItem value="explain">Explain</ToggleGroupItem>
-        <ToggleGroupItem value="practice">Practice</ToggleGroupItem>
-        <ToggleGroupItem value="flashcards">Flashcards</ToggleGroupItem>
-        <ToggleGroupItem value="summarize">Summarize</ToggleGroupItem>
-        <ToggleGroupItem value="deepen">Deepen</ToggleGroupItem>
+        <ToggleGroupItem value="explain">{t('explain')}</ToggleGroupItem>
+        <ToggleGroupItem value="practice">{t('practice')}</ToggleGroupItem>
+        <ToggleGroupItem value="flashcards">{t('flashcards')}</ToggleGroupItem>
+        <ToggleGroupItem value="summarize">{t('summarize')}</ToggleGroupItem>
+        <ToggleGroupItem value="deepen">{t('deepen')}</ToggleGroupItem>
       </ToggleGroup>
       {mutation.data ? <AIStreamingText text={mutation.data.answer_markdown} /> : null}
       {mutation.error ? <p className="text-destructive text-sm">{mutation.error.message}</p> : null}

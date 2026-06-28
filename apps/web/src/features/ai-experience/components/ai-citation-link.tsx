@@ -15,7 +15,7 @@ export function AICitationLink({ citation }: AICitationLinkProps) {
     return <Badge variant="outline">{citation.label}</Badge>
   }
   return (
-    <Badge variant="outline" render={<a href={href} />}>
+    <Badge variant="outline" render={<a href={href} aria-label={citation.label} />}>
       {citation.label}
       <ExternalLinkIcon data-icon="inline-end" />
     </Badge>

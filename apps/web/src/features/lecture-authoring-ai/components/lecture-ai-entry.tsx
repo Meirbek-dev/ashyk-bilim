@@ -1,6 +1,7 @@
 'use client'
 
 import { RefreshCw, WandSparkles } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,7 @@ import { useRunLectureCritique } from '../api/use-lecture-authoring-ai'
 import { LectureReviewPanel } from './lecture-review-panel'
 
 export function LectureAIEntry({ activityUuid, courseUuid }: { activityUuid?: string | null; courseUuid: string }) {
+  const t = useTranslations('AiExperience.lectureAIEntry')
   const critique = useRunLectureCritique(courseUuid)
   const payload = { ...(activityUuid ? { activity_uuid: activityUuid } : {}), language: 'auto' }
 
@@ -20,15 +22,13 @@ export function LectureAIEntry({ activityUuid, courseUuid }: { activityUuid?: st
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <WandSparkles className="size-4" />
-              AI lecture review
+              {t('title')}
             </CardTitle>
-            <CardDescription>
-              Find unclear explanations, missing examples, and weak assessment alignment.
-            </CardDescription>
+            <CardDescription>{t('description')}</CardDescription>
           </div>
           <Button size="sm" variant="outline" disabled={critique.isPending} onClick={() => critique.mutate(payload)}>
             <RefreshCw className="size-4" />
-            Review
+            {t('review')}
           </Button>
         </div>
       </CardHeader>
@@ -39,9 +39,7 @@ export function LectureAIEntry({ activityUuid, courseUuid }: { activityUuid?: st
         {critique.data ? (
           <LectureReviewPanel review={critique.data} />
         ) : (
-          <p className="text-muted-foreground text-sm">
-            Run a review after saving the lecture draft. Suggestions stay in human-review state.
-          </p>
+          <p className="text-muted-foreground text-sm">{t('defaultStatus')}</p>
         )}
       </CardContent>
     </Card>
