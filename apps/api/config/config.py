@@ -174,7 +174,11 @@ class HostingConfig(PlatformSectionSettings):
     @classmethod
     def parse_allowed_origins(cls, value: object) -> list[str]:
         if isinstance(value, list):
-            return [origin.strip() for origin in value if isinstance(origin, str) and origin.strip()]
+            return [
+                origin.strip()
+                for origin in value
+                if isinstance(origin, str) and origin.strip()
+            ]
 
         if not isinstance(value, str):
             msg = f"Expected str or list, got {type(value).__name__}"
@@ -190,7 +194,11 @@ class HostingConfig(PlatformSectionSettings):
             except json.JSONDecodeError:
                 decoded = None
             if isinstance(decoded, list):
-                return [origin.strip() for origin in decoded if isinstance(origin, str) and origin.strip()]
+                return [
+                    origin.strip()
+                    for origin in decoded
+                    if isinstance(origin, str) and origin.strip()
+                ]
 
         return [origin.strip() for origin in stripped.split(",") if origin.strip()]
 
@@ -225,7 +233,9 @@ class MailingConfig(PlatformSectionSettings):
 
 
 class DatabaseConfig(PlatformSectionSettings):
-    sql_connection_string: str = Field(validation_alias="PLATFORM_SQL_CONNECTION_STRING")
+    sql_connection_string: str = Field(
+        validation_alias="PLATFORM_SQL_CONNECTION_STRING"
+    )
 
     @field_validator("sql_connection_string", mode="before")
     @classmethod
@@ -247,7 +257,9 @@ class DatabaseConfig(PlatformSectionSettings):
 
 
 class RedisConfig(PlatformSectionSettings):
-    redis_connection_string: str = Field(validation_alias="PLATFORM_REDIS_CONNECTION_STRING")
+    redis_connection_string: str = Field(
+        validation_alias="PLATFORM_REDIS_CONNECTION_STRING"
+    )
     # Separate Redis URL for the taskiq task queue.  Defaults to the same URL
     # as the app cache but on DB index 1 to avoid key collisions.  Override
     # via PLATFORM_TASKIQ_BROKER_URL if you want a completely separate Redis.
@@ -322,7 +334,9 @@ class BootstrapConfig(PlatformSectionSettings):
 
     @field_validator("initial_admin_password", mode="before")
     @classmethod
-    def normalize_initial_admin_password(cls, value: SecretStr | str | None) -> str | None:
+    def normalize_initial_admin_password(
+        cls, value: SecretStr | str | None
+    ) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -344,10 +358,18 @@ class Judge0Config(PlatformSectionSettings):
         default=30.0,
         validation_alias="JUDGE0_POLL_MAX_WAIT_SECONDS",
     )
-    max_source_bytes: int = Field(default=200_000, validation_alias="JUDGE0_MAX_SOURCE_BYTES")
-    max_stdin_bytes: int = Field(default=50_000, validation_alias="JUDGE0_MAX_STDIN_BYTES")
-    max_output_bytes: int = Field(default=100_000, validation_alias="JUDGE0_MAX_OUTPUT_BYTES")
-    max_output_file_kb: int = Field(default=128, validation_alias="JUDGE0_MAX_OUTPUT_FILE_KB")
+    max_source_bytes: int = Field(
+        default=200_000, validation_alias="JUDGE0_MAX_SOURCE_BYTES"
+    )
+    max_stdin_bytes: int = Field(
+        default=50_000, validation_alias="JUDGE0_MAX_STDIN_BYTES"
+    )
+    max_output_bytes: int = Field(
+        default=100_000, validation_alias="JUDGE0_MAX_OUTPUT_BYTES"
+    )
+    max_output_file_kb: int = Field(
+        default=128, validation_alias="JUDGE0_MAX_OUTPUT_FILE_KB"
+    )
     allowed_language_ids: Annotated[list[int], NoDecode] = Field(
         default_factory=lambda: [50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78, 83],
         validation_alias="JUDGE0_ALLOWED_LANGUAGE_IDS",
@@ -439,27 +461,43 @@ class AIConfig(PlatformSectionSettings):
         default=None,
         validation_alias="PLATFORM_OPENAI_API_KEY",
     )
-    openai_model: str = Field(default="gpt-5.5-turbo", validation_alias="PLATFORM_OPENAI_MODEL")
+    openai_model: str = Field(
+        default="gpt-5.4-nano-2026-03-17", validation_alias="PLATFORM_OPENAI_MODEL"
+    )
     openrouter_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_OPENROUTER_API_KEY",
     )
     openrouter_model: str = Field(
-        default="deepseek/deepseek-v4",
+        default="deepseek/deepseek-v4-flash",
         validation_alias="PLATFORM_OPENROUTER_MODEL",
     )
     openrouter_base_url: str = Field(
         default="https://openrouter.ai/api/v1",
         validation_alias="PLATFORM_OPENROUTER_BASE_URL",
     )
-    max_tokens_per_request: int = Field(default=16_000, validation_alias="PLATFORM_AI_MAX_TOKENS_PER_REQUEST")
-    max_output_tokens: int = Field(default=8_000, validation_alias="PLATFORM_AI_MAX_OUTPUT_TOKENS")
-    monthly_token_budget: int = Field(default=5_000_000, validation_alias="PLATFORM_AI_MONTHLY_TOKEN_BUDGET")
+    max_tokens_per_request: int = Field(
+        default=16_000, validation_alias="PLATFORM_AI_MAX_TOKENS_PER_REQUEST"
+    )
+    max_output_tokens: int = Field(
+        default=8_000, validation_alias="PLATFORM_AI_MAX_OUTPUT_TOKENS"
+    )
+    monthly_token_budget: int = Field(
+        default=5_000_000, validation_alias="PLATFORM_AI_MONTHLY_TOKEN_BUDGET"
+    )
     ai_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_ENABLED")
-    course_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_COURSE_ANALYSIS_ENABLED")
-    submission_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SUBMISSION_ANALYSIS_ENABLED")
-    remediation_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_REMEDIATION_ENABLED")
-    semantic_memory_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SEMANTIC_MEMORY_ENABLED")
+    course_analysis_enabled: bool = Field(
+        default=False, validation_alias="PLATFORM_AI_COURSE_ANALYSIS_ENABLED"
+    )
+    submission_analysis_enabled: bool = Field(
+        default=False, validation_alias="PLATFORM_AI_SUBMISSION_ANALYSIS_ENABLED"
+    )
+    remediation_enabled: bool = Field(
+        default=False, validation_alias="PLATFORM_AI_REMEDIATION_ENABLED"
+    )
+    semantic_memory_enabled: bool = Field(
+        default=False, validation_alias="PLATFORM_AI_SEMANTIC_MEMORY_ENABLED"
+    )
     analysis_requests_per_hour_per_user: int = Field(
         default=10,
         validation_alias="PLATFORM_AI_ANALYSIS_REQUESTS_PER_HOUR_PER_USER",
@@ -474,7 +512,9 @@ class AIConfig(PlatformSectionSettings):
     def normalize_api_key(cls, value: SecretStr | str | None) -> str | None:
         return _strip_optional_string(value)
 
-    @field_validator("openai_model", "openrouter_model", "openrouter_base_url", mode="before")
+    @field_validator(
+        "openai_model", "openrouter_model", "openrouter_base_url", mode="before"
+    )
     @classmethod
     def normalize_ai_string(cls, value: object) -> str:
         if not isinstance(value, str):
@@ -498,7 +538,10 @@ class PlatformConfig(PydanticStrictBaseModel):
     @model_validator(mode="after")
     def validate_security_posture(self) -> PlatformConfig:
         if not self.general_config.development_mode:
-            if self.hosting_config.ssl and not self.hosting_config.cookies_use_secure_transport():
+            if (
+                self.hosting_config.ssl
+                and not self.hosting_config.cookies_use_secure_transport()
+            ):
                 msg = (
                     "Secure cookies are required when SSL is enabled. "
                     "Set PLATFORM_COOKIE_SECURE=true or remove PLATFORM_SSL."
