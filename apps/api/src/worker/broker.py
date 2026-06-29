@@ -33,10 +33,16 @@ def _build_broker() -> AsyncBroker:
     from src.infra.settings import get_settings
 
     broker_url = get_settings().redis_config.taskiq_broker_url
-    result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(broker_url)
+    _redis_kwargs = {
+        "socket_keepalive": True,
+        "health_check_interval": 30,
+    }
+    result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(
+        broker_url, **_redis_kwargs
+    )
 
     return _with_common_middlewares(
-        ListQueueBroker(broker_url).with_result_backend(result_backend),
+        ListQueueBroker(broker_url, **_redis_kwargs).with_result_backend(result_backend),
     )
 
 

@@ -83,7 +83,7 @@ if __name__ == "__main__":
         address="0.0.0.0",
         port=settings.hosting_config.port,
         interface=Interfaces.ASGI,
-        http=HTTPModes.http2,
+        http=HTTPModes.http1_2,
         http2_settings=HTTP2Settings(
             adaptive_window=True,
             keep_alive_interval=30_000,
