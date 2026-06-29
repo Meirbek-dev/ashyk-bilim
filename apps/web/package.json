@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build": "next build --webpack",
     "dev": "next dev --turbopack",
     "dev-https": "next dev --experimental-https -p 443",
     "generate:api-types": "node scripts/generate-api-types.mjs",
