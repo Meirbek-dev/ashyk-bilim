@@ -6,6 +6,10 @@ import type { Metadata } from 'next'
 
 import CoursesHome from '@/app/_shared/dash/courses/client'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false
+
 const COURSES_PER_PAGE = 24
 
 function parsePage(value: string | string[] | undefined): number {

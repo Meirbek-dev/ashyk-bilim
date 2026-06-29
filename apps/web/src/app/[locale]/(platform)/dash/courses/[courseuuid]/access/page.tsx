@@ -3,6 +3,10 @@ import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAcces
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false
+
 export default async function PlatformCourseAccessPage(props: { params: Promise<{ courseuuid: string }> }) {
   const { courseuuid } = await props.params
   const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'access')

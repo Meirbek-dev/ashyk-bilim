@@ -9,6 +9,10 @@ import { getSession } from '@/lib/auth/session'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false
+
 export default async function PlatformAssessmentReviewPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>
   searchParams: Promise<{ submission?: string }>

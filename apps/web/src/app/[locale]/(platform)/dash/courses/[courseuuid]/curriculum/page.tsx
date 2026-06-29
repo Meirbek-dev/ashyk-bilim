@@ -2,6 +2,10 @@ import CurriculumEditor from '@components/Dashboard/Pages/Course/EditCourseStruc
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { setRequestLocale } from 'next-intl/server'
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false
+
 export default async function PlatformCourseCurriculumPage(props: {
   params: Promise<{ locale: string; courseuuid: string }>
 }) {
