@@ -64,12 +64,10 @@ _KOTLIN_COMPILER_OPTIONS = (
     "-J-XX:CompressedClassSpaceSize=64m -J-XX:ReservedCodeCacheSize=64m "
     "-J-XX:+UseSerialGC"
 )
-_IDEMPOTENT_REUSE_STATUSES = frozenset(
-    {
-        CodeRunStatus.ACCEPTED,
-        CodeRunStatus.WRONG_ANSWER,
-    }
-)
+_IDEMPOTENT_REUSE_STATUSES = frozenset({
+    CodeRunStatus.ACCEPTED,
+    CodeRunStatus.WRONG_ANSWER,
+})
 
 
 def _compare_output(actual: str | None, expected: str | None, match_mode: str) -> bool:
@@ -283,12 +281,10 @@ class _ConfiguredJudge0Client(judge0.Client):
     ) -> None:
         self.endpoint = endpoint
         self.headers = headers or {}
-        self.headers.update(
-            {
-                "X-Judge0-App": "Judge0 Python SDK",
-                "X-Judge0-App-Version": JUDGE0_SDK_VERSION,
-            }
-        )
+        self.headers.update({
+            "X-Judge0-App": "Judge0 Python SDK",
+            "X-Judge0-App-Version": JUDGE0_SDK_VERSION,
+        })
         self._poll_interval_seconds = poll_interval_seconds
         self._poll_max_wait_seconds = poll_max_wait_seconds
         self.client = httpx.Client(
@@ -319,9 +315,7 @@ class _ConfiguredJudge0Client(judge0.Client):
 
 
 class _BoundedIntervalRetry:
-    def __init__(
-        self, *, poll_interval_seconds: float, max_wait_seconds: float
-    ) -> None:
+    def __init__(self, *, poll_interval_seconds: float, max_wait_seconds: float) -> None:
         self.poll_interval_seconds = poll_interval_seconds
         self.max_wait_seconds = max_wait_seconds
         self.total_wait_time = 0.0
@@ -344,12 +338,8 @@ class CodeExecutionService:
         try:
             return await asyncio.to_thread(self._list_languages_sync)
         except Exception as exc:
-            logger.warning(
-                "ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc
-            )
-            raise dependency_unavailable(
-                "judge0", "list_languages", retry_after=30, cause=exc
-            )
+            logger.warning("ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc)
+            raise dependency_unavailable("judge0", "list_languages", retry_after=30, cause=exc)
 
     def close(self) -> None:
         close = getattr(self._client_factory, "close", None)
@@ -382,9 +372,7 @@ class CodeExecutionService:
             purpose=purpose,
             idempotency_key=idempotency_key,
             source_sha256=_sha256(source_code),
-            stdin_sha256=_sha256(custom_input or "")
-            if custom_input is not None
-            else None,
+            stdin_sha256=_sha256(custom_input or "") if custom_input is not None else None,
             language_id=language_id,
         )
         if existing is not None:
@@ -413,9 +401,7 @@ class CodeExecutionService:
             status=CodeRunStatus.RUNNING,
             language_id=language_id,
             source_sha256=_sha256(source_code),
-            stdin_sha256=_sha256(custom_input or "")
-            if custom_input is not None
-            else None,
+            stdin_sha256=_sha256(custom_input or "") if custom_input is not None else None,
             idempotency_key=idempotency_key,
             total=len(tests),
             started_at=datetime.now(UTC),
@@ -436,9 +422,7 @@ class CodeExecutionService:
                 memory_limit_mb=memory_limit_mb,
             )
         except Exception as exc:
-            logger.warning(
-                "ASSESSMENT_SUPPORT_ALERT Judge0 execution degraded: %s", exc
-            )
+            logger.warning("ASSESSMENT_SUPPORT_ALERT Judge0 execution degraded: %s", exc)
             logger.info(
                 "judge0_execution_metrics run_uuid=%s language_id=%s degraded=true",
                 run_uuid,
@@ -492,8 +476,7 @@ class CodeExecutionService:
                 "monaco_language": monaco_language_for(language.name),
             }
             for language in languages
-            if language.is_archived is not True
-            and (not allowed or int(language.id) in allowed)
+            if language.is_archived is not True and (not allowed or int(language.id) in allowed)
         ]
 
     def _execute_sync(
@@ -518,12 +501,8 @@ class CodeExecutionService:
                 source_code=source_code,
                 language=language_id,
                 test_cases=[judge0.TestCase(test.input, None) for test in test_cases],
-                cpu_time_limit=float(time_limit_seconds)
-                if time_limit_seconds
-                else None,
-                wall_time_limit=float(time_limit_seconds + 1)
-                if time_limit_seconds
-                else None,
+                cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
+                wall_time_limit=float(time_limit_seconds + 1) if time_limit_seconds else None,
                 compiler_options=_compiler_options_for_language(language_id),
                 memory_limit=sandbox_policy.memory_limit_kb,
                 stack_limit=sandbox_policy.stack_limit_kb,
@@ -538,8 +517,7 @@ class CodeExecutionService:
         if isinstance(raw_submissions, _Judge0SubmissionLike):
             submissions = [raw_submissions]
         elif isinstance(raw_submissions, list) and all(
-            isinstance(submission, _Judge0SubmissionLike)
-            for submission in raw_submissions
+            isinstance(submission, _Judge0SubmissionLike) for submission in raw_submissions
         ):
             submissions = raw_submissions
         else:
@@ -557,18 +535,12 @@ class CodeExecutionService:
             case_status = normalize_status(submission.status)
 
             # Extract standard status
-            status_id = (
-                int(submission.status) if submission.status is not None else None
-            )
-            status_description = (
-                str(submission.status) if submission.status is not None else ""
-            )
+            status_id = int(submission.status) if submission.status is not None else None
+            status_description = str(submission.status) if submission.status is not None else ""
 
             if scored and case_status == CodeRunStatus.ACCEPTED:
                 match_mode = getattr(test, "match_mode", "EXACT")
-                if not _compare_output(
-                    submission.stdout, test.expected_output, match_mode
-                ):
+                if not _compare_output(submission.stdout, test.expected_output, match_mode):
                     case_status = CodeRunStatus.WRONG_ANSWER
                     case_passed = False
                     status_id = 4
@@ -581,22 +553,15 @@ class CodeExecutionService:
                 if case_passed and scored:
                     passed += 1
 
-            if (
-                case_status != CodeRunStatus.ACCEPTED
-                and overall_status == CodeRunStatus.ACCEPTED
-            ):
+            if case_status != CodeRunStatus.ACCEPTED and overall_status == CodeRunStatus.ACCEPTED:
                 overall_status = case_status
 
             stdout = _truncate_output(submission.stdout, settings.max_output_bytes)
             stderr = _truncate_output(submission.stderr, settings.max_output_bytes)
-            compile_output = _truncate_output(
-                submission.compile_output, settings.max_output_bytes
-            )
+            compile_output = _truncate_output(submission.compile_output, settings.max_output_bytes)
             message = _truncate_output(submission.message, settings.max_output_bytes)
             time_value = float(submission.time) if submission.time is not None else None
-            memory_value = (
-                int(submission.memory) if submission.memory is not None else None
-            )
+            memory_value = int(submission.memory) if submission.memory is not None else None
             details.append(
                 CodeExecutionCaseResult(
                     test_id=test.id,
@@ -611,9 +576,7 @@ class CodeExecutionService:
                     message=message,
                     status_id=status_id,
                     status_description=status_description,
-                    judge0_token=str(submission.token)
-                    if submission.token is not None
-                    else None,
+                    judge0_token=str(submission.token) if submission.token is not None else None,
                     time=time_value,
                     memory=memory_value,
                     weight=float(test.weight or 1),
@@ -668,10 +631,7 @@ class CodeExecutionService:
                 message="Исходный код превышает настроенное ограничение размера",
                 details={"max_source_bytes": settings.max_source_bytes},
             )
-        if (
-            custom_input is not None
-            and len(custom_input.encode()) > settings.max_stdin_bytes
-        ):
+        if custom_input is not None and len(custom_input.encode()) > settings.max_stdin_bytes:
             raise AppError.from_status(
                 status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 code="CUSTOM_INPUT_TOO_LARGE",
@@ -681,10 +641,7 @@ class CodeExecutionService:
 
     def _validate_language(self, language_id: int) -> None:
         settings = get_settings().integrations.judge0
-        if (
-            settings.allowed_language_ids
-            and language_id not in settings.allowed_language_ids
-        ):
+        if settings.allowed_language_ids and language_id not in settings.allowed_language_ids:
             raise AppError.from_status(
                 status_code=HTTPStatus.BAD_REQUEST,
                 code="CODE_LANGUAGE_NOT_ALLOWED",
@@ -738,9 +695,7 @@ class CodeExecutionService:
 
     def _result_from_db(self, db_session: Session, run: CodeRun) -> CodeExecutionResult:
         cases = db_session.exec(
-            select(CodeRunCase)
-            .where(CodeRunCase.run_uuid == run.run_uuid)
-            .order_by(col(CodeRunCase.id))
+            select(CodeRunCase).where(CodeRunCase.run_uuid == run.run_uuid).order_by(col(CodeRunCase.id))
         ).all()
         details = [
             CodeExecutionCaseResult(
@@ -817,9 +772,7 @@ class CodeExecutionService:
         db_session.commit()
 
 
-def _sandbox_policy_for_language(
-    language_id: int, memory_limit_mb: int | None
-) -> Judge0SandboxPolicy:
+def _sandbox_policy_for_language(language_id: int, memory_limit_mb: int | None) -> Judge0SandboxPolicy:
     requested_memory_kb = memory_limit_mb * 1024 if memory_limit_mb else None
 
     if language_id in _JVM_LANGUAGE_IDS:
@@ -945,9 +898,7 @@ def _truncate_output(value: str | None, max_bytes: int) -> str | None:
 
 def _max_queue_seconds(submissions: list[_Judge0SubmissionLike]) -> float | None:
     queue_times = [
-        queue_seconds
-        for submission in submissions
-        if (queue_seconds := _queue_seconds(submission)) is not None
+        queue_seconds for submission in submissions if (queue_seconds := _queue_seconds(submission)) is not None
     ]
     return round(max(queue_times), 3) if queue_times else None
 
@@ -960,11 +911,7 @@ def _queue_seconds(submission: _Judge0SubmissionLike) -> float | None:
 
     total_seconds = (finished_at - created_at).total_seconds()
     raw_run_seconds = getattr(submission, "time", None)
-    run_seconds = (
-        float(raw_run_seconds)
-        if isinstance(raw_run_seconds, (int, float, str))
-        else 0.0
-    )
+    run_seconds = float(raw_run_seconds) if isinstance(raw_run_seconds, (int, float, str)) else 0.0
     return max(0.0, total_seconds - run_seconds)
 
 

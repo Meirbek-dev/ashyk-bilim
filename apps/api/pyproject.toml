@@ -130,7 +130,7 @@ ignore = [
   "EM101", # raw-string-in-exception: Exception must not use a string literal directly
   "TRY300", # try-consider-else: Move code to else block (noisy)
   "TRY301", # raise-within-try: Disallow raising within try block (noisy)
-  # "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
+  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
   "D", # docstring-rules: Disables all docstring-related rules
@@ -198,7 +198,7 @@ ignore = [
   "S106",
   "SLF001",
   "PT003",
-  # "RUF076",
+  "RUF076",
 ]
 
 "**/conftest.py" = [
@@ -210,7 +210,7 @@ ignore = [
   "S105",
   "S106",
   "PT003",
-  # "RUF076"
+  "RUF076",
 ]
 
 [tool.ruff.lint.isort]

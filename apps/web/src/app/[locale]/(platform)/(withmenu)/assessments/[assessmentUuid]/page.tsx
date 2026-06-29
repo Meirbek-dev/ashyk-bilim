@@ -6,10 +6,6 @@ import { getSearchParam } from '@/lib/search-params'
 import type { PageSearchParams } from '@/lib/search-params'
 import { getAssessmentByUuid } from '@services/assessments/assessments'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false
-
 interface Props {
   params: Promise<{ assessmentUuid: string }>
   searchParams: Promise<PageSearchParams>

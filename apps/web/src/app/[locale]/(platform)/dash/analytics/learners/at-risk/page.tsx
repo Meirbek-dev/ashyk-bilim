@@ -8,10 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { ChevronRight, LayoutDashboard } from 'lucide-react'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false
-
 export default function PlatformAnalyticsAtRiskPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {

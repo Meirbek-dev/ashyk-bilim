@@ -4,10 +4,6 @@ import type { Metadata } from 'next'
 
 import UserProfileClient from '@/app/_shared/withmenu/user/[username]/UserProfileClient'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false
-
 interface UserPageProps {
   params: Promise<{ username: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>

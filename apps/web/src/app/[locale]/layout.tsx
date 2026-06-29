@@ -8,9 +8,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false
+import { Suspense } from 'react'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -19,6 +17,12 @@ interface LocaleLayoutProps {
 
 function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
   return rawMode === 'dark' ? 'dark' : DEFAULT_THEME_MODE
+}
+
+async function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value)
+  return <RootProviders initialThemeMode={initialThemeMode}>{children}</RootProviders>
 }
 
 /**
@@ -35,13 +39,14 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   setRequestLocale(locale)
 
-  const [cookieStore, messages] = await Promise.all([cookies(), getMessages()])
-  const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value)
+  const messages = await getMessages()
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <HtmlLangSync locale={locale} />
-      <RootProviders initialThemeMode={initialThemeMode}>{children}</RootProviders>
+      <Suspense fallback={null}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </Suspense>
     </NextIntlClientProvider>
   )
 }
