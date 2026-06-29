@@ -16,10 +16,10 @@
 
 ## Constraints
 
-* Do NOT break existing behavior
-* Prefer **composition over inheritance**
-* Avoid inline styles unless absolutely necessary
-* Follow **App Router + Server/Client component boundaries correctly**
-* Do NOT introduce unnecessary dependencies
+- Do NOT break existing behavior
+- Prefer **composition over inheritance**
+- Avoid inline styles unless absolutely necessary
+- Follow **App Router + Server/Client component boundaries correctly**
+- Do NOT introduce unnecessary dependencies
 
 ---

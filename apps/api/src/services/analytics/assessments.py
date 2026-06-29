@@ -4,44 +4,41 @@ import operator
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import cast
+from typing import Literal, cast
 
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
 from src.db.grading.bulk_actions import BulkAction
 from src.db.grading.entries import GradingEntry
-from src.db.grading.submissions import AssessmentType as SubmissionAssessmentType
-from src.db.grading.submissions import Submission, SubmissionStatus
+from src.db.grading.submissions import AssessmentType as SubmissionAssessmentType, Submission, SubmissionStatus
 from src.db.usergroups import UserGroup
 from src.db.users import User
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    AssessmentAnalyticsRow,
     ProgressSnapshot,
     assessment_pass_threshold,
+    bucket_start as normalize_bucket_start,
+    cohort_user_ids,
+    display_name,
+    hours_between,
+    load_analytics_context,
     manual_assessment_graded_at,
     manual_assessment_is_graded,
     manual_assessment_is_reviewable,
     manual_assessment_score,
     manual_assessment_submission_status,
     manual_assessment_submitted_at,
-    cohort_user_ids,
-    display_name,
-    hours_between,
-    load_analytics_context,
     median_or_none,
     parse_timestamp,
     percentile,
     progress_snapshots,
     safe_pct,
     to_iso,
-)
-from src.services.analytics.queries import (
-    bucket_start as normalize_bucket_start,
 )
 from src.services.analytics.rollups import (
     list_latest_assessment_rollups,
@@ -68,6 +65,11 @@ from src.services.analytics.schemas import (
 )
 from src.services.analytics.scope import TeacherAnalyticsScope
 
+EPOCH_START = datetime(1970, 1, 1, tzinfo=UTC)
+type _AssessmentOutlierType = Literal["manual_assessment", "quiz", "exam", "code_challenge"]
+type _AssessmentSloStatus = Literal["healthy", "warning", "breached", "not_applicable"]
+type _AssessmentItemSignal = Literal["healthy", "watch", "critical"]
+
 
 @dataclass
 class _CohortRollupAccumulator:
@@ -92,15 +94,11 @@ def _selected_bucket_window(
     if selected.tzinfo is None:
         selected = selected.replace(tzinfo=UTC)
     local_start = normalize_bucket_start(selected, filters.bucket, filters.tzinfo)
-    local_end = local_start + (
-        timedelta(weeks=1) if filters.bucket == "week" else timedelta(days=1)
-    )
+    local_end = local_start + (timedelta(weeks=1) if filters.bucket == "week" else timedelta(days=1))
     return local_start.astimezone(UTC), local_end.astimezone(UTC)
 
 
-def _in_bucket_window(
-    value: object, bucket_window: tuple[datetime, datetime] | None
-) -> bool:
+def _in_bucket_window(value: object, bucket_window: tuple[datetime, datetime] | None) -> bool:
     if bucket_window is None:
         return True
     timestamp = parse_timestamp(value)
@@ -124,21 +122,15 @@ def _build_rollup_assessment_rows(
     course_map = {
         course.id: course
         for course in db_session.exec(
-            select(Course).where(
-                Course.id.in_(list({row.course_id for row in rollups}))
-            )
+            select(Course).where(col(Course.id).in_(list({row.course_id for row in rollups})))
         ).all()
     }
     assessments = {
         assessment.id: assessment
         for assessment in db_session.exec(
             select(Assessment).where(
-                Assessment.id.in_(
-                    list({
-                        row.assessment_id
-                        for row in rollups
-                        if row.assessment_type in {"manual_assessment", "exam"}
-                    })
+                col(Assessment.id).in_(
+                    list({row.assessment_id for row in rollups if row.assessment_type in {"manual_assessment", "exam"}})
                 )
             )
         ).all()
@@ -147,12 +139,8 @@ def _build_rollup_assessment_rows(
         activity.id: activity
         for activity in db_session.exec(
             select(Activity).where(
-                Activity.id.in_(
-                    list({
-                        row.assessment_id
-                        for row in rollups
-                        if row.assessment_type in {"quiz", "code_challenge"}
-                    })
+                col(Activity.id).in_(
+                    list({row.assessment_id for row in rollups if row.assessment_type in {"quiz", "code_challenge"}})
                 )
             )
         ).all()
@@ -160,69 +148,50 @@ def _build_rollup_assessment_rows(
 
     rows: list[AssessmentOutlierRow] = []
     for row in rollups:
+        if row.assessment_type not in {"manual_assessment", "quiz", "exam", "code_challenge"}:
+            continue
+        assessment_type = cast("_AssessmentOutlierType", row.assessment_type)
         course = course_map.get(row.course_id)
         if course is None:
             continue
         if row.assessment_type == "manual_assessment":
-            title = (
-                assessments.get(row.assessment_id).title
-                if row.assessment_id in assessments
-                else f"Задание {row.assessment_id}"
-            )
+            assessment_obj = assessments.get(row.assessment_id)
+            title = assessment_obj.title if assessment_obj is not None else f"Задание {row.assessment_id}"
         elif row.assessment_type == "exam":
-            title = (
-                assessments.get(row.assessment_id).title
-                if row.assessment_id in assessments
-                else f"Экзамен {row.assessment_id}"
-            )
+            assessment_obj = assessments.get(row.assessment_id)
+            title = assessment_obj.title if assessment_obj is not None else f"Экзамен {row.assessment_id}"
         else:
-            title = (
-                activities.get(row.assessment_id).name
-                if row.assessment_id in activities
-                else f"Оценивание {row.assessment_id}"
-            )
+            activity_obj = activities.get(row.assessment_id)
+            title = activity_obj.name if activity_obj is not None else f"Оценивание {row.assessment_id}"
 
         outlier_reason_codes: list[str] = []
         if row.submission_rate is not None and float(row.submission_rate) < 60:
             outlier_reason_codes.append("low_submission_rate")
         if row.pass_rate is not None and float(row.pass_rate) < 60:
             outlier_reason_codes.append("low_success_rate")
-        if (
-            row.grading_latency_hours_p90 is not None
-            and float(row.grading_latency_hours_p90) > 72
-        ):
+        if row.grading_latency_hours_p90 is not None and float(row.grading_latency_hours_p90) > 72:
             outlier_reason_codes.append("slow_feedback")
 
         rows.append(
             AssessmentOutlierRow(
-                assessment_type=row.assessment_type,
+                assessment_type=assessment_type,
                 assessment_id=row.assessment_id,
                 activity_id=row.activity_id,
                 course_id=row.course_id,
                 course_name=course.name,
                 title=title,
-                submission_rate=float(row.submission_rate)
-                if row.submission_rate is not None
-                else None,
-                completion_rate=float(row.completion_rate)
-                if row.completion_rate is not None
-                else None,
+                submission_rate=float(row.submission_rate) if row.submission_rate is not None else None,
+                completion_rate=float(row.completion_rate) if row.completion_rate is not None else None,
                 pass_rate=float(row.pass_rate) if row.pass_rate is not None else None,
-                median_score=float(row.median_score)
-                if row.median_score is not None
-                else None,
-                avg_attempts=float(row.avg_attempts)
-                if row.avg_attempts is not None
-                else None,
+                median_score=float(row.median_score) if row.median_score is not None else None,
+                avg_attempts=float(row.avg_attempts) if row.avg_attempts is not None else None,
                 grading_latency_hours_p50=float(row.grading_latency_hours_p50)
                 if row.grading_latency_hours_p50 is not None
                 else None,
                 grading_latency_hours_p90=float(row.grading_latency_hours_p90)
                 if row.grading_latency_hours_p90 is not None
                 else None,
-                difficulty_score=float(row.difficulty_score)
-                if row.difficulty_score is not None
-                else None,
+                difficulty_score=float(row.difficulty_score) if row.difficulty_score is not None else None,
                 outlier_reason_codes=outlier_reason_codes,
             )
         )
@@ -231,19 +200,11 @@ def _build_rollup_assessment_rows(
     reverse = filters.sort_order != "asc"
     sort_map = {
         "title": lambda current: current.title.lower(),
-        "submission": lambda current: (
-            current.submission_rate if current.submission_rate is not None else -1
-        ),
-        "pass": lambda current: (
-            current.pass_rate if current.pass_rate is not None else -1
-        ),
-        "difficulty": lambda current: (
-            current.difficulty_score if current.difficulty_score is not None else -1
-        ),
+        "submission": lambda current: current.submission_rate if current.submission_rate is not None else -1,
+        "pass": lambda current: current.pass_rate if current.pass_rate is not None else -1,
+        "difficulty": lambda current: current.difficulty_score if current.difficulty_score is not None else -1,
         "latency": lambda current: (
-            current.grading_latency_hours_p90
-            if current.grading_latency_hours_p90 is not None
-            else -1
+            current.grading_latency_hours_p90 if current.grading_latency_hours_p90 is not None else -1
         ),
         "signals": lambda current: len(current.outlier_reason_codes),
     }
@@ -270,21 +231,13 @@ def _attempt_distribution(attempts_by_user: dict[int, int]) -> list[HistogramBuc
         label = str(attempts if attempts < 5 else "5+")
         buckets[label] += 1
     order = ["1", "2", "3", "4", "5+"]
-    return [
-        HistogramBucket(label=label, count=buckets.get(label, 0))
-        for label in order
-        if buckets.get(label, 0) > 0
-    ]
+    return [HistogramBucket(label=label, count=buckets.get(label, 0)) for label in order if buckets.get(label, 0) > 0]
 
 
 def _score_distribution(scores: list[float]) -> list[HistogramBucket]:
     buckets = Counter(_score_bucket(score) for score in scores)
     order = ["0-19", "20-39", "40-59", "60-79", "80-100", "Неизвестно"]
-    return [
-        HistogramBucket(label=label, count=buckets.get(label, 0))
-        for label in order
-        if buckets.get(label, 0) > 0
-    ]
+    return [HistogramBucket(label=label, count=buckets.get(label, 0)) for label in order if buckets.get(label, 0) > 0]
 
 
 def _score_variance(scores: list[float]) -> float | None:
@@ -351,9 +304,7 @@ def _quality_by_question_from_quiz_submissions(
         lambda: {"strong": 0, "strong_miss": 0, "weak": 0, "weak_correct": 0}
     )
     for _score, submission in scored_submissions:
-        grading_json = (
-            submission.grading_json if isinstance(submission.grading_json, dict) else {}
-        )
+        grading_json = submission.grading_json or {}
         items = grading_json.get("items", [])
         if not isinstance(items, list):
             continue
@@ -374,9 +325,7 @@ def _quality_by_question_from_quiz_submissions(
                     totals[question_id]["weak_correct"] += 1
     quality: dict[str, dict[str, float | int]] = {}
     for question_id, counts in totals.items():
-        strong_accuracy = safe_pct(
-            counts["strong"] - counts["strong_miss"], counts["strong"]
-        )
+        strong_accuracy = safe_pct(counts["strong"] - counts["strong_miss"], counts["strong"])
         weak_accuracy = safe_pct(counts["weak_correct"], counts["weak"])
         if strong_accuracy is None or weak_accuracy is None:
             continue
@@ -385,23 +334,21 @@ def _quality_by_question_from_quiz_submissions(
             "strong_miss_pct": safe_pct(counts["strong_miss"], counts["strong"]) or 0.0,
             "weak_correct_pct": weak_accuracy,
             "distractor_issue_count": 1
-            if counts["strong"]
-            and (safe_pct(counts["strong_miss"], counts["strong"]) or 0) > 35
+            if counts["strong"] and (safe_pct(counts["strong_miss"], counts["strong"]) or 0) > 35
             else 0,
         }
     return quality
 
 
 def _submission_has_suspicion(submission: Submission) -> bool:
-    metadata = (
-        submission.metadata_json if isinstance(submission.metadata_json, dict) else {}
-    )
+    metadata = submission.metadata_json or {}
     violations = metadata.get("violations")
     violation_count = metadata.get("violation_count")
+    parsed_violation_count = int(violation_count) if isinstance(violation_count, (int, float, str)) else 0
     plagiarism = metadata.get("plagiarism")
     return (
         (isinstance(violations, list) and len(violations) > 0)
-        or (violation_count is not None and int(violation_count) > 0)
+        or parsed_violation_count > 0
         or (isinstance(plagiarism, dict) and bool(plagiarism.get("flagged")))
     )
 
@@ -433,17 +380,12 @@ def _build_submission_diagnostics(
     manual_grading_required: bool,
     note: str | None = None,
 ) -> AssessmentDiagnosticsSnapshot:
-    status_counts = Counter(
-        manual_assessment_submission_status(submission) for submission in submissions
-    )
+    status_counts = Counter(manual_assessment_submission_status(submission) for submission in submissions)
     stale_backlog = sum(
         1
         for submission in submissions
         if manual_assessment_submission_status(submission) == SubmissionStatus.PENDING.value
-        and (
-            hours_between(manual_assessment_submitted_at(submission), datetime.now(UTC)) or 0.0
-        )
-        > 72
+        and (hours_between(manual_assessment_submitted_at(submission), datetime.now(UTC)) or 0.0) > 72
     )
     return AssessmentDiagnosticsSnapshot(
         manual_grading_required=manual_grading_required,
@@ -455,12 +397,8 @@ def _build_submission_diagnostics(
         released=status_counts.get(SubmissionStatus.PUBLISHED.value, 0),
         late_submissions=sum(1 for submission in submissions if submission.is_late),
         stale_backlog=stale_backlog,
-        suspicious_attempts=sum(
-            1 for submission in submissions if _submission_has_suspicion(submission)
-        ),
-        missing_scores=sum(
-            1 for submission in submissions if _submission_missing_score(submission)
-        ),
+        suspicious_attempts=sum(1 for submission in submissions if _submission_has_suspicion(submission)),
+        missing_scores=sum(1 for submission in submissions if _submission_missing_score(submission)),
         note=note,
     )
 
@@ -484,13 +422,9 @@ def _build_slo_snapshot(
     observed_p50 = percentile(latencies, 0.5)
     observed_p90 = percentile(latencies, 0.9)
     overdue_backlog = diagnostics.stale_backlog
-    if overdue_backlog > 0 or (
-        observed_p90 is not None and observed_p90 > target_hours
-    ):
-        status = "breached"
-    elif diagnostics.awaiting_grading > 0 or (
-        observed_p50 is not None and observed_p50 > 48
-    ):
+    if overdue_backlog > 0 or (observed_p90 is not None and observed_p90 > target_hours):
+        status: _AssessmentSloStatus = "breached"
+    elif diagnostics.awaiting_grading > 0 or (observed_p50 is not None and observed_p50 > 48):
         status = "warning"
     else:
         status = "healthy"
@@ -516,12 +450,7 @@ def _build_slo_snapshot(
 def _resolve_actor_names(db_session: Session, actor_ids: set[int]) -> dict[int, str]:
     if not actor_ids:
         return {}
-    users = (
-        db_session
-        .exec(select(User).where(User.id.in_(sorted(actor_ids))))
-        .scalars()
-        .all()
-    )
+    users = db_session.exec(select(User).where(col(User.id).in_(sorted(actor_ids)))).all()
     return {user.id: display_name(user) for user in users if user.id is not None}
 
 
@@ -532,26 +461,14 @@ def _load_audit_history(
     submission_ids: list[int],
     allowed_user_ids: set[int] | None,
 ) -> list[AssessmentAuditEventRow]:
-    entries = (
-        db_session
-        .exec(
-            select(GradingEntry)
-            .where(GradingEntry.submission_id.in_(submission_ids or [-1]))
-            .order_by(GradingEntry.created_at.desc())
-        )
-        .scalars()
-        .all()
-    )
-    actions = (
-        db_session
-        .exec(
-            select(BulkAction)
-            .where(BulkAction.activity_id == activity_id)
-            .order_by(BulkAction.created_at.desc())
-        )
-        .scalars()
-        .all()
-    )
+    entries = db_session.exec(
+        select(GradingEntry)
+        .where(col(GradingEntry.submission_id).in_(submission_ids or [-1]))
+        .order_by(col(GradingEntry.created_at).desc())
+    ).all()
+    actions = db_session.exec(
+        select(BulkAction).where(col(BulkAction.activity_id) == activity_id).order_by(col(BulkAction.created_at).desc())
+    ).all()
 
     visible_actions: list[BulkAction] = []
     for action in actions:
@@ -560,12 +477,8 @@ def _load_audit_history(
             visible_actions.append(action)
 
     actor_ids = {
-        actor_id
-        for actor_id in [
-            *(entry.graded_by for entry in entries if entry.graded_by is not None),
-            *(action.performed_by for action in visible_actions),
-        ]
-        if actor_id is not None
+        *(entry.graded_by for entry in entries),
+        *(action.performed_by for action in visible_actions),
     }
     actor_names = _resolve_actor_names(db_session, actor_ids)
 
@@ -596,15 +509,9 @@ def _load_audit_history(
     for action in visible_actions:
         occurred_at = action.completed_at or action.created_at
         action_type_value = (
-            action.action_type.value
-            if hasattr(action.action_type, "value")
-            else str(action.action_type)
+            action.action_type.value if hasattr(action.action_type, "value") else str(action.action_type)
         )
-        action_status_value = (
-            action.status.value
-            if hasattr(action.status, "value")
-            else str(action.status)
-        )
+        action_status_value = action.status.value if hasattr(action.status, "value") else str(action.status)
         action_name = action_type_value.lower()
         sortable_events.append((
             occurred_at,
@@ -616,9 +523,7 @@ def _load_audit_history(
                 actor_display_name=actor_names.get(action.performed_by),
                 occurred_at=to_iso(occurred_at) or "",
                 status=action_status_value.lower(),
-                summary=(
-                    f"{action_type_value.replace('_', ' ').title()} for {action.affected_count} learners"
-                ),
+                summary=(f"{action_type_value.replace('_', ' ').title()} for {action.affected_count} learners"),
                 affected_count=action.affected_count,
             ),
         ))
@@ -653,6 +558,7 @@ def _build_migration_status(
         "quiz": SubmissionAssessmentType.QUIZ,
         "exam": SubmissionAssessmentType.EXAM,
         "code_challenge": SubmissionAssessmentType.CODE_CHALLENGE,
+        "manual_assessment": SubmissionAssessmentType.EXAM,
     }[assessment_type]
     canonical_row_count = _canonical_submission_count(
         db_session,
@@ -679,7 +585,7 @@ def _build_workflow_item_rows(
         "returned_for_resubmission": 3,
         "late_submissions": 4,
     }
-    definitions = [
+    definitions: list[tuple[str, str, int, _AssessmentItemSignal, str]] = [
         (
             "awaiting_grading",
             "Ожидает проверки преподавателем",
@@ -760,18 +666,14 @@ def _build_cohort_analytics(
         learner_row = row_by_user.get(user_id)
         status = learner_row.status if learner_row is not None else None
         submitted = learner_row is not None and (
-            learner_row.submitted_at is not None
-            or status not in {None, "DRAFT", "IN_PROGRESS"}
+            learner_row.submitted_at is not None or status not in {None, "DRAFT", "IN_PROGRESS"}
         )
         released = learner_row is not None and status in released_statuses
         returned = learner_row is not None and status in returned_statuses
         awaiting = learner_row is not None and status in awaiting_statuses
         best_score = learner_row.best_score if learner_row is not None else None
         passed = (
-            learner_row is not None
-            and best_score is not None
-            and threshold is not None
-            and best_score >= threshold
+            learner_row is not None and best_score is not None and threshold is not None and best_score >= threshold
         )
 
         for cohort_id in cohort_ids:
@@ -803,9 +705,7 @@ def _build_cohort_analytics(
         rows.append(
             AssessmentCohortRow(
                 cohort_id=cohort_id,
-                cohort_name=context.usergroup_names_by_id.get(
-                    cohort_id, f"Cohort {cohort_id}"
-                ),
+                cohort_name=context.usergroup_names_by_id.get(cohort_id, f"Cohort {cohort_id}"),
                 eligible_learners=eligible,
                 submitted_learners=submitted_count,
                 submission_rate=safe_pct(submitted_count, eligible),
@@ -923,43 +823,36 @@ def _build_manual_assessment_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
-    submissions_by_manual_assessment: dict[int, list] = defaultdict(list)
+    submissions_by_manual_assessment: dict[int, list[tuple[Submission, AssessmentAnalyticsRow]]] = defaultdict(list)
     for submission, manual_assessment in context.manual_assessment_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
         if not _in_bucket_window(manual_assessment_submitted_at(submission), bucket_window):
             continue
-        if manual_assessment.id is not None:
-            submissions_by_manual_assessment[manual_assessment.id].append((submission, manual_assessment))
+        submissions_by_manual_assessment[manual_assessment.id].append((
+            submission,
+            manual_assessment,
+        ))
 
     rows: list[AssessmentOutlierRow] = []
     for manual_assessment in context.manual_assessments:
         manual_assessment_id = manual_assessment.id
-        if manual_assessment_id is None:
-            continue
         submissions = submissions_by_manual_assessment.get(manual_assessment_id, [])
         eligible = len(eligible_by_course.get(manual_assessment.course_id, set()))
         submitted = len({submission.user_id for submission, _ in submissions})
         graded = [
             submission
             for submission, _ in submissions
-            if manual_assessment_is_graded(submission)
-            and manual_assessment_score(submission) is not None
+            if manual_assessment_is_graded(submission) and manual_assessment_score(submission) is not None
         ]
         grades = [manual_assessment_score(submission) or 0.0 for submission in graded]
-        scores_by_user = {
-            submission.user_id: manual_assessment_score(submission) or 0.0
-            for submission in graded
-        }
+        scores_by_user = {submission.user_id: manual_assessment_score(submission) or 0.0 for submission in graded}
         pass_rate = safe_pct(
-            sum(
-                1
-                for submission in graded
-                if (manual_assessment_score(submission) or 0.0) >= 60
-            ),
+            sum(1 for submission in graded if (manual_assessment_score(submission) or 0.0) >= 60),
             len(graded),
         )
         variance = _score_variance(grades)
@@ -982,11 +875,8 @@ def _build_manual_assessment_rows(
             outlier_reason_codes.append("low_submission_rate")
         if pass_rate is not None and pass_rate < 60:
             outlier_reason_codes.append("low_pass_rate")
-        if (
-            latency_hours
-            and percentile(latency_hours, 0.9)
-            and percentile(latency_hours, 0.9) > 72
-        ):
+        p90 = percentile(latency_hours, 0.9)
+        if p90 is not None and p90 > 72.0:
             outlier_reason_codes.append("grading_latency")
 
         course = context.courses_by_id[manual_assessment.course_id]
@@ -1027,45 +917,31 @@ def _build_exam_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
-    attempts_by_exam: dict[int, list] = defaultdict(list)
+    attempts_by_exam: dict[int, list[tuple[Submission, AssessmentAnalyticsRow]]] = defaultdict(list)
     for attempt, exam in context.exam_attempts:
         if not _is_allowed(attempt.user_id, allowed_user_ids):
             continue
-        if not _in_bucket_window(
-            attempt.submitted_at or attempt.started_at, bucket_window
-        ):
+        if not _in_bucket_window(attempt.submitted_at or attempt.started_at, bucket_window):
             continue
-        if exam.id is not None:
-            attempts_by_exam[exam.id].append((attempt, exam))
+        attempts_by_exam[exam.id].append((attempt, exam))
 
     rows: list[AssessmentOutlierRow] = []
     for exam in context.exams:
         exam_id = exam.id
-        if exam_id is None:
-            continue
         attempts = attempts_by_exam.get(exam_id, [])
         eligible = len(eligible_by_course.get(exam.course_id, set()))
-        submitted_users = {
-            attempt.user_id for attempt, _ in attempts if attempt.submitted_at
-        }
-        scores = [
-            score
-            for attempt, _ in attempts
-            if (score := manual_assessment_score(attempt)) is not None
-        ]
+        submitted_users = {attempt.user_id for attempt, _ in attempts if attempt.submitted_at}
+        scores = [score for attempt, _ in attempts if (score := manual_assessment_score(attempt)) is not None]
         scores_by_user = {
-            attempt.user_id: score
-            for attempt, _ in attempts
-            if (score := manual_assessment_score(attempt)) is not None
+            attempt.user_id: score for attempt, _ in attempts if (score := manual_assessment_score(attempt)) is not None
         }
         attempts_by_user = Counter(attempt.user_id for attempt, _ in attempts)
         threshold = assessment_pass_threshold(exam.settings)
-        pass_rate = safe_pct(
-            sum(1 for score in scores if score >= threshold), len(scores)
-        )
+        pass_rate = safe_pct(sum(1 for score in scores if score >= threshold), len(scores))
         variance = _score_variance(scores)
         discrimination = _discrimination_index(scores_by_user)
         submission_rate = safe_pct(len(submitted_users), eligible)
@@ -1089,9 +965,7 @@ def _build_exam_rows(
                 completion_rate=submission_rate,
                 pass_rate=pass_rate,
                 median_score=median_or_none(scores),
-                avg_attempts=round(
-                    sum(attempts_by_user.values()) / len(attempts_by_user), 2
-                )
+                avg_attempts=round(sum(attempts_by_user.values()) / len(attempts_by_user), 2)
                 if attempts_by_user
                 else None,
                 grading_latency_hours_p50=None,
@@ -1118,12 +992,11 @@ def _build_quiz_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
-    submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(
-        list
-    )
+    submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(list)
     for submission, activity in context.quiz_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
@@ -1132,24 +1005,21 @@ def _build_quiz_rows(
             bucket_window,
         ):
             continue
-        submissions_by_activity[activity.id].append((submission, activity))
+        if activity.id is not None:
+            submissions_by_activity[activity.id].append((submission, activity))
 
     rows: list[AssessmentOutlierRow] = []
     for activity_id, submissions in submissions_by_activity.items():
-        activity = context.activities_by_id.get(activity_id)
-        if activity is None or activity.course_id is None:
+        act = context.activities_by_id.get(activity_id)
+        if act is None or act.course_id is None:
             continue
-        eligible = len(eligible_by_course.get(activity.course_id, set()))
+        eligible = len(eligible_by_course.get(act.course_id, set()))
         submitted_users = {
             submission.user_id
             for submission, _ in submissions
             if manual_assessment_submission_status(submission) != SubmissionStatus.DRAFT.value
         }
-        scores = [
-            score
-            for submission, _ in submissions
-            if (score := manual_assessment_score(submission)) is not None
-        ]
+        scores = [score for submission, _ in submissions if (score := manual_assessment_score(submission)) is not None]
         scores_by_user = {
             submission.user_id: score
             for submission, _ in submissions
@@ -1166,22 +1036,20 @@ def _build_quiz_rows(
             outlier_reason_codes.append("low_completion_rate")
         if pass_rate is not None and pass_rate < 60:
             outlier_reason_codes.append("low_accuracy")
-        course = context.courses_by_id[activity.course_id]
+        course = context.courses_by_id[act.course_id]
         rows.append(
             AssessmentOutlierRow(
                 assessment_type="quiz",
                 assessment_id=activity_id,
                 activity_id=activity_id,
-                course_id=activity.course_id,
+                course_id=act.course_id,
                 course_name=course.name,
-                title=activity.name,
+                title=act.name,
                 submission_rate=submission_rate,
                 completion_rate=submission_rate,
                 pass_rate=pass_rate,
                 median_score=median_or_none(scores),
-                avg_attempts=round(
-                    sum(attempts_by_user.values()) / len(attempts_by_user), 2
-                )
+                avg_attempts=round(sum(attempts_by_user.values()) / len(attempts_by_user), 2)
                 if attempts_by_user
                 else None,
                 grading_latency_hours_p50=None,
@@ -1208,42 +1076,35 @@ def _build_code_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for key in snapshots:
+        course_id, user_id = key
         eligible_by_course[course_id].add(user_id)
 
-    submissions_by_activity: dict[int, list] = defaultdict(list)
+    submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(list)
     for submission, activity in context.code_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
-        if not _in_bucket_window(
-            getattr(submission, "created_at", None), bucket_window
-        ):
+        if not _in_bucket_window(getattr(submission, "created_at", None), bucket_window):
             continue
-        submissions_by_activity[activity.id].append((submission, activity))
+        if activity.id is not None:
+            submissions_by_activity[activity.id].append((submission, activity))
 
     rows: list[AssessmentOutlierRow] = []
     code_activities = [
         activity
         for activity in context.activities_by_id.values()
-        if activity.course_id is not None
-        and activity.activity_type == ActivityTypeEnum.TYPE_CODE_CHALLENGE
+        if activity.course_id is not None and activity.activity_type == ActivityTypeEnum.TYPE_CODE_CHALLENGE
     ]
     for activity in code_activities:
-        if activity.id is None:
+        if activity.id is None or activity.course_id is None:
             continue
         activity_id = activity.id
         submissions = submissions_by_activity.get(activity_id, [])
         eligible = len(eligible_by_course.get(activity.course_id, set()))
         submitted_users = {
-            submission.user_id
-            for submission, _ in submissions
-            if manual_assessment_is_graded(submission)
+            submission.user_id for submission, _ in submissions if manual_assessment_is_graded(submission)
         }
-        scores = [
-            score
-            for submission, _ in submissions
-            if (score := manual_assessment_score(submission)) is not None
-        ]
+        scores = [score for submission, _ in submissions if (score := manual_assessment_score(submission)) is not None]
         scores_by_user = {
             submission.user_id: score
             for submission, _ in submissions
@@ -1273,9 +1134,7 @@ def _build_code_rows(
                 completion_rate=submission_rate,
                 pass_rate=pass_rate,
                 median_score=median_or_none(scores),
-                avg_attempts=round(
-                    sum(attempts_by_user.values()) / len(attempts_by_user), 2
-                )
+                avg_attempts=round(sum(attempts_by_user.values()) / len(attempts_by_user), 2)
                 if attempts_by_user
                 else None,
                 grading_latency_hours_p50=None,
@@ -1311,18 +1170,10 @@ def build_assessment_rows(
     sort_order = filters.sort_order if filters else "desc"
     sort_map = {
         "title": lambda row: row.title.lower(),
-        "submission": lambda row: (
-            row.submission_rate if row.submission_rate is not None else -1
-        ),
+        "submission": lambda row: row.submission_rate if row.submission_rate is not None else -1,
         "pass": lambda row: row.pass_rate if row.pass_rate is not None else -1,
-        "difficulty": lambda row: (
-            row.difficulty_score if row.difficulty_score is not None else -1
-        ),
-        "latency": lambda row: (
-            row.grading_latency_hours_p90
-            if row.grading_latency_hours_p90 is not None
-            else -1
-        ),
+        "difficulty": lambda row: row.difficulty_score if row.difficulty_score is not None else -1,
+        "latency": lambda row: row.grading_latency_hours_p90 if row.grading_latency_hours_p90 is not None else -1,
         "signals": lambda row: len(row.outlier_reason_codes),
     }
     rows.sort(
@@ -1348,11 +1199,9 @@ def get_teacher_assessment_list(
         paged_rows = rows[filters.offset : filters.offset + filters.page_size]
         course_map = {
             course.id: course
-            for course in db_session.exec(
-                select(Course).where(Course.id.in_(scope.course_ids))
-            ).all()
+            for course in db_session.exec(select(Course).where(col(Course.id).in_(scope.course_ids))).all()
         }
-        usergroups = list(db_session.exec(select(UserGroup)).scalars().all())
+        usergroups = list(db_session.exec(select(UserGroup)).all())
         return TeacherAssessmentListResponse(
             generated_at=generated_at,
             total=len(rows),
@@ -1361,9 +1210,7 @@ def get_teacher_assessment_list(
             items=paged_rows,
             course_options=[
                 AnalyticsFilterOption(label=course.name, value=str(course_id))
-                for course_id, course in sorted(
-                    course_map.items(), key=lambda item: item[1].name.lower()
-                )
+                for course_id, course in sorted(course_map.items(), key=lambda item: item[1].name.lower())
             ],
             cohort_options=[
                 AnalyticsFilterOption(label=group.name, value=str(group.id))
@@ -1371,9 +1218,7 @@ def get_teacher_assessment_list(
             ],
         )
     previous_start, _ = filters.previous_window_bounds()
-    context = load_analytics_context(
-        db_session, scope.course_ids, activity_start=previous_start
-    )
+    context = load_analytics_context(db_session, scope.course_ids, activity_start=previous_start)
     rows = build_assessment_rows(context, filters)
     paged_rows = rows[filters.offset : filters.offset + filters.page_size]
     return TeacherAssessmentListResponse(
@@ -1383,17 +1228,13 @@ def get_teacher_assessment_list(
         page_size=filters.page_size,
         items=paged_rows,
         course_options=[
-            AnalyticsFilterOption(
-                label=context.courses_by_id[course_id].name, value=str(course_id)
-            )
+            AnalyticsFilterOption(label=context.courses_by_id[course_id].name, value=str(course_id))
             for course_id in sorted(context.courses_by_id)
             if course_id in scope.course_ids
         ],
         cohort_options=[
             AnalyticsFilterOption(label=name, value=str(group_id))
-            for group_id, name in sorted(
-                context.usergroup_names_by_id.items(), key=lambda item: item[1].lower()
-            )
+            for group_id, name in sorted(context.usergroup_names_by_id.items(), key=lambda item: item[1].lower())
         ],
     )
 
@@ -1416,13 +1257,11 @@ def get_teacher_assessment_detail(
                 scoped_course_id = activity.course_id
     else:
         # Quiz and code_challenge assessments are Activity rows with a course_id field
-        row = db_session.get(Activity, assessment_id)
-        if row and row.course_id in scope.course_ids:
-            scoped_course_id = row.course_id
+        activity_row = db_session.get(Activity, assessment_id)
+        if activity_row and activity_row.course_id in scope.course_ids:
+            scoped_course_id = activity_row.course_id
 
-    context_course_ids = (
-        [scoped_course_id] if scoped_course_id is not None else scope.course_ids
-    )
+    context_course_ids = [scoped_course_id] if scoped_course_id is not None else scope.course_ids
     context = load_analytics_context(db_session, context_course_ids)
     allowed_user_ids = cohort_user_ids(context, filters.cohort_ids)
     snapshots = progress_snapshots(context, allowed_user_ids)
@@ -1430,9 +1269,12 @@ def get_teacher_assessment_detail(
     for course_id, user_id in snapshots:
         eligible_by_course[course_id].add(user_id)
 
+    records: list[tuple[Submission, object]] = []
+
     if assessment_type == "manual_assessment":
         manual_assessment = next(
-            (item for item in context.manual_assessments if item.id == assessment_id), None
+            (item for item in context.manual_assessments if item.id == assessment_id),
+            None,
         )
         if manual_assessment is None:
             msg = f"Задание не найдено: {assessment_id}"
@@ -1440,8 +1282,7 @@ def get_teacher_assessment_detail(
         records = [
             (submission, manual_assessment_)
             for submission, manual_assessment_ in context.manual_assessment_submissions
-            if manual_assessment_.id == assessment_id
-            and _is_allowed(submission.user_id, allowed_user_ids)
+            if manual_assessment_.id == assessment_id and _is_allowed(submission.user_id, allowed_user_ids)
         ]
         eligible = len(eligible_by_course.get(manual_assessment.course_id, set()))
         scores = [
@@ -1466,9 +1307,7 @@ def get_teacher_assessment_detail(
         learner_rows = [
             AssessmentLearnerRow(
                 user_id=submission.user_id,
-                user_display_name=display_name(
-                    context.users_by_id.get(submission.user_id)
-                ),
+                user_display_name=display_name(context.users_by_id.get(submission.user_id)),
                 attempts=1,
                 best_score=manual_assessment_score(submission),
                 last_score=manual_assessment_score(submission),
@@ -1487,11 +1326,7 @@ def get_teacher_assessment_detail(
             CommonFailureRow(
                 key="ungraded",
                 label="Ожидают проверки",
-                count=sum(
-                    1
-                    for submission, _ in records
-                    if manual_assessment_is_reviewable(submission)
-                ),
+                count=sum(1 for submission, _ in records if manual_assessment_is_reviewable(submission)),
             ),
         ]
         common_failures = [item for item in common_failures if item.count > 0]
@@ -1505,9 +1340,7 @@ def get_teacher_assessment_detail(
         audit_history = _load_audit_history(
             db_session,
             activity_id=manual_assessment.activity_id,
-            submission_ids=[
-                submission.id for submission in submissions if submission.id is not None
-            ],
+            submission_ids=[submission.id for submission in submissions if submission.id is not None],
             allowed_user_ids=allowed_user_ids,
         )
         slo = _build_slo_snapshot(diagnostics, latencies)
@@ -1550,12 +1383,8 @@ def get_teacher_assessment_detail(
             pass_threshold_bucket_label=_score_bucket(60),
             summary=TeacherAssessmentDetailSummary(
                 eligible_learners=eligible,
-                submitted_learners=len({
-                    submission.user_id for submission, _ in records
-                }),
-                submission_rate=safe_pct(
-                    len({submission.user_id for submission, _ in records}), eligible
-                ),
+                submitted_learners=len({submission.user_id for submission, _ in records}),
+                submission_rate=safe_pct(len({submission.user_id for submission, _ in records}), eligible),
                 pass_rate=pass_rate,
                 median_score=median_or_none(scores),
                 avg_attempts=1.0 if records else None,
@@ -1584,8 +1413,7 @@ def get_teacher_assessment_detail(
         records = [
             (attempt, exam_)
             for attempt, exam_ in context.exam_attempts
-            if exam_.id == assessment_id
-            and _is_allowed(attempt.user_id, allowed_user_ids)
+            if exam_.id == assessment_id and _is_allowed(attempt.user_id, allowed_user_ids)
         ]
         eligible = len(eligible_by_course.get(exam.course_id, set()))
         exam_attempts_by_user: dict[int, list[Submission]] = defaultdict(list)
@@ -1594,21 +1422,20 @@ def get_teacher_assessment_detail(
             exam_attempts_by_user[attempt.user_id].append(attempt)
             if (score := manual_assessment_score(attempt)) is not None:
                 exam_scores.append(score)
-        submitted_users = {
-            attempt.user_id for attempt, _exam in records if attempt.submitted_at
-        }
+        submitted_users = {attempt.user_id for attempt, _exam in records if attempt.submitted_at}
         learner_rows = []
         for user_id, attempts in exam_attempts_by_user.items():
             best_score = max(
-                (
-                    score
-                    for item in attempts
-                    if (score := manual_assessment_score(item)) is not None
-                ),
+                (score for item in attempts if (score := manual_assessment_score(item)) is not None),
                 default=None,
             )
             last_attempt = max(
-                attempts, key=lambda item: item.submitted_at or item.started_at or ""
+                attempts,
+                key=lambda item: (
+                    item.submitted_at
+                    if item.submitted_at is not None
+                    else (item.started_at if item.started_at is not None else EPOCH_START)
+                ),
             )
             last_score = manual_assessment_score(last_attempt)
             learner_rows.append(
@@ -1634,9 +1461,7 @@ def get_teacher_assessment_detail(
         audit_history = _load_audit_history(
             db_session,
             activity_id=exam.activity_id,
-            submission_ids=[
-                attempt.id for attempt in submissions if attempt.id is not None
-            ],
+            submission_ids=[attempt.id for attempt in submissions if attempt.id is not None],
             allowed_user_ids=allowed_user_ids,
         )
         slo = _build_slo_snapshot(diagnostics, latencies)
@@ -1687,8 +1512,7 @@ def get_teacher_assessment_detail(
                 ),
                 median_score=median_or_none(exam_scores),
                 avg_attempts=round(
-                    sum(len(items) for items in exam_attempts_by_user.values())
-                    / len(exam_attempts_by_user),
+                    sum(len(items) for items in exam_attempts_by_user.values()) / len(exam_attempts_by_user),
                     2,
                 )
                 if exam_attempts_by_user
@@ -1714,14 +1538,13 @@ def get_teacher_assessment_detail(
 
     if assessment_type == "quiz":
         activity = context.activities_by_id.get(assessment_id)
-        if activity is None or activity.course_id is None:
+        if activity is None or activity.id is None or activity.course_id is None:
             msg = f"Активность теста не найдена: {assessment_id}"
             raise ValueError(msg)
         records = [
             (submission, activity_)
             for submission, activity_ in context.quiz_submissions
-            if activity_.id == assessment_id
-            and _is_allowed(submission.user_id, allowed_user_ids)
+            if activity_.id == assessment_id and _is_allowed(submission.user_id, allowed_user_ids)
         ]
         eligible = len(eligible_by_course.get(activity.course_id, set()))
         quiz_submissions_by_user: dict[int, list[Submission]] = defaultdict(list)
@@ -1739,11 +1562,7 @@ def get_teacher_assessment_detail(
             submission for submission, _activity in records
         ])
         question_breakdown = []
-        for stat in [
-            item
-            for item in context.quiz_question_stats
-            if item.activity_id == assessment_id
-        ]:
+        for stat in [item for item in context.quiz_question_stats if item.activity_id == assessment_id]:
             quality = quality_by_question.get(stat.question_id, {})
             question_breakdown.append(
                 QuestionDifficultyRow(
@@ -1756,9 +1575,7 @@ def get_teacher_assessment_detail(
                     discrimination_index=quality.get("discrimination_index"),
                     strong_miss_pct=quality.get("strong_miss_pct"),
                     weak_correct_pct=quality.get("weak_correct_pct"),
-                    distractor_issue_count=int(
-                        quality.get("distractor_issue_count") or 0
-                    ),
+                    distractor_issue_count=int(quality.get("distractor_issue_count") or 0),
                 )
             )
         common_failures = [
@@ -1767,9 +1584,7 @@ def get_teacher_assessment_detail(
                 label=row.question_label,
                 count=max(0, 100 - int(row.accuracy_pct or 0)),
             )
-            for row in sorted(
-                question_breakdown, key=lambda item: item.accuracy_pct or 100
-            )[:5]
+            for row in sorted(question_breakdown, key=lambda item: item.accuracy_pct or 100)[:5]
             if row.accuracy_pct is not None and row.accuracy_pct < 80
         ]
         learner_rows = []
@@ -1777,19 +1592,10 @@ def get_teacher_assessment_detail(
             quiz_submission_list: list[Submission] = list(attempts)
             ordered_attempts = sorted(
                 quiz_submission_list,
-                key=lambda item: (
-                    item.submitted_at
-                    or item.updated_at
-                    or item.created_at
-                    or item.started_at
-                ),
+                key=lambda item: item.submitted_at if item.submitted_at is not None else item.updated_at,
             )
             best_score = max(
-                (
-                    score
-                    for item in quiz_submission_list
-                    if (score := manual_assessment_score(item)) is not None
-                ),
+                (score for item in quiz_submission_list if (score := manual_assessment_score(item)) is not None),
                 default=None,
             )
             last_attempt = ordered_attempts[-1]
@@ -1810,8 +1616,7 @@ def get_teacher_assessment_detail(
         diagnostics = _build_submission_diagnostics(
             canonical_quiz_submissions,
             manual_grading_required=any(
-                isinstance(submission.grading_json, dict)
-                and bool(submission.grading_json.get("needs_manual_review"))
+                bool((submission.grading_json or {}).get("needs_manual_review"))
                 for submission in canonical_quiz_submissions
             ),
             note="Quiz analytics detail is backed by canonical submission rows and per-question grading payloads.",
@@ -1819,11 +1624,7 @@ def get_teacher_assessment_detail(
         audit_history = _load_audit_history(
             db_session,
             activity_id=activity.id,
-            submission_ids=[
-                submission.id
-                for submission in canonical_quiz_submissions
-                if submission.id is not None
-            ],
+            submission_ids=[submission.id for submission in canonical_quiz_submissions if submission.id is not None],
             allowed_user_ids=allowed_user_ids,
         )
         latencies = _submission_latencies(canonical_quiz_submissions)
@@ -1835,13 +1636,9 @@ def get_teacher_assessment_detail(
         )
         eligible_user_ids = eligible_by_course.get(activity.course_id, set())
         item_analytics = _build_workflow_item_rows(diagnostics)
-        for stat in [
-            item
-            for item in context.quiz_question_stats
-            if item.activity_id == assessment_id
-        ]:
+        for stat in [item for item in context.quiz_question_stats if item.activity_id == assessment_id]:
             accuracy_pct = safe_pct(stat.correct_count, stat.total_attempts)
-            signal = (
+            signal: _AssessmentItemSignal = (
                 "critical"
                 if accuracy_pct is not None and accuracy_pct < 50
                 else "watch"
@@ -1860,11 +1657,7 @@ def get_teacher_assessment_detail(
                         stat.total_attempts,
                     ),
                     signal=signal,
-                    note=(
-                        f"Точность {accuracy_pct:.1f}%"
-                        if accuracy_pct is not None
-                        else "Точность пока недоступна."
-                    ),
+                    note=(f"Точность {accuracy_pct:.1f}%" if accuracy_pct is not None else "Точность пока недоступна."),
                 )
             )
 
@@ -1918,8 +1711,7 @@ def get_teacher_assessment_detail(
                 ),
                 median_score=median_or_none(quiz_scores),
                 avg_attempts=round(
-                    sum(len(items) for items in quiz_submissions_by_user.values())
-                    / len(quiz_submissions_by_user),
+                    sum(len(items) for items in quiz_submissions_by_user.values()) / len(quiz_submissions_by_user),
                     2,
                 )
                 if quiz_submissions_by_user
@@ -1929,12 +1721,9 @@ def get_teacher_assessment_detail(
             ),
             score_distribution=_score_distribution(quiz_scores),
             attempt_distribution=_attempt_distribution({
-                user_id: len(items)
-                for user_id, items in quiz_submissions_by_user.items()
+                user_id: len(items) for user_id, items in quiz_submissions_by_user.items()
             }),
-            question_breakdown=sorted(
-                question_breakdown, key=lambda row: row.accuracy_pct or 100
-            ),
+            question_breakdown=sorted(question_breakdown, key=lambda row: row.accuracy_pct or 100),
             common_failures=common_failures,
             learner_rows=sorted(learner_rows, key=lambda row: row.user_display_name),
             diagnostics=diagnostics,
@@ -1948,14 +1737,13 @@ def get_teacher_assessment_detail(
 
     if assessment_type == "code_challenge":
         activity = context.activities_by_id.get(assessment_id)
-        if activity is None or activity.course_id is None:
+        if activity is None or activity.id is None or activity.course_id is None:
             msg = f"Активность задачи по коду не найдена: {assessment_id}"
             raise ValueError(msg)
         records = [
             (submission, activity_)
             for submission, activity_ in context.code_submissions
-            if activity_.id == assessment_id
-            and _is_allowed(submission.user_id, allowed_user_ids)
+            if activity_.id == assessment_id and _is_allowed(submission.user_id, allowed_user_ids)
         ]
         eligible = len(eligible_by_course.get(activity.course_id, set()))
         code_attempts_by_user: dict[int, list[Submission]] = defaultdict(list)
@@ -1966,31 +1754,24 @@ def get_teacher_assessment_detail(
             score = manual_assessment_score(submission)
             if score is not None:
                 code_scores.append(score)
-                failed_tests = (
+                failed_tests_value = (
                     (submission.grading_json or {}).get("failed_tests")
                     or (submission.grading_json or {}).get("failed")
                     or []
                 )
+                failed_tests = failed_tests_value if isinstance(failed_tests_value, list) else []
                 for failed in failed_tests:
                     key = str(failed.get("id") if isinstance(failed, dict) else failed)
                     failure_counter[key] += 1
         submitted_users = {
-            submission.user_id
-            for submission, _activity in records
-            if manual_assessment_is_graded(submission)
+            submission.user_id for submission, _activity in records if manual_assessment_is_graded(submission)
         }
         learner_rows = []
         for user_id, attempts in code_attempts_by_user.items():
-            submission_attempts = cast("list[Submission]", list(attempts))
-            ordered_attempts = sorted(
-                submission_attempts, key=lambda item: item.created_at
-            )
+            submission_attempts = list(attempts)
+            ordered_attempts = sorted(submission_attempts, key=lambda item: item.created_at)
             best_score = max(
-                (
-                    score
-                    for item in submission_attempts
-                    if (score := manual_assessment_score(item)) is not None
-                ),
+                (score for item in submission_attempts if (score := manual_assessment_score(item)) is not None),
                 default=None,
             )
             last_attempt = ordered_attempts[-1]
@@ -2021,9 +1802,7 @@ def get_teacher_assessment_detail(
         audit_history = _load_audit_history(
             db_session,
             activity_id=activity.id,
-            submission_ids=[
-                submission.id for submission in submissions if submission.id is not None
-            ],
+            submission_ids=[submission.id for submission in submissions if submission.id is not None],
             allowed_user_ids=allowed_user_ids,
         )
         slo = _build_slo_snapshot(diagnostics, latencies)
@@ -2043,10 +1822,7 @@ def get_teacher_assessment_detail(
                     population_count=len(records),
                     impacted_count=count,
                     impact_rate=safe_pct(count, len(records)),
-                    signal="critical"
-                    if safe_pct(count, len(records))
-                    and safe_pct(count, len(records)) >= 50
-                    else "watch",
+                    signal="critical" if (pct := safe_pct(count, len(records))) is not None and pct >= 50 else "watch",
                     note=f"This test failed in {count} submissions.",
                 )
             )
@@ -2090,8 +1866,7 @@ def get_teacher_assessment_detail(
                 ),
                 median_score=median_or_none(code_scores),
                 avg_attempts=round(
-                    sum(len(items) for items in code_attempts_by_user.values())
-                    / len(code_attempts_by_user),
+                    sum(len(items) for items in code_attempts_by_user.values()) / len(code_attempts_by_user),
                     2,
                 )
                 if code_attempts_by_user

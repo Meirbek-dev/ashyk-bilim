@@ -6,8 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.auth.users import get_public_user
@@ -20,10 +19,12 @@ from src.db.grading.item_feedback import (
     ItemFeedbackUpdate,
 )
 from src.db.grading.submissions import Submission
+from src.db.strict_base_model import JsonObject
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionChecker
 from src.services.grading.events import publish_grading_event
+from src.types import require_persisted_id
 
 router = APIRouter()
 
@@ -34,13 +35,13 @@ def _submission_with_activity(
 ) -> tuple[Submission, Activity]:
     row = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
+        .join(Activity, col(Activity.id) == Submission.activity_id)
         .where(Submission.submission_uuid == submission_uuid)
     ).first()
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return row
 
@@ -84,39 +85,32 @@ def _latest_or_create_grading_entry(
         if entry is None or entry.submission_id != submission.id:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Grading entry does not belong to this submission",
+                detail="Запись проверки не относится к этой отправке",
             )
         return entry
 
     entry = db_session.exec(
         select(GradingEntry)
         .where(GradingEntry.submission_id == submission.id)
-        .order_by(desc(GradingEntry.created_at), desc(GradingEntry.id))
+        .order_by(col(GradingEntry.created_at).desc(), col(GradingEntry.id).desc())
     ).first()
     if entry is not None:
         return entry
 
     now = datetime.now(UTC)
-    grading_dict = (
-        submission.grading_json if isinstance(submission.grading_json, dict) else {}
-    )
-    raw_dict = (
-        submission.raw_grading_json
-        if isinstance(submission.raw_grading_json, dict)
-        else {}
-    )
+    grading_dict: JsonObject = dict(submission.grading_json)
+    raw_dict: JsonObject = dict(submission.raw_grading_json)
+    feedback_value = grading_dict.get("feedback", "")
     entry = GradingEntry(
         entry_uuid=f"entry_{ULID()}",
-        submission_id=submission.id,
+        submission_id=require_persisted_id(submission.id, model_name="Submission"),
         graded_by=current_user.id,
         raw_score=float(submission.final_score or submission.auto_score or 0),
         penalty_pct=float(submission.late_penalty_pct or 0),
         final_score=float(submission.final_score or submission.auto_score or 0),
         raw_breakdown=raw_dict,
         effective_breakdown=grading_dict,
-        overall_feedback=(
-            grading_dict.get("feedback", "") if isinstance(grading_dict, dict) else ""
-        ),
+        overall_feedback=feedback_value if isinstance(feedback_value, str) else "",
         grading_version=submission.grading_version,
         created_at=now,
         published_at=None,
@@ -137,21 +131,17 @@ async def api_list_item_feedback(
 ) -> list[ItemFeedbackRead]:
     submission, activity = _submission_with_activity(submission_uuid, db_session)
     if not _can_read_feedback(submission, activity, current_user, db_session):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен")
 
     query = (
         select(ItemFeedbackEntry)
-        .join(GradingEntry, GradingEntry.id == ItemFeedbackEntry.grading_entry_id)
+        .join(GradingEntry, col(GradingEntry.id) == ItemFeedbackEntry.grading_entry_id)
         .where(ItemFeedbackEntry.submission_id == submission.id)
-        .order_by(ItemFeedbackEntry.created_at, ItemFeedbackEntry.id)
+        .order_by(col(ItemFeedbackEntry.created_at), col(ItemFeedbackEntry.id))
     )
     if submission.user_id == current_user.id:
-        query = query.where(GradingEntry.published_at.is_not(None))
-    return [
-        ItemFeedbackRead.model_validate(row) for row in db_session.exec(query).all()
-    ]
+        query = query.where(col(GradingEntry.published_at).is_not(None))
+    return [ItemFeedbackRead.model_validate(row) for row in db_session.exec(query).all()]
 
 
 @router.post(
@@ -175,8 +165,8 @@ async def api_create_item_feedback(
     )
     now = datetime.now(UTC)
     row = ItemFeedbackEntry(
-        grading_entry_id=entry.id,
-        submission_id=submission.id,
+        grading_entry_id=require_persisted_id(entry.id, model_name="GradingEntry"),
+        submission_id=require_persisted_id(submission.id, model_name="Submission"),
         task_id=feedback.task_id,
         item_ref=feedback.item_ref,
         comment=feedback.comment,
@@ -191,7 +181,7 @@ async def api_create_item_feedback(
     db_session.add(row)
     db_session.commit()
     db_session.refresh(row)
-    publish_grading_event(
+    await publish_grading_event(
         "feedback.created",
         submission.submission_uuid,
         ItemFeedbackRead.model_validate(row).model_dump(mode="json"),
@@ -208,17 +198,11 @@ async def api_update_item_feedback(
 ) -> ItemFeedbackRead:
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена")
     existing_submission = db_session.get(Submission, row.submission_id)
     if existing_submission is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-        )
-    submission, activity = _submission_with_activity(
-        existing_submission.submission_uuid, db_session
-    )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
+    submission, activity = _submission_with_activity(existing_submission.submission_uuid, db_session)
     _require_teacher(activity, current_user, db_session)
 
     update = feedback.model_dump(exclude_unset=True)
@@ -228,7 +212,7 @@ async def api_update_item_feedback(
     db_session.add(row)
     db_session.commit()
     db_session.refresh(row)
-    publish_grading_event(
+    await publish_grading_event(
         "feedback.updated",
         submission.submission_uuid,
         ItemFeedbackRead.model_validate(row).model_dump(mode="json"),
@@ -244,22 +228,16 @@ async def api_delete_item_feedback(
 ) -> None:
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена")
     submission = db_session.get(Submission, row.submission_id)
     if submission is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
     activity = db_session.get(Activity, submission.activity_id)
     if activity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
     _require_teacher(activity, current_user, db_session)
 
     payload = ItemFeedbackRead.model_validate(row).model_dump(mode="json")
     db_session.delete(row)
     db_session.commit()
-    publish_grading_event("feedback.deleted", submission.submission_uuid, payload)
+    await publish_grading_event("feedback.deleted", submission.submission_uuid, payload)

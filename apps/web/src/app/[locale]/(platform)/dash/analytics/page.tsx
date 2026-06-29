@@ -1,39 +1,30 @@
-import { getAdminAnalyticsOverview, getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher';
-import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState';
-import TeacherOverview from '@components/Dashboard/Analytics/TeacherOverview';
-import { getTranslations } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation'
+import { normalizeAnalyticsQuery } from '@services/analytics/teacher'
 
-export default function PlatformAnalyticsPage(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  return <PlatformAnalyticsPageInner searchParams={props.searchParams} />;
+interface PageProps {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-async function PlatformAnalyticsPageInner(props: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const query = normalizeAnalyticsQuery(await props.searchParams);
-  const t = await getTranslations('TeacherAnalytics');
+export default async function PlatformAnalyticsPage(props: PageProps) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([props.params, props.searchParams])
+  const query = normalizeAnalyticsQuery(resolvedSearchParams)
 
-  try {
-    const [overview, adminData] = await Promise.all([
-      getTeacherOverview(query),
-      getAdminAnalyticsOverview(query).catch(() => null),
-    ]);
+  const params = new URLSearchParams()
+  if (query.window) params.set('window', query.window)
+  if (query.compare) params.set('compare', query.compare)
+  if (query.bucket) params.set('bucket', query.bucket)
+  if (query.course_ids) params.set('course_ids', query.course_ids)
+  if (query.cohort_ids) params.set('cohort_ids', query.cohort_ids)
+  if (query.teacher_user_id) params.set('teacher_user_id', String(query.teacher_user_id))
+  if (query.timezone) params.set('timezone', query.timezone)
+  if (query.sort_by) params.set('sort_by', query.sort_by)
+  if (query.sort_order) params.set('sort_order', query.sort_order)
+  if (query.bucket_start) params.set('bucket_start', query.bucket_start)
 
-    return (
-      <TeacherOverview
-        query={query}
-        data={overview}
-        adminData={adminData}
-      />
-    );
-  } catch (error) {
-    return (
-      <AnalyticsEmptyState
-        title={t('pages.overviewDisabledTitle')}
-        description={error instanceof Error ? error.message : t('pages.overviewLoadError')}
-      />
-    );
-  }
+  const serialized = params.toString()
+  redirect({
+    href: `/dash/analytics/overview${serialized ? `?${serialized}` : ''}`,
+    locale: resolvedParams.locale,
+  })
 }

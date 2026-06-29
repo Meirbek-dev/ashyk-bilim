@@ -1,5 +1,4 @@
-"""
-Gamification Router
+"""Gamification Router.
 
 - GET /        → Dashboard
 - POST /xp     → Award XP
@@ -10,7 +9,7 @@ Gamification Router
 """
 
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlmodel import Session
@@ -21,15 +20,13 @@ from src.db.gamification import (
     GamificationProfile,
     LeaderboardRead,
     ProfileRead,
+    StreakType as DBStreakType,
     StreakUpdateRead,
     TransactionRead,
     XPAwardRequest,
     XPAwardResponse,
     XPSource,
     XPTransaction,
-)
-from src.db.gamification import (
-    StreakType as DBStreakType,
 )
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
@@ -40,6 +37,7 @@ from src.services.gamification.service import (
     DailyLimitExceededError,
     GamificationError,
 )
+from src.types import as_json_object, require_persisted_id
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -76,7 +74,7 @@ def _profile_to_read(p: GamificationProfile) -> ProfileRead:
 
 def _transaction_to_read(tx: XPTransaction) -> TransactionRead:
     return TransactionRead(
-        id=tx.id,
+        id=require_persisted_id(tx.id, model_name="XPTransaction"),
         user_id=tx.user_id,
         amount=tx.amount,
         source=tx.source,
@@ -92,13 +90,13 @@ async def get_unified_dashboard(
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
 ) -> DashboardRead:
-    """Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config"""
+    """Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config."""
     try:
         data = service.get_dashboard_data(db, user.id, include_leaderboard=True)
         profile = _profile_to_read(data["profile"])
         recent_txs = [
             TransactionRead(
-                id=tx.id,
+                id=require_persisted_id(tx.id, model_name="XPTransaction"),
                 user_id=tx.user_id,
                 amount=tx.amount,
                 source=tx.source,
@@ -119,7 +117,7 @@ async def get_unified_dashboard(
 
     except Exception:
         logger.exception("Dashboard error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to get dashboard")
+        raise HTTPException(status_code=500, detail="Не удалось получить панель управления")
 
 
 @router.post("/xp", response_model=XPAwardResponse)
@@ -128,7 +126,7 @@ async def award_xp(
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
     checker: PermissionCheckerDep,
-):
+) -> XPAwardResponse:
     """Award XP with strong typing and idempotency."""
     logger.info(f"Award XP request: user={user.id} payload={payload}")
     try:
@@ -136,18 +134,16 @@ async def award_xp(
             if payload.source != XPSource.ADMIN_AWARD:
                 raise HTTPException(
                     status_code=400,
-                    detail="custom_amount allowed only with ADMIN_AWARD source",
+                    detail="custom_amount можно использовать только с источником ADMIN_AWARD",
                 )
             checker.require(user.id, "platform:manage")
 
         try:
             normalized_source = (
-                payload.source.value
-                if isinstance(payload.source, XPSource)
-                else XPSource(str(payload.source)).value
+                payload.source.value if isinstance(payload.source, XPSource) else XPSource(str(payload.source)).value
             )
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid XP source")
+            raise HTTPException(status_code=400, detail="Некорректный источник XP")
 
         profile, transaction, level_up, is_new = service.award_xp(
             db=db,
@@ -165,16 +161,16 @@ async def award_xp(
             is_new_transaction=is_new,
         )
     except DailyLimitExceededError as e:
-        logger.warning(f"Daily limit exceeded for user {user.id}: {e}")
+        logger.warning(f"Превышен дневной лимит для пользователя {user.id}: {e}")
         raise HTTPException(status_code=429, detail=str(e))
     except GamificationError as e:
-        logger.warning(f"Gamification error for user {user.id}: {e}")
+        logger.warning(f"Ошибка gamification для пользователя {user.id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception:
         logger.exception("Award XP error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to award XP")
+        raise HTTPException(status_code=500, detail="Не удалось начислить XP")
 
 
 @router.post("/streaks/{streak_type}", response_model=StreakUpdateRead)
@@ -182,7 +178,7 @@ async def update_streak(
     streak_type: DBStreakType,
     user: Annotated[PublicUser, Depends(get_public_user)],
     db: Annotated[Session, Depends(get_db_session)],
-):
+) -> StreakUpdateRead:
     try:
         profile = service.update_streak(db, user.id, streak_type.value)
         if streak_type == DBStreakType.LOGIN:
@@ -202,37 +198,39 @@ async def update_streak(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         logger.exception("Update streak error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to update streak")
+        raise HTTPException(status_code=500, detail="Не удалось обновить streak")
 
 
 @router.patch("/preferences", response_model=ProfileRead)
 async def update_preferences(
-    data: Annotated[dict[str, Any], Body()] = ...,
-    user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db: Annotated[Session, Depends(get_db_session)] = None,
-):
-    if not isinstance(data, dict):
-        raise HTTPException(status_code=400, detail="Invalid preferences body")
+    data: Annotated[dict[str, object], Body()],
+    user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db: Annotated[Session | None, Depends(get_db_session)] = None,
+) -> ProfileRead:
+    assert user is not None
+    assert db is not None
     try:
-        profile = service.update_preferences(db, user.id, data)
+        profile = service.update_preferences(db, user.id, as_json_object(data, field="preferences"))
         return _profile_to_read(profile)
     except Exception:
         logger.exception("Update preferences error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to update preferences")
+        raise HTTPException(status_code=500, detail="Не удалось обновить настройки")
 
 
 @router.get("/leaderboard", response_model=LeaderboardRead)
 async def get_leaderboard(
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
     offset: Annotated[int, Query(ge=0)] = 0,
-    user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db: Annotated[Session, Depends(get_db_session)] = None,
-):
+    user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+    db: Annotated[Session | None, Depends(get_db_session)] = None,
+) -> LeaderboardRead:
+    assert user is not None
+    assert db is not None
     try:
         return service.get_leaderboard_read(db, limit=limit, offset=offset)
     except Exception:
         logger.exception("Leaderboard error")
-        raise HTTPException(status_code=500, detail="Failed to get leaderboard")
+        raise HTTPException(status_code=500, detail="Не удалось получить таблицу лидеров")
 
 
 @router.get("/rank", response_model=UserRankRead)
@@ -249,4 +247,4 @@ async def get_user_rank(
         return UserRankRead(user_id=user.id, rank=rank)
     except Exception:
         logger.exception("User rank error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to get user rank")
+        raise HTTPException(status_code=500, detail="Не удалось получить ранг пользователя")

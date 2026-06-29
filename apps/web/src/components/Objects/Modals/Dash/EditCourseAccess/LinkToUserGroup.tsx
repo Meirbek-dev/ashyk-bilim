@@ -1,121 +1,110 @@
-'use client';
+'use client'
 
-import { NativeSelect, NativeSelectOption } from '@components/ui/native-select';
-import { linkResourcesToUserGroup } from '@services/usergroups/usergroups';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useCourse } from '@components/Contexts/CourseContext';
-import { useUserGroups } from '@/features/users/hooks/useUsers';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import { Info } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select'
+import { linkResourcesToUserGroup } from '@services/usergroups/usergroups'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useCourse } from '@components/Contexts/CourseContext'
+import { useUserGroups } from '@/features/users/hooks/useUsers'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { ExternalLink, Users } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 interface UserGroup {
-  id: number;
-  name: string;
-  description?: string;
+  id: number
+  name: string
+  description?: string
 }
 
 interface LinkToUserGroupProps {
-  setUserGroupModal: (open: boolean) => void;
+  setUserGroupModal: (open: boolean) => void
 }
 
 const LinkToUserGroup = (props: LinkToUserGroupProps) => {
-  const t = useTranslations('Components.LinkToUserGroup');
-  const course = useCourse();
-  const { courseStructure } = course;
+  const t = useTranslations('Components.LinkToUserGroup')
+  const course = useCourse()
+  const { courseStructure } = course
 
-  const { data: usergroups } = useUserGroups({ enabled: Boolean(courseStructure) });
-  const [selectedUserGroup, setSelectedUserGroup] = useState<number | null>(null);
+  const { data: usergroups } = useUserGroups({ enabled: Boolean(courseStructure) })
+  const [selectedUserGroup, setSelectedUserGroup] = useState<string | null>(null)
 
-  // Use first usergroup as default if not explicitly set
-  const effectiveUserGroup = selectedUserGroup ?? usergroups?.[0]?.id ?? null;
-
-  const usergroupItems = (usergroups || []).map((group: UserGroup) => ({
-    value: String(group.id),
-    label: group.name,
-  }));
+  const effectiveUserGroup = selectedUserGroup ?? (usergroups?.[0]?.id ? String(usergroups[0].id) : null)
 
   const handleLink = async () => {
     if (!effectiveUserGroup) {
-      toast.error(t('selectUserGroupFirst'));
-      return;
+      toast.error(t('selectUserGroupFirst'))
+      return
     }
 
     try {
-      const res = await linkResourcesToUserGroup(effectiveUserGroup, courseStructure.course_uuid, {
+      const res = await linkResourcesToUserGroup(Number(effectiveUserGroup), [courseStructure.course_uuid], {
         courseUuid: courseStructure.course_uuid,
-      });
+      })
       if (res.status === 200) {
-        props.setUserGroupModal(false);
-        toast.success(t('linkSuccess'));
-        await course.refreshEditorData();
+        props.setUserGroupModal(false)
+        toast.success(t('linkSuccess'))
+        await course.refreshEditorData()
       } else {
-        toast.error(t('linkError', { error: res.data?.detail || t('unknownError') }));
+        const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+        toast.error(t('linkError', { error: errorDetail }))
       }
     } catch {
-      toast.error(t('linkError', { error: t('unknownError') }));
+      toast.error(t('linkError', { error: t('unknownError') }))
     }
-  };
+  }
+
+  const hasGroups = (usergroups?.length ?? 0) > 0
 
   return (
-    <div className="flex flex-col space-y-1">
-      <div className="mx-auto mt-3 flex w-fit items-center space-x-2 rounded-full bg-yellow-100 px-4 py-2 text-sm text-yellow-900">
-        <Info size={19} />
-        <h1 className="font-medium">{t('infoMessage')}</h1>
-      </div>
-      <div className="flex flex-row items-center justify-between p-4">
-        {(usergroups?.length ?? 0) >= 1 && (
-          <div className="py-1">
-            <span className="ml-0.5 rounded-full bg-gray-100 px-3 py-1 font-bold text-gray-500">
+    <div className="flex flex-col gap-4 p-4">
+      {hasGroups ? (
+        <div className="flex items-end gap-3">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label htmlFor="usergroup-select" className="flex items-center gap-1.5">
+              <Users className="text-muted-foreground size-3.5" />
               {t('userGroupNameLabel')}
-            </span>
-
+            </Label>
             <NativeSelect
-              onChange={(event) => setSelectedUserGroup(Number(event.target.value))}
-              value={effectiveUserGroup?.toString()}
-              className="mx-5 mt-2 w-fit min-w-32"
-              aria-label={t('selectUserGroup')}
+              id="usergroup-select"
+              className="w-full"
+              value={effectiveUserGroup ?? ''}
+              onChange={e => setSelectedUserGroup(e.target.value)}
             >
-              {usergroupItems.map((group: { value: string; label: string }) => (
-                <NativeSelectOption
-                  key={group.value}
-                  value={group.value}
-                >
-                  {group.label}
+              {effectiveUserGroup === null && (
+                <NativeSelectOption value="" disabled>
+                  {t('selectUserGroup')}
+                </NativeSelectOption>
+              )}
+              {(usergroups ?? []).map((group: UserGroup) => (
+                <NativeSelectOption key={group.id} value={String(group.id)}>
+                  {group.name}
                 </NativeSelectOption>
               ))}
             </NativeSelect>
           </div>
-        )}
-        {usergroups?.length === 0 && (
-          <div className="flex items-center space-x-3">
-            <span className="mx-3 rounded-full px-3 py-1 font-semibold text-yellow-700">
-              {t('noUserGroupsAvailable')}
-            </span>
-            <Link
-              className="mx-1 rounded-full bg-blue-100 px-3 py-1 font-semibold text-blue-700"
-              target="_blank"
-              href={getAbsoluteUrl('/dash/users/settings/usergroups')}
-            >
-              {t('createUserGroupLink')}
-            </Link>
-          </div>
-        )}
-        <div className="py-3">
-          <button
-            onClick={() => {
-              handleLink();
-            }}
-            className="rounded-md bg-green-700 px-4 py-2 font-bold text-white shadow-sm"
-          >
+          <Button onClick={handleLink} className="shrink-0">
             {t('linkButton')}
-          </button>
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
+          <p className="text-muted-foreground text-sm">{t('noUserGroupsAvailable')}</p>
+          <Link
+            className="text-primary flex items-center gap-1.5 text-sm font-medium hover:underline"
+            target="_blank"
+            href={getAbsoluteUrl('/dash/users/settings/usergroups')}
+          >
+            {t('createUserGroupLink')}
+            <ExternalLink className="size-3.5" />
+          </Link>
+        </div>
+      )}
     </div>
-  );
-};
+  )
+}
 
-export default LinkToUserGroup;
+export default LinkToUserGroup

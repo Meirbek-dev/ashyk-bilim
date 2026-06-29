@@ -16,14 +16,12 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.assessments import (
-    ITEM_BODY_ADAPTER,
     Assessment,
     AssessmentCreate,
-    AssessmentGradingType,
     AssessmentItem,
     AssessmentItemCreate,
     AssessmentItemReorder,
@@ -31,23 +29,15 @@ from src.db.assessments import (
     AssessmentLifecycle,
     AssessmentLifecycleTransition,
     AssessmentPolicyPatch,
-    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentUpdate,
     ItemKind,
-    ReadinessIssue,
 )
-from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
-from src.db.courses.chapters import Chapter
-from src.db.courses.courses import Course
+from src.db.courses.activities import Activity
 from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
     AssessmentPolicy,
-    GradeReleaseMode,
-    LatePolicyNone,
 )
 from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.users import AnonymousUser, PublicUser
@@ -73,10 +63,11 @@ from src.services.assessments._helpers import (
     _require_author,
     _require_publish,
     _require_read,
-    _sync_activity_lifecycle,
     build_readiness,
+    sync_activity_lifecycle,
 )
 from src.services.courses._utils import _next_activity_order
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +75,12 @@ logger = logging.getLogger(__name__)
 # (PUBLISHED + has non-DRAFT submissions).  Metadata fields like title,
 # description, and explanation are always editable.
 _SCORING_FIELDS: frozenset[str] = frozenset({"body", "body_json", "kind", "max_score"})
+
+_SUPPORTED_ITEM_KINDS_BY_ASSESSMENT: dict[AssessmentType, frozenset[ItemKind]] = {
+    AssessmentType.EXAM: frozenset({ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}),
+    AssessmentType.QUIZ: frozenset({ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}),
+    AssessmentType.CODE_CHALLENGE: frozenset({ItemKind.CODE}),
+}
 
 
 def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
@@ -93,10 +90,8 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     active_submission = db_session.exec(
         select(Submission)
         .where(
-            Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
-                select(AssessmentPolicy.id).where(
-                    AssessmentPolicy.activity_id == assessment.activity_id
-                )
+            col(Submission.assessment_policy_id).in_(
+                select(AssessmentPolicy.id).where(AssessmentPolicy.activity_id == assessment.activity_id)
             )
         )
         .where(Submission.status != SubmissionStatus.DRAFT)
@@ -104,6 +99,22 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     ).first()
     return active_submission is not None
 
+
+def _ensure_item_kind_supported(assessment: Assessment, kind: ItemKind) -> None:
+    supported = _SUPPORTED_ITEM_KINDS_BY_ASSESSMENT.get(AssessmentType(assessment.kind))
+    if supported is None or kind in supported:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={
+            "code": "ITEM_KIND_UNSUPPORTED",
+            "message": (
+                f"Элементы типа {kind.value} не поддерживаются для оцениваний типа {AssessmentType(assessment.kind).value} "
+                "в текущем механизме выполнения и проверки для учащихся."
+            ),
+            "supported_kinds": sorted(item_kind.value for item_kind in supported),
+        },
+    )
 
 
 # ── Public assessment CRUD ────────────────────────────────────────────────────
@@ -128,6 +139,8 @@ async def create_assessment(
     activity_type, activity_sub_type = _KIND_TO_ACTIVITY[payload.kind]
     now = datetime.now(UTC)
 
+    chapter_id = require_persisted_id(chapter.id, model_name="Chapter")
+    course_id = require_persisted_id(course.id, model_name="Course")
     activity = Activity(
         name=payload.title,
         activity_type=activity_type,
@@ -136,9 +149,9 @@ async def create_assessment(
         details={"lifecycle_status": AssessmentLifecycle.DRAFT.value},
         settings=_default_activity_settings(payload.kind),
         published=False,
-        chapter_id=chapter.id,
-        course_id=course.id,
-        order=_next_activity_order(chapter.id, db_session),
+        chapter_id=chapter_id,
+        course_id=course_id,
+        order=_next_activity_order(chapter_id, db_session),
         creator_id=current_user.id,
         activity_uuid=f"activity_{ULID()}",
         creation_date=now,
@@ -146,26 +159,28 @@ async def create_assessment(
     )
     db_session.add(activity)
     db_session.flush()
+    activity_id = require_persisted_id(activity.id, model_name="Activity")
 
     policy = _get_or_create_policy(
-        activity_id=activity.id,
+        activity_id=activity_id,
         kind=payload.kind,
         patch=payload.policy,
         db_session=db_session,
         now=now,
     )
     db_session.flush()
+    policy_id = require_persisted_id(policy.id, model_name="AssessmentPolicy")
 
     assessment = Assessment(
         assessment_uuid=f"assessment_{ULID()}",
-        activity_id=activity.id,
+        activity_id=activity_id,
         kind=payload.kind,
         title=payload.title,
         description=payload.description,
         lifecycle=AssessmentLifecycle.DRAFT,
         weight=payload.weight,
         grading_type=payload.grading_type,
-        policy_id=policy.id,
+        policy_id=policy_id,
         created_at=now,
         updated_at=now,
     )
@@ -218,13 +233,13 @@ async def update_assessment(
 
     if policy_patch is not None:
         policy = _get_or_create_policy(
-            activity_id=activity.id,
+            activity_id=require_persisted_id(activity.id, model_name="Activity"),
             kind=assessment.kind,
             patch=AssessmentPolicyPatch.model_validate(policy_patch),
             db_session=db_session,
             now=datetime.now(UTC),
         )
-        assessment.policy_id = policy.id
+        assessment.policy_id = require_persisted_id(policy.id, model_name="AssessmentPolicy")
 
     now = datetime.now(UTC)
     assessment.updated_at = now
@@ -270,10 +285,7 @@ async def transition_assessment_lifecycle(
         )
 
     readiness = build_readiness(assessment, db_session)
-    if (
-        target in {AssessmentLifecycle.PUBLISHED, AssessmentLifecycle.SCHEDULED}
-        and not readiness.ok
-    ):
+    if target in {AssessmentLifecycle.PUBLISHED, AssessmentLifecycle.SCHEDULED} and not readiness.ok:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"issues": [issue.model_dump() for issue in readiness.issues]},
@@ -287,9 +299,7 @@ async def transition_assessment_lifecycle(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Параметр scheduled_at обязателен при планировании",
             )
-        scheduled_at = (
-            scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
-        )
+        scheduled_at = scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
         if scheduled_at <= now:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -315,13 +325,37 @@ async def transition_assessment_lifecycle(
     assessment.lifecycle = target
     assessment.updated_at = now
     activity.update_date = now
-    _sync_activity_lifecycle(assessment, activity)
+    sync_activity_lifecycle(assessment, activity)
+    _append_lifecycle_audit_note(activity, target, payload.audit_note, current_user.id, now)
 
     db_session.add(assessment)
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(assessment)
     return _build_assessment_read(assessment, db_session, current_user=current_user)
+
+
+def _append_lifecycle_audit_note(
+    activity: Activity,
+    target: AssessmentLifecycle,
+    audit_note: str | None,
+    user_id: int | None,
+    created_at: datetime,
+) -> None:
+    note = (audit_note or "").strip()
+    if not note:
+        return
+    details = dict(activity.details or {})
+    raw_entries = details.get("assessment_lifecycle_audit")
+    entries = raw_entries if isinstance(raw_entries, list) else []
+    entries.append({
+        "to": target.value,
+        "note": note,
+        "user_id": user_id,
+        "created_at": created_at.isoformat(),
+    })
+    details["assessment_lifecycle_audit"] = entries[-25:]
+    activity.details = details
 
 
 # ── Items ─────────────────────────────────────────────────────────────────────
@@ -340,36 +374,35 @@ async def create_assessment_item(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
 
-    item_count = db_session.exec(
-        select(func.count()).where(AssessmentItem.assessment_id == assessment.id)
-    ).one()
+    assessment_id = require_persisted_id(assessment.id, model_name="Assessment")
+    item_count = db_session.exec(select(func.count()).where(AssessmentItem.assessment_id == assessment_id)).one()
     if item_count >= MAX_ITEMS_PER_ASSESSMENT:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "ITEM_LIMIT_EXCEEDED",
                 "message": (
-                    f"Assessment already has {item_count} items. "
-                    f"Maximum allowed: {MAX_ITEMS_PER_ASSESSMENT}."
+                    f"В оценивании уже есть {item_count} элементов. Максимально допустимо: {MAX_ITEMS_PER_ASSESSMENT}."
                 ),
                 "max": MAX_ITEMS_PER_ASSESSMENT,
                 "current": item_count,
             },
         )
 
+    _ensure_item_kind_supported(assessment, payload.kind)
+
     max_order = db_session.exec(
-        select(func.max(AssessmentItem.order)).where(
-            AssessmentItem.assessment_id == assessment.id
-        )
+        select(func.max(AssessmentItem.order)).where(AssessmentItem.assessment_id == assessment_id)
     ).one()
     now = datetime.now(UTC)
     item = AssessmentItem(
         item_uuid=f"item_{ULID()}",
-        assessment_id=assessment.id,
+        assessment_id=assessment_id,
         order=int(max_order or 0) + 1,
         kind=payload.kind,
         title=payload.title,
         body_json=payload.body.model_dump(mode="json"),
+        metadata_json=payload.metadata.model_dump(mode="json"),
         max_score=payload.max_score,
         created_at=now,
         updated_at=now,
@@ -405,19 +438,29 @@ async def update_assessment_item(
                 detail={
                     "code": "ASSESSMENT_LOCKED",
                     "message": (
-                        "Cannot modify scoring fields of a published assessment "
-                        "that has active submissions. Only title, description, and "
-                        "explanation may be updated."
+                        "Нельзя изменять поля, влияющие на оценку, у опубликованного оценивания "
+                        "с активными отправками. Можно обновлять только название, описание и "
+                        "пояснение."
                     ),
                     "locked_fields": sorted(forbidden_changes),
                 },
             )
 
     changes = payload.model_dump(exclude_unset=True)
+    next_kind = payload.kind
+    payload_body = payload.body
+    if payload_body is not None:
+        next_kind = ItemKind(payload_body.kind)
+    if next_kind is not None:
+        _ensure_item_kind_supported(assessment, next_kind)
+
     for field, value in changes.items():
         if field == "body" and value is not None:
-            item.body_json = payload.body.model_dump(mode="json")
-            item.kind = ItemKind(payload.body.kind)
+            if payload_body is not None:
+                item.body_json = payload_body.model_dump(mode="json")
+                item.kind = ItemKind(payload_body.kind)
+        elif field == "metadata" and value is not None:
+            item.metadata_json = payload.metadata.model_dump(mode="json") if payload.metadata is not None else {}
         elif value is not None:
             setattr(item, field, value)
 
@@ -446,13 +489,9 @@ async def reorder_assessment_items(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
 
-    items = db_session.exec(
-        select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)
-    ).all()
+    items = db_session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
     by_uuid = {item.item_uuid: item for item in items}
-    missing = [
-        entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid
-    ]
+    missing = [entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid]
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -493,10 +532,7 @@ async def delete_assessment_item(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "code": "ASSESSMENT_LOCKED",
-                "message": (
-                    "Cannot delete items from a published assessment that has "
-                    "active submissions."
-                ),
+                "message": ("Нельзя удалять элементы из опубликованного оценивания с активными отправками."),
             },
         )
 
@@ -528,6 +564,8 @@ async def duplicate_assessment(
     now = datetime.now(UTC)
 
     # ── Duplicate the backing Activity ───────────────────────────────────────
+    source_chapter_id = require_persisted_id(activity.chapter_id, model_name="Activity")
+    source_course_id = require_persisted_id(activity.course_id, model_name="Activity")
     new_activity = Activity(
         name=f"{activity.name} (копия)",
         activity_type=activity.activity_type,
@@ -536,9 +574,9 @@ async def duplicate_assessment(
         details={"lifecycle_status": AssessmentLifecycle.DRAFT.value},
         settings=activity.settings,
         published=False,
-        chapter_id=activity.chapter_id,
-        course_id=activity.course_id,
-        order=_next_activity_order(activity.chapter_id, db_session),
+        chapter_id=source_chapter_id,
+        course_id=source_course_id,
+        order=_next_activity_order(source_chapter_id, db_session),
         creator_id=current_user.id,
         activity_uuid=f"activity_{ULID()}",
         creation_date=now,
@@ -546,13 +584,14 @@ async def duplicate_assessment(
     )
     db_session.add(new_activity)
     db_session.flush()
+    new_activity_id = require_persisted_id(new_activity.id, model_name="Activity")
 
     # ── Duplicate the Policy (deep-copy settings, reset runtime counters) ────
     source_policy: AssessmentPolicy | None = (
         db_session.get(AssessmentPolicy, source.policy_id) if source.policy_id else None
     )
     new_policy = _get_or_create_policy(
-        activity_id=new_activity.id,
+        activity_id=new_activity_id,
         kind=source.kind,
         patch=None,
         db_session=db_session,
@@ -569,43 +608,44 @@ async def duplicate_assessment(
         new_policy.passing_score = source_policy.passing_score
         db_session.add(new_policy)
     db_session.flush()
+    new_policy_id = require_persisted_id(new_policy.id, model_name="AssessmentPolicy")
 
     # ── Duplicate the Assessment ──────────────────────────────────────────────
     new_assessment = Assessment(
         assessment_uuid=f"assessment_{ULID()}",
-        activity_id=new_activity.id,
+        activity_id=new_activity_id,
         kind=source.kind,
         title=f"{source.title} (копия)",
         description=source.description,
         lifecycle=AssessmentLifecycle.DRAFT,
         weight=source.weight,
         grading_type=source.grading_type,
-        policy_id=new_policy.id,
+        policy_id=new_policy_id,
         content_version=1,
         created_at=now,
         updated_at=now,
     )
     db_session.add(new_assessment)
     db_session.flush()
+    new_assessment_id = require_persisted_id(new_assessment.id, model_name="Assessment")
 
     # ── Duplicate all AssessmentItems ────────────────────────────────────────
     source_items: list[AssessmentItem] = list(
         db_session.exec(
             select(AssessmentItem)
-            .where(AssessmentItem.assessment_id == source.id)
-            .order_by(AssessmentItem.order)
+            .where(AssessmentItem.assessment_id == require_persisted_id(source.id, model_name="Assessment"))
+            .order_by(col(AssessmentItem.order))
         ).all()
     )
     for src_item in source_items:
         new_item = AssessmentItem(
             item_uuid=f"item_{ULID()}",
-            assessment_id=new_assessment.id,
+            assessment_id=new_assessment_id,
             order=src_item.order,
             kind=src_item.kind,
             title=src_item.title,
-            description=src_item.description,
-            explanation=src_item.explanation,
             body_json=src_item.body_json,
+            metadata_json=src_item.metadata_json,
             max_score=src_item.max_score,
             created_at=now,
             updated_at=now,

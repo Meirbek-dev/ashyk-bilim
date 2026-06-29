@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import (
@@ -24,36 +24,28 @@ from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses._utils import (
     _get_activity_by_uuid_or_404,
-    _next_activity_order,
 )
+from src.types import require_persisted_id
 
 
-def _get_chapter_by_uuid(chapter_uuid: str, db_session) -> Chapter:
+def _get_chapter_by_uuid(chapter_uuid: str, db_session: Session) -> Chapter:
     statement = select(Chapter).where(Chapter.chapter_uuid == chapter_uuid)
     chapter = db_session.exec(statement).first()
     if not chapter:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chapter does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Глава не существует")
     return chapter
 
 
 def _get_course_for_chapter(chapter: Chapter, db_session: Session) -> Course:
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует")
     return course
 
 
 def _next_chapter_order(course_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Chapter)
-        .where(Chapter.course_id == course_id)
-        .order_by(Chapter.order.desc())
+        select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order).desc())
     ).first()
     return (result.order if result else 0) + 1
 
@@ -69,28 +61,25 @@ async def create_chapter(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> ChapterRead:
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == chapter_object.course_uuid)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.course_uuid == chapter_object.course_uuid)).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует")
 
     checker = PermissionChecker(db_session)
     require_course_permission("chapter:create", current_user, course, checker)
 
+    course_id = require_persisted_id(course.id, model_name="Course")
     chapter = Chapter(
         name=chapter_object.name,
         description=chapter_object.description or "",
         thumbnail_image=chapter_object.thumbnail_image or "",
-        course_id=course.id,
+        course_id=course_id,
     )
     chapter.chapter_uuid = f"chapter_{ULID()}"
     chapter.creation_date = datetime.now(tz=UTC)
     chapter.update_date = datetime.now(tz=UTC)
     chapter.creator_id = current_user.id
-    chapter.order = _next_chapter_order(course.id, db_session)
+    chapter.order = _next_chapter_order(course_id, db_session)
 
     db_session.add(chapter)
     db_session.commit()
@@ -112,9 +101,7 @@ async def get_chapter(
     require_course_permission("course:read", current_user, course, checker)
 
     activities = db_session.exec(
-        select(Activity)
-        .where(Activity.chapter_id == chapter.id)
-        .order_by(Activity.order)
+        select(Activity).where(Activity.chapter_id == chapter.id).order_by(col(Activity.order))
     ).all()
 
     return ChapterRead.model_validate(
@@ -145,9 +132,7 @@ async def update_chapter(
     db_session.refresh(chapter)
 
     activities = db_session.exec(
-        select(Activity)
-        .where(Activity.chapter_id == chapter.id)
-        .order_by(Activity.order)
+        select(Activity).where(Activity.chapter_id == chapter.id).order_by(col(Activity.order))
     ).all()
 
     return ChapterRead.model_validate(
@@ -161,7 +146,7 @@ async def delete_chapter(
     chapter_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     chapter = _get_chapter_by_uuid(chapter_uuid, db_session)
 
     course = _get_course_for_chapter(chapter, db_session)
@@ -182,7 +167,7 @@ async def move_chapter_to_order(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> ChapterRead:
-    """Move a chapter to a new position within its course."""
+    """Переместить главу на новую позицию внутри курса."""
     chapter = _get_chapter_by_uuid(chapter_uuid, db_session)
     course = _get_course_for_chapter(chapter, db_session)
 
@@ -193,7 +178,7 @@ async def move_chapter_to_order(
         select(Chapter)
         .where(Chapter.course_id == chapter.course_id)
         .where(Chapter.id != chapter.id)
-        .order_by(Chapter.order)
+        .order_by(col(Chapter.order))
     ).all()
 
     # Clamp position to the valid range [1, total_chapters].
@@ -221,18 +206,15 @@ async def move_activity_to_order(
     target_chapter_uuid: str | None,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
-    """Move an activity to a new position, optionally into a different chapter."""
+) -> dict[str, str]:
+    """Переместить активность на новую позицию, при необходимости в другую главу."""
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
 
     # Resolve source chapter and its course for permission check.
-    source_chapter = _get_chapter_by_uuid(
-        db_session
-        .exec(select(Chapter).where(Chapter.id == activity.chapter_id))
-        .first()
-        .chapter_uuid,
-        db_session,
-    )
+    source_chapter_row = db_session.exec(select(Chapter).where(Chapter.id == activity.chapter_id)).first()
+    if source_chapter_row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Исходная глава не найдена")
+    source_chapter = _get_chapter_by_uuid(source_chapter_row.chapter_uuid, db_session)
     source_course = _get_course_for_chapter(source_chapter, db_session)
 
     checker = PermissionChecker(db_session)
@@ -243,9 +225,9 @@ async def move_activity_to_order(
         # If moving to a different course, verify permission on that course too.
         if target_chapter.course_id != source_course.id:
             target_course = _get_course_for_chapter(target_chapter, db_session)
-            require_course_permission(
-                "chapter:update", current_user, target_course, checker
-            )
+            require_course_permission("chapter:update", current_user, target_course, checker)
+        if target_chapter.id is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Целевая глава не найдена")
         activity.chapter_id = target_chapter.id
         # Sync the denormalized FK.
         activity.course_id = target_chapter.course_id
@@ -256,7 +238,7 @@ async def move_activity_to_order(
         select(Activity)
         .where(Activity.chapter_id == activity.chapter_id)
         .where(Activity.id != activity.id)
-        .order_by(Activity.order)
+        .order_by(col(Activity.order))
     ).all()
 
     # Clamp position to the valid range [1, total_activities].
@@ -271,7 +253,7 @@ async def move_activity_to_order(
 
     activity.order = new_order
     db_session.commit()
-    return {"detail": "activity moved"}
+    return {"detail": "Активность перемещена"}
 
 
 async def get_course_chapters(
@@ -285,21 +267,16 @@ async def get_course_chapters(
 ) -> list[ChapterReadWithPermissions]:
     course = db_session.exec(select(Course).where(Course.id == course_id)).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует")
 
     checker = PermissionChecker(db_session)
     if not course.public:
         require_course_permission("course:read", current_user, course, checker)
 
-    chapters = db_session.exec(
-        select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order)
-    ).all()
+    chapters = db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(col(Chapter.order))).all()
 
     chapter_reads = [
-        ChapterReadWithPermissions.model_validate(chapter, update={"activities": []})
-        for chapter in chapters
+        ChapterReadWithPermissions.model_validate(chapter, update={"activities": []}) for chapter in chapters
     ]
 
     if not chapter_reads:
@@ -308,11 +285,7 @@ async def get_course_chapters(
     chapter_ids = [c.id for c in chapter_reads]
 
     # Apply the published filter in SQL, not in Python.
-    activity_query = (
-        select(Activity)
-        .where(Activity.chapter_id.in_(chapter_ids))
-        .order_by(Activity.order)
-    )
+    activity_query = select(Activity).where(col(Activity.chapter_id).in_(chapter_ids)).order_by(col(Activity.order))
     if not with_unpublished_activities:
         activity_query = activity_query.where(Activity.published)
 
@@ -320,8 +293,7 @@ async def get_course_chapters(
 
     activities_by_chapter: dict[int, list[Activity]] = defaultdict(list)
     for activity in activities:
-        if activity.chapter_id is not None:
-            activities_by_chapter[activity.chapter_id].append(activity)
+        activities_by_chapter[activity.chapter_id].append(activity)
 
     for chapter in chapter_reads:
         for activity in activities_by_chapter.get(chapter.id, []):
@@ -356,15 +328,11 @@ async def reorder_chapters_and_activities(
     chapters_order: ChapterUpdateOrder,
     current_user: PublicUser,
     db_session: Session,
-):
-    """Bulk reorder all chapters and activities in a course (used by drag-and-drop)."""
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == course_uuid)
-    ).first()
+) -> dict[str, str]:
+    """Массово переупорядочить все главы и активности в курсе (для drag-and-drop)."""
+    course = db_session.exec(select(Course).where(Course.course_uuid == course_uuid)).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует")
 
     checker = PermissionChecker(db_session)
     require_course_permission("chapter:update", current_user, course, checker)
@@ -376,14 +344,10 @@ async def reorder_chapters_and_activities(
         _ensure_course_is_current(course, chapters_order.last_known_update_date)
 
     # --- Resolve all chapter UUIDs in the payload ---
-    payload_chapter_uuids = {
-        co.chapter_uuid for co in chapters_order.chapter_order_by_uuids
-    }
+    payload_chapter_uuids = {co.chapter_uuid for co in chapters_order.chapter_order_by_uuids}
 
     # All chapters that actually belong to this course.
-    db_chapters = db_session.exec(
-        select(Chapter).where(Chapter.course_id == course.id)
-    ).all()
+    db_chapters = db_session.exec(select(Chapter).where(Chapter.course_id == course.id)).all()
     db_chapter_uuids = {c.chapter_uuid for c in db_chapters}
     chapters_by_uuid = {c.chapter_uuid: c for c in db_chapters}
 
@@ -394,8 +358,8 @@ async def reorder_chapters_and_activities(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "error": "Payload does not match the current course structure. "
-                "Reload and try again.",
+                "error": "Полезная нагрузка не совпадает с текущей структурой курса. "
+                "Перезагрузите страницу и попробуйте снова.",
                 "missing_chapters": sorted(missing),
                 "unknown_chapters": sorted(unknown),
             },
@@ -408,19 +372,15 @@ async def reorder_chapters_and_activities(
 
     # Duplicate check within the payload.
     all_activity_uuids_flat = [
-        uuid
-        for co in chapters_order.chapter_order_by_uuids
-        for uuid in co.activities_order_by_uuids
+        uuid for co in chapters_order.chapter_order_by_uuids for uuid in co.activities_order_by_uuids
     ]
     if len(all_activity_uuids_flat) != len(payload_activity_uuids):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Duplicate activity UUIDs detected in the payload.",
+            detail="В полезной нагрузке обнаружены дублирующиеся UUID активностей.",
         )
 
-    db_activities = db_session.exec(
-        select(Activity).where(Activity.course_id == course.id)
-    ).all()
+    db_activities = db_session.exec(select(Activity).where(Activity.course_id == course.id)).all()
     db_activity_uuids = {a.activity_uuid for a in db_activities}
     activities_by_uuid = {a.activity_uuid: a for a in db_activities}
 
@@ -430,8 +390,8 @@ async def reorder_chapters_and_activities(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "error": "Payload does not match the current course activities. "
-                "Reload and try again.",
+                "error": "Полезная нагрузка не совпадает с текущими активностями курса. "
+                "Перезагрузите страницу и попробуйте снова.",
                 "missing_activities": sorted(missing_acts),
                 "unknown_activities": sorted(unknown_acts),
             },
@@ -447,9 +407,10 @@ async def reorder_chapters_and_activities(
 
     for chapter_order in chapters_order.chapter_order_by_uuids:
         chapter = chapters_by_uuid[chapter_order.chapter_uuid]
+        chapter_id = require_persisted_id(chapter.id, model_name="Chapter")
         for index, activity_uuid in enumerate(chapter_order.activities_order_by_uuids):
             activity = activities_by_uuid[activity_uuid]
-            activity.chapter_id = chapter.id
+            activity.chapter_id = chapter_id
             # Keep denormalized FK in sync.
             activity.course_id = course.id
             activity.order = index + 1
@@ -458,4 +419,4 @@ async def reorder_chapters_and_activities(
     course.update_date = now
     db_session.commit()
 
-    return {"detail": "Chapters and activities reordered successfully"}
+    return {"detail": "Главы и активности успешно переупорядочены"}

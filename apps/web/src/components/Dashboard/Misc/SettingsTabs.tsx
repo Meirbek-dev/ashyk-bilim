@@ -1,38 +1,47 @@
-'use client';
+'use client'
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import { cn } from '@/lib/utils';
-import React from 'react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { cn } from '@/lib/utils'
+import { usePathname } from 'next/navigation'
+import React from 'react'
 
 export interface TabItem {
-  id: string;
-  labelKey: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  id: string
+  labelKey: string
+  icon?: React.ComponentType<{ size?: number; className?: string }>
 }
 
 interface Props {
-  value: string;
-  tabs: TabItem[];
-  getHref?: (tab: TabItem) => string;
-  translationNamespace: string;
-  className?: string;
-  renderTab?: (tab: TabItem, isActive: boolean) => React.ReactNode;
+  /**
+   * The active tab id. When omitted and `getHref` is provided, the active tab
+   * is derived automatically from the current pathname (last path segment).
+   */
+  value?: string
+  tabs: TabItem[]
+  getHref?: (tab: TabItem) => string
+  translationNamespace: string
+  className?: string
+  renderTab?: (tab: TabItem, isActive: boolean) => React.ReactNode
 }
 
 export default function SettingsTabs({
-  value,
+  value: valueProp,
   tabs,
   getHref,
   translationNamespace,
   className = 'w-full',
   renderTab,
 }: Props) {
-  const t = useTranslations(translationNamespace);
+  const t = useTranslations(translationNamespace)
+  const pathname = usePathname()
+
+  // When callers don't pass an explicit value, derive it from the last path segment.
+  const value = valueProp ?? pathname.split('/').findLast(Boolean) ?? ''
 
   const defaultRender = (tab: TabItem, isActive: boolean) => {
-    const Icon = tab.icon;
+    const Icon = tab.icon
 
     return (
       <TabsTrigger
@@ -47,43 +56,34 @@ export default function SettingsTabs({
       >
         <div className="flex items-center gap-2">
           {Icon && (
-            <Icon
-              size={16}
-              className={cn('transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')}
-            />
+            <Icon size={16} className={cn('transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')} />
           )}
           <span className="text-sm">{t ? t(tab.labelKey) : tab.labelKey}</span>
         </div>
       </TabsTrigger>
-    );
-  };
+    )
+  }
 
   const render = (tab: TabItem) => {
-    const isActive = value === tab.id;
-    const inner = renderTab ? renderTab(tab, isActive) : defaultRender(tab, isActive);
+    const isActive = value === tab.id
+    const inner = renderTab ? renderTab(tab, isActive) : defaultRender(tab, isActive)
 
     if (getHref) {
       return (
-        <Link
-          key={tab.id}
-          href={getHref(tab)}
-        >
+        <Link key={tab.id} href={getHref(tab)}>
           {inner}
         </Link>
-      );
+      )
     }
 
-    return <React.Fragment key={tab.id}>{inner}</React.Fragment>;
-  };
+    return <React.Fragment key={tab.id}>{inner}</React.Fragment>
+  }
 
   return (
-    <Tabs
-      value={value}
-      className={className}
-    >
+    <Tabs value={value} className={className}>
       <TabsList className="h-auto w-full justify-start rounded-none border-b-0 bg-transparent p-0">
-        {tabs.map((tab) => render(tab))}
+        {tabs.map(tab => render(tab))}
       </TabsList>
     </Tabs>
-  );
+  )
 }

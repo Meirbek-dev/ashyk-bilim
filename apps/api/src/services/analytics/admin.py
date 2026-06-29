@@ -8,7 +8,6 @@ from src.services.analytics.courses import build_course_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     build_activity_events,
-    cohort_names_for_user,
     display_name,
     load_analytics_context,
     progress_snapshots,
@@ -69,10 +68,7 @@ def get_admin_analytics(
                 sla_breaches=workload.sla_breaches,
                 median_feedback_latency_hours=workload.median_feedback_latency_hours,
                 at_risk_learners=sum(
-                    1
-                    for row in risk_rows
-                    if row.course_id in course_ids
-                    and row.risk_level in {"medium", "high"}
+                    1 for row in risk_rows if row.course_id in course_ids and row.risk_level in {"medium", "high"}
                 ),
             )
         )
@@ -82,105 +78,71 @@ def get_admin_analytics(
     )
 
     course_health: list[AdminAnalyticsCourseRow] = []
-    for row in course_rows:
-        course = context.courses_by_id.get(row.course_id)
+    for course_row in course_rows:
+        course_model = context.courses_by_id.get(course_row.course_id)
         activity_count = sum(
-            1
-            for activity in context.activities_by_id.values()
-            if activity.course_id == row.course_id
+            1 for activity in context.activities_by_id.values() if activity.course_id == course_row.course_id
         )
         effort = max(1, activity_count)
-        roi_score = round((row.completion_rate + row.content_health_score) / effort, 2)
+        roi_score = round((course_row.completion_rate + course_row.content_health_score) / effort, 2)
         course_health.append(
             AdminAnalyticsCourseRow(
-                course_id=row.course_id,
-                course_uuid=row.course_uuid,
-                course_name=row.course_name,
-                health_score=row.content_health_score,
-                completion_rate=row.completion_rate,
-                active_learners_7d=row.active_learners_7d,
-                at_risk_learners=row.at_risk_learners,
-                content_roi_score=roi_score if course is not None else None,
+                course_id=course_row.course_id,
+                course_uuid=course_row.course_uuid,
+                course_name=course_row.course_name,
+                health_score=course_row.content_health_score,
+                completion_rate=course_row.completion_rate,
+                active_learners_7d=course_row.active_learners_7d,
+                at_risk_learners=course_row.at_risk_learners,
+                content_roi_score=roi_score if course_model is not None else None,
             )
         )
     course_health.sort(key=lambda row: row.health_score)
     content_roi = sorted(
         course_health,
-        key=lambda row: (
-            row.content_roi_score if row.content_roi_score is not None else -1
-        ),
+        key=lambda row: row.content_roi_score if row.content_roi_score is not None else -1,
         reverse=True,
     )
 
     current_start, _current_end = filters.window_bounds(now=context.generated_at)
-    active_pairs = {
-        (event.course_id, event.user_id)
-        for event in events
-        if event.ts >= current_start
-    }
+    active_pairs = {(event.course_id, event.user_id) for event in events if event.ts >= current_start}
     cohort_members: dict[int, set[int]] = defaultdict(set)
     for user_id, cohort_ids in context.cohort_ids_by_user.items():
         for cohort_id in cohort_ids:
             cohort_members[cohort_id].add(user_id)
     cohort_rows: list[AdminAnalyticsCohortRow] = []
     for cohort_id, user_ids in cohort_members.items():
-        retained = {
-            user_id
-            for user_id in user_ids
-            if any(pair[1] == user_id for pair in active_pairs)
-        }
-        cohort_progress = [
-            snapshot.progress_pct
-            for snapshot in snapshots.values()
-            if snapshot.user_id in user_ids
-        ]
+        retained = {user_id for user_id in user_ids if any(pair[1] == user_id for pair in active_pairs)}
+        cohort_progress = [snapshot.progress_pct for snapshot in snapshots.values() if snapshot.user_id in user_ids]
         cohort_rows.append(
             AdminAnalyticsCohortRow(
                 cohort_id=cohort_id,
-                cohort_name=context.usergroup_names_by_id.get(
-                    cohort_id, f"Когорта {cohort_id}"
-                ),
+                cohort_name=context.usergroup_names_by_id.get(cohort_id, f"Когорта {cohort_id}"),
                 learners=len(user_ids),
                 retained_learners=len(retained),
                 retention_rate=safe_pct(len(retained), len(user_ids)),
-                avg_progress_pct=round(sum(cohort_progress) / len(cohort_progress), 1)
-                if cohort_progress
-                else None,
+                avg_progress_pct=round(sum(cohort_progress) / len(cohort_progress), 1) if cohort_progress else None,
             )
         )
     cohort_rows.sort(key=lambda row: row.retention_rate or 0)
 
     program_rows: list[AdminAnalyticsProgramRow] = []
     by_creator: dict[int | None, list[AdminAnalyticsCourseRow]] = defaultdict(list)
-    for row in course_health:
-        course = context.courses_by_id.get(row.course_id)
-        by_creator[course.creator_id if course is not None else None].append(row)
+    for health_row in course_health:
+        creator_course = context.courses_by_id.get(health_row.course_id)
+        by_creator[creator_course.creator_id if creator_course is not None else None].append(health_row)
     for creator_id, rows in by_creator.items():
-        teacher = (
-            context.users_by_id.get(creator_id) if creator_id is not None else None
-        )
+        teacher = context.users_by_id.get(creator_id) if creator_id is not None else None
         course_ids = {row.course_id for row in rows}
-        learner_count = len({
-            snapshot.user_id
-            for snapshot in snapshots.values()
-            if snapshot.course_id in course_ids
-        })
+        learner_count = len({snapshot.user_id for snapshot in snapshots.values() if snapshot.course_id in course_ids})
         program_rows.append(
             AdminAnalyticsProgramRow(
                 program_id=creator_id,
-                program_name=f"Курсы: {display_name(teacher)}"
-                if teacher is not None
-                else "Нераспределенные курсы",
+                program_name=f"Курсы: {display_name(teacher)}" if teacher is not None else "Нераспределенные курсы",
                 course_count=len(rows),
                 learner_count=learner_count,
-                completion_rate=round(
-                    sum(row.completion_rate for row in rows) / len(rows), 1
-                )
-                if rows
-                else None,
-                health_score=round(sum(row.health_score for row in rows) / len(rows), 1)
-                if rows
-                else None,
+                completion_rate=round(sum(row.completion_rate for row in rows) / len(rows), 1) if rows else None,
+                health_score=round(sum(row.health_score for row in rows) / len(rows), 1) if rows else None,
             )
         )
     program_rows.sort(key=lambda row: row.health_score or 0, reverse=True)

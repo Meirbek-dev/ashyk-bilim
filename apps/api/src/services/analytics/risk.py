@@ -3,31 +3,35 @@ from __future__ import annotations
 import operator
 from collections import defaultdict
 from datetime import UTC, date
+from typing import Literal
 
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
+from src.infra.db.execute import sa_execute
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
     assessment_pass_threshold,
-    manual_assessment_is_graded,
-    manual_assessment_is_reviewable,
-    manual_assessment_score,
     build_activity_events,
     cohort_names_for_user,
     cohort_user_ids,
     display_name,
     load_analytics_context,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
+    manual_assessment_score,
     now_utc,
     progress_snapshots,
     to_iso,
 )
-from src.services.analytics.schemas import AtRiskLearnerRow, AtRiskLearnersResponse
+from src.services.analytics.schemas import AnalyticsFilterOption, AtRiskLearnerRow, AtRiskLearnersResponse
 from src.services.analytics.scope import TeacherAnalyticsScope
+from src.types import require_persisted_id
 
 _RISK_LEVEL_WEIGHT = {"low": 0, "medium": 1, "high": 2}
+_RiskLevel = Literal["low", "medium", "high"]
 
 
 def _risk_trend(
@@ -66,7 +70,7 @@ def _confidence_level(
     risk_score: float,
     reason_codes: list[str],
     days_since_last_activity: int | None,
-) -> str:
+) -> _RiskLevel:
     if risk_score >= 70 and len(reason_codes) >= 2:
         return "high"
     if days_since_last_activity is None and len(reason_codes) <= 1:
@@ -98,15 +102,18 @@ def _previous_snapshots(
     course_ids = sorted({course_id for course_id, _user_id in pairs})
     user_ids = sorted({user_id for _course_id, user_id in pairs})
     rows = list(
-        db_session.exec(
+        sa_execute(
+            db_session,
             select(LearnerRiskSnapshot)
             .where(
-                LearnerRiskSnapshot.snapshot_date < before_date,
-                LearnerRiskSnapshot.course_id.in_(course_ids),
-                LearnerRiskSnapshot.user_id.in_(user_ids),
+                col(LearnerRiskSnapshot.snapshot_date) < before_date,
+                col(LearnerRiskSnapshot.course_id).in_(course_ids),
+                col(LearnerRiskSnapshot.user_id).in_(user_ids),
             )
-            .order_by(LearnerRiskSnapshot.snapshot_date.desc())
-        ).all()
+            .order_by(col(LearnerRiskSnapshot.snapshot_date).desc()),
+        )
+        .scalars()
+        .all()
     )
     latest: dict[tuple[int, int], LearnerRiskSnapshot] = {}
     for row in rows:
@@ -122,14 +129,17 @@ def _interventions_by_pair(
     if not scope.course_ids:
         return {}
     rows = list(
-        db_session.exec(
+        sa_execute(
+            db_session,
             select(TeacherIntervention)
             .where(
-                TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-                TeacherIntervention.course_id.in_(scope.course_ids),
+                col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+                col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
-            .order_by(TeacherIntervention.created_at.desc())
-        ).all()
+            .order_by(col(TeacherIntervention.created_at).desc()),
+        )
+        .scalars()
+        .all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)
     for row in rows:
@@ -150,13 +160,9 @@ def enrich_risk_rows(
     enriched: list[AtRiskLearnerRow] = []
     for row in rows:
         key = (row.course_id, row.user_id)
-        trend, previous_score, delta = _risk_trend(
-            row.risk_level, row.risk_score, previous_by_pair.get(key)
-        )
+        trend, previous_score, delta = _risk_trend(row.risk_level, row.risk_score, previous_by_pair.get(key))
         learner_interventions = interventions.get(key, [])
-        latest_intervention = (
-            learner_interventions[0] if learner_interventions else None
-        )
+        latest_intervention = learner_interventions[0] if learner_interventions else None
         enriched.append(
             row.model_copy(
                 update={
@@ -179,15 +185,11 @@ def enrich_risk_rows(
     return enriched
 
 
-def build_risk_rows(
-    context: AnalyticsContext, filters: AnalyticsFilters
-) -> list[AtRiskLearnerRow]:
+def build_risk_rows(context: AnalyticsContext, filters: AnalyticsFilters) -> list[AtRiskLearnerRow]:
     allowed_user_ids = cohort_user_ids(context, filters.cohort_ids)
     snapshots = progress_snapshots(context, allowed_user_ids)
     activity_events = build_activity_events(context, allowed_user_ids)
-    last_activity_by_pair = {
-        (event.course_id, event.user_id): event.ts for event in activity_events
-    }
+    last_activity_by_pair = {(event.course_id, event.user_id): event.ts for event in activity_events}
     for event in activity_events:
         key = (event.course_id, event.user_id)
         current = last_activity_by_pair.get(key)
@@ -200,22 +202,23 @@ def build_risk_rows(
 
     course_manual_assessment_ids: dict[int, set[int]] = defaultdict(set)
     for manual_assessment in context.manual_assessments:
-        if manual_assessment.id is not None:
-            course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment.id)
+        manual_assessment_id = require_persisted_id(manual_assessment.id, model_name="Assessment")
+        course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment_id)
 
     course_exam_ids: dict[int, set[int]] = defaultdict(set)
     exam_thresholds: dict[int, float] = {}
     for exam in context.exams:
-        if exam.id is not None:
-            course_exam_ids[exam.course_id].add(exam.id)
-            exam_thresholds[exam.id] = assessment_pass_threshold(exam.settings)
+        exam_id = require_persisted_id(exam.id, model_name="Assessment")
+        course_exam_ids[exam.course_id].add(exam_id)
+        exam_thresholds[exam_id] = assessment_pass_threshold(exam.settings)
 
     course_code_ids: dict[int, set[int]] = defaultdict(set)
     for activity in context.activities_by_id.values():
-        if activity.course_id is None:
+        activity_id = activity.id
+        if activity.course_id is None or activity_id is None:
             continue
         if activity.activity_type.value == "TYPE_CODE_CHALLENGE":
-            course_code_ids[activity.course_id].add(activity.id)
+            course_code_ids[activity.course_id].add(activity_id)
 
     manual_assessment_seen: dict[tuple[int, int], set[int]] = defaultdict(set)
     for submission, manual_assessment in context.manual_assessment_submissions:
@@ -250,7 +253,7 @@ def build_risk_rows(
         key = (activity.course_id, submission.user_id)
         score = manual_assessment_score(submission)
         if score is not None and score >= 60:
-            code_success_by_pair[key].add(activity.id)
+            code_success_by_pair[key].add(require_persisted_id(activity.id, model_name="Activity"))
         elif manual_assessment_is_graded(submission):
             failed_assessments[key] += 1
 
@@ -266,22 +269,12 @@ def build_risk_rows(
         last_activity = last_activity_by_pair.get(pair)
         days_since_last_activity = None
         if last_activity is not None:
-            days_since_last_activity = max(
-                0, (now - last_activity.astimezone(UTC)).days
-            )
+            days_since_last_activity = max(0, (now - last_activity.astimezone(UTC)).days)
 
         missing = 0
-        missing += len(
-            course_manual_assessment_ids.get(course_id, set())
-            - manual_assessment_seen.get(pair, set())
-        )
-        missing += len(
-            course_exam_ids.get(course_id, set()) - exam_seen.get(pair, set())
-        )
-        missing += len(
-            course_code_ids.get(course_id, set())
-            - code_success_by_pair.get(pair, set())
-        )
+        missing += len(course_manual_assessment_ids.get(course_id, set()) - manual_assessment_seen.get(pair, set()))
+        missing += len(course_exam_ids.get(course_id, set()) - exam_seen.get(pair, set()))
+        missing += len(course_code_ids.get(course_id, set()) - code_success_by_pair.get(pair, set()))
         missing_assessments[pair] = missing
 
         inactivity_component = min(40, (days_since_last_activity or 0) * 2)
@@ -290,16 +283,12 @@ def build_risk_rows(
         missing_component = min(24, missing * 6)
         grading_component = min(12, open_grading_blocks[pair] * 4)
         risk_score = round(
-            inactivity_component
-            + progress_component
-            + failure_component
-            + missing_component
-            + grading_component,
+            inactivity_component + progress_component + failure_component + missing_component + grading_component,
             1,
         )
 
         if risk_score >= 70:
-            risk_level = "high"
+            risk_level: _RiskLevel = "high"
         elif risk_score >= 40:
             risk_level = "medium"
         else:
@@ -328,9 +317,7 @@ def build_risk_rows(
         elif "repeated_failures" in reason_codes:
             recommended_action = "Предложите точечную помощь по самому слабому для учащегося направлению оценивания."
         elif "missing_required_assessments" in reason_codes:
-            recommended_action = (
-                "Напомните учащемуся о пропущенных обязательных работах и сроках сдачи."
-            )
+            recommended_action = "Напомните учащемуся о пропущенных обязательных работах и сроках сдачи."
         elif "low_progress" in reason_codes:
             recommended_action = "Назначьте встречу, чтобы обсудить темп прохождения и вовлеченность по главам."
 
@@ -355,10 +342,7 @@ def build_risk_rows(
                 course_uuid=getattr(course, "course_uuid", None),
                 course_name=course.name,
                 user_display_name=display_name(user),
-                cohort_name=", ".join(
-                    cohort_names_for_user(context, user_id, filters.cohort_ids)
-                )
-                or None,
+                cohort_name=", ".join(cohort_names_for_user(context, user_id, filters.cohort_ids)) or None,
                 progress_pct=round(snapshot.progress_pct, 1),
                 days_since_last_activity=days_since_last_activity,
                 open_grading_blocks=open_grading_blocks[pair],
@@ -399,14 +383,12 @@ def get_at_risk_learners(
         page_size=filters.page_size,
         items=paged_rows,
         course_options=[
-            {"label": context.courses_by_id[course_id].name, "value": str(course_id)}
+            AnalyticsFilterOption(label=context.courses_by_id[course_id].name, value=str(course_id))
             for course_id in sorted(context.courses_by_id)
             if course_id in scope.course_ids
         ],
         cohort_options=[
-            {"label": name, "value": str(group_id)}
-            for group_id, name in sorted(
-                context.usergroup_names_by_id.items(), key=lambda item: item[1].lower()
-            )
+            AnalyticsFilterOption(label=name, value=str(group_id))
+            for group_id, name in sorted(context.usergroup_names_by_id.items(), key=lambda item: item[1].lower())
         ],
     )

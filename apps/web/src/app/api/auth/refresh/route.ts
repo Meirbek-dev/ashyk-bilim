@@ -1,66 +1,66 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { getServerAPIUrl } from '@services/config/config';
-import {
-  applyResponseCookiesToNextResponse,
-  buildRequestCookieHeader,
-  clearAuthCookies,
-} from '@/lib/auth/cookie-bridge';
-import { buildLoginRedirect, normalizeReturnTo } from '@/lib/auth/redirect';
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { clearAuthCookies } from '@/lib/auth/cookie-bridge'
+import { buildLoginRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
+import { copyBackendSetCookies, serverAuthFetchForRequest } from '@/lib/auth/server-auth-fetch'
 
-function buildForwardedHeaders(request: NextRequest): Headers {
-  const headers = new Headers();
-
-  const userAgent = request.headers.get('user-agent');
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
-  const forwardedProto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '');
-
-  if (userAgent) headers.set('user-agent', userAgent);
-  if (forwardedFor) headers.set('x-forwarded-for', forwardedFor);
-  if (forwardedHost) headers.set('x-forwarded-host', forwardedHost);
-  if (forwardedProto) headers.set('x-forwarded-proto', forwardedProto);
-
-  const cookieHeader = buildRequestCookieHeader(request);
-  if (cookieHeader) {
-    headers.set('cookie', cookieHeader);
-  }
-
-  return headers;
+function wantsJson(request: NextRequest): boolean {
+  return (
+    request.headers.get('x-auth-refresh') === 'fetch' ||
+    request.headers.get('accept')?.includes('application/json') === true
+  )
 }
 
-function getPublicOrigin(request: NextRequest): string {
-  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host;
-  const proto = (request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol).replace(':', '');
-  return `${proto}://${host}`;
+function authJson(status: number, body: { loginUrl?: string; status: string }): NextResponse {
+  return NextResponse.json(body, { status })
 }
 
 function redirectToLogin(request: NextRequest, returnTo: string): NextResponse {
-  const response = NextResponse.redirect(new URL(buildLoginRedirect(returnTo), getPublicOrigin(request)));
-  clearAuthCookies(response);
-  return response;
+  if (wantsJson(request)) {
+    const response = authJson(401, { status: 'unauthenticated', loginUrl: buildLoginRedirect(returnTo) })
+    clearAuthCookies(response)
+    return response
+  }
+
+  const response = NextResponse.redirect(new URL(buildLoginRedirect(returnTo), request.nextUrl.origin))
+  clearAuthCookies(response)
+  return response
+}
+
+function redirectToReturnTo(request: NextRequest, returnTo: string): NextResponse {
+  if (wantsJson(request)) {
+    return authJson(409, { status: 'already_rotated' })
+  }
+  return NextResponse.redirect(new URL(returnTo, request.nextUrl.origin))
 }
 
 export async function GET(request: NextRequest) {
-  const returnTo = normalizeReturnTo(request.nextUrl.searchParams.get('returnTo'));
+  const returnTo = normalizeReturnTo(request.nextUrl.searchParams.get('returnTo'))
 
-  let backendResponse: Response;
+  let backendResponse: Response
   try {
-    backendResponse = await fetch(`${getServerAPIUrl()}auth/refresh`, {
+    backendResponse = await serverAuthFetchForRequest(request, 'auth/refresh', {
       method: 'POST',
-      headers: buildForwardedHeaders(request),
-      cache: 'no-store',
-      redirect: 'manual',
-    });
+    })
   } catch {
-    return redirectToLogin(request, returnTo);
+    return redirectToLogin(request, returnTo)
+  }
+
+  if (backendResponse.status === 409) {
+    return redirectToReturnTo(request, returnTo)
   }
 
   if (!backendResponse.ok) {
-    return redirectToLogin(request, returnTo);
+    return redirectToLogin(request, returnTo)
   }
 
-  const response = NextResponse.redirect(new URL(returnTo, getPublicOrigin(request)));
-  applyResponseCookiesToNextResponse(backendResponse.headers, response);
-  return response;
+  if (wantsJson(request)) {
+    const response = authJson(200, { status: 'ok' })
+    copyBackendSetCookies(backendResponse.headers, response)
+    return response
+  }
+
+  const response = NextResponse.redirect(new URL(returnTo, request.nextUrl.origin))
+  copyBackendSetCookies(backendResponse.headers, response)
+  return response
 }

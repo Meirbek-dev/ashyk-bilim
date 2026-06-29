@@ -1,49 +1,46 @@
-'use client';
-import { useQueryClient } from '@tanstack/react-query';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { revalidateTags } from '@/lib/cache/revalidate';
-import { Award, ExternalLink, Loader2, X } from 'lucide-react';
-import { removeCourse } from '@services/courses/activity';
-import { getAbsoluteUrl } from '@services/config/config';
-import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
+'use client'
+import { useQueryClient } from '@tanstack/react-query'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { revalidateTags } from '@/lib/cache/revalidate'
+import { Award, ExternalLink, Loader2, X } from 'lucide-react'
+import { removeCourse } from '@services/courses/activity'
+import { getAbsoluteUrl } from '@services/config/config'
+import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
 
 interface TrailCourseElementProps {
-  course: any;
-  run: any;
+  course: AppCourse
+  run: AppTrailRun
 }
 
 const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
-  const queryClient = useQueryClient();
-  const courseid = course.course_uuid.replace('course_', '');
-  const router = useRouter();
-  const t = useTranslations('Trail');
-  const { course_total_steps } = run;
-  const course_completed_steps = run.steps.length;
-  const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0;
-  const isCompleted = course_progress === 100;
-  const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null);
-  const courseCertificate = certificateQuery.data?.data?.[0] ?? null;
-  const isLoadingCertificate = isCompleted && certificateQuery.isPending;
+  const queryClient = useQueryClient()
+  const courseid = course.course_uuid.replace('course_', '')
+  const router = useRouter()
+  const t = useTranslations('Trail')
+  const course_total_steps = run.course_total_steps ?? 0
+  const course_completed_steps = run.steps?.length ?? 0
+  const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0
+  const isCompleted = course_progress === 100
+  const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)
+  const courseCertificate = certificateQuery.data?.data?.[0] ?? null
+  const isLoadingCertificate = isCompleted && certificateQuery.isPending
 
   async function quitCourse(course_uuid: string) {
-    await removeCourse(course_uuid);
-    await revalidateTags(['courses']);
-    router.refresh();
-    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
+    await removeCourse(course_uuid)
+    await revalidateTags(['courses'])
+    router.refresh()
+    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
   }
 
   return (
     <div className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
       {/* Thumbnail */}
-      <Link
-        href={getAbsoluteUrl(`/course/${courseid}`)}
-        className="shrink-0"
-      >
+      <Link href={getAbsoluteUrl(`/course/${courseid}`)} className="shrink-0">
         <div
           className="ring-border h-[76px] w-[108px] rounded-lg bg-cover bg-center ring-1 ring-inset"
           style={{
@@ -81,7 +78,10 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
         <div className="space-y-1.5">
           <div className="text-muted-foreground flex items-center justify-between text-xs">
             <span className="tabular-nums">
-              {course_completed_steps}&thinsp;/&thinsp;{course_total_steps} {t('stepsLabel')}
+              {t('stepsProgress', {
+                completed: course_completed_steps,
+                total: course_total_steps,
+              })}
             </span>
             <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
               {course_progress}%
@@ -126,7 +126,7 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TrailCourseElement;
+export default TrailCourseElement

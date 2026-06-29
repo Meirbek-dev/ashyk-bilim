@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Award,
@@ -16,128 +16,133 @@ import {
   MapPin,
   User,
   Users,
-} from 'lucide-react';
-import { useUserByIdQuery, useUserByUsernameQuery } from '@/features/users/hooks/useUsers';
-import type { components } from '@/lib/api/generated';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { getUserAvatarMediaDirectory } from '@services/media/media';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { NodeViewWrapper } from '@tiptap/react';
-import { Button } from '@components/ui/button';
-import { Label } from '@components/ui/label';
-import { Input } from '@components/ui/input';
-import { Badge } from '@components/ui/badge';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+} from 'lucide-react'
+import { useUserByIdQuery, useUserByUsernameQuery } from '@/features/users/hooks/useUsers'
+import type { components } from '@/lib/api/generated'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { NodeViewWrapper } from '@tiptap/react'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import { Badge } from '@components/ui/badge'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
-type UserData = components['schemas']['UserRead'];
+type UserData = components['schemas']['UserRead']
 interface UserDetail {
-  id: string;
-  label: string;
-  icon: string;
-  text: string;
+  id: string
+  label: string
+  icon: string
+  text: string
 }
 
 const AVAILABLE_ICONS = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
+  speciality: Lightbulb,
+  globe: Globe,
   'laptop-2': Laptop2,
-  'award': Award,
+  award: Award,
   'book-open': BookOpen,
-  'link': Link,
-  'users': Users,
-  'calendar': Calendar,
-} as const;
+  link: Link,
+  users: Users,
+  calendar: Calendar,
+} as const
 
 const IconComponent = ({ iconName }: { iconName: string }) => {
-  const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS];
-  if (!IconElement) return <User className="h-4 w-4 text-gray-600" />;
-  return <IconElement className="h-4 w-4 text-gray-600" />;
-};
+  const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS]
+  if (!IconElement) return <User className="h-4 w-4 text-gray-600" />
+  return <IconElement className="h-4 w-4 text-gray-600" />
+}
 
 interface UserNodeAttrs {
-  user_id: string | number | null;
+  user_id: string | number | null
 }
 
 const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
-  const t = useTranslations('DashPage.Editor.UserBlock');
-  const editorState = useEditorProvider();
-  const { isEditable } = editorState;
-  const router = useRouter();
+  const t = useTranslations('DashPage.Editor.UserBlock')
+  const editorState = useEditorProvider()
+  const { isEditable } = editorState
+  const router = useRouter()
 
-  const [username, setUsername] = useState('');
-  const [submittedUsername, setSubmittedUsername] = useState<string | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState('')
+  const [submittedUsername, setSubmittedUsername] = useState<string | null>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const { updateAttributes, node } = props;
-  const userId = typeof node.attrs.user_id === 'number' ? node.attrs.user_id : null;
-  const userByIdQuery = useUserByIdQuery(userId, { enabled: userId !== null });
+  const { updateAttributes, node } = props
+  const userId = typeof node.attrs.user_id === 'number' ? node.attrs.user_id : null
+  const userByIdQuery = useUserByIdQuery(userId, { enabled: userId !== null })
   const userByUsernameQuery = useUserByUsernameQuery(submittedUsername, {
     enabled: Boolean(submittedUsername && submittedUsername.trim().length > 0),
-  });
-  const isLoading = userByIdQuery.isFetching || userByUsernameQuery.isFetching;
+  })
+  const isLoading = userByIdQuery.isFetching || userByUsernameQuery.isFetching
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return
 
     if (userByIdQuery.data) {
-      setUserData(userByIdQuery.data);
-      setUsername(userByIdQuery.data.username);
-      setError(null);
-      return;
+      queueMicrotask(() => {
+        setUserData(userByIdQuery.data)
+        setUsername(userByIdQuery.data.username)
+        setError(null)
+      })
+      return
     }
 
     if (userByIdQuery.error) {
-      console.error('Error fetching user by ID:', userByIdQuery.error);
-      setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'));
-      updateAttributes({ user_id: null });
+      console.error('Error fetching user by ID:', userByIdQuery.error)
+      queueMicrotask(() => {
+        setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
+        updateAttributes({ user_id: null })
+      })
     }
-  }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId]);
+  }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId])
 
   useEffect(() => {
-    if (!submittedUsername) return;
+    if (!submittedUsername) return
 
     if (userByUsernameQuery.data) {
-      setUserData(userByUsernameQuery.data);
-      setUsername(userByUsernameQuery.data.username);
-      setError(null);
-      updateAttributes({
-        user_id: userByUsernameQuery.data.id,
-      });
-      setSubmittedUsername(null);
-      return;
+      queueMicrotask(() => {
+        setUserData(userByUsernameQuery.data)
+        setUsername(userByUsernameQuery.data.username)
+        setError(null)
+        updateAttributes({
+          user_id: userByUsernameQuery.data.id,
+        })
+        setSubmittedUsername(null)
+      })
+      return
     }
 
     if (userByUsernameQuery.error) {
-      console.error('Error fetching user by username:', userByUsernameQuery.error);
-      setError(userByUsernameQuery.error instanceof Error ? userByUsernameQuery.error.message : t('errorNotFound'));
-      setSubmittedUsername(null);
+      console.error('Error fetching user by username:', userByUsernameQuery.error)
+      queueMicrotask(() => {
+        setError(userByUsernameQuery.error instanceof Error ? userByUsernameQuery.error.message : t('errorNotFound'))
+        setSubmittedUsername(null)
+      })
     }
-  }, [submittedUsername, t, updateAttributes, userByUsernameQuery.data, userByUsernameQuery.error]);
+  }, [submittedUsername, t, updateAttributes, userByUsernameQuery.data, userByUsernameQuery.error])
 
   const handleUsernameSubmit = async (formData: FormData) => {
-    const nextUsername = String(formData.get('username') ?? '').trim();
+    const nextUsername = String(formData.get('username') ?? '').trim()
 
-    if (!nextUsername) return;
-    setError(null);
-    setSubmittedUsername(nextUsername);
-  };
+    if (!nextUsername) return
+    setError(null)
+    setSubmittedUsername(nextUsername)
+  }
 
   if (isEditable && !userData) {
     return (
       <NodeViewWrapper className="block-user">
         <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6">
-          <form
-            action={handleUsernameSubmit}
-            className="space-y-4"
-          >
+          <form action={handleUsernameSubmit} className="space-y-4">
             <div>
               <Label htmlFor="username">{t('usernameLabel')}</Label>
               <div className="mt-2 flex gap-2">
@@ -145,16 +150,13 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                   id="username"
                   name="username"
                   value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
+                  onChange={e => {
+                    setUsername(e.target.value)
                   }}
                   placeholder={t('usernamePlaceholder')}
                   className="flex-1"
                 />
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                >
+                <Button type="submit" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('loadUser')}
                 </Button>
               </div>
@@ -163,7 +165,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
           </form>
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
   if (isLoading) {
@@ -173,7 +175,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
   if (error) {
@@ -181,7 +183,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
       <NodeViewWrapper className="block-user">
         <div className="rounded-lg bg-red-50 p-4 text-red-500">{error}</div>
       </NodeViewWrapper>
-    );
+    )
   }
 
   if (!userData) {
@@ -194,10 +196,10 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
           </div>
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
-  const details = userData.details ? (Object.values(userData.details) as UserDetail[]) : [];
+  const details = userData.details ? (Object.values(userData.details) as unknown as UserDetail[]) : []
 
   return (
     <NodeViewWrapper className="block-user">
@@ -216,7 +218,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                         ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image)
                         : ''
                     }
-                    predefined_avatar={userData.avatar_image ? undefined : 'empty'}
+                    {...(!userData.avatar_image ? { predefined_avatar: 'empty' } : {})}
                     userId={userData.id}
                     showProfilePopup
                   />
@@ -230,10 +232,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                       {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                     </h4>
                     {userData.username ? (
-                      <Badge
-                        variant="outline"
-                        className="truncate px-2 text-xs font-normal text-gray-500"
-                      >
+                      <Badge variant="outline" className="truncate px-2 text-xs font-normal text-gray-500">
                         @{userData.username}
                       </Badge>
                     ) : null}
@@ -257,11 +256,8 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
 
         {details.length > 0 ? (
           <div className="space-y-2.5 border-t border-gray-100 px-5 pt-3.5 pb-4">
-            {details.map((detail) => (
-              <div
-                key={detail.id}
-                className="flex items-center gap-2.5"
-              >
+            {details.map(detail => (
+              <div key={detail.id} className="flex items-center gap-2.5">
                 <IconComponent iconName={detail.icon} />
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500">{detail.label}</span>
@@ -273,7 +269,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
         ) : null}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default UserBlockComponent;
+export default UserBlockComponent

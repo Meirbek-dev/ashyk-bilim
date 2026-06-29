@@ -1,30 +1,42 @@
-'use client';
+'use client'
 
-import { useTranslations } from 'next-intl';
+import { Bookmark, BookmarkCheck } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
-import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
+import { ChoiceItemAttempt } from '@/features/assessments/items/choice'
+import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice'
+import { MarkdownContent } from '@/features/content-markdown'
+import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
+import { Button } from '@components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface QuestionData {
-  id: string;
-  question_uuid: string;
-  question_text: string;
-  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
-  points: number;
-  explanation?: string;
-  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: string | number }[];
+  id: string
+  question_uuid: string
+  question_text: string
+  question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING'
+  points: number
+  explanation?: string
+  answer_options: {
+    text: string
+    is_correct?: boolean
+    left?: string
+    right?: string
+    option_id?: string | number
+  }[]
 }
 
 interface ExamQuestionCardProps {
-  question: QuestionData;
-  questionNumber: number;
-  answer: Record<string, unknown>;
-  onAnswerChange: (questionId: string, answer: unknown) => void;
+  question: QuestionData
+  questionNumber: number
+  answer: Record<string, unknown>
+  isFlagged?: boolean
+  onAnswerChange: (questionId: string, answer: unknown) => void
+  onToggleFlag?: () => void
 }
 
 function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): string | number {
-  return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex;
+  return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex
 }
 
 function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
@@ -39,7 +51,7 @@ function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
         left: option.left ?? '',
         right: option.right ?? '',
       })),
-    };
+    }
   }
 
   return {
@@ -52,41 +64,77 @@ function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
           : 'TRUE_FALSE',
     prompt: question.question_text,
     points: question.points,
-    options: question.answer_options.map((option, index) => ({
-      id: getAnswerOptionId(option, index),
-      text: option.text,
-      isCorrect: option.is_correct,
-    })),
-  };
+    options: question.answer_options.map((option, index) =>
+      option.is_correct === undefined
+        ? {
+            id: getAnswerOptionId(option, index),
+            text: option.text,
+          }
+        : {
+            id: getAnswerOptionId(option, index),
+            text: option.text,
+            isCorrect: option.is_correct,
+          },
+    ),
+  }
 }
 
-export default function ExamQuestionCard({ question, questionNumber, answer, onAnswerChange }: ExamQuestionCardProps) {
-  const t = useTranslations('Activities.ExamActivity');
-  const questionId = question.id;
+export default function ExamQuestionCard({
+  question,
+  questionNumber,
+  answer,
+  isFlagged = false,
+  onAnswerChange,
+  onToggleFlag,
+}: ExamQuestionCardProps) {
+  const t = useTranslations('Activities.ExamActivity')
+  const questionId = question.id
 
   return (
     <Card
       role="group"
       aria-labelledby={`question-title-${questionId}`}
+      className={cn('rounded-lg shadow-sm', isFlagged && 'ring-2 ring-yellow-400/60 dark:ring-yellow-500/60')}
     >
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between gap-2">
           <span id={`question-title-${questionId}`}>{t('questionNumber', { number: questionNumber })}</span>
-          <span className="text-muted-foreground text-sm font-normal">
-            {t('points', { count: question.points ?? 0 })}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm font-normal">
+              {t('points', { count: question.points ?? 0 })}
+            </span>
+            {onToggleFlag ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onToggleFlag}
+                aria-label={isFlagged ? t('unflagQuestion') : t('flagQuestion')}
+                className={cn(
+                  'size-8 transition-colors',
+                  isFlagged ? 'text-yellow-600 hover:text-yellow-700' : 'text-muted-foreground hover:text-yellow-600',
+                )}
+              >
+                {isFlagged ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+              </Button>
+            ) : null}
+          </div>
         </CardTitle>
-        <CardDescription className="text-foreground mt-4 text-xl leading-relaxed">
-          {question.question_text}
-        </CardDescription>
+        <div className="mt-2">
+          <MarkdownContent
+            content={question.question_text}
+            mode="prompt"
+            className="text-foreground text-base leading-relaxed"
+          />
+        </div>
       </CardHeader>
       <CardContent className="pt-6">
         <ChoiceItemAttempt
           item={toChoiceItem(question)}
           answer={answer[questionId] as ChoiceAnswer}
-          onAnswerChange={(nextAnswer) => onAnswerChange(questionId, nextAnswer)}
+          onAnswerChange={nextAnswer => onAnswerChange(questionId, nextAnswer)}
         />
       </CardContent>
     </Card>
-  );
+  )
 }

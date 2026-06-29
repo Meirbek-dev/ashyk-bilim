@@ -7,7 +7,6 @@ Create Date: 2026-04-11 17:22:14.454786
 """
 
 from collections.abc import Sequence
-from typing import Union
 
 import sqlalchemy as sa
 from alembic import op
@@ -49,8 +48,4 @@ def downgrade() -> None:
                 )
             )
         if "email_verified_at" not in column_names:
-            batch_op.add_column(
-                sa.Column(
-                    "email_verified_at", sa.DateTime(timezone=True), nullable=True
-                )
-            )
+            batch_op.add_column(sa.Column("email_verified_at", sa.DateTime(timezone=True), nullable=True))

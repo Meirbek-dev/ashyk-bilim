@@ -1,23 +1,25 @@
-import { getActivityMediaDirectory } from '@services/media/media';
-import { useTranslations } from 'next-intl';
+import { getActivityMediaDirectory } from '@services/media/media'
+import { useTranslations } from 'next-intl'
 
-const DocumentPdfActivity = ({ activity, course }: { activity: any; course: any }) => {
-  const t = useTranslations('Activities.DocumentPdf');
+const DocumentPdfActivity = ({ activity, course }: { activity: AppActivity; course: AppCourse }) => {
+  const t = useTranslations('Activities.DocumentPdf')
+  const content = activity.content as { filename?: string } | null | undefined
+  const fileId = content?.filename ?? ''
 
   return (
-    <div className="m-8 mt-14 rounded-md bg-zinc-900">
+    <div className="h-full w-full">
       <iframe
-        className="h-[900px] w-full rounded-lg"
+        className="h-full w-full"
         title={t('viewerTitle')}
         src={getActivityMediaDirectory({
           courseUUID: course?.course_uuid ?? '',
           activityUUID: activity.activity_uuid,
-          fileId: activity.content.filename,
+          fileId,
           activityType: 'documentpdf',
         })}
       />
     </div>
-  );
-};
+  )
+}
 
-export default DocumentPdfActivity;
+export default DocumentPdfActivity

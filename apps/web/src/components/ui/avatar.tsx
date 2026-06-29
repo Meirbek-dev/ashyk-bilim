@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar';
+import * as React from 'react'
+import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar'
 
-import { normalizeAvatarUrl } from '@/services/media/avatar';
-import { cn } from '@/lib/utils';
+import { normalizeAvatarUrl } from '@/services/media/avatar'
+import { cn } from '@/lib/utils'
 
 function Avatar({
   className,
   size = 'default',
   ...props
 }: AvatarPrimitive.Root.Props & {
-  size?: 'default' | 'sm' | 'lg';
+  size?: 'default' | 'sm' | 'lg'
 }) {
   return (
     <AvatarPrimitive.Root
@@ -23,7 +23,7 @@ function Avatar({
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AvatarImage({ className, src, ...props }: AvatarPrimitive.Image.Props) {
@@ -34,7 +34,7 @@ function AvatarImage({ className, src, ...props }: AvatarPrimitive.Image.Props) 
       src={typeof src === 'string' ? normalizeAvatarUrl(src) : src}
       {...props}
     />
-  );
+  )
 }
 
 function AvatarFallback({ className, ...props }: AvatarPrimitive.Fallback.Props) {
@@ -47,7 +47,7 @@ function AvatarFallback({ className, ...props }: AvatarPrimitive.Fallback.Props)
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AvatarBadge({ className, ...props }: React.ComponentProps<'span'>) {
@@ -63,7 +63,7 @@ function AvatarBadge({ className, ...props }: React.ComponentProps<'span'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AvatarGroup({ className, ...props }: React.ComponentProps<'div'>) {
@@ -76,7 +76,7 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<'div'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AvatarGroupCount({ className, ...props }: React.ComponentProps<'div'>) {
@@ -89,7 +89,7 @@ function AvatarGroupCount({ className, ...props }: React.ComponentProps<'div'>) 
       )}
       {...props}
     />
-  );
+  )
 }
 
-export { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarBadge };
+export { Avatar, AvatarImage, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarBadge }

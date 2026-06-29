@@ -1,17 +1,15 @@
-"""
-Gamification Models
-"""
+"""Gamification Models."""
 
 from datetime import datetime
-from enum import Enum, StrEnum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import ClassVar
 
 from pydantic import field_validator
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from src.core.timezone import now as tz_now
-from src.db.strict_base_model import PydanticStrictBaseModel
+from src.db.strict_base_model import JsonObject, PydanticStrictBaseModel
 
 XP_REWARDS = {
     "activity_completion": 25,
@@ -32,7 +30,7 @@ MAX_LEVEL = 100
 
 
 class XPSource(StrEnum):
-    """XP source types"""
+    """XP source types."""
 
     ACTIVITY_COMPLETION = "activity_completion"
     COURSE_COMPLETION = "course_completion"
@@ -48,35 +46,43 @@ class XPSource(StrEnum):
 
 
 class StreakType(StrEnum):
-    """Streak types"""
+    """Streak types."""
 
     LOGIN = "login"
     LEARNING = "learning"
 
 
 def calculate_level(total_xp: int) -> int:
-    """Calculate level from total XP - 100 XP per level"""
+    """Уровень рассчитывается на основе общего количества XP с использованием квадратичной кривой.
+
+    Формула кривой: XP = 50 * (level - 1)^2 + 50 * (level - 1)
+    SolРешение уравнения для определения уровня дает: level = floor((-1 + sqrt(1 + 0.08 * XP)) / 2) + 1
+    """
+    import math
+
     if total_xp <= 0:
         return 1
-    return min((total_xp // 100) + 1, MAX_LEVEL)
+    try:
+        level = int((-1.0 + math.sqrt(1.0 + 0.08 * total_xp)) / 2.0) + 1
+    except Exception:
+        level = 1
+    return min(level, MAX_LEVEL)
 
 
 def get_xp_for_level(level: int) -> int:
-    """Calculate total XP required to reach a given level"""
+    """Calculate total XP required to reach a given level using quadratic curve."""
     if level <= 1:
         return 0
-    return (level - 1) * 100
+    return 50 * (level - 1) ** 2 + 50 * (level - 1)
 
 
 class GamificationProfile(SQLModel, table=True):
-    """Single gamification profile model with consistent naming"""
+    """Single gamification profile model with consistent naming."""
 
-    __tablename__ = "gamification_profiles"
+    __tablename__: ClassVar[str] = "gamification_profiles"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
-
-    # Core progression
     total_xp: int = Field(default=0, ge=0)
     level: int = Field(default=1, ge=1, le=MAX_LEVEL)
     daily_xp_earned: int = Field(default=0, ge=0)
@@ -99,7 +105,7 @@ class GamificationProfile(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=tz_now)
 
     # Preferences
-    preferences: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    preferences: JsonObject = Field(default_factory=dict, sa_column=Column(JSON))
 
     # Database constraints
     __table_args__ = (
@@ -112,37 +118,35 @@ class GamificationProfile(SQLModel, table=True):
     # Computed properties
     @property
     def xp_to_next_level(self) -> int:
-        """XP needed to reach next level"""
+        """XP needed to reach next level."""
         if self.level >= MAX_LEVEL:
             return 0
         return get_xp_for_level(self.level + 1) - self.total_xp
 
     @property
     def level_progress_percent(self) -> float:
-        """Progress through current level (0.0 to 100.0)"""
+        """Progress through current level (0.0 to 100.0)."""
         if self.level >= MAX_LEVEL:
             return 100.0
         current_level_xp = get_xp_for_level(self.level)
         next_level_xp = get_xp_for_level(self.level + 1)
         if next_level_xp == current_level_xp:
             return 100.0
-        progress = (self.total_xp - current_level_xp) / (
-            next_level_xp - current_level_xp
-        )
+        progress = (self.total_xp - current_level_xp) / (next_level_xp - current_level_xp)
         return round(progress * 100.0, 1)
 
     @property
     def xp_in_current_level(self) -> int:
-        """XP earned in current level"""
+        """XP earned in current level."""
         return self.total_xp - get_xp_for_level(self.level)
 
 
 class XPTransaction(SQLModel, table=True):
-    """XP transaction audit trail"""
+    """XP transaction audit trail."""
 
-    __tablename__ = "xp_transactions"
+    __tablename__: ClassVar[str] = "xp_transactions"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
 
     # Transaction data
@@ -180,12 +184,12 @@ class PlatformGamificationConfig(SQLModel, table=True):
     Safe optional overrides with sane defaults applied in service if fields are null.
     """
 
-    __tablename__ = "org_gamification_config"
+    __tablename__: ClassVar[str] = "org_gamification_config"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     # Optional overrides
     daily_xp_limit: int | None = Field(default=None, ge=0)
-    rewards: dict | None = Field(default=None, sa_column=Column(JSON))
+    rewards: JsonObject | None = Field(default=None, sa_column=Column(JSON))
     updated_at: datetime = Field(default_factory=tz_now)
 
 
@@ -214,7 +218,7 @@ class ProfileRead(PydanticStrictBaseModel):
     daily_xp_earned: int
     total_activities_completed: int
     total_courses_completed: int
-    preferences: dict[str, Any]
+    preferences: JsonObject
     created_at: datetime
     updated_at: datetime
 

@@ -2,13 +2,14 @@ import logging
 from collections import defaultdict
 
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.permission_enums import ADMIN_ROLE_SLUGS
 from src.db.permissions import Role, RoleRead, UserRole
 from src.db.platform import PaginatedPlatformUsers, PlatformUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,9 @@ def get_platform_users(
 ) -> PaginatedPlatformUsers:
     checker.require(current_user.id, "platform:read")
 
-    base_statement = (
-        select(User).join(UserRole, UserRole.user_id == User.id).distinct(User.id)
-    )
+    base_statement = select(User).join(UserRole, col(UserRole.user_id) == User.id).distinct(col(User.id))
 
-    all_user_ids = db_session.exec(
-        select(User.id).join(UserRole, UserRole.user_id == User.id).distinct()
-    ).all()
+    all_user_ids = db_session.exec(select(User.id).join(UserRole, col(UserRole.user_id) == User.id).distinct()).all()
     total = len(all_user_ids)
 
     offset = (page - 1) * per_page
@@ -38,19 +35,19 @@ def get_platform_users(
 
     platform_users_list = []
 
-    user_ids = [u.id for u in users]
-    roles_by_user: dict[int, list] = defaultdict(list)
+    user_ids = [require_persisted_id(u.id, model_name="User") for u in users]
+    roles_by_user: dict[int, list[Role]] = defaultdict(list)
     if user_ids:
         all_role_rows = db_session.exec(
             select(Role, UserRole)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id.in_(user_ids))
+            .join(UserRole, col(UserRole.role_id) == Role.id)
+            .where(col(UserRole.user_id).in_(user_ids))
         ).all()
         for role, user_role in all_role_rows:
             roles_by_user[user_role.user_id].append(role)
 
     for user in users:
-        user_roles = roles_by_user.get(user.id, [])
+        user_roles = roles_by_user.get(user.id or 0, [])
 
         if not user_roles:
             logger.warning("No roles found for user %s in platform", user.id)
@@ -85,7 +82,7 @@ def remove_platform_user(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     checker: PermissionChecker,
-):
+) -> dict[str, str]:
     checker.require(current_user.id, "platform:manage")
 
     statement = select(UserRole).where(UserRole.user_id == user_id)
@@ -96,12 +93,10 @@ def remove_platform_user(
     if not user_roles:
         raise HTTPException(
             status_code=404,
-            detail="User not found",
+            detail="Пользователь не найден",
         )
 
-    admin_role = db_session.exec(
-        select(Role).where(Role.slug.in_(list(ADMIN_ROLE_SLUGS)))
-    ).first()
+    admin_role = db_session.exec(select(Role).where(col(Role.slug).in_(list(ADMIN_ROLE_SLUGS)))).first()
     admin_role_id = admin_role.id if admin_role else 1
 
     statement = select(UserRole).where(UserRole.role_id == admin_role_id).distinct()
@@ -113,14 +108,14 @@ def remove_platform_user(
     if len(admin_user_ids) == 1 and user_id in admin_user_ids:
         raise HTTPException(
             status_code=400,
-            detail="You can't remove the last admin of the platform",
+            detail="Вы не можете удалить последнего администратора платформы",
         )
 
     for role in user_roles:
         db_session.delete(role)
     db_session.commit()
 
-    return {"detail": "User removed from platform"}
+    return {"detail": "Пользователь удален с платформы"}
 
 
 def update_platform_user_role(
@@ -130,47 +125,34 @@ def update_platform_user_role(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     checker: PermissionChecker,
-):
+) -> dict[str, str]:
     role = db_session.get(Role, role_id)
     if not role:
-        raise HTTPException(status_code=404, detail="Role not found")
+        raise HTTPException(status_code=404, detail="Роль не найдена")
 
     checker.require(current_user.id, "platform:update")
 
-    admin_role = db_session.exec(
-        select(Role).where(Role.slug.in_(list(ADMIN_ROLE_SLUGS)))
-    ).first()
+    admin_role = db_session.exec(select(Role).where(col(Role.slug).in_(list(ADMIN_ROLE_SLUGS)))).first()
     admin_role_id = admin_role.id if admin_role else 1
 
     admin_user_ids = {
-        ur.user_id
-        for ur in db_session.exec(
-            select(UserRole).where(UserRole.role_id == admin_role_id)
-        ).all()
+        ur.user_id for ur in db_session.exec(select(UserRole).where(UserRole.role_id == admin_role_id)).all()
     }
     if not admin_user_ids:
-        raise HTTPException(status_code=400, detail="There is no admin in the platform")
+        raise HTTPException(status_code=400, detail="На платформе нет администраторов")
 
-    if (
-        len(admin_user_ids) == 1
-        and user_id in admin_user_ids
-        and role.slug not in ADMIN_ROLE_SLUGS
-    ):
-        raise HTTPException(
-            status_code=400, detail="Platform must have at least one admin"
-        )
+    if len(admin_user_ids) == 1 and user_id in admin_user_ids and role.slug not in ADMIN_ROLE_SLUGS:
+        raise HTTPException(status_code=400, detail="На платформе должен быть как минимум один администратор")
 
-    existing_roles = db_session.exec(
-        select(UserRole).where(UserRole.user_id == user_id)
-    ).all()
+    existing_roles = db_session.exec(select(UserRole).where(UserRole.user_id == user_id)).all()
     if not existing_roles:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     for user_role in existing_roles:
         db_session.delete(user_role)
     db_session.flush()
 
-    checker.assign_role(user_id=user_id, role_id=role.id)
+    checker.assign_role(user_id=user_id, role_id=require_persisted_id(role.id, model_name="Role"))
     db_session.commit()
 
-    return {"detail": "User role updated"}
+    return {"detail": "Роль пользователя обновлена"}

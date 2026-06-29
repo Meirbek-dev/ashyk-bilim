@@ -1,21 +1,21 @@
-'use client';
+'use client'
 
-import type { Action, Resource, Scope } from '@/types/permissions';
-import { useSession } from '@/hooks/useSession';
-import type { ReactNode } from 'react';
-import { Component } from 'react';
+import type { Action, Resource, Scope } from '@/types/permissions'
+import { useSession } from '@/hooks/useSession'
+import type { ReactNode } from 'react'
+import { Component } from 'react'
 
 interface PermissionGuardProps {
   /** Action to check permission for. */
-  action: Action;
+  action: Action
   /** Resource to check permission for. */
-  resource: Resource;
+  resource: Resource
   /** Permission scope (required - no silent default). */
-  scope: Scope;
+  scope: Scope
   /** Content to render if permission is granted. */
-  children: ReactNode;
+  children: ReactNode
   /** Optional fallback content if permission is denied. */
-  fallback?: ReactNode;
+  fallback?: ReactNode
 }
 
 /**
@@ -29,10 +29,10 @@ interface PermissionGuardProps {
  * ```
  */
 export function PermissionGuard({ action, resource, scope, children, fallback = null }: PermissionGuardProps) {
-  const { can } = useSession();
+  const { can } = useSession()
 
-  if (!can(resource, action, scope)) return <>{fallback}</>;
-  return <>{children}</>;
+  if (!can(resource, action, scope)) return <>{fallback}</>
+  return <>{children}</>
 }
 
 /**
@@ -41,34 +41,34 @@ export function PermissionGuard({ action, resource, scope, children, fallback = 
  * instead of crashing the entire page.
  */
 interface PermissionErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: ReactNode
+  fallback?: ReactNode
 }
 
 interface PermissionErrorBoundaryState {
-  hasError: boolean;
+  hasError: boolean
 }
 
 export class PermissionErrorBoundary extends Component<PermissionErrorBoundaryProps, PermissionErrorBoundaryState> {
   public constructor(props: PermissionErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
+    super(props)
+    this.state = { hasError: false }
   }
 
   public static getDerivedStateFromError(): PermissionErrorBoundaryState {
-    return { hasError: true };
+    return { hasError: true }
   }
 
   public override componentDidCatch(error: Error) {
-    console.error('PermissionErrorBoundary caught error:', error);
+    console.error('PermissionErrorBoundary caught error:', error)
   }
 
   public override render() {
     if (this.state.hasError) {
-      return <>{this.props.fallback ?? null}</>;
+      return <>{this.props.fallback ?? null}</>
     }
-    return this.props.children;
+    return this.props.children
   }
 }
 
-export default PermissionGuard;
+export default PermissionGuard

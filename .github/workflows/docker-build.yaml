@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Docker Image
-        run: docker build -t openu .
-        working-directory: .
+      - name: Build API Docker image
+        run: docker build -f apps/api/Dockerfile -t ashyq-bilim-api apps/api
+      - name: Build Web Docker image
+        run: docker build -f apps/web/Dockerfile -t ashyq-bilim-web .

@@ -1,3 +1,4 @@
+
 """Drop legacy breakdown column from grading_entry.
 
 The ``breakdown`` column was the original grading detail JSON field. It has been

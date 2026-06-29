@@ -1,5 +1,4 @@
-"""
-StudentPolicyOverride — per-student exceptions to AssessmentPolicy limits.
+"""StudentPolicyOverride — per-student exceptions to AssessmentPolicy limits.
 
 A teacher can grant a specific student extra attempts, a deadline extension,
 or an exemption from late penalties without changing the policy for the whole
@@ -20,6 +19,7 @@ expires_at              If set, the override is ignored after this timestamp.
 """
 
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from sqlalchemy import (
     Boolean,
@@ -39,7 +39,7 @@ from src.db.strict_base_model import SQLModelStrictBaseModel
 class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
     """Per-student exception to an AssessmentPolicy."""
 
-    __tablename__ = "student_policy_override"
+    __tablename__: ClassVar[str] = "student_policy_override"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint(
             "policy_id",
@@ -78,9 +78,7 @@ class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
     )
     waive_late_penalty: bool = Field(
         default=False,
-        sa_column=Column(
-            "waive_late_penalty", Boolean, nullable=False, server_default="false"
-        ),
+        sa_column=Column("waive_late_penalty", Boolean, nullable=False, server_default="false"),
     )
 
     note: str = Field(

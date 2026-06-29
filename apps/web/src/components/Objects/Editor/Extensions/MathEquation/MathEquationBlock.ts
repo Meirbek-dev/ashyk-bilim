@@ -1,18 +1,18 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import MathEquationBlockComponent from './MathEquationBlockComponent';
-import { nodeView } from '@components/Objects/Editor/core';
+import MathEquationBlockComponent from './MathEquationBlockComponent'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 export interface MathEquationBlockAttrs {
-  math_equation: string;
+  math_equation: string
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockMathEquation: {
-      insertMathEquation: () => ReturnType;
-    };
+      insertMathEquation: () => ReturnType
+    }
   }
 }
 
@@ -27,7 +27,10 @@ export default Node.create({
       math_equation: {
         default: '',
       },
-    };
+      html: {
+        default: '',
+      },
+    }
   },
 
   parseHTML() {
@@ -35,11 +38,11 @@ export default Node.create({
       {
         tag: 'block-math-equation',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-math-equation', mergeAttributes(HTMLAttributes)];
+    return ['block-math-equation', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -48,10 +51,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return nodeView(MathEquationBlockComponent);
+    return nodeView(MathEquationBlockComponent)
   },
-});
+})

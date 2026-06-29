@@ -1,5 +1,4 @@
-"""
-Submission state-machine service.
+"""Submission state-machine service.
 
 Owns the explicit student-facing state transitions:
 
@@ -99,9 +98,11 @@ def start_submission_v2(
     assessment_type: AssessmentType,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    skip_permission: bool = False,
+    skip_attempt_limit: bool = False,
 ) -> SubmissionRead:
-    """
-    Create a DRAFT Submission and record the server-stamped start time.
+    """Create a DRAFT Submission and record the server-stamped start time.
 
     Idempotent — returns the existing DRAFT if one is already open for this
     user/activity pair.
@@ -111,7 +112,8 @@ def start_submission_v2(
     Raises 404 if the activity does not exist.
     """
     activity = _get_activity_or_404(activity_id, db_session)
-    _require_permission(current_user, activity, assessment_type, db_session)
+    if not skip_permission:
+        _require_permission(current_user, activity, assessment_type, db_session)
 
     # Return the open DRAFT if one already exists (idempotent)
     existing_draft = db_session.exec(
@@ -127,11 +129,10 @@ def start_submission_v2(
         return SubmissionRead.model_validate(existing_draft)
 
     # Enforce max_attempts from AssessmentPolicy before creating a new DRAFT.
-    _enforce_attempt_limit_from_policy(activity_id, current_user.id, db_session)
+    if not skip_attempt_limit:
+        _enforce_attempt_limit_from_policy(activity_id, current_user.id, db_session)
 
-    attempt_number = (
-        _count_previous_attempts(activity_id, current_user.id, db_session) + 1
-    )
+    attempt_number = _count_previous_attempts(activity_id, current_user.id, db_session) + 1
     now = datetime.now(UTC)
 
     submission = Submission(
@@ -159,8 +160,7 @@ def create_resubmission_draft(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionRead:
-    """
-    Create a new DRAFT from a RETURNED submission (resubmission flow).
+    """Create a new DRAFT from a RETURNED submission (resubmission flow).
 
     The original RETURNED submission is left intact.  A new Submission row is
     inserted with attempt_number = previous_attempt + 1 and status = DRAFT.
@@ -177,14 +177,10 @@ def create_resubmission_draft(
     _require_permission(current_user, activity, original.assessment_type, db_session)
 
     # max_attempts includes the attempt that was just RETURNED
-    _enforce_attempt_limit_from_policy(
-        original.activity_id, current_user.id, db_session
-    )
+    _enforce_attempt_limit_from_policy(original.activity_id, current_user.id, db_session)
 
     now = datetime.now(UTC)
-    next_attempt = (
-        _count_previous_attempts(original.activity_id, current_user.id, db_session) + 1
-    )
+    next_attempt = _count_previous_attempts(original.activity_id, current_user.id, db_session) + 1
 
     draft = Submission(
         submission_uuid=f"submission_{ULID()}",
@@ -210,20 +206,16 @@ def create_resubmission_draft(
 
 
 def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     return activity
 
 
-def _get_own_submission_or_404(
-    submission_uuid: str, user_id: int, db_session: Session
-) -> Submission:
+def _get_own_submission_or_404(submission_uuid: str, user_id: int, db_session: Session) -> Submission:
     submission = db_session.exec(
         select(Submission).where(
             Submission.submission_uuid == submission_uuid,
@@ -233,7 +225,7 @@ def _get_own_submission_or_404(
     if not submission:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return submission
 
@@ -254,9 +246,7 @@ def _require_permission(
     )
 
 
-def _count_previous_attempts(
-    activity_id: int, user_id: int, db_session: Session
-) -> int:
+def _count_previous_attempts(activity_id: int, user_id: int, db_session: Session) -> int:
     """Count all non-DRAFT submissions as prior attempts."""
     return db_session.exec(
         select(sql_func.count()).where(
@@ -278,8 +268,8 @@ def _validate_transition(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"Cannot transition from {current_status} to {requested_status}. "
-                f"Allowed transitions: {[s.value for s in allowed]}"
+                f"Нельзя перейти из {current_status} в {requested_status}. "
+                f"Разрешенные переходы: {[s.value for s in allowed]}"
             ),
         )
 
@@ -299,11 +289,7 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = (
-            override.expires_at
-            if override.expires_at.tzinfo
-            else override.expires_at.replace(tzinfo=UTC)
-        )
+        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
         if expires_at <= now:
             return None
     return override
@@ -314,16 +300,13 @@ def _enforce_attempt_limit_from_policy(
     user_id: int,
     db_session: Session,
 ) -> None:
-    """
-    Enforce max_attempts from AssessmentPolicy.
+    """Enforce max_attempts from AssessmentPolicy.
 
     Unlike the block-content-based check in submit.py, this reads from the
     canonical AssessmentPolicy row so limits are consistent regardless of which
     submit endpoint the student uses.
     """
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
 
     if policy is None:
         return
@@ -340,5 +323,5 @@ def _enforce_attempt_limit_from_policy(
     if completed_count >= max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({max_attempts}) reached",
+            detail=f"Достигнуто максимальное количество попыток ({max_attempts})",
         )

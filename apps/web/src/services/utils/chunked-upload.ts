@@ -5,51 +5,52 @@
  * Bypasses nginx request size limits and provides progress tracking.
  */
 
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client'
+import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 
 // Default chunk size: 2MB (small enough to bypass most nginx configs)
-const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
-const CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS = 5 * 60_000;
+const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024
+const CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS = 5 * 60_000
 
 export interface ChunkedUploadOptions {
-  file: File;
-  directory: string;
-  typeOfDir: 'platform' | 'users';
-  uuid?: string;
-  filename: string;
-  chunkSize?: number;
+  file: File
+  directory: string
+  typeOfDir: 'platform' | 'users'
+  uuid?: string
+  filename: string
+  chunkSize?: number
   onProgress?: (progress: {
-    uploadedBytes: number;
-    totalBytes: number;
-    percentage: number;
-    currentChunk: number;
-    totalChunks: number;
-  }) => void;
-  onChunkComplete?: (chunkIndex: number, totalChunks: number) => void;
-  onError?: (error: Error) => void;
+    uploadedBytes: number
+    totalBytes: number
+    percentage: number
+    currentChunk: number
+    totalChunks: number
+  }) => void
+  onChunkComplete?: (chunkIndex: number, totalChunks: number) => void
+  onError?: (error: Error) => void
 }
 
 export interface ChunkedUploadResult {
-  success: boolean;
-  filename: string;
-  fileSize: number;
-  message?: string;
+  success: boolean
+  filename: string
+  fileSize: number
+  message?: string
 }
 
 /**
  * Split a file into chunks
  */
 function splitFileIntoChunks(file: File, chunkSize: number): Blob[] {
-  const chunks: Blob[] = [];
-  let start = 0;
+  const chunks: Blob[] = []
+  let start = 0
 
   while (start < file.size) {
-    const end = Math.min(start + chunkSize, file.size);
-    chunks.push(file.slice(start, end));
-    start = end;
+    const end = Math.min(start + chunkSize, file.size)
+    chunks.push(file.slice(start, end))
+    start = end
   }
 
-  return chunks;
+  return chunks
 }
 
 /**
@@ -66,76 +67,69 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     onProgress,
     onChunkComplete,
     onError,
-  } = options;
+  } = options
 
   try {
     if (typeOfDir === 'users' && !uuid) {
-      throw new Error('uuid is required when typeOfDir is "users"');
+      throw clientApiError('INVALID_CLIENT_REQUEST', 'uuid is required when typeOfDir is "users"', {
+        path: 'uploads/initiate',
+      })
     }
 
     // Split file into chunks
-    const chunks = splitFileIntoChunks(file, chunkSize);
-    const totalChunks = chunks.length;
-    let uploadedBytes = 0;
+    const chunks = splitFileIntoChunks(file, chunkSize)
+    const totalChunks = chunks.length
+    let uploadedBytes = 0
 
-    console.log(`Uploading file in ${totalChunks} chunks...`);
+    console.log(`Uploading file in ${totalChunks} chunks...`)
 
     // Step 1: Initiate chunked upload
-    const initiateFormData = new FormData();
-    initiateFormData.append('directory', directory);
-    initiateFormData.append('type_of_dir', typeOfDir);
-    initiateFormData.append('uuid', uuid ?? '');
-    initiateFormData.append('filename', filename);
-    initiateFormData.append('total_chunks', totalChunks.toString());
-    initiateFormData.append('file_size', file.size.toString());
+    const initiateFormData = new FormData()
+    initiateFormData.append('directory', directory)
+    initiateFormData.append('type_of_dir', typeOfDir)
+    initiateFormData.append('uuid', uuid ?? '')
+    initiateFormData.append('filename', filename)
+    initiateFormData.append('total_chunks', totalChunks.toString())
+    initiateFormData.append('file_size', file.size.toString())
 
     const initiateResponse = await apiFetch('uploads/initiate', {
       method: 'POST',
       body: initiateFormData,
       timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
-    });
+    })
 
     if (!initiateResponse.ok) {
-      const body = await initiateResponse.json().catch(() => null);
-      console.error('Failed to initiate chunked upload', {
-        status: initiateResponse.status,
-        body,
-      });
-      throw new Error(
-        body?.detail ? JSON.stringify(body.detail) : `Failed to initiate upload (status ${initiateResponse.status})`,
-      );
+      throw await parseApiError(initiateResponse, 'uploads/initiate')
     }
 
-    const { upload_uuid: upload_id } = await initiateResponse.json();
-    console.log(`Upload initiated with ID: ${upload_id}`);
+    const { upload_uuid: upload_id } = await initiateResponse.json()
+    console.log(`Upload initiated with ID: ${upload_id}`)
 
     // Step 2: Upload chunks sequentially
     for (let i = 0; i < chunks.length; i += 1) {
-      const chunk = chunks[i];
+      const chunk = chunks[i]
       if (!chunk) {
-        throw new Error(`Chunk ${i} is undefined`);
+        throw clientApiError('CLIENT_INVARIANT_VIOLATION', `Chunk ${i} is undefined`, {
+          path: 'uploads/chunk',
+        })
       }
 
-      const chunkFormData = new FormData();
-      chunkFormData.append('upload_id', upload_id);
-      chunkFormData.append('chunk_index', i.toString());
-      chunkFormData.append('chunk', chunk, `chunk_${i}`);
+      const chunkFormData = new FormData()
+      chunkFormData.append('upload_id', upload_id)
+      chunkFormData.append('chunk_index', i.toString())
+      chunkFormData.append('chunk', chunk, `chunk_${i}`)
 
       const chunkResponse = await apiFetch('uploads/chunk', {
         method: 'POST',
         body: chunkFormData,
         timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
-      });
+      })
 
       if (!chunkResponse.ok) {
-        const body = await chunkResponse.json().catch(() => null);
-        console.error(`Failed to upload chunk ${i}`, { status: chunkResponse.status, body });
-        throw new Error(
-          body?.detail ? JSON.stringify(body.detail) : `Failed to upload chunk ${i} (status ${chunkResponse.status})`,
-        );
+        throw await parseApiError(chunkResponse, 'uploads/chunk')
       }
 
-      uploadedBytes += chunk.size;
+      uploadedBytes += chunk.size
 
       if (onProgress) {
         onProgress({
@@ -144,49 +138,44 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
           percentage: Math.round((uploadedBytes / file.size) * 100),
           currentChunk: i + 1,
           totalChunks,
-        });
+        })
       }
 
       if (onChunkComplete) {
-        onChunkComplete(i, totalChunks);
+        onChunkComplete(i, totalChunks)
       }
 
-      console.log(`Uploaded chunk ${i + 1}/${totalChunks}`);
+      console.log(`Uploaded chunk ${i + 1}/${totalChunks}`)
     }
 
     // Step 3: Complete the upload
-    const completeFormData = new FormData();
-    completeFormData.append('upload_id', upload_id);
+    const completeFormData = new FormData()
+    completeFormData.append('upload_id', upload_id)
 
     const completeResponse = await apiFetch('uploads/complete', {
       method: 'POST',
       body: completeFormData,
       timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
-    });
+    })
 
     if (!completeResponse.ok) {
-      const body = await completeResponse.json().catch(() => null);
-      console.error('Failed to complete upload', { status: completeResponse.status, body });
-      throw new Error(
-        body?.detail ? JSON.stringify(body.detail) : `Failed to complete upload (status ${completeResponse.status})`,
-      );
+      throw await parseApiError(completeResponse, 'uploads/complete')
     }
 
-    const result = await completeResponse.json();
-    console.log('Upload completed successfully');
+    const result = await completeResponse.json()
+    console.log('Upload completed successfully')
 
     return {
       success: true,
       filename: result.filename,
       fileSize: result.file_size,
       message: result.message,
-    };
-  } catch (error) {
-    console.error('Chunked upload error:', error);
-    if (onError) {
-      onError(error as Error);
     }
-    throw error;
+  } catch (error) {
+    if (onError) {
+      onError(error as Error)
+    }
+    throw error
   }
 }
 
@@ -195,6 +184,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
  * Files larger than 5MB should use chunked upload to avoid nginx 413 errors
  */
 export function shouldUseChunkedUpload(fileSize: number): boolean {
-  const THRESHOLD = 5 * 1024 * 1024; // 5MB
-  return fileSize > THRESHOLD;
+  const THRESHOLD = 5 * 1024 * 1024 // 5MB
+  return fileSize > THRESHOLD
 }

@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
-import type { Submission } from '@/features/grading/domain';
-import { cn } from '@/lib/utils';
-import ReviewBulkActionBar from './ReviewBulkActionBar';
+import type { Submission } from '@/features/grading/domain'
+import { cn } from '@/lib/utils'
+import ReviewBulkActionBar from './ReviewBulkActionBar'
 
 interface SubmissionStats {
-  total: number;
-  needs_grading_count: number;
-  avg_score: number | null;
-  pass_rate: number | null;
+  total: number
+  needs_grading_count: number
+  avg_score: number | null
+  pass_rate: number | null
 }
 
 export default function ReviewLayout({
@@ -25,17 +25,17 @@ export default function ReviewLayout({
   children,
   onBulkRefresh,
 }: {
-  activityId: number;
-  assessmentUuid?: string;
-  title?: string;
-  total: number;
-  stats?: SubmissionStats | null;
-  selectedSubmissions: Submission[];
-  children: ReactNode;
-  onBulkRefresh: () => Promise<void>;
+  activityId: number
+  assessmentUuid?: string
+  title?: string
+  total: number
+  stats?: SubmissionStats | null
+  selectedSubmissions: Submission[]
+  children: ReactNode
+  onBulkRefresh: () => Promise<void>
 }) {
-  const t = useTranslations('Features.Grading.Review');
-  const pageTitle = title ?? t('layout.title');
+  const t = useTranslations('Features.Grading.Review')
+  const pageTitle = title ?? t('layout.title')
 
   return (
     <div className="flex min-h-[calc(100vh-96px)] flex-col">
@@ -45,18 +45,21 @@ export default function ReviewLayout({
             <div>
               <h1 className="text-2xl font-semibold">{pageTitle}</h1>
               <p className="text-muted-foreground text-sm">
-                {t('layout.queueDescription', { count: stats?.needs_grading_count ?? 0, total })}
+                {t('layout.queueDescription', {
+                  count: stats?.needs_grading_count ?? 0,
+                  total,
+                })}
               </p>
             </div>
             <ReviewBulkActionBar
               activityId={activityId}
-              assessmentUuid={assessmentUuid}
               submissions={selectedSubmissions}
               disabled={selectedSubmissions.length === 0}
               onRefresh={onBulkRefresh}
+              {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
             />
           </div>
-          <StatsGrid stats={stats} />
+          <StatsGrid {...(stats === undefined ? {} : { stats })} />
         </div>
       </div>
 
@@ -64,40 +67,31 @@ export default function ReviewLayout({
         {children}
       </div>
     </div>
-  );
+  )
 }
 
 function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
-  const t = useTranslations('Features.Grading.Review');
-  if (!stats) return null;
+  const t = useTranslations('Features.Grading.Review')
+  if (!stats) return null
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile
-        label={t('layout.stats.total')}
-        value={stats.total}
-        icon={Users}
-      />
-      <StatTile
-        label={t('layout.stats.needsGrading')}
-        value={stats.needs_grading_count}
-        icon={Clock4}
-        accent="amber"
-      />
+      <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
+      <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
       <StatTile
         label={t('layout.stats.avgScore')}
         value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
         icon={TrendingUp}
-        accent="sky"
+        accent="blue"
       />
       <StatTile
         label={t('layout.stats.passRate')}
         value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
         icon={BookOpenCheck}
-        accent="emerald"
+        accent="lime"
       />
     </div>
-  );
+  )
 }
 
 function StatTile({
@@ -106,17 +100,17 @@ function StatTile({
   icon: Icon,
   accent = 'default',
 }: {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  accent?: 'amber' | 'emerald' | 'sky' | 'default';
+  label: string
+  value: string | number
+  icon: React.ElementType
+  accent?: 'amber' | 'lime' | 'blue' | 'default'
 }) {
   const colorMap = {
     default: 'text-muted-foreground',
     amber: 'text-amber-600',
-    emerald: 'text-emerald-600',
-    sky: 'text-sky-600',
-  };
+    lime: 'text-lime-600',
+    blue: 'text-blue-600',
+  }
 
   return (
     <div className="bg-card flex items-center gap-3 rounded-md border p-3">
@@ -126,5 +120,5 @@ function StatTile({
         <p className="text-lg leading-tight font-semibold">{value}</p>
       </div>
     </div>
-  );
+  )
 }

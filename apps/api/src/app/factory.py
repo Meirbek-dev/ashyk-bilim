@@ -5,8 +5,13 @@ from src.app.errors import register_exception_handlers
 from src.app.lifespan import create_lifespan
 from src.app.middleware import add_application_middleware, mount_static_routes
 from src.app.routing import StrictAPIRoute, enforce_strict_response_models
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.infra.settings import AppSettings, get_settings
 from src.router import v1_router
+
+
+class RootResponse(PydanticStrictBaseModel):
+    Message: str
 
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
@@ -16,9 +21,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         title="Ashyk Bilim",
         description="Образовательная платформа Ashyk Bilim",
         docs_url="/docs" if resolved_settings.general_config.development_mode else None,
-        redoc_url="/redoc"
-        if resolved_settings.general_config.development_mode
-        else None,
+        redoc_url="/redoc" if resolved_settings.general_config.development_mode else None,
         version="0.1.0",
         lifespan=create_lifespan(resolved_settings),
     )
@@ -33,7 +36,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     enforce_strict_response_models(app)
     add_pagination(app)
 
-    @app.get("/")
+    @app.get("/", response_model=RootResponse)
     def root() -> dict[str, str]:
         return {"Message": "Добро пожаловать в Ashyk Bilim"}
 

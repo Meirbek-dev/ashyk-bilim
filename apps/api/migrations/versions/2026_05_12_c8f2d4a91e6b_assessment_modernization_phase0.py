@@ -30,36 +30,41 @@ depends_on = None
 
 
 def upgrade() -> None:
+    inspector = sa.inspect(op.get_bind())
+    existing_tables = set(inspector.get_table_names())
+
     # ── New columns on assessment ─────────────────────────────────────────────
-    op.add_column(
-        "assessment",
-        sa.Column(
-            "inline_parent_activity_id",
-            sa.Integer(),
-            sa.ForeignKey("activity.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
-    op.add_column(
-        "assessment",
-        sa.Column(
-            "is_inline",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("false"),
-        ),
-    )
+    if "assessment" in existing_tables:
+        op.add_column(
+            "assessment",
+            sa.Column(
+                "inline_parent_activity_id",
+                sa.Integer(),
+                sa.ForeignKey("activity.id", ondelete="SET NULL"),
+                nullable=True,
+            ),
+        )
+        op.add_column(
+            "assessment",
+            sa.Column(
+                "is_inline",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+        )
 
     # ── New column on submission ──────────────────────────────────────────────
-    op.add_column(
-        "submission",
-        sa.Column(
-            "draft_version",
-            sa.Integer(),
-            nullable=False,
-            server_default=sa.text("1"),
-        ),
-    )
+    if "submission" in existing_tables:
+        op.add_column(
+            "submission",
+            sa.Column(
+                "draft_version",
+                sa.Integer(),
+                nullable=False,
+                server_default=sa.text("1"),
+            ),
+        )
 
     # ── audit_event table ─────────────────────────────────────────────────────
     op.create_table(
@@ -124,33 +129,31 @@ def upgrade() -> None:
         op.execute(sa.text(f"DROP TABLE IF EXISTS {table} CASCADE"))
 
     # ── Strip legacy_* keys from submission.metadata_json ─────────────────────
-    conn = op.get_bind()
-    rows = conn.execute(
-        sa.text(
-            "SELECT id, metadata_json FROM submission "
-            "WHERE metadata_json::text LIKE '%legacy_%'"
-        )
-    ).fetchall()
+    if "submission" in existing_tables:
+        conn = op.get_bind()
+        rows = conn.execute(
+            sa.text("SELECT id, metadata_json FROM submission WHERE metadata_json::text LIKE '%legacy_%'")
+        ).fetchall()
 
-    legacy_keys = [
-        "legacy_code_submission_id",
-        "legacy_plagiarism_score",
-        "legacy_assignment_type",
-        "legacy_task_submission_uuid",
-    ]
+        legacy_keys = [
+            "legacy_code_submission_id",
+            "legacy_plagiarism_score",
+            "legacy_assignment_type",
+            "legacy_task_submission_uuid",
+        ]
 
-    for row in rows:
-        metadata = row.metadata_json if isinstance(row.metadata_json, dict) else {}
-        changed = False
-        for key in legacy_keys:
-            if key in metadata:
-                del metadata[key]
-                changed = True
-        if changed:
-            conn.execute(
-                sa.text("UPDATE submission SET metadata_json = :meta WHERE id = :id"),
-                {"meta": json.dumps(metadata), "id": row.id},
-            )
+        for row in rows:
+            metadata = row.metadata_json if isinstance(row.metadata_json, dict) else {}
+            changed = False
+            for key in legacy_keys:
+                if key in metadata:
+                    del metadata[key]
+                    changed = True
+            if changed:
+                conn.execute(
+                    sa.text("UPDATE submission SET metadata_json = :meta WHERE id = :id"),
+                    {"meta": json.dumps(metadata), "id": row.id},
+                )
 
 
 def downgrade() -> None:

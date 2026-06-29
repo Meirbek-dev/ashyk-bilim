@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { courseKeys } from './courseKeys';
-import { courseStructureQueryOptions } from '@/features/courses/queries/course.query';
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { courseKeys } from './courseKeys'
+import { courseStructureQueryOptions } from '@/features/courses/queries/course.query'
 
 interface UseCourseStructureOptions<TCourseStructure> {
-  withUnpublishedActivities?: boolean;
-  fallbackData?: TCourseStructure;
+  withUnpublishedActivities?: boolean
+  fallbackData?: TCourseStructure
 }
 
 /**
@@ -20,23 +20,23 @@ function courseStructureHookOptions<TCourseStructure = unknown>(
   courseUuid: string,
   options?: UseCourseStructureOptions<TCourseStructure>,
 ) {
-  const withUnpublishedActivities = options?.withUnpublishedActivities ?? false;
+  const withUnpublishedActivities = options?.withUnpublishedActivities ?? false
 
   return queryOptions({
     ...courseStructureQueryOptions<TCourseStructure>(courseUuid, withUnpublishedActivities),
     enabled: Boolean(courseUuid),
-    initialData: options?.fallbackData,
-  });
+    ...(options?.fallbackData === undefined ? {} : { initialData: options.fallbackData }),
+  })
 }
 
-export function useCourseStructure<TCourseStructure = any>(
+export function useCourseStructure<TCourseStructure = AppCourse>(
   courseUuid: string,
   options?: UseCourseStructureOptions<TCourseStructure>,
 ) {
-  const withUnpublishedActivities = options?.withUnpublishedActivities ?? false;
-  const key = courseKeys.structure(courseUuid, withUnpublishedActivities);
+  const withUnpublishedActivities = options?.withUnpublishedActivities ?? false
+  const key = courseKeys.structure(courseUuid, withUnpublishedActivities)
 
-  const query = useQuery(courseStructureHookOptions<TCourseStructure>(courseUuid, options));
+  const query = useQuery(courseStructureHookOptions<TCourseStructure>(courseUuid, options))
 
   return {
     courseStructure: query.data,
@@ -52,46 +52,41 @@ export function useCourseStructure<TCourseStructure = any>(
     mutate: async () => (await query.refetch()).data,
     refetch: query.refetch,
     status: query.status,
-  };
+  }
 }
 
-export function useCourseChapters<TChapter = any>(courseUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure<{ chapters?: TChapter[] }>(courseUuid, {
+export function useCourseChapters(courseUuid: string, withUnpublishedActivities = false) {
+  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
     withUnpublishedActivities,
-  });
+  })
 
   return {
     ...rest,
     chapters: courseStructure?.chapters ?? [],
-  };
+  }
 }
 
-export function useChapter<TChapter = any>(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure<{ chapters?: TChapter[] }>(courseUuid, {
+export function useChapter(courseUuid: string, chapterUuid: string, withUnpublishedActivities = false) {
+  const { courseStructure, ...rest } = useCourseStructure(courseUuid, {
     withUnpublishedActivities,
-  });
+  })
 
-  const chapter =
-    courseStructure?.chapters?.find((currentChapter: any) => currentChapter.chapter_uuid === chapterUuid) ?? null;
+  const chapter = courseStructure?.chapters?.find(currentChapter => currentChapter.chapter_uuid === chapterUuid) ?? null
 
-  return { ...rest, chapter };
+  return { ...rest, chapter }
 }
 
-export function useChapterActivities<TActivity = any>(
+export function useChapterActivities(
   courseUuid: string,
   chapterUuid: string,
   enabled: boolean,
   withUnpublishedActivities = false,
 ) {
-  const { chapter, ...rest } = useChapter<{ activities?: TActivity[] }>(
-    courseUuid,
-    chapterUuid,
-    withUnpublishedActivities,
-  );
+  const { chapter, ...rest } = useChapter(courseUuid, chapterUuid, withUnpublishedActivities)
 
   return {
     ...rest,
     activities: enabled ? (chapter?.activities ?? []) : [],
     isLoading: enabled ? rest.isLoading : false,
-  };
+  }
 }

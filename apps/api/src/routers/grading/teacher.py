@@ -1,5 +1,4 @@
-"""
-Teacher-facing grading routes.
+"""Teacher-facing grading routes.
 
 GET   /grading/submissions           — paginated + filterable + searchable list
 GET   /grading/submissions/stats     — aggregate stats for dashboard header
@@ -10,7 +9,7 @@ PATCH /grading/submissions/{uuid}    — save teacher grade + feedback
 
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
@@ -35,9 +34,12 @@ from src.infra.db.session import get_db_session
 from src.services.grading.bulk import (
     create_deadline_extension_action,
     get_bulk_action,
-    run_deadline_extension_action,
 )
-from src.services.grading.gradebook import get_course_gradebook
+from src.services.grading.gradebook import export_course_gradebook_csv, get_course_gradebook
+from src.services.grading.gradebook_cursor import (
+    GradebookCursorPage,
+    get_gradebook_cursor,
+)
 from src.services.grading.teacher import (
     batch_grade_submissions,
     bulk_publish_grades,
@@ -56,26 +58,54 @@ async def api_get_course_gradebook(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
+    page: Annotated[int | None, Query(ge=1)] = None,
+    page_size: Annotated[int | None, Query(ge=1, le=500)] = None,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    activity_type: Annotated[str | None, Query()] = None,
+    saved_filter: Annotated[str | None, Query()] = None,
 ) -> CourseGradebookResponse:
     """Return the teacher's course-level gradebook matrix."""
     return await get_course_gradebook(
         course_uuid=course_uuid,
         current_user=current_user,
         db_session=db_session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        activity_type=activity_type,
+        saved_filter=saved_filter,
     )
 
 
-@router.get("/courses/{course_uuid}/gradebook/cursor")
+@router.get("/courses/{course_uuid}/gradebook/export", response_class=StreamingResponse)
+async def api_export_course_gradebook_csv(
+    course_uuid: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> StreamingResponse:
+    """Export the full course gradebook matrix as CSV."""
+    data = await get_course_gradebook(
+        course_uuid=course_uuid,
+        current_user=current_user,
+        db_session=db_session,
+    )
+    filename = f"course-gradebook-{data.course_uuid}.csv"
+    return StreamingResponse(
+        export_course_gradebook_csv(data),
+        media_type="text/csv",
+        headers={"Content-Disposition": get_content_disposition_header(filename)},
+    )
+
+
+@router.get("/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage)
 async def api_get_course_gradebook_cursor(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     cursor: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=2000)] = 500,
-):
+) -> GradebookCursorPage:
     """Return cursor-paginated gradebook cells for large classes."""
-    from src.services.grading.gradebook_cursor import get_gradebook_cursor
-
     return await get_gradebook_cursor(
         course_uuid=course_uuid,
         current_user=current_user,
@@ -94,8 +124,7 @@ async def api_bulk_publish_grades(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BulkPublishGradesResponse:
-    """
-    Publish all graded submissions for an activity at once (BATCH release mode).
+    """Опубликовать все оценённые отправки для активности сразу (режим BATCH).
 
     For each PUBLISHED submission without an existing published GradingEntry,
     a new immutable GradingEntry is inserted with published_at stamped to now.
@@ -119,11 +148,12 @@ async def api_bulk_publish_grades(
 async def api_extend_deadline(
     activity_id: int,
     request: DeadlineExtensionRequest,
-    background_tasks: BackgroundTasks,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BulkActionRead:
     """Grant selected students a deadline extension via StudentPolicyOverride."""
+    from src.worker.tasks.bulk_grading import execute_deadline_extension_task
+
     action = create_deadline_extension_action(
         activity_id=activity_id,
         user_uuids=request.user_uuids,
@@ -133,7 +163,8 @@ async def api_extend_deadline(
         db_session=db_session,
         execute_inline=False,
     )
-    background_tasks.add_task(run_deadline_extension_action, action.action_uuid)
+    # Enqueue the heavy work durably — survives process restarts.
+    await execute_deadline_extension_task.kiq(action.action_uuid)
     return BulkActionRead.model_validate(action)
 
 
@@ -165,14 +196,13 @@ async def api_list_submissions(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 25,
 ) -> SubmissionListResponse:
-    """
-    Paginated, filterable, searchable submissions list for a teacher.
+    """Paginated, filterable, searchable submissions list for a teacher.
 
     Query params:
     - activity_id: required
     - status: DRAFT | PENDING | GRADED | PUBLISHED | RETURNED | NEEDS_GRADING (virtual)
     - late_only: filter PENDING submissions to only those submitted after the deadline
-    - search: student name or email filter
+    - search: фильтр по имени студента или электронной почте
     - sort_by: submitted_at | final_score | created_at | attempt_number
     - sort_dir: asc | desc
     - page, page_size: pagination
@@ -205,14 +235,13 @@ async def api_get_submission_stats(
     )
 
 
-@router.get("/submissions/export")
+@router.get("/submissions/export", response_class=StreamingResponse)
 def api_export_submissions_csv(
     activity_id: int,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> StreamingResponse:
-    """
-    Export all non-draft submissions for an activity as CSV.
+    """Export all non-draft submissions for an activity as CSV.
 
     Streams the full dataset — no row cap.
     Content-Disposition header triggers a browser download.
@@ -224,11 +253,7 @@ def api_export_submissions_csv(
             db_session=db_session,
         ),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": get_content_disposition_header(
-                f"grades-activity-{activity_id}.csv"
-            )
-        },
+        headers={"Content-Disposition": get_content_disposition_header(f"grades-activity-{activity_id}.csv")},
     )
 
 
@@ -278,8 +303,7 @@ async def api_save_grade(
         ),
     ] = None,
 ) -> SubmissionRead:
-    """
-    Save a teacher-entered final score and optional per-item feedback.
+    """Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.
 
     Permission is checked in save_grade via the activity's creator_id.
 
@@ -288,10 +312,10 @@ async def api_save_grade(
     """
     expected_version: int | None = None
     if if_match is not None:
-        try:
+        import contextlib
+
+        with contextlib.suppress(ValueError):
             expected_version = int(if_match.strip('"'))
-        except ValueError:
-            pass  # malformed header — ignore and proceed without version check
 
     return await save_grade(
         submission_uuid=submission_uuid,

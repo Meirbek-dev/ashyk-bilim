@@ -15,6 +15,7 @@ Immutability is enforced via SQLAlchemy event listeners:
 """
 
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from sqlalchemy import (
     JSON,
@@ -29,10 +30,10 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SASession
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
+from src.types import JsonObject
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ _MUTABLE_FIELDS: frozenset[str] = frozenset({"published_at"})
 class GradingEntry(SQLModelStrictBaseModel, table=True):
     """Immutable ledger row recording one grading event for a submission."""
 
-    __tablename__ = "grading_entry"
+    __tablename__: ClassVar[str] = "grading_entry"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("entry_uuid", name="uq_grading_entry_uuid"),
         Index("ix_grading_entry_submission_id", "submission_id"),
@@ -84,15 +85,13 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     )
     final_score: float = Field(sa_column=Column("final_score", Float, nullable=False))
 
-    raw_breakdown: dict = Field(
+    raw_breakdown: JsonObject = Field(
         default_factory=dict,
         sa_column=Column("raw_breakdown", JSON, nullable=False, server_default="{}"),
     )
-    effective_breakdown: dict = Field(
+    effective_breakdown: JsonObject = Field(
         default_factory=dict,
-        sa_column=Column(
-            "effective_breakdown", JSON, nullable=False, server_default="{}"
-        ),
+        sa_column=Column("effective_breakdown", JSON, nullable=False, server_default="{}"),
     )
 
     # Teacher's overall comment — stored separately from per-item breakdown
@@ -104,9 +103,7 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     # Grading version — mirrors Submission.grading_version for schema evolution
     grading_version: int = Field(
         default=1,
-        sa_column=Column(
-            "grading_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("grading_version", Integer, nullable=False, server_default="1"),
     )
 
     # Immutable timestamps — created_at is never updated
@@ -132,8 +129,8 @@ class GradingEntryRead(SQLModelStrictBaseModel):
     raw_score: float
     penalty_pct: float
     final_score: float
-    raw_breakdown: dict
-    effective_breakdown: dict
+    raw_breakdown: JsonObject
+    effective_breakdown: JsonObject
     overall_feedback: str
     grading_version: int
     created_at: datetime
@@ -144,9 +141,7 @@ class GradingEntryRead(SQLModelStrictBaseModel):
 
 
 @event.listens_for(GradingEntry, "before_update")
-def _prevent_grading_entry_update(
-    mapper: object, connection: object, target: GradingEntry
-) -> None:
+def _prevent_grading_entry_update(mapper: object, connection: object, target: GradingEntry) -> None:  # pyright: ignore[reportUnusedFunction]
     """Block any column change except ``published_at``.
 
     SQLAlchemy's ``get_history()`` returns (added, unchanged, deleted) tuples.
@@ -155,32 +150,28 @@ def _prevent_grading_entry_update(
     from sqlalchemy import inspect as sa_inspect
 
     state = sa_inspect(target)
-    changed_fields = {
-        attr.key
-        for attr in state.attrs
-        if attr.history.added and attr.key not in _MUTABLE_FIELDS
-    }
+    if state is None:
+        return
+    changed_fields = {attr.key for attr in state.attrs if attr.history.added and attr.key not in _MUTABLE_FIELDS}
     if changed_fields:
         raise IntegrityError(
             statement=None,
             params=None,
             orig=Exception(
-                f"GradingEntry is immutable. Attempted to modify: {sorted(changed_fields)}. "
-                "Create a new GradingEntry instead."
+                f"GradingEntry неизменяем. Попытка изменить: {sorted(changed_fields)}. "
+                "Вместо этого создайте новый GradingEntry."
             ),
         )
 
 
 @event.listens_for(GradingEntry, "before_delete")
-def _prevent_grading_entry_delete(
-    mapper: object, connection: object, target: GradingEntry
-) -> None:
+def _prevent_grading_entry_delete(mapper: object, connection: object, target: GradingEntry) -> None:  # pyright: ignore[reportUnusedFunction]
     """Block all DELETE operations on GradingEntry rows."""
     raise IntegrityError(
         statement=None,
         params=None,
         orig=Exception(
-            f"GradingEntry (id={target.id}, uuid={target.entry_uuid}) cannot be deleted. "
-            "The grading ledger is append-only."
+            f"GradingEntry (id={target.id}, uuid={target.entry_uuid}) не может быть удален. "
+            "Журнал оценивания доступен только для добавления."
         ),
     )

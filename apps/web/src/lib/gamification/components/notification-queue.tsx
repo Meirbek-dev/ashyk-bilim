@@ -13,35 +13,35 @@
  * - Properly cleans up timeouts on unmount and manual dismissal
  */
 
-'use client';
+'use client'
 
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
-import { animations } from '../design-tokens';
+import { useReducedMotion } from '@/hooks/use-reduced-motion'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
+import { animations } from '../design-tokens'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface XPNotification {
-  id: string;
-  amount: number;
-  source: string;
-  triggeredLevelUp?: boolean;
-  timestamp: number;
+  id: string
+  amount: number
+  source: string
+  triggeredLevelUp?: boolean
+  timestamp: number
 }
 
 export interface XPNotificationQueueOptions {
-  maxVisible?: number;
-  batchWindowMs?: number;
-  displayDurationMs?: number;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  maxVisible?: number
+  batchWindowMs?: number
+  displayDurationMs?: number
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 }
 
-interface BatchedNotification extends XPNotification {
-  batchCount: number;
-  totalAmount: number;
+export interface BatchedNotification extends XPNotification {
+  batchCount: number
+  totalAmount: number
 }
 
 // ============================================================================
@@ -53,13 +53,13 @@ const DEFAULT_OPTIONS: Required<XPNotificationQueueOptions> = {
   batchWindowMs: 2000,
   displayDurationMs: 3000,
   position: 'bottom-right',
-};
+}
 
 export function useXPNotificationQueue(options: XPNotificationQueueOptions = {}) {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const [queue, setQueue] = useState<BatchedNotification[]>([]);
-  const [visible, setVisible] = useState<BatchedNotification[]>([]);
-  const timeoutsRef = useRef(new Map());
+  const opts = { ...DEFAULT_OPTIONS, ...options }
+  const [queue, setQueue] = useState<BatchedNotification[]>([])
+  const [visible, setVisible] = useState<BatchedNotification[]>([])
+  const timeoutsRef = useRef(new Map())
 
   // Add notification to queue with batching logic
   function addNotification(notification: Omit<XPNotification, 'id' | 'timestamp'>) {
@@ -67,24 +67,24 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
       ...notification,
       id: `${Date.now()}-${Math.random()}`,
       timestamp: Date.now(),
-    };
+    }
 
-    setQueue((prev) => {
+    setQueue(prev => {
       // Try to batch with recent similar notifications
       const recentSimilar = prev.find(
-        (n) =>
+        n =>
           n.source === newNotification.source && Date.now() - n.timestamp < opts.batchWindowMs && !n.triggeredLevelUp,
-      );
+      )
 
       if (recentSimilar) {
         // Clear existing timeout for this notification
-        const existingTimeout = timeoutsRef.current.get(recentSimilar.id);
+        const existingTimeout = timeoutsRef.current.get(recentSimilar.id)
         if (existingTimeout) {
-          clearTimeout(existingTimeout);
+          clearTimeout(existingTimeout)
         }
 
         // Batch with existing notification
-        const updated = prev.map((n) =>
+        const updated = prev.map(n =>
           n.id === recentSimilar.id
             ? {
                 ...n,
@@ -93,17 +93,17 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
                 timestamp: Date.now(), // Reset timestamp for batched notification
               }
             : n,
-        );
+        )
 
         // Set new timeout for batched notification
         const timeout = setTimeout(() => {
-          setQueue((q) => q.filter((n) => n.id !== recentSimilar.id));
-          setVisible((v) => v.filter((n) => n.id !== recentSimilar.id));
-          timeoutsRef.current.delete(recentSimilar.id);
-        }, opts.displayDurationMs);
-        timeoutsRef.current.set(recentSimilar.id, timeout);
+          setQueue(q => q.filter(n => n.id !== recentSimilar.id))
+          setVisible(v => v.filter(n => n.id !== recentSimilar.id))
+          timeoutsRef.current.delete(recentSimilar.id)
+        }, opts.displayDurationMs)
+        timeoutsRef.current.set(recentSimilar.id, timeout)
 
-        return updated;
+        return updated
       }
 
       // Add as new notification
@@ -111,61 +111,61 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
         ...newNotification,
         batchCount: 1,
         totalAmount: newNotification.amount,
-      };
+      }
 
       // Schedule automatic dismissal
       const timeout = setTimeout(() => {
-        setQueue((q) => q.filter((n) => n.id !== batched.id));
-        setVisible((v) => v.filter((n) => n.id !== batched.id));
-        timeoutsRef.current.delete(batched.id);
-      }, opts.displayDurationMs);
-      timeoutsRef.current.set(batched.id, timeout);
+        setQueue(q => q.filter(n => n.id !== batched.id))
+        setVisible(v => v.filter(n => n.id !== batched.id))
+        timeoutsRef.current.delete(batched.id)
+      }, opts.displayDurationMs)
+      timeoutsRef.current.set(batched.id, timeout)
 
-      return [...prev, batched];
-    });
+      return [...prev, batched]
+    })
   }
 
   // Update visible list whenever queue changes
-  const visibleRafRef = useRef<number | null>(null);
+  const visibleRafRef = useRef<number | null>(null)
   useEffect(() => {
     // Schedule update on next animation frame to avoid synchronous update in render
-    if (visibleRafRef.current) cancelAnimationFrame(visibleRafRef.current);
+    if (visibleRafRef.current) cancelAnimationFrame(visibleRafRef.current)
     visibleRafRef.current = requestAnimationFrame(() => {
-      setVisible(queue.slice(0, opts.maxVisible));
-    });
+      setVisible(queue.slice(0, opts.maxVisible))
+    })
     return () => {
-      if (visibleRafRef.current) cancelAnimationFrame(visibleRafRef.current);
-    };
-  }, [queue, opts.maxVisible]);
+      if (visibleRafRef.current) cancelAnimationFrame(visibleRafRef.current)
+    }
+  }, [queue, opts.maxVisible])
 
   // Cleanup timeouts on unmount
   useEffect(() => {
-    const timeouts = timeoutsRef.current;
+    const timeouts = timeoutsRef.current
     return () => {
-      timeouts.forEach((timeout) => clearTimeout(timeout));
-      timeouts.clear();
-    };
-  }, []);
+      timeouts.forEach(timeout => clearTimeout(timeout))
+      timeouts.clear()
+    }
+  }, [])
 
   // Manually dismiss a notification
   function dismissNotification(id: string) {
     // Clear timeout if exists
-    const timeout = timeoutsRef.current.get(id);
+    const timeout = timeoutsRef.current.get(id)
     if (timeout) {
-      clearTimeout(timeout);
-      timeoutsRef.current.delete(id);
+      clearTimeout(timeout)
+      timeoutsRef.current.delete(id)
     }
-    setQueue((prev) => prev.filter((n) => n.id !== id));
-    setVisible((prev) => prev.filter((n) => n.id !== id));
+    setQueue(prev => prev.filter(n => n.id !== id))
+    setVisible(prev => prev.filter(n => n.id !== id))
   }
 
   // Clear all notifications
   function clearAll() {
     // Clear all timeouts
-    timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
-    timeoutsRef.current.clear();
-    setQueue([]);
-    setVisible([]);
+    timeoutsRef.current.forEach(timeout => clearTimeout(timeout))
+    timeoutsRef.current.clear()
+    setQueue([])
+    setVisible([])
   }
 
   return {
@@ -174,7 +174,7 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
     dismissNotification,
     clearAll,
     queueSize: queue.length,
-  };
+  }
 }
 
 // ============================================================================
@@ -182,26 +182,26 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
 // ============================================================================
 
 interface XPNotificationContainerProps {
-  notifications: BatchedNotification[];
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
-  onDismiss: (id: string) => void;
-  renderNotification: (notification: BatchedNotification) => React.ReactNode;
+  notifications: BatchedNotification[]
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+  onDismiss: (id: string) => void
+  renderNotification: (notification: BatchedNotification) => React.ReactNode
 }
 
 export function XPNotificationContainer({
   notifications,
   position = 'bottom-right',
-  onDismiss,
+  onDismiss: _onDismiss,
   renderNotification,
 }: XPNotificationContainerProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion()
 
   const positionClasses = {
     'top-right': 'top-4 right-4',
     'top-left': 'top-4 left-4',
     'bottom-right': 'bottom-4 right-4',
     'bottom-left': 'bottom-4 left-4',
-  };
+  }
 
   // Simplified variants for reduced motion preference
   const containerVariants = prefersReducedMotion
@@ -217,7 +217,7 @@ export function XPNotificationContainer({
             staggerChildren: 0.1,
           },
         },
-      };
+      }
 
   const itemVariants = prefersReducedMotion
     ? {
@@ -249,7 +249,7 @@ export function XPNotificationContainer({
             duration: animations.duration.fast / 1000,
           },
         },
-      };
+      }
 
   return (
     <motion.div
@@ -259,7 +259,7 @@ export function XPNotificationContainer({
       animate="visible"
     >
       <AnimatePresence mode="popLayout">
-        {notifications.map((notification) => (
+        {notifications.map(notification => (
           <motion.div
             key={notification.id}
             variants={itemVariants}
@@ -274,7 +274,7 @@ export function XPNotificationContainer({
         ))}
       </AnimatePresence>
     </motion.div>
-  );
+  )
 }
 
 // ============================================================================
@@ -282,25 +282,25 @@ export function XPNotificationContainer({
 // ============================================================================
 
 interface BatchIndicatorProps {
-  count: number;
-  className?: string;
+  count: number
+  className?: string
 }
 
 export function BatchIndicator({ count, className }: BatchIndicatorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion()
 
-  if (count <= 1) return null;
+  if (count <= 1) return null
 
   return (
     <motion.div
       initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-      transition={prefersReducedMotion ? { duration: 0.15 } : undefined}
       className={`bg-primary text-primary-foreground inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${className}`}
+      {...(prefersReducedMotion ? { transition: { duration: 0.15 } } : {})}
     >
       ×{count}
     </motion.div>
-  );
+  )
 }
 
 // ============================================================================
@@ -308,9 +308,9 @@ export function BatchIndicator({ count, className }: BatchIndicatorProps) {
 // ============================================================================
 
 export interface ContextualPosition {
-  x: number;
-  y: number;
-  avoid?: 'top' | 'bottom' | 'left' | 'right';
+  x: number
+  y: number
+  avoid?: 'top' | 'bottom' | 'left' | 'right'
 }
 
 /**
@@ -320,75 +320,75 @@ export interface ContextualPosition {
 export function useContextualPosition(
   contextElement?: HTMLElement | null,
 ): 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' {
-  const [position, setPosition] = useState<'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'>('bottom-right');
+  const [position, setPosition] = useState<'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'>('bottom-right')
 
   // Use refs for mutable values so we can reference them from stable callbacks
-  const rafRef = useRef<number | null>(null);
-  const mountedRef = useRef(false);
+  const rafRef = useRef<number | null>(null)
+  const mountedRef = useRef(false)
 
   // computePosition and scheduleCompute are declared inside the effect to keep
   // listener references stable and avoid stale-closure issues; see useEffect below.
 
   useEffect(() => {
-    if (typeof globalThis.window === 'undefined') return;
-    if (!contextElement) return;
+    if (typeof globalThis.window === 'undefined') return
+    if (!contextElement) return
 
-    mountedRef.current = true;
+    mountedRef.current = true
 
     // Define computePosition and scheduler here so listeners can add/remove reliably
     const computePosition = () => {
-      if (typeof globalThis.window === 'undefined') return;
-      if (!contextElement || !mountedRef.current) return;
+      if (typeof globalThis.window === 'undefined') return
+      if (!contextElement || !mountedRef.current) return
 
-      const rect = contextElement.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
+      const rect = contextElement.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const viewportWidth = window.innerWidth
 
-      const isTop = rect.top < viewportHeight / 2;
-      const isLeft = rect.left < viewportWidth / 2;
+      const isTop = rect.top < viewportHeight / 2
+      const isLeft = rect.left < viewportWidth / 2
 
-      let newPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+      let newPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
       if (isTop && isLeft) {
-        newPosition = 'bottom-right';
+        newPosition = 'bottom-right'
       } else if (isTop && !isLeft) {
-        newPosition = 'bottom-left';
+        newPosition = 'bottom-left'
       } else if (!isTop && isLeft) {
-        newPosition = 'top-right';
+        newPosition = 'top-right'
       } else {
-        newPosition = 'top-left';
+        newPosition = 'top-left'
       }
 
-      setPosition((prev) => (prev === newPosition ? prev : newPosition));
-    };
+      setPosition(prev => (prev === newPosition ? prev : newPosition))
+    }
 
     const scheduleCompute = () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
       rafRef.current = requestAnimationFrame(() => {
-        computePosition();
-      });
-    };
+        computePosition()
+      })
+    }
 
     // Initial compute via rAF to avoid sync setState inside effect
-    scheduleCompute();
+    scheduleCompute()
 
     // Use a single shared options object so add/removeEventListener use the exact same reference
-    const listenerOptions = { passive: true } as any;
+    const listenerOptions: AddEventListenerOptions = { passive: true }
 
     // Listen to viewport changes
-    window.addEventListener('resize', scheduleCompute, listenerOptions);
-    window.addEventListener('scroll', scheduleCompute, listenerOptions);
-    globalThis.addEventListener('orientationchange', scheduleCompute, listenerOptions);
+    window.addEventListener('resize', scheduleCompute, listenerOptions)
+    window.addEventListener('scroll', scheduleCompute, listenerOptions)
+    globalThis.addEventListener('orientationchange', scheduleCompute, listenerOptions)
 
     return () => {
-      mountedRef.current = false;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      mountedRef.current = false
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
       // Remove listeners using the same options reference to ensure handlers are removed reliably in all browsers
-      window.removeEventListener('resize', scheduleCompute, listenerOptions);
-      window.removeEventListener('scroll', scheduleCompute, listenerOptions);
-      globalThis.removeEventListener('orientationchange', scheduleCompute, listenerOptions);
+      window.removeEventListener('resize', scheduleCompute, listenerOptions)
+      window.removeEventListener('scroll', scheduleCompute, listenerOptions)
+      globalThis.removeEventListener('orientationchange', scheduleCompute, listenerOptions)
       // Note: if the element can be inside a scrollable container, consider listening on the nearest scroll container or using IntersectionObserver - manual review may be needed.
-    };
-  }, [contextElement]);
+    }
+  }, [contextElement])
 
-  return position;
+  return position
 }

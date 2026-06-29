@@ -24,9 +24,7 @@ CourseSortBy = Literal[
     "difficulty",
     "signals",
 ]
-AssessmentSortBy = Literal[
-    "title", "submission", "pass", "difficulty", "latency", "signals"
-]
+AssessmentSortBy = Literal["title", "submission", "pass", "difficulty", "latency", "signals"]
 
 
 def _parse_csv_ints(value: str | None) -> list[int]:
@@ -99,16 +97,12 @@ class AnalyticsFilters(PydanticStrictBaseModel):
     def validate_page_size(cls, value: int) -> int:
         return min(max(1, value), 200)
 
-    def window_bounds(
-        self, *, now: datetime | None = None
-    ) -> tuple[datetime, datetime]:
+    def window_bounds(self, *, now: datetime | None = None) -> tuple[datetime, datetime]:
         end = (now or datetime.now(tz=UTC)).astimezone(UTC)
         start = end - timedelta(days=self.window_days)
         return start, end
 
-    def previous_window_bounds(
-        self, *, now: datetime | None = None
-    ) -> tuple[datetime, datetime]:
+    def previous_window_bounds(self, *, now: datetime | None = None) -> tuple[datetime, datetime]:
         current_start, _ = self.window_bounds(now=now)
         previous_end = current_start
         previous_start = previous_end - timedelta(days=self.window_days)
@@ -126,7 +120,7 @@ def get_analytics_filters(
     timezone: Annotated[str, Query()] = "UTC",
     page: Annotated[int, Query()] = 1,
     page_size: Annotated[int, Query()] = 25,
-    sort_by: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[CourseSortBy | AssessmentSortBy | None, Query()] = None,
     sort_order: Annotated[SortOrder, Query()] = "desc",
 ) -> AnalyticsFilters:
     return AnalyticsFilters(

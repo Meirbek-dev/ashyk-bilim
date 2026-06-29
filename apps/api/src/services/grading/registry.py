@@ -1,7 +1,8 @@
 """Pluggable grader registry for assessment-type dispatch."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from collections.abc import Callable
+from typing import ClassVar, override
 
 from pydantic import BaseModel
 
@@ -15,6 +16,7 @@ from src.services.grading.quiz_grader import (
     apply_attempt_penalty,
     grade_canonical_choice_items,
 )
+from src.types.narrowing import as_json_value
 
 
 class GradingResult(BaseModel):
@@ -33,7 +35,7 @@ class GraderRegistry:
     _graders: ClassVar[dict[AssessmentType, type[BaseGrader]]] = {}
 
     @classmethod
-    def register(cls, assessment_type: AssessmentType):
+    def register(cls, assessment_type: AssessmentType) -> Callable[[type[BaseGrader]], type[BaseGrader]]:
         def decorator(grader_cls: type[BaseGrader]) -> type[BaseGrader]:
             cls._graders[assessment_type] = grader_cls
             return grader_cls
@@ -42,30 +44,31 @@ class GraderRegistry:
 
     @classmethod
     def get(cls, assessment_type: AssessmentType) -> BaseGrader:
-        grader_cls = cls._graders.get(assessment_type, ManualReviewGrader)
+        grader_cls = cls._graders.get(assessment_type)
+        if grader_cls is None:
+            message = f"No grader registered for assessment type {assessment_type.value}"
+            raise RuntimeError(message)
         return grader_cls()
 
     @classmethod
-    def grade(
-        cls, assessment_type: AssessmentType, ctx: GradingContext
-    ) -> GradingResult:
+    def grade(cls, assessment_type: AssessmentType, ctx: GradingContext) -> GradingResult:
         return cls.get(assessment_type).grade(ctx)
 
 
 @GraderRegistry.register(AssessmentType.QUIZ)
 class QuizGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             raw_score, breakdown = grade_canonical_choice_items(
                 items=ctx.items,
                 answers_by_item_uuid=ctx.answers_by_item_uuid,
                 max_score=ctx.max_score,
+                negative_marking_percent=ctx.negative_marking_percent,
             )
         else:
             raw_score = 0.0
-            breakdown = GradingBreakdown(
-                items=[], needs_manual_review=True, auto_graded=False
-            )
+            breakdown = GradingBreakdown(items=[], needs_manual_review=True, auto_graded=False)
         penalized = apply_attempt_penalty(
             base_score=raw_score,
             attempt_number=ctx.attempt_number,
@@ -80,19 +83,19 @@ class QuizGrader(BaseGrader):
 
 @GraderRegistry.register(AssessmentType.EXAM)
 class ExamGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             raw_score, breakdown = grade_canonical_choice_items(
                 items=ctx.items,
                 answers_by_item_uuid=ctx.answers_by_item_uuid,
                 max_score=ctx.max_score,
+                negative_marking_percent=ctx.negative_marking_percent,
             )
         else:
             # No canonical items — return empty (exams must have items)
             raw_score = 0.0
-            breakdown = GradingBreakdown(
-                items=[], needs_manual_review=True, auto_graded=False
-            )
+            breakdown = GradingBreakdown(items=[], needs_manual_review=True, auto_graded=False)
         return GradingResult(
             auto_score=raw_score,
             breakdown=breakdown,
@@ -102,6 +105,7 @@ class ExamGrader(BaseGrader):
 
 @GraderRegistry.register(AssessmentType.CODE_CHALLENGE)
 class CodeChallengeGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             auto_score, breakdown = grade_canonical_code_item(
@@ -122,6 +126,7 @@ class CodeChallengeGrader(BaseGrader):
 
 
 class ManualReviewGrader(BaseGrader):
+    @override
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:
             empty_breakdown = GradingBreakdown(
@@ -134,7 +139,10 @@ class ManualReviewGrader(BaseGrader):
                         correct=None,
                         feedback="",
                         needs_manual_review=True,
-                        user_answer=ctx.answers_by_item_uuid.get(item.item_uuid),
+                        user_answer=as_json_value(
+                            ctx.answers_by_item_uuid.get(item.item_uuid),
+                            field=f"answer:{item.item_uuid}",
+                        ),
                     )
                     for item in ctx.items
                 ],

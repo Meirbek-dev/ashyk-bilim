@@ -10,10 +10,11 @@ This is intentionally simple: it runs in-process on the same DB session and
 does not need a distributed lock because the deletes are idempotent.
 """
 
+import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.uploads import Upload, UploadStatus
 
@@ -37,8 +38,8 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
     stale_cutoff = now - _PENDING_ORPHAN_TTL
     stale = db_session.exec(
         select(Upload).where(
-            Upload.status.in_([UploadStatus.CREATED, UploadStatus.RECEIVING]),
-            Upload.created_at < stale_cutoff,
+            col(Upload.status).in_([UploadStatus.CREATED, UploadStatus.RECEIVING]),
+            col(Upload.created_at) < stale_cutoff,
         )
     ).all()
     for upload in stale:
@@ -51,9 +52,9 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
     orphan_cutoff = now - _FINALIZED_ORPHAN_TTL
     orphans = db_session.exec(
         select(Upload).where(
-            Upload.status == UploadStatus.FINALIZED,
-            Upload.referenced_count == 0,
-            Upload.finalized_at < orphan_cutoff,
+            col(Upload.status) == UploadStatus.FINALIZED,
+            col(Upload.referenced_count) == 0,
+            col(Upload.finalized_at) < orphan_cutoff,
         )
     ).all()
     for upload in orphans:
@@ -61,5 +62,39 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
         deleted += 1
 
     db_session.commit()
+
+    # --- Clean up orphaned temporary chunk directories ---
+    import shutil
+    import time
+    from pathlib import Path
+
+    temp_uploads_root = Path("temp_uploads")
+    if temp_uploads_root.exists():
+        now_ts = time.time()
+        cutoff_seconds = 2 * 3600  # 2 hours
+        dirs_to_check: list[Path] = []
+        for p in temp_uploads_root.iterdir():
+            if p.is_dir():
+                if p.name == "assessment":
+                    dirs_to_check.extend(subp for subp in p.iterdir() if subp.is_dir())
+                else:
+                    dirs_to_check.append(p)
+
+        for d in dirs_to_check:
+            try:
+                mtime = d.stat().st_mtime
+                for filepath in d.rglob("*"):
+                    with contextlib.suppress(Exception):
+                        mtime = max(mtime, filepath.stat().st_mtime)
+                if (now_ts - mtime) > cutoff_seconds:
+                    shutil.rmtree(d)
+                    log.info("upload_reaper: deleted stale temp upload directory %s", d)
+            except Exception as e:
+                log.warning(
+                    "upload_reaper: failed to delete stale temp upload directory %s: %s",
+                    d,
+                    e,
+                )
+
     log.info("upload_reaper: cancelled=%d deleted=%d", cancelled, deleted)
     return {"cancelled": cancelled, "deleted": deleted}

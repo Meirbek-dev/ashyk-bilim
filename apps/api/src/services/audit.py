@@ -12,6 +12,7 @@ from sqlmodel import Session
 from ulid import ULID
 
 from src.db.audit import AuditEvent, AuditEventType
+from src.types import JsonObject
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def record_audit_event(
     event_type: AuditEventType | str,
     target_kind: str,
     target_uuid: str,
-    payload: dict | None = None,
+    payload: JsonObject | None = None,
 ) -> AuditEvent:
     """Record an audit event in the current transaction.
 

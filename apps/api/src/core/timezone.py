@@ -1,74 +1,78 @@
-"""
-Timezone utilities
+"""Timezone utilities.
 
 Provides a centralized way to get timezone-aware datetime objects
 based on the configured backend settings
 """
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from config.config import get_settings
 
-_CACHED_TIMEZONE: ZoneInfo | None = None
+_cached_timezone: ZoneInfo | None = None
 
 
 def get_timezone() -> ZoneInfo:
-    """
-    Get the configured timezone as a ZoneInfo object.
+    """Get the configured timezone as a ZoneInfo object.
 
     Returns:
         ZoneInfo: Configured timezone (defaults to UTC if invalid)
-    """
-    global _CACHED_TIMEZONE
 
-    if _CACHED_TIMEZONE is not None:
-        return _CACHED_TIMEZONE
+    """
+    global _cached_timezone
+
+    if _cached_timezone is not None:
+        return _cached_timezone
 
     settings = get_settings()
     tz_name = settings.general_config.timezone
 
     try:
-        _CACHED_TIMEZONE = ZoneInfo(tz_name)
+        _cached_timezone = ZoneInfo(tz_name)
     except Exception:
         # Fallback to UTC if timezone is invalid
-        _CACHED_TIMEZONE = ZoneInfo("UTC")
+        _cached_timezone = ZoneInfo("UTC")
 
-    return _CACHED_TIMEZONE
+    return _cached_timezone
 
 
 def now() -> datetime:
-    """
-    Get current datetime in the configured timezone.
+    """Get current datetime in the configured timezone.
 
     Returns:
         datetime: Current datetime with configured timezone
+
     """
     return datetime.now(get_timezone())
 
 
 def utcnow() -> datetime:
-    """
-    Get current datetime in UTC.
+    """Get current datetime in UTC.
 
     This is useful when you explicitly need UTC time
     regardless of the configured timezone.
 
     Returns:
         datetime: Current datetime in UTC
+
     """
     return datetime.now(UTC)
 
 
+def utcnow_iso() -> str:
+    """Return the current UTC timestamp as an ISO 8601 string."""
+    return utcnow().isoformat()
+
+
 def to_timezone(dt: datetime) -> datetime:
-    """
-    Convert a datetime to the configured timezone.
+    """Convert a datetime to the configured timezone.
 
     Args:
         dt: datetime object to convert
 
     Returns:
         datetime: datetime in configured timezone
+
     """
     if dt.tzinfo is None:
         # If naive, assume UTC
@@ -78,9 +82,8 @@ def to_timezone(dt: datetime) -> datetime:
 
 
 def invalidate_cache() -> None:
-    """
-    Invalidate the cached timezone.
+    """Invalidate the cached timezone.
     Useful for testing or when config changes.
     """
-    global _CACHED_TIMEZONE
-    _CACHED_TIMEZONE = None
+    global _cached_timezone
+    _cached_timezone = None

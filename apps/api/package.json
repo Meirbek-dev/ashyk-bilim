@@ -6,11 +6,14 @@
     "dev": "uv run app.py",
     "migrate": "uv run --no-sync alembic upgrade head",
     "format": "uv run ruff format .",
-    "lint": "uv run ruff check . --fix --unsafe-fixes",
+    "lint": "uv run ruff check . --fix --unsafe-fixes && uv run python scripts/lint_response_models.py",
+    "audit:errors": "uv run python scripts/audit_errors.py",
+    "lint:response-models": "uv run python scripts/lint_response_models.py",
     "pyrefly": "uv run pyrefly check",
-    "basedpyright": "uv run basedpyright .",
+    "pyright": "uv run basedpyright .",
     "mypy": "uv run mypy .",
     "test": "uv run python -m pytest",
+    "check:migrations": "uv run python scripts/check_migration_graph.py --require-single-head",
     "generate:openapi": "uv run python scripts/export_openapi.py",
     "generate:contracts": "uv run python scripts/export_openapi.py"
   }

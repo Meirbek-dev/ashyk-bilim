@@ -1,12 +1,13 @@
-'use client';
+'use client'
 
-import { useMemo } from 'react';
-import { cva } from 'class-variance-authority';
-import type { VariantProps } from 'class-variance-authority';
+import { useMemo } from 'react'
+import { cva } from 'class-variance-authority'
+import type { VariantProps } from 'class-variance-authority'
+import { useTranslations } from 'next-intl'
 
-import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   return (
@@ -18,7 +19,7 @@ function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function FieldLegend({
@@ -33,7 +34,7 @@ function FieldLegend({
       className={cn('mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base', className)}
       {...props}
     />
-  );
+  )
 }
 
 function FieldGroup({ className, ...props }: React.ComponentProps<'div'>) {
@@ -46,7 +47,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<'div'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 const fieldVariants = cva('group/field flex w-full gap-2 data-[invalid=true]:text-destructive', {
@@ -62,7 +63,7 @@ const fieldVariants = cva('group/field flex w-full gap-2 data-[invalid=true]:tex
   defaultVariants: {
     orientation: 'vertical',
   },
-});
+})
 
 function Field({
   className,
@@ -77,7 +78,7 @@ function Field({
       className={cn(fieldVariants({ orientation }), className)}
       {...props}
     />
-  );
+  )
 }
 
 function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
@@ -87,7 +88,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
       className={cn('group/field-content flex flex-1 flex-col gap-0.5 leading-snug', className)}
       {...props}
     />
-  );
+  )
 }
 
 function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
@@ -101,7 +102,7 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
       )}
       {...props}
     />
-  );
+  )
 }
 
 function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
@@ -114,7 +115,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
@@ -129,7 +130,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 function FieldSeparator({
@@ -137,7 +138,7 @@ function FieldSeparator({
   className,
   ...props
 }: React.ComponentProps<'div'> & {
-  children?: React.ReactNode;
+  children?: React.ReactNode
 }) {
   return (
     <div
@@ -156,7 +157,7 @@ function FieldSeparator({
         </span>
       )}
     </div>
-  );
+  )
 }
 
 function FieldError({
@@ -165,32 +166,61 @@ function FieldError({
   errors,
   ...props
 }: React.ComponentProps<'div'> & {
-  errors?: ({ message?: string } | undefined)[];
+  errors?: ({ message?: string } | undefined)[]
 }) {
+  const validationT = useTranslations('Validation')
+
   const content = useMemo(() => {
     if (children) {
-      return children;
+      return children
     }
 
     if (!errors?.length) {
-      return null;
+      return null
     }
 
-    const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()];
+    const uniqueErrors = [...new Map(errors.map(error => [error?.message, error])).values()]
+
+    const getTranslatedMessage = (message?: string) => {
+      if (!message) return ''
+
+      // Convert snake_case to camelCase since localization keys are in camelCase
+      const camelCaseKey = message.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+
+      try {
+        if (typeof validationT.has === 'function' && validationT.has(camelCaseKey)) {
+          return validationT(camelCaseKey)
+        }
+      } catch {
+        // Fallback
+      }
+
+      try {
+        if (typeof validationT.has === 'function' && validationT.has(message)) {
+          return validationT(message)
+        }
+      } catch {
+        // Fallback
+      }
+
+      return message
+    }
 
     if (uniqueErrors?.length === 1) {
-      return uniqueErrors[0]?.message;
+      return getTranslatedMessage(uniqueErrors[0]?.message)
     }
 
     return (
       <ul className="ms-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+        {uniqueErrors.map(
+          (error, index) => error?.message && <li key={index}>{getTranslatedMessage(error.message)}</li>,
+        )}
       </ul>
-    );
-  }, [children, errors]);
+    )
+  }, [children, errors, validationT])
 
   if (!content) {
-    return null;
+    return null
   }
 
   return (
@@ -202,7 +232,7 @@ function FieldError({
     >
       {content}
     </div>
-  );
+  )
 }
 
 export {
@@ -216,4 +246,4 @@ export {
   FieldSet,
   FieldContent,
   FieldTitle,
-};
+}

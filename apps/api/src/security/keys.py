@@ -16,7 +16,8 @@ from config.config import get_settings, secret_value
 def get_jwt_secret() -> str:
     value = secret_value(get_settings().security_config.jwt_secret)
     if value is None:
-        raise RuntimeError("PLATFORM_JWT_SECRET must be set")
+        msg = "PLATFORM_JWT_SECRET must be set"
+        raise RuntimeError(msg)
     return value
 
 

@@ -1,19 +1,21 @@
-'use client';
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { AdminAnalyticsResponse } from '@/types/analytics';
-import { Building2 } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { AdminAnalyticsResponse } from '@/types/analytics'
+import { Building2 } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface AdminAnalyticsPanelProps {
-  data: AdminAnalyticsResponse;
+  data: AdminAnalyticsResponse
 }
 
 export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) {
-  const locale = useLocale();
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const t = useTranslations('Components.DashboardAnalytics');
+  const locale = useLocale()
+  const numberFormatter = new Intl.NumberFormat(locale)
+  const t = useTranslations('Components.DashboardAnalytics')
+
+  const formatPercent = (val: number) => `${numberFormatter.format(val)}%`
 
   return (
     <Card className="shadow-sm">
@@ -36,7 +38,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.teacher_workload_comparison.slice(0, 5).map((row) => (
+              {data.teacher_workload_comparison.slice(0, 5).map(row => (
                 <TableRow key={row.teacher_user_id}>
                   <TableCell className="max-w-[220px] truncate">{row.teacher_display_name}</TableCell>
                   <TableCell>{row.workload_backlog}</TableCell>
@@ -57,11 +59,11 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.course_health_ranking.slice(0, 5).map((row) => (
+              {data.course_health_ranking.slice(0, 5).map(row => (
                 <TableRow key={row.course_id}>
                   <TableCell className="max-w-[260px] truncate">{row.course_name}</TableCell>
                   <TableCell>{numberFormatter.format(row.health_score)}</TableCell>
-                  <TableCell>{`${numberFormatter.format(row.completion_rate)}%`}</TableCell>
+                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -78,13 +80,13 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.cohort_retention.slice(0, 5).map((row) => (
+              {data.cohort_retention.slice(0, 5).map(row => (
                 <TableRow key={row.cohort_id}>
                   <TableCell className="max-w-[220px] truncate">{row.cohort_name}</TableCell>
                   <TableCell>
                     {row.retention_rate === null || row.retention_rate === undefined
                       ? t('adminAnalyticsPanel.noData')
-                      : `${numberFormatter.format(row.retention_rate)}%`}
+                      : formatPercent(row.retention_rate)}
                   </TableCell>
                   <TableCell>{row.learners}</TableCell>
                 </TableRow>
@@ -103,7 +105,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.content_roi.slice(0, 5).map((row) => (
+              {data.content_roi.slice(0, 5).map(row => (
                 <TableRow key={row.course_id}>
                   <TableCell className="max-w-[260px] truncate">{row.course_name}</TableCell>
                   <TableCell>
@@ -111,7 +113,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
                       ? t('adminAnalyticsPanel.noData')
                       : numberFormatter.format(row.content_roi_score)}
                   </TableCell>
-                  <TableCell>{`${numberFormatter.format(row.completion_rate)}%`}</TableCell>
+                  <TableCell>{formatPercent(row.completion_rate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -119,5 +121,5 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

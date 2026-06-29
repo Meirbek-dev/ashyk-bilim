@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertDialog,
@@ -10,64 +10,76 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 import {
   buildCourseCreationPath,
   buildCourseWorkspacePath,
   courseNeedsAttention,
   getCourseContentStats,
   getCourseReadinessSummary,
-} from '@/lib/course-management';
+} from '@/lib/course-management'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AlertTriangle, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react';
-import { CourseStatusBadge, courseWorkflowSummaryCardClass } from '@components/Dashboard/Courses/courseWorkflowUi';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail';
-import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses';
-import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
-import { Actions, Resources, Scopes } from '@/components/Security';
-import { useSession } from '@/hooks/useSession';
-import { useCallback, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react';
-import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Checkbox } from '@/components/ui/checkbox';
-import DataTable from '@/components/ui/data-table';
-import { Button } from '@/components/ui/button';
-import AppLink from '@/components/ui/AppLink';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
-import { getAbsoluteUrl } from '@services/config/config';
+  AlertTriangle,
+  Globe,
+  LayoutGrid,
+  List,
+  Lock,
+  MoreHorizontal,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Workflow,
+  X,
+} from 'lucide-react'
+import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
+import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
+import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
+import { Actions, Resources, Scopes } from '@/components/Security'
+import { useSession } from '@/hooks/useSession'
+import { useCallback, useMemo, useOptimistic, useState, useTransition } from 'react'
+import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import DashHeader from '@/components/Dashboard/Misc/DashHeader'
+import { Checkbox } from '@/components/ui/checkbox'
+import { extractMarkdownSummary } from '@/features/content-markdown'
+import DataTable from '@/components/ui/data-table'
+import type { DataTableColumnDef } from '@/components/ui/data-table'
+import { Button } from '@/components/ui/button'
+import AppLink from '@/components/ui/AppLink'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
+import { getAbsoluteUrl } from '@services/config/config'
 
 interface ManageableCourse extends Course {
-  public?: boolean;
+  course_uuid: string
+  name: string
+  public?: boolean
 }
 
 interface CourseProps {
-  courses: ManageableCourse[];
-  totalCourses: number;
-  currentPage: number;
-  searchQuery: string;
-  sortBy: 'updated' | 'name';
-  pageSize: number;
-  preset: string;
+  courses: ManageableCourse[]
+  totalCourses: number
+  currentPage: number
+  searchQuery: string
+  sortBy: 'updated' | 'name'
+  pageSize: number
+  preset: string
   summaryCounts: {
-    total: number;
-    ready: number;
-    private: number;
-    attention: number;
-  };
+    total: number
+    ready: number
+    private: number
+    attention: number
+  }
 }
 
-type BulkActionKind = 'publish' | 'private' | 'delete';
+type BulkActionKind = 'publish' | 'private' | 'delete'
 
 const CoursesHome = ({
   courses,
@@ -79,50 +91,54 @@ const CoursesHome = ({
   preset,
   summaryCounts,
 }: CourseProps) => {
-  const t = useTranslations('DashPage.CourseManagement.Dashboard');
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [searchInput, setSearchInput] = useState(searchQuery);
-  const viewMode = searchParams.get('view') === 'table' ? 'table' : 'cards';
-  const { can, isAuthenticated } = useSession();
-  const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.PLATFORM);
-  const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([]);
-  const [isBulkPending, startBulkTransition] = useTransition();
-  const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null);
+  const t = useTranslations('DashPage.CourseManagement.Dashboard')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [searchInput, setSearchInput] = useState(searchQuery)
+  const viewMode = searchParams.get('view') === 'table' ? 'table' : 'cards'
+  const { can, isAuthenticated } = useSession()
+  const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.APP)
+  const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([])
+  const [isBulkPending, startBulkTransition] = useTransition()
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null)
   const [optimisticCourses, removeOptimisticCourses] = useOptimistic(
     courses,
-    (state: ManageableCourse[], deletedUuids: string[]) => state.filter((c) => !deletedUuids.includes(c.course_uuid)),
-  );
-  const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({ enabled: isAuthenticated });
+    (state: ManageableCourse[], deletedUuids: string[]) => state.filter(c => !deletedUuids.includes(c.course_uuid)),
+  )
+  const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({
+    enabled: isAuthenticated,
+  })
 
-  const isTrailLoading = isAuthenticated && trailQueryLoading;
+  const isTrailLoading = isAuthenticated && trailQueryLoading
 
-  const totalPages = Math.max(1, Math.ceil(totalCourses / pageSize));
-  const hasPagination = totalPages > 1;
-  const hasQuery = searchQuery.length > 0;
+  const totalPages = Math.max(1, Math.ceil(totalCourses / pageSize))
+  const hasPagination = totalPages > 1
+  const hasQuery = searchQuery.length > 0
 
   const updateRoute = (updates: Record<string, string | null>) => {
-    const nextParams = new URLSearchParams(searchParams.toString());
+    const nextParams = new URLSearchParams(searchParams.toString())
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null || value === '') {
-        nextParams.delete(key);
+        nextParams.delete(key)
       } else {
-        nextParams.set(key, value);
+        nextParams.set(key, value)
       }
-    });
+    })
 
-    const nextQuery = nextParams.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
-  };
+    const nextQuery = nextParams.toString()
+    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+      scroll: false,
+    })
+  }
 
   const courseReadinessMap = useMemo(() => {
-    const map = new Map<string, boolean>();
+    const map = new Map<string, boolean>()
     for (const course of optimisticCourses) {
-      map.set(course.course_uuid, getCourseReadinessSummary(course, null).readyToPublish);
+      map.set(course.course_uuid, getCourseReadinessSummary(course as AppCourse, null).readyToPublish)
     }
-    return map;
-  }, [optimisticCourses]);
+    return map
+  }, [optimisticCourses])
 
   const summaryCards = useMemo(() => {
     return [
@@ -146,93 +162,96 @@ const CoursesHome = ({
         value: summaryCounts.attention,
         detail: t('summary.attention.detail'),
       },
-    ];
-  }, [summaryCounts, t]);
+    ]
+  }, [summaryCounts, t])
 
   const canManageCourse = useCallback(
     (course: ManageableCourse) =>
-      can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
+      can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
       Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
     [can],
-  );
+  )
 
   const canDeleteCourse = useCallback(
     (course: ManageableCourse) =>
-      can(Resources.COURSE, Actions.DELETE, Scopes.PLATFORM) ||
+      can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
       Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
     [can],
-  );
+  )
 
-  const visibleCourseUuids = useMemo(() => optimisticCourses.map((course) => course.course_uuid), [optimisticCourses]);
-  const visibleCourseUuidSet = useMemo(() => new Set(visibleCourseUuids), [visibleCourseUuids]);
-  const selectedCourseUuidSet = useMemo(() => new Set(selectedCourseUuids), [selectedCourseUuids]);
+  const visibleCourseUuids = useMemo(() => optimisticCourses.map(course => course.course_uuid), [optimisticCourses])
+  const visibleCourseUuidSet = useMemo(() => new Set(visibleCourseUuids), [visibleCourseUuids])
+  const selectedCourseUuidSet = useMemo(() => new Set(selectedCourseUuids), [selectedCourseUuids])
 
-  useEffect(() => {
-    setSelectedCourseUuids((current) => current.filter((courseUuid) => visibleCourseUuidSet.has(courseUuid)));
-  }, [visibleCourseUuidSet]);
+  const [prevVisibleCourseUuidSet, setPrevVisibleCourseUuidSet] = useState(visibleCourseUuidSet)
+
+  if (visibleCourseUuidSet !== prevVisibleCourseUuidSet) {
+    setPrevVisibleCourseUuidSet(visibleCourseUuidSet)
+    setSelectedCourseUuids(current => current.filter(courseUuid => visibleCourseUuidSet.has(courseUuid)))
+  }
 
   const selectedCourses = useMemo(
-    () => optimisticCourses.filter((course) => selectedCourseUuidSet.has(course.course_uuid)),
+    () => optimisticCourses.filter(course => selectedCourseUuidSet.has(course.course_uuid)),
     [optimisticCourses, selectedCourseUuidSet],
-  );
+  )
 
   const selectableVisibleCourses = useMemo(
-    () => optimisticCourses.filter((course) => canManageCourse(course) || canDeleteCourse(course)),
+    () => optimisticCourses.filter(course => canManageCourse(course) || canDeleteCourse(course)),
     [canDeleteCourse, canManageCourse, optimisticCourses],
-  );
+  )
 
   const allVisibleSelected =
     selectableVisibleCourses.length > 0 &&
-    selectableVisibleCourses.every((course) => selectedCourseUuidSet.has(course.course_uuid));
+    selectableVisibleCourses.every(course => selectedCourseUuidSet.has(course.course_uuid))
 
   const someVisibleSelected =
-    !allVisibleSelected && selectableVisibleCourses.some((course) => selectedCourseUuidSet.has(course.course_uuid));
+    !allVisibleSelected && selectableVisibleCourses.some(course => selectedCourseUuidSet.has(course.course_uuid))
 
-  const headerCheckboxState = allVisibleSelected ? true : someVisibleSelected ? ('indeterminate' as const) : false;
+  const headerCheckboxState = allVisibleSelected ? true : someVisibleSelected ? ('indeterminate' as const) : false
 
-  const toggleCourseSelection = (courseUuid: string, checked: boolean) => {
-    setSelectedCourseUuids((current) => {
+  const toggleCourseSelection = useCallback((courseUuid: string, checked: boolean) => {
+    setSelectedCourseUuids(current => {
       if (checked) {
         if (current.includes(courseUuid)) {
-          return current;
+          return current
         }
-        return [...current, courseUuid];
+        return [...current, courseUuid]
       }
-      return current.filter((value) => value !== courseUuid);
-    });
-  };
+      return current.filter(value => value !== courseUuid)
+    })
+  }, [])
 
   const toggleAllVisibleCourses = useCallback(
     (checked: boolean) => {
       if (!checked) {
-        setSelectedCourseUuids((current) => current.filter((courseUuid) => !visibleCourseUuidSet.has(courseUuid)));
-        return;
+        setSelectedCourseUuids(current => current.filter(courseUuid => !visibleCourseUuidSet.has(courseUuid)))
+        return
       }
 
-      setSelectedCourseUuids((current) => {
-        const next = new Set(current);
-        selectableVisibleCourses.forEach((course) => next.add(course.course_uuid));
-        return [...next];
-      });
+      setSelectedCourseUuids(current => {
+        const next = new Set(current)
+        selectableVisibleCourses.forEach(course => next.add(course.course_uuid))
+        return [...next]
+      })
     },
     [selectableVisibleCourses, visibleCourseUuidSet],
-  );
+  )
 
   const runBulkVisibility = (nextPublic: boolean) => {
     if (!(selectedCourses.length > 0)) {
-      return;
+      return
     }
 
-    const targetCourses = selectedCourses.filter((course) => canManageCourse(course));
+    const targetCourses = selectedCourses.filter(course => canManageCourse(course))
     if (targetCourses.length === 0) {
-      toast.error(t('errors.cannotUpdateSelection'));
-      return;
+      toast.error(t('errors.cannotUpdateSelection'))
+      return
     }
 
     startBulkTransition(() => {
       void (async () => {
         const results = await Promise.allSettled(
-          targetCourses.map((course) =>
+          targetCourses.map(course =>
             updateCourseAccess(
               course.course_uuid,
               { public: nextPublic },
@@ -241,86 +260,84 @@ const CoursesHome = ({
               },
             ),
           ),
-        );
+        )
 
-        const successCount = results.filter(
-          (result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value?.success,
-        ).length;
-        const failedCount = targetCourses.length - successCount;
+        const successCount = results.filter(result => result.status === 'fulfilled' && result.value.success).length
+        const failedCount = targetCourses.length - successCount
 
         if (successCount > 0) {
           toast.success(
             nextPublic
               ? t('toasts.published', { count: successCount })
               : t('toasts.movedPrivate', { count: successCount }),
-          );
-          setSelectedCourseUuids([]);
-          router.refresh();
+          )
+          setSelectedCourseUuids([])
+          router.refresh()
         }
 
         if (failedCount > 0) {
-          toast.error(t('toasts.updateFailed', { count: failedCount }));
+          toast.error(t('toasts.updateFailed', { count: failedCount }))
         }
-      })();
-    });
-  };
+      })()
+    })
+  }
 
   const runBulkDelete = () => {
     if (!(selectedCourses.length > 0)) {
-      return;
+      return
     }
 
-    const targetCourses = selectedCourses.filter((course) => canDeleteCourse(course));
+    const targetCourses = selectedCourses.filter(course => canDeleteCourse(course))
     if (targetCourses.length === 0) {
-      toast.error(t('errors.cannotDeleteSelection'));
-      return;
+      toast.error(t('errors.cannotDeleteSelection'))
+      return
     }
 
     startBulkTransition(async () => {
-      removeOptimisticCourses(targetCourses.map((c) => c.course_uuid));
-      const results = await Promise.allSettled(
-        targetCourses.map((course) => deleteCourseFromBackend(course.course_uuid)),
-      );
+      removeOptimisticCourses(targetCourses.map(c => c.course_uuid))
+      const results = await Promise.allSettled(targetCourses.map(course => deleteCourseFromBackend(course.course_uuid)))
 
-      const successCount = results.filter((result) => result.status === 'fulfilled').length;
-      const failedCount = targetCourses.length - successCount;
+      const successCount = results.filter(result => result.status === 'fulfilled').length
+      const failedCount = targetCourses.length - successCount
 
       if (successCount > 0) {
-        toast.success(t('toasts.deleted', { count: successCount }));
-        setSelectedCourseUuids([]);
-        router.refresh();
+        toast.success(t('toasts.deleted', { count: successCount }))
+        setSelectedCourseUuids([])
+        router.refresh()
       }
 
       if (failedCount > 0) {
-        toast.error(t('toasts.deleteFailed', { count: failedCount }));
+        toast.error(t('toasts.deleteFailed', { count: failedCount }))
       }
-    });
-  };
+    })
+  }
 
   const confirmBulkAction = () => {
     if (pendingBulkAction === 'publish') {
-      setPendingBulkAction(null);
-      runBulkVisibility(true);
-      return;
+      setPendingBulkAction(null)
+      runBulkVisibility(true)
+      return
     }
 
     if (pendingBulkAction === 'private') {
-      setPendingBulkAction(null);
-      runBulkVisibility(false);
-      return;
+      setPendingBulkAction(null)
+      runBulkVisibility(false)
+      return
     }
 
     if (pendingBulkAction === 'delete') {
-      setPendingBulkAction(null);
-      runBulkDelete();
+      setPendingBulkAction(null)
+      runBulkDelete()
     }
-  };
+  }
 
   const bulkActionMeta =
     pendingBulkAction === 'publish'
       ? {
           title: t('dialogs.publish.title'),
-          description: t('dialogs.publish.description', { count: selectedCourses.length }),
+          description: t('dialogs.publish.description', {
+            count: selectedCourses.length,
+          }),
           confirmLabel: t('dialogs.publish.confirm'),
           variant: 'default' as const,
           mediaClassName: 'bg-muted text-foreground',
@@ -328,7 +345,9 @@ const CoursesHome = ({
       : pendingBulkAction === 'private'
         ? {
             title: t('dialogs.private.title'),
-            description: t('dialogs.private.description', { count: selectedCourses.length }),
+            description: t('dialogs.private.description', {
+              count: selectedCourses.length,
+            }),
             confirmLabel: t('dialogs.private.confirm'),
             variant: 'default' as const,
             mediaClassName: 'bg-muted text-foreground',
@@ -336,12 +355,14 @@ const CoursesHome = ({
         : pendingBulkAction === 'delete'
           ? {
               title: t('dialogs.delete.title'),
-              description: t('dialogs.delete.description', { count: selectedCourses.length }),
+              description: t('dialogs.delete.description', {
+                count: selectedCourses.length,
+              }),
               confirmLabel: t('dialogs.delete.confirm'),
               variant: 'destructive' as const,
               mediaClassName: 'bg-destructive/10 text-destructive',
             }
-          : null;
+          : null
 
   const bulkToolbar =
     selectedCourses.length > 0 ? (
@@ -351,7 +372,7 @@ const CoursesHome = ({
           type="button"
           size="sm"
           variant="outline"
-          disabled={isBulkPending || !selectedCourses.some((course) => canManageCourse(course))}
+          disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
           onClick={() => setPendingBulkAction('publish')}
         >
           {t('bulk.publish')}
@@ -360,7 +381,7 @@ const CoursesHome = ({
           type="button"
           size="sm"
           variant="outline"
-          disabled={isBulkPending || !selectedCourses.some((course) => canManageCourse(course))}
+          disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
           onClick={() => setPendingBulkAction('private')}
         >
           {t('bulk.movePrivate')}
@@ -369,7 +390,7 @@ const CoursesHome = ({
           type="button"
           size="sm"
           variant="outline"
-          disabled={isBulkPending || !selectedCourses.some((course) => canDeleteCourse(course))}
+          disabled={isBulkPending || !selectedCourses.some(course => canDeleteCourse(course))}
           onClick={() => setSelectedCourseUuids([])}
         >
           {t('bulk.clearSelection')}
@@ -378,15 +399,15 @@ const CoursesHome = ({
           type="button"
           size="sm"
           variant="destructive"
-          disabled={isBulkPending || !selectedCourses.some((course) => canDeleteCourse(course))}
+          disabled={isBulkPending || !selectedCourses.some(course => canDeleteCourse(course))}
           onClick={() => setPendingBulkAction('delete')}
         >
           {t('bulk.delete')}
         </Button>
       </div>
-    ) : null;
+    ) : null
 
-  const columns = useMemo<ColumnDef<ManageableCourse>[]>(
+  const columns = useMemo<DataTableColumnDef<ManageableCourse>[]>(
     () => [
       {
         id: 'select',
@@ -394,7 +415,7 @@ const CoursesHome = ({
           <Checkbox
             checked={headerCheckboxState === true}
             indeterminate={headerCheckboxState === 'indeterminate'}
-            onCheckedChange={(checked) => toggleAllVisibleCourses(checked)}
+            onCheckedChange={checked => toggleAllVisibleCourses(checked)}
             aria-label={t('table.selectVisibleAria')}
           />
         ),
@@ -402,16 +423,18 @@ const CoursesHome = ({
         enableHiding: false,
         meta: { label: t('table.select'), exportable: false },
         cell: ({ row }) => {
-          const course = row.original;
-          const disabled = !(canManageCourse(course) || canDeleteCourse(course));
+          const course = row.original
+          const disabled = !(canManageCourse(course) || canDeleteCourse(course))
           return (
             <Checkbox
               checked={selectedCourseUuidSet.has(course.course_uuid)}
               disabled={disabled}
-              onCheckedChange={(checked) => toggleCourseSelection(course.course_uuid, checked)}
-              aria-label={t('table.selectCourseAria', { courseName: course.name })}
+              onCheckedChange={checked => toggleCourseSelection(course.course_uuid, checked)}
+              aria-label={t('table.selectCourseAria', {
+                courseName: course.name,
+              })}
             />
-          );
+          )
         },
       },
       {
@@ -419,8 +442,8 @@ const CoursesHome = ({
         header: t('table.course'),
         meta: { label: t('table.course') },
         cell: ({ row }) => {
-          const course = row.original;
-          const stats = getCourseContentStats(course);
+          const course = row.original
+          const stats = getCourseContentStats(course as AppCourse)
 
           return (
             <div className="space-y-1">
@@ -431,7 +454,9 @@ const CoursesHome = ({
                 {course.name}
               </AppLink>
               <div className="text-muted-foreground line-clamp-2 text-sm">
-                {course.description?.trim() || t('table.noDescription')}
+                {course.description?.trim()
+                  ? extractMarkdownSummary(course.description, 140)
+                  : t('table.noDescription')}
               </div>
               <div className="text-muted-foreground text-xs">
                 {t('table.structureSummary', {
@@ -440,7 +465,7 @@ const CoursesHome = ({
                 })}
               </div>
             </div>
-          );
+          )
         },
       },
       {
@@ -448,21 +473,21 @@ const CoursesHome = ({
         header: t('table.status'),
         meta: { label: t('table.status') },
         cell: ({ row }) => {
-          const course = row.original;
-          const ready = courseReadinessMap.get(course.course_uuid) ?? false;
+          const course = row.original
+          const ready = courseReadinessMap.get(course.course_uuid) ?? false
 
           return (
             <div className="flex flex-wrap gap-2">
               <CourseStatusBadge status={course.public ? 'public' : 'private'} />
               <CourseStatusBadge status={ready ? 'ready' : 'needs-review'} />
-              {courseNeedsAttention(course) ? <CourseStatusBadge status="attention" /> : null}
+              {courseNeedsAttention(course as AppCourse) ? <CourseStatusBadge status="attention" /> : null}
             </div>
-          );
+          )
         },
       },
       {
         id: 'updated',
-        accessorFn: (course) => course.update_date,
+        accessorFn: course => course.update_date,
         header: t('table.updated'),
         meta: { label: t('table.updated') },
         cell: ({ row }) => (
@@ -478,12 +503,7 @@ const CoursesHome = ({
         header: '',
         enableSorting: false,
         meta: { label: t('table.actions'), exportable: false },
-        cell: ({ row }) => (
-          <CourseRowActions
-            course={row.original}
-            onOptimisticDelete={removeOptimisticCourses}
-          />
-        ),
+        cell: ({ row }) => <CourseRowActions course={row.original} onOptimisticDelete={removeOptimisticCourses} />,
       },
     ],
     [
@@ -495,8 +515,9 @@ const CoursesHome = ({
       selectedCourseUuidSet,
       t,
       toggleAllVisibleCourses,
+      toggleCourseSelection,
     ],
-  );
+  )
 
   const presets = [
     { key: 'all', label: t('presets.all') },
@@ -505,209 +526,232 @@ const CoursesHome = ({
     { key: 'private', label: t('presets.private') },
     { key: 'recent', label: t('presets.recent') },
     { key: 'attention', label: t('presets.attention') },
-  ];
+  ]
 
   return (
-    <div className="bg-background min-h-screen w-full px-4 py-6 lg:px-8">
-      <div className="mb-6">
-        <DashBreadcrumbs type="courses" />
-
-        <div className="bg-card mt-4 rounded-xl border p-6 shadow-sm">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl">
-              <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">{t('header.title')}</h1>
-              <p className="text-muted-foreground mt-3 text-sm leading-6">{t('header.description')}</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
+    <div className="bg-background flex min-h-screen w-full flex-col">
+      <DashHeader
+        breadcrumbType="courses"
+        title={t('header.title')}
+        description={t('header.description')}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}
+              className="h-9 px-3 text-xs font-semibold"
+            >
+              {viewMode === 'table' ? <LayoutGrid className="mr-2 size-4" /> : <List className="mr-2 size-4" />}
+              {viewMode === 'table' ? t('viewMode.cards') : t('viewMode.table')}
+            </Button>
+            {canCreateCourse ? (
               <Button
-                variant="outline"
-                onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}
+                size="sm"
+                nativeButton={false}
+                render={<AppLink href={buildCourseCreationPath()} />}
+                className="h-9 px-3 text-xs font-semibold"
               >
-                {viewMode === 'table' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
-                {viewMode === 'table' ? t('viewMode.cards') : t('viewMode.table')}
+                {t('guidedSetup')}
               </Button>
-              {canCreateCourse ? (
+            ) : null}
+          </div>
+        }
+      />
+
+      <main className="container mx-auto flex-1 space-y-6 px-4 py-8 lg:px-8">
+        {/* Summary Cards */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map(card => (
+            <div key={card.label} className="bg-card border-border/80 rounded-2xl border p-5 shadow-2xs">
+              <div className="text-muted-foreground text-[10px] leading-none font-bold tracking-[0.1em] uppercase">
+                {card.label}
+              </div>
+              <div className="text-foreground mt-2.5 text-3xl font-bold tracking-tight">{card.value}</div>
+              <div className="text-muted-foreground mt-1.5 text-xs leading-relaxed font-medium">{card.detail}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filter Presets Panel */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {presets.map(item => (
+              <Button
+                key={item.key}
+                type="button"
+                variant={preset === item.key ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 rounded-full px-4 text-xs font-medium transition-all"
+                onClick={() =>
+                  updateRoute({
+                    preset: item.key === 'all' ? null : item.key,
+                    page: '1',
+                  })
+                }
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="bg-muted/40 border-border/60 flex flex-col gap-4 rounded-2xl border p-4 shadow-2xs lg:flex-row lg:items-center lg:justify-between">
+            <form
+              className="flex w-full max-w-2xl items-center gap-2"
+              onSubmit={event => {
+                event.preventDefault()
+                updateRoute({ q: searchInput.trim() || null, page: '1' })
+              }}
+            >
+              <div className="relative flex-1">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  value={searchInput}
+                  onChange={event => setSearchInput(event.target.value)}
+                  placeholder={t('search.placeholder')}
+                  className="h-9 pl-9 text-sm"
+                />
+              </div>
+              <Button type="submit" size="sm" className="h-9 px-4">
+                {t('search.submit')}
+              </Button>
+              {hasQuery ? (
                 <Button
-                  nativeButton={false}
-                  render={<AppLink href={buildCourseCreationPath()} />}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3"
+                  onClick={() => {
+                    setSearchInput('')
+                    updateRoute({ q: null, page: '1' })
+                  }}
                 >
-                  <Sparkles className="size-4" />
-                  {t('guidedSetup')}
+                  <X className="mr-2 h-4 w-4" />
+                  {t('search.clear')}
                 </Button>
               ) : null}
+            </form>
+
+            <div className="flex shrink-0 items-center gap-3">
+              <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                {t('sort.label')}
+              </Label>
+              <NativeSelect
+                value={sortBy}
+                onChange={event => updateRoute({ sort: event.target.value, page: '1' })}
+                className="h-9 w-[180px]"
+                aria-label={t('sort.label')}
+              >
+                <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
+                <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
+              </NativeSelect>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {summaryCards.map((card) => (
-              <div
-                key={card.label}
-                className={courseWorkflowSummaryCardClass}
-              >
-                <div className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
-                  {card.label}
-                </div>
-                <div className="text-foreground mt-2 text-3xl font-semibold">{card.value}</div>
-                <div className="text-muted-foreground mt-1 text-sm">{card.detail}</div>
+          <div className="text-muted-foreground px-1 text-xs font-semibold tracking-wide">
+            {t('resultsSummary', {
+              visible: optimisticCourses.length,
+              total: totalCourses,
+            })}
+          </div>
+        </div>
+
+        {/* Content list */}
+        {optimisticCourses.length === 0 ? (
+          <div className="bg-card rounded-2xl border border-dashed py-16 shadow-2xs">
+            <div className="flex items-center justify-center">
+              <div className="max-w-sm space-y-4 px-4 text-center">
+                <h2 className="text-foreground text-xl font-bold">{t('empty.title')}</h2>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
+                </p>
+                {canCreateCourse ? (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      size="sm"
+                      nativeButton={false}
+                      render={<AppLink href={buildCourseCreationPath()} />}
+                      className="px-4"
+                    >
+                      <Plus className="mr-2 size-4" />
+                      {t('empty.createAction')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+            {optimisticCourses.map(course => (
+              <div key={course.course_uuid} className="w-full">
+                <CourseThumbnail
+                  customLink={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
+                  actionLink={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                  course={course}
+                  trailData={trailData}
+                  trailLoading={isTrailLoading}
+                />
               </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className="bg-card rounded-2xl border p-4 shadow-2xs">
+            <DataTable
+              columns={columns}
+              data={optimisticCourses}
+              enableColumnVisibility={false}
+              enableCsvExport
+              csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
+              storageKey="course-management"
+              serverPaginated
+              toolbarContent={bulkToolbar}
+              labels={{
+                searchPlaceholder: t('table.filterPlaceholder'),
+                emptyMessage: t('table.emptyMessage'),
+              }}
+            />
+          </div>
+        )}
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {presets.map((item) => (
-            <Button
-              key={item.key}
-              type="button"
-              variant={preset === item.key ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => updateRoute({ preset: item.key === 'all' ? null : item.key, page: '1' })}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="bg-card mt-4 flex flex-col gap-4 rounded-xl border p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <form
-            className="flex w-full max-w-2xl items-center gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              updateRoute({ q: searchInput.trim() || null, page: '1' });
-            }}
-          >
-            <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder={t('search.placeholder')}
-                className="pl-9"
-              />
+        {hasPagination ? (
+          <div className="border-border/60 flex items-center justify-between border-t pt-6 pb-8">
+            <div className="text-muted-foreground text-xs font-semibold">
+              {t('pagination.page', { current: currentPage, total: totalPages })}
             </div>
-            <Button type="submit">{t('search.submit')}</Button>
-            {hasQuery ? (
+            <div className="flex items-center gap-2">
               <Button
-                type="button"
                 variant="outline"
-                onClick={() => {
-                  setSearchInput('');
-                  updateRoute({ q: null, page: '1' });
-                }}
+                size="sm"
+                className="h-8 px-3 text-xs"
+                disabled={currentPage <= 1}
+                onClick={() => updateRoute({ page: String(Math.max(1, currentPage - 1)) })}
               >
-                <X className="mr-2 h-4 w-4" />
-                {t('search.clear')}
+                {t('pagination.previous')}
               </Button>
-            ) : null}
-          </form>
-
-          <div className="flex items-center gap-3">
-            <label className="text-muted-foreground text-sm font-medium">{t('sort.label')}</label>
-            <NativeSelect
-              value={sortBy}
-              onChange={(event) => updateRoute({ sort: event.target.value, page: '1' })}
-              className="w-[180px]"
-              aria-label={t('sort.label')}
-            >
-              <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
-              <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
-            </NativeSelect>
-          </div>
-        </div>
-
-        <div className="text-muted-foreground mt-3 text-sm">
-          {t('resultsSummary', { visible: optimisticCourses.length, total: totalCourses })}
-        </div>
-      </div>
-
-      {optimisticCourses.length === 0 ? (
-        <div className="bg-card rounded-xl border border-dashed py-12 shadow-sm">
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <h2 className="text-muted-foreground mb-2 text-2xl font-bold">{t('empty.title')}</h2>
-              <p className="text-muted-foreground text-lg">
-                {hasQuery ? t('empty.withQuery') : t('empty.withoutQuery')}
-              </p>
-              {canCreateCourse ? (
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    nativeButton={false}
-                    render={<AppLink href={buildCourseCreationPath()} />}
-                  >
-                    <Sparkles className="size-4" />
-                    {t('empty.createAction')}
-                  </Button>
-                </div>
-              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                disabled={currentPage >= totalPages}
+                onClick={() =>
+                  updateRoute({
+                    page: String(Math.min(totalPages, currentPage + 1)),
+                  })
+                }
+              >
+                {t('pagination.next')}
+              </Button>
             </div>
           </div>
-        </div>
-      ) : viewMode === 'cards' ? (
-        <div className="grid w-full grid-cols-1 gap-6 pb-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-          {optimisticCourses.map((course) => (
-            <div
-              key={course.course_uuid}
-              className="w-full"
-            >
-              <CourseThumbnail
-                customLink={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
-                actionLink={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
-                course={course}
-                trailData={trailData}
-                trailLoading={isTrailLoading}
-              />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-card rounded-xl border p-4 shadow-sm">
-          <DataTable
-            columns={columns}
-            data={optimisticCourses}
-            enableColumnVisibility={false}
-            enableCsvExport
-            csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
-            storageKey="course-management"
-            serverPaginated
-            toolbarContent={bulkToolbar}
-            labels={{
-              searchPlaceholder: t('table.filterPlaceholder'),
-              emptyMessage: t('table.emptyMessage'),
-            }}
-          />
-        </div>
-      )}
-
-      {hasPagination ? (
-        <div className="flex items-center justify-between border-t py-6">
-          <div className="text-muted-foreground text-sm">
-            {t('pagination.page', { current: currentPage, total: totalPages })}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              disabled={currentPage <= 1}
-              onClick={() => updateRoute({ page: String(Math.max(1, currentPage - 1)) })}
-            >
-              {t('pagination.previous')}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={currentPage >= totalPages}
-              onClick={() => updateRoute({ page: String(Math.min(totalPages, currentPage + 1)) })}
-            >
-              {t('pagination.next')}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+        ) : null}
+      </main>
 
       <AlertDialog
         open={pendingBulkAction !== null}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open) {
-            setPendingBulkAction(null);
+            setPendingBulkAction(null)
           }
         }}
       >
@@ -732,45 +776,45 @@ const CoursesHome = ({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-};
+  )
+}
 
 function CourseRowActions({
   course,
   onOptimisticDelete,
 }: {
-  course: ManageableCourse;
-  onOptimisticDelete: (uuids: string[]) => void;
+  course: ManageableCourse
+  onOptimisticDelete: (uuids: string[]) => void
 }) {
-  const t = useTranslations('DashPage.CourseManagement.Dashboard');
-  const router = useRouter();
-  const { can } = useSession();
-  const [isPending, startTransition] = useTransition();
+  const t = useTranslations('DashPage.CourseManagement.Dashboard')
+  const router = useRouter()
+  const { can } = useSession()
+  const [isPending, startTransition] = useTransition()
 
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN));
+    can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
+    Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN))
   const canDeleteCourse =
-    can(Resources.COURSE, Actions.DELETE, Scopes.PLATFORM) ||
-    Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN));
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
+    Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
   const handleDelete = () => {
-    if (!canDeleteCourse) return;
+    if (!canDeleteCourse) return
 
     startTransition(async () => {
-      onOptimisticDelete([course.course_uuid]);
+      onOptimisticDelete([course.course_uuid])
       try {
-        await deleteCourseFromBackend(course.course_uuid);
-        toast.success(t('rowActions.deleteSuccess'));
-        router.refresh();
+        await deleteCourseFromBackend(course.course_uuid)
+        toast.success(t('rowActions.deleteSuccess'))
+        router.refresh()
       } catch {
-        toast.error(t('rowActions.deleteError'));
+        toast.error(t('rowActions.deleteError'))
       }
-    });
-  };
+    })
+  }
 
   const handleToggleVisibility = () => {
-    if (!canManageCourse) return;
+    if (!canManageCourse) return
 
     startTransition(() => {
       void (async () => {
@@ -781,25 +825,21 @@ function CourseRowActions({
             {
               lastKnownUpdateDate: course.update_date,
             },
-          );
-          toast.success(course.public ? t('rowActions.visibilityMovedPrivate') : t('rowActions.visibilityPublished'));
-          router.refresh();
+          )
+          toast.success(course.public ? t('rowActions.visibilityMovedPrivate') : t('rowActions.visibilityPublished'))
+          router.refresh()
         } catch {
-          toast.error(t('rowActions.visibilityError'));
+          toast.error(t('rowActions.visibilityError'))
         }
-      })();
-    });
-  };
+      })()
+    })
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={isPending}
-          >
+          <Button variant="outline" size="icon" disabled={isPending}>
             <MoreHorizontal className="size-4" />
           </Button>
         }
@@ -818,7 +858,7 @@ function CourseRowActions({
         <DropdownMenuItem
           onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'review'))}
         >
-          <Sparkles className="size-4" />
+          <ShieldCheck className="size-4" />
           {t('rowActions.reviewPublish')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push(buildCourseCreationPath(course.course_uuid))}>
@@ -827,22 +867,19 @@ function CourseRowActions({
         </DropdownMenuItem>
         {canManageCourse ? (
           <DropdownMenuItem onClick={handleToggleVisibility}>
-            <Sparkles className="size-4" />
+            {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
             {course.public ? t('rowActions.movePrivate') : t('rowActions.publish')}
           </DropdownMenuItem>
         ) : null}
         {canDeleteCourse ? (
-          <DropdownMenuItem
-            onClick={handleDelete}
-            variant="destructive"
-          >
+          <DropdownMenuItem onClick={handleDelete} variant="destructive">
             <Trash2 className="size-4" />
             {t('rowActions.delete')}
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
 
-export default CoursesHome;
+export default CoursesHome

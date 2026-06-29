@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { courseKeys } from './courseKeys';
-import { courseEditorBundleQueryOptions } from '@/features/courses/queries/course.query';
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { courseKeys } from './courseKeys'
+import { courseEditorBundleQueryOptions } from '@/features/courses/queries/course.query'
 
 function courseEditorBundleHookOptions(courseUuid?: string | null) {
-  const normalizedCourseUuid = courseUuid ?? '';
+  const normalizedCourseUuid = courseUuid ?? ''
 
   return queryOptions({
     ...courseEditorBundleQueryOptions(normalizedCourseUuid),
     enabled: Boolean(courseUuid),
-  });
+  })
 }
 
 export function useCourseEditorBundle(courseUuid?: string | null) {
-  const key = courseUuid ? courseKeys.editorBundle(courseUuid) : null;
+  const key = courseUuid ? courseKeys.editorBundle(courseUuid) : null
 
-  const query = useQuery(courseEditorBundleHookOptions(courseUuid));
+  const query = useQuery(courseEditorBundleHookOptions(courseUuid))
 
   return {
     data: query.data,
@@ -32,5 +32,5 @@ export function useCourseEditorBundle(courseUuid?: string | null) {
     mutate: async () => (await query.refetch()).data,
     refetch: query.refetch,
     status: query.status,
-  };
+  }
 }

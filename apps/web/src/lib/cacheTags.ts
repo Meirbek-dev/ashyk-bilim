@@ -10,10 +10,10 @@ export const gamificationTag = {
   profile: () => 'gamification:profile',
   dashboard: () => 'gamification:dashboard',
   leaderboard: () => 'gamification:leaderboard',
-} as const;
+} as const
 
 export function gamificationTags(): string[] {
-  return [gamificationTag.profile(), gamificationTag.dashboard(), gamificationTag.leaderboard()];
+  return [gamificationTag.profile(), gamificationTag.dashboard(), gamificationTag.leaderboard()]
 }
 
 // General cache tags
@@ -24,7 +24,7 @@ export const tags = {
   collections: 'collections',
   activities: 'activities',
   users: 'users',
-} as const;
+} as const
 
 export const courseTag = {
   detail: (courseUuid: string) => `course:${courseUuid}:detail`,
@@ -33,35 +33,35 @@ export const courseTag = {
   certifications: (courseUuid: string) => `course:${courseUuid}:certifications`,
   editableList: () => 'courses:platform:editable',
   publicList: () => 'courses:platform:public',
-} as const;
+} as const
 
 interface CourseListTagOptions {
-  includeEditable?: boolean;
-  includePublic?: boolean;
+  includeEditable?: boolean
+  includePublic?: boolean
 }
 
 export function getCourseListTags(options: CourseListTagOptions = {}): string[] {
-  const { includeEditable = true, includePublic = true } = options;
-  const scopedTags: string[] = [];
+  const { includeEditable = true, includePublic = true } = options
+  const scopedTags: string[] = []
 
   if (includeEditable) {
-    scopedTags.push(courseTag.editableList());
+    scopedTags.push(courseTag.editableList())
   }
 
   if (includePublic) {
-    scopedTags.push(courseTag.publicList());
+    scopedTags.push(courseTag.publicList())
   }
 
-  return scopedTags;
+  return scopedTags
 }
 
 export async function revalidateGamification() {
   // Dynamically import to keep this file usable on both server and client
-  const { revalidateTag } = await import('next/cache');
-  for (const tag of gamificationTags()) revalidateTag(tag, 'max');
+  const { revalidateTag } = await import('next/cache')
+  for (const tag of gamificationTags()) revalidateTag(tag, 'max')
 }
 
 export async function revalidateTags(...tagList: string[]) {
-  const { revalidateTag } = await import('next/cache');
-  for (const tag of tagList) revalidateTag(tag, 'max');
+  const { revalidateTag } = await import('next/cache')
+  for (const tag of tagList) revalidateTag(tag, 'max')
 }

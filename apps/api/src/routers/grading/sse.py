@@ -1,11 +1,12 @@
-"""Student-facing grading SSE stream."""
-
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
-from typing import Annotated
+from collections import defaultdict
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -25,6 +26,10 @@ from src.services.grading.events import (
     grading_event,
 )
 
+if TYPE_CHECKING:
+    import redis.asyncio
+    import redis.asyncio.client
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -33,6 +38,69 @@ router = APIRouter()
 _MAX_CONNECTIONS_PER_USER = 5
 # Seconds between keepalive comments sent to the client.
 _KEEPALIVE_INTERVAL = 30
+
+# In-process fallback counter used when Redis is unavailable.
+_local_conn_counts: dict[int, int] = defaultdict(int)
+
+
+@contextlib.asynccontextmanager
+async def _sse_connection(
+    redis: redis.asyncio.Redis | None,
+    conn_key: str,
+    user_id: int,
+) -> AsyncGenerator[None]:
+    # Increment connection counter (Redis or in-process fallback)
+    if redis is not None:
+        try:
+            await redis.incr(conn_key)
+            await redis.expire(conn_key, 3600)  # auto-clean stale counter
+        except Exception:
+            logger.warning("Не удалось увеличить счетчик SSE-соединений", exc_info=True)
+    else:
+        _local_conn_counts[user_id] += 1
+
+    try:
+        yield
+    finally:
+        # Decrement connection counter on disconnect
+        if redis is not None:
+            try:
+                remaining = await redis.decr(conn_key)
+                if remaining <= 0:
+                    await redis.delete(conn_key)
+            except Exception:
+                logger.warning("Не удалось уменьшить счетчик SSE-соединений", exc_info=True)
+        else:
+            _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
+            if _local_conn_counts[user_id] == 0:
+                _local_conn_counts.pop(user_id, None)
+
+
+async def _stream_pubsub(
+    pubsub: redis.asyncio.client.PubSub,
+    request: Request,
+    submission_uuid: str,
+) -> AsyncGenerator[str]:
+    while not await request.is_disconnected():
+        message = await pubsub.get_message(
+            ignore_subscribe_messages=True,
+            timeout=float(_KEEPALIVE_INTERVAL),
+        )
+        if message is None:
+            yield ": keepalive\n\n"
+            continue
+        raw = message.get("data")
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        if not isinstance(raw, str):
+            continue
+        try:
+            payload = json.loads(raw)
+        except Exception:
+            logger.warning("Не удалось декодировать SSE-полезную нагрузку: %s", raw)
+            continue
+        event_type = str(payload.get("event", "message"))
+        yield encode_sse(event_type, payload)
 
 
 def _conn_key(user_id: int) -> str:
@@ -44,13 +112,11 @@ def _get_streamable_submission(
     current_user: PublicUser,
     db_session: Session,
 ) -> Submission:
-    submission = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     if submission.user_id == current_user.id:
         return submission
@@ -59,7 +125,7 @@ def _get_streamable_submission(
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     PermissionChecker(db_session).require(
         current_user.id,
@@ -69,7 +135,7 @@ def _get_streamable_submission(
     return submission
 
 
-@router.get("/submissions/{submission_uuid}/feedback-stream")
+@router.get("/submissions/{submission_uuid}/feedback-stream", response_class=StreamingResponse)
 async def api_feedback_stream(
     request: Request,
     submission_uuid: str,
@@ -93,47 +159,55 @@ async def api_feedback_stream(
 
     # ── Connection limit check ────────────────────────────────────────────────
     if redis is not None:
-        current_conn_count = await redis.get(conn_key)
-        if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={
-                    "code": "SSE_CONNECTION_LIMIT",
-                    "message": (
-                        f"Too many concurrent SSE connections "
-                        f"(limit: {_MAX_CONNECTIONS_PER_USER})."
-                    ),
-                    "limit": _MAX_CONNECTIONS_PER_USER,
-                },
-                headers={"Retry-After": "60"},
-            )
+        try:
+            current_conn_count = await redis.get(conn_key)
+            if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        "code": "SSE_CONNECTION_LIMIT",
+                        "message": (
+                            f"Слишком много одновременных SSE-соединений (лимит: {_MAX_CONNECTIONS_PER_USER})."
+                        ),
+                        "limit": _MAX_CONNECTIONS_PER_USER,
+                    },
+                    headers={"Retry-After": "60"},
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            # Redis unavailable — fall through to in-process counter
+            logger.warning("Redis недоступен для проверки SSE-соединения", exc_info=True)
+            redis = None
 
-    async def event_generator():
+    if redis is None and _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
+        # In-process fallback: enforce limit without Redis to prevent DoS.
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "SSE_CONNECTION_LIMIT",
+                "message": (f"Слишком много одновременных SSE-соединений (лимит: {_MAX_CONNECTIONS_PER_USER})."),
+                "limit": _MAX_CONNECTIONS_PER_USER,
+            },
+            headers={"Retry-After": "60"},
+        )
+
+    async def event_generator() -> AsyncGenerator[str]:
         nonlocal redis
 
-        # Increment connection counter
-        if redis is not None:
-            try:
-                await redis.incr(conn_key)
-                await redis.expire(conn_key, 3600)  # auto-clean stale counter
-            except Exception:
-                logger.warning(
-                    "Failed to increment SSE connection counter", exc_info=True
-                )
-
-        try:
+        async with _sse_connection(redis, conn_key, user_id):
             # ── Replay missed events ──────────────────────────────────────────
             if last_event_id:
                 try:
                     missed = await get_events_since(submission_uuid, last_event_id)
                     for event_data in missed:
                         event_type = str(event_data.get("event", "message"))
-                        yield encode_sse(event_type, event_data)
+                        yield encode_sse(event_type, event_data)  # noqa: ASYNC119
                 except Exception:
-                    logger.warning("SSE replay failed", exc_info=True)
+                    logger.warning("Не удалось повторно воспроизвести SSE", exc_info=True)
 
             # ── Send connected event ──────────────────────────────────────────
-            yield encode_sse(
+            yield encode_sse(  # noqa: ASYNC119
                 "connected",
                 grading_event("connected", submission_uuid),
             )
@@ -141,7 +215,7 @@ async def api_feedback_stream(
             if redis is None:
                 # No Redis — just send keepalives until disconnect.
                 while not await request.is_disconnected():
-                    yield ": keepalive\n\n"
+                    yield ": keepalive\n\n"  # noqa: ASYNC119
                     await asyncio.sleep(_KEEPALIVE_INTERVAL)
                 return
 
@@ -149,40 +223,11 @@ async def api_feedback_stream(
             pubsub = redis.pubsub()
             await pubsub.subscribe(grading_channel(submission_uuid))
             try:
-                while not await request.is_disconnected():
-                    message = await pubsub.get_message(
-                        ignore_subscribe_messages=True,
-                        timeout=float(_KEEPALIVE_INTERVAL),
-                    )
-                    if message is None:
-                        yield ": keepalive\n\n"
-                        continue
-                    raw = message.get("data")
-                    if isinstance(raw, bytes):
-                        raw = raw.decode("utf-8")
-                    if not isinstance(raw, str):
-                        continue
-                    try:
-                        payload = json.loads(raw)
-                    except Exception:
-                        logger.warning("Failed to decode SSE payload: %s", raw)
-                        continue
-                    event_type = str(payload.get("event", "message"))
-                    yield encode_sse(event_type, payload)
+                async for event in _stream_pubsub(pubsub, request, submission_uuid):
+                    yield event  # noqa: ASYNC119
             finally:
                 await pubsub.unsubscribe(grading_channel(submission_uuid))
-                await pubsub.aclose()
-        finally:
-            # Decrement connection counter on disconnect
-            if redis is not None:
-                try:
-                    remaining = await redis.decr(conn_key)
-                    if remaining <= 0:
-                        await redis.delete(conn_key)
-                except Exception:
-                    logger.warning(
-                        "Failed to decrement SSE connection counter", exc_info=True
-                    )
+                await pubsub.aclose()  # type: ignore[no-untyped-call]
 
     return StreamingResponse(
         event_generator(),

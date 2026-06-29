@@ -7,12 +7,10 @@ Redis data model for user sessions:
                                   pruned on every write so the set never grows
                                   unboundedly.
 
-Audit writes use their own short-lived DB session (via get_bg_engine())
-and are fire-and-forget via asyncio.create_task + asyncio.to_thread, so they
-never block the event-loop.
+Audit writes are enqueued through Taskiq and use their own short-lived DB
+session in the worker process.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
@@ -22,9 +20,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from fastapi import HTTPException, status
+import redis.asyncio
 from sqlmodel import Session, select
 
+from src.app.exceptions import DependencyAppError
 from src.db.auth_sessions import AuthSession
 from src.db.users import User
 from src.security.auth_lifetimes import (
@@ -32,16 +31,20 @@ from src.security.auth_lifetimes import (
     REFRESH_TOKEN_HARD_CAP_EXPIRE,
 )
 from src.services.cache.redis_client import get_async_redis_client
+from src.types import JsonObject, require_persisted_id
+from src.types.narrowing import as_int, as_str
 
 logger = logging.getLogger(__name__)
 
 REFRESH_SESSION_TTL = int(REFRESH_TOKEN_EXPIRE.total_seconds())
 REFRESH_SESSION_HARD_CAP = int(REFRESH_TOKEN_HARD_CAP_EXPIRE.total_seconds())
+REFRESH_ROTATION_GRACE_SECONDS = 10
 MAX_SESSIONS_PER_USER = 10
 SESSION_PREFIX = "session:"
 USER_SESSIONS_PREFIX = "user_sessions:"
+ROTATED_SESSION_PREFIX = "rotated_session:"
 
-RefreshSessionStatus = Literal["active", "expired", "revoked", "reused", "invalid"]
+RefreshSessionStatus = Literal["active", "expired", "revoked", "reused", "rotated", "invalid"]
 
 
 @dataclass(slots=True)
@@ -73,6 +76,12 @@ class RefreshSessionInspection:
 
 def _now_ts() -> int:
     return int(time.time())
+
+
+def _optional_str(value: object, *, field: str) -> str | None:
+    if value is None:
+        return None
+    return as_str(value, field=field)
 
 
 def _generate_session_id() -> str:
@@ -107,13 +116,17 @@ def _user_sessions_key(user_id: int) -> str:
     return USER_SESSIONS_PREFIX + str(user_id)
 
 
+def _rotated_session_key(session_id: str) -> str:
+    return ROTATED_SESSION_PREFIX + session_id
+
+
 def _redis_key_type_name(key_type: bytes | str) -> str:
     if isinstance(key_type, bytes):
         return key_type.decode("utf-8", errors="ignore")
     return key_type
 
 
-async def _ensure_user_sessions_index(r, user_id: int) -> str:
+async def _ensure_user_sessions_index(r: redis.asyncio.Redis, user_id: int) -> str:
     """Normalize the per-user session index to a sorted set.
 
     Older deployments may have written a non-zset value under the same key.
@@ -128,7 +141,7 @@ async def _ensure_user_sessions_index(r, user_id: int) -> str:
     return user_key
 
 
-def _session_data_to_dict(data: SessionData) -> dict:
+def _session_data_to_dict(data: SessionData) -> JsonObject:
     return {
         "session_id": data.session_id,
         "token_family_id": data.token_family_id,
@@ -150,6 +163,17 @@ def _parse_session_data(raw: bytes | str) -> SessionData | None:
         return SessionData(**d)
     except Exception:
         return None
+
+
+def _rotation_grace_payload(old_session: SessionData, new_session: SessionData, *, rotated_at: int) -> JsonObject:
+    return {
+        "session_id": old_session.session_id,
+        "token_family_id": old_session.token_family_id,
+        "user_id": old_session.user_id,
+        "refresh_token_hash": old_session.refresh_token_hash,
+        "replaced_by_session_id": new_session.session_id,
+        "rotated_at": rotated_at,
+    }
 
 
 # ── Redis operations (Sorted Set) ─────────────────────────────────────────────
@@ -209,6 +233,38 @@ async def _delete_session_from_redis(session_id: str, user_id: int) -> None:
         await pipe.execute()
 
 
+async def _write_rotation_grace(old_session: SessionData, new_session: SessionData, *, rotated_at: int) -> None:
+    r = get_async_redis_client()
+    if not r:
+        return
+
+    payload = json.dumps(_rotation_grace_payload(old_session, new_session, rotated_at=rotated_at))
+    await r.set(_rotated_session_key(old_session.session_id), payload, ex=REFRESH_ROTATION_GRACE_SECONDS)
+
+
+async def _read_rotation_grace(session_id: str) -> JsonObject | None:
+    r = get_async_redis_client()
+    if not r:
+        return None
+
+    try:
+        raw = await r.get(_rotated_session_key(session_id))
+    except Exception:
+        logger.warning("Redis error reading refresh rotation grace for %s", session_id)
+        return None
+
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        logger.warning("Corrupt refresh rotation grace payload for %s", session_id)
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
 async def _find_session_by_refresh_token(refresh_token: str) -> SessionData | None:
     session_id = _extract_session_id(refresh_token)
     if session_id is None:
@@ -229,60 +285,68 @@ async def _get_active_session_ids(user_id: int) -> list[str]:
     now = _now_ts()
     user_key = await _ensure_user_sessions_index(r, user_id)
     members = await r.zrangebyscore(user_key, now, "+inf")
-    return [m.decode() if isinstance(m, bytes) else m for m in members]
+    res: list[str] = []
+    for m in members:
+        if isinstance(m, bytes):
+            res.append(m.decode())
+        elif isinstance(m, str):
+            res.append(m)
+    return res
 
 
 # ── Background audit helpers (own DB session, non-blocking) ──────────────────
 
 
-def _audit_create_sync(session_data_dict: dict) -> None:
+def audit_create_sync(session_data_dict: JsonObject) -> None:
     """Write a session-created audit record using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
 
         engine = get_bg_engine()
         with Session(engine) as db:
+            existing = db.exec(
+                select(AuthSession).where(AuthSession.session_id == session_data_dict["session_id"])
+            ).first()
+            if existing is not None:
+                return
+
             now = datetime.now(UTC)
             record = AuthSession(
-                session_id=session_data_dict["session_id"],
-                token_family_id=session_data_dict["token_family_id"],
-                user_id=session_data_dict["user_id"],
-                refresh_token_hash=session_data_dict["refresh_token_hash"],
+                session_id=as_str(session_data_dict["session_id"], field="session_id"),
+                token_family_id=as_str(session_data_dict["token_family_id"], field="token_family_id"),
+                user_id=as_int(session_data_dict["user_id"], field="user_id"),
+                refresh_token_hash=as_str(session_data_dict["refresh_token_hash"], field="refresh_token_hash"),
                 created_at=now,
                 last_seen_at=now,
                 expires_at=now + timedelta(seconds=REFRESH_SESSION_TTL),
-                ip_address=session_data_dict["ip_address"],
-                user_agent=session_data_dict["user_agent"],
+                ip_address=_optional_str(session_data_dict.get("ip_address"), field="ip_address"),
+                user_agent=_optional_str(session_data_dict.get("user_agent"), field="user_agent"),
             )
             db.add(record)
             db.commit()
     except Exception:
-        logger.warning(
-            "Audit create failed for session %s", session_data_dict.get("session_id")
-        )
+        logger.warning("Audit create failed for session %s", session_data_dict.get("session_id"))
+        raise
 
 
-def _audit_revoke_sync(session_id: str) -> None:
+def audit_revoke_sync(session_id: str) -> None:
     """Mark a session as revoked using its own short-lived DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
 
         engine = get_bg_engine()
         with Session(engine) as db:
-            record = db.exec(
-                select(AuthSession).where(AuthSession.session_id == session_id)
-            ).first()
+            record = db.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
             if record and record.revoked_at is None:
                 record.revoked_at = datetime.now(UTC)
                 db.add(record)
                 db.commit()
     except Exception:
         logger.warning("Audit revoke failed for session %s", session_id)
+        raise
 
 
-def _audit_rotate_sync(
-    old_session_id: str, new_session_id: str, new_session_dict: dict
-) -> None:
+def audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: JsonObject) -> None:
     """Mark old session as rotated and create new session record, in one DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -291,59 +355,73 @@ def _audit_rotate_sync(
         with Session(engine) as db:
             now = datetime.now(UTC)
             # Mark old session as rotated
-            old_record = db.exec(
-                select(AuthSession).where(AuthSession.session_id == old_session_id)
-            ).first()
+            old_record = db.exec(select(AuthSession).where(AuthSession.session_id == old_session_id)).first()
             if old_record is not None:
                 old_record.revoked_at = now
                 old_record.rotated_at = now
                 old_record.replaced_by_session_id = new_session_id
                 db.add(old_record)
 
-            # Create new session record
-            new_record = AuthSession(
-                session_id=new_session_dict["session_id"],
-                token_family_id=new_session_dict["token_family_id"],
-                user_id=new_session_dict["user_id"],
-                refresh_token_hash=new_session_dict["refresh_token_hash"],
-                created_at=now,
-                last_seen_at=now,
-                expires_at=now + timedelta(seconds=REFRESH_SESSION_TTL),
-                ip_address=new_session_dict["ip_address"],
-                user_agent=new_session_dict["user_agent"],
-            )
-            db.add(new_record)
+            new_record = db.exec(select(AuthSession).where(AuthSession.session_id == new_session_id)).first()
+            if new_record is None:
+                new_record = AuthSession(
+                    session_id=as_str(new_session_dict["session_id"], field="session_id"),
+                    token_family_id=as_str(new_session_dict["token_family_id"], field="token_family_id"),
+                    user_id=as_int(new_session_dict["user_id"], field="user_id"),
+                    refresh_token_hash=as_str(new_session_dict["refresh_token_hash"], field="refresh_token_hash"),
+                    created_at=now,
+                    last_seen_at=now,
+                    expires_at=now + timedelta(seconds=REFRESH_SESSION_TTL),
+                    ip_address=_optional_str(new_session_dict.get("ip_address"), field="ip_address"),
+                    user_agent=_optional_str(new_session_dict.get("user_agent"), field="user_agent"),
+                )
+                db.add(new_record)
             db.commit()
     except Exception:
-        logger.warning(
-            "Audit rotate failed for sessions %s → %s", old_session_id, new_session_id
+        logger.exception(
+            "Audit rotate failed for sessions %s -> %s",
+            old_session_id,
+            new_session_id,
         )
+        raise
 
 
-def _fire_audit_create(data: SessionData) -> None:
-    """Schedule a non-blocking background audit write for a new session."""
-    asyncio.create_task(
-        asyncio.to_thread(_audit_create_sync, _session_data_to_dict(data))
-    )
+async def _fire_audit_create(data: SessionData) -> None:
+    """Enqueue a non-blocking audit write for a new session."""
+    try:
+        from src.worker.tasks.auth_sessions import audit_session_created_task
+
+        await audit_session_created_task.kiq(_session_data_to_dict(data))
+    except Exception:
+        logger.warning("Audit create enqueue failed for session %s", data.session_id)
 
 
-def _fire_audit_revoke(session_id: str) -> None:
-    """Schedule a non-blocking background audit write for a revoked session."""
-    asyncio.create_task(asyncio.to_thread(_audit_revoke_sync, session_id))
+async def _fire_audit_revoke(session_id: str) -> None:
+    """Enqueue a non-blocking audit write for a revoked session."""
+    try:
+        from src.worker.tasks.auth_sessions import audit_session_revoked_task
+
+        await audit_session_revoked_task.kiq(session_id)
+    except Exception:
+        logger.warning("Audit revoke enqueue failed for session %s", session_id)
 
 
-def _fire_audit_rotate(
-    old_session_id: str, new_session_id: str, new_data: SessionData
-) -> None:
-    """Schedule a non-blocking background audit write for a rotated session."""
-    asyncio.create_task(
-        asyncio.to_thread(
-            _audit_rotate_sync,
+async def _fire_audit_rotate(old_session_id: str, new_session_id: str, new_data: SessionData) -> None:
+    """Enqueue a non-blocking audit write for a rotated session."""
+    try:
+        from src.worker.tasks.auth_sessions import audit_session_rotated_task
+
+        await audit_session_rotated_task.kiq(
             old_session_id,
             new_session_id,
             _session_data_to_dict(new_data),
         )
-    )
+    except Exception:
+        logger.warning(
+            "Audit rotate enqueue failed for sessions %s -> %s",
+            old_session_id,
+            new_session_id,
+        )
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -364,14 +442,14 @@ async def create_auth_session(
 
     No DB session required — audit uses its own engine connection.
     """
-    # Enforce session concurrency limit
-    active_ids = await _get_active_session_ids(user.id)
+    user_id = require_persisted_id(user.id, model_name="User")
+    active_ids = await _get_active_session_ids(user_id)
     if len(active_ids) >= MAX_SESSIONS_PER_USER:
         # Evict oldest sessions until we're under the limit
         sessions_to_evict = active_ids[: len(active_ids) - MAX_SESSIONS_PER_USER + 1]
         for oldest_sid in sessions_to_evict:
-            await _delete_session_from_redis(oldest_sid, user.id)
-            _fire_audit_revoke(oldest_sid)
+            await _delete_session_from_redis(oldest_sid, user_id)
+            await _fire_audit_revoke(oldest_sid)
 
     now = _now_ts()
     session_id = _generate_session_id()
@@ -379,7 +457,7 @@ async def create_auth_session(
     data = SessionData(
         session_id=session_id,
         token_family_id=token_family_id or _generate_family_id(),
-        user_id=user.id,
+        user_id=user_id,
         user_uuid=str(user.user_uuid),
         refresh_token_hash=hash_refresh_token(refresh_token),
         ip_address=ip_address,
@@ -392,12 +470,15 @@ async def create_auth_session(
     try:
         await _write_session_to_redis(data, REFRESH_SESSION_TTL)
     except Exception as exc:
-        logger.exception("Redis unavailable — cannot persist session")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication service temporarily unavailable",
+        logger.exception("Redis unavailable - cannot persist auth session")
+        raise DependencyAppError(
+            code="AUTH_SESSION_STORE_UNAVAILABLE",
+            message="Сервис аутентификации временно недоступен",
+            details={"service": "redis", "operation": "create_auth_session"},
+            retry_after=30,
+            cause=exc,
         ) from exc
-    _fire_audit_create(data)
+    await _fire_audit_create(data)
     return data, refresh_token
 
 
@@ -405,9 +486,7 @@ async def get_session_by_id(session_id: str) -> SessionData | None:
     return await _read_session_from_redis(session_id)
 
 
-async def get_session_owner_id(
-    db_session: Session | None, session_id: str
-) -> int | None:
+async def get_session_owner_id(db_session: Session | None, session_id: str) -> int | None:
     active = await _read_session_from_redis(session_id)
     if active is not None:
         return active.user_id
@@ -416,18 +495,14 @@ async def get_session_owner_id(
         return None
 
     try:
-        record = db_session.exec(
-            select(AuthSession).where(AuthSession.session_id == session_id)
-        ).first()
+        record = db_session.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
         return record.user_id if record else None
     except Exception:
         logger.warning("Failed to resolve owner for session %s", session_id)
         return None
 
 
-async def inspect_refresh_session(
-    db_session: Session, refresh_token: str
-) -> RefreshSessionInspection:
+async def inspect_refresh_session(db_session: Session, refresh_token: str) -> RefreshSessionInspection:
     """Inspect a refresh token and return its status.
 
     Still accepts db_session for the PostgreSQL fallback read path (reuse/revoke
@@ -442,7 +517,7 @@ async def inspect_refresh_session(
         now = _now_ts()
         if now >= data.absolute_expires_at:
             await _delete_session_from_redis(data.session_id, data.user_id)
-            _fire_audit_revoke(data.session_id)
+            await _fire_audit_revoke(data.session_id)
             return RefreshSessionInspection(
                 status="expired",
                 session_id=data.session_id,
@@ -462,11 +537,18 @@ async def inspect_refresh_session(
             user_id=data.user_id,
         )
 
+    grace = await _read_rotation_grace(session_id)
+    if grace is not None and grace.get("refresh_token_hash") == hash_refresh_token(refresh_token):
+        return RefreshSessionInspection(
+            status="rotated",
+            session_id=session_id,
+            token_family_id=as_str(grace["token_family_id"], field="token_family_id"),
+            user_id=as_int(grace["user_id"], field="user_id"),
+        )
+
     # Session not in Redis — check PostgreSQL for reuse / revocation diagnosis.
     # This is a READ-only path; any resulting audit writes are also fire-and-forget.
-    record = db_session.exec(
-        select(AuthSession).where(AuthSession.session_id == session_id)
-    ).first()
+    record = db_session.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
     if record is None:
         return RefreshSessionInspection(status="invalid", session_id=session_id)
 
@@ -506,8 +588,6 @@ async def rotate_session(
 ) -> tuple[SessionData, str]:
     """Rotate a refresh session.  No DB session required — audit is async."""
     now = _now_ts()
-    await _delete_session_from_redis(old_session.session_id, old_session.user_id)
-
     new_session_id = _generate_session_id()
     new_refresh_token = _generate_refresh_token(new_session_id)
     new_data = SessionData(
@@ -524,15 +604,17 @@ async def rotate_session(
         absolute_expires_at=old_session.absolute_expires_at,
     )
     remaining = max(1, min(REFRESH_SESSION_TTL, old_session.absolute_expires_at - now))
+    await _delete_session_from_redis(old_session.session_id, old_session.user_id)
     await _write_session_to_redis(new_data, remaining)
-    _fire_audit_rotate(old_session.session_id, new_session_id, new_data)
+    await _write_rotation_grace(old_session, new_data, rotated_at=now)
+    await _fire_audit_rotate(old_session.session_id, new_session_id, new_data)
     return new_data, new_refresh_token
 
 
 async def revoke_session(session_id: str, user_id: int) -> None:
     """Revoke a single session.  No DB session required — audit is async."""
     await _delete_session_from_redis(session_id, user_id)
-    _fire_audit_revoke(session_id)
+    await _fire_audit_revoke(session_id)
 
 
 async def revoke_token_family(token_family_id: str, user_id: int) -> None:
@@ -542,7 +624,7 @@ async def revoke_token_family(token_family_id: str, user_id: int) -> None:
         data = await _read_session_from_redis(sid)
         if data and data.token_family_id == token_family_id:
             await _delete_session_from_redis(sid, user_id)
-            _fire_audit_revoke(sid)
+            await _fire_audit_revoke(sid)
 
 
 async def revoke_all_user_sessions(user_id: int) -> int:
@@ -564,15 +646,15 @@ async def revoke_all_user_sessions(user_id: int) -> int:
         await pipe.execute()
 
     for sid in active_ids:
-        _fire_audit_revoke(sid)
+        await _fire_audit_revoke(sid)
 
     return len(active_ids)
 
 
-async def get_user_active_sessions(user_id: int) -> list[dict]:
+async def get_user_active_sessions(user_id: int) -> list[JsonObject]:
     """Return metadata for all active sessions of a user."""
     active_ids = await _get_active_session_ids(user_id)
-    result = []
+    result: list[JsonObject] = []
     for sid in active_ids:
         data = await _read_session_from_redis(sid)
         if data:

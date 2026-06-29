@@ -3,6 +3,6 @@
  * All extension options that previously used `activity: any` should use this.
  */
 export interface ActivityRef {
-  activity_uuid: string;
-  name?: string;
+  activity_uuid: string
+  name?: string
 }

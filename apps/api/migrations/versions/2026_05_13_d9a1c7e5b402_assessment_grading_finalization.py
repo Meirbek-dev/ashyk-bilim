@@ -89,9 +89,7 @@ def _column_exists(conn: sa.Connection, table_name: str, column_name: str) -> bo
     )
 
 
-def _first_existing_column(
-    conn: sa.Connection, table_name: str, columns: Iterable[str]
-) -> str | None:
+def _first_existing_column(conn: sa.Connection, table_name: str, columns: Iterable[str]) -> str | None:
     for column in columns:
         if _column_exists(conn, table_name, column):
             return column
@@ -105,7 +103,7 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
             SELECT activity.id, activity.activity_uuid, activity.activity_type, COUNT(assessment.id) AS assessment_count
             FROM activity
             LEFT JOIN assessment ON assessment.activity_id = activity.id
-            WHERE activity.activity_type IN :activity_types
+            WHERE activity.activity_type::text IN :activity_types
             GROUP BY activity.id, activity.activity_uuid, activity.activity_type
             HAVING COUNT(assessment.id) <> 1
             LIMIT 20
@@ -115,8 +113,7 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
     ).fetchall()
     if rows:
         formatted = ", ".join(
-            f"{row.activity_type}:{row.activity_uuid or row.id}({row.assessment_count})"
-            for row in rows
+            f"{row.activity_type}:{row.activity_uuid or row.id}({row.assessment_count})" for row in rows
         )
         msg = (
             "Cannot finalize assessment grading while legacy activities are not "
@@ -128,18 +125,14 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
 def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
     checks: list[str] = []
 
-    if _table_exists(conn, "assignmentusersubmission") and _table_exists(
-        conn, "assignment"
-    ):
+    if _table_exists(conn, "assignmentusersubmission") and _table_exists(conn, "assignment"):
         activity_col = _first_existing_column(conn, "assignment", ("activity_id",))
         assignment_fk = _first_existing_column(
             conn,
             "assignmentusersubmission",
             ("assignment_id", "assignmentId"),
         )
-        user_col = _first_existing_column(
-            conn, "assignmentusersubmission", ("user_id", "userId")
-        )
+        user_col = _first_existing_column(conn, "assignmentusersubmission", ("user_id", "userId"))
         if activity_col and assignment_fk and user_col:
             checks.append(
                 f"""
@@ -158,12 +151,8 @@ def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
             )
 
     if _table_exists(conn, "assignmenttasksubmission"):
-        activity_col = _first_existing_column(
-            conn, "assignmenttasksubmission", ("activity_id",)
-        )
-        user_col = _first_existing_column(
-            conn, "assignmenttasksubmission", ("user_id", "userId")
-        )
+        activity_col = _first_existing_column(conn, "assignmenttasksubmission", ("activity_id",))
+        user_col = _first_existing_column(conn, "assignmenttasksubmission", ("user_id", "userId"))
         if activity_col and user_col:
             checks.append(
                 f"""
@@ -203,9 +192,7 @@ def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
 
     if _table_exists(conn, "code_submission"):
         activity_col = _first_existing_column(conn, "code_submission", ("activity_id",))
-        user_col = _first_existing_column(
-            conn, "code_submission", ("user_id", "userId")
-        )
+        user_col = _first_existing_column(conn, "code_submission", ("user_id", "userId"))
         if activity_col and user_col:
             checks.append(
                 f"""
@@ -263,6 +250,7 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
                 title,
                 description,
                 lifecycle,
+                published_at,
                 weight,
                 grading_type,
                 policy_id,
@@ -318,15 +306,21 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
                 CASE
                     WHEN exam.settings ->> 'lifecycle_status' IN ('DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED')
                         THEN exam.settings ->> 'lifecycle_status'
-                    WHEN exam.published THEN 'PUBLISHED'
+                    WHEN exam.published OR activity.published THEN 'PUBLISHED'
                     ELSE 'DRAFT'
+                END,
+                CASE
+                    WHEN exam.published OR activity.published
+                        THEN COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, NULLIF(exam.creation_date::text, '')::timestamptz, now())
+                    ELSE NULL
                 END,
                 1.0,
                 'PERCENTAGE',
                 assessment_policy.id,
-                COALESCE(NULLIF(exam.creation_date, '')::timestamptz, now()),
-                COALESCE(NULLIF(exam.update_date, '')::timestamptz, now())
+                COALESCE(NULLIF(exam.creation_date::text, '')::timestamptz, now()),
+                COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, now())
             FROM exam
+            JOIN activity ON activity.id = exam.activity_id
             LEFT JOIN assessment_policy
               ON assessment_policy.activity_id = exam.activity_id
             WHERE NOT EXISTS (
@@ -368,12 +362,12 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
             1.0,
             'PERCENTAGE',
             assessment_policy.id,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         LEFT JOIN assessment_policy
           ON assessment_policy.activity_id = activity.id
-        WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
+        WHERE activity.activity_type::text = 'TYPE_CODE_CHALLENGE'
           AND NOT EXISTS (
               SELECT 1 FROM assessment WHERE assessment.activity_id = activity.id
           )
@@ -508,8 +502,8 @@ def _backfill_remaining_assessments(conn: sa.Connection) -> None:
                     THEN (activity.details ->> 'points')::float
                 ELSE 100.0
             END,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         JOIN assessment ON assessment.activity_id = activity.id
         WHERE assessment.kind = 'CODE_CHALLENGE'
@@ -530,53 +524,61 @@ def upgrade() -> None:
     _assert_no_unmapped_activity_types(conn)
     _assert_legacy_submissions_have_canonical_rows(conn)
 
-    op.add_column(
-        "submission",
-        sa.Column(
-            "raw_grading_json",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.execute(
-        sa.text(
-            """
-            UPDATE submission
-            SET raw_grading_json = COALESCE(grading_json, '{}'::json)
-            """
-        )
-    )
-
-    op.add_column(
-        "grading_entry",
-        sa.Column(
-            "raw_breakdown",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.add_column(
-        "grading_entry",
-        sa.Column(
-            "effective_breakdown",
-            sa.JSON(),
-            server_default=sa.text("'{}'::json"),
-            nullable=False,
-        ),
-    )
-    op.execute(
-        sa.text(
-            """
-            UPDATE grading_entry
-            SET raw_breakdown = COALESCE(breakdown, '{}'::json),
-                effective_breakdown = COALESCE(breakdown, '{}'::json)
-            """
-        )
-    )
-
     _strip_legacy_metadata_keys()
+
+    conn = op.get_bind()
+    submission_cols = {col["name"] for col in sa.inspect(conn).get_columns("submission")}
+    if "raw_grading_json" not in submission_cols:
+        op.add_column(
+            "submission",
+            sa.Column(
+                "raw_grading_json",
+                sa.JSON(),
+                server_default=sa.text("'{}'::json"),
+                nullable=False,
+            ),
+        )
+        op.execute(
+            sa.text(
+                """
+                UPDATE submission
+                SET raw_grading_json = COALESCE(grading_json, '{}'::json)
+                """
+            )
+        )
+
+    if _table_exists(conn, "grading_entry"):
+        grading_cols = {col["name"] for col in sa.inspect(conn).get_columns("grading_entry")}
+        if "raw_breakdown" not in grading_cols:
+            op.add_column(
+                "grading_entry",
+                sa.Column(
+                    "raw_breakdown",
+                    sa.JSON(),
+                    server_default=sa.text("'{}'::json"),
+                    nullable=False,
+                ),
+            )
+        if "effective_breakdown" not in grading_cols:
+            op.add_column(
+                "grading_entry",
+                sa.Column(
+                    "effective_breakdown",
+                    sa.JSON(),
+                    server_default=sa.text("'{}'::json"),
+                    nullable=False,
+                ),
+            )
+        if "breakdown" in grading_cols:
+            op.execute(
+                sa.text(
+                    """
+                    UPDATE grading_entry
+                    SET raw_breakdown = COALESCE(breakdown, '{}'::json),
+                        effective_breakdown = COALESCE(breakdown, '{}'::json)
+                    """
+                )
+            )
 
     for table_name in LEGACY_TABLES:
         op.execute(sa.text(f'DROP TABLE IF EXISTS "{table_name}" CASCADE'))

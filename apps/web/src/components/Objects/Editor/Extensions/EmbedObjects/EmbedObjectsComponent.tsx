@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   SiCrewai,
@@ -9,8 +9,8 @@ import {
   SiGooglemaps,
   SiNotion,
   SiYoutube,
-} from '@icons-pack/react-simple-icons';
-import { YouTubeEmbed } from '@next/third-parties/google';
+} from '@icons-pack/react-simple-icons'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
 import {
   AlignCenter,
   BoxIcon,
@@ -23,45 +23,46 @@ import {
   LinkIcon,
   Trash2,
   X,
-} from 'lucide-react';
-import type { CSSProperties, ChangeEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Textarea } from '@components/ui/textarea';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import DOMPurify from 'dompurify';
-import { getYouTubeVideoId } from '@/lib/utils';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+} from 'lucide-react'
+import type { CSSProperties, ChangeEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Textarea } from '@components/ui/textarea'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import DOMPurify from 'dompurify'
+import { getYouTubeVideoId } from '@/lib/utils'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { Button } from '@/components/ui/button'
 
 // ============================================================================
 // TYPES & CONSTANTS
 // ============================================================================
 
-type EmbedType = 'url' | 'code';
-type Alignment = 'left' | 'center';
-type ActiveInput = 'none' | 'url' | 'code';
+type EmbedType = 'url' | 'code'
+type Alignment = 'left' | 'center'
+type ActiveInput = 'none' | 'url' | 'code'
 
 interface ScriptEmbedConfig {
-  src: string;
-  identifier: string;
+  src: string
+  identifier: string
 }
 
 interface SupportedProduct {
-  name: string;
-  icon: any;
-  color: string;
-  guide: string;
+  name: string
+  icon: AppIcon
+  color: string
+  guide: string
 }
 
-interface EmbedNodeAttrs {
-  embedUrl: string | null;
-  embedCode: string | null;
-  embedType: EmbedType | null;
-  embedHeight: number;
-  embedWidth: string;
-  alignment: Alignment;
+export interface EmbedNodeAttrs {
+  embedUrl: string | null
+  embedCode: string | null
+  embedType: EmbedType | null
+  embedHeight: number
+  embedWidth: string
+  alignment: Alignment
 }
 
 const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
@@ -77,7 +78,7 @@ const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
     src: 'https://www.tiktok.com/embed.js',
     identifier: 'tiktok-embed',
   },
-};
+}
 
 const SUPPORTED_PRODUCTS: SupportedProduct[] = [
   {
@@ -92,7 +93,12 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
     color: '#FF0000',
     guide: 'https://support.google.com/youtube/answer/171780?hl=en',
   },
-  { name: 'GitHub', icon: SiGithub, color: '#181717', guide: 'https://emgithub.com/' },
+  {
+    name: 'GitHub',
+    icon: SiGithub,
+    color: '#181717',
+    guide: 'https://emgithub.com/',
+  },
 
   {
     name: 'CodePen',
@@ -161,33 +167,33 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
     color: '#34A853',
     guide: 'https://support.google.com/docs/answer/2839588',
   },
-];
+]
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 const sanitizeUrl = (url: string): string => {
-  const trimmed = url.trim();
-  if (!trimmed) return '';
+  const trimmed = url.trim()
+  if (!trimmed) return ''
 
-  const sanitized = DOMPurify.sanitize(trimmed);
-  if (!sanitized) return '';
+  const sanitized = DOMPurify.sanitize(trimmed)
+  if (!sanitized) return ''
 
   try {
-    const parsed = new URL(sanitized);
+    const parsed = new URL(sanitized)
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      parsed.protocol = 'https:';
-      return parsed.toString();
+      parsed.protocol = 'https:'
+      return parsed.toString()
     }
-    return sanitized;
+    return sanitized
   } catch {
     if (!/^[A-Za-z]+:\/\//.test(sanitized)) {
-      return `https://${sanitized}`;
+      return `https://${sanitized}`
     }
-    return sanitized;
+    return sanitized
   }
-};
+}
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -199,44 +205,46 @@ const EmbedContent = ({
   embedType,
   embeddedTitle,
 }: {
-  embedUrl: string;
-  sanitizedEmbedCode: string;
-  embedType: EmbedType;
-  embeddedTitle?: string;
+  embedUrl: string
+  sanitizedEmbedCode: string
+  embedType: EmbedType
+  embeddedTitle?: string
 }) => {
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
+
   useEffect(() => {
-    if (embedType !== 'code' || !sanitizedEmbedCode) return;
+    if (embedType !== 'code' || !sanitizedEmbedCode) return
 
     const matchingPlatform = Object.entries(SCRIPT_BASED_EMBEDS).find(([_, config]) =>
       sanitizedEmbedCode.includes(config.identifier),
-    );
+    )
 
-    if (!matchingPlatform) return;
+    if (!matchingPlatform) return
 
-    const [_, config] = matchingPlatform;
-    const script = document.createElement('script');
-    script.src = config.src;
-    script.async = true;
-    document.body.append(script);
+    const [_, config] = matchingPlatform
+    const script = document.createElement('script')
+    script.src = config.src
+    script.async = true
+    document.body.append(script)
 
     return () => {
       if (document.body.contains(script)) {
-        document.body.removeChild(script);
+        document.body.removeChild(script)
       }
-    };
-  }, [embedType, sanitizedEmbedCode]);
+    }
+  }, [embedType, sanitizedEmbedCode])
 
   if (embedType === 'url' && embedUrl) {
-    const videoId = getYouTubeVideoId(embedUrl);
+    const videoId = getYouTubeVideoId(embedUrl)
 
     if (videoId) {
       return (
-        <YouTubeEmbed
+        <YouTubeEmbedFill
           videoid={videoId}
-          style="height: 100%; width: 100%; max-width: none;"
+          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
           params="autoplay=0&rel=0"
         />
-      );
+      )
     }
 
     return (
@@ -244,46 +252,38 @@ const EmbedContent = ({
         src={embedUrl}
         className="h-full w-full border-0"
         allowFullScreen
-        title={embeddedTitle ?? 'Embedded content'}
+        title={embeddedTitle ?? t('embeddedContent')}
       />
-    );
+    )
   }
 
   if (embedType === 'code' && sanitizedEmbedCode) {
-    return (
-      <div
-        dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }}
-        className="h-full w-full"
-      />
-    );
+    return <div dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }} className="h-full w-full" />
   }
 
-  return null;
-};
+  return null
+}
 
 const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick: () => void }) => {
-  const isMobile = useIsMobile();
-  const t = useTranslations('DashPage.Editor.EmbedObjects');
+  const isMobile = useIsMobile()
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
 
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
+      className="group flex flex-col items-center gap-1.5"
       title={t('addProductEmbedTitle', { productName: product.name })}
     >
       <div
-        className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm transition-shadow group-hover:shadow-md sm:h-12 sm:w-12"
+        className="flex h-10 w-10 items-center justify-center rounded-xl shadow-xs transition-shadow group-hover:shadow-sm sm:h-12 sm:w-12"
         style={{ backgroundColor: product.color }}
       >
-        <product.icon
-          size={isMobile ? 20 : 26}
-          color="#FFFFFF"
-        />
+        <product.icon size={isMobile ? 20 : 26} color="#FFFFFF" />
       </div>
-      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{product.name}</span>
+      <span className="text-muted-foreground group-hover:text-foreground text-xs font-medium">{product.name}</span>
     </button>
-  );
-};
+  )
+}
 
 const EmbedToolbar = ({
   onEdit,
@@ -292,36 +292,42 @@ const EmbedToolbar = ({
   alignment,
   t,
 }: {
-  onEdit: () => void;
-  onCenter: () => void;
-  onRemove: () => void;
-  alignment: Alignment;
-  t: any;
+  onEdit: () => void
+  onCenter: () => void
+  onRemove: () => void
+  alignment: Alignment
+  t: AppTranslator
 }) => (
-  <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100">
-    <button
+  <div className="border-border bg-background/90 absolute top-2 right-2 flex items-center gap-1 rounded-lg border p-1 opacity-0 shadow-xs backdrop-blur-sm transition-opacity group-hover:opacity-100">
+    <Button
       onClick={onEdit}
-      className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground hover:text-foreground"
       title={t('editEmbedTitle')}
     >
-      <Edit2 size={16} />
-    </button>
-    <button
+      <Edit2 size={14} />
+    </Button>
+    <Button
       onClick={onCenter}
-      className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground hover:text-foreground"
       title={alignment === 'center' ? t('alignLeftTitle') : t('centerAlignTitle')}
     >
-      <AlignCenter size={16} />
-    </button>
-    <button
+      <AlignCenter size={14} />
+    </Button>
+    <Button
       onClick={onRemove}
-      className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+      variant="ghost"
+      size="icon-xs"
+      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
       title={t('removeEmbedTitle')}
     >
-      <Trash2 size={16} />
-    </button>
+      <Trash2 size={14} />
+    </Button>
   </div>
-);
+)
 
 const InputModal = ({
   activeInput,
@@ -335,45 +341,45 @@ const InputModal = ({
   onOpenDocs,
   t,
 }: {
-  activeInput: ActiveInput;
-  embedUrl: string;
-  embedCode: string;
-  selectedProduct: SupportedProduct | null;
-  onClose: () => void;
-  onUrlChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onCodeChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
-  onSubmit: (formData: FormData) => void;
-  onOpenDocs: () => void;
-  t: any;
+  activeInput: ActiveInput
+  embedUrl: string
+  embedCode: string
+  selectedProduct: SupportedProduct | null
+  onClose: () => void
+  onUrlChange: (e: ChangeEvent<HTMLInputElement>) => void
+  onCodeChange: (e: ChangeEvent<HTMLTextAreaElement>) => void
+  onSubmit: (formData: FormData) => void
+  onOpenDocs: () => void
+  t: AppTranslator
 }) => {
-  const urlInputRef = useRef<HTMLInputElement>(null);
-  const codeInputRef = useRef<HTMLTextAreaElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null)
+  const codeInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       requestAnimationFrame(() => {
-        if (activeInput === 'url') urlInputRef.current?.focus();
-        else if (activeInput === 'code') codeInputRef.current?.focus();
-      });
-    }, 50);
-    return () => clearTimeout(timeout);
-  }, [activeInput]);
+        if (activeInput === 'url') urlInputRef.current?.focus()
+        else if (activeInput === 'code') codeInputRef.current?.focus()
+      })
+    }, 50)
+    return () => clearTimeout(timeout)
+  }, [activeInput])
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onClose()
     },
     [onClose],
-  );
+  )
 
-  const isValid = (activeInput === 'url' && embedUrl) || (activeInput === 'code' && embedCode);
+  const isValid = (activeInput === 'url' && embedUrl) || (activeInput === 'code' && embedCode)
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/20 p-4 backdrop-blur-sm">
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <form
         action={onSubmit}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="border-border bg-card w-full max-w-lg rounded-xl border p-5 shadow-lg"
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -383,47 +389,47 @@ const InputModal = ({
                 className="flex h-9 w-9 items-center justify-center rounded-lg"
                 style={{ backgroundColor: selectedProduct.color }}
               >
-                <selectedProduct.icon
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <selectedProduct.icon size={20} color="#FFFFFF" />
               </div>
             )}
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-foreground text-lg font-semibold">
               {activeInput === 'url'
                 ? selectedProduct
-                  ? t('addProductEmbedTitle', { productName: selectedProduct.name })
+                  ? t('addProductEmbedTitle', {
+                      productName: selectedProduct.name,
+                    })
                   : t('addEmbedUrlTitle')
                 : t('addEmbedCodeTitle')}
             </h3>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="text-muted-foreground hover:text-foreground"
           >
-            <X size={20} />
-          </button>
+            <X size={16} />
+          </Button>
         </div>
 
         {/* Input */}
         {activeInput === 'url' ? (
           <div className="mb-3">
             <div className="relative">
-              <Link
-                className="absolute top-1/2 left-3 -translate-y-1/2 text-blue-500"
-                size={18}
-              />
+              <Link className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2" size={18} />
               <input
                 ref={urlInputRef}
                 name="embedUrl"
                 type="text"
                 value={embedUrl}
                 onChange={onUrlChange}
-                className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 py-3 pr-4 pl-11 transition-all focus:border-blue-500 focus:bg-white focus:outline-hidden"
+                className="border-border bg-muted/30 text-foreground focus:border-primary focus:bg-background w-full rounded-lg border py-2.5 pr-4 pl-11 transition-all focus:outline-hidden"
                 placeholder={
                   selectedProduct
-                    ? t('productUrlPlaceholder', { productName: selectedProduct.name })
+                    ? t('productUrlPlaceholder', {
+                        productName: selectedProduct.name,
+                      })
                     : t('urlPlaceholder')
                 }
               />
@@ -436,7 +442,7 @@ const InputModal = ({
               name="embedCode"
               value={embedCode}
               onChange={onCodeChange}
-              className="min-h-[140px] w-full rounded-xl border-2 border-gray-200 bg-gray-50 font-mono text-sm transition-all focus:border-blue-500 focus:bg-white"
+              className="border-border bg-muted/30 focus:border-primary focus:bg-background min-h-[140px] w-full rounded-lg border font-mono text-sm transition-all"
               placeholder={t('codePlaceholder')}
             />
           </div>
@@ -445,38 +451,31 @@ const InputModal = ({
         {/* Help Text */}
         <div className="mb-4 flex justify-end">
           {selectedProduct && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={onOpenDocs}
-              className="flex shrink-0 items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700"
+              className="text-primary h-auto p-0 text-xs font-medium"
             >
-              <HelpCircle size={14} />
+              <HelpCircle size={14} className="mr-1" />
               {t('guide')}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
-          >
+          <Button type="button" variant="ghost" onClick={onClose}>
             {t('cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={!isValid}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" disabled={!isValid} variant="default">
             {t('apply')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
-  );
-};
+  )
+}
 
 const EmptyState = ({
   onProductSelect,
@@ -485,275 +484,265 @@ const EmptyState = ({
   isEditable,
   t,
 }: {
-  onProductSelect: (product: SupportedProduct) => void;
-  onUrlClick: () => void;
-  onCodeClick: () => void;
-  isEditable: boolean;
-  t: any;
+  onProductSelect: (product: SupportedProduct) => void
+  onUrlClick: () => void
+  onCodeClick: () => void
+  isEditable: boolean
+  t: AppTranslator
 }) => (
   <div className="flex h-full w-full flex-col items-center justify-center p-6">
-    <p className="mb-5 text-center text-lg font-medium text-gray-700">{t('addEmbedFrom')}</p>
+    <p className="text-foreground mb-5 text-center text-lg font-medium">{t('addEmbedFrom')}</p>
 
     <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
-      {SUPPORTED_PRODUCTS.map((product) => (
-        <ProductIcon
-          key={product.name}
-          product={product}
-          onClick={() => onProductSelect(product)}
-        />
+      {SUPPORTED_PRODUCTS.map(product => (
+        <ProductIcon key={product.name} product={product} onClick={() => onProductSelect(product)} />
       ))}
     </div>
 
-    <p className="mb-4 max-w-md text-center text-sm text-gray-500">{t('clickServiceToAdd')}</p>
+    <p className="text-muted-foreground mb-4 max-w-md text-center text-sm">{t('clickServiceToAdd')}</p>
 
     {isEditable && (
       <div className="flex gap-3">
-        <button
-          onClick={onUrlClick}
-          className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow"
-        >
-          <LinkIcon size={16} />
+        <Button onClick={onUrlClick} variant="outline" size="default">
+          <LinkIcon size={16} className="mr-1" />
           {t('urlButton')}
-        </button>
-        <button
-          onClick={onCodeClick}
-          className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow"
-        >
-          <Code size={16} />
+        </Button>
+        <Button onClick={onCodeClick} variant="outline" size="default">
+          <Code size={16} className="mr-1" />
           {t('codeButton')}
-        </button>
+        </Button>
       </div>
     )}
   </div>
-);
+)
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
-  const t = useTranslations('DashPage.Editor.EmbedObjects');
-  const { updateAttributes } = props;
-  const isMobile = useIsMobile();
-  const { isEditable } = useEditorProvider();
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
+  const { updateAttributes } = props
+  const isMobile = useIsMobile()
+  const { isEditable } = useEditorProvider()
 
   // State
-  const [embedType, setEmbedType] = useState<EmbedType>(props.node.attrs.embedType || 'url');
-  const [embedUrl, setEmbedUrl] = useState(props.node.attrs.embedUrl || '');
-  const [embedCode, setEmbedCode] = useState(props.node.attrs.embedCode || '');
-  const [embedHeight, setEmbedHeight] = useState(props.node.attrs.embedHeight || 300);
-  const [embedWidth, setEmbedWidth] = useState(props.node.attrs.embedWidth || '100%');
-  const [alignment, setAlignment] = useState<Alignment>(props.node.attrs.alignment || 'left');
-  const [isResizing, setIsResizing] = useState(false);
-  const [parentWidth, setParentWidth] = useState<number | null>(null);
-  const [activeInput, setActiveInput] = useState<ActiveInput>('none');
-  const [selectedProduct, setSelectedProduct] = useState<SupportedProduct | null>(null);
+  const [embedType, setEmbedType] = useState<EmbedType>(props.node.attrs.embedType || 'url')
+  const [embedUrl, setEmbedUrl] = useState(props.node.attrs.embedUrl || '')
+  const [embedCode, setEmbedCode] = useState(props.node.attrs.embedCode || '')
+  const [embedHeight, setEmbedHeight] = useState(props.node.attrs.embedHeight || 300)
+  const [embedWidth, setEmbedWidth] = useState(props.node.attrs.embedWidth || '100%')
+  const [alignment, setAlignment] = useState<Alignment>(props.node.attrs.alignment || 'left')
+  const [isResizing, setIsResizing] = useState(false)
+  const [parentWidth, setParentWidth] = useState<number | null>(null)
+  const [activeInput, setActiveInput] = useState<ActiveInput>('none')
+  const [selectedProduct, setSelectedProduct] = useState<SupportedProduct | null>(null)
 
   // Refs
-  const resizeRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dimensionsRef = useRef({ width: embedWidth, height: embedHeight });
-  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
-  const mouseUpHandlerRef = useRef<(() => void) | null>(null);
+  const resizeRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dimensionsRef = useRef({ width: embedWidth, height: embedHeight })
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null)
+  const mouseUpHandlerRef = useRef<(() => void) | null>(null)
 
   // Sanitized embed code
   const sanitizedEmbedCode = useMemo(
     () =>
       embedType === 'code' && embedCode ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] }) : '',
     [embedType, embedCode],
-  );
+  )
 
   // Handlers
   const handleUrlChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const sanitized = sanitizeUrl(e.target.value);
-      setEmbedUrl(sanitized);
-      updateAttributes({ embedUrl: sanitized, embedType: 'url' });
+      const sanitized = sanitizeUrl(e.target.value)
+      setEmbedUrl(sanitized)
+      updateAttributes({ embedUrl: sanitized, embedType: 'url' })
     },
     [updateAttributes],
-  );
+  )
 
   const handleCodeChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
-      const { value } = e.target;
+      const { value } = e.target
       if (value === '' || value.trim()) {
-        setEmbedCode(value);
-        updateAttributes({ embedCode: value, embedType: 'code' });
+        setEmbedCode(value)
+        updateAttributes({ embedCode: value, embedType: 'code' })
       }
     },
     [updateAttributes],
-  );
+  )
 
   const handleProductSelection = useCallback((product: SupportedProduct) => {
-    setEmbedType('url');
-    setActiveInput('url');
-    setSelectedProduct(product);
-  }, []);
+    setEmbedType('url')
+    setActiveInput('url')
+    setSelectedProduct(product)
+  }, [])
 
   const handleCenterBlock = useCallback(() => {
-    const newAlignment: Alignment = alignment === 'center' ? 'left' : 'center';
-    setAlignment(newAlignment);
-    updateAttributes({ alignment: newAlignment });
-  }, [alignment, updateAttributes]);
+    const newAlignment: Alignment = alignment === 'center' ? 'left' : 'center'
+    setAlignment(newAlignment)
+    updateAttributes({ alignment: newAlignment })
+  }, [alignment, updateAttributes])
 
   const handleRemove = useCallback(() => {
-    setEmbedUrl('');
-    setEmbedCode('');
-    updateAttributes({ embedUrl: '', embedCode: '' });
-  }, [updateAttributes]);
+    setEmbedUrl('')
+    setEmbedCode('')
+    updateAttributes({ embedUrl: '', embedCode: '' })
+  }, [updateAttributes])
 
   const handleInputSubmit = useCallback(
     (formData: FormData) => {
       if (activeInput === 'url') {
-        const nextUrl = sanitizeUrl(String(formData.get('embedUrl') ?? ''));
-        setEmbedType('url');
-        setEmbedUrl(nextUrl);
-        updateAttributes({ embedUrl: nextUrl, embedType: 'url' });
+        const nextUrl = sanitizeUrl(String(formData.get('embedUrl') ?? ''))
+        setEmbedType('url')
+        setEmbedUrl(nextUrl)
+        updateAttributes({ embedUrl: nextUrl, embedType: 'url' })
       }
 
       if (activeInput === 'code') {
-        const nextCode = String(formData.get('embedCode') ?? '');
+        const nextCode = String(formData.get('embedCode') ?? '')
         if (nextCode === '' || nextCode.trim()) {
-          setEmbedType('code');
-          setEmbedCode(nextCode);
-          updateAttributes({ embedCode: nextCode, embedType: 'code' });
+          setEmbedType('code')
+          setEmbedCode(nextCode)
+          updateAttributes({ embedCode: nextCode, embedType: 'code' })
         }
       }
 
-      setActiveInput('none');
+      setActiveInput('none')
     },
     [activeInput, updateAttributes],
-  );
+  )
 
   const handleOpenDocs = useCallback(() => {
     if (selectedProduct) {
-      window.open(selectedProduct.guide, '_blank', 'noopener,noreferrer');
+      window.open(selectedProduct.guide, '_blank', 'noopener,noreferrer')
     }
-  }, [selectedProduct]);
+  }, [selectedProduct])
 
   const handleResizeStart = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>, direction: 'horizontal' | 'vertical') => {
-      e.preventDefault();
-      setIsResizing(true);
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startWidth = resizeRef.current?.offsetWidth || 0;
-      const startHeight = resizeRef.current?.offsetHeight || 0;
+    (
+      e: Pick<ReactMouseEvent<HTMLDivElement>, 'clientX' | 'clientY' | 'preventDefault'>,
+      direction: 'horizontal' | 'vertical',
+    ) => {
+      e.preventDefault()
+      setIsResizing(true)
+      const startX = e.clientX
+      const startY = e.clientY
+      const startWidth = resizeRef.current?.offsetWidth || 0
+      const startHeight = resizeRef.current?.offsetHeight || 0
 
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!resizeRef.current) return;
+      const handleMouseMove = (mouseEvent: MouseEvent) => {
+        if (!resizeRef.current) return
 
         if (direction === 'horizontal') {
-          const newWidth = startWidth + e.clientX - startX;
-          const parentWidth = resizeRef.current.parentElement?.offsetWidth || 1;
-          const widthPercentage = Math.min(100, Math.max(10, (newWidth / parentWidth) * 100));
-          const newWidthValue = `${widthPercentage}%`;
-          dimensionsRef.current.width = newWidthValue;
-          resizeRef.current.style.width = newWidthValue;
+          const newWidth = startWidth + mouseEvent.clientX - startX
+          const currentParentWidth = resizeRef.current.parentElement?.offsetWidth || 1
+          const widthPercentage = Math.min(100, Math.max(10, (newWidth / currentParentWidth) * 100))
+          const newWidthValue = `${widthPercentage}%`
+          dimensionsRef.current.width = newWidthValue
+          resizeRef.current.style.width = newWidthValue
         } else {
-          const newHeight = Math.max(100, startHeight + e.clientY - startY);
-          dimensionsRef.current.height = newHeight;
-          resizeRef.current.style.height = `${newHeight}px`;
+          const newHeight = Math.max(100, startHeight + mouseEvent.clientY - startY)
+          dimensionsRef.current.height = newHeight
+          resizeRef.current.style.height = `${newHeight}px`
         }
-      };
+      }
 
       const handleMouseUp = () => {
-        setIsResizing(false);
-        setEmbedWidth(dimensionsRef.current.width);
-        setEmbedHeight(dimensionsRef.current.height);
+        setIsResizing(false)
+        setEmbedWidth(dimensionsRef.current.width)
+        setEmbedHeight(dimensionsRef.current.height)
         updateAttributes({
           embedWidth: dimensionsRef.current.width,
           embedHeight: dimensionsRef.current.height,
-        });
+        })
 
         if (mouseMoveHandlerRef.current) {
-          document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
-          mouseMoveHandlerRef.current = null;
+          document.removeEventListener('mousemove', mouseMoveHandlerRef.current)
+          mouseMoveHandlerRef.current = null
         }
         if (mouseUpHandlerRef.current) {
-          document.removeEventListener('mouseup', mouseUpHandlerRef.current);
-          mouseUpHandlerRef.current = null;
+          document.removeEventListener('mouseup', mouseUpHandlerRef.current)
+          mouseUpHandlerRef.current = null
         }
-      };
+      }
 
-      mouseMoveHandlerRef.current = handleMouseMove;
-      mouseUpHandlerRef.current = handleMouseUp;
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      mouseMoveHandlerRef.current = handleMouseMove
+      mouseUpHandlerRef.current = handleMouseUp
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
     },
     [updateAttributes],
-  );
+  )
 
   // Responsive styles
   const getResponsiveStyles = useCallback((): CSSProperties => {
     const styles: CSSProperties = {
       height: `${embedHeight}px`,
       width: embedWidth,
-    };
+    }
 
     if (parentWidth) {
       if (isMobile) {
-        styles.width = '100%';
-        styles.minWidth = 'unset';
+        styles.width = '100%'
+        styles.minWidth = 'unset'
       } else {
-        styles.minWidth = `${Math.min(parentWidth, 400)}px`;
-        styles.maxWidth = '100%';
+        styles.minWidth = `${Math.min(parentWidth, 400)}px`
+        styles.maxWidth = '100%'
       }
     }
 
-    return styles;
-  }, [embedHeight, embedWidth, parentWidth, isMobile]);
+    return styles
+  }, [embedHeight, embedWidth, parentWidth, isMobile])
 
   // Effects
   useEffect(() => {
     const updateDimensions = () => {
-      if (!containerRef.current?.parentElement) return;
+      if (!containerRef.current?.parentElement) return
 
-      const newParentWidth = containerRef.current.parentElement.offsetWidth;
-      setParentWidth(newParentWidth);
+      const newParentWidth = containerRef.current.parentElement.offsetWidth
+      setParentWidth(newParentWidth)
 
       if (typeof embedWidth === 'string' && embedWidth.endsWith('%')) {
-        const percentage = Number.parseInt(embedWidth, 10);
-        const newWidth = `${Math.min(100, percentage)}%`;
-        setEmbedWidth(newWidth);
-        updateAttributes({ embedWidth: newWidth });
+        const percentage = Number.parseInt(embedWidth, 10)
+        const newWidth = `${Math.min(100, percentage)}%`
+        setEmbedWidth(newWidth)
+        updateAttributes({ embedWidth: newWidth })
       } else if (newParentWidth < Number.parseInt(embedWidth, 10)) {
-        setEmbedWidth('100%');
-        updateAttributes({ embedWidth: '100%' });
+        setEmbedWidth('100%')
+        updateAttributes({ embedWidth: '100%' })
       }
-    };
-
-    updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (containerRef.current?.parentElement) {
-      resizeObserver.observe(containerRef.current.parentElement);
     }
 
-    return () => resizeObserver.disconnect();
-  }, [embedWidth, updateAttributes]);
+    updateDimensions()
+    const resizeObserver = new ResizeObserver(updateDimensions)
+    if (containerRef.current?.parentElement) {
+      resizeObserver.observe(containerRef.current.parentElement)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [embedWidth, updateAttributes])
 
   useEffect(() => {
     return () => {
       if (mouseMoveHandlerRef.current) {
-        document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        document.removeEventListener('mousemove', mouseMoveHandlerRef.current)
       }
       if (mouseUpHandlerRef.current) {
-        document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        document.removeEventListener('mouseup', mouseUpHandlerRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Render
-  const hasContent = embedUrl || sanitizedEmbedCode;
+  const hasContent = embedUrl || sanitizedEmbedCode
 
   return (
-    <NodeViewWrapper
-      className="embed-block w-full"
-      ref={containerRef}
-    >
+    <NodeViewWrapper className="embed-block w-full" ref={containerRef}>
       <div
         ref={resizeRef}
-        className={`group relative flex items-center justify-center overflow-hidden rounded-xl bg-gray-100 transition-shadow hover:shadow-sm ${
+        className={`group border-border bg-muted/40 relative flex items-center justify-center overflow-hidden rounded-xl border transition-shadow hover:shadow-xs ${
           alignment === 'center' ? 'mx-auto' : ''
         }`}
         style={getResponsiveStyles()}
@@ -782,12 +771,12 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
           <EmptyState
             onProductSelect={handleProductSelection}
             onUrlClick={() => {
-              setEmbedType('url');
-              setActiveInput('url');
+              setEmbedType('url')
+              setActiveInput('url')
             }}
             onCodeClick={() => {
-              setEmbedType('code');
-              setActiveInput('code');
+              setEmbedType('code')
+              setActiveInput('code')
             }}
             isEditable={isEditable}
             t={t}
@@ -812,38 +801,48 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
         {isEditable && hasContent && (
           <>
             <div
-              className="absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              className="bg-background/70 hover:bg-accent/90 absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100"
               role="button"
               tabIndex={0}
-              onMouseDown={(e) => handleResizeStart(e, 'horizontal')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'horizontal');
+              onMouseDown={e => handleResizeStart(e, 'horizontal')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const simulatedEvent = {
+                    preventDefault: () => e.preventDefault(),
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  }
+                  handleResizeStart(simulatedEvent, 'horizontal')
+                }
               }}
             >
-              <GripVertical
-                size={16}
-                className="text-gray-600"
-              />
+              <GripVertical size={16} className="text-muted-foreground" />
             </div>
             <div
-              className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              className="bg-background/70 hover:bg-accent/90 absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100"
               role="button"
               tabIndex={0}
-              onMouseDown={(e) => handleResizeStart(e, 'vertical')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'vertical');
+              onMouseDown={e => handleResizeStart(e, 'vertical')}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const simulatedEvent = {
+                    preventDefault: () => e.preventDefault(),
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  }
+                  handleResizeStart(simulatedEvent, 'vertical')
+                }
               }}
             >
-              <GripHorizontal
-                size={16}
-                className="text-gray-600"
-              />
+              <GripHorizontal size={16} className="text-muted-foreground" />
             </div>
           </>
         )}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default EmbedObjectsComponent;
+export default EmbedObjectsComponent

@@ -17,6 +17,11 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    inspector = sa.inspect(op.get_bind())
+    existing_tables = set(inspector.get_table_names())
+    if "assignment" not in existing_tables:
+        return
+
     op.drop_index("idx_assignment_scheduled_publish_at", table_name="assignment")
     op.drop_column("assignment", "archived_at")
     op.drop_column("assignment", "published_at")

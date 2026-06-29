@@ -1,11 +1,10 @@
-'use client';
+'use client'
 
-import type { ButtonHTMLAttributes, FC, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
-import { Upload } from 'lucide-react';
+import type { ButtonHTMLAttributes, FC, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
+import { Loader2, Upload } from 'lucide-react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLabel?: string }> = ({
   onChange,
@@ -13,7 +12,7 @@ const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLab
   ariaLabel,
   ...props
 }) => {
-  const t = useTranslations('DashPage.Editor.FileUploadBlock');
+  const t = useTranslations('DashPage.Editor.FileUploadBlock')
   return (
     <input
       className={cn(
@@ -27,11 +26,11 @@ const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLab
       title={ariaLabel || t('selectFile')}
       {...props}
     />
-  );
-};
+  )
+}
 
 const FileUploadBlockButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({ onClick, className, ...props }) => {
-  const t = useTranslations('DashPage.Editor.FileUploadBlock');
+  const t = useTranslations('DashPage.Editor.FileUploadBlock')
   return (
     <button
       className={cn(
@@ -44,51 +43,40 @@ const FileUploadBlockButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({ on
       <Upload />
       <p>{t('submit')}</p>
     </button>
-  );
-};
+  )
+}
 
 type UploadBlockComponentProps = {
-  isLoading: boolean;
-  isEditable: boolean;
-  isEmpty: boolean;
-  Icon: any;
-  children: ReactNode;
-} & HTMLAttributes<HTMLDivElement>;
+  isLoading: boolean
+  isEditable: boolean
+  isEmpty: boolean
+  Icon: AppIcon
+  children: ReactNode
+} & HTMLAttributes<HTMLDivElement>
 
 const FileUploadBlock = ({ isLoading, isEditable, isEmpty, Icon, children }: UploadBlockComponentProps) => {
-  const t = useTranslations('DashPage.Editor.FileUploadBlock');
+  const t = useTranslations('DashPage.Editor.FileUploadBlock')
 
   if (isLoading) {
-    return (
-      <Loader2
-        className="animate-spin text-gray-200"
-        size={50}
-      />
-    );
+    return <Loader2 className="animate-spin text-gray-200" size={50} />
   }
 
   if (!isEditable && isEmpty) {
     return (
       <div className="flex items-center gap-5">
-        <Icon
-          className="text-gray-200"
-          size={50}
-        />
+        <Icon className="text-gray-200" size={50} />
         <p>{t('noFilePreview')}</p>
       </div>
-    );
+    )
   }
 
   return (
     <>
-      <Icon
-        className="text-gray-200"
-        size={50}
-      />
+      <Icon className="text-gray-200" size={50} />
       {children}
     </>
-  );
-};
+  )
+}
 
 const FileUploadBlockWrapper = ({ children, isEmpty, ...props }: UploadBlockComponentProps) => {
   return (
@@ -97,15 +85,12 @@ const FileUploadBlockWrapper = ({ children, isEmpty, ...props }: UploadBlockComp
         className="border-gray-150 flex items-center justify-center space-x-3 rounded-xl border-2 border-dashed bg-gray-50 px-3 py-7 text-sm text-gray-900"
         contentEditable={false}
       >
-        <FileUploadBlock
-          isEmpty
-          {...props}
-        >
+        <FileUploadBlock isEmpty {...props}>
           {children}
         </FileUploadBlock>
       </div>
     )
-  );
-};
+  )
+}
 
-export { FileUploadBlockWrapper as FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput };
+export { FileUploadBlockWrapper as FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput }

@@ -1,22 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test'
 import {
   buildGoogleFontCssUrl,
   extractFontFamily,
   getThemeFontStylesheetHref,
   resolveThemeFontFamilies,
-} from '@/lib/theme-fonts';
+} from '@/lib/theme-fonts'
 
 describe('theme font handling', () => {
   it('extracts the first custom family while preserving quoted names', () => {
-    expect(extractFontFamily('"JetBrains Mono", ui-monospace, monospace')).toBe('JetBrains Mono');
-    expect(extractFontFamily("'DM Sans', system-ui, sans-serif")).toBe('DM Sans');
-  });
+    expect(extractFontFamily('"JetBrains Mono", ui-monospace, monospace')).toBe('JetBrains Mono')
+    expect(extractFontFamily("'DM Sans', system-ui, sans-serif")).toBe('DM Sans')
+  })
 
   it('skips system font stacks that should not hit Google Fonts', () => {
-    expect(extractFontFamily('ui-sans-serif, system-ui, sans-serif')).toBeNull();
-    expect(extractFontFamily('Segoe UI, Helvetica Neue, Arial, sans-serif')).toBeNull();
-    expect(extractFontFamily('Menlo, Monaco, Consolas, monospace')).toBeNull();
-  });
+    expect(extractFontFamily('ui-sans-serif, system-ui, sans-serif')).toBeNull()
+    expect(extractFontFamily('Segoe UI, Helvetica Neue, Arial, sans-serif')).toBeNull()
+    expect(extractFontFamily('Menlo, Monaco, Consolas, monospace')).toBeNull()
+  })
 
   it('resolves only supported Google families from tweakcn tokens', () => {
     expect(
@@ -25,14 +25,32 @@ describe('theme font handling', () => {
         'font-serif': 'Signifier, Georgia, serif',
         'font-mono': 'JetBrains Mono, monospace',
       }),
-    ).toEqual(['Inter', 'JetBrains Mono']);
-  });
+    ).toEqual(['Inter', 'JetBrains Mono'])
+  })
+
+  it('resolves Cyrillic fallback fonts alongside primary fonts', () => {
+    expect(
+      resolveThemeFontFamilies({
+        'font-sans': 'Geist, sans-serif',
+        'font-mono': 'Geist Mono, monospace',
+      }),
+    ).toEqual(['Geist', 'Geist Mono', 'Inter', 'JetBrains Mono'])
+  })
 
   it('builds one deterministic Google Fonts stylesheet for active theme fonts', () => {
     expect(buildGoogleFontCssUrl(['JetBrains Mono', 'Inter'])).toBe(
       'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=JetBrains+Mono:wght@400..700&display=swap',
-    );
-  });
+    )
+  })
+
+  it('builds a Google Fonts URL containing fallbacks for Geist', () => {
+    const href = getThemeFontStylesheetHref({
+      'font-sans': 'Geist, sans-serif',
+    })
+    expect(href).toBe(
+      'https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Inter:opsz,wght@14..32,400..700&display=swap',
+    )
+  })
 
   it('returns no stylesheet when a theme uses only local system fonts', () => {
     expect(
@@ -41,6 +59,6 @@ describe('theme font handling', () => {
         'font-serif': 'Georgia, serif',
         'font-mono': 'SFMono-Regular, Menlo, Consolas, monospace',
       }),
-    ).toBeNull();
-  });
-});
+    ).toBeNull()
+  })
+})

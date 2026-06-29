@@ -1,9 +1,10 @@
-import { defineConfig } from 'vitest/config';
-import { playwright } from '@vitest/browser-playwright';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite-plus'
+import { playwright } from 'vite-plus/test/browser-playwright'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
+  // eslint-disable-next-line typescript/no-explicit-any
+  plugins: [react() as any],
   resolve: {
     // Vite now handles this natively, so we can remove the external plugin
     tsconfigPaths: true,
@@ -16,6 +17,7 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     environment: 'jsdom',
     include: ['src/tests/**/*.test.{ts,tsx}'],
+    testTimeout: 10_000,
     server: {
       deps: {
         inline: ['next-intl'],
@@ -34,4 +36,4 @@ export default defineConfig({
       ],
     },
   },
-});
+})

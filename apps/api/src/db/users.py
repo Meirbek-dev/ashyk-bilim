@@ -8,6 +8,7 @@ from ulid import ULID
 
 from src.db.permissions import RoleRead
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject
 
 
 class UserBase(SQLModelStrictBaseModel):
@@ -18,8 +19,8 @@ class UserBase(SQLModelStrictBaseModel):
     email: EmailStr
     avatar_image: str | None = ""
     bio: str | None = ""
-    details: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    profile: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    details: JsonObject | None = Field(default_factory=dict, sa_column=Column(JSON))
+    profile: JsonObject | None = Field(default_factory=dict, sa_column=Column(JSON))
     theme: str | None = "default"
     locale: str | None = "ru-RU"
 
@@ -39,8 +40,8 @@ class UserUpdate(schemas.CreateUpdateDictModel, SQLModelStrictBaseModel):
     email: str | None = None
     avatar_image: str | None = None
     bio: str | None = None
-    details: dict | None = None
-    profile: dict | None = None
+    details: JsonObject | None = None
+    profile: JsonObject | None = None
     theme: str | None = None
     locale: str | None = None
 
@@ -74,9 +75,7 @@ class UserSession(PydanticStrictBaseModel):
     permissions: list[str] = Field(
         default_factory=list
     )  # Effective permissions: list of permission strings, e.g. "course:create:platform"
-    permissions_timestamp: int | None = (
-        None  # Unix timestamp when permissions were loaded
-    )
+    permissions_timestamp: int | None = None  # Unix timestamp when permissions were loaded
     expires_at: int | None = None
     session_version: int | None = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -104,7 +103,7 @@ class User(UserBase, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     # fastapi-users required fields
-    hashed_password: str | None = Field(default=None)
+    hashed_password: str = Field(default="")
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
     is_verified: bool = Field(default=False)

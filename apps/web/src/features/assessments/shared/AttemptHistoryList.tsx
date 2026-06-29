@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import { History } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { History } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
-import type { SubmissionStatus } from '@/features/grading/domain';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
+import type { SubmissionStatus } from '@/features/grading/domain'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export interface AttemptHistoryItem {
-  id: string | number;
-  label: string;
-  submittedAt?: string | null;
-  status?: SubmissionStatus | null;
-  scoreLabel?: string | null;
-  metaLabel?: string | null;
-  onReview?: () => void;
+  id: string | number
+  label: string
+  submittedAt?: string | null
+  status?: SubmissionStatus | null
+  scoreLabel?: string | null
+  metaLabel?: string | null
+  onReview?: () => void
 }
 
 interface AttemptHistoryListProps {
-  items: AttemptHistoryItem[];
-  title?: string;
-  emptyLabel?: string;
-  compact?: boolean;
-  className?: string;
+  items: AttemptHistoryItem[]
+  title?: string
+  emptyLabel?: string
+  compact?: boolean
+  className?: string
 }
 
 export default function AttemptHistoryList({
@@ -33,9 +33,9 @@ export default function AttemptHistoryList({
   compact = false,
   className,
 }: AttemptHistoryListProps) {
-  const t = useTranslations('Components.AttemptHistoryList');
-  const resolvedTitle = title ?? t('attemptHistory');
-  const resolvedEmptyLabel = emptyLabel ?? t('noAttemptsYet');
+  const t = useTranslations('Components.AttemptHistoryList')
+  const resolvedTitle = title ?? t('attemptHistory')
+  const resolvedEmptyLabel = emptyLabel ?? t('noAttemptsYet')
   return (
     <section className={cn('space-y-3', className)}>
       <div className="flex items-center gap-2">
@@ -46,11 +46,8 @@ export default function AttemptHistoryList({
         <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{resolvedEmptyLabel}</div>
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={cn('rounded-md border p-3', compact && 'p-2')}
-            >
+          {items.map(item => (
+            <div key={item.id} className={cn('rounded-md border p-3', compact && 'p-2')}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -64,13 +61,7 @@ export default function AttemptHistoryList({
                 <div className="shrink-0 text-right">
                   {item.scoreLabel ? <div className="text-sm font-semibold">{item.scoreLabel}</div> : null}
                   {item.onReview ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={item.onReview}
-                    >
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={item.onReview}>
                       {t('review')}
                     </Button>
                   ) : null}
@@ -81,5 +72,5 @@ export default function AttemptHistoryList({
         </div>
       )}
     </section>
-  );
+  )
 }

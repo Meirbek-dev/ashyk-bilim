@@ -5,18 +5,29 @@
  * Replaces scattered constants with a cohesive system.
  */
 
-import { Award, Crown, Medal, Sparkles, Star, Target, TrendingUp, Trophy, Zap } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { colors } from './design-tokens';
+import {
+  Award,
+  CalendarCheck,
+  ClipboardCheck,
+  Crown,
+  GraduationCap,
+  Medal,
+  Star,
+  Target,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { colors } from './design-tokens'
 
 // ============================================
 // XP SOURCE THEME
 // ============================================
 export interface XPSourceTheme {
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  label: string;
+  icon: LucideIcon
+  color: string
+  bgColor: string
+  label: string
 }
 
 const xpSourceThemes: Record<string, XPSourceTheme> = {
@@ -27,13 +38,13 @@ const xpSourceThemes: Record<string, XPSourceTheme> = {
     label: 'Activity Completed',
   },
   course_completion: {
-    icon: Sparkles,
+    icon: Trophy,
     color: colors.xp.course,
     bgColor: colors.xpBg.course,
     label: 'Course Completed',
   },
   quiz_completion: {
-    icon: Zap,
+    icon: ClipboardCheck,
     color: colors.xp.quiz,
     bgColor: colors.xpBg.quiz,
     label: 'Quiz Completed',
@@ -45,13 +56,13 @@ const xpSourceThemes: Record<string, XPSourceTheme> = {
     label: 'Streak Bonus',
   },
   login_bonus: {
-    icon: Zap,
+    icon: CalendarCheck,
     color: colors.xp.login,
     bgColor: colors.xpBg.login,
     label: 'Daily Login',
   },
   daily_login: {
-    icon: Zap,
+    icon: CalendarCheck,
     color: colors.xp.login,
     bgColor: colors.xpBg.login,
     label: 'Daily Login',
@@ -62,24 +73,24 @@ const xpSourceThemes: Record<string, XPSourceTheme> = {
     bgColor: colors.xpBg.default,
     label: 'XP Earned',
   },
-} as const;
+} as const
 
 export function getXPSourceTheme(source: string): XPSourceTheme {
-  const theme = xpSourceThemes[source];
+  const theme = xpSourceThemes[source]
   if (!theme) {
-    return xpSourceThemes.default!;
+    return xpSourceThemes.default!
   }
-  return theme;
+  return theme
 }
 
 // ============================================
 // RANK THEME
 // ============================================
 export interface RankTheme {
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  badge: 'gold' | 'silver' | 'bronze' | null;
+  icon: LucideIcon
+  color: string
+  bgColor: string
+  badge: 'gold' | 'silver' | 'bronze' | null
 }
 
 const rankThemes: Record<number, RankTheme> = {
@@ -101,7 +112,7 @@ const rankThemes: Record<number, RankTheme> = {
     bgColor: colors.rankBg.bronze,
     badge: 'bronze',
   },
-} as const;
+} as const
 
 export function getRankTheme(rank: number): RankTheme {
   return (
@@ -111,32 +122,32 @@ export function getRankTheme(rank: number): RankTheme {
       bgColor: colors.xpBg.default,
       badge: null,
     }
-  );
+  )
 }
 
 // ============================================
 // LEVEL THEME
 // ============================================
 export interface LevelTheme {
-  icon: LucideIcon;
-  color: string;
-  titleKey: string;
+  icon: LucideIcon
+  color: string
+  titleKey: string
 }
 
 const levelThemes: Record<number, LevelTheme> = {
   1: { icon: Target, color: colors.level[1], titleKey: 'novice' },
   5: { icon: Star, color: colors.level[5], titleKey: 'apprentice' },
-  10: { icon: Zap, color: colors.level[10], titleKey: 'scholar' },
+  10: { icon: GraduationCap, color: colors.level[10], titleKey: 'scholar' },
   15: { icon: Trophy, color: colors.level[15], titleKey: 'expert' },
   25: { icon: Crown, color: colors.level[25], titleKey: 'master' },
   50: { icon: Crown, color: colors.level[50], titleKey: 'grandmaster' },
-} as const;
+} as const
 
 export function getLevelTheme(level: number): LevelTheme {
   // Find the closest level milestone
-  const milestones = [1, 5, 10, 15, 25, 50];
-  const milestone = milestones.toReversed().find((m) => level >= m) || 1;
-  const theme = levelThemes[milestone];
+  const milestones = [1, 5, 10, 15, 25, 50]
+  const milestone = milestones.toReversed().find(m => level >= m) || 1
+  const theme = levelThemes[milestone]
   // Guaranteed fallback to novice level
-  return theme || { icon: Target, color: colors.level[1], titleKey: 'novice' };
+  return theme || { icon: Target, color: colors.level[1], titleKey: 'novice' }
 }

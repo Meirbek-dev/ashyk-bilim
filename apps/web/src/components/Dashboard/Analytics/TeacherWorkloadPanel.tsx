@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { TeacherWorkloadSummary } from '@/types/analytics';
-import { Clock4, Inbox, TimerReset } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { TeacherWorkloadSummary } from '@/types/analytics'
+import { Clock4, Inbox, TimerReset } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface TeacherWorkloadPanelProps {
-  workload: TeacherWorkloadSummary;
+  workload: TeacherWorkloadSummary
 }
 
 export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelProps) {
-  const locale = useLocale();
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const t = useTranslations('Components.DashboardAnalytics');
+  const locale = useLocale()
+  const numberFormatter = new Intl.NumberFormat(locale)
+  const t = useTranslations('Components.DashboardAnalytics')
   const hours = (value: number | null | undefined) =>
-    value === null || value === undefined ? t('teacherWorkloadPanel.na') : `${numberFormatter.format(value)}h`;
+    value === null || value === undefined ? t('teacherWorkloadPanel.na') : `${numberFormatter.format(value)}h`
 
   return (
     <Card className="shadow-sm">
@@ -28,31 +28,31 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
         <CardDescription>{t('teacherWorkloadPanel.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="bg-muted rounded-lg border p-4">
+        <div className="border-border/40 my-4 grid gap-4 border-y py-6 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5 first:pl-0 last:pr-0 sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <Inbox className="h-3.5 w-3.5" />
+              <Inbox className="text-primary h-3.5 w-3.5" />
               {t('teacherWorkloadPanel.backlog')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.backlog_total)}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <Clock4 className="h-3.5 w-3.5" />
+              <Clock4 className="h-3.5 w-3.5 text-amber-500" />
               {t('teacherWorkloadPanel.slaBreaches')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.sla_breaches)}
             </div>
           </div>
-          <div className="bg-muted rounded-lg border p-4">
+          <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-wider uppercase">
-              <TimerReset className="h-3.5 w-3.5" />
+              <TimerReset className="h-3.5 w-3.5 text-blue-500" />
               {t('teacherWorkloadPanel.forecast7d')}
             </div>
-            <div className="text-foreground mt-2 text-2xl font-semibold">
+            <div className="text-foreground text-3xl font-bold tracking-tight">
               {numberFormatter.format(workload.forecast_backlog_7d)}
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {workload.backlog_by_manual_assessment.slice(0, 5).map((item) => (
+            {workload.backlog_by_manual_assessment.slice(0, 5).map(item => (
               <TableRow key={`${item.assessment_id}-${item.course_id}`}>
                 <TableCell className="max-w-[260px] font-medium whitespace-normal">{item.title}</TableCell>
                 <TableCell className="max-w-[220px] whitespace-normal">{item.course_name}</TableCell>
@@ -96,10 +96,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
             ))}
             {!workload.backlog_by_manual_assessment.length ? (
               <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-muted-foreground"
-                >
+                <TableCell colSpan={4} className="text-muted-foreground">
                   {t('teacherWorkloadPanel.noSubmissions')}
                 </TableCell>
               </TableRow>
@@ -108,5 +105,5 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
         </Table>
       </CardContent>
     </Card>
-  );
+  )
 }

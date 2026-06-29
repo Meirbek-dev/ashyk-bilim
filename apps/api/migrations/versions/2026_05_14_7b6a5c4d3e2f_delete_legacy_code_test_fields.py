@@ -35,9 +35,7 @@ def upgrade() -> None:
         sa.column("body_json", sa.JSON),
     )
 
-    rows = conn.execute(
-        sa.select(table.c.id, table.c.body_json).where(table.c.kind == "CODE")
-    ).fetchall()
+    rows = conn.execute(sa.select(table.c.id, table.c.body_json).where(table.c.kind == "CODE")).fetchall()
     for row in rows:
         body = _as_dict(row.body_json)
         if body is None:
@@ -47,9 +45,7 @@ def upgrade() -> None:
         if cleaned == body:
             continue
 
-        conn.execute(
-            table.update().where(table.c.id == row.id).values(body_json=cleaned)
-        )
+        conn.execute(table.update().where(table.c.id == row.id).values(body_json=cleaned))
 
 
 def downgrade() -> None:

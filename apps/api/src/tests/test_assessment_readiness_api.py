@@ -2,12 +2,15 @@
 
 import pathlib
 import sys
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -40,7 +43,7 @@ from src.services.assessments import core
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(
         engine,
@@ -98,12 +101,12 @@ def teacher_user_fixture() -> PublicUser:
 
 @pytest.fixture(name="api_client")
 def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+    db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -118,13 +121,13 @@ def api_client_fixture(
 
 
 def _seed_assessment(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     *,
     kind: AssessmentType,
     title: str,
     scheduled_at: datetime | None,
-    policy_kwargs: dict | None = None,
-    items: list[dict] | None = None,
+    policy_kwargs: dict[str, object] | None = None,
+    items: list[dict[str, object]] | None = None,
 ) -> Assessment:
     with db_session_factory() as session:
         user = User(
@@ -203,7 +206,7 @@ def _seed_assessment(
         session.add(activity)
         session.flush()
 
-        policy_payload = {
+        policy_payload: dict[str, Any] = {
             "policy_uuid": "policy_readiness",
             "activity_id": activity.id,
             "assessment_type": kind,
@@ -216,8 +219,8 @@ def _seed_assessment(
             "due_at": None,
             "allow_late": True,
             "late_policy_json": LatePolicyNone().model_dump(mode="json"),
-            "anti_cheat_json": {},
-            "settings_json": {},
+            "anti_cheat_json": cast("dict[str, Any]", {}),
+            "settings_json": cast("dict[str, Any]", {}),
         }
         policy_payload.update(policy_kwargs or {})
         policy = AssessmentPolicy(**policy_payload)
@@ -241,7 +244,8 @@ def _seed_assessment(
         session.add(assessment)
         session.flush()
 
-        for index, item in enumerate(items or [], start=1):
+        items_list: list[dict[str, object]] = items or []
+        for index, item in enumerate(items_list, start=1):
             session.add(
                 AssessmentItem(
                     item_uuid=f"item_{index}",
@@ -261,7 +265,7 @@ def _seed_assessment(
 
 def test_readiness_endpoint_returns_new_policy_and_item_codes(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -340,7 +344,7 @@ def test_readiness_endpoint_returns_new_policy_and_item_codes(
 
 def test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -383,7 +387,7 @@ def test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback(
 
 def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
@@ -396,21 +400,21 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
         },
         items=[
             {
-                "kind": ItemKind.OPEN_TEXT,
-                "title": "Essay",
+                "kind": ItemKind.CODE,
+                "title": "Write code",
                 "max_score": 10,
                 "body_json": {
-                    "kind": "OPEN_TEXT",
-                    "prompt": "Explain the theorem.",
-                    "min_words": 50,
+                    "kind": "CODE",
+                    "prompt": "Write Python code.",
+                    "languages": [71],
+                    "starter_code": {"71": "pass"},
+                    "tests": [],
                 },
             },
         ],
     )
 
-    readiness_response = api_client.get(
-        f"/assessments/{assessment.assessment_uuid}/readiness"
-    )
+    readiness_response = api_client.get(f"/assessments/{assessment.assessment_uuid}/readiness")
 
     assert readiness_response.status_code == 200
     readiness_payload = readiness_response.json()
@@ -426,3 +430,186 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     assert lifecycle_response.status_code == 422
     lifecycle_payload = lifecycle_response.json()
     assert lifecycle_payload["detail"]["issues"] == readiness_payload["issues"]
+
+
+def test_exam_item_create_rejects_unsupported_runtime_kind(
+    api_client: TestClient,
+    db_session_factory: Callable[[], Session],
+) -> None:
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.EXAM,
+        title="Midterm",
+        scheduled_at=None,
+    )
+
+    response = api_client.post(
+        f"/assessments/{assessment.assessment_uuid}/items",
+        json={
+            "kind": "CODE",
+            "title": "Write code",
+            "max_score": 10,
+            "body": {
+                "kind": "CODE",
+                "prompt": "Write Python code.",
+                "languages": [71],
+                "starter_code": {"71": "pass"},
+                "tests": [],
+            },
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "ITEM_KIND_UNSUPPORTED"
+    assert response.json()["detail"]["supported_kinds"] == ["CHOICE", "FORM", "MATCHING", "OPEN_TEXT"]
+
+
+def test_item_metadata_is_persisted_on_create_and_patch(
+    api_client: TestClient,
+    db_session_factory: Callable[[], Session],
+) -> None:
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.EXAM,
+        title="Midterm",
+        scheduled_at=None,
+    )
+
+    create_response = api_client.post(
+        f"/assessments/{assessment.assessment_uuid}/items",
+        json={
+            "kind": "CHOICE",
+            "title": "Capital",
+            "max_score": 1,
+            "metadata": {
+                "section_label": "Geography",
+                "difficulty": "easy",
+                "tags": ["Maps", "maps", "  capitals  "],
+                "outcome_ids": ["geo-1"],
+                "estimated_minutes": 2,
+            },
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Capital of Kazakhstan?",
+                "multiple": False,
+                "options": [
+                    {"id": "a", "text": "Astana", "is_correct": True},
+                    {"id": "b", "text": "Almaty", "is_correct": False},
+                ],
+            },
+        },
+    )
+
+    assert create_response.status_code == 200
+    created = create_response.json()
+    assert created["metadata"] == {
+        "section_label": "Geography",
+        "difficulty": "easy",
+        "tags": ["Maps", "capitals"],
+        "outcome_ids": ["geo-1"],
+        "estimated_minutes": 2,
+    }
+
+    patch_response = api_client.patch(
+        f"/assessments/{assessment.assessment_uuid}/items/{created['item_uuid']}",
+        json={
+            "metadata": {
+                "section_label": "Final section",
+                "difficulty": "hard",
+                "tags": [],
+                "outcome_ids": [],
+                "estimated_minutes": None,
+            }
+        },
+    )
+
+    assert patch_response.status_code == 200
+    assert patch_response.json()["metadata"]["section_label"] == "Final section"
+    assert patch_response.json()["metadata"]["difficulty"] == "hard"
+
+
+def test_validate_code_challenge_endpoint(
+    api_client: TestClient,
+    db_session_factory: Callable[[], Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.db.code_execution import CodeRunStatus
+    from src.services.code_execution.service import CodeExecutionCaseResult
+
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.CODE_CHALLENGE,
+        title="Python challenge",
+        scheduled_at=None,
+        items=[
+            {
+                "kind": ItemKind.CODE,
+                "title": "Two Sum",
+                "max_score": 100,
+                "body_json": {
+                    "kind": "CODE",
+                    "prompt": "Find sum.",
+                    "languages": [71],
+                    "starter_code": {"71": "def f(): pass"},
+                    "reference_solutions": {"71": "def f(): return 4"},
+                    "tests": [
+                        {
+                            "id": "t1",
+                            "input": "2",
+                            "expected_output": "4",
+                            "is_visible": True,
+                            "weight": 1,
+                            "match_mode": "EXACT",
+                        }
+                    ],
+                },
+            }
+        ],
+    )
+
+    class FakeResult:
+        def __init__(self) -> None:
+            self.run_uuid = "run_123"
+            self.status = CodeRunStatus.ACCEPTED
+            self.passed = 1
+            self.total = 1
+            self.score = 100.0
+            self.compile_output = "compiled ok"
+            self.error_message: str | None = None
+            self.details = [
+                CodeExecutionCaseResult(
+                    test_id="t1",
+                    passed=True,
+                    is_visible=True,
+                    stdin="2",
+                    expected="4",
+                    actual="4",
+                    stdout="4",
+                    stderr=None,
+                    compile_output=None,
+                    message=None,
+                    status_id=3,
+                    status_description="Accepted",
+                    judge0_token="token",
+                    time=0.01,
+                    memory=1024,
+                    weight=1.0,
+                    description="",
+                )
+            ]
+
+    async def mock_run(*args: object, **kwargs: object) -> FakeResult:
+        return FakeResult()
+
+    from src.services.code_execution.service import CodeExecutionService
+
+    monkeypatch.setattr(CodeExecutionService, "run", mock_run)
+
+    response = api_client.post(f"/assessments/{assessment.assessment_uuid}/code-challenge/validate")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "results" in payload
+    assert "71" in payload["results"]
+    assert payload["results"]["71"]["ok"] is True
+    assert payload["results"]["71"]["passed"] == 1

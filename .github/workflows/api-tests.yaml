@@ -6,10 +6,10 @@ on:
     branches:
       - openu
     paths:
-      - "apps/api/**"
+      - 'apps/api/**'
   pull_request:
     paths:
-      - "apps/api/**"
+      - 'apps/api/**'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.13"
+          python-version: '3.14'
 
       - name: Install uv
         uses: astral-sh/setup-uv@v2
@@ -37,14 +37,14 @@ jobs:
           cd apps/api
           uv run python -m pytest src/tests/ -v --tb=short
         env:
-          TESTING: "true"
+          TESTING: 'true'
 
       - name: Run security tests with coverage
         run: |
           cd apps/api
           uv run python -m pytest src/tests/security/ --cov=src.security --cov-report=html --cov-report=term-missing
         env:
-          TESTING: "true"
+          TESTING: 'true'
 
       - name: Upload coverage report to GitHub
         uses: actions/upload-artifact@v4

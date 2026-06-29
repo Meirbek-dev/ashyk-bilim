@@ -1,99 +1,100 @@
-'use client';
+'use client'
 
 import {
   CourseStatusBadge,
   courseWorkflowCardClass,
   courseWorkflowMutedPanelClass,
   courseWorkflowSummaryCardClass,
-} from './courseWorkflowUi';
-import { buildCourseWorkspacePath, getCourseContentStats } from '@/lib/course-management';
-import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server';
-import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations';
-import { ExternalLink, FileStack, Loader2, Users } from 'lucide-react';
-import { useCourse } from '@components/Contexts/CourseContext';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useCourseEditorStore } from '@/stores/courses';
-import { Button } from '@/components/ui/button';
-import { useState, useTransition } from 'react';
-import AppLink from '@/components/ui/AppLink';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+} from './courseWorkflowUi'
+import { buildCourseWorkspacePath, getCourseContentStats } from '@/lib/course-management'
+import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
+import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
+import { ExternalLink, FileStack, Loader2, Users } from 'lucide-react'
+import { useCourse } from '@components/Contexts/CourseContext'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useCourseEditorStore } from '@/stores/courses'
+import { Button } from '@/components/ui/button'
+import { useState, useTransition } from 'react'
+import AppLink from '@/components/ui/AppLink'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
 export default function CourseReviewPublish({
   courseuuid,
   capabilities,
 }: {
-  courseuuid: string;
-  capabilities: CourseWorkspaceCapabilities;
+  courseuuid: string
+  capabilities: CourseWorkspaceCapabilities
 }) {
-  const t = useTranslations('DashPage.CourseManagement.Review');
-  const tReadiness = useTranslations('DashPage.CourseManagement.Readiness');
-  const tOverview = useTranslations('DashPage.CourseManagement.Overview');
-  const course = useCourse();
-  const { updateAccess } = useCoursesMutations(course.courseStructure.course_uuid, true);
-  const setConflict = useCourseEditorStore((state) => state.setConflict);
-  const { readiness } = course;
-  const stats = getCourseContentStats(course.courseStructure);
-  const contributors = course.editorData.contributors.data ?? [];
+  const t = useTranslations('DashPage.CourseManagement.Review')
+  const tReadiness = useTranslations('DashPage.CourseManagement.Readiness')
+  const tOverview = useTranslations('DashPage.CourseManagement.Overview')
+  const course = useCourse()
+  const { updateAccess } = useCoursesMutations(course.courseStructure.course_uuid, true)
+  const setConflict = useCourseEditorStore(state => state.setConflict)
+  const { readiness } = course
+  const stats = getCourseContentStats(course.courseStructure)
+  const contributors = course.editorData.contributors.data ?? []
   const contributorNameItems = contributors
     .slice(0, 3)
-    .map((contributor: any, index: number) => {
-      const parts = [contributor?.user?.first_name, contributor?.user?.last_name].filter(Boolean);
-      const label = parts.join(' ') || contributor?.user?.username || contributor?.user?.email;
+    .map((contributor: AppCourseAuthor, index: number) => {
+      const parts = [contributor?.user?.first_name, contributor?.user?.last_name].filter(Boolean)
+      const label = parts.join(' ') || contributor?.user?.username || contributor?.user?.email
       return {
         key: contributor?.user?.user_uuid || contributor?.user?.username || contributor?.id || `contributor-${index}`,
         label,
-      };
+      }
     })
-    .filter((item) => item.label);
-  const [isPending, startTransition] = useTransition();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+    .filter(item => item.label)
+  const [isPending, startTransition] = useTransition()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const criticalReady = readiness.checklist
-    .filter((item) => ['details', 'curriculum'].includes(item.id))
-    .every((item) => item.complete);
+    .filter(item => ['details', 'curriculum'].includes(item.id))
+    .every(item => item.complete)
 
   const toggleVisibility = () => {
     if (!capabilities.canManageAccess) {
-      return;
+      return
     }
 
-    const wasPublic = course.courseStructure.public;
+    const wasPublic = course.courseStructure.public
 
     startTransition(() => {
       void (async () => {
         try {
-          setIsRefreshing(true);
+          setIsRefreshing(true)
           await updateAccess(
             { public: !wasPublic },
             {
               lastKnownUpdateDate: course.courseStructure.update_date,
             },
-          );
-          toast.success(wasPublic ? t('toasts.movedPrivate') : t('toasts.published'));
-        } catch (error: any) {
-          if (error?.status === 409) {
+          )
+          toast.success(wasPublic ? t('toasts.movedPrivate') : t('toasts.published'))
+        } catch (error: unknown) {
+          const apiError = error as AppApiError
+          if (apiError.status === 409) {
             setConflict({
               serverVersion: course.courseStructure,
-              message: error?.detail || error?.message,
+              message: String(apiError.detail || apiError.message || ''),
               pendingSave: async () => {
                 await updateAccess(
                   { public: !wasPublic },
                   {
                     lastKnownUpdateDate: course.courseStructure.update_date,
                   },
-                );
+                )
               },
-            });
-            return;
+            })
+            return
           }
-          toast.error(error?.message || t('errors.visibilityUpdate'));
+          toast.error(apiError.message || t('errors.visibilityUpdate'))
         } finally {
-          setIsRefreshing(false);
+          setIsRefreshing(false)
         }
-      })();
-    });
-  };
+      })()
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -118,6 +119,7 @@ export default function CourseReviewPublish({
                   href={getAbsoluteUrl(`/course/${courseuuid}`)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={t('previewPublicPage')}
                 />
               }
             >
@@ -125,10 +127,7 @@ export default function CourseReviewPublish({
               {t('previewPublicPage')}
             </Button>
             {capabilities.canManageAccess ? (
-              <Button
-                onClick={toggleVisibility}
-                disabled={isPending || isRefreshing || !criticalReady}
-              >
+              <Button onClick={toggleVisibility} disabled={isPending || isRefreshing || !criticalReady}>
                 {isPending || isRefreshing ? <Loader2 className="size-4 animate-spin" /> : null}
                 {course.courseStructure.public ? t('movePrivate') : t('publishCourse')}
               </Button>
@@ -141,11 +140,8 @@ export default function CourseReviewPublish({
         <div className={`${courseWorkflowCardClass} p-5`}>
           <div className="text-foreground text-sm font-semibold">{t('readinessChecklist')}</div>
           <div className="mt-4 space-y-3">
-            {readiness.checklist.map((item) => (
-              <div
-                key={item.id}
-                className="bg-muted/40 flex items-start justify-between gap-4 rounded-lg border p-4"
-              >
+            {readiness.checklist.map(item => (
+              <div key={item.id} className="bg-muted/40 flex items-start justify-between gap-4 rounded-lg border p-4">
                 <div>
                   <div className="text-foreground font-medium">{tReadiness(`checklist.${item.id}.title`)}</div>
                   <div className="text-muted-foreground mt-1 text-sm">
@@ -200,7 +196,9 @@ export default function CourseReviewPublish({
                   {tOverview('chapterCount', { count: stats.chapters })}
                 </div>
                 <div className="text-muted-foreground mt-1 text-sm">
-                  {tOverview('activityCountDescription', { count: stats.activities })}
+                  {tOverview('activityCountDescription', {
+                    count: stats.activities,
+                  })}
                 </div>
               </div>
               <div className={courseWorkflowMutedPanelClass}>
@@ -210,11 +208,13 @@ export default function CourseReviewPublish({
                 </div>
                 <div className="text-foreground mt-2 text-2xl font-semibold">{contributors.length}</div>
                 <div className="text-muted-foreground mt-1 text-sm">
-                  {tOverview('collaboration.loadedRecords', { count: contributors.length })}
+                  {tOverview('collaboration.loadedRecords', {
+                    count: contributors.length,
+                  })}
                 </div>
                 {contributorNameItems.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {contributorNameItems.map((contributor) => (
+                    {contributorNameItems.map(contributor => (
                       <span
                         key={contributor.key}
                         className="bg-background text-foreground rounded-full border px-2.5 py-1 text-xs"
@@ -239,5 +239,5 @@ export default function CourseReviewPublish({
         </div>
       </div>
     </div>
-  );
+  )
 }

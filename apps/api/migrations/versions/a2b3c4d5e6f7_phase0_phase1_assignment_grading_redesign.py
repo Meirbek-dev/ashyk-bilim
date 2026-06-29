@@ -48,111 +48,106 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
     # ── assignment: lifecycle columns ─────────────────────────────────────────
 
-    op.add_column(
-        "assignment",
-        sa.Column(
-            "status",
-            sa.String,
-            nullable=False,
-            server_default="DRAFT",
-        ),
-    )
-    # Backfill: rows that were published before this migration get PUBLISHED.
-    op.execute(
-        "UPDATE assignment SET status = CASE WHEN published = true "
-        "THEN 'PUBLISHED' ELSE 'DRAFT' END"
-    )
+    if "assignment" in existing_tables:
+        op.add_column(
+            "assignment",
+            sa.Column(
+                "status",
+                sa.String,
+                nullable=False,
+                server_default="DRAFT",
+            ),
+        )
+        # Backfill: rows that were published before this migration get PUBLISHED.
+        op.execute("UPDATE assignment SET status = CASE WHEN published = true THEN 'PUBLISHED' ELSE 'DRAFT' END")
 
-    op.add_column(
-        "assignment",
-        sa.Column("scheduled_publish_at", sa.DateTime(timezone=True), nullable=True),
-    )
-    op.add_column(
-        "assignment",
-        sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
-    )
-    # Backfill published_at for already-published rows (use updated_at as proxy).
-    op.execute(
-        "UPDATE assignment SET published_at = updated_at WHERE status = 'PUBLISHED'"
-    )
+        op.add_column(
+            "assignment",
+            sa.Column("scheduled_publish_at", sa.DateTime(timezone=True), nullable=True),
+        )
+        op.add_column(
+            "assignment",
+            sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
+        )
+        # Backfill published_at for already-published rows (use updated_at as proxy).
+        op.execute("UPDATE assignment SET published_at = updated_at WHERE status = 'PUBLISHED'")
 
-    op.add_column(
-        "assignment",
-        sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
-    )
+        op.add_column(
+            "assignment",
+            sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
+        )
 
-    op.create_index("idx_assignment_status", "assignment", ["status"])
-    op.create_index(
-        "idx_assignment_scheduled_publish_at",
-        "assignment",
-        ["scheduled_publish_at"],
-    )
+        op.create_index("idx_assignment_status", "assignment", ["status"])
+        op.create_index(
+            "idx_assignment_scheduled_publish_at",
+            "assignment",
+            ["scheduled_publish_at"],
+        )
 
     # ── submission: optimistic-lock version + late penalty ────────────────────
 
-    op.add_column(
-        "submission",
-        sa.Column(
-            "late_penalty_pct",
-            sa.Float,
-            nullable=False,
-            server_default="0",
-        ),
-    )
-    op.add_column(
-        "submission",
-        sa.Column(
-            "version",
-            sa.Integer,
-            nullable=False,
-            server_default="1",
-        ),
-    )
+    if "submission" in existing_tables:
+        op.add_column(
+            "submission",
+            sa.Column(
+                "late_penalty_pct",
+                sa.Float,
+                nullable=False,
+                server_default="0",
+            ),
+        )
+        op.add_column(
+            "submission",
+            sa.Column(
+                "version",
+                sa.Integer,
+                nullable=False,
+                server_default="1",
+            ),
+        )
 
     # ── grading_entry: new append-only ledger ─────────────────────────────────
+    # Create grading_entry with or without submission FK depending on availability.
 
-    op.create_table(
-        "grading_entry",
+    grading_entry_cols = [
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
         sa.Column("entry_uuid", sa.String, nullable=False, unique=True),
-        sa.Column(
-            "submission_id",
-            sa.Integer,
-            sa.ForeignKey("submission.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
-        sa.Column(
-            "graded_by",
-            sa.Integer,
-            sa.ForeignKey("user.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
+        sa.Column("graded_by", sa.Integer, sa.ForeignKey("user.id", ondelete="SET NULL"), nullable=True),
         sa.Column("raw_score", sa.Float, nullable=False),
         sa.Column("penalty_pct", sa.Float, nullable=False, server_default="0"),
         sa.Column("final_score", sa.Float, nullable=False),
-        sa.Column(
-            "breakdown",
-            sa.JSON,
-            nullable=False,
-            server_default="{}",
-        ),
-        sa.Column(
-            "overall_feedback",
-            sa.Text,
-            nullable=False,
-            server_default="",
-        ),
-        sa.Column(
-            "grading_version",
-            sa.Integer,
-            nullable=False,
-            server_default="1",
-        ),
+        sa.Column("breakdown", sa.JSON, nullable=False, server_default="{}"),
+        sa.Column("overall_feedback", sa.Text, nullable=False, server_default=""),
+        sa.Column("grading_version", sa.Integer, nullable=False, server_default="1"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
-    )
+    ]
+
+    if "submission" in existing_tables:
+        grading_entry_cols.insert(
+            2,
+            sa.Column(
+                "submission_id",
+                sa.Integer,
+                sa.ForeignKey("submission.id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+        )
+    else:
+        # submission table doesn't exist yet — add column without FK; FK will be
+        # added by the migration that creates submission.
+        grading_entry_cols.insert(
+            2,
+            sa.Column("submission_id", sa.Integer, nullable=False),
+        )
+
+    op.create_table("grading_entry", *grading_entry_cols)
     op.create_index(
         "ix_grading_entry_submission_id",
         "grading_entry",

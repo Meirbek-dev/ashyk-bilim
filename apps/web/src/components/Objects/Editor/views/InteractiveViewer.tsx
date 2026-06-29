@@ -1,54 +1,95 @@
-'use client';
+'use client'
 
-import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext';
-import { Tiptap } from '@tiptap/react';
-import { useEditorInstance } from '@components/Objects/Editor/core';
-import type { ActivityRef } from '@components/Objects/Editor/core';
-import AICanvaToolkit from '@components/Objects/Activities/DynamicCanva/AI/AICanvaToolkit';
-import TableOfContents from '@components/Objects/Activities/DynamicCanva/TableOfContents';
-import { useIsMobile } from '@/hooks/use-mobile';
-import '@components/Objects/Editor/styles/prosemirror.css';
+import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
+import { Tiptap } from '@tiptap/react'
+import { useEditorInstance } from '@components/Objects/Editor/core'
+import type { ActivityRef } from '@components/Objects/Editor/core'
+import TableOfContents, { useHeadingOutline } from '@components/Objects/Activities/DynamicCanva/TableOfContents'
+import { ListTree, FileText } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { cn } from '@/lib/utils'
+
+import '@components/Objects/Editor/styles/prosemirror.css'
 
 interface InteractiveViewerProps {
-  content: unknown;
-  activity: ActivityRef;
+  content: unknown
+  activity: ActivityRef
 }
 
 export function InteractiveViewer(props: InteractiveViewerProps) {
-  const isMobile = useIsMobile();
-
+  const t = useTranslations('ActivityPage')
   const editor = useEditorInstance({
     preset: 'interactive',
     activity: props.activity,
     content: props.content,
-  });
+  })
+  const headings = useHeadingOutline(editor)
+  const hasToc = headings.length >= 2
 
   return (
     <EditorOptionsProvider options={{ isEditable: false, mode: 'interactive' }}>
-      <div className="prosemirror-interactive relative mx-auto w-full px-1 py-2 sm:px-2 xl:px-4">
-        <div className="pointer-events-none absolute inset-0 z-[1000] [&>*]:pointer-events-auto">
-          {editor ? (
-            <AICanvaToolkit
-              activity={props.activity}
-              editor={editor}
-            />
-          ) : null}
-        </div>
+      <div
+        className={cn(
+          'prosemirror-interactive relative w-full px-1 py-2 sm:px-2 xl:px-4',
+          hasToc && 'prosemirror-interactive--with-toc',
+        )}
+      >
+        {hasToc ? <MobileTableOfContents editor={editor} title={t('onThisPage')} /> : null}
         <div className="prosemirror-interactive-layout">
-          {!isMobile && (
-            <div className="prosemirror-interactive-layout-toc">
-              <TableOfContents editor={editor} />
-            </div>
-          )}
           <div className="prosemirror-interactive-layout-content">
             {editor ? (
-              <Tiptap instance={editor}>
-                <Tiptap.Content />
-              </Tiptap>
+              editor.isEmpty ? (
+                <Empty className="bg-muted/40 my-4 border border-dashed py-12">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <FileText className="size-4" />
+                    </EmptyMedia>
+                    <EmptyTitle>{t('noContent')}</EmptyTitle>
+                    <EmptyDescription>{t('emptyContentDescription')}</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <Tiptap instance={editor}>
+                  <Tiptap.Content />
+                </Tiptap>
+              )
             ) : null}
           </div>
+          {hasToc ? (
+            <aside aria-label={t('onThisPage')} className="prosemirror-interactive-layout-toc">
+              <TableOfContents editor={editor} />
+            </aside>
+          ) : null}
         </div>
       </div>
     </EditorOptionsProvider>
-  );
+  )
+}
+
+function MobileTableOfContents({ editor, title }: { editor: ReturnType<typeof useEditorInstance>; title: string }) {
+  return (
+    <div className="mb-3 flex justify-end xl:hidden">
+      <Sheet>
+        <SheetTrigger
+          render={triggerProps => (
+            <Button type="button" variant="outline" size="sm" aria-label={title} {...triggerProps}>
+              <ListTree className="size-4" />
+              {title}
+            </Button>
+          )}
+        />
+        <SheetContent side="right" className="w-[min(90vw,22rem)]">
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <TableOfContents editor={editor} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
 }

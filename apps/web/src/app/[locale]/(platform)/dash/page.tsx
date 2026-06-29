@@ -1,150 +1,101 @@
-import { BarChart2, BookCopy, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react';
-import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp';
-import ServerLink from '@/components/ui/ServerLink';
-import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
-import Image from 'next/image';
+import { BarChart2, BookCopy, ChevronRight, Settings, ShieldCheck, Users } from 'lucide-react'
+import ServerLink from '@/components/ui/ServerLink'
+import { getTranslations } from 'next-intl/server'
+import type { ReactNode } from 'react'
 
-import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUsers } from '@/lib/rbac/navigation-policy';
-import { requireSession } from '@/lib/auth/session';
-import { sessionCan } from '@/lib/auth/permissions';
+import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/rbac/navigation-policy'
+import { requireSession } from '@/lib/auth/session'
+import { sessionCan } from '@/lib/auth/permissions'
 
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
-import type { Action, Resource, Scope } from '@/types/permissions';
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import type { Action, Resource, Scope } from '@/types/permissions'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 
 export default async function PlatformDashHomePage() {
-  const t = await getTranslations('DashPage.Card');
-  const session = await requireSession();
-  const permsSet = new Set<string>(session.permissions);
-  const can = (resource: Resource, action: Action, scope: Scope): boolean =>
-    sessionCan(session, resource, action, scope, permsSet);
+  const t = await getTranslations('DashPage.Card')
+  const tGeneral = await getTranslations('General')
+  const session = await requireSession()
+  const permsSet = new Set<string>(session.permissions)
 
-  const hasCoursesAccess = canSeeCourses(can);
-  const hasAnalyticsAccess = canSeeAnalytics(can);
-  const hasPlatformAccess = canSeePlatform(can);
-  const hasUsersAccess = canSeeUsers(can);
-  const hasAdminAccess = canSeeAdmin(can);
+  const can = (resource: Resource, action: Action, scope: Scope): boolean =>
+    sessionCan(session, resource, action, scope, permsSet)
+
+  const hasCoursesAccess = canSeeCourses(can)
+  const hasAnalyticsAccess = canSeeAnalytics(can)
+  const hasUsersAccess = canSeeUsers(can)
+  const hasAdminAccess = canSeeAdmin(can)
 
   const cards = [
     {
       visible: hasCoursesAccess,
       href: '/dash/courses',
-      icon: <BookCopy size={22} />,
+      icon: <BookCopy size={20} />,
       title: t('Courses.title'),
       description: t('Courses.description'),
     },
     {
       visible: hasAnalyticsAccess,
       href: '/dash/analytics',
-      icon: <BarChart2 size={22} />,
+      icon: <BarChart2 size={20} />,
       title: t('Analytics.title'),
       description: t('Analytics.description'),
     },
     {
-      visible: hasPlatformAccess,
-      href: '/dash/platform/settings/landing',
-      icon: <School size={22} />,
-      title: t('Platform.title'),
-      description: t('Platform.description'),
-    },
-    {
       visible: hasUsersAccess,
       href: '/dash/users/settings/users',
-      icon: <Users size={22} />,
+      icon: <Users size={20} />,
       title: t('Users.title'),
       description: t('Users.description'),
     },
     {
       visible: hasAdminAccess,
       href: '/dash/admin',
-      icon: <ShieldCheck size={22} />,
+      icon: <ShieldCheck size={20} />,
       title: t('Admin.title'),
       description: t('Admin.description'),
       badge: t('Admin.badge'),
     },
-  ].filter((card) => card.visible);
+    {
+      visible: true,
+      href: '/dash/user-account/settings/general',
+      icon: <Settings size={20} />,
+      title: t('AccountSettings.title'),
+      description: t('AccountSettings.description'),
+    },
+  ].filter(card => card.visible)
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
-      {/* Logo */}
-      <div className="mb-12">
-        <Image
-          alt={t('platformLogo')}
-          width={210}
-          src={platformLogoFull}
-          className="theme-logo-dark w-40 sm:w-[210px]"
-          style={{ height: 'auto' }}
-          loading="eager"
-        />
-        <Image
-          alt={t('platformLogo')}
-          width={210}
-          src={platformLogoLightFull}
-          className="theme-logo-light w-40 sm:w-[210px]"
-          style={{ height: 'auto' }}
-          loading="eager"
-        />
-      </div>
+    <div className="bg-background flex min-h-screen w-full flex-col">
+      {/* Standard Header */}
+      <DashHeader title={tGeneral('dashboard')} description={tGeneral('dashboardWelcome')} />
 
-      {/* Nav Cards Grid */}
-      {cards.length > 0 ? (
-        <div className="grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
-            <DashboardCard
-              key={card.title}
-              href={card.href}
-              icon={card.icon}
-              title={card.title}
-              description={card.description}
-              badge={card.badge}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-sm">{t('noAccess')}</p>
-      )}
-
-      {/* Footer */}
-      <div className="mt-6 flex flex-col gap-6 sm:mt-10 sm:gap-10">
-        <div className="bg-muted/40 dark:bg-muted/80 mx-auto h-1 w-[100px] rounded-full" />
-        <div className="flex items-center justify-center">
-          <ServerLink
-            href="https://tou.edu.kz/ru/"
-            target="_blank"
-            className="bg-primary mt-4 flex cursor-pointer items-center gap-2 rounded-lg px-7 py-3 shadow-lg transition-all ease-linear hover:scale-105 sm:mt-[40px]"
-          >
-            <Image
-              width={26}
-              src={touEmblemLight}
-              alt={t('touUniversity')}
-            />
-            <div className="text-primary-foreground text-sm font-bold">{t('touUniversity')}</div>
-          </ServerLink>
-        </div>
-        <div className="bg-muted/40 dark:bg-muted/80 mx-auto mt-4 h-1 w-28 rounded-full sm:mt-[40px]" />
-
-        <ServerLink
-          href="/dash/user-account/settings/general"
-          className="bg-background mx-auto flex max-w-md cursor-pointer items-center rounded-lg p-4 shadow-lg transition-all ease-linear hover:scale-105"
-        >
-          <div className="mx-auto flex flex-col items-center gap-2 text-center sm:flex-row sm:gap-3 sm:text-left">
-            <Settings
-              className="text-muted-foreground"
-              size={20}
-            />
-            <div>
-              <div className="text-muted-foreground font-bold">{t('AccountSettings.title')}</div>
-              <p className="text-muted-foreground text-sm">{t('AccountSettings.description')}</p>
+      <main className="container mx-auto space-y-6 px-4 py-8 md:space-y-8 md:py-12 lg:px-8">
+        {/* Dashboard Sections/Cards Grid */}
+        <div className="space-y-4">
+          <h2 className="text-muted-foreground/60 text-[10px] font-medium tracking-wider uppercase select-none">
+            {t('availableSections')}
+          </h2>
+          {cards.length > 0 ? (
+            <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {cards.map(card => (
+                <DashboardCard
+                  key={card.title}
+                  href={card.href}
+                  icon={card.icon}
+                  title={card.title}
+                  description={card.description}
+                  {...(card.badge ? { badge: card.badge } : {})}
+                />
+              ))}
             </div>
-          </div>
-        </ServerLink>
-      </div>
+          ) : (
+            <p className="text-muted-foreground text-sm font-medium">{t('noAccess')}</p>
+          )}
+        </div>
+      </main>
     </div>
-  );
+  )
 }
 
 const DashboardCard = ({
@@ -154,44 +105,41 @@ const DashboardCard = ({
   description,
   badge,
 }: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  description: string;
-  badge?: string;
+  href: string
+  icon: ReactNode
+  title: string
+  description: string
+  badge?: string
 }) => {
   return (
-    <ServerLink
-      href={href}
-      className="group block"
-    >
-      <Card className="hover:bg-accent hover:text-accent-foreground h-full transition-colors duration-150">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between">
-            <div className="bg-muted text-muted-foreground group-hover:bg-background rounded-md p-2 transition-colors duration-150">
+    <ServerLink href={href} className="group block h-full">
+      <Card className="border-border/50 bg-card hover:bg-muted/30 hover:border-border/80 flex h-full flex-col justify-between p-6 transition-all duration-200 select-none">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-muted-foreground group-hover:text-foreground size-5 transition-colors duration-200">
               {icon}
             </div>
             <div className="flex items-center gap-2">
               {badge && (
                 <Badge
-                  variant="secondary"
-                  className="text-xs"
+                  variant="outline"
+                  className="border-border/85 text-muted-foreground/90 bg-transparent px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase"
                 >
                   {badge}
                 </Badge>
               )}
               <ChevronRight
-                size={16}
-                className="text-muted-foreground translate-x-0 opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100"
+                size={14}
+                className="text-muted-foreground/30 group-hover:text-foreground/70 transition-colors duration-200"
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <CardTitle className="mb-1 text-base">{title}</CardTitle>
-          <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
-        </CardContent>
+          <div className="space-y-1">
+            <h3 className="text-foreground text-sm font-semibold tracking-tight">{title}</h3>
+            <p className="text-muted-foreground text-xs leading-normal">{description}</p>
+          </div>
+        </div>
       </Card>
     </ServerLink>
-  );
-};
+  )
+}

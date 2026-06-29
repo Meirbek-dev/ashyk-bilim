@@ -1,12 +1,12 @@
-from enum import Enum, StrEnum
-from typing import Any
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from pydantic import Field as PydanticField
-from pydantic import field_validator
-from sqlalchemy import JSON, Column, ForeignKey, Integer
+from pydantic import Field as PydanticField, field_validator
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, func
 from sqlmodel import Field
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject
 
 
 class TrailStepTypeEnum(StrEnum):
@@ -15,8 +15,7 @@ class TrailStepTypeEnum(StrEnum):
 
 
 class TrailStep(SQLModelStrictBaseModel, table=True):
-    """
-    TrailStep database model representing a step in a learning trail.
+    """TrailStep database model representing a step in a learning trail.
 
     This model tracks completion status, verification, grading, and metadata
     for individual steps within a learning trail.
@@ -32,31 +31,27 @@ class TrailStep(SQLModelStrictBaseModel, table=True):
     # Allow a default value for `grade` to avoid Pydantic errors when legacy rows
     # contain empty strings. Database column remains Integer.
     grade: int = Field(default=0, sa_column=Column(Integer))
-    data: dict[str, Any] = Field(
+    data: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON),
     )
 
     # Foreign key relationships
-    trailrun_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("trailrun.id", ondelete="CASCADE"))
-    )
-    trail_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE"))
-    )
-    activity_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE"))
-    )
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    trailrun_id: int = Field(sa_column=Column(Integer, ForeignKey("trailrun.id", ondelete="CASCADE")))
+    trail_id: int = Field(sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE")))
+    activity_id: int = Field(sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE")))
+    course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
 
     # Timestamps
-    creation_date: str = Field()
-    update_date: str = Field()
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class TrailStepRead(PydanticStrictBaseModel):
@@ -65,35 +60,30 @@ class TrailStepRead(PydanticStrictBaseModel):
     teacher_verified: bool
     # Make grade tolerant: accept strings/empty values and coerce to int (default 0)
     grade: int = PydanticField(default=0)
-    data: dict[str, Any] = PydanticField(default_factory=dict)
+    data: JsonObject = PydanticField(default_factory=dict)
     trailrun_id: int
     trail_id: int
     activity_id: int
     course_id: int
     user_id: int
-    creation_date: str | None = None
-    update_date: str | None = None
-    activity: dict[str, Any] | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
+    activity: JsonObject | None = None
 
     @field_validator("grade", mode="before")
     @classmethod
-    def _validate_grade(cls, v) -> int:
+    def _validate_grade(cls, v: object) -> int:
         # Normalize empty strings and non-int strings to 0, preserve ints
         if v is None:
             return 0
         if isinstance(v, str):
-            v = v.strip()
-            if v == "":
+            value = v.strip()
+            if value == "":
                 return 0
             try:
-                return int(v)
+                return int(value)
             except ValueError:
                 return 0
-        try:
+        if isinstance(v, (int, float)):
             return int(v)
-        except TypeError, ValueError:
-            return 0
-
-
-# note : prepare assignments support
-# An assignment object will be linked to a trail step object in the future
+        return 0

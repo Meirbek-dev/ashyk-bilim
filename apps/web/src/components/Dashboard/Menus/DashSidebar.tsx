@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Sidebar,
@@ -12,48 +12,42 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { BarChart3, BookCopy, Home, LogOut, Moon, School, Settings, ShieldCheck, Sun, Users } from 'lucide-react';
-import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
-import { useSession } from '@/hooks/useSession';
-import platformLogo from '@public/platform_logo.svg';
-import platformLogoLight from '@public/platform_logo_light.svg';
-import { useTheme } from '@/components/providers/theme-provider';
-import { logout } from '@services/auth/auth';
-import { getAbsoluteUrl } from '@services/config/config';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import UserAvatar from '../../Objects/UserAvatar';
-import { useCallback, useEffect, useEffectEvent } from 'react';
-import AppLink from '@/components/ui/AppLink';
-import { Badge } from '@/components/ui/badge';
-import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+} from '@/components/ui/sidebar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { BarChart3, BookCopy, Home, LogOut, Moon, Settings, ShieldCheck, Sun, Users } from 'lucide-react'
+import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
+import { useSession } from '@/hooks/useSession'
+import appLogoLight from '@public/app_logo_light.svg'
+import { useTheme } from '@/components/providers/theme-provider'
+import { logout } from '@services/auth/auth'
+import { getAbsoluteUrl } from '@services/config/config'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import UserAvatar from '../../Objects/UserAvatar'
+import { useCallback, useEffect, useEffectEvent } from 'react'
+import AppLink from '@/components/ui/AppLink'
+import { Badge } from '@/components/ui/badge'
+import { usePathname } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 
 interface NavigationItem {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ 'className'?: string; 'aria-hidden'?: boolean }>;
-  tooltip: string;
-  isActive?: boolean;
-  badge?: string | number;
-  disabled?: boolean;
+  title: string
+  href: string
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+  tooltip: string
+  isActive?: boolean
+  badge?: string | number
+  disabled?: boolean
 }
 
 interface SidebarProps {
-  className?: string;
+  className?: string
 }
 
 // Loading skeleton component
 const SidebarSkeleton = () => (
-  <Sidebar
-    side="left"
-    variant="sidebar"
-    collapsible="icon"
-    className="border-r"
-  >
+  <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r">
     <SidebarHeader className="border-sidebar-border border-b p-4">
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-lg" />
@@ -66,10 +60,7 @@ const SidebarSkeleton = () => (
     <SidebarContent className="p-4">
       <div className="space-y-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            className="h-10 w-full rounded-md"
-          />
+          <Skeleton key={i} className="h-10 w-full rounded-md" />
         ))}
       </div>
     </SidebarContent>
@@ -83,13 +74,13 @@ const SidebarSkeleton = () => (
       </div>
     </SidebarFooter>
   </Sidebar>
-);
+)
 
 // Custom hook for navigation items
 const useNavigationItems = () => {
-  const pathname = usePathname();
-  const t = useTranslations('SidebarMenu');
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions();
+  const pathname = usePathname()
+  const t = useTranslations('SidebarMenu')
+  const { canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()
 
   return [
     {
@@ -132,17 +123,6 @@ const useNavigationItems = () => {
           },
         ]
       : []),
-    ...(canSeePlatform
-      ? [
-          {
-            title: t('tooltips.platform'),
-            href: '/dash/platform/settings/landing',
-            icon: School,
-            tooltip: t('tooltips.platform'),
-            isActive: pathname.startsWith('/dash/platform'),
-          },
-        ]
-      : []),
     ...(canSeeAdmin
       ? [
           {
@@ -154,40 +134,28 @@ const useNavigationItems = () => {
           },
         ]
       : []),
-  ];
-};
+  ]
+}
 
 // Navigation item component
 const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boolean }) => (
   <SidebarMenuItem className={isCollapsed ? 'flex w-full justify-center' : ''}>
     <SidebarMenuButton
-      render={
-        <AppLink
-          href={item.href}
-          aria-label={item.tooltip}
-          aria-current={item.isActive ? 'page' : undefined}
-        />
-      }
-      tooltip={isCollapsed ? item.tooltip : undefined}
-      isActive={item.isActive}
+      render={<AppLink href={item.href} aria-label={item.tooltip} aria-current={item.isActive ? 'page' : undefined} />}
+      {...(isCollapsed ? { tooltip: item.tooltip } : {})}
+      {...(item.isActive === undefined ? {} : { isActive: item.isActive })}
       size="default"
       className={`group hover:bg-sidebar-accent/50 relative transition-all duration-200 ${
         isCollapsed ? 'flex h-10 w-10 items-center justify-center p-0' : 'w-full gap-3'
       } flex min-w-0 items-center`}
-      disabled={item.disabled}
+      {...(item.disabled === undefined ? {} : { disabled: item.disabled })}
     >
-      <item.icon
-        className="h-4 w-4 shrink-0"
-        aria-hidden
-      />
+      <item.icon className="h-4 w-4 shrink-0" aria-hidden />
       {!isCollapsed && (
         <>
           <span className="truncate font-medium">{item.title}</span>
           {item.badge ? (
-            <Badge
-              variant="secondary"
-              className="ml-auto text-xs"
-            >
+            <Badge variant="secondary" className="ml-auto text-xs">
               {item.badge}
             </Badge>
           ) : null}
@@ -196,58 +164,61 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
       )}
     </SidebarMenuButton>
   </SidebarMenuItem>
-);
+)
 
 const DashSidebar = ({ className }: SidebarProps) => {
-  const { user } = useSession();
-  const { state, toggleSidebar } = useSidebar();
-  const { resolvedTheme, isDark, toggleMode } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogo : platformLogoLight;
-  const t = useTranslations('SidebarMenu');
-  const tThemeSelector = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector');
-  const navigationItems = useNavigationItems();
+  const { user } = useSession()
+  const { state, toggleSidebar } = useSidebar()
+  const { isDark, toggleMode } = useTheme()
+  const logoSrc = appLogoLight
+  const t = useTranslations('SidebarMenu')
+  const tThemeSelector = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector')
+  const navigationItems = useNavigationItems()
 
-  const isCollapsed = state === 'collapsed';
-  const isExpanded = state === 'expanded';
+  const isCollapsed = state === 'collapsed'
+  const isExpanded = state === 'expanded'
 
   async function handleLogout() {
     try {
-      await logout({ redirectTo: getAbsoluteUrl('/login') });
+      await logout({ redirectTo: getAbsoluteUrl('/login') })
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout failed:', error)
       // Could add toast notification here
     }
   }
 
   const handleModeToggle = useCallback(
     (e: React.MouseEvent) => {
-      toggleMode({ x: e.clientX, y: e.clientY });
+      toggleMode({ x: e.clientX, y: e.clientY })
     },
     [toggleMode],
-  );
+  )
 
   // Keyboard shortcut handler - useEffectEvent so the handler is stable and reads latest toggleSidebar
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     // Check for Ctrl+B (or Cmd+B on Mac)
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
-      event.preventDefault();
-      event.stopPropagation();
+      event.preventDefault()
+      event.stopPropagation()
 
-      if (typeof toggleSidebar === 'function') toggleSidebar();
+      if (typeof toggleSidebar === 'function') toggleSidebar()
     }
-  });
+  })
 
   useEffect(() => {
     // Add event listener with capture to ensure it fires before other handlers
-    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keydown', handleKeyDown, true)
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
-    };
-  }, []);
+      document.removeEventListener('keydown', handleKeyDown, true)
+    }
+  }, [])
+
+  const shortcutLabel =
+    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘B' : 'Ctrl+B'
 
   if (!user) {
-    return <SidebarSkeleton />;
+    return <SidebarSkeleton />
   }
 
   return (
@@ -271,7 +242,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
             <div className="bg-primary/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br p-1.5 shadow-sm">
               <div className="relative h-full w-full">
                 <Image
-                  alt={t('ariaLabels.platformLogo')}
+                  alt={t('ariaLabels.appLogo')}
                   src={logoSrc}
                   fill
                   sizes="28px"
@@ -318,12 +289,8 @@ const DashSidebar = ({ className }: SidebarProps) => {
         <SidebarGroup>
           <SidebarGroupContent className={isCollapsed ? 'px-2' : ''}>
             <SidebarMenu className={`space-y-1 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-              {navigationItems.map((item) => (
-                <NavItem
-                  key={item.title}
-                  item={item}
-                  isCollapsed={isCollapsed}
-                />
+              {navigationItems.map(item => (
+                <NavItem key={item.title} item={item} isCollapsed={isCollapsed} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -337,12 +304,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
           {/* User Profile Section */}
           <div className={`flex min-w-0 items-center gap-3 ${isCollapsed ? 'flex-col gap-2' : ''}`}>
             <div className="relative shrink-0">
-              <UserAvatar
-                user={user}
-                size="sm"
-                variant="outline"
-                showProfilePopup
-              />
+              <UserAvatar user={user} size="sm" variant="outline" showProfilePopup />
             </div>
             <div
               className={`min-w-0 flex-1 overflow-hidden transition-all duration-300 ${
@@ -357,39 +319,28 @@ const DashSidebar = ({ className }: SidebarProps) => {
           {/* Action Buttons */}
           <div className={`flex gap-2 ${isCollapsed ? 'w-full flex-col' : ''}`}>
             <SidebarMenuButton
-              render={
-                <AppLink
-                  href="/dash/user-account/settings/general"
-                  aria-label={t('ariaLabels.userSettings')}
-                />
-              }
-              tooltip={isCollapsed ? t('tooltips.userSettings', { username: user.username }) : undefined}
+              render={<AppLink href="/dash/user-account/settings/general" aria-label={t('ariaLabels.userSettings')} />}
+              {...(isCollapsed ? { tooltip: t('tooltips.userSettings', { username: user.username }) } : {})}
               size="sm"
               className={`hover:bg-sidebar-accent/50 flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center' : ''
               } flex items-center gap-2 ${isCollapsed ? 'justify-center' : 'justify-center'}`}
             >
-              <Settings
-                className="h-4 w-4"
-                aria-hidden="true"
-              />
+              <Settings className="h-4 w-4" aria-hidden="true" />
               <span className={`transition-all duration-200 ${isCollapsed ? 'sr-only' : ''}`}>
                 {t('buttons.settings')}
               </span>
             </SidebarMenuButton>
 
             <SidebarMenuButton
-              tooltip={isCollapsed ? t('tooltips.logout') : undefined}
+              {...(isCollapsed ? { tooltip: t('tooltips.logout') } : {})}
               size="sm"
               onClick={handleLogout}
               className={`text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center px-0' : 'gap-2 px-3'
               }`}
             >
-              <LogOut
-                className="h-4 w-4"
-                aria-hidden="true"
-              />
+              <LogOut className="h-4 w-4" aria-hidden="true" />
               <span className={`transition-all duration-200 ${isCollapsed ? 'sr-only' : ''}`}>
                 {t('buttons.logout')}
               </span>
@@ -404,11 +355,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
           >
             <div className="text-sidebar-foreground/50 flex items-center gap-1 text-xs">
               <kbd className="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm select-none">
-                <span className="font-mono">
-                  {typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-                    ? '⌘B'
-                    : 'Ctrl+B'}
-                </span>
+                <span className="font-mono">{shortcutLabel}</span>
               </kbd>
               <span>{t('keyboardShortcut.toToggle')}</span>
             </div>
@@ -416,7 +363,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
         </div>
       </SidebarFooter>
     </Sidebar>
-  );
-};
+  )
+}
 
-export default DashSidebar;
+export default DashSidebar

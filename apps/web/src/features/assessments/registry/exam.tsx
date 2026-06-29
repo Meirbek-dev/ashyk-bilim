@@ -2,11 +2,10 @@
  * Registry module for TYPE_EXAM.
  */
 
-import type { ComponentType } from 'react';
-import { registerKind } from './index';
-import type { KindAttemptProps, KindAuthorProps, KindReviewProps } from './index';
+import type { ComponentType } from 'react'
+import type { KindAttemptProps, KindAuthorProps, KindModule, KindReviewProps } from './index'
 
-registerKind('TYPE_EXAM', async () => {
+export const examModuleFactory = async (): Promise<KindModule> => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: GradingReviewWorkspace },
@@ -17,27 +16,23 @@ registerKind('TYPE_EXAM', async () => {
     import('@/features/grading/review/GradingReviewWorkspace'),
     import('./exam-review-detail'),
     import('./exam/ExamAttemptContent'),
-  ]);
+  ])
 
-  const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
-    <NativeItemOutline
-      allowedKinds={['CHOICE', 'MATCHING']}
-      itemNoun="Question"
-      itemNounKey="question"
-    />
-  );
+  const OutlineSlot: ComponentType<KindAuthorProps> = _props => (
+    <NativeItemOutline allowedKinds={['CHOICE', 'MATCHING']} itemNoun="Question" itemNounKey="question" />
+  )
 
-  const AuthorSlot: ComponentType<KindAuthorProps> = (_props) => (
-    <NativeItemAuthor
-      mode="exam"
-      itemNoun="Question"
-      itemNounKey="question"
-    />
-  );
+  const AuthorSlot: ComponentType<KindAuthorProps> = _props => (
+    <NativeItemAuthor mode="exam" itemNoun="Question" itemNounKey="question" allowedKinds={['CHOICE', 'MATCHING']} />
+  )
 
   const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
-    return GradingReviewWorkspace({ activityId, initialSubmissionUuid: submissionUuid ?? null, title });
-  };
+    return GradingReviewWorkspace({
+      activityId,
+      initialSubmissionUuid: submissionUuid ?? null,
+      ...(title !== undefined ? { title } : {}),
+    })
+  }
 
   return {
     label: 'Exam',
@@ -48,5 +43,5 @@ registerKind('TYPE_EXAM', async () => {
     Attempt: ExamAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
     ReviewDetail: ExamReviewDetail,
-  };
-});
+  }
+}

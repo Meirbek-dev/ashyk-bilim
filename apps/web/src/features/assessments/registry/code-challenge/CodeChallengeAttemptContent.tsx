@@ -1,59 +1,77 @@
-'use client';
+'use client'
 
-import { useEffect, useMemo, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 
-import { CodeItemAttempt, CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
-import type { CodeItemSettings } from '@/features/assessments/items/code';
-import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
-import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
-import { useAttemptShellControls } from '@/features/assessments/shell';
-import type { AttemptSaveState } from '@/features/assessments/shell';
-import { apiFetch } from '@/lib/api-client';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import type { KindAttemptProps } from '../index';
+import { CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code'
+import type { AssessmentItem } from '@/features/assessments/domain/items'
+import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
+import { useAttemptShellControls } from '@/features/assessments/shell'
+import type { AttemptSaveState } from '@/features/assessments/shell'
+import { CodeArenaWorkspace } from '@/features/code-arena/attempt'
+import { codeItemToProblem } from '@/features/code-arena/domain'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
+import type { KindAttemptProps } from '../index'
 
 interface CodeChallengeTestCase {
-  id: string;
-  input: string;
-  expected_output: string;
-  description?: string;
-  is_visible: boolean;
-  weight?: number;
+  id: string
+  input: string
+  expected_output: string
+  description?: string
+  is_visible: boolean
+  weight?: number
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER'
 }
 
 export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAttemptProps) {
-  const t = useTranslations('Activities.CodeChallenges');
-  const normalizedActivityUuid = activityUuid.replace(/^activity_/, '');
-  const queryClient = useQueryClient();
-  const assessmentUuid = vm?.assessmentUuid ?? null;
-  const codeItem = useMemo(() => vm?.items.find((item) => item.body.kind === 'CODE') ?? null, [vm?.items]);
-  const settings = useMemo(() => (codeItem ? codeItemToSettings(codeItem) : null), [codeItem]);
-  const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid);
-  const { submitControl, handleSubmitControlChange } = useCodeSubmitControl();
-  const startedRef = useRef<string | null>(null);
+  const t = useTranslations('Activities.CodeChallenges')
+  const normalizedActivityUuid = activityUuid.replace(/^activity_/, '')
+  const assessmentUuid = vm?.assessmentUuid ?? null
+  const codeItem = useMemo(() => vm?.items.find(item => item.body.kind === 'CODE') ?? null, [vm?.items])
+  const settings = useMemo(
+    () => (codeItem ? codeItemToSettings(codeItem, vm?.title, vm?.description ?? undefined) : null),
+    [codeItem, vm?.description, vm?.title],
+  )
+  const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid)
+  const saveDraft = submissionState.save
+  const { saveState } = submissionState
+  const submissionStatus = submissionState.status
+  const submitAssessment = submissionState.submit
+  const { submitControl, handleSubmitControlChange } = useCodeSubmitControl()
 
-  const primaryLanguageId = settings?.allowed_languages?.[0];
-  const savedAnswer = codeItem ? submissionState.answers[codeItem.item_uuid] : undefined;
-  const codeAnswer = savedAnswer?.kind === 'CODE' ? savedAnswer : undefined;
-  const initialCode =
-    primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : '';
-  const isConfigured = Boolean(settings?.allowed_languages?.length);
+  const primaryLanguageId = settings?.allowed_languages?.[0]
+  const savedAnswer = codeItem ? submissionState.answers[codeItem.item_uuid] : undefined
+  const codeAnswer = savedAnswer?.kind === 'CODE' ? savedAnswer : undefined
+  const initialCode = primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : ''
+  const isConfigured = Boolean(settings?.allowed_languages?.length)
+  const vmTitle = vm?.title
+  const vmDescription = vm?.description
+  const problem = useMemo(
+    () =>
+      codeItem && settings
+        ? codeItemToProblem({
+            activityUuid: normalizedActivityUuid,
+            item: codeItem,
+            settings,
+            ...(vmTitle !== undefined ? { title: vmTitle } : {}),
+            ...(vmDescription !== undefined ? { description: vmDescription } : {}),
+          })
+        : null,
+    [codeItem, normalizedActivityUuid, settings, vmDescription, vmTitle],
+  )
 
-  const shellControls = useMemo(
-    () => ({
+  const shellControls = useMemo(() => {
+    const onSave =
+      Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined
+    const onSubmit = vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined
+
+    return {
       saveState: mapSaveState(submissionState.saveState, submissionState.status),
       status: submissionState.status,
       canSave: Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty',
       canSubmit: Boolean(vm?.canSubmit && submitControl?.canSubmit),
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting || Boolean(submitControl?.isSubmitting),
-      onSave:
-        Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty'
-          ? () => void submissionState.save()
-          : undefined,
-      onSubmit: vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined,
       conflict: submissionState.conflict
         ? {
             open: true,
@@ -65,119 +83,81 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
             onUseServerVersion: submissionState.conflict.onUseServerVersion,
           }
         : null,
-    }),
-    [submissionState, submitControl, vm?.canSaveDraft, vm?.canSubmit],
-  );
-  useAttemptShellControls(shellControls);
-
-  useEffect(() => {
-    if (
-      !isConfigured ||
-      !assessmentUuid ||
-      submissionState.isLoading ||
-      submissionState.draft ||
-      startedRef.current === assessmentUuid ||
-      !(vm?.canStart || vm?.canStartRevision || vm?.canEdit)
-    ) {
-      return;
+      ...(onSave ? { onSave } : {}),
+      ...(onSubmit ? { onSubmit } : {}),
     }
-
-    startedRef.current = assessmentUuid;
-
-    void apiFetch(`assessments/${assessmentUuid}/start`, { method: 'POST' })
-      .then(async (response) => {
-        if (!response.ok) {
-          startedRef.current = null;
-          return;
-        }
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.activity(normalizedActivityUuid) }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
-        ]);
-      })
-      .catch(() => {
-        startedRef.current = null;
-      });
-  }, [
-    assessmentUuid,
-    isConfigured,
-    normalizedActivityUuid,
-    queryClient,
-    submissionState.draft,
-    submissionState.isLoading,
-    vm?.canEdit,
-    vm?.canStart,
-    vm?.canStartRevision,
-  ]);
+  }, [submissionState, submitControl, vm?.canSaveDraft, vm?.canSubmit])
+  useAttemptShellControls(shellControls)
 
   useEffect(() => {
-    if (!codeItem || !submissionState.draft || codeAnswer) return;
+    if (!codeItem || !submissionState.draft || codeAnswer) return
     submissionState.setItemAnswer(codeItem.item_uuid, {
       kind: 'CODE',
       language: primaryLanguageId ?? 0,
       source: initialCode,
-    });
-  }, [codeAnswer, codeItem, initialCode, primaryLanguageId, submissionState]);
+    })
+  }, [codeAnswer, codeItem, initialCode, primaryLanguageId, submissionState])
 
   useEffect(() => {
-    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return;
+    if (submissionStatus !== 'DRAFT' || saveState !== 'dirty') return
     const timeout = setTimeout(() => {
-      void submissionState.save();
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [submissionState]);
+      saveDraft()
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [saveDraft, saveState, submissionStatus])
 
-  const handleCanonicalSubmit = useMemo(
-    () => async () => {
-      await submissionState.submit();
-    },
-    [submissionState],
-  );
+  const handleCanonicalSubmit = useCallback(async () => {
+    await submitAssessment()
+  }, [submitAssessment])
 
   if (submissionState.isLoading) {
-    return <CodeItemLoading />;
+    return <CodeItemLoading />
   }
 
-  if (!codeItem || !settings || !isConfigured) {
+  if (!codeItem || !settings || !problem || !isConfigured) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
         <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
         <p className="text-muted-foreground mt-2 max-w-md text-sm">{t('notConfiguredDescription')}</p>
       </div>
-    );
+    )
   }
 
   return (
-    <CodeItemAttempt
-      item={{
-        activityUuid: normalizedActivityUuid,
-        settings,
-        initialCode: codeAnswer?.source ?? initialCode,
-        initialLanguageId: codeAnswer?.language ?? primaryLanguageId ?? 0,
-        title: vm?.title,
-        description: vm?.description ?? undefined,
-        onSubmitControlChange: handleSubmitControlChange,
-        onSubmit: handleCanonicalSubmit,
-      }}
+    <CodeArenaWorkspace
+      problem={problem}
+      settings={settings}
       answer={codeAnswer}
       disabled={!vm?.canEdit}
-      onAnswerChange={(answer) => {
-        submissionState.setItemAnswer(codeItem.item_uuid, answer as ItemAnswer);
+      initialCode={codeAnswer?.source ?? initialCode}
+      initialLanguageId={codeAnswer?.language ?? primaryLanguageId ?? 0}
+      onSubmitControlChange={handleSubmitControlChange}
+      onSubmit={handleCanonicalSubmit}
+      onAnswerChange={answer => {
+        submissionState.setItemAnswer(codeItem.item_uuid, answer)
       }}
     />
-  );
+  )
 }
 
-function codeItemToSettings(item: AssessmentItem): CodeItemSettings | null {
-  if (item.body.kind !== 'CODE') return null;
-  const visibleTests = item.body.tests.filter((test) => test.is_visible).map(toCodeChallengeTestCase);
-  const hiddenTests = item.body.tests.filter((test) => !test.is_visible).map(toCodeChallengeTestCase);
-  const timeLimit = item.body.time_limit_seconds ?? 5;
-  const memoryLimit = item.body.memory_limit_mb ?? 256;
+function codeItemToSettings(
+  item: AssessmentItem,
+  title?: string | null,
+  description?: string | null,
+): CodeChallengeSettings | null {
+  if (item.body.kind !== 'CODE') return null
+  const visibleTests = item.body.tests.filter(test => test.is_visible).map(toCodeChallengeTestCase)
+  const hiddenTests = item.body.tests.filter(test => !test.is_visible).map(toCodeChallengeTestCase)
+  const timeLimit = item.body.time_limit_seconds ?? 5
+  const memoryLimit = item.body.memory_limit_mb ?? 256
 
   return {
     uuid: item.item_uuid,
+    title: title ?? item.title,
+    prompt: item.body.prompt || description || '',
+    input_spec: item.body.input_spec ?? '',
+    output_spec: item.body.output_spec ?? '',
+    constraints: item.body.constraints ?? [],
     time_limit: timeLimit,
     memory_limit: memoryLimit,
     time_limit_ms: timeLimit * 1000,
@@ -187,46 +167,49 @@ function codeItemToSettings(item: AssessmentItem): CodeItemSettings | null {
     visible_tests: visibleTests,
     hidden_tests: hiddenTests,
     starter_code: item.body.starter_code,
-  };
+    reference_solutions: item.body.reference_solutions ?? {},
+  }
 }
 
 function toCodeChallengeTestCase(test: {
-  id: string;
-  input: string;
-  expected_output: string;
-  description?: string | null;
-  is_visible: boolean;
-  weight: number;
+  id: string
+  input: string
+  expected_output: string
+  description?: string | null
+  is_visible: boolean
+  weight: number
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER'
 }): CodeChallengeTestCase {
   return {
     id: test.id,
     input: test.input,
     expected_output: test.expected_output,
-    description: test.description ?? undefined,
     is_visible: test.is_visible,
     weight: test.weight,
-  };
+    match_mode: test.match_mode ?? 'EXACT',
+    ...(test.description ? { description: test.description } : {}),
+  }
 }
 
 function mapSaveState(
   saveState: 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error',
   status: string | null,
 ): AttemptSaveState {
-  if (status === 'PENDING') return 'submitted';
-  if (status === 'RETURNED') return 'returned';
+  if (status === 'PENDING') return 'submitted'
+  if (status === 'RETURNED') return 'returned'
   switch (saveState) {
     case 'dirty': {
-      return 'unsaved';
+      return 'unsaved'
     }
     case 'saving': {
-      return 'saving';
+      return 'saving'
     }
     case 'error':
     case 'conflict': {
-      return 'error';
+      return 'error'
     }
     default: {
-      return 'saved';
+      return 'saved'
     }
   }
 }

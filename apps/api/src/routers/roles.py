@@ -1,5 +1,4 @@
-"""
-Roles Router - CRUD for roles + permission assignment.
+"""Roles Router - CRUD for roles + permission assignment.
 
 Role assignment/revocation to *users* is in rbac.py.
 """
@@ -30,6 +29,14 @@ class AddPermissionBody(BaseModel):
     permission_id: int
 
 
+class RoleActionResponse(BaseModel):
+    ok: bool
+
+
+class RoleUsersCountResponse(BaseModel):
+    count: int
+
+
 def _caller_max_priority(checker: PermissionChecker, user_id: int) -> int:
     return max((r["priority"] for r in checker.get_user_roles(user_id)), default=0)
 
@@ -42,7 +49,7 @@ def list_all_permissions(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[PermissionRead]:
     """List all permission definitions. Used by the RBAC admin panel."""
     checker.require(current_user.id, "role:read")
     return [PermissionRead.model_validate(p) for p in repo.list_all_permissions()]
@@ -53,12 +60,18 @@ def list_roles(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[RoleRead]:
     """List all roles available in the platform."""
     checker.require(current_user.id, "role:read")
     roles = repo.list_all()
     role_ids = [r.id for r in roles if r.id is not None]
-    perm_map, user_map = repo.bulk_counts(role_ids) if role_ids else ({}, {})
+    perm_map: dict[int, int]
+    user_map: dict[int, int]
+    if role_ids:
+        perm_map, user_map = repo.bulk_counts(role_ids)
+    else:
+        perm_map = {}
+        user_map = {}
     return [
         RoleRead.model_validate(r).model_copy(
             update={
@@ -76,7 +89,7 @@ def get_role_audit_log(
     checker: PermissionCheckerDep,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-):
+) -> RoleAuditListResponse:
     checker.require(current_user.id, "role:read")
     events = list_role_audit_events()
     total = len(events)
@@ -95,14 +108,12 @@ def get_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Get a single role by ID."""
     checker.require(current_user.id, "role:read")
     role = repo.get_or_404(role_id)
     perm_count, user_count = repo.get_counts(role_id)
-    return RoleRead.model_validate(role).model_copy(
-        update={"permissions_count": perm_count, "users_count": user_count}
-    )
+    return RoleRead.model_validate(role).model_copy(update={"permissions_count": perm_count, "users_count": user_count})
 
 
 # ── Create / Update / Delete ──────────────────────────────────────────────────
@@ -114,12 +125,13 @@ def create_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Create a new custom role."""
     checker.require(current_user.id, "role:create")
     if body.priority > _caller_max_priority(checker, current_user.id):
         raise HTTPException(
-            403, detail="Cannot create a role with higher priority than your own"
+            403,
+            detail="Нельзя создать роль с более высоким приоритетом, чем у вашей роли",
         )
     role = repo.create_role(body)
     audit_log.info(
@@ -142,19 +154,18 @@ def update_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> RoleRead:
     """Update a role's name, description, or priority."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     requested_priority = body.priority if body.priority is not None else role.priority
-    if not is_admin and requested_priority > _caller_max_priority(
-        checker, current_user.id
-    ):
+    if not is_admin and requested_priority > _caller_max_priority(checker, current_user.id):
         raise HTTPException(
-            403, detail="Cannot set a role priority higher than your own"
+            403,
+            detail="Нельзя назначить приоритет роли выше, чем у вашей собственной роли",
         )
     role, changed = repo.update_role(role, body)
     audit_log.info(
@@ -175,19 +186,19 @@ def update_role(
     return RoleRead.model_validate(role)
 
 
-@router.delete("/{role_id}")
+@router.delete("/{role_id}", response_model=RoleActionResponse)
 def delete_role(
     role_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Delete a custom role."""
     checker.require(current_user.id, "role:delete")
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be deleted")
+        raise HTTPException(403, detail="Системные роли нельзя удалять")
     audit_log.info(
         "role_deleted",
         extra={
@@ -206,13 +217,13 @@ def delete_role(
     return {"ok": True}
 
 
-@router.get("/{role_id}/users/count")
+@router.get("/{role_id}/users/count", response_model=RoleUsersCountResponse)
 def get_role_users_count(
     role_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, int]:
     checker.require(current_user.id, "role:read")
     repo.get_or_404(role_id)  # 404 guard
     return {"count": repo.get_user_count(role_id)}
@@ -227,36 +238,32 @@ def get_role_permissions(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> list[PermissionRead]:
     """Get all permissions assigned to a role."""
     checker.require(current_user.id, "role:read")
     repo.get_or_404(role_id)
-    return [
-        PermissionRead.model_validate(p) for p in repo.get_role_permissions(role_id)
-    ]
+    return [PermissionRead.model_validate(p) for p in repo.get_role_permissions(role_id)]
 
 
-@router.post("/{role_id}/permissions")
+@router.post("/{role_id}/permissions", response_model=RoleActionResponse)
 def add_permission_to_role(
     role_id: int,
     body: AddPermissionBody,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Add a permission to a role."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     perm = repo.get_permission_or_404(body.permission_id)
-    if not is_admin and perm.name not in checker.get_expanded_permissions(
-        current_user.id
-    ):
+    if not is_admin and perm.name not in checker.get_expanded_permissions(current_user.id):
         raise HTTPException(
             403,
-            detail=f"Cannot grant permission '{perm.name}' that you do not have",
+            detail=f"Нельзя выдать разрешение '{perm.name}', которого у вас нет",
         )
     repo.add_permission_to_role(role_id, body.permission_id)
     audit_log.info(
@@ -278,20 +285,20 @@ def add_permission_to_role(
     return {"ok": True}
 
 
-@router.delete("/{role_id}/permissions/{permission_id}")
+@router.delete("/{role_id}/permissions/{permission_id}", response_model=RoleActionResponse)
 def remove_permission_from_role(
     role_id: int,
     permission_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Remove a permission from a role."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     perm = repo.remove_permission_from_role(role_id, permission_id)
     audit_log.info(
         "permission_removed_from_role",

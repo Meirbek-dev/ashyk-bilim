@@ -1,7 +1,7 @@
 interface QuestionLike {
-  id: string | number;
-  question_uuid: string;
-  order_index?: number;
+  id: string | number
+  question_uuid: string
+  order_index?: number
 }
 
 /**
@@ -21,44 +21,44 @@ export function getOrderedExamQuestions<T extends QuestionLike>(
   questions: T[],
   orderedIds: (string | number)[] | null,
 ): T[] {
-  const sortedByOrderIndex = (): T[] => [...questions].toSorted((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const sortedByOrderIndex = (): T[] => [...questions].toSorted((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
 
   if (orderedIds === null) {
-    return [...questions];
+    return [...questions]
   }
 
   if (orderedIds.length === 0) {
-    return sortedByOrderIndex();
+    return sortedByOrderIndex()
   }
 
   const findQuestion = (id: string | number): T | undefined => {
-    const idStr = String(id);
-    const idNum = Number(id);
-    const normalizedId = idStr.replace(/^question_/, '');
+    const idStr = String(id)
+    const idNum = Number(id)
+    const normalizedId = idStr.replace(/^question_/, '')
 
-    return questions.find((q) => {
-      if (!Number.isNaN(idNum) && idNum === Number(q.id)) return true;
-      if (idStr === String(q.id)) return true;
-      if (idStr === q.question_uuid) return true;
-      if (q.question_uuid.replace(/^question_/, '') === normalizedId) return true;
-      return false;
-    });
-  };
+    return questions.find(q => {
+      if (!Number.isNaN(idNum) && idNum === Number(q.id)) return true
+      if (idStr === String(q.id)) return true
+      if (idStr === q.question_uuid) return true
+      if (q.question_uuid.replace(/^question_/, '') === normalizedId) return true
+      return false
+    })
+  }
 
-  const seen = new Set<T>();
-  const ordered: T[] = [];
+  const seen = new Set<T>()
+  const ordered: T[] = []
 
   for (const id of orderedIds) {
-    const question = findQuestion(id);
+    const question = findQuestion(id)
     if (question && !seen.has(question)) {
-      seen.add(question);
-      ordered.push(question);
+      seen.add(question)
+      ordered.push(question)
     }
   }
 
   if (ordered.length === 0) {
-    return sortedByOrderIndex();
+    return sortedByOrderIndex()
   }
 
-  return ordered;
+  return ordered
 }

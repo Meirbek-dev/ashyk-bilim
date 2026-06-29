@@ -183,15 +183,11 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
             "description": row.description or "",
             "hint": row.hint or "",
             "reference_file": row.reference_file,
-            "allowed_mime_types": [
-                item for item in _as_list(allowed) if isinstance(item, str)
-            ],
+            "allowed_mime_types": [item for item in _as_list(allowed) if isinstance(item, str)],
             "max_file_size_mb": contents.get("max_file_size_mb")
             if isinstance(contents.get("max_file_size_mb"), int)
             else None,
-            "max_files": contents.get("max_files")
-            if isinstance(contents.get("max_files"), int)
-            else 1,
+            "max_files": contents.get("max_files") if isinstance(contents.get("max_files"), int) else 1,
         }
     if task_type == "QUIZ":
         questions: list[dict[str, object]] = []
@@ -207,8 +203,7 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
                     "text": str(option.get("text", "")),
                     "fileID": str(option.get("fileID", "")),
                     "type": str(option.get("type", "text")),
-                    "assigned_right_answer": option.get("assigned_right_answer")
-                    is True,
+                    "assigned_right_answer": option.get("assigned_right_answer") is True,
                 })
             questions.append({
                 "questionUUID": str(question.get("questionUUID", "")),
@@ -252,9 +247,7 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
         "kind": "ASSIGNMENT_OTHER",
         "description": row.description or "",
         "hint": row.hint or "",
-        "body": contents.get("body")
-        if isinstance(contents.get("body"), dict)
-        else contents,
+        "body": contents.get("body") if isinstance(contents.get("body"), dict) else contents,
     }
 
 
@@ -263,9 +256,7 @@ def _question_item_kind(question_type: str | None) -> str:
 
 
 def _question_item_body(row: sa.Row) -> dict[str, object]:
-    answer_options = [
-        option for option in _as_list(row.answer_options) if isinstance(option, dict)
-    ]
+    answer_options = [option for option in _as_list(row.answer_options) if isinstance(option, dict)]
     if row.question_type == "MATCHING":
         return {
             "kind": "MATCHING",
@@ -281,13 +272,7 @@ def _question_item_body(row: sa.Row) -> dict[str, object]:
         }
 
     multiple = row.question_type == "MULTIPLE_CHOICE"
-    variant = (
-        "TRUE_FALSE"
-        if row.question_type == "TRUE_FALSE"
-        else "MULTIPLE_CHOICE"
-        if multiple
-        else "SINGLE_CHOICE"
-    )
+    variant = "TRUE_FALSE" if row.question_type == "TRUE_FALSE" else "MULTIPLE_CHOICE" if multiple else "SINGLE_CHOICE"
     return {
         "kind": "CHOICE",
         "prompt": row.question_text or "",
@@ -305,13 +290,9 @@ def _question_item_body(row: sa.Row) -> dict[str, object]:
     }
 
 
-def _build_code_submission_metadata(
-    row: sa.Row, updated_at: datetime
-) -> dict[str, object]:
+def _build_code_submission_metadata(row: sa.Row, updated_at: datetime) -> dict[str, object]:
     test_results = _as_dict(row.test_results)
-    raw_results = [
-        item for item in _as_list(test_results.get("results")) if isinstance(item, dict)
-    ]
+    raw_results = [item for item in _as_list(test_results.get("results")) if isinstance(item, dict)]
     latest_run = {
         "run_id": row.submission_uuid,
         "language_id": int(row.language_id or 0),
@@ -321,9 +302,7 @@ def _build_code_submission_metadata(
         "score": float(row.score or 0.0),
         "stdout": None,
         "stderr": None,
-        "time": (float(row.execution_time_ms) / 1000.0)
-        if row.execution_time_ms is not None
-        else None,
+        "time": (float(row.execution_time_ms) / 1000.0) if row.execution_time_ms is not None else None,
         "memory": int(row.memory_kb) if row.memory_kb is not None else None,
         "details": raw_results,
         "created_at": updated_at.isoformat(),
@@ -369,9 +348,7 @@ def upgrade() -> None:
             )
         )
     }
-    existing_item_uuids = set(
-        bind.execute(sa.select(assessment_item_table.c.item_uuid)).scalars()
-    )
+    existing_item_uuids = set(bind.execute(sa.select(assessment_item_table.c.item_uuid)).scalars())
 
     items_to_insert: list[dict[str, object]] = []
     touched_assessment_ids: set[int] = set()
@@ -407,9 +384,7 @@ def upgrade() -> None:
         ).all()
         for row in assignment_rows:
             if not row.assignment_task_uuid:
-                raise RuntimeError(
-                    "Assignment task row is missing assignment_task_uuid"
-                )
+                raise RuntimeError("Assignment task row is missing assignment_task_uuid")
             assessment = assessments.get(("ASSIGNMENT", int(row.activity_id)))
             if assessment is None:
                 msg = f"Missing canonical assessment for assignment activity {row.activity_id}"
@@ -447,11 +422,7 @@ def upgrade() -> None:
                 question_table.c.update_date,
                 exam_table.c.activity_id,
             )
-            .select_from(
-                question_table.join(
-                    exam_table, question_table.c.exam_id == exam_table.c.id
-                )
-            )
+            .select_from(question_table.join(exam_table, question_table.c.exam_id == exam_table.c.id))
             .order_by(
                 exam_table.c.activity_id,
                 question_table.c.order_index,
@@ -463,21 +434,34 @@ def upgrade() -> None:
                 raise RuntimeError("Question row is missing question_uuid")
             assessment = assessments.get(("EXAM", int(row.activity_id)))
             if assessment is None:
-                msg = (
-                    f"Missing canonical assessment for exam activity {row.activity_id}"
-                )
+                msg = f"Missing canonical assessment for exam activity {row.activity_id}"
                 raise RuntimeError(msg)
-            if row.question_uuid in existing_item_uuids:
-                continue
             created_at = _coerce_datetime(row.creation_date) or now
             updated_at = _coerce_datetime(row.update_date) or created_at
+            item_body = _question_item_body(row)
+            if row.question_uuid in existing_item_uuids:
+                bind.execute(
+                    sa.update(assessment_item_table)
+                    .where(assessment_item_table.c.item_uuid == row.question_uuid)
+                    .values(
+                        assessment_id=assessment["id"],
+                        order=int(row.order_index or 0),
+                        kind=_question_item_kind(row.question_type),
+                        title=row.question_text or "",
+                        body_json=item_body,
+                        max_score=float(row.points or 0),
+                        updated_at=updated_at,
+                    )
+                )
+                touched_assessment_ids.add(int(assessment["id"]))
+                continue
             items_to_insert.append({
                 "item_uuid": row.question_uuid,
                 "assessment_id": assessment["id"],
                 "order": int(row.order_index or 0),
                 "kind": _question_item_kind(row.question_type),
                 "title": row.question_text or "",
-                "body_json": _question_item_body(row),
+                "body_json": item_body,
                 "max_score": float(row.points or 0),
                 "created_at": created_at,
                 "updated_at": updated_at,
@@ -488,15 +472,10 @@ def upgrade() -> None:
     if items_to_insert:
         bind.execute(sa.insert(assessment_item_table), items_to_insert)
         bind.execute(
-            sa
-            .update(assessment_table)
-            .where(assessment_table.c.id.in_(touched_assessment_ids))
-            .values(updated_at=now)
+            sa.update(assessment_table).where(assessment_table.c.id.in_(touched_assessment_ids)).values(updated_at=now)
         )
 
-    existing_submission_uuids = set(
-        bind.execute(sa.select(submission_table.c.submission_uuid)).scalars()
-    )
+    existing_submission_uuids = set(bind.execute(sa.select(submission_table.c.submission_uuid)).scalars())
     submissions_to_insert: list[dict[str, object]] = []
 
     if _table_exists(bind, "exam_attempt"):
@@ -516,11 +495,7 @@ def upgrade() -> None:
                 exam_attempt_table.c.update_date,
                 exam_table.c.activity_id,
             )
-            .select_from(
-                exam_attempt_table.join(
-                    exam_table, exam_attempt_table.c.exam_id == exam_table.c.id
-                )
-            )
+            .select_from(exam_attempt_table.join(exam_table, exam_attempt_table.c.exam_id == exam_table.c.id))
             .order_by(
                 exam_table.c.activity_id,
                 exam_attempt_table.c.user_id,
@@ -539,24 +514,12 @@ def upgrade() -> None:
                 continue
             assessment = assessments.get(("EXAM", int(row.activity_id)))
             if assessment is None:
-                msg = (
-                    f"Missing canonical assessment for exam activity {row.activity_id}"
-                )
+                msg = f"Missing canonical assessment for exam activity {row.activity_id}"
                 raise RuntimeError(msg)
             status_value = str(row.status or "")
-            canonical_status = (
-                "GRADED" if status_value in {"SUBMITTED", "AUTO_SUBMITTED"} else "DRAFT"
-            )
-            created_at = (
-                _coerce_datetime(row.creation_date)
-                or _coerce_datetime(row.started_at)
-                or now
-            )
-            updated_at = (
-                _coerce_datetime(row.update_date)
-                or _coerce_datetime(row.submitted_at)
-                or created_at
-            )
+            canonical_status = "GRADED" if status_value in {"SUBMITTED", "AUTO_SUBMITTED"} else "DRAFT"
+            created_at = _coerce_datetime(row.creation_date) or _coerce_datetime(row.started_at) or now
+            updated_at = _coerce_datetime(row.update_date) or _coerce_datetime(row.submitted_at) or created_at
             submitted_at = _coerce_datetime(row.submitted_at)
             metadata: dict[str, object] = {
                 "exam_attempt_id": row.id,
@@ -571,9 +534,7 @@ def upgrade() -> None:
                 "assessment_policy_id": assessment["policy_id"],
                 "user_id": int(row.user_id),
                 "auto_score": float(row.score or 0),
-                "final_score": float(row.score)
-                if row.score is not None and canonical_status == "GRADED"
-                else None,
+                "final_score": float(row.score) if row.score is not None and canonical_status == "GRADED" else None,
                 "status": canonical_status,
                 "attempt_number": exam_attempt_numbers[key],
                 "is_late": False,
@@ -628,11 +589,7 @@ def upgrade() -> None:
                 msg = f"Missing canonical assessment for code challenge activity {row.activity_id}"
                 raise RuntimeError(msg)
             status_value = str(row.status or "")
-            canonical_status = (
-                "PENDING"
-                if status_value in {"PENDING", "PROCESSING", "PENDING_JUDGE0"}
-                else "GRADED"
-            )
+            canonical_status = "PENDING" if status_value in {"PENDING", "PROCESSING", "PENDING_JUDGE0"} else "GRADED"
             created_at = _coerce_datetime(row.created_at) or now
             updated_at = _coerce_datetime(row.updated_at) or created_at
             submitted_at = updated_at if canonical_status != "PENDING" else None
@@ -643,9 +600,7 @@ def upgrade() -> None:
                 "assessment_policy_id": assessment["policy_id"],
                 "user_id": int(row.user_id),
                 "auto_score": float(row.score or 0),
-                "final_score": float(row.score)
-                if row.score is not None and canonical_status == "GRADED"
-                else None,
+                "final_score": float(row.score) if row.score is not None and canonical_status == "GRADED" else None,
                 "status": canonical_status,
                 "attempt_number": code_attempt_numbers[key],
                 "is_late": False,
@@ -778,9 +733,7 @@ def downgrade() -> None:
         sa.Column("answers", sa.JSON(), nullable=True),
         sa.Column("question_order", sa.JSON(), nullable=True),
         sa.Column("violations", sa.JSON(), nullable=True),
-        sa.Column(
-            "is_preview", sa.Boolean(), nullable=False, server_default=sa.text("false")
-        ),
+        sa.Column("is_preview", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("started_at", sa.String(), nullable=True),
         sa.Column("submitted_at", sa.String(), nullable=True),
         sa.Column("creation_date", sa.String(), nullable=False, server_default=""),

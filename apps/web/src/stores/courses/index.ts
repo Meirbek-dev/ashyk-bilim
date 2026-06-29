@@ -1,1 +1,1 @@
-export * from './courseEditorStore';
+export * from './courseEditorStore'

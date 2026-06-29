@@ -1,34 +1,34 @@
-'use client';
+'use client'
 
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Download, Expand, Loader2, Upload, Video, X } from 'lucide-react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import ArtPlayer from '@components/Objects/Activities/Video/Artplayer';
-import { getActivityBlockMediaDirectory } from '@services/media/media';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { uploadNewVideoFile } from '@services/blocks/Video/video';
-import { useCourse } from '@components/Contexts/CourseContext';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { constructAcceptValue } from '@/lib/constants';
-import { AnimatePresence, motion } from 'motion/react';
-import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, DragEvent } from 'react';
-import type { NodeViewProps } from '@tiptap/react';
-import { NodeViewWrapper } from '@tiptap/react';
-import type ArtplayerType from 'artplayer';
-import type { Node } from '@tiptap/core';
-import { cn } from '@/lib/utils';
+import { AlertCircle, ArrowLeftRight, CheckCircle2, Download, Expand, Loader2, Upload, Video, X } from 'lucide-react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
+import { getActivityBlockMediaDirectory } from '@services/media/media'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { uploadNewVideoFile } from '@services/blocks/Video/video'
+import { useCourse } from '@components/Contexts/CourseContext'
+import Modal from '@/components/Objects/Elements/Modal/Modal'
+import { constructAcceptValue } from '@/lib/constants'
+import { AnimatePresence, motion } from 'motion/react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent, DragEvent } from 'react'
+import type { NodeViewProps } from '@tiptap/react'
+import { NodeViewWrapper } from '@tiptap/react'
+import type ArtplayerType from 'artplayer'
+import type { Node } from '@tiptap/core'
+import { cn } from '@/lib/utils'
 
-const SUPPORTED_FILES = constructAcceptValue(['webm', 'mkv', 'mp4', 'mov', 'avi', 'flv']);
+const SUPPORTED_FILES = constructAcceptValue(['webm', 'mkv', 'mp4', 'mov', 'avi', 'flv'])
 
 const VIDEO_SIZES = {
   small: { width: 480, label: 'sizeSmall' },
   medium: { width: 720, label: 'sizeMedium' },
   large: { width: 960, label: 'sizeLarge' },
   full: { width: '100%', label: 'sizeFull' },
-} as const;
+} as const
 
-type VideoSize = keyof typeof VIDEO_SIZES;
+type VideoSize = keyof typeof VIDEO_SIZES
 
 const sizeButtonCn = (isActive: boolean) =>
   cn(
@@ -36,215 +36,208 @@ const sizeButtonCn = (isActive: boolean) =>
     isActive
       ? 'text-white bg-blue-500 border-blue-500 hover:bg-blue-600'
       : 'text-gray-600 bg-transparent border-gray-200 hover:bg-gray-50',
-  );
+  )
 
 interface Course {
   courseStructure: {
-    course_uuid: string;
-  };
-}
-
-interface EditorState {
-  isEditable: boolean;
+    course_uuid: string
+  }
 }
 
 interface VideoBlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
-  size: VideoSize;
+    file_id: string
+    file_format: string
+  }
+  size: VideoSize
 }
 
 type ExtendedNodeViewProps = {
   extension: Node & {
     options: {
       activity: {
-        activity_uuid: string;
-      };
-    };
-  };
-} & Omit<NodeViewProps, 'extension'>;
+        activity_uuid: string
+      }
+    }
+  }
+} & Omit<NodeViewProps, 'extension'>
 
 const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
-  const t = useTranslations('DashPage.Editor.VideoBlock');
-  const fullLocale = useLocale();
-  const locale = fullLocale.split('-')[0];
-  const { node, extension, updateAttributes } = props;
-  usePlatform();
-  const course = useCourse() as Course | null;
+  const t = useTranslations('DashPage.Editor.VideoBlock')
+  const fullLocale = useLocale()
+  const locale = fullLocale.split('-')[0]
+  const { node, extension, updateAttributes } = props
+  usePlatform()
+  const course = useCourse() as Course | null
 
   const subtitleEntries = [
     { html: t('subtitles.russian'), url: '/subtitle.ru.srt' },
     { html: t('subtitles.english'), url: '/subtitle.en.srt' },
     { html: t('subtitles.kazakh'), url: '/subtitle.kz.srt' },
-  ];
-  const editorState = useEditorProvider();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadZoneRef = useRef<HTMLDivElement>(null);
+  ]
+  const editorState = useEditorProvider()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadZoneRef = useRef<HTMLDivElement>(null)
 
   const initialBlockObject = (() => {
-    if (!node.attrs.blockObject) return null;
+    if (!node.attrs.blockObject) return null
     if ('size' in node.attrs.blockObject && typeof node.attrs.blockObject.size === 'string') {
-      return node.attrs.blockObject as VideoBlockObject;
+      return node.attrs.blockObject as VideoBlockObject
     }
-    return null;
-  })();
+    return null
+  })()
 
-  const [_video, setVideo] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const uploadResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [blockObject, setBlockObject] = useState(initialBlockObject || null);
-  const [selectedSize, setSelectedSize] = useState<VideoSize>(initialBlockObject?.size || 'medium');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [_video, setVideo] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const uploadResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [blockObject, setBlockObject] = useState(initialBlockObject || null)
+  const [selectedSize, setSelectedSize] = useState<VideoSize>(initialBlockObject?.size || 'medium')
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Update block object when size changes
-  useEffect(() => {
-    if (blockObject && blockObject.size !== selectedSize) {
-      const newBlockObject = {
-        ...blockObject,
-        size: selectedSize,
-      };
-      setBlockObject(newBlockObject);
-      updateAttributes({ blockObject: newBlockObject });
-    }
-  }, [selectedSize, blockObject, updateAttributes]);
-
-  const isEditable = editorState?.isEditable;
-  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null;
+  const isEditable = editorState?.isEditable
+  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
 
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0]
     if (file) {
-      setVideo(file);
-      setError(null);
-      handleUpload(file);
+      setVideo(file)
+      setError(null)
+      handleUpload(file)
     }
-  };
+  }
 
   const handleDragEnter = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
 
   const handleDragLeave = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault()
+    e.stopPropagation()
     if (e.currentTarget === uploadZoneRef.current) {
-      setIsDragging(false);
+      setIsDragging(false)
     }
-  };
+  }
 
   const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
 
-    const file = e.dataTransfer.files[0];
-    const fileExtension = file?.name.split('.').pop()?.toLowerCase();
+    const file = e.dataTransfer.files[0]
+    const fileExtension = file?.name.split('.').pop()?.toLowerCase()
 
     if (file && fileExtension && ['mkv', 'mp4', 'webm'].includes(fileExtension)) {
-      setVideo(file);
-      setError(null);
-      handleUpload(file);
+      setVideo(file)
+      setError(null)
+      handleUpload(file)
     } else {
-      setError(t('errorFormat'));
+      setError(t('errorFormat'))
     }
-  };
+  }
 
   // MANUAL REVIEW: progressIntervalRef tracks simulated upload progress. If uploads can be aborted, ensure abort handling clears intervals and timeouts as well.
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const handleUpload = async (file: File) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      setUploadProgress(0);
+      setIsLoading(true)
+      setError(null)
+      setUploadProgress(0)
 
       // Simulate upload progress - store interval id in a ref so we can clear it on unmount
       progressIntervalRef.current = globalThis.setInterval(() => {
-        setUploadProgress((prev) => Math.min(prev + 10, 90));
-      }, 200);
+        setUploadProgress(prev => Math.min(prev + 10, 90))
+      }, 200)
 
-      const tempBlockUuid = `block_temp_${Date.now()}`;
+      const tempBlockUuid = `block_temp_${Date.now()}`
 
       const object = await uploadNewVideoFile(
         file,
         extension.options.activity.activity_uuid,
         course?.courseStructure.course_uuid,
         tempBlockUuid,
-      );
+      )
 
       // If we got a temporary block, set it immediately so UI updates predictably
       if (object?.block_uuid && object.content) {
         const optimisticBlock = {
           ...object,
           size: selectedSize,
-        };
-        setBlockObject(optimisticBlock);
-        updateAttributes({ blockObject: optimisticBlock });
+        }
+        setBlockObject(optimisticBlock)
+        updateAttributes({ blockObject: optimisticBlock })
       }
 
       if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
       }
-      setUploadProgress(100);
+      setUploadProgress(100)
 
       const newBlockObject = {
         ...object,
         size: selectedSize,
-      };
-      setBlockObject(newBlockObject);
-      updateAttributes({ blockObject: newBlockObject });
-      setVideo(null);
+      }
+      setBlockObject(newBlockObject)
+      updateAttributes({ blockObject: newBlockObject })
+      setVideo(null)
 
       // Reset progress after a delay
       uploadResetTimeoutRef.current = globalThis.setTimeout(() => {
-        setUploadProgress(0);
-      }, 1000);
-    } catch (error: any) {
-      console.error(t('errorUpload'), error);
-      setError(error?.message || t('errorUpload'));
+        setUploadProgress(0)
+      }, 1000)
+    } catch (uploadError: unknown) {
+      console.error(t('errorUpload'), uploadError)
+      const err = uploadError as Error | AppApiError
+      setError((err && 'message' in err ? err.message : '') || t('errorUpload'))
     } finally {
       if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
       }
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleRemove = () => {
-    setBlockObject(null);
-    updateAttributes({ blockObject: null });
-    setVideo(null);
-    setError(null);
-    setUploadProgress(0);
-  };
+    setBlockObject(null)
+    updateAttributes({ blockObject: null })
+    setVideo(null)
+    setError(null)
+    setUploadProgress(0)
+  }
 
   const handleSizeChange = (size: VideoSize) => {
-    setSelectedSize(size);
-  };
-  // Clear any pending timeouts or intervals on unmount
+    setSelectedSize(size)
+    if (blockObject) {
+      const newBlockObject = {
+        ...blockObject,
+        size,
+      }
+      setBlockObject(newBlockObject)
+      updateAttributes({ blockObject: newBlockObject })
+    }
+  }
+  // Clear pending timeouts or intervals on unmount
   useEffect(() => {
     return () => {
       if (uploadResetTimeoutRef.current) {
-        clearTimeout(uploadResetTimeoutRef.current);
-        uploadResetTimeoutRef.current = null;
+        clearTimeout(uploadResetTimeoutRef.current)
+        uploadResetTimeoutRef.current = null
       }
       // Ensure any progress simulation interval is cleared on unmount
       if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
       }
-    };
-  }, []);
+    }
+  }, [])
 
   const videoUrl =
     blockObject && course?.courseStructure.course_uuid
@@ -255,30 +248,30 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
           fileId: fileId || '',
           type: 'videoBlock',
         })
-      : null;
+      : null
 
   const handleDownload = () => {
-    if (!videoUrl) return;
+    if (!videoUrl) return
 
     // Create a temporary link element
-    const link = document.createElement('a');
-    link.href = videoUrl;
-    link.download = `video-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'mp4'}`;
-    link.setAttribute('download', '');
-    link.setAttribute('target', '_blank');
-    link.setAttribute('rel', 'noopener noreferrer');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const link = document.createElement('a')
+    link.href = videoUrl
+    link.download = `video-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'mp4'}`
+    link.setAttribute('download', '')
+    link.setAttribute('target', '_blank')
+    link.setAttribute('rel', 'noopener noreferrer')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleExpand = () => {
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
   // If we're in preview mode and have a video, show only the video player
   if (!isEditable && blockObject && videoUrl) {
-    const { width } = VIDEO_SIZES[blockObject.size];
+    const { width } = VIDEO_SIZES[blockObject.size]
     return (
       <>
         <NodeViewWrapper className="block-video w-full">
@@ -348,22 +341,18 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
           }
         />
       </>
-    );
+    )
   }
 
   // If we're in preview mode but don't have a video, show nothing
   if (!(isEditable || (blockObject && videoUrl))) {
-    return null;
+    return null
   }
 
   // Show the full editor UI when in edit mode
   return (
     <NodeViewWrapper className="block-video w-full">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="bg-muted border-border flex flex-col space-y-4 rounded-lg border px-5 py-6 [transition:all_0.2s_ease]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-zinc-500">
@@ -470,12 +459,12 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
                   <ArrowLeftRight size={14} />
                   {t('sizeLabel')}
                 </div>
-                {(Object.keys(VIDEO_SIZES) as VideoSize[]).map((size) => (
+                {(Object.keys(VIDEO_SIZES) as VideoSize[]).map(size => (
                   <motion.button
                     key={size}
                     className={sizeButtonCn(selectedSize === size)}
                     onClick={() => {
-                      handleSizeChange(size);
+                      handleSizeChange(size)
                     }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -571,7 +560,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
         ) : null}
       </motion.div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default VideoBlockComponent;
+export default VideoBlockComponent

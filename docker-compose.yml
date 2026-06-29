@@ -9,16 +9,15 @@ networks:
     internal: true
 
 services:
-
   # ---------------------------------------------------------------------------
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: nginx:1.29.8-alpine
+    image: nginx:mainline-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     environment:
       NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-localhost}
     volumes:
@@ -36,7 +35,7 @@ services:
       resources:
         limits:
           memory: 256m
-          cpus: "1.0"
+          cpus: '1.0'
 
   # ---------------------------------------------------------------------------
   # Frontend — Next.js standalone server
@@ -51,14 +50,14 @@ services:
         NEXT_PUBLIC_MEDIA_URL: ${NEXT_PUBLIC_MEDIA_URL:-http://localhost:1338/}
     restart: unless-stopped
     expose:
-      - "3000"
+      - '3000'
     environment:
       INTERNAL_API_URL: http://api:8000/api/v1/
     env_file: .env
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:3000/api/health']
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -70,8 +69,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
-          cpus: "1.0"
+          memory: 2g
+          cpus: '2.0'
 
   # ---------------------------------------------------------------------------
   # Backend — FastAPI
@@ -81,7 +80,7 @@ services:
       context: ./apps/api
     restart: unless-stopped
     expose:
-      - "8000"
+      - '8000'
     volumes:
       - app_content:/app/content
     env_file: .env
@@ -95,7 +94,16 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)"]
+      test:
+        [
+          'CMD',
+          'curl',
+          '--fail',
+          '--silent',
+          '--show-error',
+          '--http2-prior-knowledge',
+          'http://127.0.0.1:8000/api/v1/health',
+        ]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -108,7 +116,62 @@ services:
       resources:
         limits:
           memory: 2g
-          cpus: "2.0"
+          cpus: '2.0'
+
+  taskiq-worker:
+    build:
+      context: ./apps/api
+    command: ['dumb-init', 'taskiq', 'worker', 'worker:broker']
+    restart: unless-stopped
+    volumes:
+      - app_content:/app/content
+    env_file: .env
+    networks:
+      - app-net
+      - data-net
+      - exec-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: '2.0'
+
+  taskiq-scheduler:
+    build:
+      context: ./apps/api
+    command: ['dumb-init', 'taskiq', 'scheduler', 'worker:scheduler', '--skip-first-run']
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - data-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      taskiq-worker:
+        condition: service_started
+    healthcheck:
+      disable: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
 
   # ---------------------------------------------------------------------------
   # Database migration — run manually, never auto-started
@@ -116,13 +179,15 @@ services:
   migrate:
     build:
       context: ./apps/api
-    command: ["uv", "run", "--no-sync", "alembic", "upgrade", "head"]
+    command: ['uv', 'run', '--no-sync', 'alembic', 'upgrade', 'head']
     env_file: .env
     networks:
       - data-net
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      disable: true
 
   # ---------------------------------------------------------------------------
   # Database
@@ -133,7 +198,7 @@ services:
       dockerfile: extra/Dockerfile.db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-openu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
@@ -143,7 +208,7 @@ services:
     networks:
       - data-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openu}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openu}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -155,22 +220,22 @@ services:
       resources:
         limits:
           memory: 1g
-          cpus: "2.0"
+          cpus: '2.0'
 
   # ---------------------------------------------------------------------------
   # Cache
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:8.8-m03-alpine
+    image: redis:8.8-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
       - data-net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -180,20 +245,22 @@ services:
       resources:
         limits:
           memory: 256m
-          cpus: "1.0"
+          cpus: '1.0'
 
   # ---------------------------------------------------------------------------
   # Code execution tier
   # ---------------------------------------------------------------------------
   judge0-server:
     image: judge0/judge0:1.13.1
-    command: ["bash", "-c", "sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/server"]
+    command: ['bash', '-c', 'sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/server']
     volumes:
       - ./judge0.conf:/judge0.conf:ro
       - judge0_box:/box
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     expose:
-      - "2358"
+      - '2358'
+    ports:
+      - '2358:2358'
     privileged: true
     restart: unless-stopped
     networks:
@@ -212,7 +279,7 @@ services:
 
   judge0-workers:
     image: judge0/judge0:1.13.1
-    command: ["bash", "-c", "sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/workers"]
+    command: ['bash', '-c', 'sudo mkdir -p /box && sudo chmod 1777 /box && exec ./scripts/workers']
     volumes:
       - ./judge0.conf:/judge0.conf:ro
       - judge0_box:/box
@@ -237,13 +304,13 @@ services:
   # Backup
   # ---------------------------------------------------------------------------
   backup:
-    image: offen/docker-volume-backup:v2.47.0
+    image: offen/docker-volume-backup:v2.48.0
     restart: unless-stopped
     environment:
-      BACKUP_CRON_EXPRESSION: "0 2 * * *"
-      BACKUP_RETENTION_DAYS: "7"
+      BACKUP_CRON_EXPRESSION: '0 2 * * *'
+      BACKUP_RETENTION_DAYS: '7'
       BACKUP_COMPRESSION: zst
-      BACKUP_FILENAME: "backup-%Y-%m-%dT%H-%M-%S.{{ .Extension }}"
+      BACKUP_FILENAME: 'backup-%Y-%m-%dT%H-%M-%S.{{ .Extension }}'
       BACKUP_PRUNING_PREFIX: backup-
     volumes:
       - postgres_data:/backup/postgres:ro

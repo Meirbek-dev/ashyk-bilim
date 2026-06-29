@@ -5,12 +5,13 @@ Legacy per-type answer schemas are intentionally absent.
 """
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field, field_validator
 
 from src.db.grading.submissions import ItemFeedback
 from src.db.strict_base_model import PydanticStrictBaseModel, coerce_date_to_end_of_day
+from src.types import JsonObject
 
 
 class BatchGradeItem(PydanticStrictBaseModel):
@@ -62,7 +63,7 @@ class DeadlineExtensionRequest(PydanticStrictBaseModel):
 
     @field_validator("new_due_at", mode="before")
     @classmethod
-    def validate_new_due_at(cls, v: Any) -> Any:
+    def validate_new_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -78,5 +79,5 @@ class BulkActionRead(PydanticStrictBaseModel):
     requested_by: int
     requested_at: datetime
     completed_at: datetime | None = None
-    payload_json: dict[str, Any] = Field(default_factory=dict)
-    result_json: dict[str, Any] = Field(default_factory=dict)
+    payload_json: JsonObject = Field(default_factory=dict)
+    result_json: JsonObject = Field(default_factory=dict)

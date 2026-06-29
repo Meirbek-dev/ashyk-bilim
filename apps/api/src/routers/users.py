@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request, Response, UploadFile
 from sqlmodel import Session
@@ -16,7 +16,6 @@ from src.db.users import (
 from src.infra.db.session import get_db_session
 from src.security.rbac import (
     PermissionCheckerDep,
-    PermissionDenied,
     ResourceAccessDenied,
 )
 from src.services.courses.courses import get_user_courses
@@ -40,9 +39,7 @@ router = APIRouter()
 def api_get_public_user(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> UserRead:
-    """
-    Get current user
-    """
+    """Get current user."""
     return current_user
 
 
@@ -52,9 +49,7 @@ def api_get_public_user_session(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> UserSession:
-    """
-    Get current user session.
-    """
+    """Get current user session."""
     return get_user_session(
         request,
         db_session,
@@ -62,7 +57,7 @@ def api_get_public_user_session(
     )
 
 
-@router.post("", tags=["users"])
+@router.post("", tags=["users"], response_model=UserRead)
 async def api_create_user_without_platform(
     *,
     request: Request,
@@ -70,15 +65,11 @@ async def api_create_user_without_platform(
     current_user: Annotated[PublicUser, Depends(get_optional_public_user)],
     user_object: UserCreate,
 ) -> UserRead:
-    """
-    Create User
-    """
-    return await create_user_without_platform(
-        request, db_session, current_user, user_object
-    )
+    """Create User."""
+    return await create_user_without_platform(request, db_session, current_user, user_object)
 
 
-@router.get("/id/{user_id}", tags=["users"])
+@router.get("/id/{user_id}", tags=["users"], response_model=UserRead)
 def api_get_user_by_id(
     *,
     request: Request,
@@ -87,15 +78,13 @@ def api_get_user_by_id(
     user_id: int,
     response: Response,
 ) -> UserRead:
-    """
-    Get User by ID
-    """
+    """Get User by ID."""
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
     return read_user_by_id(request, db_session, current_user, user_id)
 
 
-@router.get("/uuid/{user_uuid}", tags=["users"])
+@router.get("/uuid/{user_uuid}", tags=["users"], response_model=UserRead)
 def api_get_user_by_uuid(
     *,
     request: Request,
@@ -103,13 +92,11 @@ def api_get_user_by_uuid(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     user_uuid: str,
 ) -> UserRead:
-    """
-    Get User by UUID
-    """
+    """Get User by UUID."""
     return read_user_by_uuid(request, db_session, current_user, user_uuid)
 
 
-@router.get("/username/{username}", tags=["users"])
+@router.get("/username/{username}", tags=["users"], response_model=UserRead)
 def api_get_user_by_username(
     *,
     request: Request,
@@ -118,15 +105,13 @@ def api_get_user_by_username(
     username: str,
     response: Response,
 ) -> UserRead:
-    """
-    Get User by Username
-    """
+    """Get User by Username."""
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
     return read_user_by_username(request, db_session, current_user, username)
 
 
-@router.put("/{user_id}", tags=["users"])
+@router.put("/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user(
     *,
     request: Request,
@@ -136,8 +121,7 @@ def api_update_user(
     user_id: int,
     user_object: UserUpdate,
 ) -> UserRead:
-    """
-    Update User
+    """Update User.
 
     **Required Permission**: `user:update:own` (for own profile) or `user:update:platform` (for others)
     """
@@ -147,10 +131,10 @@ def api_update_user(
     if not is_own_profile:
         checker.require(current_user.id, "user:update")
 
-    return update_user(request, db_session, user_id, current_user, user_object)
+    return cast("UserRead", update_user(request, db_session, user_id, current_user, user_object))
 
 
-@router.put("/update_avatar/{user_id}", tags=["users"])
+@router.put("/update_avatar/{user_id}", tags=["users"], response_model=UserRead)
 async def api_update_avatar_user(
     *,
     request: Request,
@@ -160,8 +144,7 @@ async def api_update_avatar_user(
     checker: PermissionCheckerDep,
     avatar_file: UploadFile | None = None,
 ) -> UserRead:
-    """
-    Update User Avatar
+    """Update User Avatar.
 
     **Required Permission**: `user:update:own` (for own avatar) or `user:update:platform` (for others)
     """
@@ -174,7 +157,7 @@ async def api_update_avatar_user(
     return await update_user_avatar(request, db_session, current_user, avatar_file)
 
 
-@router.put("/change_password/{user_id}", tags=["users"])
+@router.put("/change_password/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_password(
     *,
     request: Request,
@@ -183,19 +166,18 @@ def api_update_user_password(
     user_id: int,
     form: UserUpdatePassword,
 ) -> UserRead:
-    """
-    Update User Password
+    """Update User Password.
 
     **Required Permission**: Own account only (for security)
     """
     # Password changes restricted to own account only
     if user_id != current_user.id:
-        raise ResourceAccessDenied(reason="You can only change your own password")
+        raise ResourceAccessDenied(reason="Вы можете изменять только собственный пароль")
 
     return update_user_password(request, db_session, current_user, user_id, form)
 
 
-@router.put("/preferences/theme/{user_id}", tags=["users"])
+@router.put("/preferences/theme/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_theme(
     *,
     request: Request,
@@ -204,9 +186,7 @@ def api_update_user_theme(
     user_id: int,
     theme: str,
 ) -> UserRead:
-    """
-    Update User Theme Preference
-    """
+    """Update User Theme Preference."""
     return update_user_preferences(
         request,
         db_session,
@@ -216,7 +196,7 @@ def api_update_user_theme(
     )
 
 
-@router.put("/preferences/locale/{user_id}", tags=["users"])
+@router.put("/preferences/locale/{user_id}", tags=["users"], response_model=UserRead)
 def api_update_user_locale(
     *,
     request: Request,
@@ -225,9 +205,7 @@ def api_update_user_locale(
     user_id: int,
     locale: str,
 ) -> UserRead:
-    """
-    Update User Locale Preference
-    """
+    """Update User Locale Preference."""
     return update_user_preferences(
         request,
         db_session,
@@ -237,7 +215,7 @@ def api_update_user_locale(
     )
 
 
-@router.delete("/user_id/{user_id}", tags=["users"])
+@router.delete("/user_id/{user_id}", tags=["users"], response_model=str)
 def api_delete_user(
     *,
     request: Request,
@@ -245,9 +223,8 @@ def api_delete_user(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     user_id: int,
-):
-    """
-    Delete User
+) -> str:
+    """Delete User.
 
     **Required Permission**: `user:delete:platform`
     """
@@ -255,14 +232,12 @@ def api_delete_user(
 
     # Prevent self-deletion
     if user_id == current_user.id:
-        raise ResourceAccessDenied(
-            reason="You cannot delete your own account through this endpoint"
-        )
+        raise ResourceAccessDenied(reason="Вы не можете удалить собственный аккаунт через этот эндпоинт")
 
     return delete_user_by_id(request, db_session, current_user, user_id)
 
 
-@router.get("/{user_id}/courses", tags=["users"])
+@router.get("/{user_id}/courses", tags=["users"], response_model=list[CourseRead])
 async def api_get_user_courses(
     *,
     request: Request,
@@ -272,9 +247,7 @@ async def api_get_user_courses(
     page: int = 1,
     limit: int = 20,
 ) -> list[CourseRead]:
-    """
-    Get courses made or contributed by a user.
-    """
+    """Get courses made or contributed by a user."""
     return await get_user_courses(
         request=request,
         current_user=current_user,

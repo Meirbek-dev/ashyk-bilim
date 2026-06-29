@@ -1,20 +1,20 @@
-'use client';
+'use client'
 
-import { useSession } from '@/hooks/useSession';
-import { logout } from '@/services/auth/auth';
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { useTheme } from '@/components/providers/theme-provider';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+import { useSession } from '@/hooks/useSession'
+import { logout } from '@/services/auth/auth'
+import appLogoFull from '@public/app_logo_full.svg'
+import appLogoLightFull from '@public/app_logo_light_full.svg'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { useTheme } from '@/components/providers/theme-provider'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 
 const HomeClient = () => {
-  const t = useTranslations('HomeClient');
-  const tCommon = useTranslations('Common');
-  const { user: viewer } = useSession();
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
+  const t = useTranslations('HomeClient')
+  const tCommon = useTranslations('Common')
+  const { user: viewer } = useSession()
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLightFull : appLogoFull
 
   return (
     <div className="flex flex-col">
@@ -22,8 +22,9 @@ const HomeClient = () => {
         <Image
           quality={100}
           width={230}
+          height={84}
           src={logoSrc}
-          alt={tCommon('platformLogoAlt')}
+          alt={tCommon('appLogoAlt')}
           style={{ width: '100%', height: 'auto' }}
           loading="eager"
         />
@@ -38,14 +39,14 @@ const HomeClient = () => {
       <div className="mx-auto flex cursor-pointer items-center space-x-4 pt-16 text-2xl font-semibold">
         <span
           onClick={() => {
-            void logout();
+            void logout()
           }}
         >
           {t('signOut')}
         </span>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default HomeClient;
+export default HomeClient

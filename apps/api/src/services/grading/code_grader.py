@@ -1,18 +1,27 @@
 """Canonical code-challenge grading logic."""
 
-from typing import Any
-
 from src.db.assessments import CodeItemAnswer
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types.narrowing import as_json_value
+
+
+def _float_value(value: object, default: float = 0.0) -> float:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def grade_code_challenge(
-    run_results: list[dict],
+    run_results: list[dict[str, object]],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
-    """
-    Grade a code challenge submission.
+    """Grade a code challenge submission.
 
     Args:
         run_results: List of {test_id, passed, weight} dicts from the test runner.
@@ -21,36 +30,30 @@ def grade_code_challenge(
 
     Returns:
         (auto_score 0–100, GradingBreakdown)
+
     """
     if not run_results:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
-    total_weight = sum(float(t.get("weight", 1)) for t in run_results)
+    total_weight = sum(_float_value(t.get("weight"), 1.0) for t in run_results)
     if total_weight == 0:
         total_weight = len(run_results)
 
-    earned_weight = sum(
-        float(t.get("weight", 1)) for t in run_results if t.get("passed", False)
-    )
+    earned_weight = sum(_float_value(t.get("weight"), 1.0) for t in run_results if t.get("passed", False) is True)
 
     raw_score = (earned_weight / total_weight) * 100
 
     strategy_upper = strategy.upper()
-    if strategy_upper == "ALL_OR_NOTHING":
-        auto_score = 100.0 if raw_score >= 100.0 else 0.0
-    else:
-        auto_score = raw_score
+    auto_score = (100.0 if raw_score >= 100.0 else 0.0) if strategy_upper == "ALL_OR_NOTHING" else raw_score
 
     items = [
         GradedItem(
             item_id=str(t.get("test_id", i)),
-            item_text=t.get("description", f"Test {i + 1}"),
-            score=float(t.get("weight", 1)) if t.get("passed") else 0.0,
-            max_score=float(t.get("weight", 1)),
+            item_text=str(t.get("description", f"Test {i + 1}")),
+            score=_float_value(t.get("weight"), 1.0) if t.get("passed") is True else 0.0,
+            max_score=_float_value(t.get("weight"), 1.0),
             correct=bool(t.get("passed", False)),
-            feedback=t.get("message", ""),
+            feedback=str(t.get("message", "")),
             needs_manual_review=False,
         )
         for i, t in enumerate(run_results)
@@ -66,16 +69,13 @@ def grade_code_challenge(
 
 def grade_canonical_code_item(
     items: list[CanonicalAssessmentItem],
-    answers_by_item_uuid: dict[str, Any],
+    answers_by_item_uuid: dict[str, object],
     strategy: str = "BEST_SUBMISSION",
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CODE items using answer.latest_run when present."""
-
     code_items = [item for item in items if item.body.kind == "CODE"]
     if not code_items:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
     if len(code_items) > 1:
         return 0.0, GradingBreakdown(
@@ -109,7 +109,7 @@ def grade_canonical_code_item(
                     correct=None,
                     feedback="Requires manual review",
                     needs_manual_review=True,
-                    user_answer=_serialize_code_answer(raw_answer),
+                    user_answer=as_json_value(_serialize_code_answer(raw_answer), field="code_answer"),
                 )
             ],
             needs_manual_review=True,
@@ -123,9 +123,7 @@ def grade_canonical_code_item(
         return auto_score, breakdown
 
     item_score = latest_run.get("score")
-    normalized_score = (
-        float(item_score) if isinstance(item_score, (int, float)) else auto_score
-    )
+    normalized_score = float(item_score) if isinstance(item_score, (int, float)) else auto_score
     item_breakdown = GradingBreakdown(
         items=[
             GradedItem(
@@ -133,11 +131,9 @@ def grade_canonical_code_item(
                 item_text=item.title or item.body.prompt,
                 score=normalized_score,
                 max_score=100.0,
-                correct=(latest_run.get("passed") == latest_run.get("total"))
-                if latest_run.get("total")
-                else None,
+                correct=(latest_run.get("passed") == latest_run.get("total")) if latest_run.get("total") else None,
                 feedback="",
-                user_answer=_serialize_code_answer(raw_answer),
+                user_answer=as_json_value(_serialize_code_answer(raw_answer), field="code_answer"),
             )
         ],
         needs_manual_review=False,
@@ -146,7 +142,7 @@ def grade_canonical_code_item(
     return normalized_score, item_breakdown
 
 
-def _extract_latest_run(raw_answer: Any) -> dict[str, Any] | None:
+def _extract_latest_run(raw_answer: object) -> dict[str, object] | None:
     if isinstance(raw_answer, CodeItemAnswer):
         latest_run = raw_answer.latest_run
         return latest_run.model_dump(mode="json") if latest_run is not None else None
@@ -157,7 +153,7 @@ def _extract_latest_run(raw_answer: Any) -> dict[str, Any] | None:
     return None
 
 
-def _serialize_code_answer(raw_answer: Any) -> Any:
+def _serialize_code_answer(raw_answer: object) -> object:
     if isinstance(raw_answer, CodeItemAnswer):
         return raw_answer.model_dump(mode="json")
     return raw_answer

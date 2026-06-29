@@ -1,5 +1,4 @@
-"""
-Activity settings loader — extracts canonical items and grading config.
+"""Activity settings loader — extracts canonical items and grading config.
 
 Keeps the router layer clean: routers pass activity_id + assessment_type,
 this service resolves the assessment + policy and returns a typed
@@ -7,8 +6,9 @@ AssessmentSettings object.
 """
 
 from dataclasses import dataclass, field
+from typing import assert_never
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.assessments import ITEM_BODY_ADAPTER, Assessment, AssessmentItem, ItemBody
 from src.db.grading.submissions import AssessmentType
@@ -30,11 +30,12 @@ class CanonicalAssessmentItem:
 class AssessmentSettings:
     """Typed grading config for a single activity."""
 
-    questions: list[dict] = field(default_factory=list)
+    questions: list[dict[str, object]] = field(default_factory=list)
     items: list[CanonicalAssessmentItem] = field(default_factory=list)
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     max_score_penalty_per_attempt: float | None = None
+    negative_marking_percent: float = 0.0
     due_date_iso: str | None = None
     track_violations: bool = False
     block_on_violations: bool = False
@@ -47,8 +48,7 @@ def load_activity_settings(
     assessment_type: AssessmentType,
     db_session: Session,
 ) -> AssessmentSettings:
-    """
-    Load questions and grading settings for any assessment type.
+    """Load questions and grading settings for any assessment type.
 
     Uses the canonical Assessment + AssessmentPolicy as the single source of truth.
     No legacy Block-based fallback.
@@ -64,6 +64,7 @@ def load_activity_settings(
                 max_attempts=canonical.max_attempts,
                 time_limit_seconds=canonical.time_limit_seconds,
                 max_score_penalty_per_attempt=canonical.max_score_penalty_per_attempt,
+                negative_marking_percent=canonical.negative_marking_percent,
                 due_date_iso=canonical.due_date_iso,
                 track_violations=canonical.track_violations,
                 block_on_violations=canonical.block_on_violations,
@@ -76,9 +77,8 @@ def load_activity_settings(
             return AssessmentSettings(
                 items=assessment_items,
                 max_attempts=canonical.attempt_limit,
-                time_limit_seconds=(
-                    canonical.time_limit * 60 if canonical.time_limit else None
-                ),
+                time_limit_seconds=(canonical.time_limit * 60 if canonical.time_limit else None),
+                negative_marking_percent=canonical.negative_marking_percent,
                 track_violations=any([
                     canonical.copy_paste_protection,
                     canonical.tab_switch_detection,
@@ -94,12 +94,12 @@ def load_activity_settings(
         if canonical.kind == "CODE_CHALLENGE":
             return AssessmentSettings(
                 items=assessment_items,
-                due_date_iso=canonical.due_date,
+                due_date_iso=canonical.due_date.isoformat() if canonical.due_date is not None else None,
                 code_strategy=str(canonical.grading_strategy),
             )
         return AssessmentSettings(items=assessment_items)
 
-    return AssessmentSettings(items=assessment_items)
+    assert_never(assessment_type)
 
 
 # ── Canonical item loader ─────────────────────────────────────────────────────
@@ -109,16 +109,14 @@ def _load_canonical_items(
     activity_id: int,
     db_session: Session,
 ) -> list[CanonicalAssessmentItem]:
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity_id)
-    ).first()
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity_id)).first()
     if assessment is None or assessment.id is None:
         return []
 
     items = db_session.exec(
         select(AssessmentItem)
         .where(AssessmentItem.assessment_id == assessment.id)
-        .order_by(AssessmentItem.order, AssessmentItem.id)
+        .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
     ).all()
     return [_to_canonical_item(item) for item in items]
 

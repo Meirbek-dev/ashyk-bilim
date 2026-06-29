@@ -1,12 +1,13 @@
-'use client';
+'use client'
 
-import DiscussionList from './discussion-list';
+import type { Discussion } from '@/services/courses/discussions'
+import DiscussionList from './discussion-list'
 
 interface CourseDiscussionsProps {
-  initialPosts: any[];
-  currentUser: any;
-  courseUuid: string;
-  onMutate?: () => void;
+  initialPosts: Discussion[]
+  currentUser: AppUserSummary | null
+  courseUuid: string
+  onMutate?: () => void
 }
 
 export default function CourseDiscussions({ initialPosts, currentUser, courseUuid, onMutate }: CourseDiscussionsProps) {
@@ -16,8 +17,8 @@ export default function CourseDiscussions({ initialPosts, currentUser, courseUui
         initialPosts={initialPosts}
         currentUser={currentUser}
         courseUuid={courseUuid}
-        onMutate={onMutate}
+        {...(onMutate === undefined ? {} : { onMutate })}
       />
     </div>
-  );
+  )
 }

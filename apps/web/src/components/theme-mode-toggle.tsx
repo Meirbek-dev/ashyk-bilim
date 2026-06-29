@@ -1,27 +1,27 @@
-'use client';
+'use client'
 
-import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
-import { Moon, Sun } from 'lucide-react';
-import type { MouseEvent } from 'react';
-import { useTranslations } from 'next-intl';
-import { useTheme } from '@/components/providers/theme-provider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { Switch as SwitchPrimitive } from '@base-ui/react/switch'
+import { Moon, Sun } from 'lucide-react'
+import type { MouseEvent } from 'react'
+import { useTranslations } from 'next-intl'
+import { useTheme } from '@/components/providers/theme-provider'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 interface ThemeModeToggleProps {
-  className?: string;
-  label?: string;
+  className?: string
+  label?: string
 }
 
 export function ThemeModeToggle({ className, label }: ThemeModeToggleProps) {
-  const { resolvedTheme, toggleMode } = useTheme();
-  const t = useTranslations('Components.NavMenu');
-  const isDark = resolvedTheme === 'dark';
-  const accessibleLabel = label ?? (isDark ? t('switchToLight') : t('switchToDark'));
+  const { resolvedTheme, toggleMode } = useTheme()
+  const t = useTranslations('Components.NavMenu')
+  const isDark = resolvedTheme === 'dark'
+  const accessibleLabel = label ?? (isDark ? t('switchToLight') : t('switchToDark'))
 
   const handleClick = (event: MouseEvent<HTMLElement>) => {
-    toggleMode({ x: event.clientX, y: event.clientY });
-  };
+    toggleMode({ x: event.clientX, y: event.clientY })
+  }
 
   return (
     <TooltipProvider>
@@ -52,5 +52,5 @@ export function ThemeModeToggle({ className, label }: ThemeModeToggleProps) {
         <TooltipContent>{accessibleLabel}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  );
+  )
 }

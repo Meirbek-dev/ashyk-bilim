@@ -1,10 +1,11 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Literal
 
 from fastapi import HTTPException, Request, UploadFile, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.courses.activities import (
@@ -20,6 +21,17 @@ from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.videos import upload_subtitle, upload_video
+from src.types import require_persisted_id
+
+
+def _move_temp_video_files(temp_path: Path, final_path: Path) -> None:
+    import shutil
+
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    if temp_path.exists():
+        shutil.move(str(temp_path), str(final_path))
+        if temp_path.parent.exists():
+            shutil.rmtree(temp_path.parent, ignore_errors=True)
 
 
 def _get_language_label(language_code: str) -> str:
@@ -38,31 +50,27 @@ def validate_video_file(video_file: UploadFile | None) -> str:
     if not video_file:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : No video file provided",
+            detail="Видео: Файл видео не предоставлен",
         )
     if video_file.content_type not in {"video/mp4", "video/webm", "video/x-matroska"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : Wrong video format",
+            detail="Видео: Неверный формат видео",
         )
     video_format = (
-        video_file.filename.rsplit(".", 1)[-1]
-        if video_file.filename and "." in video_file.filename
-        else None
+        video_file.filename.rsplit(".", 1)[-1] if video_file.filename and "." in video_file.filename else None
     )
     if not video_format:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Video : No video file provided or invalid filename",
+            detail="Видео: Файл видео не предоставлен или имя файла неверно",
         )
     return video_format
 
 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Activity)
-        .where(Activity.chapter_id == chapter_id)
-        .order_by(Activity.order.desc())
+        select(Activity).where(Activity.chapter_id == chapter_id).order_by(col(Activity.order).desc())
     ).first()
     return (result.order if result else 0) + 1
 
@@ -77,21 +85,19 @@ async def create_video_activity(
     details: str = "{}",
     subtitle_files: list[UploadFile] | None = None,
     video_uploaded_path: str | None = None,
-):
+) -> ActivityRead:
     chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
 
-    details_dict = json.loads(details) if isinstance(details, str) else details
+    details_dict = json.loads(details)
 
     activity_uuid = f"activity_{ULID()}"
 
@@ -102,22 +108,21 @@ async def create_video_activity(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either video_file or video_uploaded_path must be provided",
+            detail="Необходимо предоставить video_file или video_uploaded_path",
         )
 
+    now = datetime.now(tz=UTC)
     activity = Activity(
         name=name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
         activity_sub_type=ActivitySubTypeEnum.SUBTYPE_VIDEO_HOSTED,
         activity_uuid=activity_uuid,
-        chapter_id=chapter.id,
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
         course_id=chapter.course_id,  # keep legacy column in sync
         content={"filename": f"video.{video_format}", "activity_uuid": activity_uuid},
-        details=details_dict
-        if isinstance(details_dict, dict)
-        else json.loads(details_dict),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        details=details_dict if isinstance(details_dict, dict) else json.loads(details_dict),
+        creation_date=now,
+        update_date=now,
         order=_next_activity_order(chapter_id, db_session),
         creator_id=current_user.id,
     )
@@ -129,24 +134,17 @@ async def create_video_activity(
     if video_file:
         await upload_video(video_file, activity.activity_uuid, course.course_uuid)
     elif video_uploaded_path:
-        import shutil
-        from pathlib import Path
-
         temp_path = Path(f"content/platform/{video_uploaded_path}")
         final_path = Path(
             f"content/platform/courses/{course.course_uuid}/activities/{activity.activity_uuid}/video/video.{video_format}"
         )
-        final_path.parent.mkdir(parents=True, exist_ok=True)
-        if temp_path.exists():
-            shutil.move(str(temp_path), str(final_path))
-            if temp_path.parent.exists():
-                shutil.rmtree(temp_path.parent, ignore_errors=True)
+        await asyncio.to_thread(_move_temp_video_files, temp_path, final_path)
 
     if subtitle_files:
-        subtitle_info = []
-        valid_subtitles: list[tuple] = []
+        subtitle_info: list[dict[str, object]] = []
+        valid_subtitles: list[tuple[UploadFile, str]] = []
         for subtitle_file in subtitle_files:
-            if subtitle_file.filename and subtitle_file.size > 0:
+            if subtitle_file.filename and subtitle_file.size is not None and subtitle_file.size > 0:
                 if not subtitle_file.filename.endswith((".srt", ".vtt")):
                     continue
                 filename_parts = subtitle_file.filename.split(".")
@@ -168,9 +166,7 @@ async def create_video_activity(
                 )
                 for subtitle_file, language in valid_subtitles
             ])
-            for (_, language), upload_result in zip(
-                valid_subtitles, upload_results, strict=False
-            ):
+            for (_, language), upload_result in zip(valid_subtitles, upload_results, strict=False):
                 if upload_result.get("success"):
                     subtitle_info.append({
                         "language": language,
@@ -180,9 +176,7 @@ async def create_video_activity(
                     })
 
         if subtitle_info:
-            updated_details = (
-                details_dict.copy() if isinstance(details_dict, dict) else {}
-            )
+            updated_details = details_dict.copy() if isinstance(details_dict, dict) else {}
             updated_details["subtitles"] = subtitle_info
             activity.details = updated_details
             db_session.add(activity)
@@ -209,18 +203,14 @@ async def create_external_video_activity(
     current_user: PublicUser | AnonymousUser,
     data: ExternalVideo,
     db_session: Session,
-):
-    chapter = db_session.exec(
-        select(Chapter).where(Chapter.id == data.chapter_id)
-    ).first()
+) -> ActivityRead:
+    chapter = db_session.exec(select(Chapter).where(Chapter.id == data.chapter_id)).first()
     if not chapter:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     checker = PermissionChecker(db_session)
     require_course_permission("activity:create", current_user, course, checker)
@@ -228,17 +218,18 @@ async def create_external_video_activity(
     activity_uuid = f"activity_{ULID()}"
     details = json.loads(data.details)
 
+    now = datetime.now(tz=UTC)
     activity = Activity(
         name=data.name,
         activity_type=ActivityTypeEnum.TYPE_VIDEO,
         activity_sub_type=ActivitySubTypeEnum.SUBTYPE_VIDEO_YOUTUBE,
         activity_uuid=activity_uuid,
-        chapter_id=chapter.id,
+        chapter_id=require_persisted_id(chapter.id, model_name="Chapter"),
         course_id=chapter.course_id,
         content={"uri": data.uri, "type": data.type, "activity_uuid": activity_uuid},
         details=details,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=now,
+        update_date=now,
         order=_next_activity_order(data.chapter_id, db_session),
         creator_id=current_user.id,
     )

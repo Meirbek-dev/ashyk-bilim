@@ -1,18 +1,17 @@
-import { getAPIUrl } from '@services/config/config';
-import { logoutAction } from '@/app/actions/auth';
-import { apiFetch } from '@/lib/api-client';
-import { broadcastLogout } from '@/components/providers/session-provider';
-import type { components } from '@/lib/api/generated';
+import { logoutAction } from '@/app/actions/auth'
+import { apiFetch } from '@/lib/api-client'
+import { broadcastLogout } from '@/components/providers/session-provider'
+import type { components } from '@/lib/api/generated'
 
-type AuthUser = components['schemas']['UserRead'];
+type AuthUser = components['schemas']['UserRead']
 
 interface LogoutOptions {
-  redirectTo?: string;
+  redirectTo?: string
 }
 
 export async function logout(options?: LogoutOptions): Promise<void> {
-  broadcastLogout();
-  await logoutAction(options?.redirectTo ?? '/login');
+  broadcastLogout()
+  await logoutAction(options?.redirectTo ?? '/login')
 }
 
 export async function sendResetLink(email: string): Promise<Response> {
@@ -20,7 +19,7 @@ export async function sendResetLink(email: string): Promise<Response> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: email.trim().toLowerCase() }),
-  });
+  })
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<Response> {
@@ -28,7 +27,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword }),
-  });
+  })
 }
 
-export type { AuthUser };
+export type { AuthUser }

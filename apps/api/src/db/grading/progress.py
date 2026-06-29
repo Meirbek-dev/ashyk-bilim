@@ -4,8 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, TypeAdapter, field_validator
-from pydantic import Field as PydanticField
+from pydantic import Field as PydanticField, TypeAdapter, field_validator
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -23,6 +22,7 @@ from sqlmodel import Field
 
 from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject
 
 # ── Late policy discriminated union ────────────────────────────────────────────
 
@@ -32,7 +32,7 @@ class LatePolicyNone(PydanticStrictBaseModel):
 
     kind: Literal["NONE"] = "NONE"
 
-    def apply(self, submitted_at: datetime, due_at: datetime) -> float:
+    def apply(self, _submitted_at: datetime, _due_at: datetime) -> float:
         """Always returns 0 — no penalty regardless of lateness."""
         return 0.0
 
@@ -61,7 +61,7 @@ class LatePolicyCutoff(PydanticStrictBaseModel):
     kind: Literal["CUTOFF"] = "CUTOFF"
     cutoff_at: datetime
 
-    def apply(self, submitted_at: datetime, due_at: datetime) -> float:
+    def apply(self, submitted_at: datetime, _due_at: datetime) -> float:
         """Return 100% penalty if past cutoff, 0% otherwise."""
         return 100.0 if submitted_at > self.cutoff_at else 0.0
 
@@ -72,6 +72,16 @@ type LatePolicy = Annotated[
 ]
 
 LATE_POLICY_ADAPTER: TypeAdapter[LatePolicy] = TypeAdapter(LatePolicy)
+
+
+def deserialize_late_policy(value: object) -> LatePolicy:
+    """Safely validate and parse late policy, defaulting to LatePolicyNone if empty or invalid."""
+    if not value or (isinstance(value, dict) and "kind" not in value):
+        return LatePolicyNone(kind="NONE")
+    try:
+        return LATE_POLICY_ADAPTER.validate_python(value)
+    except Exception:
+        return LatePolicyNone(kind="NONE")
 
 
 class AssessmentGradingMode(StrEnum):
@@ -116,7 +126,7 @@ class ActivityProgressState(StrEnum):
 class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     """Operational policy for a gradeable course activity."""
 
-    __tablename__ = "assessment_policy"
+    __tablename__ = "assessment_policy"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("activity_id", name="uq_assessment_policy_activity_id"),
         UniqueConstraint("policy_uuid", name="uq_assessment_policy_uuid"),
@@ -133,9 +143,7 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
             nullable=False,
         )
     )
-    assessment_type: AssessmentType = Field(
-        sa_column=Column("assessment_type", String, nullable=False)
-    )
+    assessment_type: AssessmentType = Field(sa_column=Column("assessment_type", String, nullable=False))
     grading_mode: AssessmentGradingMode = Field(
         default=AssessmentGradingMode.MANUAL,
         sa_column=Column("grading_mode", String, nullable=False),
@@ -164,15 +172,15 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
         default=True,
         sa_column=Column(Boolean, nullable=False, server_default="true"),
     )
-    late_policy_json: dict = Field(
+    late_policy_json: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
-    anti_cheat_json: dict = Field(
+    anti_cheat_json: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
-    settings_json: dict = Field(
+    settings_json: JsonObject = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -229,15 +237,13 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     @field_validator("late_policy_json", mode="before")
     @classmethod
     def validate_late_policy_json(cls, value: object) -> dict[str, object]:
-        if value is None or value == "":
-            return LatePolicyNone().model_dump(mode="json")
-        return LATE_POLICY_ADAPTER.validate_python(value).model_dump(mode="json")
+        return deserialize_late_policy(value).model_dump(mode="json")
 
 
 class ActivityProgress(SQLModelStrictBaseModel, table=True):
     """Canonical current state for one learner on one course activity."""
 
-    __tablename__ = "activity_progress"
+    __tablename__ = "activity_progress"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("activity_id", "user_id", name="uq_activity_progress_user"),
         Index("ix_activity_progress_course_user", "course_id", "user_id"),
@@ -363,7 +369,7 @@ class ActivityProgress(SQLModelStrictBaseModel, table=True):
 class CourseProgress(SQLModelStrictBaseModel, table=True):
     """Aggregate current state for one learner in one course."""
 
-    __tablename__ = "course_progress"
+    __tablename__ = "course_progress"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         UniqueConstraint("course_id", "user_id", name="uq_course_progress_user"),
         Index("ix_course_progress_course_user", "course_id", "user_id"),
@@ -397,7 +403,7 @@ class CourseProgress(SQLModelStrictBaseModel, table=True):
         sa_column=Column(Float, nullable=False, server_default="0"),
     )
     grade_average: float | None = None
-    # Weighted average using Assignment.weight.  NULL when no graded scores exist.
+    # Weighted average using activity grade weights. NULL when no graded scores exist.
     weighted_grade_average: float | None = Field(
         default=None,
         sa_column=Column("weighted_grade_average", Float, nullable=True),

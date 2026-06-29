@@ -1,59 +1,59 @@
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
-import { Info, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
+import { Info, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 
 interface CalloutOptions {
-  dismissible?: boolean;
-  variant?: 'default' | 'filled' | 'outlined';
-  size?: 'sm' | 'md' | 'lg';
+  dismissible?: boolean
+  variant?: 'default' | 'filled' | 'outlined'
+  size?: 'sm' | 'md' | 'lg'
 }
 
-type InfoCalloutAttrs = CalloutOptions;
+type InfoCalloutAttrs = CalloutOptions
 
 const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
-  const editorState = useEditorProvider();
-  const { isEditable } = editorState;
-  const [dismissed, setDismissed] = useState(false);
+  const editorState = useEditorProvider()
+  const { isEditable } = editorState
+  const [dismissed, setDismissed] = useState(false)
 
   // Extract options from props or use defaults
   const options: CalloutOptions = {
-    dismissible: props.node?.attrs?.dismissible,
+    ...(props.node?.attrs?.dismissible === undefined ? {} : { dismissible: props.node.attrs.dismissible }),
     variant: props.node?.attrs?.variant || 'default',
     size: props.node?.attrs?.size || 'md',
-  };
+  }
 
-  if (dismissed) return null;
+  if (dismissed) return null
 
   const getVariantClasses = () => {
     switch (options.variant) {
       case 'filled': {
-        return 'bg-gray-300 text-gray-700';
+        return 'bg-gray-300 text-gray-700'
       }
       case 'outlined': {
-        return 'bg-transparent border-2 border-gray-300 text-gray-500';
+        return 'bg-transparent border-2 border-gray-300 text-gray-500'
       }
       default: {
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-gray-100 text-gray-600'
       }
     }
-  };
+  }
 
   const getSizeClasses = () => {
     switch (options.size) {
       case 'sm': {
-        return 'py-1 px-2 text-sm';
+        return 'py-1 px-2 text-sm'
       }
       case 'lg': {
-        return 'py-3 px-4 text-lg';
+        return 'py-3 px-4 text-lg'
       }
       default: {
-        return 'py-2 px-3';
+        return 'py-2 px-3'
       }
     }
-  };
+  }
 
   return (
     <NodeViewWrapper>
@@ -91,7 +91,7 @@ const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
           <button
             className="ml-2 flex cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-1 hover:bg-black/10"
             onClick={() => {
-              setDismissed(true);
+              setDismissed(true)
             }}
           >
             <X size={16} />
@@ -99,7 +99,7 @@ const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
         ) : null}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default InfoCalloutComponent;
+export default InfoCalloutComponent

@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.collections import (
     Collection,
     CollectionCreate,
@@ -12,10 +11,11 @@ from src.db.collections import (
     CollectionUpdate,
 )
 from src.db.collections_courses import CollectionCourse
-from src.db.courses.courses import Course
+from src.db.courses.courses import Course, CourseRead
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
+from src.types import require_persisted_id
 
 ####################################################
 # CRUD
@@ -33,9 +33,7 @@ async def get_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Коллекция не существует")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -48,10 +46,7 @@ async def get_collection(
 
     # get courses in collection
     statement_all = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     )
 
     statement_public = (
@@ -60,12 +55,9 @@ async def get_collection(
         .where(CollectionCourse.collection_id == collection.id, Course.public)
         .distinct()
     )
-    if current_user.user_uuid == "user_anonymous":
-        statement = statement_public
-    else:
-        statement = statement_all
+    courses_statement = statement_public if current_user.user_uuid == "user_anonymous" else statement_all
 
-    courses = list(db_session.exec(statement).all())
+    courses = list(db_session.exec(courses_statement).all())
 
     can_update = (
         checker.check(
@@ -85,11 +77,11 @@ async def get_collection(
         if current_user.id
         else False
     )
-    is_owner = current_user.id is not None and collection.creator_id == current_user.id
+    is_owner = collection.creator_id == current_user.id
 
     return CollectionReadWithPermissions(
         **collection.model_dump(),
-        courses=courses,
+        courses=[CourseRead.model_validate(c) for c in courses],
         can_update=can_update,
         can_delete=can_delete,
         is_owner=is_owner,
@@ -115,8 +107,9 @@ async def create_collection(
     # Complete the collection object
     collection.collection_uuid = f"collection_{ULID()}"
     collection.creator_id = current_user.id  # Set creator
-    collection.creation_date = str(datetime.now())
-    collection.update_date = str(datetime.now())
+    current_time = utcnow()
+    collection.creation_date = current_time
+    collection.update_date = current_time
 
     # Add collection to database
     db_session.add(collection)
@@ -124,32 +117,30 @@ async def create_collection(
     db_session.refresh(collection)
 
     # SECURITY: Link courses to collection - ensure user has access to all courses being added
-    if collection and collection_object.courses:
+    collection_id = require_persisted_id(collection.id, model_name="Collection")
+    if collection_object.courses:
         # Batch-fetch all requested courses in a single query instead of one per course
-        found_courses = db_session.exec(
-            select(Course).where(Course.id.in_(collection_object.courses))
-        ).all()
+        found_courses = db_session.exec(select(Course).where(col(Course.id).in_(collection_object.courses))).all()
 
         if found_courses:
             # Permission check — verify access to each course individually
             try:
                 for course in found_courses:
                     if not course.public:
-                        require_course_permission(
-                            "course:read", current_user, course, checker
-                        )
+                        require_course_permission("course:read", current_user, course, checker)
             except HTTPException:
                 raise HTTPException(
                     status_code=403,
-                    detail="You don't have permission to add courses to this collection",
+                    detail="У вас нет прав для добавления курсов в эту коллекцию",
                 )
 
             for course in found_courses:
+                current_time = utcnow()
                 collection_course = CollectionCourse(
-                    collection_id=int(collection.id),
-                    course_id=course.id,
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    collection_id=collection_id,
+                    course_id=require_persisted_id(course.id, model_name="Course"),
+                    creation_date=current_time,
+                    update_date=current_time,
                 )
                 db_session.add(collection_course)
 
@@ -157,17 +148,17 @@ async def create_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
+    created_courses_statement = (
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     )
-    courses = list(db_session.exec(statement).all())
+    courses = list(db_session.exec(created_courses_statement).all())
 
-    collection = CollectionRead(**collection.model_dump(), courses=courses)
+    collection_read = CollectionRead(
+        **collection.model_dump(),
+        courses=[CourseRead.model_validate(c) for c in courses],
+    )
 
-    return CollectionRead.model_validate(collection)
+    return CollectionRead.model_validate(collection_read)
 
 
 async def update_collection(
@@ -182,9 +173,7 @@ async def update_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Коллекция не существует")
 
     # RBAC check
     if checker is None:
@@ -195,7 +184,7 @@ async def update_collection(
         resource_owner_id=collection.creator_id,
     )
 
-    courses = collection_object.courses
+    course_ids = collection_object.courses
 
     del collection_object.courses
 
@@ -205,24 +194,23 @@ async def update_collection(
         if value is not None:
             setattr(collection, field, value)
 
-    collection.update_date = str(datetime.now())
+    collection.update_date = utcnow()
 
-    statement = select(CollectionCourse).where(
-        CollectionCourse.collection_id == collection.id
-    )
-    collection_courses = db_session.exec(statement).all()
+    collection_courses_statement = select(CollectionCourse).where(CollectionCourse.collection_id == collection.id)
+    collection_courses = db_session.exec(collection_courses_statement).all()
 
     # Delete all collection_courses
     for collection_course in collection_courses:
         db_session.delete(collection_course)
 
     # Add new collection_courses
-    for course in courses or []:
+    for course in course_ids or []:
+        current_time = utcnow()
         collection_course = CollectionCourse(
-            collection_id=int(collection.id),
+            collection_id=require_persisted_id(collection.id, model_name="Collection"),
             course_id=int(course),
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=current_time,
+            update_date=current_time,
         )
         # Add collection_course to database
         db_session.add(collection_course)
@@ -231,15 +219,15 @@ async def update_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
+    updated_courses_statement = (
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     )
-    courses = list(db_session.exec(statement).all())
+    updated_courses = list(db_session.exec(updated_courses_statement).all())
 
-    return CollectionRead(**collection.model_dump(), courses=courses)
+    return CollectionRead(
+        **collection.model_dump(),
+        courses=[CourseRead.model_validate(c) for c in updated_courses],
+    )
 
 
 async def delete_collection(
@@ -248,14 +236,14 @@ async def delete_collection(
     current_user: PublicUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> dict[str, str]:
     statement = select(Collection).where(Collection.collection_uuid == collection_uuid)
     collection = db_session.exec(statement).first()
 
     if not collection:
         raise HTTPException(
             status_code=404,
-            detail="Collection not found",
+            detail="Коллекция не найдена",
         )
 
     # RBAC check
@@ -271,7 +259,7 @@ async def delete_collection(
     db_session.delete(collection)
     db_session.commit()
 
-    return {"detail": "Collection deleted"}
+    return {"detail": "Коллекция удалена"}
 
 
 ####################################################
@@ -289,7 +277,7 @@ async def get_collections(
 ) -> list[CollectionReadWithPermissions]:
 
     statement_public = select(Collection).where(Collection.public)
-    statement_all = select(Collection).distinct(Collection.id)
+    statement_all = select(Collection).distinct(col(Collection.id))
 
     statement = statement_public if current_user.id == 0 else statement_all
 
@@ -299,31 +287,31 @@ async def get_collections(
     if checker is None:
         checker = PermissionChecker(db_session)
 
-    collection_ids = [c.id for c in collections]
+    collection_ids = [require_persisted_id(c.id, model_name="Collection") for c in collections]
     is_public_user = current_user.id == 0
 
     # Batch fetch all courses for all collections in one query
     if is_public_user:
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids), Course.public)
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids), Course.public)
             .distinct()
         )
     else:
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids))
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids))
             .distinct()
         )
 
-    courses_by_collection: dict[int, list] = {}
+    courses_by_collection: dict[int, list[Course]] = {}
     for cc, course in db_session.exec(batch_stmt).all():
         courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
     for collection in collections:
-        courses = courses_by_collection.get(collection.id, [])
+        courses = courses_by_collection.get(require_persisted_id(collection.id, model_name="Collection"), [])
 
         can_update = (
             checker.check(
@@ -343,13 +331,11 @@ async def get_collections(
             if current_user.id
             else False
         )
-        is_owner = (
-            current_user.id is not None and collection.creator_id == current_user.id
-        )
+        is_owner = collection.creator_id == current_user.id
 
         enriched = CollectionReadWithPermissions(
             **collection.model_dump(),
-            courses=list(courses),
+            courses=[CourseRead.model_validate(c) for c in courses],
             can_update=can_update,
             can_delete=can_delete,
             is_owner=is_owner,

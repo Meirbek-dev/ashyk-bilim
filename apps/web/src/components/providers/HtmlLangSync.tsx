@@ -1,14 +1,26 @@
-'use client';
+'use client'
 
-import { useLocale } from 'next-intl';
-import { useEffect } from 'react';
+import { useServerInsertedHTML } from 'next/navigation'
+import { useEffect } from 'react'
 
-export function HtmlLangSync() {
-  const locale = useLocale();
+interface HtmlLangSyncProps {
+  locale: string
+}
+
+export function HtmlLangSync({ locale }: HtmlLangSyncProps) {
+  useServerInsertedHTML(() => {
+    return (
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.lang=${JSON.stringify(locale)};`,
+        }}
+      />
+    )
+  })
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    document.documentElement.lang = locale
+  }, [locale])
 
-  return null;
+  return null
 }

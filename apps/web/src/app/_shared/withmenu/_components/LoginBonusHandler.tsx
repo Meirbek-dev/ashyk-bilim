@@ -1,69 +1,70 @@
-'use client';
+'use client'
 
-import { useGamificationStore } from '@/stores/gamification';
-import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useGamificationStore } from '@/stores/gamification'
+import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage'
 
-const TODAY_KEY = `gamification:lastLoginAward:${new Date().toISOString().slice(0, 10)}`;
+const TODAY_KEY = `gamification:lastLoginAward:${new Date().toISOString().slice(0, 10)}`
 
 export function LoginBonusHandler() {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const profile = useGamificationStore((s) => s.profile);
-  const updateStreak = useGamificationStore((s) => s.updateStreak);
-  const awardXP = useGamificationStore((s) => s.awardXP);
-  const [showBadge, setShowBadge] = useState(false);
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const profile = useGamificationStore(s => s.profile)
+  const updateStreak = useGamificationStore(s => s.updateStreak)
+  const awardXP = useGamificationStore(s => s.awardXP)
+  const [showBadge, setShowBadge] = useState(false)
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMountedRef = useRef(false);
-  const hasAttemptedRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMountedRef = useRef(false)
+  const hasAttemptedRef = useRef(false)
 
   useEffect(() => {
-    if (!profile) return;
-    if (hasAttemptedRef.current) return;
+    if (!profile) return
+    if (hasAttemptedRef.current) return
 
-    isMountedRef.current = true;
+    isMountedRef.current = true
 
     try {
-      const alreadyDone = typeof globalThis.window !== 'undefined' ? localStorage.getItem(TODAY_KEY) : null;
+      const alreadyDone = readLocalStorageString(TODAY_KEY)
 
-      if (alreadyDone) return;
+      if (alreadyDone) return
 
-      hasAttemptedRef.current = true;
+      hasAttemptedRef.current = true
 
       void (async () => {
         try {
-          await updateStreak('login');
+          await updateStreak('login')
           await awardXP(
             {
               source: 'login_bonus',
               idempotency_key: `login_bonus_${profile.user_id}_${new Date().toISOString().slice(0, 10)}`,
             },
             { silent: true },
-          );
+          )
 
-          localStorage.setItem(TODAY_KEY, '1');
+          writeLocalStorageString(TODAY_KEY, '1')
 
           if (isMountedRef.current) {
-            setShowBadge(true);
+            setShowBadge(true)
             timeoutRef.current = globalThis.setTimeout(() => {
-              if (isMountedRef.current) setShowBadge(false);
-            }, 5000);
+              if (isMountedRef.current) setShowBadge(false)
+            }, 5000)
           }
         } catch (error) {
-          console.warn('Failed to award login bonus:', error);
+          console.warn('Failed to award login bonus:', error)
         }
-      })();
+      })()
     } catch (error) {
-      console.warn('localStorage not available:', error);
+      console.warn('localStorage not available:', error)
     }
 
     return () => {
-      isMountedRef.current = false;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [profile, updateStreak, awardXP]);
+      isMountedRef.current = false
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [profile, updateStreak, awardXP])
 
-  if (!showBadge) return null;
+  if (!showBadge) return null
 
   return (
     <div
@@ -81,5 +82,5 @@ export function LoginBonusHandler() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { ChartContainer, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Legend, PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts';
-import { useTranslations } from 'next-intl';
+import { ChartContainer, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Legend, PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
+import { useTranslations } from 'next-intl'
 
 interface KpiHealthRadarChartProps {
-  data: { subject: string; current: number; previous: number }[];
+  data: { subject: string; current: number; previous: number }[]
 }
 
 export default function KpiHealthRadarChart({ data }: KpiHealthRadarChartProps) {
-  const t = useTranslations('TeacherAnalytics');
+  const t = useTranslations('TeacherAnalytics')
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -24,26 +24,19 @@ export default function KpiHealthRadarChart({ data }: KpiHealthRadarChartProps) 
             current: {
               label: t('kpiCharts.currentPeriod'),
               color: 'var(--chart-1)',
-              valueFormatter: (value) => `${Math.round(Number(value ?? 0))} / 100`,
+              valueFormatter: value => `${Math.round(Number(value ?? 0))} / 100`,
             },
             previous: {
               label: t('kpiCharts.previousPeriod'),
               color: 'var(--chart-4)',
-              valueFormatter: (value) => `${Math.round(Number(value ?? 0))} / 100`,
+              valueFormatter: value => `${Math.round(Number(value ?? 0))} / 100`,
             },
           }}
         >
-          <RadarChart
-            data={data}
-            cx="50%"
-            cy="50%"
-          >
-            <ChartTooltip content={<ChartTooltipContent formatter={(v) => [`${Math.round(Number(v))} / 100`, '']} />} />
+          <RadarChart data={data} cx="50%" cy="50%">
+            <ChartTooltip content={<ChartTooltipContent formatter={v => [`${Math.round(Number(v))} / 100`, '']} />} />
             <PolarGrid gridType="polygon" />
-            <PolarAngleAxis
-              dataKey="subject"
-              tick={{ fontSize: 11 }}
-            />
+            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
             <Legend content={<ChartLegendContent />} />
             <Radar
               dataKey="previous"
@@ -64,5 +57,5 @@ export default function KpiHealthRadarChart({ data }: KpiHealthRadarChartProps) 
         </ChartContainer>
       </CardContent>
     </Card>
-  );
+  )
 }

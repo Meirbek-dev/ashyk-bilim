@@ -1,16 +1,18 @@
 import logging
-from datetime import UTC, datetime, timezone
-
-logger = logging.getLogger(__name__)
+from datetime import UTC, datetime
+from typing import cast
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlalchemy import func
-from sqlmodel import Session, and_, or_, select, text
+from sqlalchemy.orm import Mapped
+from sqlalchemy.sql.elements import ColumnElement
+from sqlmodel import Session, and_, col, or_, select
+from sqlmodel.sql.expression import SelectOfScalar
 from ulid import ULID
 
 from src.db.courses.activities import Activity
 from src.db.courses.certifications import Certifications
-from src.db.courses.chapters import Chapter
+from src.db.courses.chapters import Chapter, ChapterReadWithPermissions
 from src.db.courses.courses import (
     AuthorWithRole,
     Course,
@@ -34,16 +36,19 @@ from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import (
     is_course_owner,
-    require_course_permission,
     require_course_read_access,
 )
 from src.services.courses.thumbnails import upload_thumbnail
+from src.types import JsonObject
+from src.types.narrowing import require_persisted_id
+
+logger = logging.getLogger(__name__)
 
 
-def _accessible_courses_filter(
-    query,
+def _accessible_courses_filter[T](
+    query: SelectOfScalar[T],
     current_user: PublicUser | AnonymousUser,
-):
+) -> SelectOfScalar[T]:
     """Apply the standard course-access filter to *query*.
 
     Rules:
@@ -58,14 +63,12 @@ def _accessible_courses_filter(
     Returns the query with EXISTS and WHERE clause applied.
     """
     if isinstance(current_user, AnonymousUser):
-        return query.where(Course.public)
+        return query.where(col(Course.public))
 
     has_usergroup = (
         select(1)
         .select_from(UserGroupResource)
-        .join(
-            UserGroupUser, UserGroupUser.usergroup_id == UserGroupResource.usergroup_id
-        )
+        .join(UserGroupUser, col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id)
         .where(
             UserGroupResource.resource_uuid == Course.course_uuid,
             UserGroupUser.user_id == current_user.id,
@@ -93,7 +96,7 @@ def _accessible_courses_filter(
     )
 
 
-def _course_search_filter(search_query: str | None):
+def _course_search_filter(search_query: str | None, dialect_name: str | None = None) -> ColumnElement[bool] | None:
     if not search_query:
         return None
 
@@ -101,66 +104,79 @@ def _course_search_filter(search_query: str | None):
     if not normalized:
         return None
 
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        return vector.op("@@")(func.plainto_tsquery("english", normalized))
+
     pattern = f"%{normalized}%"
     return or_(
-        Course.name.ilike(pattern),
-        Course.description.ilike(pattern),
-        Course.about.ilike(pattern),
-        Course.learnings.ilike(pattern),
-        Course.tags.ilike(pattern),
+        col(Course.name).ilike(pattern),
+        col(Course.description).ilike(pattern),
+        col(Course.about).ilike(pattern),
+        col(Course.learnings).ilike(pattern),
+        col(Course.tags).ilike(pattern),
     )
 
 
-def _apply_course_sort(query, sort_by: str | None):
+def _apply_course_sort[T](query: SelectOfScalar[T], sort_by: str | None) -> SelectOfScalar[T]:
     if sort_by == "name":
-        return query.order_by(func.lower(Course.name).asc(), Course.id.asc())
-    return query.order_by(Course.update_date.desc(), Course.id.desc())
+        return query.order_by(func.lower(col(Course.name)).asc(), col(Course.id).asc())
+    return query.order_by(col(Course.update_date).desc(), col(Course.id).desc())
 
 
-def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
+def _apply_lms_sort[T](query: SelectOfScalar[T], current_user: PublicUser | AnonymousUser) -> SelectOfScalar[T]:
     from sqlalchemy import case, func, select
 
     from src.db.trail_runs import TrailRun
 
     if isinstance(current_user, AnonymousUser):
-        return query.order_by(Course.creation_date.desc(), Course.id.desc())
+        return query.order_by(col(Course.creation_date).desc(), col(Course.id).desc())
 
     is_creator_author = (
         select(1)
         .select_from(ResourceAuthor)
         .where(
-            ResourceAuthor.resource_uuid == Course.course_uuid,
-            ResourceAuthor.user_id == current_user.id,
-            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
-            ResourceAuthor.authorship == ResourceAuthorshipEnum.CREATOR,
+            col(ResourceAuthor.resource_uuid) == Course.course_uuid,
+            col(ResourceAuthor.user_id) == current_user.id,
+            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+            col(ResourceAuthor.authorship) == ResourceAuthorshipEnum.CREATOR,
         )
         .exists()
     )
 
-    is_creator = case(
-        (Course.creator_id == current_user.id, 1), (is_creator_author, 1), else_=0
-    )
+    is_creator = case((col(Course.creator_id) == current_user.id, 1), (is_creator_author, 1), else_=0)
 
     is_collaborator_author = (
         select(1)
         .select_from(ResourceAuthor)
         .where(
-            ResourceAuthor.resource_uuid == Course.course_uuid,
-            ResourceAuthor.user_id == current_user.id,
-            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
-            ResourceAuthor.authorship != ResourceAuthorshipEnum.CREATOR,
+            col(ResourceAuthor.resource_uuid) == Course.course_uuid,
+            col(ResourceAuthor.user_id) == current_user.id,
+            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+            col(ResourceAuthor.authorship) != ResourceAuthorshipEnum.CREATOR,
         )
         .exists()
     )
     is_collaborator = case((is_collaborator_author, 1), else_=0)
 
     last_accessed = (
-        select(TrailRun.update_date)
+        select(col(TrailRun.update_date))
         .where(
-            TrailRun.course_id == Course.id,
-            TrailRun.user_id == current_user.id,
+            col(TrailRun.course_id) == Course.id,
+            col(TrailRun.user_id) == current_user.id,
         )
-        .order_by(TrailRun.update_date.desc())
+        .order_by(col(TrailRun.update_date).desc())
         .limit(1)
         .correlate(Course)
         .scalar_subquery()
@@ -169,9 +185,9 @@ def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
     in_progress_exists = (
         select(1)
         .where(
-            TrailRun.course_id == Course.id,
-            TrailRun.user_id == current_user.id,
-            TrailRun.status == "STATUS_IN_PROGRESS",
+            col(TrailRun.course_id) == Course.id,
+            col(TrailRun.user_id) == current_user.id,
+            col(TrailRun.status) == "STATUS_IN_PROGRESS",
         )
         .exists()
     )
@@ -180,7 +196,7 @@ def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
     popularity = (
         select(func.count())
         .select_from(TrailRun)
-        .where(TrailRun.course_id == Course.id)
+        .where(col(TrailRun.course_id) == Course.id)
         .correlate(Course)
         .scalar_subquery()
     )
@@ -191,8 +207,8 @@ def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
         in_progress.desc(),
         last_accessed.desc().nulls_last(),
         popularity.desc(),
-        Course.creation_date.desc(),
-        Course.id.desc(),
+        col(Course.creation_date).desc(),
+        col(Course.id).desc(),
     )
 
 
@@ -235,44 +251,44 @@ def _build_editable_course_insights(
 
     active_author_counts = dict(
         db_session.exec(
-            select(ResourceAuthor.resource_uuid, func.count(ResourceAuthor.id))
+            select(ResourceAuthor.resource_uuid, func.count(col(ResourceAuthor.id)))
             .where(
-                ResourceAuthor.resource_uuid.in_(course_uuids),
-                ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+                col(ResourceAuthor.resource_uuid).in_(course_uuids),
+                col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
             )
-            .group_by(ResourceAuthor.resource_uuid)
+            .group_by(col(ResourceAuthor.resource_uuid))
         ).all()
     )
     chapter_counts = dict(
         db_session.exec(
-            select(Chapter.course_id, func.count(Chapter.id.distinct()))
-            .where(Chapter.course_id.in_(course_ids))
-            .group_by(Chapter.course_id)
+            select(col(Chapter.course_id), func.count(col(Chapter.id).distinct()))
+            .where(col(Chapter.course_id).in_(course_ids))
+            .group_by(col(Chapter.course_id))
         ).all()
     )
     activity_counts = dict(
         db_session.exec(
-            select(Chapter.course_id, func.count(Activity.id.distinct()))
-            .join(Activity, Activity.chapter_id == Chapter.id)
-            .where(Chapter.course_id.in_(course_ids))
-            .group_by(Chapter.course_id)
+            select(col(Chapter.course_id), func.count(col(Activity.id).distinct()))
+            .join(Activity, col(Activity.chapter_id) == Chapter.id)
+            .where(col(Chapter.course_id).in_(course_ids))
+            .group_by(col(Chapter.course_id))
         ).all()
     )
     linked_usergroup_counts = dict(
         db_session.exec(
             select(
                 UserGroupResource.resource_uuid,
-                func.count(UserGroupResource.id.distinct()),
+                func.count(col(UserGroupResource.id).distinct()),
             )
-            .where(UserGroupResource.resource_uuid.in_(course_uuids))
-            .group_by(UserGroupResource.resource_uuid)
+            .where(col(UserGroupResource.resource_uuid).in_(course_uuids))
+            .group_by(col(UserGroupResource.resource_uuid))
         ).all()
     )
     certification_counts = dict(
         db_session.exec(
-            select(Certifications.course_id, func.count(Certifications.id.distinct()))
-            .where(Certifications.course_id.in_(course_ids))
-            .group_by(Certifications.course_id)
+            select(col(Certifications.course_id), func.count(col(Certifications.id).distinct()))
+            .where(col(Certifications.course_id).in_(course_ids))
+            .group_by(col(Certifications.course_id))
         ).all()
     )
 
@@ -294,11 +310,7 @@ def _build_editable_course_insights(
             and (bool(course.public) or linked_usergroups > 0)
             and certifications > 0
         )
-        attention = (
-            not bool(course.thumbnail_image)
-            or not has_description
-            or activity_count == 0
-        )
+        attention = not bool(course.thumbnail_image) or not has_description or activity_count == 0
         insights[course.course_uuid] = {
             "ready": ready,
             "attention": attention,
@@ -307,59 +319,51 @@ def _build_editable_course_insights(
     return insights
 
 
-def _attention_sql_condition():
+def _attention_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course needs attention (missing thumbnail, description, or activities)."""
-    from sqlalchemy import and_, case, exists, literal_column
-
     has_activities = (
         select(Activity.id)
-        .join(Chapter, Chapter.id == Activity.chapter_id)
-        .where(Chapter.course_id == Course.id)
+        .join(Chapter, col(Chapter.id) == Activity.chapter_id)
+        .where(col(Chapter.course_id) == Course.id)
         .exists()
     )
     return or_(
-        Course.thumbnail_image.is_(None),
+        col(Course.thumbnail_image).is_(None),
         Course.thumbnail_image == "",
-        Course.description.is_(None),
+        col(Course.description).is_(None),
         Course.description == "",
         ~has_activities,
     )
 
 
-def _ready_sql_condition():
+def _ready_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course is fully ready to publish."""
-    from datetime import timedelta
-
-    has_chapters = select(Chapter.id).where(Chapter.course_id == Course.id).exists()
+    has_chapters = select(Chapter.id).where(col(Chapter.course_id) == Course.id).exists()
     has_activities = (
         select(Activity.id)
-        .join(Chapter, Chapter.id == Activity.chapter_id)
-        .where(Chapter.course_id == Course.id)
+        .join(Chapter, col(Chapter.id) == Activity.chapter_id)
+        .where(col(Chapter.course_id) == Course.id)
         .exists()
     )
     has_active_author = (
         select(ResourceAuthor.id)
         .where(
-            ResourceAuthor.resource_uuid == Course.course_uuid,
-            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            col(ResourceAuthor.resource_uuid) == Course.course_uuid,
+            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
         )
         .exists()
     )
     has_usergroup_or_public = or_(
         Course.public,
-        select(UserGroupResource.id)
-        .where(UserGroupResource.resource_uuid == Course.course_uuid)
-        .exists(),
+        select(UserGroupResource.id).where(col(UserGroupResource.resource_uuid) == Course.course_uuid).exists(),
     )
-    has_certification = (
-        select(Certifications.id).where(Certifications.course_id == Course.id).exists()
-    )
+    has_certification = select(Certifications.id).where(col(Certifications.course_id) == Course.id).exists()
     return and_(
-        Course.name.isnot(None),
+        col(Course.name).isnot(None),
         Course.name != "",
-        Course.description.isnot(None),
+        col(Course.description).isnot(None),
         Course.description != "",
-        Course.thumbnail_image.isnot(None),
+        col(Course.thumbnail_image).isnot(None),
         Course.thumbnail_image != "",
         has_chapters,
         has_activities,
@@ -369,19 +373,19 @@ def _ready_sql_condition():
     )
 
 
-def _preset_sql_filter(preset: str | None):
+def _preset_sql_filter(preset: str | None) -> ColumnElement[bool] | Mapped[bool] | None:
     """Return an additional SQL WHERE clause for the given preset, or None."""
     from datetime import timedelta
 
     if not preset or preset == "all":
         return None
     if preset == "published":
-        return Course.public
+        return col(Course.public)
     if preset == "private":
-        return not Course.public
+        return ~col(Course.public)
     if preset == "recent":
         cutoff = datetime.now(tz=UTC) - timedelta(days=14)
-        return Course.update_date >= cutoff
+        return col(Course.update_date) >= cutoff
     if preset == "attention":
         return _attention_sql_condition()
     if preset == "drafts":
@@ -422,17 +426,9 @@ async def list_editable_courses(
     insights = _build_editable_course_insights(all_courses_for_summary, db_session)
     summary = {
         "total": len(all_courses_for_summary),
-        "ready": sum(
-            1
-            for c in all_courses_for_summary
-            if insights.get(c.course_uuid, {}).get("ready")
-        ),
+        "ready": sum(1 for c in all_courses_for_summary if insights.get(c.course_uuid, {}).get("ready")),
         "private": sum(1 for c in all_courses_for_summary if not bool(c.public)),
-        "attention": sum(
-            1
-            for c in all_courses_for_summary
-            if insights.get(c.course_uuid, {}).get("attention")
-        ),
+        "attention": sum(1 for c in all_courses_for_summary if insights.get(c.course_uuid, {}).get("attention")),
     }
 
     # 2. Fetch only the preset-filtered, paginated page — directly in SQL.
@@ -464,9 +460,7 @@ async def list_editable_courses(
     return paginated_courses, filtered_total, summary
 
 
-def _ensure_course_is_current(
-    course: Course, last_known_update_date: datetime | None
-) -> None:
+def _ensure_course_is_current(course: Course, last_known_update_date: datetime | None) -> None:
     if last_known_update_date is None:
         return
 
@@ -479,16 +473,16 @@ def _ensure_course_is_current(
     if current_update_date != expected_update_date:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Course has changed since you opened this editor. Reload and try again.",
+            detail="Курс был изменен с тех пор, как вы открыли этот редактор. Перезагрузите страницу и попробуйте снова.",
         )
 
 
 def _serialize_course_with_authors(course: Course, db_session: Session) -> CourseRead:
     authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid == course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid) == course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     author_results = db_session.exec(authors_statement).all()
     authors = [
@@ -510,13 +504,13 @@ async def get_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     if not course.public:
@@ -525,9 +519,9 @@ async def get_course(
     # Get course authors with their roles
     authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid == course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid) == course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     author_results = db_session.exec(authors_statement).all()
 
@@ -552,14 +546,14 @@ async def get_course_by_id(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker,
-):
-    statement = select(Course).where(Course.id == course_id)
-    course = db_session.exec(statement).first()
+) -> CourseRead:
+    course_stmt = select(Course).where(col(Course.id) == course_id)
+    course = db_session.exec(course_stmt).first()
 
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     if not course.public:
@@ -568,9 +562,9 @@ async def get_course_by_id(
     # Get course authors with their roles
     authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid == course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid) == course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     author_results = db_session.exec(authors_statement).all()
 
@@ -605,24 +599,27 @@ async def get_course_meta(
     if not resolved_course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # Get course with authors in a single query using joins
     course_statement = (
         select(Course, ResourceAuthor, User)
-        .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
-        .outerjoin(User, ResourceAuthor.user_id == User.id)
-        .where(Course.course_uuid == resolved_course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .outerjoin(ResourceAuthor, col(ResourceAuthor.resource_uuid) == Course.course_uuid)
+        .outerjoin(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(Course.course_uuid) == resolved_course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     results = db_session.exec(course_statement).all()
 
     # Extract course and authors from results
     course = results[0][0]  # First result's Course
-    author_results = [
-        (ra, u) for _, ra, u in results if ra is not None and u is not None
-    ]
+    author_results = []
+    for _, ra_raw, u_raw in results:
+        ra = cast("ResourceAuthor | None", ra_raw)
+        u = cast("User | None", u_raw)
+        if ra is not None and u is not None:
+            author_results.append((ra, u))
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -647,7 +644,7 @@ async def get_course_meta(
         )
 
     # Get course chapters
-    chapters = []
+    chapters: list[ChapterReadWithPermissions] = []
     if course.id is not None:
         chapters = await get_course_chapters(
             request,
@@ -682,7 +679,7 @@ async def count_courses(
     db_session: Session,
 ) -> int:
     """Count total courses for the platform with proper access filtering."""
-    query = select(func.count(Course.id.distinct()))
+    query: SelectOfScalar[int] = select(func.count(col(Course.id).distinct()))
     query = _accessible_courses_filter(query, current_user)
     return db_session.exec(query).one()
 
@@ -696,17 +693,21 @@ async def get_courses(
 ) -> list[CourseReadWithPermissions]:
     # Simple caching for anonymous (public) course listings to reduce
     # load and avoid upstream rate limits. Uses Redis if available.
+    get_json_fn = None
+    set_json_fn = None
     try:
-        from src.services.cache.redis_client import get_json, set_json
+        from src.services.cache.redis_client import get_json as r_get_json, set_json as r_set_json
+
+        get_json_fn = r_get_json
+        set_json_fn = r_set_json
     except Exception:
-        get_json = None  # type: ignore
-        set_json = None  # type: ignore
+        pass
 
     # Only cache results for anonymous users (public content)
     cache_key = f"courses:platform:page:{page}:limit:{limit}"
-    if isinstance(current_user, AnonymousUser) and get_json is not None:
+    if isinstance(current_user, AnonymousUser) and get_json_fn is not None:
         try:
-            cached = get_json(cache_key)
+            cached = get_json_fn(cache_key)
             if cached:
                 # cached is a list of serialised course dicts
                 return [CourseReadWithPermissions.model_validate(c) for c in cached]
@@ -719,12 +720,12 @@ async def get_courses(
 
     offset = (page - 1) * limit
     # Step 1: Fetch paginated course IDs using LMS sorting
-    id_query = select(Course.id)
+    id_query: SelectOfScalar[int | None] = cast("SelectOfScalar[int | None]", select(Course.id))
     id_query = _accessible_courses_filter(id_query, current_user)
     id_query = _apply_lms_sort(id_query, current_user)
     id_query = id_query.offset(offset).limit(limit)
 
-    course_ids = db_session.exec(id_query).all()
+    course_ids = [cid for cid in db_session.exec(id_query).all() if cid is not None]
     if not course_ids:
         return []
 
@@ -734,25 +735,29 @@ async def get_courses(
 
     combined_query = (
         select(Course, AuthorRA, AuthorUser)
-        .where(Course.id.in_(course_ids))
-        .outerjoin(AuthorRA, AuthorRA.resource_uuid == Course.course_uuid)
-        .outerjoin(AuthorUser, AuthorRA.user_id == AuthorUser.id)
-        .order_by(AuthorRA.id.asc())
+        .where(col(Course.id).in_(course_ids))
+        .outerjoin(AuthorRA, col(AuthorRA.resource_uuid) == Course.course_uuid)
+        .outerjoin(AuthorUser, col(AuthorRA.user_id) == AuthorUser.id)
+        .order_by(col(AuthorRA.id).asc())
     )
 
     results = db_session.exec(combined_query).all()
 
     # Group results by course, preserving correct sorting order
-    courses_map: OrderedDict[int, tuple] = OrderedDict()
+    courses_map: OrderedDict[int, tuple[Course | None, list[AuthorWithRole]]] = OrderedDict()
     for cid in course_ids:
         courses_map[cid] = (None, [])
 
-    for course, ra, author_user in results:
-        cid = course.id
-        if courses_map[cid][0] is None:
-            courses_map[cid] = (course, courses_map[cid][1])
+    for course, ra_raw, author_user_raw in results:
+        course_id = course.id
+        if course_id is None:
+            continue
+        ra = cast("ResourceAuthor | None", ra_raw)
+        author_user = cast("User | None", author_user_raw)
+        if courses_map[course_id][0] is None:
+            courses_map[course_id] = (course, courses_map[course_id][1])
         if ra is not None and author_user is not None:
-            courses_map[cid][1].append(
+            courses_map[course_id][1].append(
                 AuthorWithRole(
                     user=UserRead.model_validate(author_user),
                     authorship=ra.authorship,
@@ -770,22 +775,24 @@ async def get_courses(
     if not isinstance(current_user, AnonymousUser) and current_user.id and courses_map:
         next(iter(courses_map.values()))[0]
         checker = PermissionChecker(db_session)
-        granted = checker._get_or_load(current_user.id)
-        has_broad_update = PermissionChecker._has_perm(
-            granted, "course", "update", "all"
-        ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-        has_broad_delete = PermissionChecker._has_perm(
-            granted, "course", "delete", "all"
-        ) or PermissionChecker._has_perm(granted, "course", "delete", "platform")
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
-        has_own_delete = PermissionChecker._has_perm(granted, "course", "delete", "own")
+        granted = checker.get_effective_permissions(current_user.id)
+        has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
+            granted, "course", "update", "platform"
+        )
+        has_broad_delete = PermissionChecker.has_perm(granted, "course", "delete", "all") or PermissionChecker.has_perm(
+            granted, "course", "delete", "platform"
+        )
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
+        has_own_delete = PermissionChecker.has_perm(granted, "course", "delete", "own")
 
-    for course, authors in courses_map.values():
+    for course_entry, authors in courses_map.values():
+        if course_entry is None:
+            continue
+        course = course_entry
         can_update = can_delete = is_owner = False
         if not isinstance(current_user, AnonymousUser) and current_user.id:
             is_author = any(
-                a.user.id == current_user.id
-                and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
+                a.user.id == current_user.id and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
                 for a in authors
             )
             is_owner = course.creator_id == current_user.id
@@ -812,14 +819,11 @@ async def get_courses(
         })
         course_reads.append(course_read)
     try:
-        if (
-            isinstance(current_user, AnonymousUser)
-            and get_json is not None
-            and set_json is not None
-        ):
+        is_anon = isinstance(current_user, AnonymousUser)
+        if is_anon and get_json_fn is not None and set_json_fn is not None:
             try:
                 serialised = [cr.model_dump() for cr in course_reads]
-                set_json(cache_key, serialised, ttl=60)
+                set_json_fn(cache_key, serialised, ttl=60)
             except Exception:
                 # Swallow redis set errors
                 pass
@@ -839,16 +843,21 @@ async def search_courses(
     limit: int = 20,
 ) -> list[CourseRead]:
     offset = (page - 1) * limit
-    search_filter = _course_search_filter(search_query)
+    bind = db_session.bind
+    if bind is None:
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
+    dialect_name = bind.dialect.name
+    search_filter = _course_search_filter(search_query, dialect_name)
 
     # Base query
-    query = select(Course)
+    query: SelectOfScalar[Course] = select(Course)
     if search_filter is not None:
         query = query.where(search_filter)
 
     if isinstance(current_user, AnonymousUser):
         # For anonymous users, only show public courses
-        query = query.where(Course.public)
+        query = query.where(col(Course.public))
     else:
         # For authenticated users, show:
         # 1. Public courses
@@ -859,19 +868,19 @@ async def search_courses(
             select(UserGroupResource.id)
             .join(
                 UserGroupUser,
-                UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+                col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
             )
             .where(
-                UserGroupResource.resource_uuid == Course.course_uuid,
-                UserGroupUser.user_id == current_user.id,
+                col(UserGroupResource.resource_uuid) == Course.course_uuid,
+                col(UserGroupUser.user_id) == current_user.id,
             )
             .exists()
         )
         is_resource_author = (
             select(ResourceAuthor.id)
             .where(
-                ResourceAuthor.resource_uuid == Course.course_uuid,
-                ResourceAuthor.user_id == current_user.id,
+                col(ResourceAuthor.resource_uuid) == Course.course_uuid,
+                col(ResourceAuthor.user_id) == current_user.id,
             )
             .exists()
         )
@@ -885,20 +894,39 @@ async def search_courses(
             )
         )
 
-    # Apply pagination
-    query = _apply_lms_sort(query, current_user).offset(offset).limit(limit)
+    # Apply pagination & sorting
+    if dialect_name == "postgresql" and search_query:
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        query = query.order_by(
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+            col(Course.id).desc(),
+        )
+    else:
+        query = _apply_lms_sort(query, current_user)
 
+    query = query.offset(offset).limit(limit)
     courses = db_session.exec(query).all()
 
     # Batch fetch all authors for all courses in one query
     course_uuids = [course.course_uuid for course in courses]
     all_authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid.in_(course_uuids))
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid).in_(course_uuids))
+        .order_by(col(ResourceAuthor.id).asc())
     )
-    authors_by_course: dict[str, list] = {}
+    authors_by_course: dict[str, list[AuthorWithRole]] = {}
     for resource_author, user in db_session.exec(all_authors_statement).all():
         authors_by_course.setdefault(resource_author.resource_uuid, []).append(
             AuthorWithRole(
@@ -934,14 +962,12 @@ async def search_courses(
 
 
 _STARTER_CHAPTERS = [
-    {"name": "Introduction", "description": "Overview and course objectives"},
-    {"name": "Core Lessons", "description": "Main learning content"},
+    {"name": "Введение", "description": "Обзор и цели курса"},
+    {"name": "Основные уроки", "description": "Основное содержание обучения"},
 ]
 
 
-def _seed_starter_chapters(
-    course: Course, creator_id: int, db_session: Session
-) -> None:
+def _seed_starter_chapters(course: Course, creator_id: int, db_session: Session) -> None:
     """Insert the two default chapters for the 'starter' template."""
     from ulid import ULID
 
@@ -952,7 +978,7 @@ def _seed_starter_chapters(
             name=chapter_data["name"],
             description=chapter_data["description"],
             thumbnail_image="",
-            course_id=course.id,
+            course_id=require_persisted_id(course.id, model_name="Course"),
             chapter_uuid=f"chapter_{ULID()}",
             creation_date=datetime.now(tz=UTC),
             update_date=datetime.now(tz=UTC),
@@ -971,16 +997,14 @@ async def create_course(
     thumbnail_file: UploadFile | None = None,
     thumbnail_type: ThumbnailType = ThumbnailType.IMAGE,
     checker: PermissionChecker | None = None,
-):
-    """
-    Create a new course
+) -> CourseRead:
+    """Create a new course.
 
     SECURITY NOTES:
     - User becomes the CREATOR of the course automatically
     - Requires proper permissions to create courses on the platform
     - Course creation is subject to platform limits and permissions
     """
-
     # Create Course object from CourseCreate data
     course = Course.model_validate(course_object.model_dump())
 
@@ -1024,8 +1048,8 @@ async def create_course(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CREATOR,
         authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
-        creation_date=datetime.now(tz=UTC).isoformat(),
-        update_date=datetime.now(tz=UTC).isoformat(),
+        creation_date=datetime.now(tz=UTC),
+        update_date=datetime.now(tz=UTC),
     )
     db_session.add(resource_author)
     db_session.commit()
@@ -1038,9 +1062,9 @@ async def create_course(
     # Get course authors with their roles
     authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid == course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid) == course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     author_results = db_session.exec(authors_statement).all()
 
@@ -1068,13 +1092,13 @@ async def update_course_thumbnail(
     thumbnail_type: ThumbnailType = ThumbnailType.IMAGE,
     last_known_update_date: datetime | None = None,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -1102,22 +1126,14 @@ async def update_course_thumbnail(
     if name_in_disk:
         if thumbnail_type == ThumbnailType.IMAGE:
             course.thumbnail_image = name_in_disk
-            course.thumbnail_type = (
-                ThumbnailType.IMAGE
-                if not course.thumbnail_video
-                else ThumbnailType.BOTH
-            )
+            course.thumbnail_type = ThumbnailType.IMAGE if not course.thumbnail_video else ThumbnailType.BOTH
         elif thumbnail_type == ThumbnailType.VIDEO:
             course.thumbnail_video = name_in_disk
-            course.thumbnail_type = (
-                ThumbnailType.VIDEO
-                if not course.thumbnail_image
-                else ThumbnailType.BOTH
-            )
+            course.thumbnail_type = ThumbnailType.VIDEO if not course.thumbnail_image else ThumbnailType.BOTH
     else:
         raise HTTPException(
             status_code=400,
-            detail="No thumbnail file provided",
+            detail="Файл миниатюры не предоставлен",
         )
 
     # Complete the course object
@@ -1130,9 +1146,9 @@ async def update_course_thumbnail(
     # Get course authors with their roles
     authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid == course.course_uuid)
-        .order_by(ResourceAuthor.id.asc())
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid) == course.course_uuid)
+        .order_by(col(ResourceAuthor.id).asc())
     )
     author_results = db_session.exec(authors_statement).all()
 
@@ -1158,9 +1174,8 @@ async def update_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
-    """
-    Update a course
+) -> CourseRead:
+    """Update a course.
 
     SECURITY NOTES:
     - Requires course ownership (CREATOR, MAINTAINER) or admin role
@@ -1172,7 +1187,7 @@ async def update_course(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # SECURITY: Require course ownership or admin role for updating courses
@@ -1185,7 +1200,7 @@ async def update_course(
     )
 
     # SECURITY: Additional checks for sensitive access control fields
-    sensitive_fields_updated = []
+    sensitive_fields_updated: list[str] = []
 
     # Check if sensitive fields are being updated
     if course_object.public is not None:
@@ -1205,10 +1220,7 @@ async def update_course(
 
         is_course_owner = False
         if resource_author and (
-            (
-                resource_author.authorship
-                in {ResourceAuthorshipEnum.CREATOR, ResourceAuthorshipEnum.MAINTAINER}
-            )
+            (resource_author.authorship in {ResourceAuthorshipEnum.CREATOR, ResourceAuthorshipEnum.MAINTAINER})
             and resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
         ):
             is_course_owner = True
@@ -1220,7 +1232,7 @@ async def update_course(
         if not (is_course_owner or admin_or_maintainer):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"You must be the course owner (CREATOR or MAINTAINER) or have admin role to change access settings: {', '.join(sensitive_fields_updated)}",
+                detail=f"Вы должны быть владельцем курса (CREATOR или MAINTAINER) или иметь роль администратора для изменения настроек доступа: {', '.join(sensitive_fields_updated)}",
             )
 
     # Update only the fields that were passed in
@@ -1245,11 +1257,11 @@ async def update_course_metadata(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -1283,11 +1295,11 @@ async def update_course_access(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> CourseRead:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -1328,13 +1340,13 @@ async def delete_course(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-):
+) -> dict[str, str]:
     course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
     # RBAC check
@@ -1364,17 +1376,17 @@ async def get_user_courses(
     if current_user.id == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to perform this action",
+            detail="Вы должны войти в систему для выполнения этого действия",
         )
 
     # Get all resource authors for the user
-    statement = select(ResourceAuthor).where(
+    authors_stmt = select(ResourceAuthor).where(
         and_(
-            ResourceAuthor.user_id == user_id,
-            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            col(ResourceAuthor.user_id) == user_id,
+            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
         )
     )
-    resource_authors = db_session.exec(statement).all()
+    resource_authors = db_session.exec(authors_stmt).all()
 
     # Extract course UUIDs from resource authors
     course_uuids = [author.resource_uuid for author in resource_authors]
@@ -1383,22 +1395,22 @@ async def get_user_courses(
         return []
 
     # Get courses with the extracted UUIDs
-    statement = select(Course).where(Course.course_uuid.in_(course_uuids))
+    courses_statement = select(Course).where(col(Course.course_uuid).in_(course_uuids))
 
     # Apply pagination
-    statement = statement.offset((page - 1) * limit).limit(limit)
+    courses_statement = courses_statement.offset((page - 1) * limit).limit(limit)
 
-    courses = db_session.exec(statement).all()
+    courses = db_session.exec(courses_statement).all()
 
     # Convert to CourseRead objects
     # Batch fetch all authors and users for all courses in 2 queries (instead of N*M)
     course_uuids = [course.course_uuid for course in courses]
     all_authors_statement = (
         select(ResourceAuthor, User)
-        .join(User, ResourceAuthor.user_id == User.id)
-        .where(ResourceAuthor.resource_uuid.in_(course_uuids))
+        .join(User, col(ResourceAuthor.user_id) == User.id)
+        .where(col(ResourceAuthor.resource_uuid).in_(course_uuids))
     )
-    authors_by_course: dict[str, list] = {}
+    authors_by_course: dict[str, list[AuthorWithRole]] = {}
     for resource_author, user in db_session.exec(all_authors_statement).all():
         authors_by_course.setdefault(resource_author.resource_uuid, []).append(
             AuthorWithRole(
@@ -1442,10 +1454,9 @@ async def get_editable_courses(
     search_query: str | None = None,
     sort_by: str | None = "updated",
     apply_pagination: bool = True,
-    extra_filter=None,
+    extra_filter: ColumnElement[bool] | Mapped[bool] | None = None,
 ) -> list[CourseReadWithPermissions]:
-    """
-    Return courses for the platform that the current user has permission to edit
+    """Return courses for the platform that the current user has permission to edit
     (i.e. course:update). Anonymous users always get an empty list.
 
     Scope resolution:
@@ -1461,24 +1472,29 @@ async def get_editable_courses(
         return []
 
     checker = PermissionChecker(db_session)
-    granted = checker._get_or_load(current_user.id)
+    granted = checker.get_effective_permissions(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(
-        granted, "course", "update", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-    search_filter = _course_search_filter(search_query)
+    has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
+        granted, "course", "update", "platform"
+    )
+    bind = db_session.bind
+    if bind is None:
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
+    dialect_name = bind.dialect.name
+    search_filter = _course_search_filter(search_query, dialect_name)
 
     offset = (page - 1) * limit
 
+    id_query: SelectOfScalar[int | None]
     if has_broad_update:
-        id_query = select(Course.id)
+        id_query = cast("SelectOfScalar[int | None]", select(Course.id))
         if search_filter is not None:
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
             id_query = id_query.where(extra_filter)
-        id_query = _apply_course_sort(id_query, sort_by)
     else:
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         if not has_own_update:
             return []
 
@@ -1492,27 +1508,47 @@ async def get_editable_courses(
             .exists()
         )
 
-        id_query = select(Course.id).where(is_active_author)
+        id_query = cast("SelectOfScalar[int | None]", select(Course.id).where(is_active_author))
         if search_filter is not None:
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
             id_query = id_query.where(extra_filter)
+
+    if dialect_name == "postgresql" and search_query:
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        id_query = id_query.order_by(
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+            col(Course.id).desc(),
+        )
+    else:
         id_query = _apply_course_sort(id_query, sort_by)
 
     if apply_pagination:
         id_query = id_query.offset(offset).limit(limit)
 
-    id_subquery = id_query.subquery()
+    sorted_ids = [cid for cid in db_session.exec(id_query).all() if cid is not None]
+    if not sorted_ids:
+        return []
 
     AuthorRA = aliased(ResourceAuthor)
     AuthorUser = aliased(User)
 
     combined_query = (
         select(Course, AuthorRA, AuthorUser)
-        .where(Course.id.in_(select(id_subquery.c.id)))
-        .outerjoin(AuthorRA, AuthorRA.resource_uuid == Course.course_uuid)
-        .outerjoin(AuthorUser, AuthorRA.user_id == AuthorUser.id)
-        .order_by(Course.id, AuthorRA.id.asc())
+        .where(col(Course.id).in_(sorted_ids))
+        .outerjoin(AuthorRA, col(AuthorRA.resource_uuid) == Course.course_uuid)
+        .outerjoin(AuthorUser, col(AuthorRA.user_id) == AuthorUser.id)
     )
 
     results = db_session.exec(combined_query).all()
@@ -1520,11 +1556,15 @@ async def get_editable_courses(
     if not results:
         return []
 
-    courses_map: OrderedDict[int, tuple] = OrderedDict()
-    for course, ra, author_user in results:
+    courses_map: OrderedDict[int, tuple[Course, list[AuthorWithRole]]] = OrderedDict()
+    for course, ra_raw, author_user_raw in results:
         cid = course.id
+        if cid is None:
+            continue
         if cid not in courses_map:
             courses_map[cid] = (course, [])
+        ra = cast("ResourceAuthor | None", ra_raw)
+        author_user = cast("User | None", author_user_raw)
         if ra is not None and author_user is not None:
             courses_map[cid][1].append(
                 AuthorWithRole(
@@ -1538,16 +1578,14 @@ async def get_editable_courses(
 
     course_reads = []
 
-    has_broad_delete = PermissionChecker._has_perm(
-        granted, "course", "delete", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "delete", "platform")
-    has_own_delete = PermissionChecker._has_perm(granted, "course", "delete", "own")
+    has_broad_delete = PermissionChecker.has_perm(granted, "course", "delete", "all") or PermissionChecker.has_perm(
+        granted, "course", "delete", "platform"
+    )
+    has_own_delete = PermissionChecker.has_perm(granted, "course", "delete", "own")
 
     for course, authors in courses_map.values():
         is_author = any(
-            a.user.id == current_user.id
-            and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
-            for a in authors
+            a.user.id == current_user.id and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE for a in authors
         )
         is_owner = course.creator_id == current_user.id
         can_delete = has_broad_delete or (has_own_delete and is_author)
@@ -1572,6 +1610,7 @@ async def get_editable_courses(
         })
         course_reads.append(course_read)
 
+    course_reads.sort(key=lambda cr: sorted_ids.index(cr.id))
     return course_reads
 
 
@@ -1585,17 +1624,21 @@ async def count_editable_courses(
         return 0
 
     checker = PermissionChecker(db_session)
-    granted = checker._get_or_load(current_user.id)
+    granted = checker.get_effective_permissions(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(
-        granted, "course", "update", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-    search_filter = _course_search_filter(search_query)
+    has_broad_update = PermissionChecker.has_perm(granted, "course", "update", "all") or PermissionChecker.has_perm(
+        granted, "course", "update", "platform"
+    )
+    bind = db_session.bind
+    if bind is None:
+        msg = "Database session bind not configured"
+        raise ValueError(msg)
+    search_filter = _course_search_filter(search_query, bind.dialect.name)
 
     if has_broad_update:
-        query = select(func.count(Course.id.distinct()))
+        query = select(func.count(col(Course.id).distinct()))
     else:
-        has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
+        has_own_update = PermissionChecker.has_perm(granted, "course", "update", "own")
         if not has_own_update:
             return 0
 
@@ -1610,7 +1653,7 @@ async def count_editable_courses(
             .exists()
         )
 
-        query = select(func.count(Course.id.distinct())).where(
+        query = select(func.count(col(Course.id).distinct())).where(
             or_(
                 Course.creator_id == current_user.id,
                 is_active_author,
@@ -1629,9 +1672,8 @@ async def get_course_user_rights(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
     checker: PermissionChecker | None = None,
-) -> dict:
-    """
-    Get detailed user rights for a specific course.
+) -> JsonObject:
+    """Get detailed user rights for a specific course.
 
     This function returns comprehensive rights information that can be used
     by the UI to enable/disable features based on user permissions.
@@ -1647,49 +1689,52 @@ async def get_course_user_rights(
     if not course:
         raise HTTPException(
             status_code=404,
-            detail="Course not found",
+            detail="Курс не найден",
         )
 
-    # Initialize rights object
-    rights = {
+    # Initialize rights sub-dicts with explicit types for mutation safety
+    perms: dict[str, bool] = {
+        "read": False,
+        "create": False,
+        "update": False,
+        "delete": False,
+        "create_content": False,
+        "update_content": False,
+        "delete_content": False,
+        "manage_contributors": False,
+        "manage_access": False,
+        "assessment_grade": False,
+        "mark_activities_done": False,
+        "create_certifications": False,
+    }
+    ownership: dict[str, bool | str | None] = {
+        "is_owner": False,
+        "is_creator": False,
+        "is_maintainer": False,
+        "is_contributor": False,
+        "authorship_status": None,
+    }
+    roles: dict[str, bool] = {
+        "is_admin": False,
+        "is_maintainer_role": False,
+        "is_instructor": False,
+        "is_user": False,
+    }
+    rights: dict[str, object] = {
         "course_uuid": course.course_uuid,
         "user_id": current_user.id,
         "is_anonymous": current_user.id == 0,
-        "permissions": {
-            "read": False,
-            "create": False,
-            "update": False,
-            "delete": False,
-            "create_content": False,
-            "update_content": False,
-            "delete_content": False,
-            "manage_contributors": False,
-            "manage_access": False,
-            "assessment_grade": False,
-            "mark_activities_done": False,
-            "create_certifications": False,
-        },
-        "ownership": {
-            "is_owner": False,
-            "is_creator": False,
-            "is_maintainer": False,
-            "is_contributor": False,
-            "authorship_status": None,
-        },
-        "roles": {
-            "is_admin": False,
-            "is_maintainer_role": False,
-            "is_instructor": False,
-            "is_user": False,
-        },
+        "permissions": perms,
+        "ownership": ownership,
+        "roles": roles,
     }
 
     # Handle anonymous users
     if current_user.id == 0:
         # Anonymous users can only read public courses
         if course.public:
-            rights["permissions"]["read"] = True
-        return rights
+            perms["read"] = True
+        return cast("JsonObject", rights)
 
     # Check course ownership
     statement = select(ResourceAuthor).where(
@@ -1699,18 +1744,18 @@ async def get_course_user_rights(
     resource_author = db_session.exec(statement).first()
 
     if resource_author:
-        rights["ownership"]["authorship_status"] = resource_author.authorship_status
+        ownership["authorship_status"] = resource_author.authorship_status
 
         if resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE:
             if resource_author.authorship == ResourceAuthorshipEnum.CREATOR:
-                rights["ownership"]["is_creator"] = True
-                rights["ownership"]["is_owner"] = True
+                ownership["is_creator"] = True
+                ownership["is_owner"] = True
             elif resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER:
-                rights["ownership"]["is_maintainer"] = True
-                rights["ownership"]["is_owner"] = True
+                ownership["is_maintainer"] = True
+                ownership["is_owner"] = True
             elif resource_author.authorship == ResourceAuthorshipEnum.CONTRIBUTOR:
-                rights["ownership"]["is_contributor"] = True
-                rights["ownership"]["is_owner"] = True
+                ownership["is_contributor"] = True
+                ownership["is_owner"] = True
 
     # Check user roles
     if checker is None:
@@ -1720,13 +1765,11 @@ async def get_course_user_rights(
     user_is_admin_or_maintainer = checker.check(current_user.id, "course:manage")
 
     if user_is_admin_or_maintainer:
-        rights["roles"]["is_admin"] = True
-        rights["roles"]["is_maintainer_role"] = True
+        roles["is_admin"] = True
+        roles["is_maintainer_role"] = True
 
     # Check instructor role (course-level update permission)
-    is_owner_for_course = is_course_owner(
-        db_session, current_user.id, course.course_uuid
-    )
+    is_owner_for_course = is_course_owner(db_session, current_user.id, course.course_uuid)
     user_has_instructor_role = checker.check(
         current_user.id,
         "course:update",
@@ -1735,37 +1778,35 @@ async def get_course_user_rights(
     )
 
     if user_has_instructor_role:
-        rights["roles"]["is_instructor"] = True
+        roles["is_instructor"] = True
 
     # Check user role (basic permissions)
     user_has_basic_role = current_user.id != 0
 
     if user_has_basic_role:
-        rights["roles"]["is_user"] = True
+        roles["is_user"] = True
 
     # Determine permissions based on ownership and roles
-    is_course_owner_flag = rights["ownership"]["is_owner"]
-    is_admin = rights["roles"]["is_admin"]
-    is_maintainer_role = rights["roles"]["is_maintainer_role"]
-    is_instructor = rights["roles"]["is_instructor"]
+    is_course_owner_flag = ownership["is_owner"]
+    is_admin = roles["is_admin"]
+    is_maintainer_role = roles["is_maintainer_role"]
+    is_instructor = roles["is_instructor"]
 
     # Additional access checks: membership in UserGroups for this resource or authorship.
     has_user_permissions = False
 
     # If the user is an active resource author, grant access
     statement = select(ResourceAuthor).where(
-        ResourceAuthor.resource_uuid == course_uuid,
-        ResourceAuthor.user_id == current_user.id,
-        ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+        col(ResourceAuthor.resource_uuid) == course_uuid,
+        col(ResourceAuthor.user_id) == current_user.id,
+        col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
     )
     if db_session.exec(statement).first():
         has_user_permissions = True
     else:
         # Check if the course is not protected by any UserGroupResource entry. If so,
         # authenticated users are allowed to access it.
-        ugr_stmt = select(UserGroupResource).where(
-            UserGroupResource.resource_uuid == course_uuid
-        )
+        ugr_stmt = select(UserGroupResource).where(col(UserGroupResource.resource_uuid) == course_uuid)
         ugr = db_session.exec(ugr_stmt).all()
         if not ugr:
             has_user_permissions = True
@@ -1775,76 +1816,62 @@ async def get_course_user_rights(
                 select(UserGroupUser)
                 .join(
                     UserGroupResource,
-                    UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+                    col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
                 )
                 .where(
-                    UserGroupResource.resource_uuid == course_uuid,
-                    UserGroupUser.user_id == current_user.id,
+                    col(UserGroupResource.resource_uuid) == course_uuid,
+                    col(UserGroupUser.user_id) == current_user.id,
                 )
             )
             if db_session.exec(member_stmt).first():
                 has_user_permissions = True
 
     # READ permissions
-    if (
-        course.public
-        or is_course_owner_flag
-        or is_admin
-        or is_maintainer_role
-        or is_instructor
-        or has_user_permissions
-    ):
-        rights["permissions"]["read"] = True
-    is_instructor_or_admin_or_maintainer_role: bool = (
-        is_instructor or is_admin or is_maintainer_role
-    )
+    if course.public or is_course_owner_flag or is_admin or is_maintainer_role or is_instructor or has_user_permissions:
+        perms["read"] = True
+    is_instructor_or_admin_or_maintainer_role: bool = is_instructor or is_admin or is_maintainer_role
     # CREATE permissions (course creation)
     if is_instructor or is_admin or is_maintainer_role:
-        rights["permissions"]["create"] = True
+        perms["create"] = True
 
     # UPDATE permissions (course-level updates)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["update"] = True
+        perms["update"] = True
 
     # DELETE permissions (course deletion)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["delete"] = True
+        perms["delete"] = True
 
-    # CONTENT CREATION permissions (activities, assignments, chapters, etc.)
+    # CONTENT CREATION permissions (activities, assessments, chapters, etc.)
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["create_content"] = True
+        perms["create_content"] = True
 
     # CONTENT UPDATE permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["update_content"] = True
+        perms["update_content"] = True
 
     # CONTENT DELETE permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["delete_content"] = True
+        perms["delete_content"] = True
 
     # CONTRIBUTOR MANAGEMENT permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["manage_contributors"] = True
+        perms["manage_contributors"] = True
 
     # ACCESS MANAGEMENT permissions (public, open_to_contributors)
-    if (
-        rights["ownership"]["is_creator"]
-        or rights["ownership"]["is_maintainer"]
-        or is_admin
-        or is_maintainer_role
-    ):
-        rights["permissions"]["manage_access"] = True
+    if ownership["is_creator"] or ownership["is_maintainer"] or is_admin or is_maintainer_role:
+        perms["manage_access"] = True
 
     # GRADING permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["assessment_grade"] = True
+        perms["assessment_grade"] = True
 
     # ACTIVITY MARKING permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["mark_activities_done"] = True
+        perms["mark_activities_done"] = True
 
     # CERTIFICATION permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["create_certifications"] = True
+        perms["create_certifications"] = True
 
-    return rights
+    return cast("JsonObject", rights)

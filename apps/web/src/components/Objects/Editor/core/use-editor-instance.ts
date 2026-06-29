@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useEditor } from '@tiptap/react';
-import type { UseEditorOptions } from '@tiptap/react';
-import { useMemo, useState } from 'react';
-import { createEditorExtensions, resolveEditorContent } from './editor-kernel';
-import type { EditorPresetName } from './editor-presets';
-import { getEditorPresetDefinition } from './editor-presets';
-import type { ActivityRef } from './editor-types';
+import { useEditor } from '@tiptap/react'
+import type { UseEditorOptions } from '@tiptap/react'
+import { useEffect, useMemo } from 'react'
+import { createEditorExtensions, resolveEditorContent } from './editor-kernel'
+import type { EditorPresetName } from './editor-presets'
+import { getEditorPresetDefinition } from './editor-presets'
+import type { ActivityRef } from './editor-types'
 
 export interface UseEditorInstanceOptions {
-  preset: EditorPresetName;
-  activity?: ActivityRef;
-  content: unknown;
-  onUpdate?: (json: object) => void;
-  overrides?: Partial<UseEditorOptions>;
+  preset: EditorPresetName
+  activity?: ActivityRef
+  content: unknown
+  onUpdate?: (json: object) => void
+  overrides?: Partial<UseEditorOptions>
 }
 
 /**
@@ -21,24 +21,41 @@ export interface UseEditorInstanceOptions {
  * initialization across all editor surfaces (authoring, interactive, discussion).
  */
 export function useEditorInstance(options: UseEditorInstanceOptions) {
-  const { preset, activity, content, onUpdate, overrides } = options;
+  const { preset, activity, content, onUpdate, overrides } = options
 
-  const presetDef = getEditorPresetDefinition(preset);
+  const presetDef = getEditorPresetDefinition(preset)
 
   // Memoize extensions — only recompute when preset or activity identity changes
-  const extensions = useMemo(() => createEditorExtensions({ preset, activity }), [preset, activity]);
+  const extensions = useMemo(
+    () => createEditorExtensions({ preset, ...(activity === undefined ? {} : { activity }) }),
+    [preset, activity],
+  )
 
-  // Resolve content once on mount
-  const [resolvedContent] = useState(() => resolveEditorContent(content));
+  const editor = useEditor(
+    {
+      extensions,
+      content: resolveEditorContent(content),
+      immediatelyRender: false,
+      injectCSS: false,
+      shouldRerenderOnTransaction: preset === 'discussion',
+      editable: presetDef.isEditable,
+      ...(onUpdate === undefined ? {} : { onUpdate: ({ editor: ed }) => onUpdate(ed.getJSON()) }),
+      ...overrides,
+    },
+    [preset, activity?.activity_uuid],
+  )
 
-  return useEditor({
-    extensions,
-    content: resolvedContent,
-    immediatelyRender: false,
-    injectCSS: false,
-    shouldRerenderOnTransaction: preset === 'discussion',
-    editable: presetDef.isEditable,
-    onUpdate: onUpdate ? ({ editor }) => onUpdate(editor.getJSON()) : undefined,
-    ...overrides,
-  });
+  // Keep editor content in sync when `content` prop changes
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+
+    const newContent = resolveEditorContent(content)
+    const currentContent = editor.getJSON()
+
+    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+      editor.commands.setContent(newContent, { emitUpdate: false })
+    }
+  }, [editor, content])
+
+  return editor
 }

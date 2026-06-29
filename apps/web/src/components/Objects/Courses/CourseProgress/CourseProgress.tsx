@@ -1,111 +1,116 @@
-import { ArrowRight, Check, ChevronDown, Circle, FileArchive, FileText, Layers, Trophy, Video } from 'lucide-react';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { getAbsoluteUrl } from '@services/config/config';
-import AppLink from '@/components/ui/AppLink';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import { useMemo, useState } from 'react';
-import type { FC } from 'react';
+import { ArrowRight, Check, ChevronDown, Circle, FileArchive, FileText, Layers, Trophy, Video } from 'lucide-react'
+import Modal from '@/components/Objects/Elements/Modal/Modal'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { getAbsoluteUrl } from '@services/config/config'
+import AppLink from '@/components/ui/AppLink'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import { useMemo, useState } from 'react'
+import type { FC } from 'react'
 
 interface CourseProgressProps {
-  course: any;
-  isOpen: boolean;
-  onClose: () => void;
-  trailData: any;
+  course: AppCourse
+  isOpen: boolean
+  onClose: () => void
+  trailData?: AppTrailData | undefined
 }
 
 const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trailData }) => {
-  const t = useTranslations('Courses.CoursesActions');
-  const [expandedChapters, setExpandedChapters] = useState(new Set());
-  const cleanCourseUuid = course.course_uuid?.replace('course_', '');
+  const t = useTranslations('Courses.CoursesActions')
+  const [expandedChapters, setExpandedChapters] = useState(new Set())
+  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   const completedActivityIds = useMemo(() => {
-    const run = trailData?.runs?.find((candidateRun: any) => {
-      const runCourseUuid = candidateRun.course?.course_uuid ?? candidateRun.course_uuid;
-      return runCourseUuid?.replace('course_', '') === cleanCourseUuid;
-    });
+    const run = trailData?.runs?.find((candidateRun: AppTrailRun) => {
+      const runCourseUuid =
+        candidateRun.course?.course_uuid ??
+        (typeof candidateRun.course_uuid === 'string' ? candidateRun.course_uuid : undefined)
+      return runCourseUuid?.replace('course_', '') === cleanCourseUuid
+    })
 
     return new Set(
       (run?.steps ?? [])
-        .filter((step: any) => step.complete === true && typeof step.activity_id === 'number')
-        .map((step: any) => step.activity_id),
-    );
-  }, [cleanCourseUuid, trailData]);
+        .filter((step: AppTrailStep) => step.complete === true && typeof step.activity_id === 'number')
+        .map((step: AppTrailStep) => step.activity_id),
+    )
+  }, [cleanCourseUuid, trailData])
 
   const { chapterProgress, totalActivities, completedActivities } = useMemo(() => {
-    let nextTotalActivities = 0;
-    let nextCompletedActivities = 0;
-    const nextChapterProgress: Record<string, { completed: number; total: number }> = {};
+    let nextTotalActivities = 0
+    let nextCompletedActivities = 0
+    const nextChapterProgress: Record<string, { completed: number; total: number }> = {}
 
-    course.chapters.forEach((chapter: any) => {
-      const chapterActivities = chapter.activities ?? [];
-      const chapterTotal = chapterActivities.length;
-      let chapterCompleted = 0;
+    course.chapters?.forEach((chapter: AppChapter) => {
+      const chapterActivities = chapter.activities ?? []
+      const chapterTotal = chapterActivities.length
+      let chapterCompleted = 0
 
-      chapterActivities.forEach((activity: any) => {
-        if (completedActivityIds.has(activity.id)) {
-          chapterCompleted += 1;
+      chapterActivities.forEach((activity: AppActivity) => {
+        if (activity.id !== null && completedActivityIds.has(activity.id)) {
+          chapterCompleted += 1
         }
-      });
+      })
 
-      nextTotalActivities += chapterTotal;
-      nextCompletedActivities += chapterCompleted;
-      nextChapterProgress[chapter.chapter_uuid] = {
-        completed: chapterCompleted,
-        total: chapterTotal,
-      };
-    });
+      nextTotalActivities += chapterTotal
+      nextCompletedActivities += chapterCompleted
+      if (chapter.chapter_uuid) {
+        nextChapterProgress[chapter.chapter_uuid] = {
+          completed: chapterCompleted,
+          total: chapterTotal,
+        }
+      }
+    })
 
     return {
       chapterProgress: nextChapterProgress,
       totalActivities: nextTotalActivities,
       completedActivities: nextCompletedActivities,
-    };
-  }, [completedActivityIds, course.chapters]);
+    }
+  }, [completedActivityIds, course.chapters])
 
-  function isActivityDone(activity: any) {
-    return completedActivityIds.has(activity.id);
+  function isActivityDone(activity: AppActivity) {
+    return activity.id !== null && completedActivityIds.has(activity.id)
   }
 
-  const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100);
+  const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
 
   const toggleChapter = (chapterUuid: string) => {
-    setExpandedChapters((prev) => {
-      const next = new Set(prev);
+    setExpandedChapters(prev => {
+      const next = new Set(prev)
       if (next.has(chapterUuid)) {
-        next.delete(chapterUuid);
+        next.delete(chapterUuid)
       } else {
-        next.add(chapterUuid);
+        next.add(chapterUuid)
       }
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const getActivityTypeIcon = (activityType: string, isDone: boolean) => {
-    const iconClass = cn('size-4 shrink-0', isDone ? 'text-primary' : 'text-muted-foreground');
+    const iconClass = cn('size-4 shrink-0', isDone ? 'text-primary' : 'text-muted-foreground')
 
     switch (activityType) {
       case 'TYPE_VIDEO': {
-        return <Video className={iconClass} />;
+        return <Video className={iconClass} />
       }
       case 'TYPE_DOCUMENT': {
-        return <FileText className={iconClass} />;
+        return <FileText className={iconClass} />
       }
       case 'TYPE_DYNAMIC': {
-        return <Layers className={iconClass} />;
+        return <Layers className={iconClass} />
       }
       case 'TYPE_FILE_SUBMISSION': {
-        return <FileArchive className={iconClass} />;
+        return <FileArchive className={iconClass} />
       }
       default: {
-        return <FileText className={iconClass} />;
+        return <FileText className={iconClass} />
       }
     }
-  };
+  }
 
-  const isCompleted = progressPercentage === 100;
+  const isCompleted = progressPercentage === 100
 
   const dialogContent = (
     <div className="flex flex-col gap-6">
@@ -128,19 +133,8 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
         <div className="relative flex items-center gap-5">
           {/* Circular Progress */}
           <div className="relative flex size-20 shrink-0 items-center justify-center">
-            <svg
-              className="size-full -rotate-90"
-              viewBox="0 0 100 100"
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="8"
-                className="text-muted"
-              />
+            <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
               <circle
                 cx="50"
                 cy="50"
@@ -185,26 +179,27 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       {/* Chapters List */}
       <ScrollArea className="max-h-[400px]">
         <div className="mb-4 flex flex-col gap-3 p-0.5">
-          {course.chapters.map((chapter: any, chapterIndex: number) => {
-            const chapterStats = chapterProgress[chapter.chapter_uuid];
-            const isChapterComplete = chapterStats?.completed === chapterStats?.total;
-            const isExpanded = expandedChapters.has(chapter.chapter_uuid);
+          {course.chapters?.map((chapter: AppChapter, chapterIndex: number) => {
+            const chapterStats = chapter.chapter_uuid ? chapterProgress[chapter.chapter_uuid] : undefined
+            const isChapterComplete = chapterStats?.completed === chapterStats?.total
+            const isExpanded = chapter.chapter_uuid ? expandedChapters.has(chapter.chapter_uuid) : false
             const chapterPercentage =
               !chapterStats || chapterStats.total === 0
                 ? 0
-                : Math.round((chapterStats.completed / chapterStats.total) * 100);
+                : Math.round((chapterStats.completed / chapterStats.total) * 100)
 
             return (
               <div
-                key={chapter.chapter_uuid}
+                key={chapter.chapter_uuid ?? chapterIndex}
                 className="border-border hover:border-border/80 overflow-hidden rounded-xl border transition-shadow"
               >
                 {/* Chapter Header */}
-                <button
+                <Button
                   type="button"
-                  onClick={() => toggleChapter(chapter.chapter_uuid)}
+                  onClick={() => chapter.chapter_uuid && toggleChapter(chapter.chapter_uuid)}
+                  variant="ghost"
                   className={cn(
-                    'flex w-full items-center gap-3 bg-card p-4 text-left transition-colors hover:bg-muted/60',
+                    'flex h-auto w-full items-center gap-3 bg-card p-4 text-left transition-colors hover:bg-muted/60',
                     isChapterComplete && 'bg-primary/5',
                   )}
                 >
@@ -229,10 +224,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                         })}
                       </span>
                       {isChapterComplete && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-teal-100 text-teal-700"
-                        >
+                        <Badge variant="secondary" className="bg-teal-100 text-teal-700">
                           {t('progressCard.complete')}
                         </Badge>
                       )}
@@ -257,15 +249,15 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                       )}
                     />
                   </div>
-                </button>
+                </Button>
 
                 {/* Activities List */}
                 {isExpanded && (
                   <div className="border-t border-neutral-100 bg-neutral-50/50">
-                    {chapter.activities.map((activity: any, activityIndex: number) => {
-                      const activityId = activity.activity_uuid.replace('activity_', '');
-                      const courseId = course.course_uuid.replace('course_', '');
-                      const isDone = isActivityDone(activity);
+                    {chapter.activities?.map((activity: AppActivity, activityIndex: number) => {
+                      const activityId = activity.activity_uuid.replace('activity_', '')
+                      const courseId = (course.course_uuid || '').replace('course_', '')
+                      const isDone = isActivityDone(activity)
 
                       return (
                         <AppLink
@@ -276,7 +268,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                           <div
                             className={cn(
                               'group flex items-center gap-3 px-4 py-3 transition-colors',
-                              activityIndex !== chapter.activities.length - 1 && 'border-b border-neutral-100',
+                              activityIndex !== (chapter.activities?.length || 0) - 1 && 'border-b border-neutral-100',
                               isDone ? 'hover:bg-teal-50/50' : 'hover:bg-white',
                             )}
                           >
@@ -292,7 +284,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                             </div>
 
                             {/* Activity Type Icon */}
-                            {getActivityTypeIcon(activity.activity_type, isDone)}
+                            {getActivityTypeIcon(activity.activity_type || '', isDone)}
 
                             {/* Activity Name */}
                             <span
@@ -313,17 +305,17 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                             />
                           </div>
                         </AppLink>
-                      );
+                      )
                     })}
                   </div>
                 )}
               </div>
-            );
+            )
           })}
         </div>
       </ScrollArea>
     </div>
-  );
+  )
 
   return (
     <Modal
@@ -337,7 +329,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
       })}
       minWidth="md"
     />
-  );
-};
+  )
+}
 
-export default CourseProgress;
+export default CourseProgress

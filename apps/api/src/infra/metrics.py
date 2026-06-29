@@ -18,31 +18,37 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
+from src.types import JsonObject, JsonValue
+
 
 @dataclass
 class Counter:
     """Simple counter metric."""
 
     name: str
-    _values: dict[tuple, float] = field(default_factory=lambda: defaultdict(float))
+    _values: dict[tuple[tuple[str, str], ...], float] = field(default_factory=lambda: defaultdict(float))
 
     def labels(self, **kwargs: str) -> _LabeledCounter:
         return _LabeledCounter(self, tuple(sorted(kwargs.items())))
 
-    def inc(self, labels: tuple = (), amount: float = 1.0) -> None:
+    def inc(self, labels: tuple[tuple[str, str], ...] = (), amount: float = 1.0) -> None:
         self._values[labels] += amount
 
-    def get(self, labels: tuple = ()) -> float:
+    def get(self, labels: tuple[tuple[str, str], ...] = ()) -> float:
         return self._values[labels]
 
-    def collect(self) -> list[dict]:
-        return [{"labels": dict(k), "value": v} for k, v in self._values.items()]
+    def collect(self) -> list[JsonValue]:
+        res: list[JsonValue] = []
+        for k, v in self._values.items():
+            item: JsonObject = {"labels": dict(k), "value": v}
+            res.append(item)
+        return res
 
 
 @dataclass
 class _LabeledCounter:
     _counter: Counter
-    _labels: tuple
+    _labels: tuple[tuple[str, str], ...]
 
     def inc(self, amount: float = 1.0) -> None:
         self._counter.inc(self._labels, amount)
@@ -53,36 +59,35 @@ class Histogram:
     """Simple histogram metric (stores observations for percentile calculation)."""
 
     name: str
-    _observations: dict[tuple, list[float]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _observations: dict[tuple[tuple[str, str], ...], list[float]] = field(default_factory=lambda: defaultdict(list))
 
     def labels(self, **kwargs: str) -> _LabeledHistogram:
         return _LabeledHistogram(self, tuple(sorted(kwargs.items())))
 
-    def observe(self, value: float, labels: tuple = ()) -> None:
+    def observe(self, value: float, labels: tuple[tuple[str, str], ...] = ()) -> None:
         self._observations[labels].append(value)
 
-    def collect(self) -> list[dict]:
-        results = []
+    def collect(self) -> list[JsonValue]:
+        results: list[JsonValue] = []
         for labels, observations in self._observations.items():
             if not observations:
                 continue
             sorted_obs = sorted(observations)
-            results.append({
+            item: JsonObject = {
                 "labels": dict(labels),
                 "count": len(sorted_obs),
                 "sum": sum(sorted_obs),
                 "p50": sorted_obs[len(sorted_obs) // 2],
                 "p99": sorted_obs[int(len(sorted_obs) * 0.99)],
-            })
+            }
+            results.append(item)
         return results
 
 
 @dataclass
 class _LabeledHistogram:
     _histogram: Histogram
-    _labels: tuple
+    _labels: tuple[tuple[str, str], ...]
 
     def observe(self, value: float) -> None:
         self._histogram.observe(value, self._labels)
@@ -90,8 +95,10 @@ class _LabeledHistogram:
     @contextmanager
     def time(self) -> Generator[None]:
         start = time.perf_counter()
-        yield
-        self.observe(time.perf_counter() - start)
+        try:
+            yield
+        finally:
+            self.observe(time.perf_counter() - start)
 
 
 class MetricsRegistry:
@@ -103,12 +110,10 @@ class MetricsRegistry:
         self.auto_score = Histogram("grading_auto_score")
         self.code_execution_duration = Histogram("code_execution_duration_seconds")
         self.code_execution_degraded_total = Counter("code_execution_degraded_total")
-        self.lifecycle_transition_total = Counter(
-            "assessment_lifecycle_transition_total"
-        )
+        self.lifecycle_transition_total = Counter("assessment_lifecycle_transition_total")
         self.event_bus_dispatch_total = Counter("event_bus_dispatch_total")
 
-    def collect_all(self) -> dict:
+    def collect_all(self) -> JsonObject:
         """Collect all metrics for the /internal/metrics endpoint."""
         return {
             "grading_submission_total": self.submission_total.collect(),

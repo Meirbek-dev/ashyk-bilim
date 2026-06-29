@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from pydantic import Field
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.courses import Course
 from src.db.grading.gradebook import ActivityProgressCell
@@ -35,9 +34,7 @@ class GradebookCursorPage(PydanticStrictBaseModel):
 
 
 def encode_cursor(user_id: int, activity_id: int) -> str:
-    return base64.urlsafe_b64encode(
-        json.dumps({"u": user_id, "a": activity_id}).encode()
-    ).decode()
+    return base64.urlsafe_b64encode(json.dumps({"u": user_id, "a": activity_id}).encode()).decode()
 
 
 def decode_cursor(cursor: str) -> tuple[int, int]:
@@ -47,7 +44,7 @@ def decode_cursor(cursor: str) -> tuple[int, int]:
     except (json.JSONDecodeError, KeyError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid cursor",
+            detail="Неверный курсор",
         ) from exc
 
 
@@ -66,17 +63,14 @@ async def get_gradebook_cursor(
     query = (
         select(ActivityProgress)
         .where(ActivityProgress.course_id == course.id)
-        .order_by(ActivityProgress.user_id, ActivityProgress.activity_id)
+        .order_by(col(ActivityProgress.user_id), col(ActivityProgress.activity_id))
     )
 
     if cursor is not None:
         user_id, activity_id = decode_cursor(cursor)
         query = query.where(
             (ActivityProgress.user_id > user_id)
-            | (
-                (ActivityProgress.user_id == user_id)
-                & (ActivityProgress.activity_id > activity_id)
-            )
+            | ((ActivityProgress.user_id == user_id) & (ActivityProgress.activity_id > activity_id))
         )
 
     # Fetch one extra to determine has_more
@@ -85,28 +79,20 @@ async def get_gradebook_cursor(
     page_rows = rows[:limit]
 
     # Build cells
-    submission_ids = {
-        row.latest_submission_id for row in page_rows if row.latest_submission_id
-    }
+    submission_ids = {row.latest_submission_id for row in page_rows if row.latest_submission_id}
     submissions_by_id: dict[int, Submission] = {}
     if submission_ids:
-        subs = db_session.exec(
-            select(Submission).where(Submission.id.in_(submission_ids))
-        ).all()
+        subs = db_session.exec(select(Submission).where(col(Submission.id).in_(submission_ids))).all()
         submissions_by_id = {s.id: s for s in subs if s.id}
 
     cells: list[ActivityProgressCell] = []
     for progress in page_rows:
-        latest = (
-            submissions_by_id.get(progress.latest_submission_id)
-            if progress.latest_submission_id
-            else None
-        )
+        latest = submissions_by_id.get(progress.latest_submission_id) if progress.latest_submission_id else None
         cells.append(
             ActivityProgressCell(
                 user_id=progress.user_id,
                 activity_id=progress.activity_id,
-                state=progress.state,
+                state=ActivityProgressState(progress.state),
                 score=progress.score,
                 passed=progress.passed,
                 is_late=progress.is_late,
@@ -130,9 +116,7 @@ async def get_gradebook_cursor(
     # Total count
     from sqlalchemy import func
 
-    total = db_session.exec(
-        select(func.count()).where(ActivityProgress.course_id == course.id)
-    ).one()
+    total = db_session.exec(select(func.count()).where(ActivityProgress.course_id == course.id)).one()
 
     return GradebookCursorPage(
         cells=cells,
@@ -143,22 +127,14 @@ async def get_gradebook_cursor(
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
-    normalized = (
-        course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
-    )
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == normalized)
-    ).first()
+    normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    course = db_session.exec(select(Course).where(Course.course_uuid == normalized)).first()
     if course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     return course
 
 
-def _require_gradebook_access(
-    course: Course, current_user: PublicUser, db_session: Session
-) -> None:
+def _require_gradebook_access(course: Course, current_user: PublicUser, db_session: Session) -> None:
     is_author = db_session.exec(
         select(ResourceAuthor.id).where(
             ResourceAuthor.resource_uuid == course.course_uuid,

@@ -1,35 +1,37 @@
-'use client';
+'use client'
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { UseQueryResult } from '@tanstack/react-query'
 import {
   runCodeChallengeTestsMutationOptions,
   runCustomTestMutationOptions,
   saveCodeChallengeSettingsMutationOptions,
   submitCodeChallengeMutationOptions,
-} from './mutations';
+} from './mutations'
 import {
   codeChallengeSettingsQueryOptions,
   codeChallengeSubmissionQueryOptions,
   codeChallengeSubmissionsQueryOptions,
   judge0LanguagesQueryOptions,
-} from './queries';
+} from './queries'
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges'
 
-function codeChallengeSettingsHookOptions<TSettings = unknown>(activityUuid: string | null | undefined) {
-  const normalizedActivityUuid = activityUuid ?? '';
+function codeChallengeSettingsHookOptions(activityUuid: string | null | undefined) {
+  const normalizedActivityUuid = activityUuid ?? ''
 
   return queryOptions({
-    ...codeChallengeSettingsQueryOptions<TSettings>(normalizedActivityUuid),
+    ...codeChallengeSettingsQueryOptions(normalizedActivityUuid),
     enabled: Boolean(activityUuid),
-  });
+  })
 }
 
 function codeChallengeSubmissionsHookOptions(activityUuid: string | null | undefined) {
-  const normalizedActivityUuid = activityUuid ?? '';
+  const normalizedActivityUuid = activityUuid ?? ''
 
   return queryOptions({
     ...codeChallengeSubmissionsQueryOptions(normalizedActivityUuid),
     enabled: Boolean(activityUuid),
-  });
+  })
 }
 
 function codeChallengeSubmissionHookOptions(
@@ -37,26 +39,28 @@ function codeChallengeSubmissionHookOptions(
   submissionUuid: string | null,
   options?: { refetchInterval?: number | false },
 ) {
-  const normalizedActivityUuid = activityUuid ?? '';
-  const normalizedSubmissionUuid = submissionUuid ?? '';
+  const normalizedActivityUuid = activityUuid ?? ''
+  const normalizedSubmissionUuid = submissionUuid ?? ''
 
   return queryOptions({
     ...codeChallengeSubmissionQueryOptions(normalizedActivityUuid, normalizedSubmissionUuid),
     enabled: Boolean(activityUuid && submissionUuid),
-    refetchInterval: options?.refetchInterval,
-  });
+    ...(options?.refetchInterval !== undefined ? { refetchInterval: options.refetchInterval } : {}),
+  })
 }
 
-export function useCodeChallengeSettings<TSettings = unknown>(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid));
+export function useCodeChallengeSettings(
+  activityUuid: string | null | undefined,
+): UseQueryResult<CodeChallengeSettings | null> {
+  return useQuery(codeChallengeSettingsHookOptions(activityUuid))
 }
 
 export function useJudge0Languages() {
-  return useQuery(judge0LanguagesQueryOptions());
+  return useQuery(judge0LanguagesQueryOptions())
 }
 
 export function useCodeChallengeSubmissions(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSubmissionsHookOptions(activityUuid));
+  return useQuery(codeChallengeSubmissionsHookOptions(activityUuid))
 }
 
 export function useCodeChallengeSubmission(
@@ -64,23 +68,23 @@ export function useCodeChallengeSubmission(
   submissionUuid: string | null,
   options?: { refetchInterval?: number | false },
 ) {
-  return useQuery(codeChallengeSubmissionHookOptions(activityUuid, submissionUuid, options));
+  return useQuery(codeChallengeSubmissionHookOptions(activityUuid, submissionUuid, options))
 }
 
 export function useRunCustomTest(activityUuid: string) {
-  return useMutation(runCustomTestMutationOptions(activityUuid));
+  return useMutation(runCustomTestMutationOptions(activityUuid))
 }
 
 export function useRunCodeChallengeTests(activityUuid: string) {
-  return useMutation(runCodeChallengeTestsMutationOptions(activityUuid));
+  return useMutation(runCodeChallengeTestsMutationOptions(activityUuid))
 }
 
 export function useSubmitCodeChallenge(activityUuid: string) {
-  const queryClient = useQueryClient();
-  return useMutation(submitCodeChallengeMutationOptions(activityUuid, queryClient));
+  const queryClient = useQueryClient()
+  return useMutation(submitCodeChallengeMutationOptions(activityUuid, queryClient))
 }
 
 export function useSaveCodeChallengeSettings(activityUuid: string) {
-  const queryClient = useQueryClient();
-  return useMutation(saveCodeChallengeSettingsMutationOptions(activityUuid, queryClient));
+  const queryClient = useQueryClient()
+  return useMutation(saveCodeChallengeSettingsMutationOptions(activityUuid, queryClient))
 }

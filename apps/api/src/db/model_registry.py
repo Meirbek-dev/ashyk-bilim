@@ -1,46 +1,60 @@
-_MODELS_IMPORTED = False
+from importlib import import_module
+
+ORM_MODEL_MODULES: tuple[str, ...] = (
+    "src.db.ai_runtime",
+    "src.db.ai_course_analysis",
+    "src.db.ai_lecture_review",
+    "src.db.ai_qa_thread",
+    "src.db.ai_remediation",
+    "src.db.ai_student_memory",
+    "src.db.ai_submission_analysis",
+    "src.db.analytics",
+    "src.db.assessment_access",
+    "src.db.assessments",
+    "src.db.auth_audit_log",
+    "src.db.auth_sessions",
+    "src.db.audit",
+    "src.db.code_execution",
+    "src.db.collections",
+    "src.db.collections_courses",
+    "src.db.courses.activities",
+    "src.db.courses.blocks",
+    "src.db.courses.certifications",
+    "src.db.courses.chapters",
+    "src.db.courses.course_updates",
+    "src.db.courses.courses",
+    "src.db.courses.discussions",
+    "src.db.file_submissions",
+    "src.db.gamification",
+    "src.db.grading.bulk_actions",
+    "src.db.grading.entries",
+    "src.db.grading.item_feedback",
+    "src.db.grading.overrides",
+    "src.db.grading.progress",
+    "src.db.grading.submissions",
+    "src.db.permissions",
+    "src.db.platform",
+    "src.db.resource_authors",
+    "src.db.trail_runs",
+    "src.db.trail_steps",
+    "src.db.trails",
+    "src.db.uploads",
+    "src.db.usergroup_resources",
+    "src.db.usergroup_user",
+    "src.db.usergroups",
+    "src.db.users",
+)
+
+_models_imported = False
 
 
 def import_orm_models() -> None:
-    global _MODELS_IMPORTED
+    global _models_imported
 
-    if _MODELS_IMPORTED:
+    if _models_imported:
         return
 
-    import src.db.analytics
-    import src.db.assessments
-    import src.db.auth_audit_log
-    import src.db.auth_sessions
-    import src.db.code_execution
-    import src.db.collections
-    import src.db.collections_courses
-    import src.db.courses.activities
-    import src.db.courses.blocks
-    import src.db.courses.certifications
-    import src.db.courses.chapters
-    import src.db.courses.course_updates
-    import src.db.courses.courses
-    import src.db.courses.discussions
-    import src.db.courses.enhanced_responses
-    import src.db.file_submissions
-    import src.db.gamification
-    import src.db.grading.bulk_actions
-    import src.db.grading.entries
-    import src.db.grading.item_feedback
-    import src.db.grading.overrides
-    import src.db.grading.progress
-    import src.db.grading.schemas
-    import src.db.grading.submissions
-    import src.db.permissions
-    import src.db.platform
-    import src.db.resource_authors
-    import src.db.trail_runs
-    import src.db.trail_steps
-    import src.db.trails
-    import src.db.uploads
-    import src.db.usergroup_resources
-    import src.db.usergroup_user
-    import src.db.usergroups
-    import src.db.users
+    for module_name in ORM_MODEL_MODULES:
+        import_module(module_name)
 
-    _MODELS_IMPORTED = True
+    _models_imported = True

@@ -1,43 +1,45 @@
-import { getPlatformThumbnailImage } from '@services/media/media';
-import { PLATFORM_BRAND_NAME } from '@/lib/constants';
-import { getTranslations } from 'next-intl/server';
-import type { Metadata } from 'next';
+import { getPlatformThumbnailImage } from '@services/media/media'
+import { APP_NAME } from '@/lib/constants'
+import { getSearchParam } from '@/lib/search-params'
+import type { PageSearchParams } from '@/lib/search-params'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
 
-import SearchPage from './search';
+import SearchPage from './search'
 
 interface MetadataProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<PageSearchParams>
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const searchParams = await props.searchParams;
-  const t = await getTranslations('General');
+  const searchParams = await props.searchParams
+  const t = await getTranslations('General')
 
-  const searchQuery = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q || '';
-  const searchType = Array.isArray(searchParams.type) ? searchParams.type[0] : searchParams.type || 'all';
+  const searchQuery = getSearchParam(searchParams, 'q') ?? ''
+  const searchType = getSearchParam(searchParams, 'type') ?? 'all'
 
   // Build dynamic title and description based on search parameters
-  let title = `${t('search')} - ${PLATFORM_BRAND_NAME}`;
-  let description = `${t('searchContent')} ${PLATFORM_BRAND_NAME}. ${t('discoverCourses')}, ${t('collections')}, ${t('andUsers')}.`;
+  let title = `${t('search')} - ${APP_NAME}`
+  let description = `${t('searchContent')} ${APP_NAME}. ${t('discoverCourses')}, ${t('collections')}, ${t('andUsers')}.`
 
   if (searchQuery) {
-    title = `${t('searchResults')} "${searchQuery}" - ${PLATFORM_BRAND_NAME}`;
-    description = `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${PLATFORM_BRAND_NAME}. ${t('findCourses')}, ${t('collections')}, ${t('andUsers')}.`;
+    title = `${t('searchResults')} "${searchQuery}" - ${APP_NAME}`
+    description = `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${APP_NAME}. ${t('findCourses')}, ${t('collections')}, ${t('andUsers')}.`
   }
 
   if (searchType !== 'all' && searchType) {
-    const typeLabel = t(searchType as 'courses' | 'collections' | 'users');
+    const typeLabel = t(searchType as 'courses' | 'collections' | 'users')
     title = searchQuery
-      ? `${typeLabel} ${t('searchResults')} "${searchQuery}" - ${PLATFORM_BRAND_NAME}`
-      : `${typeLabel} - ${PLATFORM_BRAND_NAME}`;
+      ? `${typeLabel} ${t('searchResults')} "${searchQuery}" - ${APP_NAME}`
+      : `${typeLabel} - ${APP_NAME}`
     description = searchQuery
-      ? `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${typeLabel.toLowerCase()} ${t('at')} ${PLATFORM_BRAND_NAME}.`
-      : `${t('browse')} ${typeLabel.toLowerCase()} ${t('at')} ${PLATFORM_BRAND_NAME}.`;
+      ? `${t('searchResultsFor')} "${searchQuery}" ${t('in')} ${typeLabel.toLowerCase()} ${t('at')} ${APP_NAME}.`
+      : `${t('browse')} ${typeLabel.toLowerCase()} ${t('at')} ${APP_NAME}.`
   }
 
   // SEO keywords
   const keywords = [
-    PLATFORM_BRAND_NAME,
+    APP_NAME,
     t('search'),
     t('courses'),
     t('collections'),
@@ -49,7 +51,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     searchQuery,
   ]
     .filter(Boolean)
-    .join(', ');
+    .join(', ')
 
   return {
     title,
@@ -60,8 +62,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       follow: true,
       nocache: true,
       googleBot: {
-        'index': true,
-        'follow': true,
+        index: true,
+        follow: true,
         'max-image-preview': 'large',
         'max-snippet': -1,
         'max-video-preview': -1,
@@ -71,13 +73,13 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       title,
       description,
       type: 'website',
-      siteName: PLATFORM_BRAND_NAME,
+      siteName: APP_NAME,
       images: [
         {
           url: getPlatformThumbnailImage(),
           width: 800,
           height: 600,
-          alt: `${PLATFORM_BRAND_NAME} - ${t('search')}`,
+          alt: `${APP_NAME} - ${t('search')}`,
         },
       ],
     },
@@ -90,7 +92,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     alternates: {
       canonical: searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : `/search`,
     },
-  };
+  }
 }
 
 const SearchPageWrapper = async () => {
@@ -98,7 +100,7 @@ const SearchPageWrapper = async () => {
     <div>
       <SearchPage />
     </div>
-  );
-};
+  )
+}
 
-export default SearchPageWrapper;
+export default SearchPageWrapper

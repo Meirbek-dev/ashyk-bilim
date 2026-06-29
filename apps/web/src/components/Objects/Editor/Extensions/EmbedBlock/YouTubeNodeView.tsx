@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import { useCallback, useRef } from 'react';
-import { YouTubeEmbed } from '@next/third-parties/google';
-import { Pencil, Trash2 } from 'lucide-react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
-import type { EmbedBlockAttrs } from './EmbedBlock';
-import { resolveYouTubeVideoId } from './embed-validators';
+import { useCallback, useRef } from 'react'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
+import { Pencil, Trash2 } from 'lucide-react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
+import type { EmbedBlockAttrs } from './EmbedBlock'
+import { resolveYouTubeVideoId } from './embed-validators'
 
 const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
-  const { node, editor, deleteNode, getPos } = props;
-  const { url } = node.attrs;
-  const { isEditable } = editor;
-  const videoId = url ? resolveYouTubeVideoId(url) : null;
-  const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const openForEdit = useEmbedPanelStore((state) => state.openForEdit);
-  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const { node, editor, deleteNode, getPos } = props
+  const { url } = node.attrs
+  const { isEditable } = editor
+  const videoId = url ? resolveYouTubeVideoId(url) : null
+  const t = useTranslations('DashPage.Editor.EmbedPanel')
+  const openForEdit = useEmbedPanelStore(state => state.openForEdit)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
 
   const handleEdit = useCallback(() => {
-    const pos = typeof getPos === 'function' ? getPos() : undefined;
-    if (pos === undefined || !url) return;
-    openForEdit(pos, { type: 'youtube', url }, editButtonRef);
-  }, [getPos, openForEdit, url]);
+    const pos = typeof getPos === 'function' ? getPos() : undefined
+    if (pos === undefined || !url) return
+    openForEdit(pos, { type: 'youtube', url }, editButtonRef)
+  }, [getPos, openForEdit, url])
 
   if (!videoId) {
     return (
@@ -35,18 +35,16 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           {t('errorYoutubeId')}
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
   return (
-    <NodeViewWrapper
-      className="youtube-node-view relative my-4 w-full"
-      data-drag-handle={isEditable ? '' : undefined}
-    >
+    <NodeViewWrapper className="youtube-node-view relative my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>
       <div className="aspect-video w-full overflow-hidden rounded-md">
-        <YouTubeEmbed
+        {}
+        <YouTubeEmbedFill
           videoid={videoId}
-          style="height: 100%; width: 100%; max-width: none;"
+          style={{ height: '100%', width: '100%', maxWidth: 'none' }}
           params="rel=0"
         />
       </div>
@@ -76,7 +74,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         </div>
       ) : null}
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default YouTubeNodeView;
+export default YouTubeNodeView

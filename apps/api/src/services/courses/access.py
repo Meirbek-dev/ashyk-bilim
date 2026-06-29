@@ -1,10 +1,10 @@
 """Course membership and access helpers.
 
-These functions are used across multiple assignment/submission service modules
+These functions are used across assessment and submission service modules
 to determine whether a user has read or submit access to course content.
 """
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.courses import Course
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
@@ -33,9 +33,7 @@ def user_has_course_access(user_id: int, course: Course, db_session: Session) ->
         return True
 
     linked_groups = db_session.exec(
-        select(UserGroupResource.id).where(
-            UserGroupResource.resource_uuid == course.course_uuid
-        )
+        select(UserGroupResource.id).where(UserGroupResource.resource_uuid == course.course_uuid)
     ).all()
     if not linked_groups:
         return True
@@ -44,7 +42,7 @@ def user_has_course_access(user_id: int, course: Course, db_session: Session) ->
         select(UserGroupUser.id)
         .join(
             UserGroupResource,
-            UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+            col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
         )
         .where(
             UserGroupResource.resource_uuid == course.course_uuid,

@@ -1,15 +1,13 @@
-'use client';
-
-import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs';
-import type { DashBreadcrumbType } from '@/components/ui/app-breadcrumbs';
-import React from 'react';
+import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs'
+import type { DashBreadcrumbType } from '@/components/ui/app-breadcrumbs'
+import type React from 'react'
 
 interface Props {
-  breadcrumbType: string;
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  headerClassName?: string;
-  children?: React.ReactNode;
+  breadcrumbType: string
+  title: React.ReactNode
+  description?: React.ReactNode
+  headerClassName?: string
+  children?: React.ReactNode
 }
 
 export default function SettingsHeader({
@@ -34,5 +32,5 @@ export default function SettingsHeader({
         {children}
       </div>
     </header>
-  );
+  )
 }

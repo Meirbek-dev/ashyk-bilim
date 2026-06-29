@@ -1,26 +1,27 @@
-'use client';
+'use client'
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react'
+import { IS_PRODUCTION } from '@/services/config/env'
 
-type ViolationType = 'BLUR' | 'DEVTOOLS' | 'COPY' | 'RESIZE' | 'CONTEXTMENU' | 'KEYDOWN' | 'FULLSCREEN_EXIT';
+type ViolationType = 'BLUR' | 'DEVTOOLS' | 'COPY' | 'RESIZE' | 'CONTEXTMENU' | 'KEYDOWN' | 'FULLSCREEN_EXIT'
 
 interface Violation {
-  type: ViolationType;
-  timestamp: number;
+  type: ViolationType
+  timestamp: number
 }
 
 interface UseTestGuardOptions {
-  onViolation: (type: ViolationType, count: number) => void;
-  maxViolations?: number;
-  enabled?: boolean;
-  preventCopy?: boolean;
-  preventRightClick?: boolean;
-  trackBlur?: boolean;
-  trackDevTools?: boolean;
+  onViolation: (type: ViolationType, count: number) => void
+  maxViolations?: number
+  enabled?: boolean
+  preventCopy?: boolean
+  preventRightClick?: boolean
+  trackBlur?: boolean
+  trackDevTools?: boolean
   // New debounce options to prevent false positives
-  blurDebounceMs?: number; // Debounce blur events (default: 500ms)
-  devToolsThreshold?: number; // Pixels to consider DevTools open (default: 160)
-  devToolsCheckIntervalMs?: number; // How often to check for DevTools (default: 1000ms)
+  blurDebounceMs?: number // Debounce blur events (default: 500ms)
+  devToolsThreshold?: number // Pixels to consider DevTools open (default: 160)
+  devToolsCheckIntervalMs?: number // How often to check for DevTools (default: 1000ms)
 }
 
 /**
@@ -50,131 +51,131 @@ export function useTestGuard({
   devToolsThreshold = 160,
   devToolsCheckIntervalMs = 1000,
 }: UseTestGuardOptions) {
-  const violations = useRef<Violation[]>([]);
-  const locked = useRef(false);
-  const blurTimeout = useRef<NodeJS.Timeout | null>(null);
+  const violations = useRef<Violation[]>([])
+  const locked = useRef(false)
+  const blurTimeout = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return
 
-    const handlers: (() => void)[] = [];
+    const handlers: (() => void)[] = []
 
     const report = (type: ViolationType) => {
-      if (locked.current || !enabled) return;
+      if (locked.current || !enabled) return
 
       const violation: Violation = {
         type,
         timestamp: Date.now(),
-      };
+      }
 
       // Debug logging to help diagnose false positives
       try {
-        if (process.env.NODE_ENV !== 'production') {
+        if (!IS_PRODUCTION) {
           // Capture helpful context: active element and simple stack
-          const active = document.activeElement;
+          const active = document.activeElement
           console.debug('[useTestGuard] report', {
             type,
             activeTag: active?.tagName,
             activeId: (active as HTMLElement | null)?.id,
             activeClasses: (active as HTMLElement | null)?.className,
-          });
+          })
         }
       } catch (error) {
         // ignore logging errors
-        void error;
+        void error
       }
 
-      violations.current.push(violation);
-      const count = violations.current.length;
+      violations.current.push(violation)
+      const count = violations.current.length
 
-      onViolation(type, count);
+      onViolation(type, count)
 
       if (count >= maxViolations) {
-        locked.current = true;
+        locked.current = true
       }
-    };
+    }
 
     // 1. Blur/Focus tracking with debounce to prevent false positives
     if (trackBlur) {
       const handleBlur = () => {
         // Clear any existing timeout
         if (blurTimeout.current) {
-          clearTimeout(blurTimeout.current);
+          clearTimeout(blurTimeout.current)
         }
 
         // Debounce: only report if focus doesn't return within debounceMs
         blurTimeout.current = setTimeout(() => {
           // Double-check we're still blurred
           if (document.hidden || !document.hasFocus()) {
-            report('BLUR');
+            report('BLUR')
           }
-        }, blurDebounceMs);
-      };
+        }, blurDebounceMs)
+      }
 
       const handleFocus = () => {
         // User returned to tab - cancel pending blur report
         if (blurTimeout.current) {
-          clearTimeout(blurTimeout.current);
-          blurTimeout.current = null;
+          clearTimeout(blurTimeout.current)
+          blurTimeout.current = null
         }
-      };
+      }
 
       const onVisibility = () => {
         if (document.hidden) {
-          handleBlur();
+          handleBlur()
         } else {
-          handleFocus();
+          handleFocus()
         }
-      };
+      }
 
-      window.addEventListener('blur', handleBlur);
-      window.addEventListener('focus', handleFocus);
-      document.addEventListener('visibilitychange', onVisibility);
+      window.addEventListener('blur', handleBlur)
+      window.addEventListener('focus', handleFocus)
+      document.addEventListener('visibilitychange', onVisibility)
 
       handlers.push(() => {
         if (blurTimeout.current) {
-          clearTimeout(blurTimeout.current);
+          clearTimeout(blurTimeout.current)
         }
-        window.removeEventListener('blur', handleBlur);
-        window.removeEventListener('focus', handleFocus);
-        document.removeEventListener('visibilitychange', onVisibility);
-      });
+        window.removeEventListener('blur', handleBlur)
+        window.removeEventListener('focus', handleFocus)
+        document.removeEventListener('visibilitychange', onVisibility)
+      })
     }
 
     // 2. DevTools detection (heuristic with configurable threshold)
     if (trackDevTools) {
-      let lastWidth = window.outerWidth;
-      let lastHeight = window.outerHeight;
-      let devToolsViolationCount = 0;
-      const requiredConsistentChecks = 2; // Require 2 consistent checks before reporting
+      let lastWidth = window.outerWidth
+      let lastHeight = window.outerHeight
+      let devToolsViolationCount = 0
+      const requiredConsistentChecks = 2 // Require 2 consistent checks before reporting
 
       const checkDevTools = () => {
-        const widthDiff = window.outerWidth - window.innerWidth;
-        const heightDiff = window.outerHeight - window.innerHeight;
+        const widthDiff = window.outerWidth - window.innerWidth
+        const heightDiff = window.outerHeight - window.innerHeight
         const sizeChange =
-          Math.abs(window.outerWidth - lastWidth) > 100 || Math.abs(window.outerHeight - lastHeight) > 100;
+          Math.abs(window.outerWidth - lastWidth) > 100 || Math.abs(window.outerHeight - lastHeight) > 100
 
         // Only report if threshold exceeded and significant size change
         if ((widthDiff > devToolsThreshold || heightDiff > devToolsThreshold) && sizeChange) {
-          devToolsViolationCount += 1;
+          devToolsViolationCount += 1
 
           // Require multiple consistent checks to reduce false positives
           if (devToolsViolationCount >= requiredConsistentChecks) {
-            report('DEVTOOLS');
-            devToolsViolationCount = 0; // Reset after reporting
+            report('DEVTOOLS')
+            devToolsViolationCount = 0 // Reset after reporting
           }
 
-          lastWidth = window.outerWidth;
-          lastHeight = window.outerHeight;
+          lastWidth = window.outerWidth
+          lastHeight = window.outerHeight
         } else {
           // Reset count if conditions not met
-          devToolsViolationCount = 0;
+          devToolsViolationCount = 0
         }
-      };
+      }
 
-      const interval = setInterval(checkDevTools, devToolsCheckIntervalMs);
+      const interval = setInterval(checkDevTools, devToolsCheckIntervalMs)
 
-      handlers.push(() => clearInterval(interval));
+      handlers.push(() => clearInterval(interval))
     }
 
     // 3. Copy/Paste/Context menu prevention (hardened to reduce false positives)
@@ -183,84 +184,86 @@ export function useTestGuard({
         try {
           // Only consider clipboard events if there is an actual selection or pasted text
           if (e.type === 'copy' || e.type === 'cut') {
-            const sel = typeof globalThis.getSelection === 'function' ? globalThis.getSelection()?.toString() : '';
-            if (!sel) return;
+            const sel = typeof globalThis.getSelection === 'function' ? globalThis.getSelection()?.toString() : ''
+            if (!sel) return
           }
           if (e.type === 'paste') {
-            const data = e.clipboardData?.getData('text') ?? '';
-            if (!data) return;
+            const data = e.clipboardData?.getData('text') ?? ''
+            if (!data) return
           }
         } catch {
           // In case of unexpected environment, be conservative and ignore
-          return;
+          return
         }
 
-        e.preventDefault();
-        report('COPY');
-      };
+        e.preventDefault()
+        report('COPY')
+      }
 
       if (preventCopy) {
-        document.addEventListener('copy', preventClipboard);
-        document.addEventListener('cut', preventClipboard);
-        document.addEventListener('paste', preventClipboard);
+        document.addEventListener('copy', preventClipboard)
+        document.addEventListener('cut', preventClipboard)
+        document.addEventListener('paste', preventClipboard)
 
         handlers.push(() => {
-          document.removeEventListener('copy', preventClipboard);
-          document.removeEventListener('cut', preventClipboard);
-          document.removeEventListener('paste', preventClipboard);
-        });
+          document.removeEventListener('copy', preventClipboard)
+          document.removeEventListener('cut', preventClipboard)
+          document.removeEventListener('paste', preventClipboard)
+        })
       }
 
       if (preventRightClick) {
         const preventContext = (e: MouseEvent) => {
           // Only treat real right-clicks (button === 2) as violations; ignore synthetic or left-click contextmenu
-          if (typeof e.button === 'number' && e.button !== 2) return;
-          e.preventDefault();
-          report('CONTEXTMENU');
-        };
-        document.addEventListener('contextmenu', preventContext);
+          if (typeof e.button === 'number' && e.button !== 2) return
+          e.preventDefault()
+          report('CONTEXTMENU')
+        }
+        document.addEventListener('contextmenu', preventContext)
         handlers.push(() => {
-          document.removeEventListener('contextmenu', preventContext);
-        });
+          document.removeEventListener('contextmenu', preventContext)
+        })
       }
 
       // 4. Keyboard shortcuts - only when not typing in an input/textarea/contentEditable
       const keydown = (e: KeyboardEvent) => {
-        const active = document.activeElement as HTMLElement | null;
+        const active = document.activeElement as HTMLElement | null
         const isEditable =
           active !== null &&
           (active.tagName === 'INPUT' ||
             active.tagName === 'TEXTAREA' ||
             // contentEditable check
-            active.getAttribute?.('contenteditable') === 'true');
+            active.getAttribute?.('contenteditable') === 'true')
 
-        if (isEditable) return;
+        if (isEditable) return
 
         if ((e.ctrlKey || e.metaKey) && ['c', 'a', 'u', 's', 'p', 'x'].includes(e.key.toLowerCase())) {
-          e.preventDefault();
-          report('KEYDOWN');
+          e.preventDefault()
+          report('KEYDOWN')
         }
-      };
+      }
 
-      document.addEventListener('keydown', keydown);
+      document.addEventListener('keydown', keydown)
       handlers.push(() => {
-        document.removeEventListener('keydown', keydown);
-      });
+        document.removeEventListener('keydown', keydown)
+      })
     }
 
     // 5. Warn before leaving
     const beforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
+      e.preventDefault()
+      e.returnValue = ''
+    }
 
-    window.addEventListener('beforeunload', beforeUnload);
-    handlers.push(() => window.removeEventListener('beforeunload', beforeUnload));
+    window.addEventListener('beforeunload', beforeUnload)
+    handlers.push(() => window.removeEventListener('beforeunload', beforeUnload))
 
     // Cleanup all handlers
     return () => {
-      handlers.forEach((cleanup) => cleanup());
-    };
+      for (const cleanup of handlers) {
+        cleanup()
+      }
+    }
   }, [
     enabled,
     preventCopy,
@@ -272,15 +275,15 @@ export function useTestGuard({
     blurDebounceMs,
     devToolsThreshold,
     devToolsCheckIntervalMs,
-  ]);
+  ])
 
   return {
     isLocked: () => locked.current,
     getCount: () => violations.current.length,
     getViolations: () => violations.current,
     reset: () => {
-      violations.current = [];
-      locked.current = false;
+      violations.current = []
+      locked.current = false
     },
-  };
+  }
 }

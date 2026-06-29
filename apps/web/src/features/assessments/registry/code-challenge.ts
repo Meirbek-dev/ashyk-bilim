@@ -2,11 +2,10 @@
  * Registry module for TYPE_CODE_CHALLENGE.
  */
 
-import type { ComponentType } from 'react';
-import { registerKind } from './index';
-import type { KindAttemptProps, KindReviewProps } from './index';
+import type { ComponentType } from 'react'
+import type { KindAttemptProps, KindModule, KindReviewProps } from './index'
 
-registerKind('TYPE_CODE_CHALLENGE', async () => {
+export const codeChallengeModuleFactory = async (): Promise<KindModule> => {
   const [
     { default: GradingReviewWorkspace },
     { default: CodeChallengeAuthor },
@@ -15,11 +14,15 @@ registerKind('TYPE_CODE_CHALLENGE', async () => {
     import('@/features/grading/review/GradingReviewWorkspace'),
     import('./code-challenge-author'),
     import('./code-challenge/CodeChallengeAttemptContent'),
-  ]);
+  ])
 
   const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
-    return GradingReviewWorkspace({ activityId, initialSubmissionUuid: submissionUuid ?? null, title });
-  };
+    return GradingReviewWorkspace({
+      activityId,
+      initialSubmissionUuid: submissionUuid ?? null,
+      ...(title !== undefined ? { title } : {}),
+    })
+  }
 
   return {
     label: 'Code Challenge',
@@ -27,5 +30,5 @@ registerKind('TYPE_CODE_CHALLENGE', async () => {
     Author: CodeChallengeAuthor,
     Attempt: CodeChallengeAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
-  };
-});
+  }
+}

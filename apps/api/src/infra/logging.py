@@ -1,7 +1,8 @@
 import logging.config
 import os
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Literal, override
 
 from src.infra.settings import AppSettings
 
@@ -18,10 +19,20 @@ _RESET = "\x1b[0m"
 
 
 class ColorFormatter(logging.Formatter):
-    def __init__(self, *args: Any, colorize: bool = True, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        fmt: str | None = None,
+        datefmt: str | None = None,
+        style: Literal["%", "{", "$"] = "%",
+        validate: bool = True,
+        *,
+        defaults: Mapping[str, object] | None = None,
+        colorize: bool = True,
+    ) -> None:
+        super().__init__(fmt, datefmt, style, validate, defaults=defaults)
         self.colorize = colorize and "NO_COLOR" not in os.environ
 
+    @override
     def format(self, record: logging.LogRecord) -> str:
         if not self.colorize:
             return super().format(record)
@@ -38,7 +49,7 @@ class ColorFormatter(logging.Formatter):
             record.levelname = levelname
 
 
-def build_logging_config(settings: AppSettings) -> dict[str, Any]:
+def build_logging_config(settings: AppSettings) -> dict[str, object]:
     level = "DEBUG" if settings.general_config.development_mode else "INFO"
     colorize = settings.general_config.color_logs
 

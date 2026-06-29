@@ -1,48 +1,37 @@
-'use client';
+'use client'
 
-import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
-import { Toaster as Sonner } from 'sonner';
-import type { ToasterProps } from 'sonner';
-import { useTheme } from '@/components/providers/theme-provider';
+import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react'
+import { useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
+import { Toaster as Sonner } from 'sonner'
+import type { ToasterProps } from 'sonner'
+import { useTheme } from '@/components/providers/theme-provider'
+
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme()
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <Sonner
       position={position}
       theme={resolvedTheme}
       className="toaster group"
       icons={{
-        success: (
-          <CircleCheckIcon
-            color="green"
-            className="size-4"
-          />
-        ),
-        info: (
-          <InfoIcon
-            color="blue"
-            className="size-4"
-          />
-        ),
-        warning: (
-          <TriangleAlertIcon
-            color="orange"
-            className="size-4"
-          />
-        ),
-        error: (
-          <OctagonXIcon
-            color="red"
-            className="size-4"
-          />
-        ),
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-4 text-lime-600" />,
+        info: <InfoIcon className="size-4 text-blue-600" />,
+        warning: <TriangleAlertIcon className="size-4 text-amber-600" />,
+        error: <OctagonXIcon className="size-4 text-rose-600" />,
+        loading: <Loader2Icon className="text-muted-foreground size-4 animate-spin" />,
       }}
       style={
         {
-          'zIndex': 9999,
+          zIndex: 9999,
           '--normal-bg': 'var(--popover)',
           '--normal-text': 'var(--popover-foreground)',
           '--normal-border': 'var(--border)',
@@ -55,8 +44,9 @@ const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
         },
       }}
       {...props}
-    />
-  );
-};
+    />,
+    document.body,
+  )
+}
 
-export { Toaster };
+export { Toaster }

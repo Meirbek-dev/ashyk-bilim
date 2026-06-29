@@ -1,99 +1,99 @@
-'use client';
+'use client'
 
-import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview';
-import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, Shield, XCircle } from 'lucide-react';
-import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifications';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useLocale, useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
-import NextImage from '@components/ui/NextImage';
-import { Label } from '@/components/ui/label';
-import Link from '@components/ui/AppLink';
-import type React from 'react';
+import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
+import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, Shield, XCircle } from 'lucide-react'
+import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifications'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import NextImage from '@components/ui/NextImage'
+import { Label } from '@/components/ui/label'
+import Link from '@components/ui/AppLink'
+import type React from 'react'
 
 interface CertificateVerificationPageProps {
-  certificateUuid: string;
+  certificateUuid: string
 }
 
 const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = ({ certificateUuid }) => {
-  const locale = useLocale();
-  const t = useTranslations('Certificates.CertificateVerificationPage');
+  const locale = useLocale()
+  const t = useTranslations('Certificates.CertificateVerificationPage')
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    queueMicrotask(() => setMounted(true))
+  }, [])
 
-  const certificateQuery = useCertificateByUuid(certificateUuid);
-  const certificateData = certificateQuery.data?.data ?? null;
-  const isLoading = certificateQuery.isPending;
+  const certificateQuery = useCertificateByUuid(certificateUuid)
+  const certificateData = certificateQuery.data?.data ?? null
+  const isLoading = certificateQuery.isPending
 
   const error = certificateQuery.error
     ? t('verificationFailed')
     : mounted && !isLoading && !certificateData
       ? t('certificateNotFound')
-      : null;
+      : null
 
   const verificationStatus: 'valid' | 'invalid' | 'loading' =
-    !mounted || isLoading ? 'loading' : certificateData ? 'valid' : 'invalid';
+    !mounted || isLoading ? 'loading' : certificateData ? 'valid' : 'invalid'
 
   // Certificate type translation helper
   const getCertificationTypeLabel = (type: string): string => {
-    const typeKey = type as keyof typeof t;
-    return t(typeKey) || t('completion');
-  };
+    const typeKey = type as keyof typeof t
+    return t(typeKey) || t('completion')
+  }
 
   const getVerificationStatusIcon = () => {
     switch (verificationStatus) {
       case 'valid': {
-        return <CheckCircle className="h-8 w-8 text-green-600" />;
+        return <CheckCircle className="h-8 w-8 text-green-600" />
       }
       case 'invalid': {
-        return <XCircle className="h-8 w-8 text-red-600" />;
+        return <XCircle className="h-8 w-8 text-red-600" />
       }
       case 'loading': {
-        return <AlertTriangle className="h-8 w-8 text-yellow-600" />;
+        return <AlertTriangle className="h-8 w-8 text-yellow-600" />
       }
       default: {
-        return <AlertTriangle className="h-8 w-8 text-yellow-600" />;
+        return <AlertTriangle className="h-8 w-8 text-yellow-600" />
       }
     }
-  };
+  }
 
   const getVerificationStatusText = () => {
     switch (verificationStatus) {
       case 'valid': {
-        return t('certificateVerified');
+        return t('certificateVerified')
       }
       case 'invalid': {
-        return t('certificateNotFound');
+        return t('certificateNotFound')
       }
       case 'loading': {
-        return t('verifyingCertificate');
+        return t('verifyingCertificate')
       }
       default: {
-        return t('verificationStatusUnknown');
+        return t('verificationStatusUnknown')
       }
     }
-  };
+  }
 
   const getVerificationStatusColor = () => {
     switch (verificationStatus) {
       case 'valid': {
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'text-green-600 bg-green-50 border-green-200'
       }
       case 'invalid': {
-        return 'text-red-600 bg-red-50 border-red-200';
+        return 'text-red-600 bg-red-50 border-red-200'
       }
       case 'loading': {
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
       }
       default: {
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
       }
     }
-  };
+  }
 
   if (!mounted || isLoading) {
     return (
@@ -108,7 +108,7 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (error || verificationStatus === 'invalid') {
@@ -143,14 +143,14 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (!certificateData) {
-    return null;
+    return null
   }
 
-  const qrCodeLink = getAbsoluteUrl(`/certificates/${certificateData.certificate_user.user_certification_uuid}/verify`);
+  const qrCodeLink = getAbsoluteUrl(`/certificates/${certificateData.certificate_user.user_certification_uuid}/verify`)
 
   return (
     <div className="bg-background text-foreground min-h-screen py-8">
@@ -184,16 +184,13 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
             {/* Certificate Preview */}
             <div className="soft-shadow border-border bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
               <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificatePreview')}</h2>
-              <div
-                className="mx-auto max-w-2xl"
-                id="certificate-preview"
-              >
+              <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <CertificatePreview
                   certificationName={certificateData.certification.config.certification_name}
-                  certificationDescription={certificateData.certification.config.certification_description}
+                  certificationDescription={certificateData.certification.config.certification_description ?? ''}
                   certificationType={certificateData.certification.config.certification_type}
-                  certificatePattern={certificateData.certification.config.certificate_pattern}
-                  certificateInstructor={certificateData.certification.config.certificate_instructor}
+                  certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
+                  certificateInstructor={certificateData.certification.config.certificate_instructor ?? undefined}
                   certificateId={certificateData.certificate_user.user_certification_uuid}
                   awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
                     year: 'numeric',
@@ -256,42 +253,34 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                       ) : null}
                     </div>
 
-                    {certificateData.course.authors && certificateData.course.authors.length > 0 ? (
-                      <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
-                        <span>{t('byLabel')}</span>
-                        <div className="flex items-center gap-1">
-                          {certificateData.course.authors
-                            .filter((author: any) => author.authorship_status === 'ACTIVE')
-                            .slice(0, 2)
-                            .map((author: any, index: number) => (
-                              <span
-                                key={author.user.user_uuid}
-                                className="text-foreground"
-                              >
-                                {[author.user.first_name, author.user.middle_name, author.user.last_name]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                                {index <
-                                  Math.min(
-                                    2,
-                                    certificateData.course.authors.filter((a: any) => a.authorship_status === 'ACTIVE')
-                                      .length - 1,
-                                  ) && ', '}
+                    {(() => {
+                      const authors = certificateData.course.authors ?? []
+                      const activeAuthors = authors.filter(
+                        (author: AppCourseAuthor) => author.authorship_status === 'ACTIVE' && author.user,
+                      )
+                      if (activeAuthors.length === 0) return null
+                      return (
+                        <div className="text-muted-foreground flex items-center gap-1 text-sm font-normal">
+                          <span>{t('byLabel')}</span>
+                          <div className="flex items-center gap-1">
+                            {activeAuthors.slice(0, 2).map((author: AppCourseAuthor, index: number) => {
+                              const user = author.user!
+                              return (
+                                <span key={user.user_uuid} className="text-foreground">
+                                  {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
+                                  {index < Math.min(2, activeAuthors.length - 1) && ', '}
+                                </span>
+                              )
+                            })}
+                            {activeAuthors.length > 2 && (
+                              <span className="text-muted-foreground">
+                                +{activeAuthors.length - 2} {t('moreAuthors')}
                               </span>
-                            ))}
-                          {certificateData.course.authors.filter((author: any) => author.authorship_status === 'ACTIVE')
-                            .length > 2 && (
-                            <span className="text-muted-foreground">
-                              +
-                              {certificateData.course.authors.filter(
-                                (author: any) => author.authorship_status === 'ACTIVE',
-                              ).length - 2}{' '}
-                              {t('moreAuthors')}
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -302,18 +291,8 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                     className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm transition-colors"
                   >
                     <span>{t('viewCourse')}</span>
-                    <svg
-                      className="h-3 w-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </Link>
                 </div>
@@ -407,7 +386,7 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CertificateVerificationPage;
+export default CertificateVerificationPage

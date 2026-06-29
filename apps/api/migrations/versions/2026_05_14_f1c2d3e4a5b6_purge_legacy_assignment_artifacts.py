@@ -41,13 +41,15 @@ def upgrade() -> None:
     existing_tables = set(inspector.get_table_names())
 
     if "activity" in existing_tables:
+        _add_enum_value("activitytypeenum", "TYPE_FILE_SUBMISSION")
+        _add_enum_value("activitysubtypeenum", "SUBTYPE_FILE_SUBMISSION_STANDARD")
         conn.execute(
             sa.text(
                 """
                 UPDATE activity
                 SET activity_type = 'TYPE_FILE_SUBMISSION',
                     activity_sub_type = 'SUBTYPE_FILE_SUBMISSION_STANDARD'
-                WHERE activity_type = 'TYPE_ASSIGNMENT'
+                WHERE activity_type::text = 'TYPE_ASSIGNMENT'
                 """
             )
         )
@@ -57,9 +59,7 @@ def upgrade() -> None:
         conn.execute(
             sa.text(
                 "UPDATE submission "
-                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb "
-                + removal_expr
-                + ")::json "
+                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb " + removal_expr + ")::json "
                 "WHERE metadata_json IS NOT NULL"
             )
         )
@@ -77,3 +77,27 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     pass
+
+
+def _add_enum_value(enum_name: str, value: str) -> None:
+    with op.get_context().autocommit_block():
+        op.execute(
+            sa.text(
+                f"""
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = '{enum_name}') THEN
+                        IF NOT EXISTS (
+                            SELECT 1
+                            FROM pg_enum e
+                            JOIN pg_type t ON t.oid = e.enumtypid
+                            WHERE t.typname = '{enum_name}' AND e.enumlabel = '{value}'
+                        ) THEN
+                            ALTER TYPE {enum_name} ADD VALUE '{value}';
+                        END IF;
+                    END IF;
+                END
+                $$;
+                """
+            )
+        )

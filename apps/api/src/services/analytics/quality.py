@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import DailyTeacherMetrics
+from src.infra.db.execute import sa_execute
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import AnalyticsContext, progress_snapshots, to_iso
 from src.services.analytics.rollups import supports_teacher_rollup_reads
@@ -20,19 +23,20 @@ def build_data_quality(
     freshness_seconds: int,
 ) -> AnalyticsDataQuality:
     teacher_rollup = (
-        db_session.exec(
+        sa_execute(
+            db_session,
             select(DailyTeacherMetrics)
-            .where(DailyTeacherMetrics.teacher_user_id == scope.teacher_user_id)
-            .order_by(DailyTeacherMetrics.metric_date.desc())
-            .limit(1)
-        ).first()
+            .where(col(DailyTeacherMetrics.teacher_user_id) == scope.teacher_user_id)
+            .order_by(col(DailyTeacherMetrics.metric_date).desc())
+            .limit(1),
+        )
+        .scalars()
+        .first()
         if supports_teacher_rollup_reads(filters)
         else None
     )
-    mode = (
-        "rollup"
-        if supports_teacher_rollup_reads(filters) and teacher_rollup is not None
-        else "live"
+    mode: Literal["live", "rollup"] = (
+        "rollup" if supports_teacher_rollup_reads(filters) and teacher_rollup is not None else "live"
     )
     snapshots = progress_snapshots(context)
     missing_sources: list[str] = []
@@ -49,11 +53,7 @@ def build_data_quality(
 
     courses_without_enough_data: list[dict[str, object]] = []
     for course_id in scope.course_ids:
-        course_snapshots = [
-            snapshot
-            for snapshot in snapshots.values()
-            if snapshot.course_id == course_id
-        ]
+        course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == course_id]
         if len(course_snapshots) < 5:
             course = context.courses_by_id.get(course_id)
             courses_without_enough_data.append({
@@ -97,7 +97,7 @@ def build_data_quality(
             )
         )
 
-    confidence = "high"
+    confidence: Literal["low", "medium", "high"] = "high"
     if missing_sources or courses_without_enough_data:
         confidence = "medium"
     if freshness_seconds > 86_400 or len(missing_sources) >= 3:
@@ -105,9 +105,7 @@ def build_data_quality(
 
     return AnalyticsDataQuality(
         mode=mode,
-        last_rollup_time=to_iso(teacher_rollup.generated_at)
-        if teacher_rollup is not None
-        else None,
+        last_rollup_time=to_iso(teacher_rollup.generated_at) if teacher_rollup is not None else None,
         freshness_seconds=freshness_seconds,
         confidence_level=confidence,
         missing_event_sources=missing_sources,

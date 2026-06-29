@@ -1,4 +1,4 @@
-import { JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono } from 'next/font/google'
 
 export const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin', 'latin-ext'],
@@ -7,4 +7,4 @@ export const jetBrainsMono = JetBrains_Mono({
   preload: false,
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
-});
+})

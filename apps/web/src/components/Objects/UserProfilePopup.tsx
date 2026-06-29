@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import {
   Award,
   BookOpen,
@@ -14,70 +14,70 @@ import {
   Loader2,
   MapPin,
   Users,
-} from 'lucide-react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { useUserById } from '@/lib/users/client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useSession } from '@/hooks/useSession';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+} from 'lucide-react'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import { useUserByIdQuery as useUserById } from '@/features/users/hooks/useUsers'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useSession } from '@/hooks/useSession'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 
 interface UserProfilePopupProps {
-  children: ReactNode;
-  userId: number;
+  children: ReactNode
+  userId: number
 }
 
 interface UserData {
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  username: string;
-  bio?: string;
-  avatar_image?: string;
+  first_name: string
+  middle_name?: string
+  last_name: string
+  username: string
+  bio?: string
+  avatar_image?: string
   details?: Record<
     string,
     {
-      id: string;
-      label: string;
-      icon: string;
-      text: string;
+      id: string
+      label: string
+      icon: string
+      text: string
     }
-  >;
+  >
 }
 
-type UserDetail = NonNullable<UserData['details']>[string];
+type UserDetail = NonNullable<UserData['details']>[string]
 
 const ICON_MAP = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
-  'link': Link,
-  'users': Users,
-  'calendar': Calendar,
+  speciality: Lightbulb,
+  globe: Globe,
+  link: Link,
+  users: Users,
+  calendar: Calendar,
   'laptop-2': Laptop2,
-  'award': Award,
+  award: Award,
   'book-open': BookOpen,
-} as const;
+} as const
 
 const IconComponent = ({ iconName }: { iconName: string }) => {
-  const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP];
-  if (!IconElement) return null;
-  return <IconElement className="text-muted-foreground h-4 w-4" />;
-};
+  const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP]
+  if (!IconElement) return null
+  return <IconElement className="text-muted-foreground h-4 w-4" />
+}
 
 const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
-  const t = useTranslations('Components.UserProfilePopup');
-  const router = useRouter();
-  const { isAuthenticated } = useSession();
-  const [open, setOpen] = useState(false);
-  const { data: userData, error, isLoading } = useUserById(userId, { enabled: open && isAuthenticated });
-  const details = userData?.details ? (Object.values(userData.details) as UserDetail[]) : [];
+  const t = useTranslations('Components.UserProfilePopup')
+  const router = useRouter()
+  const { isAuthenticated } = useSession()
+  const [open, setOpen] = useState(false)
+  const { data: userData, error, isLoading } = useUserById(userId, { enabled: open && isAuthenticated })
+  const details = userData?.details ? (Object.values(userData.details) as UserDetail[]) : []
 
   return (
     <HoverCard onOpenChange={setOpen}>
@@ -112,10 +112,7 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                           {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                         </h4>
                         {userData.username ? (
-                          <Badge
-                            variant="outline"
-                            className="text-muted-foreground truncate px-2 text-xs font-normal"
-                          >
+                          <Badge variant="outline" className="text-muted-foreground truncate px-2 text-xs font-normal">
                             @{userData.username}
                           </Badge>
                         ) : null}
@@ -140,11 +137,8 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
             {/* Details */}
             {details.length > 0 ? (
               <div className="border-border space-y-2.5 border-t px-5 pt-3.5 pb-4">
-                {details.map((detail) => (
-                  <div
-                    key={detail.id}
-                    className="flex items-center gap-2.5"
-                  >
+                {details.map(detail => (
+                  <div key={detail.id} className="flex items-center gap-2.5">
                     <IconComponent iconName={detail.icon} />
                     <div className="flex flex-col">
                       <span className="text-muted-foreground text-xs">{detail.label}</span>
@@ -158,7 +152,7 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
         ) : null}
       </HoverCardContent>
     </HoverCard>
-  );
-};
+  )
+}
 
-export default UserProfilePopup;
+export default UserProfilePopup

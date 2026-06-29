@@ -1,18 +1,13 @@
-'use client';
+'use client'
 
-import { PreviewCard as PreviewCardPrimitive } from '@base-ui/react/preview-card';
-import type React from 'react';
-import { cn } from '@/lib/utils';
+import { PreviewCard as PreviewCardPrimitive } from '@base-ui/react/preview-card'
+import type React from 'react'
+import { cn } from '@/lib/utils'
 
-export const PreviewCard: typeof PreviewCardPrimitive.Root = PreviewCardPrimitive.Root;
+export const PreviewCard: typeof PreviewCardPrimitive.Root = PreviewCardPrimitive.Root
 
 export function PreviewCardTrigger({ ...props }: PreviewCardPrimitive.Trigger.Props): React.ReactElement {
-  return (
-    <PreviewCardPrimitive.Trigger
-      data-slot="preview-card-trigger"
-      {...props}
-    />
-  );
+  return <PreviewCardPrimitive.Trigger data-slot="preview-card-trigger" {...props} />
 }
 
 export function PreviewCardPopup({
@@ -24,10 +19,10 @@ export function PreviewCardPopup({
   portalProps,
   ...props
 }: PreviewCardPrimitive.Popup.Props & {
-  align?: PreviewCardPrimitive.Positioner.Props['align'];
-  sideOffset?: PreviewCardPrimitive.Positioner.Props['sideOffset'];
-  anchor?: PreviewCardPrimitive.Positioner.Props['anchor'];
-  portalProps?: PreviewCardPrimitive.Portal.Props;
+  align?: PreviewCardPrimitive.Positioner.Props['align']
+  sideOffset?: PreviewCardPrimitive.Positioner.Props['sideOffset']
+  anchor?: PreviewCardPrimitive.Positioner.Props['anchor']
+  portalProps?: PreviewCardPrimitive.Portal.Props
 }): React.ReactElement {
   return (
     <PreviewCardPrimitive.Portal {...portalProps}>
@@ -50,7 +45,7 @@ export function PreviewCardPopup({
         </PreviewCardPrimitive.Popup>
       </PreviewCardPrimitive.Positioner>
     </PreviewCardPrimitive.Portal>
-  );
+  )
 }
 
 export {
@@ -58,4 +53,4 @@ export {
   PreviewCard as HoverCard,
   PreviewCardTrigger as HoverCardTrigger,
   PreviewCardPopup as HoverCardContent,
-};
+}

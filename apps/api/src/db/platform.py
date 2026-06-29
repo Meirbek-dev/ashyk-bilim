@@ -1,6 +1,9 @@
+from datetime import UTC, datetime
+
 from pydantic import ConfigDict
-from sqlalchemy import JSON, Column
+from sqlalchemy import Column, DateTime, func
 from sqlmodel import Field
+from sqlmodel._compat import SQLModelConfig
 
 from src.db.permissions import RoleRead
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
@@ -10,16 +13,13 @@ from src.db.users import UserRead
 class PlatformBase(SQLModelStrictBaseModel):
     """Base model for the platform with common fields."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = SQLModelConfig(arbitrary_types_allowed=True)
 
     name: str
     description: str | None = None
     about: str | None = None
-    socials: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    links: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     label: str | None = None
     email: str
 
@@ -28,22 +28,24 @@ class Platform(PlatformBase, table=True):
     """Database table model for the platform."""
 
     id: int | None = Field(default=None, primary_key=True)
-    creation_date: str = ""
-    update_date: str = ""
-    landing: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    creation_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    update_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
 
 
 class PlatformUpdate(SQLModelStrictBaseModel):
     """Model for updating the platform."""
 
     about: str | None = None
-    socials: dict | None = None
-    links: dict | None = None
     logo_image: str | None = None
     thumbnail_image: str | None = None
-    previews: dict | None = None
     email: str | None = None
-    update_date: str | None = None
+    update_date: datetime | None = None
 
 
 class PlatformCreate(PlatformBase):
@@ -53,9 +55,8 @@ class PlatformCreate(PlatformBase):
 class PlatformRead(PlatformBase):
     """Model for reading the platform with all related data."""
 
-    landing: dict | None = None
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
 
 class PlatformUser(PydanticStrictBaseModel):

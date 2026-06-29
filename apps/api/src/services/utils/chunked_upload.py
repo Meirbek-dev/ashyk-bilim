@@ -1,17 +1,23 @@
-"""
-Chunked file upload utilities for handling large files.
-Bypasses nginx request size limits by streaming file chunks.
+"""Chunked file upload utilities for handling large files.
+
+Chunks are stored under the app's persistent content directory so resumable
+uploads survive process restarts and can be cleaned up by a startup sweep.
 """
 
-import hashlib
-import os
 import shutil
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
 import anyio
 from fastapi import HTTPException, UploadFile
 from ulid import ULID
+
+from src.types import JsonObject
+
+_CHUNKED_UPLOAD_ROOT = Path("content/chunked_uploads")
+_CHUNKED_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+_DEFAULT_SESSION_TTL = timedelta(hours=24)
 
 
 class ChunkedUploadSession:
@@ -20,14 +26,16 @@ class ChunkedUploadSession:
     def __init__(
         self,
         upload_id: str,
+        owner_user_id: int,
         directory: str,
         type_of_dir: Literal["platform", "users"],
-        uuid: str,
+        uuid: str | None,
         filename: str,
         total_chunks: int,
         file_size: int,
     ) -> None:
         self.upload_id = upload_id
+        self.owner_user_id = owner_user_id
         self.directory = directory
         self.type_of_dir = type_of_dir
         self.uuid = uuid
@@ -35,9 +43,10 @@ class ChunkedUploadSession:
         self.total_chunks = total_chunks
         self.file_size = file_size
         self.chunks_received: set[int] = set()
+        self.created_at = datetime.now(UTC)
 
-        # Create temp directory for chunks
-        self.temp_dir = Path(f"temp_uploads/{upload_id}")
+        # Create durable temp directory for chunks.
+        self.temp_dir = _CHUNKED_UPLOAD_ROOT / upload_id
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
     def get_chunk_path(self, chunk_index: int) -> Path:
@@ -53,7 +62,7 @@ class ChunkedUploadSession:
         if chunk_index in self.chunks_received:
             raise HTTPException(
                 status_code=400,
-                detail=f"Chunk {chunk_index} already received",
+                detail=f"Часть {chunk_index} уже получена",
             )
 
         chunk_path = self.get_chunk_path(chunk_index)
@@ -67,7 +76,7 @@ class ChunkedUploadSession:
         if not self.is_complete():
             raise HTTPException(
                 status_code=400,
-                detail=f"Not all chunks received. Got {len(self.chunks_received)}/{self.total_chunks}",
+                detail=f"Получены не все части. Получено {len(self.chunks_received)}/{self.total_chunks}",
             )
 
         # Assemble chunks in order
@@ -78,7 +87,7 @@ class ChunkedUploadSession:
             if not await path.exists():
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Chunk {i} missing during assembly",
+                    detail=f"Часть {i} отсутствует при сборке",
                 )
 
             assembled_data.extend(await path.read_bytes())
@@ -87,7 +96,7 @@ class ChunkedUploadSession:
         if len(assembled_data) != self.file_size:
             raise HTTPException(
                 status_code=400,
-                detail=f"Assembled file size mismatch. Expected {self.file_size}, got {len(assembled_data)}",
+                detail=f"Несоответствие размера собранного файла. Ожидалось {self.file_size}, получено {len(assembled_data)}",
             )
 
         return bytes(assembled_data)
@@ -105,7 +114,8 @@ _upload_sessions: dict[str, ChunkedUploadSession] = {}
 def create_upload_session(
     directory: str,
     type_of_dir: Literal["platform", "users"],
-    uuid: str,
+    uuid: str | None,
+    owner_user_id: int,
     filename: str,
     total_chunks: int,
     file_size: int,
@@ -115,6 +125,7 @@ def create_upload_session(
 
     session = ChunkedUploadSession(
         upload_id=upload_id,
+        owner_user_id=owner_user_id,
         directory=directory,
         type_of_dir=type_of_dir,
         uuid=uuid,
@@ -133,7 +144,7 @@ def get_upload_session(upload_id: str) -> ChunkedUploadSession:
     if not session:
         raise HTTPException(
             status_code=404,
-            detail=f"Upload session {upload_id} not found",
+            detail=f"Сессия загрузки {upload_id} не найдена",
         )
     return session
 
@@ -142,7 +153,7 @@ async def process_chunk(
     upload_id: str,
     chunk_index: int,
     chunk_file: UploadFile,
-) -> dict:
+) -> JsonObject:
     """Process a single chunk."""
     session = get_upload_session(upload_id)
 
@@ -168,7 +179,7 @@ async def complete_upload(upload_id: str) -> tuple[bytes, ChunkedUploadSession]:
     if not session.is_complete():
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot complete upload. Received {len(session.chunks_received)}/{session.total_chunks} chunks",
+            detail=f"Не удалось завершить загрузку. Получено {len(session.chunks_received)}/{session.total_chunks} частей",
         )
 
     # Assemble chunks
@@ -184,7 +195,30 @@ def cleanup_session(upload_id: str) -> None:
         session.cleanup()
 
 
-def get_session_status(upload_id: str) -> dict:
+def cleanup_stale_sessions(*, max_age: timedelta = _DEFAULT_SESSION_TTL) -> int:
+    """Remove orphaned chunk directories that are no longer tracked in memory."""
+    if not _CHUNKED_UPLOAD_ROOT.exists():
+        return 0
+
+    now = datetime.now(UTC)
+    removed = 0
+    for entry in _CHUNKED_UPLOAD_ROOT.iterdir():
+        if not entry.is_dir():
+            continue
+        if entry.name in _upload_sessions:
+            continue
+        try:
+            created_at = datetime.fromtimestamp(entry.stat().st_mtime, UTC)
+        except FileNotFoundError:
+            continue
+        if now - created_at < max_age:
+            continue
+        shutil.rmtree(entry, ignore_errors=True)
+        removed += 1
+    return removed
+
+
+def get_session_status(upload_id: str) -> JsonObject:
     """Get the status of an upload session."""
     session = get_upload_session(upload_id)
 

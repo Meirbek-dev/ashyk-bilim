@@ -1,56 +1,115 @@
 [project]
-description = "Ashyk Bilim Backend"
 name = "ashyk-bilim-api"
 version = "0.1.0"
+description = "Ashyk Bilim Backend"
 requires-python = ">=3.14.5,<3.15.0"
+
 dependencies = [
-  "fastapi>=0.136.1",
-  "sqlalchemy>=2.0.49",
+  # Framework
+  "fastapi>=0.138.1",
+  "granian[reload,uvloop]>=2.7.7",
+
+  # Database
+  "sqlalchemy>=2.0.51",
+  "sqlmodel>=0.0.39",
+  "alembic>=1.18.5",
   "psycopg[binary]>=3.3.4",
-  "pydantic[email]>=2.13.4",
-  "redis>=8.0.0b2",
-  "httpx>=0.28.1",
-  "pyjwt>=2.12.1",
-  "openai>=2.36.0",
-  "resend>=2.30.1",
-  "sqlmodel>=0.0.38",
-  "typer>=0.25.1",
-  "alembic>=1.18.4",
-  "logfire[fastapi,sqlalchemy]>=4.33.0",
-  "python-ulid>=3.1.0",
-  "pydantic-settings>=2.14.1",
-  "selectolax>=0.4.9",
-  "pydantic-ai-slim[logfire,openai]>=1.96.1",
   "pgvector>=0.4.2",
+  "redis>=8.0.1",
+
+  # Validation / Config
+  "pydantic[email]>=2.13.4",
+  "pydantic-settings>=2.14.2",
+
+  # Auth
   "fastapi-users[sqlalchemy]>=15.0.5",
-  "cachebox>=5.2.3",
-  "judge0>=0.0.8",
-  "fastapi-pagination>=0.15.12",
+  "pyjwt>=2.13.0",
+
+  # AI
+  "openai>=2.44.0",
+  "pydantic-ai-slim[logfire,openai]>=2.0.0",
   "tiktoken>=0.13.0",
-  "granian[reload,uvloop]>=2.7.4",
-  "python-multipart>=0.0.28",
+
+  # Async / Jobs
+  "taskiq>=0.12.4",
+  "taskiq-fastapi>=0.5.0",
+  "taskiq-redis>=1.2.3",
+
+  # API
+  "fastapi-pagination>=0.15.15",
+  "python-multipart>=0.0.32",
+
+  # Infra / Observability
+  "logfire[fastapi,sqlalchemy]>=4.37.0",
+
+  # Utilities
+  "cachebox>=6.1.2",
+  "httpx>=0.28.1",
+  "python-ulid>=3.1.0",
+  "resend>=2.32.2",
+  "selectolax>=0.4.10",
+  "typer>=0.26.8",
+
+  # Sandbox / Execution
+  "judge0>=0.0.8",
 ]
 
 [dependency-groups]
-
 dev = [
-  "basedpyright>=1.39.4",
-  "faker>=40.15.0",
-  "mypy>=1.20.2",
-  "pyrefly>=0.64.1",
-  "pytest>=9.0.3",
-  "pytest-asyncio>=1.3.0",
+  # Lint / Format
+  "ruff==0.15.19",
+  # Type Checking
+  "basedpyright>=1.39.9",
+  "mypy>=2.1.0",
+  "pyrefly>=1.1.1",
+  # Testing
+  "pytest>=9.1.1",
+  "pytest-asyncio>=1.4.0",
   "pytest-cov>=7.1.0",
-  "ruff>=0.15.12",
-  "uvicorn[standard]>=0.47.0",
+  # Dev Server
+  "uvicorn[standard]>=0.49.0",
+  # Fixtures
+  "faker>=40.23.0",
+  "ty>=0.0.55",
 ]
 
 [tool.ruff]
-lint.ignore = [
+target-version = "py315"
+preview = true
+line-length = 120
+force-exclude = true
+
+exclude = [
+  ".git",
+  ".ruff_cache",
+  ".venv",
+  "__pycache__",
+  "node_modules",
+  "dist",
+  "build",
+  "alembic",
+  "migrations",
+  ".turbo",
+  ".logfire",
+  ".agents",
+  ".mypy_cache",
+  ".pyrefly_cache",
+  "content",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+fixable = ["ALL"]
+unfixable = [
+  "ERA001", # Do not auto-delete commented code; require human review.
+]
+
+ignore = [
+  # --- Annotations (flake8-annotations) ---
+  "PLC0415", # `import` should be at the top-level of a file
+
   # --- General & Style ---
-  "F401", # unused-import: Module imported but not used
   "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
-  "PLC0415", # import-outside-top-level: Import should be at the top of the file
   "PLR2004", # magic-value-comparison: Use of unnamed numerical constants in comparisons
   "PLR0913", # too-many-arguments: Function has too many arguments (typically > 5)
 
@@ -59,20 +118,19 @@ lint.ignore = [
   "TC002", # move-to-type-checking: Move third-party imports into TYPE_CHECKING blocks
   "TC003", # move-to-type-checking: Move stdlib imports into TYPE_CHECKING blocks
 
-  # --- Annotations (flake8-annotations) ---
-  "ANN001", # missing-type-function-argument: Missing type annotation for function argument
-  "ANN201", # missing-return-type-undocumented-public-function: Missing return type for public function
-
   # --- Security (flake8-bandit) ---
-  "S101", # assert: Use of `assert` (can be optimized out in production)
   "S105", # hardcoded-password-string: Possible hardcoded password string assignment
   "S106", # hardcoded-password-func-arg: Possible hardcoded password in function call
   "S110", # try-except-pass: Exception caught and silenced with `pass`
+  "S104", # hardcoded-bind-all-interfaces: Warns on binding to 0.0.0.0 (required for Docker)
 
   # --- Exceptions (tryceratops / flake8-errmsg) ---
   "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
   "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
   "EM101", # raw-string-in-exception: Exception must not use a string literal directly
+  "TRY300", # try-consider-else: Move code to else block (noisy)
+  "TRY301", # raise-within-try: Disallow raising within try block (noisy)
+  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
   "D", # docstring-rules: Disables all docstring-related rules
@@ -80,84 +138,234 @@ lint.ignore = [
   "DOC201", # missing-docstring-in-function: Missing docstring in function
   "DOC202", # missing-docstring-in-method: Missing docstring in method
   "DOC501", # missing-docstring-in-class: Missing docstring in class
+  "DOC502", # docstring-extraneous-exception: Docstring rule
+  "DOC402", # docstring-missing-yields: Docstring rule
 
   # --- Miscellaneous ---
-  "DTZ005", # call-datetime-now-without-tzinfo: `datetime.now()` used without a timezone
   "T20", # flake8-print: Disallows `print` statements (prevents debug debris)
-  "ARG002", # unused-method-argument: Method argument is defined but never used
   "TD002", # missing-todo-author: TODO comment is missing an author name
   "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
+  "FIX002", # line-contains-todo: Disallow TODOs
 
   "PLC2701",
   "RUF001",
+  "RUF002", # ambiguous-unicode-character-docstring: False positives on Cyrillic docstrings
+  "RUF003", # ambiguous-unicode-character-comment: False positives on Cyrillic comments
   "E501", # line-too-long: Line is too long
+
+  # --- Project Specific Ignores ---
+  "CPY001", # missing-copyright-notice: Checks for copyright notice at the top of every file
+  "INP001", # implicit-namespace-package: Checks for __init__.py in all directories (noisy for apps)
+  "ARG001", # unused-function-argument: Unused function arguments (noisy for FastAPI routes/dependencies)
+  "RUF029", # unused-async: Functions defined as async but without await (noisy for route consistency)
+  "FBT", # flake8-boolean-trap: Disallow boolean positional arguments (false positives on routes/options)
+  "PLC1901", # compare-to-empty-string: Simplification breaks SQLAlchemy expressions like Column == ""
+  "PLW0603", # global-statement: Discourage use of global statements (required for lazy singletons)
+  "PLR0911", # too-many-return-statements: Pylint complexity check
+  "PLR0912", # too-many-branches: Pylint complexity check
+  "PLR0914", # too-many-locals: Pylint complexity check
+  "PLR0915", # too-many-statements: Pylint complexity check
+  "PLR0916", # too-many-boolean-expressions: Pylint complexity check
+  "PLR0917", # too-many-positional-arguments: Pylint complexity check
+  "C901", # complex-structure: McCabe complexity check
+  "PLR1702", # too-many-nested-blocks: Pylint complexity check
+  "PLR6301", # no-self-use: Disallow methods that don't use self (standard for repositories/dependencies)
+  "N818", # error-suffix-on-exception-name: Exception name should end in Error (false positive on HTTPExceptions)
+  "SLF001", # private-member-access: Allow accessing private members (e.g. Row._mapping in SQLAlchemy)
+  "G004", # logging-f-string: Logging statements should not use f-strings (noisy with Logfire)
+  "RUF067", # non-empty-init-module: __init__.py should only contain docstrings and re-exports (noisy for modules with helpers)
+  "B904", # raise-without-from-inside-except: Checks for raise within except block without 'from'
+  "N806", # non-lowercase-variable-in-function: Allow uppercase local constants and capitalized class aliases
+  "ERA001", # commented-out-code: Allow code-like text in comments
+  "S101",
+  "A005", # module-shadowing: Allow 'types' module name inside packages
 ]
-# lint.select = ["ALL"]
-lint.fixable = ["ALL"]
-target-version = "py315"
-preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = [
+  "F401", # Allow explicit re-export imports.
+  "F403",
+]
+
+"**/tests/**/*.py" = [
+  "ARG001",
+  "ARG002",
+  "F811",
+  "PLR2004",
+  "RUF069",
+  "S101",
+  "S105",
+  "S106",
+  "SLF001",
+  "PT003",
+  "RUF076",
+]
+
+"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003", "RUF076"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+split-on-trailing-comma = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-positional-args = 6
+max-branches = 12
+max-returns = 6
+max-statements = 60
+max-locals = 20
+max-bool-expr = 5
+max-nested-blocks = 5
+max-statements-in-try = 10
 
 [tool.ruff.format]
 quote-style = "double"
-
-[tool.ruff.lint.pylint]
-max-args = 8 # Slightly more relaxed than default for FastAPI dependencies
+docstring-code-format = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
 markers = ["asyncio: mark test as async"]
 
+addopts = ["--strict-config", "--strict-markers"]
 [tool.logfire]
 ignore_no_config = true
-
 [tool.pyrefly]
-project-includes = ["**/*.py"]
-# Prevent deep nesting which leads to unmaintainable FastAPI endpoints
-max-complexity = 10
+project-includes = ["src", "tests"]
 
-[tool.pyrefly.rules]
-# Enable rules that catch logic errors, not just style
-async-function-naming = true
-no-shadowed-builtins = true
-strict-exception-handling = true # Complements your Ruff BLE/TRY rules
+project-excludes = ["**/.[!/.]*", "**/__pycache__", ".venv", "alembic", "migrations", "content"]
+
+search-path = ["."]
+
+python-version = "3.15"
+python-platform = "linux"
+
+preset = "strict"
+min-severity = "error"
+
+check-unannotated-defs = true
+infer-return-types = "checked"
+
+enabled-ignores = ["type", "pyrefly"]
+
+ignore-missing-imports = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
+
+[tool.pyrefly.errors]
+bad-override = "ignore"
+bad-assignment = "ignore"
+missing-attribute = "ignore"
+bad-argument-type = "ignore"
 
 [tool.mypy]
-python_version = "3.14"
-strict = true
+python_version = "3.15"
+files = ["src"]
+mypy_path = "$MYPY_CONFIG_FILE_DIR"
+
 plugins = ["pydantic.mypy"]
 
-# Robustness settings
-warn_unreachable = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-show_error_codes = true
+strict = true
 
-# Lowering the "Nitpick" factor
-disallow_untyped_decorators = false # FastAPI routes often use untyped decorators
-warn_return_any = false # Too noisy with FastAPI's dynamic responses
-implicit_reexport = true # Useful for __init__.py patterns
+# Make suppressions and config drift visible.
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+
+# Useful CI/editor output.
+show_error_codes = true
+show_error_code_links = true
+pretty = true
+
+# Stronger correctness checks.
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_any_explicit = true
+disallow_subclassing_any = true
+strict_equality = true
+strict_equality_for_none = true
+implicit_reexport = false
+
+enable_error_code = [
+  "deprecated",
+  "exhaustive-match",
+  "explicit-override",
+  "ignore-without-code",
+  "mutable-override",
+  "possibly-undefined",
+  "redundant-expr",
+  "redundant-self",
+  "truthy-bool",
+  "truthy-iterable",
+  "unimported-reveal",
+  "unused-awaitable",
+]
+
+exclude = ["^alembic/", "^migrations/", "^content/", "^src/tests/"]
 
 [[tool.mypy.overrides]]
-# Libraries that traditionally have poor or no typing
-module = ["selectolax.*", "judge0.*", "python-ulid.*", "cachebox.*"]
+module = ["cachebox.*", "judge0.*", "selectolax.*"]
 ignore_missing_imports = true
 
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
 [tool.basedpyright]
+pythonVersion = "3.15"
 typeCheckingMode = "strict"
-pythonVersion = "3.14"
+
+exclude = ["**/__pycache__", "**/alembic", "**/node_modules", "**/tests", "**/venv", ".venv", "**/migrations"]
+
 # Robustness without the "Any" nitpicking
 reportAny = false
 reportMissingTypeStubs = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
 reportUnknownArgumentType = false
 reportUnknownLambdaType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportUnusedCallResult = false
+# Private module helpers (e.g. _helpers.py) are intentionally imported cross-module
+reportPrivateUsage = false
+# FastAPI decorators and exported helper functions appear "unused" in their own file
+reportUnusedFunction = false
+# SQLModel class-level column attributes are typed as T|None but carry SQLAlchemy operators
+# (ilike, asc, desc, distinct, is_, isnot, in_, etc.) — structural false positives from sqlmodel dual-typing
+reportOptionalMemberAccess = false
+# SQLModel Session.exec() has no overloads for sqlalchemy Select — structural false positives
+reportCallIssue = false
+# Bare dict/list/tuple/Callable in legacy function signatures (73 occurrences across 35 files)
+reportMissingTypeArgument = false
+# isinstance(x, dict) when x is already dict[...] — defensive runtime checks, always True
+reportUnnecessaryIsInstance = false
+# Comparison of non-overlapping types — defensive runtime guards for SQLModel/ORM returned values
+reportUnnecessaryComparison = false
+# SQLModel column attributes typed as Python primitives — attribute access false positives
+reportAttributeAccessIssue = false
+# SQLModel column expressions (col == val) type as bool, int|None passed where int expected
+# from DB objects with optional primary keys — structural SQLModel/FastAPI DI false positives
+reportArgumentType = false
+# SQLModel column operators (e.g. col + val) return bool instead of ColumnElement[bool]
+reportOperatorIssue = false
+# SQLModel optional column operators (None comparisons in where-clauses) — structural FPs
+reportOptionalOperand = false
 
-# Strictness on logic
-reportUnreachable = true
+# Strong correctness guarantees
 reportImplicitOverride = true
-reportUnusedCallResult = false # Avoids nitpicking on things like .append() or FastAPI tasks
 reportPropertyTypeMismatch = true
+reportUnreachable = true
 
-# Ignore patterns
-exclude = ["**/node_modules", "**/__pycache__", "**/tests", "**/alembic", "**/venv", ".venv"]
+# Better large-codebase maintainability
+reportDuplicateImport = true
+reportIncompatibleMethodOverride = true

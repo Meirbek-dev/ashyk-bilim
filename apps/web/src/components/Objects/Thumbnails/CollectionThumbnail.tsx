@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertDialog,
@@ -10,55 +10,51 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { PermissionTooltip } from '@/components/Utils/PermissionTooltip';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { deleteCollection } from '@services/courses/collections';
-import { Crown, Layers, Loader2, Trash2 } from 'lucide-react';
-import { revalidateTags } from '@/lib/cache/revalidate';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useState, useTransition } from 'react';
-import { Badge } from '@components/ui/badge';
-import { Button } from '@components/ui/button';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/alert-dialog'
+import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { deleteCollection } from '@services/courses/collections'
+import { Crown, Layers, Loader2, Trash2 } from 'lucide-react'
+import { revalidateTags } from '@/lib/cache/revalidate'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useState, useTransition } from 'react'
+import { Badge } from '@components/ui/badge'
+import { Button } from '@components/ui/button'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { cn } from '@/lib/utils'
 
 interface PropsType {
-  collection: any;
+  collection: AppCollection
 }
 
-const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '');
+const removeCollectionPrefix = (collectionid: string) => collectionid.replace('collection_', '')
 
-const CollectionMosaic = ({ courses }: { courses: any[] }) => {
+const CollectionMosaic = ({ courses }: { courses: AppCourse[] | number[] | undefined }) => {
   if (!courses || courses.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
         <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
-    );
+    )
   }
 
-  const courseImages = courses
-    .filter((c) => c.thumbnail_image)
-    .map((c) => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image));
+  const courseList = courses.filter((c): c is AppCourse => typeof c === 'object' && c !== null)
+  const courseImages = courseList
+    .filter((c): c is typeof c & { thumbnail_image: string } => typeof c.thumbnail_image === 'string')
+    .map(c => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image))
 
   if (courseImages.length === 0) {
     return (
       <div className="bg-muted flex h-full w-full items-center justify-center">
         <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
-    );
+    )
   }
 
   if (courseImages.length === 1) {
-    return (
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[0]})` }}
-      />
-    );
+    return <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
   }
 
   if (courseImages.length === 2) {
@@ -68,12 +64,9 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
           className="border-background h-full w-1/2 border-r bg-cover bg-center"
           style={{ backgroundImage: `url(${courseImages[0]})` }}
         />
-        <div
-          className="h-full w-1/2 bg-cover bg-center"
-          style={{ backgroundImage: `url(${courseImages[1]})` }}
-        />
+        <div className="h-full w-1/2 bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
       </div>
-    );
+    )
   }
 
   if (courseImages.length === 3) {
@@ -88,48 +81,33 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
             className="border-background h-1/2 w-full border-b bg-cover bg-center"
             style={{ backgroundImage: `url(${courseImages[1]})` }}
           />
-          <div
-            className="h-1/2 w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${courseImages[2]})` }}
-          />
+          <div className="h-1/2 w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="bg-background grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px]">
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[0]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[1]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[2]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[3]})` }}
-      />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[3]})` }} />
     </div>
-  );
-};
+  )
+}
 
 const CollectionThumbnail = ({ collection }: PropsType) => {
-  const t = useTranslations('Components.CollectionThumbnail');
-  const tCommon = useTranslations('Common');
+  const t = useTranslations('Components.CollectionThumbnail')
+  const tCommon = useTranslations('Common')
 
-  const isOwner = collection.is_owner ?? false;
-  const canDelete = collection.can_delete ?? false;
+  const isOwner = collection.is_owner ?? false
+  const canDelete = collection.can_delete === true
 
   return (
     <div className="group border-border bg-card hover:border-primary/20 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md">
       <Link
-        href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
+        href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
         className="border-border/50 relative block aspect-[16/9] w-full overflow-hidden border-b"
       >
         <CollectionMosaic courses={collection.courses} />
@@ -138,7 +116,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
 
       <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <CollectionDeleteAction
-          collection_uuid={collection.collection_uuid}
+          collection_uuid={collection.collection_uuid ?? ''}
           collection={collection}
           canDelete={canDelete}
         />
@@ -147,7 +125,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
-            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
+            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid ?? '')}`)}
             className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >
             {collection.name}
@@ -157,13 +135,10 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         <div className="mt-auto flex items-center justify-between pt-2">
           <div className="text-muted-foreground flex items-center gap-1.5">
             <Layers className="h-4 w-4" />
-            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses.length })}</p>
+            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses?.length ?? 0 })}</p>
           </div>
           {isOwner && (
-            <Badge
-              variant="secondary"
-              className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
-            >
+            <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
               <Crown className="h-3 w-3" />
               {tCommon('owner')}
             </Badge>
@@ -171,41 +146,35 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const CollectionDeleteAction = ({
   collection_uuid,
   collection,
   canDelete,
 }: {
-  collection_uuid: string;
-  collection: any;
-  canDelete: boolean;
+  collection_uuid: string
+  collection: AppCollection
+  canDelete: boolean
 }) => {
-  const t = useTranslations('Components.CollectionThumbnail');
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const t = useTranslations('Components.CollectionThumbnail')
+  const router = useRouter()
+  const [isOpen, setIsOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   async function handleDelete() {
     startTransition(async () => {
-      await deleteCollection(collection_uuid);
-      await revalidateTags(['collections']);
-      setIsOpen(false);
-      router.refresh();
-    });
+      await deleteCollection(collection_uuid)
+      await revalidateTags(['collections'])
+      setIsOpen(false)
+      router.refresh()
+    })
   }
 
   return (
-    <PermissionTooltip
-      enabled={canDelete}
-      action="delete"
-    >
-      <AlertDialog
-        open={isOpen}
-        onOpenChange={setIsOpen}
-      >
+    <PermissionTooltip enabled={canDelete} action="delete">
+      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
         <AlertDialogTrigger
           render={
             <Button
@@ -224,7 +193,9 @@ const CollectionDeleteAction = ({
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('deleteConfirmationTitle', { collectionName: collection.name ?? '' })}
+            </AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -247,7 +218,7 @@ const CollectionDeleteAction = ({
         </AlertDialogContent>
       </AlertDialog>
     </PermissionTooltip>
-  );
-};
+  )
+}
 
-export default CollectionThumbnail;
+export default CollectionThumbnail

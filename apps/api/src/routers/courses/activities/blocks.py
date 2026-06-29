@@ -32,12 +32,10 @@ async def api_create_image_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BlockRead:
-    """
-    Create new image file
-    """
+    """Create new image file."""
     return await create_image_block(request, file_object, activity_uuid, db_session)
 
 
@@ -45,14 +43,10 @@ async def api_create_image_file_block(
 async def api_get_image_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
 ) -> BlockRead:
-    """
-    Get image file
-    """
+    """Get image file."""
     return await get_image_block(request, block_uuid, current_user, db_session)
 
 
@@ -66,12 +60,10 @@ async def api_create_video_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BlockRead:
-    """
-    Create new video file
-    """
+    """Create new video file."""
     return await create_video_block(request, file_object, activity_uuid, db_session)
 
 
@@ -79,14 +71,10 @@ async def api_create_video_file_block(
 async def api_get_video_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
 ) -> BlockRead:
-    """
-    Get video file
-    """
+    """Get video file."""
     return await get_video_block(request, block_uuid, current_user, db_session)
 
 
@@ -100,12 +88,10 @@ async def api_create_pdf_file_block(
     request: Request,
     file_object: UploadFile,
     activity_uuid: Annotated[str, Form()],
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BlockRead:
-    """
-    Create new pdf file
-    """
+    """Create new pdf file."""
     return await create_pdf_block(request, file_object, activity_uuid, db_session)
 
 
@@ -113,12 +99,8 @@ async def api_create_pdf_file_block(
 async def api_get_pdf_file_block(
     request: Request,
     block_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
 ) -> BlockRead:
-    """
-    Get pdf file
-    """
+    """Get pdf file."""
     return await get_pdf_block(request, block_uuid, current_user, db_session)

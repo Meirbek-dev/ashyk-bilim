@@ -47,6 +47,9 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
     # ── assessment_policy: grade_release_mode ────────────────────────────────
     op.add_column(
         "assessment_policy",
@@ -59,15 +62,16 @@ def upgrade() -> None:
     )
 
     # ── assignment: weight ────────────────────────────────────────────────────
-    op.add_column(
-        "assignment",
-        sa.Column(
-            "weight",
-            sa.Float(),
-            nullable=False,
-            server_default="1.0",
-        ),
-    )
+    if "assignment" in existing_tables:
+        op.add_column(
+            "assignment",
+            sa.Column(
+                "weight",
+                sa.Float(),
+                nullable=False,
+                server_default="1.0",
+            ),
+        )
 
     # ── course_progress: weighted_grade_average ───────────────────────────────
     op.add_column(
@@ -135,6 +139,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
     # Drop student_policy_override
     op.drop_index("ix_spo_user_id", table_name="student_policy_override")
     op.drop_index("ix_spo_policy_user", table_name="student_policy_override")
@@ -144,7 +152,8 @@ def downgrade() -> None:
     op.drop_column("course_progress", "weighted_grade_average")
 
     # Drop assignment.weight
-    op.drop_column("assignment", "weight")
+    if "assignment" in existing_tables:
+        op.drop_column("assignment", "weight")
 
     # Drop assessment_policy.grade_release_mode
     op.drop_column("assessment_policy", "grade_release_mode")

@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Integration tests for the assessment authoring and lifecycle workflow.
+"""Integration tests for the assessment authoring and lifecycle workflow.
 
 Covers (all teacher-side):
   - Creating an assessment via POST /assessments
@@ -19,17 +18,24 @@ Covers (all teacher-side):
 
 import pathlib
 import sys
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -54,7 +60,9 @@ from src.db.grading.progress import (
     GradeReleaseMode,
     LatePolicyNone,
 )
-from src.db.grading.submissions import AssessmentType, Submission
+from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
+from src.db.resource_authors import ResourceAuthor
+from src.db.usergroups import UserGroup
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
@@ -64,6 +72,7 @@ from src.routers.file_submissions import router as file_submissions_router
 from src.security.rbac import PermissionChecker
 from src.services import file_submissions as file_submission_service
 from src.services.assessments import core
+from src.services.assessments.settings import get_settings as get_assessment_settings
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -74,6 +83,8 @@ STUDENT_ID = 2
 
 _ALL_TABLES = [
     User.__table__,
+    ResourceAuthor.__table__,
+    UserGroup.__table__,
     Course.__table__,
     Chapter.__table__,
     Activity.__table__,
@@ -82,6 +93,9 @@ _ALL_TABLES = [
     FileSubmissionAttempt.__table__,
     FileSubmissionAttemptFile.__table__,
     Assessment.__table__,
+    AssessmentAccessPolicy.__table__,
+    AssessmentAccessUser.__table__,
+    AssessmentAccessUserGroup.__table__,
     AssessmentItem.__table__,
     StudentPolicyOverride.__table__,
     Submission.__table__,
@@ -94,7 +108,7 @@ _ALL_TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -130,13 +144,13 @@ def teacher_user_fixture() -> PublicUser:
 
 @pytest.fixture(name="api_client")
 def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+    db_session_factory: Callable[[], Session], teacher_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
     app.include_router(file_submissions_router, prefix="/file-submissions")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -150,12 +164,8 @@ def api_client_fixture(
     monkeypatch.setattr(core, "_require_author", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_read", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_grade", lambda *_a, **_kw: None)
-    monkeypatch.setattr(
-        file_submission_service, "_require_author", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        file_submission_service, "_require_read", lambda *_a, **_kw: None
-    )
+    monkeypatch.setattr(file_submission_service, "_require_author", lambda *_a, **_kw: None)
+    monkeypatch.setattr(file_submission_service, "_require_read", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "require", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "check", lambda *_a, **_kw: True)
     return TestClient(app)
@@ -166,7 +176,7 @@ def api_client_fixture(
 # ---------------------------------------------------------------------------
 
 
-def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
+def _seed_course_and_chapter(db_session_factory: Callable[[], Session]) -> tuple[int, int]:
     """Insert a minimal Course + Chapter.  Returns (course_id, chapter_id)."""
     with db_session_factory() as session:
         teacher = User(
@@ -215,12 +225,13 @@ def _seed_course_and_chapter(db_session_factory) -> tuple[int, int]:
         session.commit()
         session.refresh(course)
         session.refresh(chapter)
+        assert course.id is not None
+        assert chapter.id is not None
         return course.id, chapter.id
 
 
-def _seed_published_assessment(db_session_factory) -> str:
-    """
-    Create a published assessment with one item.
+def _seed_published_assessment(db_session_factory: Callable[[], Session]) -> str:
+    """Create a published assessment with one item.
 
     Returns assessment_uuid.
     """
@@ -307,7 +318,7 @@ def _seed_published_assessment(db_session_factory) -> str:
 # ---------------------------------------------------------------------------
 
 
-def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
+def test_get_assessment_returns_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /assessments/{uuid} returns assessment with its items list."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -321,7 +332,7 @@ def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
     assert data["items"][0]["kind"] == "CHOICE"
 
 
-def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
+def test_get_assessment_404_for_unknown(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """GET /assessments/unknown-uuid returns 404."""
     _seed_course_and_chapter(db_session_factory)
 
@@ -336,7 +347,7 @@ def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
 
 
 def test_create_assessment_seeds_draft_and_policy(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """POST /assessments creates an assessment in DRAFT lifecycle with an AssessmentPolicy."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
@@ -358,10 +369,20 @@ def test_create_assessment_seeds_draft_and_policy(
     assert data["title"] == "New ManualAssessment"
     assert data["kind"] == "EXAM"
     assert data["assessment_uuid"] is not None
+    policy = data["assessment_policy"]
+    canonical_policy = policy["canonical_policy"]
+    assert policy["grade_release_mode"] == "BATCH"
+    assert policy["grading_mode"] == "AUTO_THEN_MANUAL"
+    assert policy["completion_rule"] == "PASSED"
+    assert canonical_policy["max_attempts"] == 1
+    assert canonical_policy["time_limit_seconds"] == 3600
+    assert canonical_policy["review_visibility"] == "SCORE_ONLY"
+    assert canonical_policy["integrity"]["copy_paste_protection"] is True
+    assert canonical_policy["integrity"]["fullscreen_required"] is True
 
 
 def test_create_assessment_unknown_course_returns_404(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """POST /assessments with a non-existent course_id returns 404."""
     _, chapter_id = _seed_course_and_chapter(db_session_factory)
@@ -385,7 +406,7 @@ def test_create_assessment_unknown_course_returns_404(
 
 
 def test_create_file_submission_activity_is_first_class(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """POST /file-submissions creates a TYPE_FILE_SUBMISSION activity, not an assessment."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
@@ -412,18 +433,11 @@ def test_create_file_submission_activity_is_first_class(
     assert data["max_files"] == 2
 
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.id == data["activity_id"])
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.id == data["activity_id"])).one()
         assert activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
-        assert (
-            activity.activity_sub_type
-            == ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
-        )
+        assert activity.activity_sub_type == ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
 
-    read_response = api_client.get(
-        f"/file-submissions/activity/{data['activity_uuid']}"
-    )
+    read_response = api_client.get(f"/file-submissions/activity/{data['activity_uuid']}")
     assert read_response.status_code == 200
     assert read_response.json()["file_submission_uuid"] == data["file_submission_uuid"]
 
@@ -433,13 +447,16 @@ def test_create_file_submission_activity_is_first_class(
 # ---------------------------------------------------------------------------
 
 
-def test_update_assessment_metadata(api_client, db_session_factory) -> None:
+def test_update_assessment_metadata(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid} updates the title and description."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
     response = api_client.patch(
         f"/assessments/{assessment_uuid}",
-        json={"title": "Renamed ManualAssessment", "description": "Updated description"},
+        json={
+            "title": "Renamed ManualAssessment",
+            "description": "Updated description",
+        },
     )
 
     assert response.status_code == 200
@@ -448,19 +465,34 @@ def test_update_assessment_metadata(api_client, db_session_factory) -> None:
     assert data["description"] == "Updated description"
 
 
-def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -> None:
+def test_update_assessment_policy_max_attempts(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """PATCH /assessments/{uuid} with a policy block updates max_attempts."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
     response = api_client.patch(
         f"/assessments/{assessment_uuid}",
-        json={"policy": {"max_attempts": 2}},
+        json={
+            "policy": {
+                "max_attempts": 2,
+                "copy_paste_protection": True,
+                "right_click_disabled": True,
+                "fullscreen_required": False,
+                "violation_threshold": 4,
+            }
+        },
     )
 
     assert response.status_code == 200
     data = response.json()
     policy = data.get("assessment_policy") or {}
     assert policy.get("max_attempts") == 2
+    assert policy["canonical_policy"]["max_attempts"] == 2
+    assert policy["canonical_policy"]["integrity"]["copy_paste_protection"] is True
+    assert policy["canonical_policy"]["integrity"]["right_click_disabled"] is True
+    assert policy["canonical_policy"]["integrity"]["fullscreen_required"] is False
+    assert policy["canonical_policy"]["integrity"]["violation_threshold"] == 4
 
 
 # ---------------------------------------------------------------------------
@@ -468,7 +500,7 @@ def test_update_assessment_policy_max_attempts(api_client, db_session_factory) -
 # ---------------------------------------------------------------------------
 
 
-def test_add_item_to_assessment(api_client, db_session_factory) -> None:
+def test_add_item_to_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments/{uuid}/items adds a new CHOICE item."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -499,7 +531,7 @@ def test_add_item_to_assessment(api_client, db_session_factory) -> None:
 
 
 def test_unknown_item_kinds_are_rejected_for_assessments(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """Unknown item kinds cannot be authored inside assessments."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
@@ -523,7 +555,43 @@ def test_unknown_item_kinds_are_rejected_for_assessments(
     assert response.status_code == 422
 
 
-def test_update_item_title(api_client, db_session_factory) -> None:
+def test_code_challenge_rejects_choice_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
+    """CODE_CHALLENGE assessments may only author CODE items."""
+    course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
+    create_response = api_client.post(
+        "/assessments",
+        json={
+            "kind": "CODE_CHALLENGE",
+            "title": "Code challenge",
+            "course_id": course_id,
+            "chapter_id": chapter_id,
+        },
+    )
+    assert create_response.status_code == 200
+    assessment_uuid = create_response.json()["assessment_uuid"]
+
+    response = api_client.post(
+        f"/assessments/{assessment_uuid}/items",
+        json={
+            "kind": "CHOICE",
+            "title": "Wrong item type",
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose.",
+                "options": [
+                    {"text": "A", "is_correct": True},
+                    {"text": "B", "is_correct": False},
+                ],
+                "multiple": False,
+            },
+            "max_score": 10,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_item_title(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """PATCH /assessments/{uuid}/items/{item_uuid} updates the item title."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -539,13 +607,60 @@ def test_update_item_title(api_client, db_session_factory) -> None:
     assert data["title"] == "Updated question title"
 
 
-def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> None:
+def test_locked_published_assessment_rejects_scoring_item_edits(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """Published assessments with submitted attempts reject scoring-field edits."""
+    assessment_uuid = _seed_published_assessment(db_session_factory)
+    now = datetime.now(UTC)
+    with db_session_factory() as session:
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_published_authoring")).one()
+        policy = session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).one()
+        student = User(
+            id=STUDENT_ID,
+            user_uuid="user_student_authoring",
+            username="student.authoring",
+            first_name="Student",
+            middle_name="",
+            last_name="Authoring",
+            email="student.authoring@example.com",
+            hashed_password="hashed",
+            is_active=True,
+            is_superuser=False,
+            is_verified=True,
+        )
+        session.add(student)
+        session.add(
+            Submission(
+                submission_uuid="submission_locked_authoring",
+                assessment_type=AssessmentType.EXAM,
+                activity_id=activity.id,
+                assessment_policy_id=policy.id,
+                user_id=STUDENT_ID,
+                status=SubmissionStatus.PENDING,
+                attempt_number=1,
+                answers_json={"answers": {"item_published_authoring_1": {"kind": "CHOICE", "selected": ["A"]}}},
+                started_at=now,
+                submitted_at=now,
+            )
+        )
+        session.commit()
+
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/items/item_published_authoring_1",
+        json={"max_score": 50},
+    )
+
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["code"] == "PUBLISHED_ASSESSMENT_HAS_SUBMISSIONS"
+
+
+def test_delete_item_removes_from_assessment(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """DELETE /assessments/{uuid}/items/{item_uuid} removes the item."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
-    response = api_client.delete(
-        f"/assessments/{assessment_uuid}/items/item_published_authoring_1"
-    )
+    response = api_client.delete(f"/assessments/{assessment_uuid}/items/item_published_authoring_1")
 
     # Endpoint returns a confirmation dict; verify via GET that item is gone
     assert response.status_code == 200
@@ -556,29 +671,48 @@ def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> 
     assert "item_published_authoring_1" not in item_uuids
 
 
-def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> None:
+def test_add_multiple_items_preserves_order(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """Items are returned in insertion order when fetched via GET."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
-    # Add two more items
-    api_client.post(
+    # Add two more supported exam items.
+    second_response = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Second question",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Describe."},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose the second answer.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 20,
         },
     )
-    api_client.post(
+    assert second_response.status_code == 200
+
+    third_response = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Third question",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Explain."},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose the third answer.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 20,
         },
     )
+    assert third_response.status_code == 200
 
     # GET returns the full assessment with all items in insertion order
     response = api_client.get(f"/assessments/{assessment_uuid}")
@@ -588,7 +722,7 @@ def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> N
     assert data["items"][0]["item_uuid"] == "item_published_authoring_1"
 
 
-def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
+def test_reorder_items_changes_order(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """POST /assessments/{uuid}/items:reorder changes the item sequence."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -596,9 +730,17 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
     r = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Second",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Q2"},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Q2",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 10,
         },
     )
@@ -629,7 +771,7 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
 
 
 def test_lifecycle_transition_draft_to_published(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """POST /assessments/{uuid}/lifecycle/transition moves DRAFT → PUBLISHED."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
@@ -668,16 +810,24 @@ def test_lifecycle_transition_draft_to_published(
 
     response = api_client.post(
         f"/assessments/{assessment_uuid}/lifecycle",
-        json={"to": "PUBLISHED"},
+        json={"to": "PUBLISHED", "audit_note": "High-stakes preview completed by instructor."},
     )
 
     assert response.status_code == 200
     assert response.json()["lifecycle"] == "PUBLISHED"
     assert response.json()["published_at"] is not None
+    with db_session_factory() as session:
+        activity = session.exec(
+            select(Activity).where(Activity.activity_uuid == response.json()["activity_uuid"])
+        ).one()
+        audit_entries = (activity.details or {}).get("assessment_lifecycle_audit")
+        assert isinstance(audit_entries, list)
+        assert audit_entries[-1]["to"] == "PUBLISHED"
+        assert audit_entries[-1]["note"] == "High-stakes preview completed by instructor."
 
 
 def test_lifecycle_transition_published_to_archived(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """Transition PUBLISHED → ARCHIVED is allowed."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
@@ -693,7 +843,7 @@ def test_lifecycle_transition_published_to_archived(
 
 
 def test_lifecycle_transition_invalid_returns_422(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """Transitioning to an invalid state (e.g. PUBLISHED → SCHEDULED) returns 422."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
@@ -713,7 +863,7 @@ def test_lifecycle_transition_invalid_returns_422(
 
 
 def test_readiness_check_passes_for_complete_assessment(
-    api_client, db_session_factory
+    api_client: TestClient, db_session_factory: Callable[[], Session]
 ) -> None:
     """An assessment with items and policy is considered READY."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
@@ -726,7 +876,7 @@ def test_readiness_check_passes_for_complete_assessment(
     assert data["issues"] == []
 
 
-def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> None:
+def test_readiness_check_flags_missing_items(api_client: TestClient, db_session_factory: Callable[[], Session]) -> None:
     """An assessment with zero items is NOT ready."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -749,6 +899,48 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
     assert data["ok"] is False
     issue_codes = [issue["code"] for issue in data["issues"]]
     assert len(issue_codes) > 0
+    assert data["blocker_count"] > 0
+    assert data["issues"][0]["severity"] == "blocker"
+    assert data["issues"][0]["area"] == "questions"
+    assert data["issues"][0]["view"] == "questions"
+
+
+def test_legacy_settings_endpoint_prefers_canonical_policy(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
+    """Legacy assessment settings adapters read AssessmentPolicy before Activity.settings."""
+    course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
+    response = api_client.post(
+        "/assessments",
+        json={
+            "kind": "EXAM",
+            "title": "Canonical Settings",
+            "course_id": course_id,
+            "chapter_id": chapter_id,
+        },
+    )
+    assert response.status_code == 200
+    activity_id = response.json()["activity_id"]
+
+    with db_session_factory() as session:
+        activity = session.get(Activity, activity_id)
+        assert activity is not None
+        activity.settings = {
+            "kind": "EXAM",
+            "attempt_limit": 99,
+            "time_limit": 5,
+            "copy_paste_protection": False,
+        }
+        session.add(activity)
+        session.commit()
+
+    with db_session_factory() as session:
+        settings = get_assessment_settings(activity_id, session)
+
+    assert settings.kind == "EXAM"
+    assert settings.attempt_limit == 1
+    assert settings.time_limit == 60
+    assert settings.copy_paste_protection is True
 
 
 # ---------------------------------------------------------------------------
@@ -756,7 +948,9 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+def test_policy_preset_manual_assessment_has_defaults(
+    api_client: TestClient, db_session_factory: Callable[[], Session]
+) -> None:
     """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 
@@ -765,5 +959,50 @@ def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_fac
     assert response.status_code == 200
     data = response.json()
     # Should contain grading mode and release mode
-    assert "grading_mode" in data
-    assert "grade_release_mode" in data
+    assert data["grading_mode"] == "AUTO_THEN_MANUAL"
+    assert data["completion_rule"] == "PASSED"
+    assert data["grade_release_mode"] == "BATCH"
+    assert data["review_visibility"] == "SCORE_ONLY"
+
+
+@pytest.mark.anyio
+async def test_update_published_activity_does_not_trigger_readiness_checks(
+    db_session_factory: Callable[[], Session],
+    teacher_user: PublicUser,
+) -> None:
+    """Updating fields on an already published activity should not trigger readiness validation."""
+    from unittest.mock import MagicMock
+
+    from fastapi import Request
+
+    from src.db.courses.activities import ActivityUpdate
+    from src.services.courses.activities.activities import update_activity
+
+    assessment_uuid = _seed_published_assessment(db_session_factory)
+
+    with db_session_factory() as session:
+        assessment = session.exec(select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)).one()
+
+        # Delete all items under this assessment to make it NOT ready for publishing.
+        items = session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
+        for item in items:
+            session.delete(item)
+        session.commit()
+
+    request_mock = MagicMock(spec=Request)
+
+    with db_session_factory() as session:
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_published_authoring")).one()
+        assert activity.published is True
+
+        # Call update_activity service
+        update_obj = ActivityUpdate(name="Renamed Published Activity")
+        updated_activity = await update_activity(
+            request=request_mock,
+            activity_object=update_obj,
+            activity_uuid="activity_published_authoring",
+            current_user=teacher_user,
+            db_session=session,
+        )
+
+        assert updated_activity.name == "Renamed Published Activity"

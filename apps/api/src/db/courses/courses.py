@@ -1,11 +1,11 @@
 import json
-from datetime import UTC, datetime, timezone
-from enum import Enum, StrEnum
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import override
 from uuid import uuid4
 
-from pydantic import ConfigDict, field_validator
-from pydantic import Field as PydanticField
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, func
+from pydantic import ConfigDict, Field as PydanticField, field_validator
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, func
 from sqlmodel import Field
 
 from src.db.courses.chapters import ChapterRead, ChapterReadWithPermissions
@@ -25,19 +25,19 @@ class AuthorWithRole(SQLModelStrictBaseModel):
     user: UserRead
     authorship: ResourceAuthorshipEnum
     authorship_status: ResourceAuthorshipStatusEnum
-    creation_date: str
-    update_date: str
+    creation_date: datetime
+    update_date: datetime
 
     @field_validator("authorship", mode="before")
     @classmethod
-    def validate_authorship(cls, v):
+    def validate_authorship(cls, v: object) -> object:
         if isinstance(v, str):
             return ResourceAuthorshipEnum(v)
         return v
 
     @field_validator("authorship_status", mode="before")
     @classmethod
-    def validate_authorship_status(cls, v):
+    def validate_authorship_status(cls, v: object) -> object:
         if isinstance(v, str):
             return ResourceAuthorshipStatusEnum(v)
         return v
@@ -57,7 +57,7 @@ class CourseBase(SQLModelStrictBaseModel):
 
     @field_validator("learnings", mode="before")
     @classmethod
-    def validate_learnings(cls, value):
+    def validate_learnings(cls, value: object) -> str | None:
         if value is None:
             return None
         if isinstance(value, list):
@@ -108,7 +108,7 @@ class CourseBase(SQLModelStrictBaseModel):
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, value):
+    def validate_tags(cls, value: object) -> str | None:
         if value is None:
             return None
 
@@ -123,14 +123,11 @@ class CourseBase(SQLModelStrictBaseModel):
                 parsed = json.loads(stripped)
             except json.JSONDecodeError:
                 parsed = [segment.strip() for segment in stripped.split(",")]
-            if isinstance(parsed, list):
-                raw_tags = [str(tag).strip() for tag in parsed]
-            else:
-                raw_tags = [str(parsed).strip()]
+            raw_tags = [str(tag).strip() for tag in parsed] if isinstance(parsed, list) else [str(parsed).strip()]
         else:
             raw_tags = [str(value).strip()]
 
-        normalized_tags = []
+        normalized_tags: list[str] = []
         for tag in raw_tags:
             if tag and tag not in normalized_tags:
                 normalized_tags.append(tag)
@@ -139,7 +136,7 @@ class CourseBase(SQLModelStrictBaseModel):
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
@@ -158,9 +155,7 @@ class Course(CourseBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -171,9 +166,10 @@ class CourseCreate(CourseBase):
     # Optional starter template: "blank" (default) or "starter" (seeds 2 default chapters)
     template: str | None = None
 
+    @override
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
@@ -188,12 +184,13 @@ class CourseUpdate(CourseBase):
     thumbnail_type: ThumbnailType | None = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = Field(default="")
     thumbnail_video: str | None = Field(default="")
-    public: bool | None = None
-    open_to_contributors: bool | None = None
+    public: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    open_to_contributors: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
+    @override
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
@@ -210,24 +207,24 @@ class CourseMetadataUpdate(PydanticStrictBaseModel):
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
 
     @field_validator("learnings", mode="before")
     @classmethod
-    def validate_metadata_learnings(cls, value):
+    def validate_metadata_learnings(cls, value: object) -> str | None:
         return CourseBase.validate_learnings(value)
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_metadata_tags(cls, value):
+    def validate_metadata_tags(cls, value: object) -> str | None:
         return CourseBase.validate_tags(value)
 
     @field_validator("last_known_update_date", mode="before")
     @classmethod
-    def validate_last_known_update_date(cls, value):
+    def validate_last_known_update_date(cls, value: object) -> object:
         if value is None or isinstance(value, datetime):
             return value
         if isinstance(value, str):
@@ -245,7 +242,7 @@ class CourseAccessUpdate(PydanticStrictBaseModel):
 
     @field_validator("last_known_update_date", mode="before")
     @classmethod
-    def validate_last_known_update_date(cls, value):
+    def validate_last_known_update_date(cls, value: object) -> object:
         if value is None or isinstance(value, datetime):
             return value
         if isinstance(value, str):
@@ -279,14 +276,14 @@ class CourseRead(PydanticStrictBaseModel):
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
         return v
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object) -> object:
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):
@@ -301,8 +298,8 @@ class FullCourseRead(PydanticStrictBaseModel):
     id: int
     creator_id: int | None = None
     course_uuid: str | None = None
-    creation_date: str | None = None
-    update_date: str | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
     thumbnail_type: ThumbnailType | None = PydanticField(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = PydanticField(default="")
     thumbnail_video: str | None = PydanticField(default="")
@@ -321,19 +318,9 @@ class FullCourseRead(PydanticStrictBaseModel):
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
-        return v
-
-    @field_validator("creation_date", "update_date", mode="before")
-    @classmethod
-    def validate_dates(cls, v):
-        # Accept datetime values and coerce to ISO strings centrally
-        from datetime import datetime
-
-        if isinstance(v, datetime):
-            return v.isoformat()
         return v
 
 
@@ -341,8 +328,8 @@ class FullCourseReadWithTrail(PydanticStrictBaseModel):
     id: int
     creator_id: int | None = None
     course_uuid: str | None = None
-    creation_date: str | None = None
-    update_date: str | None = None
+    creation_date: datetime | None = None
+    update_date: datetime | None = None
     authors: list[AuthorWithRole]
     chapters: list[ChapterRead]
     trail: TrailRead | None = None
@@ -362,17 +349,7 @@ class FullCourseReadWithTrail(PydanticStrictBaseModel):
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod
-    def validate_thumbnail_type(cls, v):
+    def validate_thumbnail_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ThumbnailType(v)
-        return v
-
-    @field_validator("creation_date", "update_date", mode="before")
-    @classmethod
-    def validate_dates(cls, v):
-        # Accept datetime values and coerce to ISO strings centrally
-        from datetime import datetime
-
-        if isinstance(v, datetime):
-            return v.isoformat()
         return v

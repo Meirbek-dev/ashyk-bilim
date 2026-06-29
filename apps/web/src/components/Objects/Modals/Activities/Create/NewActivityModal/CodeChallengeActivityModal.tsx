@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import { Controller, useForm } from 'react-hook-form';
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { Code2, Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import * as v from 'valibot';
+import { Controller, useForm } from 'react-hook-form'
+import { valibotResolver } from '@hookform/resolvers/valibot'
+import { Code2, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import * as v from 'valibot'
 
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { apiFetch } from '@/lib/api-client';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { apiFetch } from '@/lib/api-client'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
@@ -19,30 +19,23 @@ const createValidationSchema = (t: (key: string) => string) =>
     description: v.pipe(v.string(), v.minLength(1, t('challengeDescriptionRequired'))),
     difficulty: v.picklist(['easy', 'medium', 'hard']),
     subtype: v.picklist(['general', 'competitive']),
-  });
-
-interface FormValues {
-  name: string;
-  description: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  subtype: 'general' | 'competitive';
-}
+  })
 
 interface CodeChallengeActivityModalProps {
-  submitActivity?: (data: any) => Promise<void>;
-  chapterId: number;
-  course: any;
-  closeModal?: () => void;
+  submitActivity?: (data: AppPayload) => Promise<void>
+  chapterId: number
+  course?: AppCourse | AppCourseContextShape
+  closeModal?: () => void
 }
 
 export default function CodeChallengeActivityModal({ chapterId, course, closeModal }: CodeChallengeActivityModalProps) {
-  const t = useTranslations('Components.NewActivity.CodeChallenge');
+  const t = useTranslations('Components.NewActivity.CodeChallenge')
 
-  const validationSchema = createValidationSchema(t);
-  type ValidationInput = v.InferInput<typeof validationSchema>;
-  type ValidationOutput = v.InferOutput<typeof validationSchema>;
+  const validationSchema = createValidationSchema(t)
+  type ValidationInput = v.InferInput<typeof validationSchema>
+  type ValidationOutput = v.InferOutput<typeof validationSchema>
 
-  const form = useForm<ValidationInput, any, ValidationOutput>({
+  const form = useForm<ValidationInput, unknown, ValidationOutput>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
@@ -50,12 +43,12 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
       difficulty: 'medium',
       subtype: 'general',
     },
-  });
+  })
 
   const handleSubmit = async (values: ValidationOutput) => {
-    const courseId = course?.courseStructure?.id ?? course?.id;
+    const courseId = course?.courseStructure?.id ?? course?.id
     if (typeof courseId !== 'number') {
-      throw new Error('Course metadata is missing for code challenge creation');
+      throw new Error('Course metadata is missing for code challenge creation')
     }
 
     const response = await apiFetch('assessments', {
@@ -78,15 +71,15 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
           },
         },
       }),
-    });
+    })
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail?.message || error.detail || 'Failed to create code challenge');
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.detail?.message || error.detail || 'Failed to create code challenge')
     }
 
-    closeModal?.();
-  };
+    closeModal?.()
+  }
 
   return (
     <div className="space-y-6">
@@ -100,10 +93,7 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
         </div>
       </div>
 
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4"
-      >
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <Controller
           control={form.control}
           name="name"
@@ -111,11 +101,7 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
             <Field>
               <FieldLabel htmlFor={field.name}>{t('name')}</FieldLabel>
               <FieldContent>
-                <Input
-                  id={field.name}
-                  placeholder={t('namePlaceholder')}
-                  {...field}
-                />
+                <Input id={field.name} placeholder={t('namePlaceholder')} {...field} />
               </FieldContent>
               <FieldError errors={[fieldState.error]} />
             </Field>
@@ -129,12 +115,7 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
             <Field>
               <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
               <FieldContent>
-                <Textarea
-                  id={field.name}
-                  placeholder={t('descriptionPlaceholder')}
-                  className="min-h-24"
-                  {...field}
-                />
+                <Textarea id={field.name} placeholder={t('descriptionPlaceholder')} className="min-h-24" {...field} />
               </FieldContent>
               <FieldDescription>{t('descriptionHint')}</FieldDescription>
               <FieldError errors={[fieldState.error]} />
@@ -151,29 +132,26 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
                 { value: 'easy', label: t('difficultyEasy') },
                 { value: 'medium', label: t('difficultyMedium') },
                 { value: 'hard', label: t('difficultyHard') },
-              ];
+              ]
 
               return (
                 <Field>
                   <FieldLabel>{t('difficulty')}</FieldLabel>
                   <NativeSelect
                     value={field.value}
-                    onChange={(event) => field.onChange(event.target.value)}
+                    onChange={event => field.onChange(event.target.value)}
                     className="w-full"
                     aria-label={t('difficulty')}
                   >
-                    {difficultyItems.map((item) => (
-                      <NativeSelectOption
-                        key={item.value}
-                        value={item.value}
-                      >
+                    {difficultyItems.map(item => (
+                      <NativeSelectOption key={item.value} value={item.value}>
                         {item.label}
                       </NativeSelectOption>
                     ))}
                   </NativeSelect>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
-              );
+              )
             }}
           />
 
@@ -184,22 +162,19 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
               const subtypeItems = [
                 { value: 'general', label: t('typeGeneral') },
                 { value: 'competitive', label: t('typeCompetitive') },
-              ];
+              ]
 
               return (
                 <Field>
                   <FieldLabel>{t('type')}</FieldLabel>
                   <NativeSelect
                     value={field.value}
-                    onChange={(event) => field.onChange(event.target.value)}
+                    onChange={event => field.onChange(event.target.value)}
                     className="w-full"
                     aria-label={t('type')}
                   >
-                    {subtypeItems.map((item) => (
-                      <NativeSelectOption
-                        key={item.value}
-                        value={item.value}
-                      >
+                    {subtypeItems.map(item => (
+                      <NativeSelectOption key={item.value} value={item.value}>
                         {item.label}
                       </NativeSelectOption>
                     ))}
@@ -209,30 +184,23 @@ export default function CodeChallengeActivityModal({ chapterId, course, closeMod
                   </FieldDescription>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
-              );
+              )
             }}
           />
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
           {closeModal && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={closeModal}
-            >
+            <Button type="button" variant="outline" onClick={closeModal}>
               {t('cancel')}
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-          >
+          <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('create')}
           </Button>
         </div>
       </form>
     </div>
-  );
+  )
 }

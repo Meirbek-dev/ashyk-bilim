@@ -1,8 +1,8 @@
 from typing import TypeVar
 
 from fastapi import Request
-from sqlalchemy import true as sa_true
-from sqlmodel import Session, and_, or_, select, text
+from sqlalchemy import func, true as sa_true
+from sqlmodel import Session, col, or_, select
 
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse
@@ -29,46 +29,84 @@ async def search_platform_content(
     page: int = 1,
     limit: int = 10,
 ) -> SearchResult:
-    """
-    Search across courses, collections and users within the platform
-    """
+    """Search across courses, collections and users within the platform."""
     offset = (page - 1) * limit
+    normalized_query = search_query.strip()
 
     # Search courses using existing search_courses function
-    courses = await search_courses(
-        request, current_user, search_query, db_session, page, limit
-    )
+    courses = await search_courses(request, current_user, search_query, db_session, page, limit)
+
+    dialect_name = db_session.bind.dialect.name if db_session.bind is not None else ""
 
     # Search collections
-    collections_query = (
-        select(Collection)
-        .where(
-            or_(
-                text('LOWER("collection".name) LIKE LOWER(:pattern)'),
-                text('LOWER("collection".description) LIKE LOWER(:pattern)'),
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Collection.name, "") + " " + func.coalesce(Collection.description, ""),
+        )
+        query = func.websearch_to_tsquery("english", normalized_query)
+        collections_query = (
+            select(Collection)
+            .where(vector.op("@@")(query))
+            .order_by(
+                func.ts_rank_cd(vector, query).desc(),
+                col(Collection.id).desc(),
             )
         )
-        .params(pattern=f"%{search_query}%")
-    )
+    else:
+        pattern = f"%{normalized_query}%"
+        collections_query = select(Collection).where(
+            or_(col(Collection.name).ilike(pattern), col(Collection.description).ilike(pattern))
+        )
 
     # Search users
-    users_query = (
-        select(User)
-        .join(UserRole, UserRole.user_id == User.id)
-        # Use DISTINCT on `User.id` to avoid comparing JSON columns
-        .distinct(User.id)
-        .where(
-            or_(
-                text(
-                    'LOWER("user".username) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".first_name) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".last_name) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".bio) LIKE LOWER(:pattern)'
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(User.username, "")
+            + " "
+            + func.coalesce(User.first_name, "")
+            + " "
+            + func.coalesce(User.last_name, "")
+            + " "
+            + func.coalesce(User.bio, ""),
+        )
+        query = func.websearch_to_tsquery("english", normalized_query)
+        pattern = f"%{normalized_query}%"
+        users_query = (
+            select(User)
+            .where(col(User.id).in_(select(UserRole.user_id)))
+            .where(
+                or_(
+                    vector.op("@@")(query),
+                    col(User.username).ilike(pattern),
+                    col(User.first_name).ilike(pattern),
+                    col(User.last_name).ilike(pattern),
+                    col(User.email).ilike(pattern),
+                )
+            )
+            .order_by(
+                col(User.username).ilike(f"{normalized_query}%").desc(),
+                col(User.first_name).ilike(f"{normalized_query}%").desc(),
+                func.ts_rank_cd(vector, query).desc(),
+                col(User.id).desc(),
+            )
+        )
+    else:
+        pattern = f"%{normalized_query}%"
+        users_query = (
+            select(User)
+            .where(col(User.id).in_(select(UserRole.user_id)))
+            .where(
+                or_(
+                    col(User.username).ilike(pattern),
+                    col(User.first_name).ilike(pattern),
+                    col(User.last_name).ilike(pattern),
+                    col(User.email).ilike(pattern),
+                    col(User.bio).ilike(pattern),
                 )
             )
         )
-        .params(pattern=f"%{search_query}%")
-    )
 
     if isinstance(current_user, AnonymousUser):
         # For anonymous users, only show public collections
@@ -87,18 +125,18 @@ async def search_platform_content(
         collection_ids = [c.id for c in collections]
         batch_stmt = (
             select(CollectionCourse, Course)
-            .join(Course, CollectionCourse.course_id == Course.id)
-            .where(CollectionCourse.collection_id.in_(collection_ids))
+            .join(Course, col(CollectionCourse.course_id) == Course.id)
+            .where(col(CollectionCourse.collection_id).in_(collection_ids))
             .distinct()
         )
-        courses_by_collection: dict[int, list] = {}
+        courses_by_collection: dict[int, list[Course]] = {}
         for cc, course in db_session.exec(batch_stmt).all():
             courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
         for collection in collections:
             collection_read = CollectionRead.model_validate({
                 **collection.model_dump(),
-                "courses": courses_by_collection.get(collection.id, []),
+                "courses": [CourseRead.model_validate(c) for c in courses_by_collection.get(collection.id or 0, [])],
             })
             collection_reads.append(collection_read)
 

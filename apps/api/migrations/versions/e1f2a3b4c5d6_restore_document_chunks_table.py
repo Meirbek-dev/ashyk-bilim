@@ -38,14 +38,8 @@ def upgrade() -> None:
         "ON document_chunks USING hnsw (embedding vector_cosine_ops) "
         "WITH (m = 16, ef_construction = 64)"
     )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS document_chunks_collection_name_idx "
-        "ON document_chunks (collection_name)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS document_chunks_inserted_at_idx "
-        "ON document_chunks (inserted_at)"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS document_chunks_collection_name_idx ON document_chunks (collection_name)")
+    op.execute("CREATE INDEX IF NOT EXISTS document_chunks_inserted_at_idx ON document_chunks (inserted_at)")
 
 
 def downgrade() -> None:
@@ -59,7 +53,5 @@ def downgrade() -> None:
         table_name="document_chunks",
         if_exists=True,
     )
-    op.drop_index(
-        "document_chunks_inserted_at_idx", table_name="document_chunks", if_exists=True
-    )
+    op.drop_index("document_chunks_inserted_at_idx", table_name="document_chunks", if_exists=True)
     op.execute("DROP TABLE IF EXISTS document_chunks")

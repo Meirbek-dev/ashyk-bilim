@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import CodeChallengeStudio from './code-challenge/CodeChallengeStudio';
-import type { KindAuthorProps } from './index';
+import { CodeChallengeBuilder } from '@/features/code-arena/authoring'
+import type { KindAuthorProps } from './index'
 
 export default function CodeChallengeAuthor({ activityUuid }: KindAuthorProps) {
-  return <CodeChallengeStudio activityUuid={activityUuid} />;
+  return <CodeChallengeBuilder activityUuid={activityUuid} />
 }

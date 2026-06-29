@@ -1,10 +1,12 @@
 """Course gradebook matrix built from canonical progress rows."""
 
+import csv
+import io
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
@@ -13,6 +15,7 @@ from src.db.grading.gradebook import (
     ActivityProgressCell,
     CourseGradebookResponse,
     GradebookActivity,
+    GradebookPageInfo,
     GradebookStudent,
     GradebookSummary,
     TeacherAction,
@@ -22,7 +25,7 @@ from src.db.grading.progress import (
     ActivityProgressState,
     AssessmentPolicy,
 )
-from src.db.grading.submissions import Submission
+from src.db.grading.submissions import AssessmentType, Submission
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.trail_runs import TrailRun
 from src.db.usergroup_resources import UserGroupResource
@@ -33,7 +36,7 @@ from src.services.file_submissions import (
     file_submission_attempts_for_gradebook,
     file_submission_configs_for_activities,
 )
-from src.services.progress.submissions import backfill_activity_progress
+from src.types import require_persisted_id
 
 
 async def get_course_gradebook(
@@ -41,83 +44,102 @@ async def get_course_gradebook(
     course_uuid: str,
     current_user: PublicUser,
     db_session: Session,
+    page: int | None = None,
+    page_size: int | None = None,
+    search: str | None = None,
+    activity_type: str | None = None,
+    saved_filter: str | None = None,
 ) -> CourseGradebookResponse:
     course = _get_course_or_404(course_uuid, db_session)
     _require_gradebook_access(course, current_user, db_session)
 
-    activities = _course_activities(course.id, db_session)
+    course_id = require_persisted_id(course.id, model_name="Course")
+    all_activities = _course_activities(course_id, db_session)
+    activity_types = sorted({str(activity.activity_type) for activity in all_activities})
+    activities = all_activities
+    if activity_type and activity_type != "all":
+        activities = [activity for activity in activities if str(activity.activity_type) == activity_type]
     students = _course_students(course, activities, db_session)
-    student_ids = [s.id for s in students]
+    students = _filter_students_by_search(students, search)
+    students = _filter_students_by_saved_filter(
+        students,
+        activities,
+        course_id,
+        db_session,
+        saved_filter,
+    )
+    total_students = len(students)
+    total_activities = len(activities)
+    students_for_page = _paginate_students(students, page=page, page_size=page_size)
+    student_ids = [require_persisted_id(student.id, model_name="User") for student in students_for_page]
+    activity_ids = {activity.id for activity in activities if activity.id is not None}
 
     # Optimized progress fetch: only for students in this course view
-    progress_rows = db_session.exec(
-        select(ActivityProgress).where(
-            ActivityProgress.course_id == course.id,
-            ActivityProgress.user_id.in_(student_ids),
-        )
-    ).all()
+    if student_ids and activity_ids:
+        progress_rows = db_session.exec(
+            select(ActivityProgress).where(
+                ActivityProgress.course_id == course_id,
+                col(ActivityProgress.user_id).in_(student_ids),
+                col(ActivityProgress.activity_id).in_(activity_ids),
+            )
+        ).all()
+    else:
+        progress_rows = []
     progress_by_pair = {(r.user_id, r.activity_id): r for r in progress_rows}
 
     submissions_by_id = _submissions_by_id(
-        {
-            progress.latest_submission_id
-            for progress in progress_rows
-            if progress.latest_submission_id
-        },
+        {progress.latest_submission_id for progress in progress_rows if progress.latest_submission_id},
         db_session,
     )
-    policies_by_activity = _policies_by_activity(db_session)
+    policies_by_activity = _policies_by_activity(activity_ids, db_session)
     file_activity_ids = {
         activity.id
         for activity in activities
-        if activity.id is not None
-        and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
+        if activity.id is not None and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
     }
     file_attempts_by_pair = file_submission_attempts_for_gradebook(
-        file_activity_ids, db_session
+        file_activity_ids, db_session, student_ids=student_ids
     )
-    file_configs_by_activity = file_submission_configs_for_activities(
-        file_activity_ids, db_session
-    )
+    file_configs_by_activity = file_submission_configs_for_activities(file_activity_ids, db_session)
 
     cells: list[ActivityProgressCell] = []
-    for student in students:
+    for student in students_for_page:
+        student_id = require_persisted_id(student.id, model_name="User")
         for activity in activities:
-            progress = progress_by_pair.get((student.id, activity.id))
+            activity_id = require_persisted_id(activity.id, model_name="Activity")
+            progress = progress_by_pair.get((student_id, activity_id))
             latest = (
                 submissions_by_id.get(progress.latest_submission_id)
                 if progress and progress.latest_submission_id
                 else None
             )
-            file_attempt = file_attempts_by_pair.get((student.id, activity.id))
+            file_attempt = file_attempts_by_pair.get((student_id, activity_id))
             cells.append(
                 _build_cell(
-                    student.id,
-                    activity.id,
+                    student_id,
+                    activity_id,
                     progress,
                     latest,
-                    file_attempt_uuid=file_attempt.attempt_uuid
-                    if file_attempt
-                    else None,
-                    file_attempt_status=str(file_attempt.status)
-                    if file_attempt
-                    else None,
+                    file_attempt_uuid=file_attempt.attempt_uuid if file_attempt else None,
+                    file_attempt_status=str(file_attempt.status) if file_attempt else None,
                 )
             )
 
     activities_payload = [
         _build_activity(
             activity,
-            policies_by_activity.get(activity.id),
-            file_configs_by_activity.get(activity.id),
+            policies_by_activity.get(require_persisted_id(activity.id, model_name="Activity")),
+            file_configs_by_activity.get(require_persisted_id(activity.id, model_name="Activity")),
         )
         for activity in activities
     ]
-    students_payload = [_build_student(user) for user in students]
+    students_payload = [_build_student(user) for user in students_for_page]
+    resolved_page = page or 1
+    resolved_page_size = page_size or total_students or 1
 
     return CourseGradebookResponse(
         course_uuid=course.course_uuid,
-        course_id=course.id,
+        course_id=course_id,
         course_name=course.name,
         students=students_payload,
         activities=activities_payload,
@@ -128,20 +150,59 @@ async def get_course_gradebook(
             activities_payload,
         ),
         summary=_build_summary(cells),
+        page_info=(
+            GradebookPageInfo(
+                page=resolved_page,
+                page_size=resolved_page_size,
+                total_students=total_students,
+                total_activities=total_activities,
+                has_previous=resolved_page > 1,
+                has_next=resolved_page * resolved_page_size < total_students,
+                activity_types=activity_types,
+            )
+            if page is not None
+            or page_size is not None
+            or search
+            or activity_type
+            or _normalize_saved_filter(saved_filter) != "all"
+            else None
+        ),
     )
+
+
+def export_course_gradebook_csv(data: CourseGradebookResponse) -> Iterable[str]:
+    """Yield a CSV export for the course gradebook using the response contract."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Learner", "Email", *[activity.name for activity in data.activities]])
+    yield buffer.getvalue()
+    buffer.seek(0)
+    buffer.truncate(0)
+
+    cell_map = {(cell.user_id, cell.activity_id): cell for cell in data.cells}
+    for student in data.students:
+        learner = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username
+        row = [learner, student.email]
+        for activity in data.activities:
+            cell = cell_map.get((student.id, activity.id))
+            if cell is None:
+                row.append("NOT_STARTED")
+                continue
+            score = "" if cell.score is None else f" {cell.score:g}%"
+            row.append(f"{cell.state.value if hasattr(cell.state, 'value') else cell.state}{score}")
+        writer.writerow(row)
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
-    normalized = (
-        course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
-    )
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == normalized)
-    ).first()
+    normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    course = db_session.exec(select(Course).where(Course.course_uuid == normalized)).first()
     if course is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found",
+            detail="Курс не найден",
         )
     return course
 
@@ -175,7 +236,7 @@ def _course_activities(course_id: int, db_session: Session) -> list[Activity]:
                 Activity.course_id == course_id,
                 Activity.published,
             )
-            .order_by(Activity.chapter_id, Activity.order, Activity.id)
+            .order_by(col(Activity.chapter_id), col(Activity.order), col(Activity.id))
         ).all()
     )
 
@@ -186,69 +247,148 @@ def _course_students(
     db_session: Session,
 ) -> list[User]:
     activity_ids = [activity.id for activity in activities if activity.id is not None]
-    user_ids: set[int] = set()
 
-    user_ids.update(
-        db_session.exec(
-            select(UserGroupUser.user_id)
-            .join(
-                UserGroupResource,
-                UserGroupResource.usergroup_id == UserGroupUser.usergroup_id,
-            )
-            .where(UserGroupResource.resource_uuid == course.course_uuid)
-        ).all()
+    from sqlmodel import exists, or_
+
+    user_group_exists = exists().where(
+        col(UserGroupUser.user_id) == User.id,
+        col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
+        col(UserGroupResource.resource_uuid) == course.course_uuid,
+    )
+    trail_run_exists = exists().where(
+        col(TrailRun.user_id) == User.id,
+        col(TrailRun.course_id) == course.id,
     )
 
-    user_ids.update(
-        db_session.exec(
-            select(TrailRun.user_id).where(TrailRun.course_id == course.id)
-        ).all()
-    )
+    conditions = [user_group_exists, trail_run_exists]
 
     if activity_ids:
-        user_ids.update(
-            db_session.exec(
-                select(Submission.user_id).where(
-                    Submission.activity_id.in_(activity_ids)
-                )
-            ).all()
+        submission_exists = exists().where(
+            col(Submission.user_id) == User.id,
+            col(Submission.activity_id).in_(activity_ids),
         )
-
-        user_ids.update(
-            db_session.exec(
-                select(FileSubmissionAttempt.user_id).where(
-                    FileSubmissionAttempt.activity_id.in_(activity_ids)
-                )
-            ).all()
+        file_attempt_exists = exists().where(
+            col(FileSubmissionAttempt.user_id) == User.id,
+            col(FileSubmissionAttempt.activity_id).in_(activity_ids),
         )
-
-        user_ids.update(
-            db_session.exec(
-                select(ActivityProgress.user_id).where(
-                    ActivityProgress.activity_id.in_(activity_ids)
-                )
-            ).all()
+        progress_exists = exists().where(
+            col(ActivityProgress.user_id) == User.id,
+            col(ActivityProgress.activity_id).in_(activity_ids),
         )
-
-    if not user_ids:
-        return []
+        conditions.extend([submission_exists, file_attempt_exists, progress_exists])
 
     return list(
         db_session.exec(
-            select(User)
-            .where(User.id.in_(user_ids))
-            .order_by(User.last_name, User.first_name, User.username)
+            select(User).where(or_(*conditions)).order_by(col(User.last_name), col(User.first_name), col(User.username))
         ).all()
     )
+
+
+def _filter_students_by_search(students: list[User], search: str | None) -> list[User]:
+    term = (search or "").strip().lower()
+    if not term:
+        return students
+    return [
+        student
+        for student in students
+        if term
+        in " ".join(
+            str(part or "")
+            for part in [
+                student.first_name,
+                student.last_name,
+                student.username,
+                student.email,
+            ]
+        ).lower()
+    ]
+
+
+def _filter_students_by_saved_filter(
+    students: list[User],
+    activities: list[Activity],
+    course_id: int,
+    db_session: Session,
+    saved_filter: str | None,
+) -> list[User]:
+    normalized = _normalize_saved_filter(saved_filter)
+    if normalized == "all" or not students or not activities:
+        return students
+
+    student_ids = [require_persisted_id(student.id, model_name="User") for student in students]
+    activity_ids = [require_persisted_id(activity.id, model_name="Activity") for activity in activities]
+    progress_rows = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.course_id == course_id,
+            col(ActivityProgress.user_id).in_(student_ids),
+            col(ActivityProgress.activity_id).in_(activity_ids),
+        )
+    ).all()
+    progress_by_pair = {(row.user_id, row.activity_id): row for row in progress_rows}
+
+    return [
+        student
+        for student in students
+        if _student_matches_saved_filter(
+            require_persisted_id(student.id, model_name="User"),
+            activity_ids,
+            progress_by_pair,
+            normalized,
+        )
+    ]
+
+
+def _normalize_saved_filter(saved_filter: str | None) -> str:
+    return (
+        saved_filter
+        if saved_filter in {"all", "needs_grading", "overdue", "returned", "failed", "not_started"}
+        else "all"
+    )
+
+
+def _student_matches_saved_filter(
+    student_id: int,
+    activity_ids: list[int],
+    progress_by_pair: dict[tuple[int, int], ActivityProgress],
+    saved_filter: str,
+) -> bool:
+    now = datetime.now(UTC)
+    for activity_id in activity_ids:
+        progress = progress_by_pair.get((student_id, activity_id))
+        if progress is None:
+            if saved_filter == "not_started":
+                return True
+            continue
+        if saved_filter == "needs_grading" and progress.teacher_action_required:
+            return True
+        if saved_filter == "returned" and progress.state == ActivityProgressState.RETURNED:
+            return True
+        if saved_filter == "failed" and (progress.state == ActivityProgressState.FAILED or progress.passed is False):
+            return True
+        if (
+            saved_filter == "overdue"
+            and (due_at := _coerce_datetime(progress.due_at)) is not None
+            and due_at < now
+            and progress.state not in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
+        ):
+            return True
+    return False
+
+
+def _paginate_students(students: list[User], *, page: int | None, page_size: int | None) -> list[User]:
+    if page is None and page_size is None:
+        return students
+    resolved_page = max(1, page or 1)
+    resolved_page_size = max(1, min(500, page_size or 100))
+    start = (resolved_page - 1) * resolved_page_size
+    return students[start : start + resolved_page_size]
 
 
 def _progress_by_pair(
     course_id: int,
     db_session: Session,
 ) -> dict[tuple[int, int], ActivityProgress]:
-    rows = db_session.exec(
-        select(ActivityProgress).where(ActivityProgress.course_id == course_id)
-    ).all()
+    rows = db_session.exec(select(ActivityProgress).where(ActivityProgress.course_id == course_id)).all()
     return {(row.user_id, row.activity_id): row for row in rows}
 
 
@@ -259,20 +399,22 @@ def _submissions_by_id(
     ids = {submission_id for submission_id in submission_ids if submission_id}
     if not ids:
         return {}
-    submissions = db_session.exec(
-        select(Submission).where(Submission.id.in_(ids))
-    ).all()
+    submissions = db_session.exec(select(Submission).where(col(Submission.id).in_(ids))).all()
     return {submission.id: submission for submission in submissions if submission.id}
 
 
-def _policies_by_activity(db_session: Session) -> dict[int, AssessmentPolicy]:
-    policies = db_session.exec(select(AssessmentPolicy)).all()
+def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[int, AssessmentPolicy]:
+    if not activity_ids:
+        return {}
+    policies = db_session.exec(
+        select(AssessmentPolicy).where(col(AssessmentPolicy.activity_id).in_(activity_ids))
+    ).all()
     return {policy.activity_id: policy for policy in policies}
 
 
 def _build_student(user: User) -> GradebookStudent:
     return GradebookStudent(
-        id=user.id,
+        id=require_persisted_id(user.id, model_name="User"),
         user_uuid=user.user_uuid,
         username=user.username,
         first_name=user.first_name,
@@ -287,18 +429,26 @@ def _build_activity(
     file_config: object | None = None,
 ) -> GradebookActivity:
     return GradebookActivity(
-        id=activity.id,
+        id=require_persisted_id(activity.id, model_name="Activity"),
         activity_uuid=activity.activity_uuid,
         name=activity.name,
         activity_type=str(activity.activity_type),
-        assessment_type=policy.assessment_type if policy else None,
+        assessment_type=_gradebook_assessment_type(policy),
         order=activity.order,
-        due_at=getattr(file_config, "due_at", None)
-        if file_config
-        else policy.due_at
-        if policy
-        else None,
+        due_at=getattr(file_config, "due_at", None) if file_config else policy.due_at if policy else None,
     )
+
+
+def _gradebook_assessment_type(
+    policy: AssessmentPolicy | None,
+) -> AssessmentType | None:
+    if policy is None:
+        return None
+
+    try:
+        return AssessmentType(policy.assessment_type)
+    except ValueError:
+        return None
 
 
 def _build_cell(
@@ -320,7 +470,7 @@ def _build_cell(
     return ActivityProgressCell(
         user_id=user_id,
         activity_id=activity_id,
-        state=progress.state,
+        state=ActivityProgressState(progress.state),
         score=progress.score,
         passed=progress.passed,
         is_late=progress.is_late,
@@ -351,10 +501,7 @@ def _build_teacher_actions(
         activity = activities_by_id.get(cell.activity_id)
         if student is None or activity is None:
             continue
-        student_name = (
-            f"{student.first_name or ''} {student.last_name or ''}".strip()
-            or student.username
-        )
+        student_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username
         actions.append(
             TeacherAction(
                 action_type="GRADE_SUBMISSION",
@@ -377,22 +524,16 @@ def _build_summary(cells: list[ActivityProgressCell]) -> GradebookSummary:
         for cell in cells
         if (due_at := _coerce_datetime(cell.due_at)) is not None
         and due_at < now
-        and cell.state
-        not in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
+        and cell.state not in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
     )
     return GradebookSummary(
         student_count=len({cell.user_id for cell in cells}),
         activity_count=len({cell.activity_id for cell in cells}),
         needs_grading_count=sum(1 for cell in cells if cell.teacher_action_required),
         overdue_count=overdue_count,
-        not_started_count=sum(
-            1 for cell in cells if cell.state == ActivityProgressState.NOT_STARTED
-        ),
+        not_started_count=sum(1 for cell in cells if cell.state == ActivityProgressState.NOT_STARTED),
         completed_count=sum(
-            1
-            for cell in cells
-            if cell.state
-            in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
+            1 for cell in cells if cell.state in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
         ),
     )
 

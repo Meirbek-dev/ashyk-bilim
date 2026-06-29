@@ -1,61 +1,59 @@
-'use server';
+'use server'
 
-import { errorHandling, getResponseMetadata } from '@/lib/api-client';
-import { apiFetch } from '@/lib/api-client';
-import type { CustomResponseTyping } from '@/lib/api-client';
-import type { components } from '@/lib/api/generated';
-import { getAPIUrl } from '@services/config/config';
-import { tags, courseTag } from '@/lib/cacheTags';
+import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
+import type { CustomResponseTyping } from '@/lib/api-client'
+import type { components } from '@/lib/api/generated'
+import { parseApiError } from '@/lib/api/assertSuccess'
+import { getAPIUrl } from '@services/config/config'
+import { courseTag, tags } from '@/lib/cacheTags'
 
 /*
  This file includes POST, PUT, DELETE requests and cached GET requests
 */
 
-type CourseRead = components['schemas']['CourseRead'];
-type CourseReadWithPermissions = components['schemas']['CourseReadWithPermissions'];
-type FullCourseRead = components['schemas']['FullCourseRead'];
-type CourseUserRightsResponse = components['schemas']['CourseUserRightsResponse'];
-type CourseDetailResponse = components['schemas']['CourseDetailResponse'];
-type AuthorWithRole = components['schemas']['AuthorWithRole'];
+type CourseRead = components['schemas']['CourseRead']
+type CourseReadWithPermissions = components['schemas']['CourseReadWithPermissions']
+type FullCourseRead = components['schemas']['FullCourseRead']
+type AuthorWithRole = components['schemas']['AuthorWithRole']
 type NormalizedCourseAuthor = Omit<AuthorWithRole, 'user'> & {
   user: {
-    id: number;
-    user_uuid: string;
-    avatar_image: string;
-    first_name: string;
-    middle_name?: string;
-    last_name: string;
-    username: string;
-  };
-};
+    id: number
+    user_uuid: string
+    avatar_image: string
+    first_name: string
+    middle_name?: string
+    last_name: string
+    username: string
+  }
+}
 type NormalizedCourse = Omit<
   CourseRead,
   'about' | 'authors' | 'description' | 'learnings' | 'tags' | 'thumbnail_image' | 'thumbnail_type' | 'thumbnail_video'
 > & {
-  about: string;
-  authors: NormalizedCourseAuthor[];
-  description: string;
-  learnings: string;
-  mini_description: string;
-  tags: string[];
-  thumbnail_image: string;
-  thumbnail_type?: Exclude<CourseRead['thumbnail_type'], null>;
-  thumbnail_video: string;
-};
+  about: string
+  authors: NormalizedCourseAuthor[]
+  description: string
+  learnings: string
+  mini_description: string
+  tags: string[]
+  thumbnail_image: string
+  thumbnail_type?: Exclude<CourseRead['thumbnail_type'], null>
+  thumbnail_video: string
+}
 type NormalizedCourseWithPermissions = Omit<
   CourseReadWithPermissions,
   'about' | 'authors' | 'description' | 'learnings' | 'tags' | 'thumbnail_image' | 'thumbnail_type' | 'thumbnail_video'
 > & {
-  about: string;
-  authors: NormalizedCourseAuthor[];
-  description: string;
-  learnings: string;
-  mini_description: string;
-  tags: string[];
-  thumbnail_image: string;
-  thumbnail_type?: Exclude<CourseReadWithPermissions['thumbnail_type'], null>;
-  thumbnail_video: string;
-};
+  about: string
+  authors: NormalizedCourseAuthor[]
+  description: string
+  learnings: string
+  mini_description: string
+  tags: string[]
+  thumbnail_image: string
+  thumbnail_type?: Exclude<CourseReadWithPermissions['thumbnail_type'], null>
+  thumbnail_video: string
+}
 type NormalizedFullCourse = Omit<
   FullCourseRead,
   | 'about'
@@ -71,118 +69,161 @@ type NormalizedFullCourse = Omit<
   | 'thumbnail_video'
   | 'update_date'
 > & {
-  about: string;
-  authors: NormalizedCourseAuthor[];
-  chapters: NonNullable<FullCourseRead['chapters']>;
-  course_uuid: string;
-  creation_date?: string;
-  description: string;
-  learnings: string;
-  mini_description: string;
-  tags: string[];
-  thumbnail_image: string;
-  thumbnail_type?: Exclude<FullCourseRead['thumbnail_type'], null>;
-  thumbnail_video: string;
-  update_date?: string;
-};
+  about: string
+  authors: NormalizedCourseAuthor[]
+  chapters: NonNullable<FullCourseRead['chapters']>
+  course_uuid: string
+  creation_date?: string
+  description: string
+  learnings: string
+  mini_description: string
+  tags: string[]
+  thumbnail_image: string
+  thumbnail_type?: Exclude<FullCourseRead['thumbnail_type'], null>
+  thumbnail_video: string
+  update_date?: string
+}
 
 type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
-  data: T | null;
-};
+  data: T | null
+}
 
 interface EditableCoursesSummary {
-  total: number;
-  ready: number;
-  private: number;
-  attention: number;
+  total: number
+  ready: number
+  private: number
+  attention: number
 }
 
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return await getResponseMetadata(response);
+  return await getResponseMetadata<T | null>(response)
 }
 
-function normalizeTags(tags: string | null | undefined): string[] {
-  if (!tags) {
-    return [];
+function normalizeTags(rawTags: string | null | undefined): string[] {
+  if (!rawTags) {
+    return []
   }
 
   try {
-    const parsed = JSON.parse(tags);
+    const parsed = JSON.parse(rawTags)
     if (Array.isArray(parsed)) {
-      return parsed.filter((tag): tag is string => typeof tag === 'string');
+      return parsed.filter((tag): tag is string => typeof tag === 'string')
     }
   } catch {
     // Fall back to treating the stored value as a comma-delimited string.
   }
 
-  return tags
+  return rawTags
     .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+    .map(tag => tag.trim())
+    .filter(Boolean)
 }
 
 function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCourseAuthor[] {
-  return (authors ?? []).map((author) =>
-    Object.assign(author, {
+  return (authors ?? []).map(author => {
+    const { user, ...restAuthor } = author
+
+    return Object.assign(restAuthor, {
       user: {
-        ...author.user,
-        avatar_image: author.user.avatar_image ?? ``,
-        first_name: author.user.first_name ?? ``,
-        last_name: author.user.last_name ?? ``,
-        middle_name: author.user.middle_name ?? undefined,
-        user_uuid: author.user.user_uuid ?? ``,
+        id: user.id,
+        user_uuid: user.user_uuid ?? '',
+        avatar_image: user.avatar_image ?? '',
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        username: user.username,
+        ...(user.middle_name === null || user.middle_name === undefined ? {} : { middle_name: user.middle_name }),
       },
-    }),
-  );
+    })
+  })
 }
 
 function normalizeCourse(course: CourseRead): NormalizedCourse {
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags: courseTags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
-    thumbnail_video: course.thumbnail_video ?? '',
-  };
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(courseTags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
+  }
 }
 
 function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags: courseTags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
-    thumbnail_video: course.thumbnail_video ?? '',
-  };
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(courseTags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
+  }
 }
 
 function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
+  const {
+    about,
+    authors,
+    chapters,
+    course_uuid,
+    creation_date,
+    description,
+    learnings,
+    tags: courseTags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    update_date,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    chapters: course.chapters ?? [],
-    course_uuid: course.course_uuid ?? '',
-    creation_date: course.creation_date ?? undefined,
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_type: course.thumbnail_type ?? undefined,
-    thumbnail_video: course.thumbnail_video ?? '',
-    update_date: course.update_date ?? undefined,
-  };
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    chapters: chapters ?? [],
+    course_uuid: course_uuid ?? '',
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(courseTags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(creation_date === null || creation_date === undefined ? {} : { creation_date }),
+    ...(thumbnail_type === null || thumbnail_type === undefined ? {} : { thumbnail_type }),
+    ...(update_date === null || update_date === undefined ? {} : { update_date }),
+  }
 }
 
 /**
@@ -199,24 +240,22 @@ async function fetchCourses(
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
-  });
+  })
 
   if (!result.ok) {
-    const error: any = new Error(result.statusText || 'Request failed');
-    error.status = result.status;
-    throw error;
+    throw await parseApiError(result, `courses/page/${page}/limit/${limit}`)
   }
 
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map((course) =>
+  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
     normalizeCourseWithPermissions(course),
-  );
-  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10);
+  )
+  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10)
 
-  return { courses, total };
+  return { courses, total }
 }
 
-export async function getCourses(_next?: any, page = 1, limit = 20) {
-  return fetchCourses(page, limit);
+export async function getCourses(_next?: unknown, page = 1, limit = 20) {
+  return fetchCourses(page, limit)
 }
 
 /**
@@ -229,19 +268,19 @@ async function fetchEditableCourses(
   sortBy = 'updated',
   preset = '',
 ): Promise<{
-  courses: NormalizedCourseWithPermissions[];
-  total: number;
-  summary: EditableCoursesSummary;
+  courses: NormalizedCourseWithPermissions[]
+  total: number
+  summary: EditableCoursesSummary
 }> {
-  const queryParams = new URLSearchParams();
+  const queryParams = new URLSearchParams()
   if (query?.trim()) {
-    queryParams.set('query', query.trim());
+    queryParams.set('query', query.trim())
   }
   if (sortBy) {
-    queryParams.set('sort_by', sortBy);
+    queryParams.set('sort_by', sortBy)
   }
   if (preset?.trim()) {
-    queryParams.set('preset', preset.trim());
+    queryParams.set('preset', preset.trim())
   }
 
   const result = await apiFetch(
@@ -252,49 +291,47 @@ async function fetchEditableCourses(
       baseUrl: getAPIUrl(),
       timeoutMs: 10_000,
     },
-  );
+  )
 
   if (result.status === 401 || result.status === 403) {
     return {
       courses: [],
       total: 0,
       summary: { total: 0, ready: 0, private: 0, attention: 0 },
-    };
+    }
   }
 
   if (!result.ok) {
-    const error: any = new Error(result.statusText || 'Request failed');
-    error.status = result.status;
-    throw error;
+    throw await parseApiError(result, `courses/lms/page/${page}/limit/${limit}`)
   }
 
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map((course) =>
+  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
     normalizeCourseWithPermissions(course),
-  );
-  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10);
+  )
+  const total = Number.parseInt(result.headers.get('X-Total-Count') ?? '0', 10)
   const summary = {
     total: Number.parseInt(result.headers.get('X-Summary-Total') ?? String(total), 10),
     ready: Number.parseInt(result.headers.get('X-Summary-Ready') ?? '0', 10),
     private: Number.parseInt(result.headers.get('X-Summary-Private') ?? '0', 10),
     attention: Number.parseInt(result.headers.get('X-Summary-Attention') ?? '0', 10),
-  };
+  }
 
-  return { courses, total, summary };
+  return { courses, total, summary }
 }
 
 export async function getEditableCourses(page = 1, limit = 20, query = '', sortBy = 'updated', preset = '') {
-  return fetchEditableCourses(page, limit, query, sortBy, preset);
+  return fetchEditableCourses(page, limit, query, sortBy, preset)
 }
 
 export async function getCourseUserRights(course_uuid: string) {
-  const result = await apiFetch(`courses/${course_uuid}/rights`);
-  return await errorHandling(result);
+  const result = await apiFetch(`courses/${course_uuid}/rights`)
+  return await errorHandling(result)
 }
 
-export async function searchCourses(query: string, page = 1, limit = 20, next: any) {
-  const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
-  const courses: CourseRead[] = await errorHandling(result);
-  return courses.map((course) => normalizeCourse(course));
+export async function searchCourses(query: string, page = 1, limit = 20) {
+  const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
+  const courses: CourseRead[] = await errorHandling(result)
+  return courses.map(course => normalizeCourse(course))
 }
 
 /**
@@ -304,7 +341,7 @@ async function fetchCourseMetadata(
   course_uuid: string,
   withUnpublishedActivities = false,
 ): Promise<NormalizedFullCourse> {
-  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`;
+  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
   const result = await apiFetch(
     `courses/${normalizedCourseUuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`,
     {
@@ -313,21 +350,21 @@ async function fetchCourseMetadata(
       baseUrl: getAPIUrl(),
       timeoutMs: 10_000,
     },
-  );
-  return normalizeFullCourse(await errorHandling(result));
+  )
+  return normalizeFullCourse(await errorHandling(result))
 }
 
-export async function getCourseMetadata(course_uuid: string, _next?: any, withUnpublishedActivities = false) {
-  return fetchCourseMetadata(course_uuid, withUnpublishedActivities);
+export async function getCourseMetadata(course_uuid: string, _next?: unknown, withUnpublishedActivities = false) {
+  return fetchCourseMetadata(course_uuid, withUnpublishedActivities)
 }
 
 interface CourseWriteOptions {
-  lastKnownUpdateDate?: string | null;
-  includeEditableList?: boolean;
-  includePublicList?: boolean;
+  lastKnownUpdateDate?: string | null | undefined
+  includeEditableList?: boolean
+  includePublicList?: boolean
 }
 
-const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
+const toCourseMetadataPayload = (data: AppPayload, options?: CourseWriteOptions) => ({
   name: data.name,
   description: data.description ?? '',
   about: data.about ?? '',
@@ -335,28 +372,28 @@ const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
   tags: Array.isArray(data.tags) ? JSON.stringify(data.tags) : data.tags,
   thumbnail_type: data.thumbnail_type,
   last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
-});
+})
 
-export async function updateCourseMetadata(course_uuid: string, data: any, options?: CourseWriteOptions) {
+export async function updateCourseMetadata(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/metadata`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toCourseMetadataPayload(data, options)),
-  });
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+  })
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
-    revalidateTag(courseTag.editableList(), 'max');
-    revalidateTag(courseTag.publicList(), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.courses, 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
+    revalidateTag(courseTag.editableList(), 'max')
+    revalidateTag(courseTag.publicList(), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
-export async function updateCourseAccess(course_uuid: string, data: any, options?: CourseWriteOptions) {
+export async function updateCourseAccess(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/access`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -364,19 +401,19 @@ export async function updateCourseAccess(course_uuid: string, data: any, options
       ...data,
       last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
     }),
-  });
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+  })
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
-    revalidateTag(courseTag.access(course_uuid), 'max');
-    revalidateTag(courseTag.editableList(), 'max');
-    revalidateTag(courseTag.publicList(), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.courses, 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
+    revalidateTag(courseTag.access(course_uuid), 'max')
+    revalidateTag(courseTag.editableList(), 'max')
+    revalidateTag(courseTag.publicList(), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 /**
@@ -388,71 +425,73 @@ async function fetchCourse(course_uuid: string): Promise<NormalizedCourse> {
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
-  });
-  return normalizeCourse(await errorHandling(result));
+  })
+  return normalizeCourse(await errorHandling(result))
 }
 
-export async function getCourse(course_uuid: string, _next?: any) {
-  return fetchCourse(course_uuid);
+export async function getCourse(course_uuid: string, _next?: unknown) {
+  return fetchCourse(course_uuid)
 }
 
 export async function updateCourseThumbnail(course_uuid: string, formData: FormData, options?: CourseWriteOptions) {
   if (options?.lastKnownUpdateDate) {
-    formData.set('last_known_update_date', options.lastKnownUpdateDate);
+    formData.set('last_known_update_date', options.lastKnownUpdateDate)
   }
 
   const result = await apiFetch(`courses/${course_uuid}/thumbnail`, {
     method: 'PUT',
     body: formData,
-  });
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+  })
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
-    revalidateTag(courseTag.editableList(), 'max');
-    revalidateTag(courseTag.publicList(), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.courses, 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
+    revalidateTag(courseTag.editableList(), 'max')
+    revalidateTag(courseTag.publicList(), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function createNewCourse(
-  course_body: any,
-  thumbnail: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  course_body: AppPayload,
+  thumbnail: Blob | File | null | undefined,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
+  const { name = '', description = '', learnings = '', tags: courseTags = '', template, visibility } = course_body
+
   // Send file thumbnail as form data
-  const formData = new FormData();
-  formData.append('name', course_body.name);
-  formData.append('description', course_body.description || '');
-  formData.append('public', String(course_body.visibility));
-  formData.append('learnings', course_body.learnings || '');
-  formData.append('tags', course_body.tags || '');
-  formData.append('about', course_body.description || '');
+  const formData = new FormData()
+  formData.append('name', name)
+  formData.append('description', description)
+  formData.append('public', String(visibility ?? false))
+  formData.append('learnings', Array.isArray(learnings) ? JSON.stringify(learnings) : learnings || '')
+  formData.append('tags', Array.isArray(courseTags) ? JSON.stringify(courseTags) : courseTags || '')
+  formData.append('about', description)
 
   // Pass template so the backend can seed starter chapters atomically
-  if (course_body.template && course_body.template !== 'outline') {
-    formData.append('template', course_body.template);
+  if (template && template !== 'outline') {
+    formData.append('template', template)
   }
 
   if (thumbnail) {
-    formData.append('thumbnail', thumbnail);
+    formData.append('thumbnail', thumbnail)
   }
 
-  const result = await apiFetch(`courses`, { method: 'POST', body: formData });
-  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+  const result = await apiFetch(`courses`, { method: 'POST', body: formData })
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-    revalidateTag(tags.editableCourses, 'max');
-    revalidateTag(courseTag.editableList(), 'max');
-    revalidateTag(courseTag.publicList(), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.courses, 'max')
+    revalidateTag(tags.editableCourses, 'max')
+    revalidateTag(courseTag.editableList(), 'max')
+    revalidateTag(courseTag.publicList(), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 /**
@@ -462,113 +501,112 @@ export async function createNewCourse(
 export async function searchEditableCourses(query: string, limit = 20) {
   const result = await apiFetch(
     `courses/editable/page/1/limit/${limit}?query=${encodeURIComponent(query)}&sort_by=updated`,
-  );
-  if (!result.ok) return [];
-  const courses = ((await result.json()) as CourseReadWithPermissions[]).map((course) =>
+  )
+  if (!result.ok) return []
+  const courses = ((await result.json()) as CourseReadWithPermissions[]).map(course =>
     normalizeCourseWithPermissions(course),
-  );
-  return Array.isArray(courses) ? courses : [];
+  )
+  return Array.isArray(courses) ? courses : []
 }
 
 export async function deleteCourseFromBackend(
   course_uuid: string,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' });
-  const data = await errorHandling(result);
+  const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' })
+  const data = await errorHandling(result)
   const deletionSucceeded =
-    result.ok &&
-    (!('success' in (data as Record<string, unknown>)) || Boolean((data as { success?: unknown }).success));
+    result.ok && (!('success' in (data as Record<string, unknown>)) || Boolean((data as { success?: unknown }).success))
 
   if (deletionSucceeded) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-    revalidateTag(tags.editableCourses, 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
-    revalidateTag(courseTag.editableList(), 'max');
-    revalidateTag(courseTag.publicList(), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(tags.courses, 'max')
+    revalidateTag(tags.editableCourses, 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
+    revalidateTag(courseTag.editableList(), 'max')
+    revalidateTag(courseTag.publicList(), 'max')
   }
 
-  return data;
+  return data
 }
 
 export async function editContributor(
   course_uuid: string,
   contributor_id: number,
-  authorship: any,
-  authorship_status: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  authorship: string | undefined,
+  authorship_status: string | undefined,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(
     `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
     { method: 'PUT' },
-  );
-  const metadata = await getResponseMetadata(result);
+  )
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(courseTag.contributors(course_uuid), 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(courseTag.contributors(course_uuid), 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
-export async function applyForContributor(course_uuid: string, data: any) {
+export async function applyForContributor(course_uuid: string, data: AppPayload) {
   const result = await apiFetch(`courses/${course_uuid}/apply-contributor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getResponseMetadata(result);
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(courseTag.contributors(course_uuid), 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(courseTag.contributors(course_uuid), 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function bulkAddContributors(
   course_uuid: string,
-  data: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  data: string[],
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getResponseMetadata(result);
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(courseTag.contributors(course_uuid), 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(courseTag.contributors(course_uuid), 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
   }
 
-  return metadata;
+  return metadata
 }
 
 export async function bulkRemoveContributors(
   course_uuid: string,
-  data: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  data: string[],
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  });
-  const metadata = await getResponseMetadata(result);
+  })
+  const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(courseTag.contributors(course_uuid), 'max');
-    revalidateTag(courseTag.detail(course_uuid), 'max');
+    const { revalidateTag } = await import('next/cache')
+    revalidateTag(courseTag.contributors(course_uuid), 'max')
+    revalidateTag(courseTag.detail(course_uuid), 'max')
   }
 
-  return metadata;
+  return metadata
 }

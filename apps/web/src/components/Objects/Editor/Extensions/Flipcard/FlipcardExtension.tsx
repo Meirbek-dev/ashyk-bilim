@@ -8,28 +8,28 @@ import {
   Palette,
   RotateCcw,
   Square,
-} from 'lucide-react';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ReactNodeViewProps } from '@tiptap/react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { twMerge } from 'tailwind-merge';
+} from 'lucide-react'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactNodeViewProps } from '@tiptap/react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'cnfast'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type Alignment = 'left' | 'center' | 'right';
-type Size = 'small' | 'medium' | 'large';
-type CardColor = 'sky' | 'green' | 'yellow' | 'red' | 'purple' | 'teal' | 'amber' | 'indigo' | 'neutral' | 'blue';
+type Alignment = 'left' | 'center' | 'right'
+type Size = 'small' | 'medium' | 'large'
+type CardColor = 'sky' | 'green' | 'yellow' | 'red' | 'purple' | 'teal' | 'amber' | 'indigo' | 'neutral' | 'blue'
 
 interface FlipcardAttrs {
-  question: string;
-  answer: string;
-  color: CardColor;
-  alignment: Alignment;
-  size: Size;
+  question: string
+  answer: string
+  color: CardColor
+  alignment: Alignment
+  size: Size
 }
 
 // ============================================================================
@@ -47,13 +47,13 @@ const CARD_COLORS: CardColor[] = [
   'purple',
   'indigo',
   'neutral',
-];
+]
 
 const SIZE_CONFIG = {
   small: { container: 'w-64 h-40', font: 'text-sm', icon: 16 },
   medium: { container: 'w-80 h-52', font: 'text-base', icon: 18 },
   large: { container: 'w-96 h-64', font: 'text-lg', icon: 20 },
-} as const;
+} as const
 
 const COLOR_CONFIG: Record<CardColor, { front: string; back: string; swatch: string }> = {
   sky: {
@@ -106,36 +106,39 @@ const COLOR_CONFIG: Record<CardColor, { front: string; back: string; swatch: str
     back: 'bg-blue-600 border-blue-500/50',
     swatch: 'bg-blue-500',
   },
-};
+}
 
 const ALIGNMENT_CONFIG = {
   left: 'justify-start',
   center: 'justify-center',
   right: 'justify-end',
-} as const;
+} as const
 
 // ============================================================================
 // Hooks
 // ============================================================================
 
 function useClickOutside<T extends HTMLElement>(ref: React.RefObject<T | null>, handler: () => void, enabled = true) {
-  const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+  const handlerRef = useRef(handler)
 
   useEffect(() => {
-    if (!enabled) return;
+    handlerRef.current = handler
+  }, [handler])
+
+  useEffect(() => {
+    if (!enabled) return
 
     const listener = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (!ref.current || ref.current.contains(target)) return;
+      const target = event.target as Node
+      if (!ref.current || ref.current.contains(target)) return
       // Ignore clicks on flipcard UI elements
-      if ((target as HTMLElement).closest?.('[data-flipcard-ui]')) return;
-      handlerRef.current();
-    };
+      if ((target as HTMLElement).closest?.('[data-flipcard-ui]')) return
+      handlerRef.current()
+    }
 
-    document.addEventListener('mousedown', listener);
-    return () => document.removeEventListener('mousedown', listener);
-  }, [ref, enabled]);
+    document.addEventListener('mousedown', listener)
+    return () => document.removeEventListener('mousedown', listener)
+  }, [ref, enabled])
 }
 
 // ============================================================================
@@ -143,16 +146,16 @@ function useClickOutside<T extends HTMLElement>(ref: React.RefObject<T | null>, 
 // ============================================================================
 
 interface ToolbarButtonProps {
-  active?: boolean;
-  onClick: () => void;
-  title: string;
-  children: React.ReactNode;
-  variant?: 'default' | 'primary' | 'success';
+  active?: boolean
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+  variant?: 'default' | 'primary' | 'success'
 }
 
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({ active, onClick, title, children, variant = 'default' }) => {
   const baseClasses =
-    'rounded-md p-1.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400';
+    'rounded-md p-1.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400'
 
   const variantClasses = {
     default: active
@@ -164,48 +167,48 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ active, onClick, title, c
     success: active
       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
       : 'bg-gray-100 text-gray-600 hover:bg-emerald-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-900/50',
-  };
+  }
 
   return (
     <button
       type="button"
       data-flipcard-ui
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        onClick();
+      onClick={e => {
+        e.stopPropagation()
+        e.preventDefault()
+        onClick()
       }}
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={e => e.preventDefault()}
       className={twMerge(baseClasses, variantClasses[variant])}
       title={title}
     >
       {children}
     </button>
-  );
-};
+  )
+}
 
-const ToolbarDivider: React.FC = () => <div className="mx-1 h-5 w-px self-center bg-gray-300 dark:bg-gray-600" />;
+const ToolbarDivider: React.FC = () => <div className="mx-1 h-5 w-px self-center bg-gray-300 dark:bg-gray-600" />
 
 interface ColorPickerProps {
-  currentColor: CardColor;
-  onSelect: (color: CardColor) => void;
-  onClose: () => void;
+  currentColor: CardColor
+  onSelect: (color: CardColor) => void
+  onClose: () => void
 }
 
 const ColorPicker: React.FC<ColorPickerProps> = ({ currentColor, onSelect, onClose }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, onClose);
+  const ref = useRef<HTMLDivElement>(null)
+  useClickOutside(ref, onClose)
 
   return (
     <div
       ref={ref}
       data-flipcard-ui
       className="absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-800"
-      onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
     >
       <div className="grid grid-cols-5 gap-2">
-        {CARD_COLORS.map((c) => (
+        {CARD_COLORS.map(c => (
           <button
             key={c}
             type="button"
@@ -215,38 +218,33 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ currentColor, onSelect, onClo
               COLOR_CONFIG[c].swatch,
               currentColor === c && 'ring-2 ring-gray-400 ring-offset-2 dark:ring-offset-gray-800',
             )}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(c);
+            onClick={e => {
+              e.stopPropagation()
+              onSelect(c)
             }}
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={e => e.preventDefault()}
           >
-            {currentColor === c && (
-              <Check
-                size={14}
-                className="text-white"
-              />
-            )}
+            {currentColor === c && <Check size={14} className="text-white" />}
           </button>
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface CardFaceProps {
-  content: string;
-  placeholder: string;
-  isEditing: boolean;
-  isEditable: boolean;
-  onStartEdit: () => void;
-  onChange: (value: string) => void;
-  onBlur: () => void;
-  inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  fontClass: string;
-  hint: string;
-  iconSize: number;
-  isBack?: boolean;
+  content: string
+  placeholder: string
+  isEditing: boolean
+  isEditable: boolean
+  onStartEdit: () => void
+  onChange: (value: string) => void
+  onBlur: () => void
+  inputRef: React.RefObject<HTMLTextAreaElement | null>
+  fontClass: string
+  hint: string
+  iconSize: number
+  isBack?: boolean
 }
 
 const CardFace: React.FC<CardFaceProps> = ({
@@ -265,24 +263,21 @@ const CardFace: React.FC<CardFaceProps> = ({
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      onBlur();
+      e.preventDefault()
+      e.stopPropagation()
+      onBlur()
     }
     // Prevent flip on Enter when editing
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.stopPropagation();
+      e.stopPropagation()
     }
-  };
+  }
 
   return (
     <div className="flex h-full flex-col p-5">
       {/* Flip indicator */}
       <div className="pointer-events-none flex justify-center opacity-60 select-none">
-        <RotateCcw
-          size={iconSize}
-          className={isBack ? 'rotate-180' : ''}
-        />
+        <RotateCcw size={iconSize} className={isBack ? 'rotate-180' : ''} />
       </div>
 
       {/* Content area */}
@@ -291,11 +286,11 @@ const CardFace: React.FC<CardFaceProps> = ({
           <textarea
             ref={inputRef}
             value={content}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={e => onChange(e.target.value)}
             onBlur={onBlur}
             onKeyDown={handleKeyDown}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => e.stopPropagation()}
             className={twMerge(
               'h-full w-full resize-none rounded-lg border-none bg-white/20 p-3 text-center text-white placeholder-white/60 backdrop-blur-sm outline-none',
               fontClass,
@@ -309,29 +304,29 @@ const CardFace: React.FC<CardFaceProps> = ({
               fontClass,
               isEditable && 'cursor-text',
             )}
-            onMouseDown={(e) => {
+            onMouseDown={e => {
               // Prevent placing the editor caret inside the flipcard when in read-only mode
               if (!isEditable) {
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault()
+                e.stopPropagation()
               }
             }}
-            onClick={(e) => {
+            onClick={e => {
               // Prevent click-based focus/selection in read-only mode
               if (!isEditable) {
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault()
+                e.stopPropagation()
               }
             }}
-            onDoubleClick={(e) => {
+            onDoubleClick={e => {
               if (isEditable) {
-                e.stopPropagation();
-                e.preventDefault();
-                onStartEdit();
+                e.stopPropagation()
+                e.preventDefault()
+                onStartEdit()
               } else {
                 // Prevent text selection when double-clicking in read-only mode
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault()
+                e.stopPropagation()
               }
             }}
           >
@@ -345,128 +340,128 @@ const CardFace: React.FC<CardFaceProps> = ({
         {isEditing ? '' : isEditable ? hint : hint.split('•')[0]}
       </div>
     </div>
-  );
-};
+  )
+}
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
 const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttributes }) => {
-  const attrs = node.attrs as FlipcardAttrs;
-  const { question, answer, color, alignment, size } = attrs;
+  const attrs = node.attrs as FlipcardAttrs
+  const { question, answer, color, alignment, size } = attrs
 
-  const t = useTranslations('DashPage.Editor.Flipcard');
-  const editorState = useEditorProvider() as { isEditable: boolean };
-  const { isEditable } = editorState;
+  const t = useTranslations('DashPage.Editor.Flipcard')
+  const editorState = useEditorProvider() as { isEditable: boolean }
+  const { isEditable } = editorState
 
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [editingFace, setEditingFace] = useState<'question' | 'answer' | null>(null);
+  const [isFlipped, setIsFlipped] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [editingFace, setEditingFace] = useState<'question' | 'answer' | null>(null)
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const questionInputRef = useRef<HTMLTextAreaElement>(null);
-  const answerInputRef = useRef<HTMLTextAreaElement>(null);
-  const isMountedRef = useRef(true);
+  const cardRef = useRef<HTMLDivElement>(null)
+  const questionInputRef = useRef<HTMLTextAreaElement>(null)
+  const answerInputRef = useRef<HTMLTextAreaElement>(null)
+  const isMountedRef = useRef(true)
 
   // Track mounted state
   useEffect(() => {
-    isMountedRef.current = true;
+    isMountedRef.current = true
     return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Derived values
-  const sizeConfig = SIZE_CONFIG[size];
-  const colorConfig = COLOR_CONFIG[color];
-  const alignmentClass = ALIGNMENT_CONFIG[alignment];
+  const sizeConfig = SIZE_CONFIG[size]
+  const colorConfig = COLOR_CONFIG[color]
+  const alignmentClass = ALIGNMENT_CONFIG[alignment]
 
   // Handlers
   const handleFlip = useCallback(() => {
-    if (editingFace) return;
-    setIsFlipped((prev) => !prev);
-  }, [editingFace]);
+    if (editingFace) return
+    setIsFlipped(prev => !prev)
+  }, [editingFace])
 
   const updateAttr = useCallback(
     <K extends keyof FlipcardAttrs>(key: K, value: FlipcardAttrs[K]) => {
-      updateAttributes({ [key]: value });
+      updateAttributes({ [key]: value })
     },
     [updateAttributes],
-  );
+  )
 
   const handleStartEdit = useCallback(
     (face: 'question' | 'answer') => {
-      if (!isEditable) return;
-      setEditingFace(face);
+      if (!isEditable) return
+      setEditingFace(face)
 
       // Use setTimeout to ensure state update is processed
       setTimeout(() => {
-        if (!isMountedRef.current) return;
-        const ref = face === 'question' ? questionInputRef : answerInputRef;
-        ref.current?.focus();
-        ref.current?.select();
-      }, 0);
+        if (!isMountedRef.current) return
+        const ref = face === 'question' ? questionInputRef : answerInputRef
+        ref.current?.focus()
+        ref.current?.select()
+      }, 0)
     },
     [isEditable],
-  );
+  )
 
   const handleStopEdit = useCallback(() => {
-    setEditingFace(null);
-  }, []);
+    setEditingFace(null)
+  }, [])
 
   // Handle card keyboard navigation (only when card is focused)
   const handleCardKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       // Don't flip via keyboard while editing a face or when in editor (teacher) mode
-      if (editingFace || isEditable) return;
+      if (editingFace || isEditable) return
 
       // Allow Space/Enter to flip the card
       if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsFlipped((prev) => !prev);
-        return;
+        e.preventDefault()
+        e.stopPropagation()
+        setIsFlipped(prev => !prev)
+        return
       }
 
       // Prevent navigation keys from moving the editor caret into the node
-      const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+      const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']
       if (navKeys.includes(e.key)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
+        e.preventDefault()
+        e.stopPropagation()
+        return
       }
 
       // Prevent printable characters from being inserted into the editor while the card is focused.
       // This stops users from typing when `isEditable` is false (read-only), which previously
       // produced transient input that wasn't saved in the flipcard attributes.
-      const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' ';
+      const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' '
       if (isPrintable) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
+        e.preventDefault()
+        e.stopPropagation()
+        return
       }
     },
     [editingFace, isEditable],
-  );
+  )
 
   // Handle card click
   const handleCardClick = useCallback(
     (e: React.MouseEvent) => {
       // Don't flip if clicking on UI elements or while editing / in editor (teacher) mode
       if (editingFace || isEditable || (e.target as HTMLElement).closest('[data-flipcard-ui]')) {
-        return;
+        return
       }
 
       // Prevent the editor from taking focus and ensure the card itself receives focus
-      e.preventDefault();
-      e.stopPropagation();
-      cardRef.current?.focus();
+      e.preventDefault()
+      e.stopPropagation()
+      cardRef.current?.focus()
 
-      handleFlip();
+      handleFlip()
     },
     [editingFace, isEditable, handleFlip],
-  );
+  )
 
   return (
     <NodeViewWrapper className={twMerge('my-4 flex', alignmentClass)}>
@@ -479,10 +474,10 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
           role="button"
           aria-disabled={isEditable}
           aria-label={isFlipped ? t('showQuestion') : t('showAnswer')}
-          onMouseDown={(e) => {
+          onMouseDown={e => {
             // Prevent the editor from taking focus when the card is clicked, but allow clicks on flipcard UI controls.
-            if ((e.target as HTMLElement).closest?.('[data-flipcard-ui]')) return;
-            e.preventDefault();
+            if ((e.target as HTMLElement).closest?.('[data-flipcard-ui]')) return
+            e.preventDefault()
           }}
           onClick={handleCardClick}
           onKeyDown={handleCardKeyDown}
@@ -507,7 +502,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
                 isEditing={editingFace === 'question'}
                 isEditable={isEditable}
                 onStartEdit={() => handleStartEdit('question')}
-                onChange={(v) => updateAttr('question', v)}
+                onChange={v => updateAttr('question', v)}
                 onBlur={handleStopEdit}
                 inputRef={questionInputRef}
                 fontClass={sizeConfig.font}
@@ -529,7 +524,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
                 isEditing={editingFace === 'answer'}
                 isEditable={isEditable}
                 onStartEdit={() => handleStartEdit('answer')}
-                onChange={(v) => updateAttr('answer', v)}
+                onChange={v => updateAttr('answer', v)}
                 onBlur={handleStopEdit}
                 inputRef={answerInputRef}
                 fontClass={sizeConfig.font}
@@ -550,8 +545,8 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
               'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
             )}
             contentEditable={false}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => e.stopPropagation()}
           >
             {/* Alignment */}
             <ToolbarButton
@@ -613,7 +608,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
             <div className="relative">
               <ToolbarButton
                 active={showColorPicker}
-                onClick={() => setShowColorPicker((prev) => !prev)}
+                onClick={() => setShowColorPicker(prev => !prev)}
                 title={t('changeColor')}
               >
                 <Palette size={14} />
@@ -621,25 +616,22 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
               {showColorPicker && (
                 <ColorPicker
                   currentColor={color}
-                  onSelect={(c) => {
-                    updateAttr('color', c);
-                    setShowColorPicker(false);
+                  onSelect={c => {
+                    updateAttr('color', c)
+                    setShowColorPicker(false)
                   }}
                   onClose={() => setShowColorPicker(false)}
                 />
               )}
             </div>
-            <ToolbarButton
-              onClick={() => setIsFlipped((prev) => !prev)}
-              title={t('previewFlip')}
-            >
+            <ToolbarButton onClick={() => setIsFlipped(prev => !prev)} title={t('previewFlip')}>
               <RotateCcw size={14} />
             </ToolbarButton>
           </div>
         )}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default FlipcardExtension;
+export default FlipcardExtension

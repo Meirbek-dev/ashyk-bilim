@@ -6,19 +6,21 @@ Replaces the old stub in services/integrations/plagiarism.py.
 from __future__ import annotations
 
 import logging
+from typing import Protocol, override
 
 from src.services.events.types import (
     FileSubmissionSubmittedEvent,
     SubmissionSubmittedEvent,
 )
+from src.types import PlagiarismCheckResult
 
 logger = logging.getLogger(__name__)
 
 
-class PlagiarismProvider:
+class PlagiarismProvider(Protocol):
     """Protocol for pluggable plagiarism detection providers."""
 
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict:
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
         """Run plagiarism check. Returns a result dict with at minimum {score, flagged}."""
         raise NotImplementedError
 
@@ -26,7 +28,8 @@ class PlagiarismProvider:
 class NoopPlagiarismProvider(PlagiarismProvider):
     """Default no-op provider — logs and returns clean."""
 
-    async def check(self, submission_uuid: str, file_keys: list[str]) -> dict:
+    @override
+    async def check(self, submission_uuid: str, file_keys: list[str]) -> PlagiarismCheckResult:
         return {"score": 0.0, "flagged": False}
 
 
@@ -51,9 +54,7 @@ def set_plagiarism_provider(provider: PlagiarismProvider) -> None:
 class PlagiarismSubscriber:
     """Checks submissions with file uploads for plagiarism."""
 
-    async def handle(
-        self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent
-    ) -> None:
+    async def handle(self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent) -> None:
         """Only triggers when file_keys are present."""
         if not event.file_keys:
             return
@@ -61,7 +62,7 @@ class PlagiarismSubscriber:
         provider = get_plagiarism_provider()
         try:
             submission_uuid = (
-                getattr(event, "submission_uuid", None) or event.attempt_uuid
+                event.submission_uuid if isinstance(event, SubmissionSubmittedEvent) else event.attempt_uuid
             )
             result = await provider.check(submission_uuid, event.file_keys)
             logger.info(
@@ -73,7 +74,6 @@ class PlagiarismSubscriber:
         except Exception as exc:
             logger.warning(
                 "plagiarism_check_failed submission=%s error=%s",
-                getattr(event, "submission_uuid", None)
-                or getattr(event, "attempt_uuid", ""),
+                getattr(event, "submission_uuid", None) or getattr(event, "attempt_uuid", ""),
                 exc,
             )

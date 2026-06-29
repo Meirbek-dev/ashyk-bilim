@@ -1,30 +1,30 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import PDFBlockComponent from './PDFBlockComponent';
-import { nodeView } from '@components/Objects/Editor/core';
+import PDFBlockComponent from './PDFBlockComponent'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 export interface PdfBlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
+    file_id: string
+    file_format: string
+  }
 }
 
 export interface PdfBlockAttrs {
-  blockObject: PdfBlockObject | null;
+  blockObject: PdfBlockObject | null
   size: {
-    width: number;
-    height: number;
-  };
+    width: number
+    height: number
+  }
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockPDF: {
-      insertPDFBlock: () => ReturnType;
-    };
+      insertPDFBlock: () => ReturnType
+    }
   }
 }
 
@@ -45,7 +45,7 @@ export default Node.create({
           height: 540,
         },
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -53,11 +53,11 @@ export default Node.create({
       {
         tag: 'block-pdf',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-pdf', mergeAttributes(HTMLAttributes)];
+    return ['block-pdf', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -66,10 +66,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return nodeView(PDFBlockComponent);
+    return nodeView(PDFBlockComponent)
   },
-});
+})

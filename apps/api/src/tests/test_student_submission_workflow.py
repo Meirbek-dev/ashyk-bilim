@@ -1,6 +1,5 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
-"""
-Integration tests for the core student submission workflow.
+"""Integration tests for the core student submission workflow.
 
 Covers:
   - Starting a submission (DRAFT creation, idempotency)
@@ -13,17 +12,23 @@ Covers:
 
 import pathlib
 import sys
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -34,6 +39,11 @@ from src.db.assessments import (
 from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course, ThumbnailType
+from src.db.file_submissions import (
+    FileSubmissionActivity,
+    FileSubmissionAttempt,
+    FileSubmissionAttemptFile,
+)
 from src.db.grading.entries import GradingEntry
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
@@ -51,6 +61,9 @@ from src.db.grading.submissions import (
     Submission,
     SubmissionStatus,
 )
+from src.db.uploads import Upload
+from src.db.usergroup_user import UserGroupUser
+from src.db.usergroups import UserGroup
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
@@ -58,6 +71,7 @@ from src.infra.settings import get_settings
 from src.routers.assessments.unified import router as assessments_router
 from src.security.rbac import PermissionChecker
 from src.services.assessments import core
+from src.services.assessments._shared import _snapshot_submission
 from src.services.grading import submission as submission_service
 
 # ---------------------------------------------------------------------------
@@ -66,22 +80,31 @@ from src.services.grading import submission as submission_service
 
 _ALL_TABLES = [
     User.__table__,
+    UserGroup.__table__,
+    UserGroupUser.__table__,
     Course.__table__,
     Chapter.__table__,
     Activity.__table__,
     AssessmentPolicy.__table__,
     Assessment.__table__,
+    AssessmentAccessPolicy.__table__,
+    AssessmentAccessUser.__table__,
+    AssessmentAccessUserGroup.__table__,
     AssessmentItem.__table__,
     StudentPolicyOverride.__table__,
     Submission.__table__,
     GradingEntry.__table__,
     ActivityProgress.__table__,
     CourseProgress.__table__,
+    Upload.__table__,
+    FileSubmissionActivity.__table__,
+    FileSubmissionAttempt.__table__,
+    FileSubmissionAttemptFile.__table__,
 ]
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -138,12 +161,14 @@ def teacher_user_fixture() -> PublicUser:
     )
 
 
-def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+def _make_app(
+    db_session_factory: Callable[[], Session], current_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> FastAPI:
     """Build a minimal FastAPI app with both router groups and mocked dependencies."""
     app = FastAPI()
     app.include_router(assessments_router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -173,15 +198,14 @@ def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> Fast
 
 
 def _seed_assessment(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     *,
     max_attempts: int | None = 3,
     lifecycle: AssessmentLifecycle = AssessmentLifecycle.PUBLISHED,
     grading_mode: AssessmentGradingMode = AssessmentGradingMode.AUTO,
     grade_release_mode: GradeReleaseMode = GradeReleaseMode.IMMEDIATE,
 ) -> tuple[str, int, str]:
-    """
-    Insert a minimal course/chapter/activity/assessment/policy row set.
+    """Insert a minimal course/chapter/activity/assessment/policy row set.
 
     Returns (assessment_uuid, activity_id, activity_uuid).
     """
@@ -288,11 +312,7 @@ def _seed_assessment(
             description="",
             lifecycle=lifecycle,
             scheduled_at=None,
-            published_at=(
-                datetime.now(UTC)
-                if lifecycle == AssessmentLifecycle.PUBLISHED
-                else None
-            ),
+            published_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.PUBLISHED else None),
             archived_at=None,
             weight=1.0,
             grading_type=AssessmentGradingType.PERCENTAGE,
@@ -313,6 +333,7 @@ def _seed_assessment(
         session.add(item)
         session.commit()
         session.refresh(activity)
+        assert activity.id is not None
         return assessment.assessment_uuid, activity.id, activity.activity_uuid
 
 
@@ -322,7 +343,7 @@ def _seed_assessment(
 
 
 def test_start_submission_creates_draft(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """POST /assessments/{uuid}/start creates a DRAFT submission."""
     assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
@@ -341,7 +362,7 @@ def test_start_submission_creates_draft(
 
 
 def test_start_submission_is_idempotent(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Calling start twice returns the same DRAFT (no duplicate row)."""
     assessment_uuid, _, _ = _seed_assessment(db_session_factory)
@@ -368,12 +389,10 @@ def test_start_submission_is_idempotent(
 
 
 def test_start_blocked_when_assessment_not_published(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Students cannot start an assessment that is still in DRAFT lifecycle."""
-    assessment_uuid, _, _ = _seed_assessment(
-        db_session_factory, lifecycle=AssessmentLifecycle.DRAFT
-    )
+    assessment_uuid, _, _ = _seed_assessment(db_session_factory, lifecycle=AssessmentLifecycle.DRAFT)
     app = _make_app(db_session_factory, student_user, monkeypatch)
     client = TestClient(app)
 
@@ -384,12 +403,10 @@ def test_start_blocked_when_assessment_not_published(
 
 
 def test_start_blocked_when_max_attempts_exhausted(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Starting a submission is blocked once max_attempts is exhausted."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=1
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=1)
     # Pre-seed an already-submitted attempt for this student
     with db_session_factory() as session:
         now = datetime.now(UTC)
@@ -420,13 +437,50 @@ def test_start_blocked_when_max_attempts_exhausted(
     assert "attempt" in str(detail).lower() or "max" in str(detail).lower()
 
 
+def test_snapshot_submission_stores_items_as_dict(
+    db_session_factory: Callable[[], Session], student_user: PublicUser
+) -> None:
+    """Submitting snapshots must match the Submission.items_snapshot dict type."""
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
+    now = datetime.now(UTC)
+
+    with db_session_factory() as session:
+        assessment = session.exec(select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)).one()
+        submission = Submission(
+            submission_uuid="submission_snapshot_shape",
+            assessment_type=AssessmentType.EXAM,
+            activity_id=activity_id,
+            user_id=student_user.id,
+            status=SubmissionStatus.GRADED,
+            attempt_number=1,
+            answers_json={},
+            grading_json={},
+            started_at=now,
+            submitted_at=now,
+            graded_at=now,
+        )
+        session.add(submission)
+        session.commit()
+        session.refresh(submission)
+
+        _snapshot_submission(submission, assessment, session)
+        session.refresh(submission)
+
+        assert isinstance(submission.items_snapshot, dict)
+        snapshot_items = submission.items_snapshot.get("items")
+        assert isinstance(snapshot_items, list)
+        first_item = snapshot_items[0]
+        assert isinstance(first_item, dict)
+        assert first_item["item_uuid"] == "item_submit_1"
+
+
 # ---------------------------------------------------------------------------
 # Tests: view student's own submissions
 # ---------------------------------------------------------------------------
 
 
 def test_get_my_submissions_returns_own_submissions(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """GET /assessments/{uuid}/me returns only the calling student's submissions."""
     assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
@@ -485,7 +539,7 @@ def test_get_my_submissions_returns_own_submissions(
 
 
 def test_get_my_submissions_masks_score_when_batch_mode_unpublished(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Scores are hidden until the teacher explicitly publishes (BATCH mode)."""
     assessment_uuid, activity_id, _ = _seed_assessment(
@@ -546,7 +600,7 @@ def test_get_my_submissions_masks_score_when_batch_mode_unpublished(
 
 
 def test_get_my_submissions_shows_score_after_immediate_publish(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """With IMMEDIATE release mode, published grades are visible to the student."""
     assessment_uuid, activity_id, _ = _seed_assessment(
@@ -608,7 +662,7 @@ def test_get_my_submissions_shows_score_after_immediate_publish(
 
 
 def test_get_assessment_returns_404_for_unknown_uuid(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """GET /assessments/{uuid} returns 404 for an unknown UUID."""
     _seed_assessment(db_session_factory)
@@ -626,12 +680,10 @@ def test_get_assessment_returns_404_for_unknown_uuid(
 
 
 def test_resubmission_draft_created_from_returned(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A new DRAFT is created when the student resubmits after a RETURNED state."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=3
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=3)
 
     now = datetime.now(UTC)
     with db_session_factory() as session:
@@ -663,12 +715,10 @@ def test_resubmission_draft_created_from_returned(
 
 
 def test_attempt_limit_prevents_resubmission(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Resubmit is blocked when max_attempts is already exhausted."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=1
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=1)
 
     now = datetime.now(UTC)
     with db_session_factory() as session:

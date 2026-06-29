@@ -6,18 +6,18 @@
  * state, lifecycle controls); the kind contributes a content panel.
  */
 
-import type { AssessmentLifecycle } from './lifecycle';
-import type { SubmissionStatus } from './submission-status';
-import type { ReleaseState } from './release';
-import type { NormalizedScore } from './score';
-import type { PolicyView } from './policy';
-import type { AssessmentItem } from './items';
+import type { AssessmentLifecycle } from './lifecycle'
+import type { SubmissionStatus } from './submission-status'
+import type { ReleaseState } from './release'
+import type { NormalizedScore } from './score'
+import type { PolicyView } from './policy'
+import type { AssessmentItem } from './items'
 
 /** The three product surfaces every assessment kind must support. */
-export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT';
+export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT'
 
 /** Assessment kind identifiers — mirrors ActivityType from the backend. */
-export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_CUSTOM';
+export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_CUSTOM'
 
 // ── Studio surface ─────────────────────────────────────────────────────────────
 
@@ -26,20 +26,20 @@ export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_C
  * Consumed by the shared StudioShell; the kind provides the content panel.
  */
 export interface StudioViewModel {
-  surface: 'STUDIO';
-  kind: AssessmentKind;
-  assessmentUuid: string;
-  activityUuid: string;
-  title: string;
-  lifecycle: AssessmentLifecycle;
-  isEditable: boolean;
-  canPublish: boolean;
-  canSchedule: boolean;
-  canArchive: boolean;
-  scheduledAt: string | null;
-  policy: PolicyView;
-  items: AssessmentItem[];
-  validationIssues: ValidationIssue[];
+  surface: 'STUDIO'
+  kind: AssessmentKind
+  assessmentUuid: string
+  activityUuid: string
+  title: string
+  lifecycle: AssessmentLifecycle
+  isEditable: boolean
+  canPublish: boolean
+  canSchedule: boolean
+  canArchive: boolean
+  scheduledAt: string | null
+  policy: PolicyView
+  items: AssessmentItem[]
+  validationIssues: ValidationIssue[]
 }
 
 // ── Review surface ─────────────────────────────────────────────────────────────
@@ -50,19 +50,19 @@ export interface StudioViewModel {
  * the Submission object itself.
  */
 export interface ReviewQueueItemViewModel {
-  surface: 'REVIEW';
-  kind: AssessmentKind;
-  submissionUuid: string;
-  studentDisplayName: string;
-  status: SubmissionStatus;
-  releaseState: ReleaseState;
-  score: NormalizedScore;
-  isLate: boolean;
-  submittedAt: string | null;
-  needsTeacherAction: boolean;
-  canEdit: boolean;
-  canPublish: boolean;
-  canReturn: boolean;
+  surface: 'REVIEW'
+  kind: AssessmentKind
+  submissionUuid: string
+  studentDisplayName: string
+  status: SubmissionStatus
+  releaseState: ReleaseState
+  score: NormalizedScore
+  isLate: boolean
+  submittedAt: string | null
+  needsTeacherAction: boolean
+  canEdit: boolean
+  canPublish: boolean
+  canReturn: boolean
 }
 
 // ── Attempt surface ────────────────────────────────────────────────────────────
@@ -72,46 +72,46 @@ export interface ReviewQueueItemViewModel {
  * Shared by all kinds; the kind provides the task/question content.
  */
 export interface AttemptViewModel {
-  surface: 'ATTEMPT';
-  kind: AssessmentKind;
-  assessmentUuid: string;
-  activityUuid: string;
-  title: string;
-  description: string | null;
-  dueAt: string | null;
-  submissionStatus: SubmissionStatus | null;
-  releaseState: ReleaseState;
-  score: NormalizedScore;
-  policy: PolicyView;
-  items: AssessmentItem[];
+  surface: 'ATTEMPT'
+  kind: AssessmentKind
+  assessmentUuid: string
+  activityUuid: string
+  title: string
+  description: string | null
+  dueAt: string | null
+  submissionStatus: SubmissionStatus | null
+  releaseState: ReleaseState
+  score: NormalizedScore
+  policy: PolicyView
+  items: AssessmentItem[]
   /** Student may edit answers. */
-  canEdit: boolean;
+  canEdit: boolean
   /** Student may save a draft. */
-  canSaveDraft: boolean;
+  canSaveDraft: boolean
   /** Student may submit (or re-submit). */
-  canSubmit: boolean;
+  canSubmit: boolean
   /** Student has been returned feedback and should revise. */
-  isReturnedForRevision: boolean;
+  isReturnedForRevision: boolean
   /** Score and feedback are visible to the student. */
-  isResultVisible: boolean;
+  isResultVisible: boolean
   /** Backend reason codes explaining why start/save/submit actions are disabled. */
-  disabledActionReasons: string[];
-  serverNow: string | null;
-  availableAt: string | null;
-  closesAt: string | null;
-  timeRemainingSeconds: number | null;
-  contentVersion: number;
-  policyVersion: number;
+  disabledActionReasons: string[]
+  serverNow: string | null
+  availableAt: string | null
+  closesAt: string | null
+  timeRemainingSeconds: number | null
+  contentVersion: number
+  policyVersion: number
 
   // Phase 1 — server-driven action state
   /** Student can start a new attempt. */
-  canStart: boolean;
+  canStart: boolean
   /** Student can continue an in-progress draft. */
-  canContinue: boolean;
+  canContinue: boolean
   /** Student can view their result. */
-  canViewResult: boolean;
+  canViewResult: boolean
   /** Student can start a revision (returned attempt). */
-  canStartRevision: boolean;
+  canStartRevision: boolean
   /**
    * Backend-recommended primary action for this student right now.
    * Drive the primary CTA from this value.
@@ -124,26 +124,27 @@ export interface AttemptViewModel {
     | 'viewResult'
     | 'startRevision'
     | 'noAction'
-    | 'blocked';
+    | 'blocked'
   /** i18n key for the primary CTA label. */
-  primaryButtonLabelKey: string;
+  primaryButtonLabelKey: string
   /** Server-authoritative timer start (use instead of client Date.now()). */
-  startedAt: string | null;
-  timerStartedAt: string | null;
+  startedAt: string | null
+  timerStartedAt: string | null
   /** Server-authoritative timer expiry — derive time remaining from this. */
-  timerExpiresAt: string | null;
+  timerExpiresAt: string | null
 }
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
 export interface ValidationIssue {
-  code: string;
-  message: string;
+  code: string
+  message: string
   /** UUID of the task/question that has the issue, if applicable. */
-  itemUuid?: string;
-  severity?: 'blocker' | 'advisory';
-  area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind';
-  field?: string;
+  itemUuid?: string
+  severity?: 'blocker' | 'advisory'
+  area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind'
+  field?: string | undefined
+  actionLabel?: string
 }
 
 /**
@@ -154,16 +155,16 @@ export interface ValidationIssue {
 export function assessmentTypeToKind(assessmentType: string): AssessmentKind | null {
   switch (assessmentType) {
     case 'EXAM': {
-      return 'TYPE_EXAM';
+      return 'TYPE_EXAM'
     }
     case 'CODE_CHALLENGE': {
-      return 'TYPE_CODE_CHALLENGE';
+      return 'TYPE_CODE_CHALLENGE'
     }
     case 'QUIZ': {
-      return 'TYPE_CUSTOM';
+      return 'TYPE_CUSTOM'
     }
     default: {
-      return null;
+      return null
     }
   }
 }

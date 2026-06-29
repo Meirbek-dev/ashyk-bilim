@@ -1,67 +1,56 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react';
-import { YouTubeEmbed } from '@next/third-parties/google';
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { getYouTubeVideoId } from '@/lib/utils';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { getUrlPreview } from '@services/courses/activities';
-import type { UrlPreviewResponse } from '@services/courses/activities';
-import { Checkbox } from '@components/ui/checkbox';
-import NextImage from '@components/ui/NextImage';
-import { NodeViewWrapper } from '@tiptap/react';
-import { Button } from '@components/ui/button';
-import { Label } from '@components/ui/label';
-import { Input } from '@components/ui/input';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import type { WebPreviewAttrs } from './WebPreview';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react'
+import { YouTubeEmbedFill } from '@/components/ui/youtube-embed-fill'
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { getYouTubeVideoId } from '@/lib/utils'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Modal from '@/components/Objects/Elements/Modal/Modal'
+import { getUrlPreview } from '@services/courses/activities'
+import type { UrlPreviewResponse } from '@services/courses/activities'
+import { Checkbox } from '@components/ui/checkbox'
+import NextImage from '@components/ui/NextImage'
+import { NodeViewWrapper } from '@tiptap/react'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Input } from '@components/ui/input'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import type { WebPreviewAttrs } from './WebPreview'
 
 type WebPreviewProps = TypedNodeViewProps<WebPreviewAttrs> & {
-  deleteNode?: () => void;
-};
+  deleteNode?: () => void
+}
 
 const ALIGNMENTS = [
   { value: 'left', label: <AlignLeft size={16} /> },
   { value: 'center', label: <AlignCenter size={16} /> },
   { value: 'right', label: <AlignRight size={16} /> },
-];
+]
 
 const PreviewImage = ({ src, alt }: { src: string; alt: string }) => (
   <div className="relative -mx-6 -mt-6 mb-0 h-40 w-full overflow-hidden rounded-t-xl">
-    <NextImage
-      src={src}
-      alt={alt}
-      fill
-      className="object-cover"
-      sizes="100vw"
-    />
+    <NextImage src={src} alt={alt} fill className="object-cover" sizes="100vw" />
   </div>
-);
+)
 
 const FaviconDisplay = ({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) => (
   <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
     {favicon ? (
       <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
-        <NextImage
-          src={favicon}
-          alt={faviconAlt}
-          fill
-          className="object-cover"
-        />
+        <NextImage src={favicon} alt={faviconAlt} fill className="object-cover" />
       </div>
     ) : null}
     <span className="truncate text-xs text-gray-500">{url}</span>
   </div>
-);
+)
 
 const getAlignmentClass = (alignment: string) => {
-  if (alignment === 'center') return 'justify-center';
-  if (alignment === 'right') return 'justify-end';
-  return 'justify-start';
-};
+  if (alignment === 'center') return 'justify-center'
+  if (alignment === 'right') return 'justify-end'
+  return 'justify-start'
+}
 
 function urlPreviewQueryOptions(url: string) {
   return queryOptions({
@@ -69,7 +58,7 @@ function urlPreviewQueryOptions(url: string) {
     queryFn: () => getUrlPreview(url),
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-  });
+  })
 }
 
 const AlignmentControls = ({
@@ -78,20 +67,20 @@ const AlignmentControls = ({
   alignments,
   t,
 }: {
-  alignment: string;
-  onAlignmentChange: (value: string) => void;
-  alignments: typeof ALIGNMENTS;
-  t: (key: string, values?: Record<string, string>) => string;
+  alignment: string
+  onAlignmentChange: (value: string) => void
+  alignments: typeof ALIGNMENTS
+  t: (key: string, values?: Record<string, string>) => string
 }) => (
   <div className="mt-4 flex flex-col items-center">
     <div className="flex items-center gap-1">
       <span className="mr-1 text-xs text-gray-500">{t('align')}:</span>
-      {alignments.map((opt) => (
+      {alignments.map(opt => (
         <button
           key={opt.value}
           aria-pressed={alignment === opt.value}
           onClick={() => {
-            onAlignmentChange(opt.value);
+            onAlignmentChange(opt.value)
           }}
           title={t('alignOption', { value: t(opt.value) })}
           type="button"
@@ -106,20 +95,20 @@ const AlignmentControls = ({
       ))}
     </div>
   </div>
-);
+)
 
 // The component logic is intentionally split across helper functions and local state.
 // Complexity is managed by breaking large expressions into isolated helpers.
 
 const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewProps) => {
-  const t = useTranslations('Components.WebPreview');
-  const [inputUrl, setInputUrl] = useState(node.attrs.url || '');
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(!node.attrs.url);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const queryClient = useQueryClient();
-  const editorContext = useEditorProvider();
-  const isEditable = editorContext?.isEditable ?? true;
+  const t = useTranslations('Components.WebPreview')
+  const [inputUrl, setInputUrl] = useState(node.attrs.url || '')
+  const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(!node.attrs.url)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const queryClient = useQueryClient()
+  const editorContext = useEditorProvider()
+  const isEditable = editorContext?.isEditable ?? true
 
   const previewData = {
     title: node.attrs.title,
@@ -129,119 +118,140 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
     og_type: node.attrs.og_type,
     og_url: node.attrs.og_url,
     url: node.attrs.url,
-  };
-  const previewUrl = previewData.url ?? undefined;
+  }
+  const previewUrl = previewData.url ?? undefined
 
-  const alignment = node.attrs.alignment || 'left';
-  const hasPreview = Boolean(previewData.title);
+  const alignment = node.attrs.alignment || 'left'
+  const hasPreview = Boolean(previewData.title)
 
-  const [buttonLabel, setButtonLabel] = useState(node.attrs.buttonLabel || t('visitSite'));
-  const [showButton, setShowButton] = useState(node.attrs.showButton);
-  const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup);
-  const [popupOpen, setPopupOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(!node.attrs.url);
-  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview);
+  const [buttonLabel, setButtonLabel] = useState(node.attrs.buttonLabel || t('visitSite'))
+  const [showButton, setShowButton] = useState(node.attrs.showButton)
+  const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup)
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(!node.attrs.url)
+  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview)
   const previewQuery = useQuery({
     ...urlPreviewQueryOptions(node.attrs.url || ''),
     enabled: shouldAutoFetchPreview,
-  });
+  })
 
   const applyPreviewData = useCallback(
     (url: string, data: UrlPreviewResponse) => {
-      const hasMinimalMetadata = !(data.title || data.description || data.og_image);
+      const hasMinimalMetadata = !(data.title || data.description || data.og_image)
 
       if (hasMinimalMetadata) {
         toast.error(t('metadataIncomplete'), {
           duration: 4000,
-        });
+        })
       }
 
-      updateAttributes({ ...data, url });
-      setEditing(false);
-      setError(null);
+      updateAttributes({ ...data, url })
+      setEditing(false)
+      setError(null)
     },
     [t, updateAttributes],
-  );
+  )
 
   const fetchPreviewMutation = useMutation({
     mutationFn: async (url: string) => queryClient.fetchQuery(urlPreviewQueryOptions(url)),
     onSuccess: (data, url) => {
       if (!data) {
-        throw new Error(t('errorFetchingPreview'));
+        throw new Error(t('errorFetchingPreview'))
       }
 
-      applyPreviewData(url, data);
+      applyPreviewData(url, data)
     },
     onError: (fetchError: unknown) => {
-      setError(fetchError instanceof Error ? fetchError.message : t('errorFetchingPreview'));
+      setError(fetchError instanceof Error ? fetchError.message : t('errorFetchingPreview'))
     },
-  });
+  })
 
-  const loading = previewQuery.isFetching || fetchPreviewMutation.isPending;
+  const loading = previewQuery.isFetching || fetchPreviewMutation.isPending
 
   useEffect(() => {
-    if (!shouldAutoFetchPreview) return;
+    if (!shouldAutoFetchPreview) return
 
-    if (previewQuery.data && node.attrs.url) {
-      applyPreviewData(node.attrs.url, previewQuery.data);
-      return;
+    const url = node.attrs.url
+    if (previewQuery.data && url) {
+      queueMicrotask(() => {
+        applyPreviewData(url, previewQuery.data)
+      })
+      return
     }
 
     if (previewQuery.error) {
-      setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'));
+      queueMicrotask(() => {
+        setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'))
+      })
     }
-  }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t]);
+  }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t])
 
   useEffect(() => {
     if (editing && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus()
     }
-  }, [editing]);
-  useEffect(() => {
-    setButtonLabel(node.attrs.buttonLabel || t('visitSite'));
-    setShowButton(node.attrs.showButton);
-    setOpenInPopup(node.attrs.openInPopup);
-  }, [node.attrs.buttonLabel, node.attrs.showButton, node.attrs.openInPopup, t]);
+  }, [editing])
+  const [prevAttrs, setPrevAttrs] = useState({
+    buttonLabel: node.attrs.buttonLabel,
+    showButton: node.attrs.showButton,
+    openInPopup: node.attrs.openInPopup,
+  })
+  if (
+    node.attrs.buttonLabel !== prevAttrs.buttonLabel ||
+    node.attrs.showButton !== prevAttrs.showButton ||
+    node.attrs.openInPopup !== prevAttrs.openInPopup
+  ) {
+    setPrevAttrs({
+      buttonLabel: node.attrs.buttonLabel,
+      showButton: node.attrs.showButton,
+      openInPopup: node.attrs.openInPopup,
+    })
+    setButtonLabel(node.attrs.buttonLabel || t('visitSite'))
+    setShowButton(node.attrs.showButton)
+    setOpenInPopup(node.attrs.openInPopup)
+  }
 
   useEffect(() => {
     if (!node.attrs.url) {
-      setEditing(true);
-      setModalOpen(true);
+      queueMicrotask(() => {
+        setEditing(true)
+        setModalOpen(true)
+      })
     }
-  }, [node.attrs.url]);
+  }, [node.attrs.url])
 
   function handleAlignmentChange(value: string) {
-    updateAttributes({ alignment: value });
+    updateAttributes({ alignment: value })
   }
 
   const handleEdit = () => {
-    setEditing(true);
-    setInputUrl(node.attrs.url || '');
-    setModalOpen(true);
-  };
+    setEditing(true)
+    setInputUrl(node.attrs.url || '')
+    setModalOpen(true)
+  }
 
   const handleSaveEdit = () => {
     if (inputUrl && inputUrl !== node.attrs.url) {
-      setError(null);
-      void fetchPreviewMutation.mutateAsync(inputUrl);
+      setError(null)
+      void fetchPreviewMutation.mutateAsync(inputUrl)
     } else {
-      setEditing(false);
-      setModalOpen(false);
+      setEditing(false)
+      setModalOpen(false)
     }
-    updateAttributes({ buttonLabel, showButton, openInPopup });
-    setModalOpen(false);
-  };
+    updateAttributes({ buttonLabel, showButton, openInPopup })
+    setModalOpen(false)
+  }
 
   const handleCancelEdit = () => {
-    setEditing(false);
-    setInputUrl(node.attrs.url || '');
-    setError(null);
-    setModalOpen(false);
-  };
+    setEditing(false)
+    setInputUrl(node.attrs.url || '')
+    setError(null)
+    setModalOpen(false)
+  }
 
   const handleDelete = () => {
     if (typeof deleteNode === 'function') {
-      deleteNode();
+      deleteNode()
     } else {
       updateAttributes({
         url: null,
@@ -251,11 +261,11 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         favicon: null,
         og_type: null,
         og_url: null,
-      });
+      })
     }
-  };
+  }
 
-  const alignmentClass = getAlignmentClass(node.attrs.alignment || 'left');
+  const alignmentClass = getAlignmentClass(node.attrs.alignment || 'left')
 
   return (
     <NodeViewWrapper className="web-preview-block relative">
@@ -269,14 +279,11 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         dialogContent={
           previewUrl
             ? (() => {
-                const videoId = getYouTubeVideoId(previewUrl);
+                const videoId = getYouTubeVideoId(previewUrl)
                 if (videoId) {
                   return (
-                    <YouTubeEmbed
-                      videoid={videoId}
-                      style="height: 100%; width: 100%; max-width: none;"
-                    />
-                  );
+                    <YouTubeEmbedFill videoid={videoId} style={{ height: '100%', width: '100%', maxWidth: 'none' }} />
+                  )
                 }
                 return (
                   <iframe
@@ -286,7 +293,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                     style={{ display: 'block', borderRadius: 0 }}
                     allowFullScreen
                   />
-                );
+                )
               })()
             : null
         }
@@ -319,9 +326,9 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
           {/* Modal for editing */}
           <Modal
             isDialogOpen={modalOpen}
-            onOpenChange={(open) => {
-              setModalOpen(open);
-              if (!open) handleCancelEdit();
+            onOpenChange={open => {
+              setModalOpen(open)
+              if (!open) handleCancelEdit()
             }}
             dialogTitle={t('editWebPreviewCard')}
             dialogDescription={t('editWebPreviewDescription')}
@@ -329,9 +336,9 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
             dialogContent={
               <form
                 className="space-y-6"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSaveEdit();
+                onSubmit={e => {
+                  e.preventDefault()
+                  handleSaveEdit()
                 }}
               >
                 <div className="space-y-2">
@@ -342,8 +349,8 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                     type="text"
                     placeholder={t('enterWebsiteUrl')}
                     value={inputUrl}
-                    onChange={(e) => {
-                      setInputUrl(e.target.value);
+                    onChange={e => {
+                      setInputUrl(e.target.value)
                     }}
                     disabled={loading}
                   />
@@ -355,14 +362,11 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                       <Checkbox
                         id="show-button"
                         checked={showButton}
-                        onCheckedChange={(checked) => {
-                          setShowButton(checked);
+                        onCheckedChange={checked => {
+                          setShowButton(checked)
                         }}
                       />
-                      <Label
-                        htmlFor="show-button"
-                        className="text-sm"
-                      >
+                      <Label htmlFor="show-button" className="text-sm">
                         {t('showButton')}
                       </Label>
                     </div>
@@ -372,30 +376,24 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                           <Checkbox
                             id="open-in-popup"
                             checked={openInPopup}
-                            onCheckedChange={(checked) => {
-                              setOpenInPopup(checked);
+                            onCheckedChange={checked => {
+                              setOpenInPopup(checked)
                             }}
                           />
-                          <Label
-                            htmlFor="open-in-popup"
-                            className="text-sm"
-                          >
+                          <Label htmlFor="open-in-popup" className="text-sm">
                             {t('openInPopup')}
                           </Label>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <Label
-                            htmlFor="button-label"
-                            className="text-sm"
-                          >
+                          <Label htmlFor="button-label" className="text-sm">
                             {t('buttonLabel')}
                           </Label>
                           <Input
                             id="button-label"
                             type="text"
                             value={buttonLabel}
-                            onChange={(e) => {
-                              setButtonLabel(e.target.value);
+                            onChange={e => {
+                              setButtonLabel(e.target.value)
                             }}
                             placeholder={t('buttonLabelPlaceholder')}
                             className="w-36"
@@ -408,7 +406,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 <div className="space-y-">
                   <Label>{t('alignment')}</Label>
                   <div className="flex gap-2 pt-3">
-                    {ALIGNMENTS.map((opt) => (
+                    {ALIGNMENTS.map(opt => (
                       <Button
                         key={opt.value}
                         type="button"
@@ -416,7 +414,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                         size="sm"
                         aria-pressed={alignment === opt.value}
                         onClick={() => {
-                          handleAlignmentChange(opt.value);
+                          handleAlignmentChange(opt.value)
                         }}
                         className={`rounded-full px-2 py-1 ${alignment === opt.value ? 'bg-black text-white' : ''}`}
                       >
@@ -427,28 +425,15 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 </div>
                 {error ? <div className="mt-2 text-xs text-red-600">{error}</div> : null}
                 <div className="mt-2 flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                  >
+                  <Button type="button" variant="outline" onClick={handleCancelEdit}>
                     <span className="flex items-center">
-                      <X
-                        size={16}
-                        className="mr-1"
-                      />
+                      <X size={16} className="mr-1" />
                       {t('cancel')}
                     </span>
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading || !inputUrl}
-                  >
+                  <Button type="submit" disabled={loading || !inputUrl}>
                     <span className="flex items-center">
-                      <Save
-                        size={16}
-                        className="mr-1"
-                      />
+                      <Save size={16} className="mr-1" />
                       {t('save')}
                     </span>
                   </Button>
@@ -466,12 +451,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 className="no-underline hover:no-underline focus:no-underline active:no-underline"
                 style={{ textDecoration: 'none', borderBottom: 'none' }}
               >
-                {previewData.og_image ? (
-                  <PreviewImage
-                    src={previewData.og_image}
-                    alt={t('previewImageAlt')}
-                  />
-                ) : null}
+                {previewData.og_image ? <PreviewImage src={previewData.og_image} alt={t('previewImageAlt')} /> : null}
                 <div className="pt-4 pb-2">
                   <span
                     className="text-foreground mb-1.5 text-lg leading-tight font-semibold no-underline hover:no-underline focus:no-underline active:no-underline"
@@ -488,7 +468,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 </div>
               </a>
               <FaviconDisplay
-                favicon={previewData.favicon ?? undefined}
+                {...(previewData.favicon ? { favicon: previewData.favicon } : {})}
                 url={previewUrl ?? ''}
                 faviconAlt={t('faviconAlt')}
               />
@@ -499,7 +479,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                     className="soft-shadow mt-4 block w-full rounded-xl bg-black px-4 py-2.5 text-center text-[16px] font-semibold text-white no-underline transition-all hover:bg-gray-900 hover:shadow-lg"
                     style={{ textDecoration: 'none', color: 'white' }}
                     onClick={() => {
-                      setPopupOpen(true);
+                      setPopupOpen(true)
                     }}
                   >
                     {buttonLabel || t('visitSite')}
@@ -530,7 +510,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         </div>
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default WebPreviewComponent;
+export default WebPreviewComponent

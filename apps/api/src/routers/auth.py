@@ -1,15 +1,22 @@
+import contextlib
 import logging
-from typing import Annotated
+from typing import Annotated, cast
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_users import exceptions
+from fastapi_users.authentication import JWTStrategy
+from fastapi_users.router.common import ErrorCode
+from pydantic import EmailStr
 from sqlmodel import Session, select
 
 from config.config import secret_value
+from src.app.exceptions import AppError, AuthAppError, ConflictAppError, RateLimitAppError
 from src.auth.manager import UserManager, get_user_manager
 from src.auth.users import CurrentActiveUser, auth_backend
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, User, UserSession
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
@@ -46,6 +53,28 @@ from src.services.users.users import get_user_session
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
+class AuthLoginResponse(PydanticStrictBaseModel):
+    access_token: str
+    token_type: str
+
+
+class AuthSessionRead(PydanticStrictBaseModel):
+    session_id: str
+    ip_address: str | None = None
+    user_agent: str | None = None
+    created_at: int
+    last_seen_at: int
+
+
+class AuthRefreshResponse(PydanticStrictBaseModel):
+    status: str
+
+
+class AuthActionResponse(PydanticStrictBaseModel):
+    status: str
+
+
 _limit_auth_login_ip = rate_limit_dependency(
     namespace="auth:login:ip",
     max_requests=20,
@@ -67,6 +96,63 @@ _limit_google_oauth_ip = rate_limit_dependency(
 auth_sensitive_rate_limit = _limit_auth_login_ip
 
 
+@router.post(
+    "/forgot-password",
+    response_model=AuthActionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(auth_sensitive_rate_limit)],
+)
+async def forgot_password(
+    request: Request,
+    email: Annotated[EmailStr, Body(embed=True)],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
+) -> AuthActionResponse:
+    try:
+        user = await user_manager.get_by_email(email)
+    except exceptions.UserNotExists:
+        return AuthActionResponse(status="accepted")
+
+    with contextlib.suppress(exceptions.UserInactive):
+        await user_manager.forgot_password(user, request)
+
+    return AuthActionResponse(status="accepted")
+
+
+@router.post(
+    "/reset-password",
+    response_model=AuthActionResponse,
+    dependencies=[Depends(auth_sensitive_rate_limit)],
+)
+async def reset_password(
+    request: Request,
+    token: Annotated[str, Body()],
+    password: Annotated[str, Body()],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
+) -> AuthActionResponse:
+    try:
+        await user_manager.reset_password(token, password, request)
+    except (
+        exceptions.InvalidResetPasswordToken,
+        exceptions.UserNotExists,
+        exceptions.UserInactive,
+    ):
+        raise AppError.from_status(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ErrorCode.RESET_PASSWORD_BAD_TOKEN.value,
+            message="Недействительный или истекший токен сброса пароля",
+        )
+    except exceptions.InvalidPasswordException as exc:
+        raise AppError.from_status(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code=ErrorCode.RESET_PASSWORD_INVALID_PASSWORD.value,
+            message=exc.reason,
+            details={"reason": exc.reason},
+            cause=exc,
+        ) from exc
+
+    return AuthActionResponse(status="ok")
+
+
 def _client_ip(request: Request) -> str | None:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
@@ -85,8 +171,8 @@ def _resolve_google_redirect_uri() -> str:
     port_suffix = f":{port}" if port not in {80, 443} else ""
     uri = f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
     logger.warning(
-        "PLATFORM_GOOGLE_REDIRECT_URI is not set — using auto-constructed '%s'. "
-        "Set PLATFORM_GOOGLE_REDIRECT_URI explicitly to avoid redirect_uri_mismatch errors.",
+        "PLATFORM_GOOGLE_REDIRECT_URI не задана — используем автоматически собранный '%s'. "
+        "Задайте PLATFORM_GOOGLE_REDIRECT_URI явно, чтобы избежать ошибок redirect_uri_mismatch.",
         uri,
     )
     return uri
@@ -97,7 +183,8 @@ async def _build_login_response(
     user: User,
     user_manager: UserManager,
 ) -> Response:
-    access_token = await auth_backend.get_strategy().write_token(user)
+    strategy = cast("JWTStrategy[User, int]", auth_backend.get_strategy())
+    access_token = await strategy.write_token(user)
     response = await auth_backend.transport.get_login_response(access_token)
 
     _, refresh_token = await create_auth_session(
@@ -127,9 +214,11 @@ def _validate_callback_url(callback: str) -> None:
     if netloc == domain or netloc.endswith(f".{domain}"):
         return
 
-    raise HTTPException(
+    raise AppError.from_status(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid callback URL",
+        code="INVALID_CALLBACK_URL",
+        message="Некорректный callback URL",
+        details={"callback": callback[:200]},
     )
 
 
@@ -146,19 +235,16 @@ def _build_google_error_redirect(callback: str, error_code: str) -> str:
     ))
 
 
-def _rate_limit_http_error(exc: RateLimitExceeded) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail={
-            "error_code": "RATE_LIMIT_EXCEEDED",
-            "message": "Too many attempts. Please try again later.",
-            "retry_after": exc.retry_after,
-        },
-        headers={"Retry-After": str(exc.retry_after)},
+def _rate_limit_error(exc: RateLimitExceeded) -> RateLimitAppError:
+    return RateLimitAppError(
+        code="RATE_LIMITED",
+        message="Слишком много попыток. Пожалуйста, попробуйте позже.",
+        details={"retry_after": exc.retry_after},
+        retry_after=exc.retry_after,
     )
 
 
-@router.post("/login", dependencies=[Depends(_limit_auth_login_ip)])
+@router.post("/login", response_model=AuthLoginResponse, dependencies=[Depends(_limit_auth_login_ip)])
 async def login(
     request: Request,
     credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -166,13 +252,10 @@ async def login(
 ) -> Response:
     email = credentials.username.strip().lower()
     if await check_account_locked(email):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={
-                "error_code": "ACCOUNT_TEMPORARILY_LOCKED",
-                "message": "Too many failed login attempts. Please try again later.",
-            },
-            headers={"Retry-After": "900"},
+        raise RateLimitAppError(
+            code="LOGIN_LOCKED",
+            message="Слишком много неудачных попыток входа. Пожалуйста, попробуйте позже.",
+            retry_after=900,
         )
     try:
         await check_rate_limit(
@@ -181,21 +264,22 @@ async def login(
             window_seconds=900,
         )
     except RateLimitExceeded as exc:
-        raise _rate_limit_http_error(exc) from exc
+        raise _rate_limit_error(exc) from exc
 
     user = await user_manager.authenticate(credentials)
     if user is None:
         await record_login_failure(email)
-        raise HTTPException(
+        raise AppError.from_status(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="LOGIN_BAD_CREDENTIALS",
+            code="LOGIN_BAD_CREDENTIALS",
+            message="Неверный адрес электронной почты или пароль",
         )
 
     await clear_login_failures(email)
     return await _build_login_response(request, user, user_manager)
 
 
-@router.post("/logout")
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -205,11 +289,7 @@ async def logout(
         inspection = await inspect_refresh_session(db_session, refresh_token)
         if inspection.status == "active" and inspection.session and inspection.user_id:
             await revoke_session(inspection.session.session_id, inspection.user_id)
-        elif (
-            inspection.status == "reused"
-            and inspection.token_family_id
-            and inspection.user_id
-        ):
+        elif inspection.status == "reused" and inspection.token_family_id and inspection.user_id:
             await revoke_token_family(inspection.token_family_id, inspection.user_id)
 
     response = await auth_backend.transport.get_logout_response()
@@ -226,52 +306,54 @@ def get_me(
     return get_user_session(request, db_session, current_user)
 
 
-@router.get("/sessions")
+@router.get("/sessions", response_model=list[AuthSessionRead])
 async def list_sessions(
     current_user: CurrentActiveUser,
-):
-    return await get_user_active_sessions(current_user.id)
+) -> list[AuthSessionRead]:
+    sessions = await get_user_active_sessions(current_user.id)
+    return [AuthSessionRead.model_validate(s) for s in sessions]
 
 
-@router.post("/refresh", dependencies=[Depends(_limit_auth_refresh_ip)])
+@router.post("/refresh", response_model=AuthRefreshResponse, dependencies=[Depends(_limit_auth_refresh_ip)])
 async def refresh_token(
     request: Request,
     response: Response,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AuthRefreshResponse:
     """Exchange a valid refresh token cookie for a new access token + rotated refresh token."""
     token = request.cookies.get(REFRESH_COOKIE_KEY)
     if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing refresh token",
+        raise AuthAppError(
+            code="SESSION_EXPIRED",
+            message="Сессия истекла. Пожалуйста, войдите снова.",
         )
 
     inspection = await inspect_refresh_session(db_session, token)
 
+    if inspection.status == "rotated":
+        raise ConflictAppError(
+            code="REFRESH_TOKEN_ALREADY_ROTATED",
+            message="Refresh-токен уже был обновлен",
+        )
+
     if inspection.status == "reused":
         if inspection.token_family_id and inspection.user_id:
             await revoke_token_family(inspection.token_family_id, inspection.user_id)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token reuse detected — all sessions have been revoked",
+        raise AuthAppError(
+            code="REFRESH_TOKEN_REUSED",
+            message="Обнаружено повторное использование refresh-токена. Все сессии были аннулированы.",
         )
 
-    if (
-        inspection.status != "active"
-        or inspection.session is None
-        or inspection.user_id is None
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+    if inspection.status != "active" or inspection.session is None or inspection.user_id is None:
+        raise AuthAppError(
+            code="SESSION_EXPIRED",
+            message="Сессия истекла. Пожалуйста, войдите снова.",
         )
 
     user = db_session.exec(select(User).where(User.id == inspection.user_id)).first()
     if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive",
+        raise AuthAppError(
+            code="SESSION_EXPIRED",
         )
 
     ip = _client_ip(request)
@@ -283,25 +365,32 @@ async def refresh_token(
         user_agent=ua,
     )
 
-    access_token = await auth_backend.get_strategy().write_token(user)
+    strategy = cast("JWTStrategy[User, int]", auth_backend.get_strategy())
+    access_token = await strategy.write_token(user)
     set_access_cookie(response, access_token)
     set_refresh_cookie(response, new_refresh_token)
 
-    return {"status": "ok"}
+    return AuthRefreshResponse(status="ok")
 
 
-@router.get("/google/authorize", dependencies=[Depends(_limit_google_oauth_ip)])
+@router.get(
+    "/google/authorize",
+    response_class=RedirectResponse,
+    dependencies=[Depends(_limit_google_oauth_ip)],
+)
 async def google_authorize(
     callback: str,
-):
+) -> RedirectResponse:
     """Redirect to Google OAuth consent screen."""
     _validate_callback_url(callback)
 
     settings = get_settings()
     if not settings.google_oauth.client_id:
-        raise HTTPException(
+        raise AppError.from_status(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Google OAuth is not configured",
+            code="GOOGLE_OAUTH_NOT_CONFIGURED",
+            message="Google OAuth не настроен",
+            safe_details=False,
         )
 
     auth_url = await get_google_authorize_url(
@@ -312,7 +401,11 @@ async def google_authorize(
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/google/callback", dependencies=[Depends(_limit_google_oauth_ip)])
+@router.get(
+    "/google/callback",
+    response_class=RedirectResponse,
+    dependencies=[Depends(_limit_google_oauth_ip)],
+)
 async def google_callback(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -320,22 +413,21 @@ async def google_callback(
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
-):
+) -> Response:
     """Handle Google OAuth callback."""
     # Resolve the frontend callback URL before anything else so that all error
-    # redirects land in the right place.  If the state JWT is expired or
-    # tampered with, _decode_state raises HTTPException — catch it here and
-    # fall back to "/" rather than letting the exception bubble up as a raw
-    # JSON error to the browser.
+    # redirects land in the right place. If the state JWT is expired or
+    # tampered with, catch it here and fall back to "/" rather than letting the
+    # exception bubble up as a raw JSON error to the browser.
     frontend_callback = "/"
     try:
         if state:
             frontend_callback = get_frontend_callback_from_state(state) or "/"
-    except HTTPException:
+    except HTTPException, AppError:
         pass
 
     if error:
-        logger.error("Google OAuth error: %s", error)
+        logger.error("Ошибка Google OAuth: %s", error)
         return RedirectResponse(
             url=_build_google_error_redirect(frontend_callback, "google_oauth_error"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
@@ -343,9 +435,7 @@ async def google_callback(
 
     if not code:
         return RedirectResponse(
-            url=_build_google_error_redirect(
-                frontend_callback, "missing_authorization_code"
-            ),
+            url=_build_google_error_redirect(frontend_callback, "missing_authorization_code"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
         )
 
@@ -361,11 +451,18 @@ async def google_callback(
             state=state,
         )
 
-        frontend_callback = userinfo.get("frontend_callback", frontend_callback)
+        frontend_callback_value = userinfo.get("frontend_callback", frontend_callback)
+        if not isinstance(frontend_callback_value, str):
+            raise AppError.from_status(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                code="INVALID_CALLBACK_URL",
+                message="Некорректный callback URL фронтенда",
+            )
+        frontend_callback = frontend_callback_value
 
         user = await find_or_create_google_user(
             request=request,
-            google_user_data=userinfo,
+            google_user_data=dict(userinfo),
             current_user=AnonymousUser(),
             db_session=db_session,
         )
@@ -374,18 +471,20 @@ async def google_callback(
         response.status_code = status.HTTP_307_TEMPORARY_REDIRECT
         response.headers["Location"] = frontend_callback
 
-    except HTTPException as exc:
+    except (HTTPException, AppError) as exc:
+        status_code = exc.status_code
+        detail = exc.detail if isinstance(exc, HTTPException) else exc.message
         logger.warning(
-            "Google OAuth callback failed | status=%s | detail=%s",
-            exc.status_code,
-            exc.detail,
+            "Ошибка callback Google OAuth | status=%s | detail=%s",
+            status_code,
+            detail,
         )
         return RedirectResponse(
             url=_build_google_error_redirect(frontend_callback, "google_auth_failed"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
         )
-    except Exception:
-        logger.exception("Unexpected error during Google OAuth callback")
+    except Exception:  # audit: broad-exception=oauth_redirect_boundary
+        logger.exception("Непредвиденная ошибка во время callback Google OAuth")
         return RedirectResponse(
             url=_build_google_error_redirect(frontend_callback, "google_auth_failed"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,

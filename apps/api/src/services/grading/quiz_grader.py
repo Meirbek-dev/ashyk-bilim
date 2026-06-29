@@ -1,10 +1,16 @@
 """Canonical quiz/exam item grading logic."""
 
-from typing import Any
-
-from src.db.assessments import ChoiceItemAnswer, MatchingItemAnswer
+from src.db.assessments import (
+    ChoiceItemAnswer,
+    ChoiceItemBody,
+    FormItemBody,
+    MatchingItemAnswer,
+    MatchingItemBody,
+    OpenTextItemBody,
+)
 from src.db.grading.submissions import GradedItem, GradingBreakdown
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+from src.types.narrowing import as_json_value
 
 
 def apply_attempt_penalty(
@@ -24,23 +30,18 @@ def apply_attempt_penalty(
 
 def grade_canonical_choice_items(
     items: list[CanonicalAssessmentItem],
-    answers_by_item_uuid: dict[str, Any],
+    answers_by_item_uuid: dict[str, object],
     max_score: float = 100.0,
+    negative_marking_percent: float = 0.0,
 ) -> tuple[float, GradingBreakdown]:
-    """Grade canonical CHOICE and MATCHING items from answers[item_uuid]."""
+    """Grade canonical CHOICE/MATCHING items and preserve manual-review items."""
+    gradable_items = [item for item in items if isinstance(item.body, (ChoiceItemBody, MatchingItemBody))]
+    manual_items = [item for item in items if isinstance(item.body, (OpenTextItemBody, FormItemBody))]
+    if not gradable_items and not manual_items:
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
-    gradable_items = [
-        item for item in items if item.body.kind in {"CHOICE", "MATCHING"}
-    ]
-    if not gradable_items:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
-
-    total_defined_points = sum(float(item.max_score or 0) for item in gradable_items)
-    points_per_item = (
-        None if total_defined_points > 0 else max_score / len(gradable_items)
-    )
+    total_defined_points = sum(float(item.max_score or 0) for item in items)
+    points_per_item = None if total_defined_points > 0 else max_score / len(items)
 
     total_score = 0.0
     breakdown_items: list[GradedItem] = []
@@ -53,25 +54,52 @@ def grade_canonical_choice_items(
         )
         answer = answers_by_item_uuid.get(item.item_uuid)
         if item.body.kind == "CHOICE":
-            graded = _grade_canonical_choice(item, answer, item_points)
+            graded = _grade_canonical_choice(item, answer, item_points, negative_marking_percent)
         else:
             graded = _grade_canonical_matching(item, answer, item_points)
         total_score += graded.score
         breakdown_items.append(graded)
 
+    for item in manual_items:
+        item_points = (
+            (float(item.max_score or 0) / total_defined_points) * max_score
+            if total_defined_points > 0
+            else (points_per_item or 0.0)
+        )
+        breakdown_items.append(_manual_review_item(item, answers_by_item_uuid.get(item.item_uuid), item_points))
+
     return round(total_score, 2), GradingBreakdown(
         items=breakdown_items,
-        needs_manual_review=False,
+        needs_manual_review=bool(manual_items),
         auto_graded=True,
+    )
+
+
+def _manual_review_item(item: CanonicalAssessmentItem, raw_answer: object, points: float) -> GradedItem:
+    body = item.body
+    assert isinstance(body, (OpenTextItemBody, FormItemBody))
+    return GradedItem(
+        item_id=item.item_uuid,
+        item_text=item.title or body.prompt,
+        score=0.0,
+        max_score=round(points, 2),
+        correct=None,
+        feedback="",
+        needs_manual_review=True,
+        user_answer=as_json_value(raw_answer, field=f"answer:{item.item_uuid}"),
+        correct_answer=None,
     )
 
 
 def _grade_canonical_choice(
     item: CanonicalAssessmentItem,
-    raw_answer: Any,
+    raw_answer: object,
     points: float,
+    negative_marking_percent: float = 0.0,
 ) -> GradedItem:
-    selected = []
+    body = item.body
+    assert isinstance(body, ChoiceItemBody)
+    selected: list[str] = []
     if isinstance(raw_answer, ChoiceItemAnswer):
         selected = [str(option_id) for option_id in raw_answer.selected]
     elif isinstance(raw_answer, dict):
@@ -79,14 +107,12 @@ def _grade_canonical_choice(
         if isinstance(raw_selected, list):
             selected = [str(option_id) for option_id in raw_selected]
 
-    correct_option_ids = {
-        str(option.id) for option in item.body.options if option.is_correct
-    }
+    correct_option_ids = {str(option.id) for option in body.options if option.is_correct}
 
     if not selected:
         return GradedItem(
             item_id=item.item_uuid,
-            item_text=item.title or item.body.prompt,
+            item_text=item.title or body.prompt,
             score=0.0,
             max_score=points,
             correct=False,
@@ -104,30 +130,36 @@ def _grade_canonical_choice(
         correct_count = len(user_selected & correct_option_ids)
         incorrect_count = len(user_selected - correct_option_ids)
         partial = (correct_count / len(correct_option_ids)) * points
-        penalty = (incorrect_count / max(len(item.body.options), 1)) * points * 0.5
+        penalty = (incorrect_count / max(len(body.options), 1)) * points * 0.5
         score = max(0.0, partial - penalty)
         correct = False
         feedback = f"Partially correct ({correct_count}/{len(correct_option_ids)})"
     else:
-        score, correct, feedback = 0.0, False, "Incorrect"
+        # Fully wrong — apply negative marking if configured
+        deduction = (negative_marking_percent / 100.0) * points if negative_marking_percent > 0 else 0.0
+        score = max(-points, -deduction)
+        correct = False
+        feedback = "Incorrect" if deduction <= 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
 
     return GradedItem(
         item_id=item.item_uuid,
-        item_text=item.title or item.body.prompt,
+        item_text=item.title or body.prompt,
         score=round(score, 2),
         max_score=points,
         correct=correct,
         feedback=feedback,
-        user_answer=selected,
+        user_answer=as_json_value(selected, field="selected"),
         correct_answer=list(correct_option_ids),
     )
 
 
 def _grade_canonical_matching(
     item: CanonicalAssessmentItem,
-    raw_answer: Any,
+    raw_answer: object,
     points: float,
 ) -> GradedItem:
+    body = item.body
+    assert isinstance(body, MatchingItemBody)
     submitted_pairs: dict[str, str] = {}
     if isinstance(raw_answer, MatchingItemAnswer):
         submitted_pairs = {pair.left: pair.right for pair in raw_answer.matches}
@@ -138,39 +170,31 @@ def _grade_canonical_matching(
             if isinstance(pair, dict)
         }
 
-    expected_pairs = {pair.left: pair.right for pair in item.body.pairs}
+    expected_pairs = {pair.left: pair.right for pair in body.pairs}
     if not submitted_pairs:
         return GradedItem(
             item_id=item.item_uuid,
-            item_text=item.title or item.body.prompt,
+            item_text=item.title or body.prompt,
             score=0.0,
             max_score=points,
             correct=False,
             feedback="No answer provided",
             user_answer=[],
-            correct_answer=item.body.model_dump(mode="json").get("pairs", []),
+            correct_answer=body.model_dump(mode="json").get("pairs", []),
         )
 
-    correct_count = sum(
-        1
-        for left, right in expected_pairs.items()
-        if submitted_pairs.get(left) == right
-    )
+    correct_count = sum(1 for left, right in expected_pairs.items() if submitted_pairs.get(left) == right)
     total_pairs = max(len(expected_pairs), 1)
     score = round((correct_count / total_pairs) * points, 2)
     correct = correct_count == len(expected_pairs)
 
     return GradedItem(
         item_id=item.item_uuid,
-        item_text=item.title or item.body.prompt,
+        item_text=item.title or body.prompt,
         score=score,
         max_score=points,
         correct=correct,
-        feedback="Correct"
-        if correct
-        else f"Matched {correct_count}/{len(expected_pairs)} pairs",
-        user_answer=[
-            {"left": left, "right": right} for left, right in submitted_pairs.items()
-        ],
-        correct_answer=item.body.model_dump(mode="json").get("pairs", []),
+        feedback="Correct" if correct else f"Matched {correct_count}/{len(expected_pairs)} pairs",
+        user_answer=[{"left": left, "right": right} for left, right in submitted_pairs.items()],
+        correct_answer=body.model_dump(mode="json").get("pairs", []),
     )

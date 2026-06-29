@@ -1,63 +1,63 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
-import { getSession } from '@/lib/auth/session';
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
+import { getSession } from '@/lib/auth/session'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-} as const;
+} as const
 
 async function requireAuthenticatedSession() {
-  const session = await getSession();
+  const session = await getSession()
   if (!session?.user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders })
   }
 
-  return null;
+  return null
 }
 
 export async function GET(request: NextRequest) {
-  const unauthorized = await requireAuthenticatedSession();
+  const unauthorized = await requireAuthenticatedSession()
   if (unauthorized) {
-    return unauthorized;
+    return unauthorized
   }
 
-  const tag = request.nextUrl.searchParams.get('tag');
+  const tag = request.nextUrl.searchParams.get('tag')
 
   if (!tag) {
-    return NextResponse.json({ error: 'Tag parameter is required' }, { status: 400, headers: corsHeaders });
+    return NextResponse.json({ error: 'Tag parameter is required' }, { status: 400, headers: corsHeaders })
   }
 
-  revalidateTag(tag, 'max');
+  revalidateTag(tag, 'max')
 
-  return NextResponse.json({ revalidated: true, now: Date.now(), tag }, { status: 200, headers: corsHeaders });
+  return NextResponse.json({ revalidated: true, now: Date.now(), tag }, { status: 200, headers: corsHeaders })
 }
 
 export async function POST(request: NextRequest) {
-  const unauthorized = await requireAuthenticatedSession();
+  const unauthorized = await requireAuthenticatedSession()
   if (unauthorized) {
-    return unauthorized;
+    return unauthorized
   }
 
   try {
-    const { tags } = await request.json();
+    const { tags } = await request.json()
 
     if (!Array.isArray(tags) || tags.length === 0) {
-      return NextResponse.json({ error: 'Tags array is required' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'Tags array is required' }, { status: 400, headers: corsHeaders })
     }
 
     const uniqueTags = [...new Set(tags)]
-      .filter((tag) => typeof tag === 'string' && tag.trim().length > 0)
-      .map((tag) => tag.trim());
+      .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
+      .map(tag => tag.trim())
 
     if (uniqueTags.length === 0) {
-      return NextResponse.json({ error: 'No valid tags provided' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'No valid tags provided' }, { status: 400, headers: corsHeaders })
     }
 
     for (const tag of uniqueTags) {
-      revalidateTag(tag, 'max');
+      revalidateTag(tag, 'max')
     }
 
     return NextResponse.json(
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         tags: uniqueTags,
       },
       { status: 200, headers: corsHeaders },
-    );
+    )
   } catch (error) {
     return NextResponse.json(
       {
@@ -75,6 +75,6 @@ export async function POST(request: NextRequest) {
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 400, headers: corsHeaders },
-    );
+    )
   }
 }

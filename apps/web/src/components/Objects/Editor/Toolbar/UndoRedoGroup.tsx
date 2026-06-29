@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import type { Editor } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { Undo2, Redo2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import type { Editor } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { Redo2, Undo2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface UndoRedoGroupProps {
-  editor: Editor;
-  canUndo: boolean;
-  canRedo: boolean;
+  editor: Editor
+  canUndo: boolean
+  canRedo: boolean
 }
 
 export function UndoRedoGroup({ editor, canUndo, canRedo }: UndoRedoGroupProps) {
-  const t = useTranslations('DashPage.Editor.Toolbar');
+  const t = useTranslations('DashPage.Editor.Toolbar')
 
   return (
     <div className="flex items-center gap-0.5">
@@ -39,5 +39,5 @@ export function UndoRedoGroup({ editor, canUndo, canRedo }: UndoRedoGroupProps) 
         <Redo2 />
       </Button>
     </div>
-  );
+  )
 }

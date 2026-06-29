@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.core.timezone import utcnow
 from src.db.courses.course_updates import (
     CourseUpdate,
     CourseUpdateCreate,
@@ -27,9 +26,7 @@ async def create_update(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -37,13 +34,14 @@ async def create_update(
 
     # Generate UUID
     courseupdate_uuid = f"courseupdate_{ULID()}"
+    current_time = utcnow()
 
     update = CourseUpdate(
         **update_object.model_dump(),
         course_id=course.id,
         courseupdate_uuid=courseupdate_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=current_time,
+        update_date=current_time,
     )
 
     db_session.add(update)
@@ -62,24 +60,16 @@ async def update_update(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseUpdateRead:
-    statement = select(CourseUpdate).where(
-        CourseUpdate.courseupdate_uuid == courseupdate_uuid
-    )
+    statement = select(CourseUpdate).where(CourseUpdate.courseupdate_uuid == courseupdate_uuid)
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Update does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Обновление не существует")
     # RBAC check
     checker = PermissionChecker(db_session)
-    update_course = (
-        db_session.get(Course, update.course_id) if update.course_id else None
-    )
+    update_course = db_session.get(Course, update.course_id) if update.course_id else None
     if not update_course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не найден")
     require_course_permission("course:update", current_user, update_course, checker)
 
     for key, value in update_object.model_dump(exclude_unset=True).items():
@@ -100,22 +90,16 @@ async def delete_update(
     courseupdate_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
-    statement = select(CourseUpdate).where(
-        CourseUpdate.courseupdate_uuid == courseupdate_uuid
-    )
+) -> dict[str, str]:
+    statement = select(CourseUpdate).where(CourseUpdate.courseupdate_uuid == courseupdate_uuid)
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Update does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Обновление не существует")
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    update_course = (
-        db_session.get(Course, update.course_id) if update.course_id else None
-    )
+    update_course = db_session.get(Course, update.course_id) if update.course_id else None
     checker.require(
         current_user.id,
         "course:update",
@@ -140,15 +124,11 @@ async def get_updates_by_course_uuid(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
-    statement = (
-        select(CourseUpdate)
-        .where(CourseUpdate.course_id == course.id)
-        .order_by(col(CourseUpdate.creation_date).desc())
+    update_statement = (
+        select(CourseUpdate).where(CourseUpdate.course_id == course.id).order_by(col(CourseUpdate.creation_date).desc())
     )  # https://sqlmodel.tiangolo.com/tutorial/where/#type-annotations-and-errors
-    updates = db_session.exec(statement).all()
+    updates = db_session.exec(update_statement).all()
 
     return [CourseUpdateRead(**update.model_dump()) for update in updates]

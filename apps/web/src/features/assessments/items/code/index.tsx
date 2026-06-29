@@ -1,51 +1,52 @@
-'use client';
+'use client'
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react'
 
-import { CodeChallengeEditor } from '@/components/features/courses/code-challenges';
-import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
-import { Skeleton } from '@/components/ui/skeleton';
-import { registerItemKind, UnsupportedItemAuthor } from '../registry';
-import type { ItemAttemptProps, ItemReviewDetailProps } from '../registry';
-import type { ItemAnswer } from '@/features/assessments/domain/items';
+import { CodeChallengeEditor } from '@/components/features/courses/code-challenges'
+import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CodeSubmissionReview } from '@/features/code-arena/review'
+import type { ItemAttemptProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
+import type { ItemAnswer } from '@/features/assessments/domain/items'
+import { UnsupportedItemAuthor } from '../unsupported'
 
 export interface CodeItemSettings {
-  uuid?: string;
-  time_limit_ms: number;
-  memory_limit_kb: number;
-  time_limit: number;
-  memory_limit: number;
-  max_submissions?: number;
-  grading_strategy: string;
-  allowed_languages: number[];
+  uuid?: string
+  time_limit_ms: number
+  memory_limit_kb: number
+  time_limit: number
+  memory_limit: number
+  max_submissions?: number
+  grading_strategy: string
+  allowed_languages: number[]
   visible_tests: {
-    id: string;
-    input: string;
-    expected_output: string;
-    description?: string;
-    is_visible: boolean;
-    weight?: number;
-  }[];
+    id: string
+    input: string
+    expected_output: string
+    description?: string
+    is_visible: boolean
+    weight?: number
+  }[]
   hidden_tests?: {
-    id: string;
-    input: string;
-    expected_output: string;
-    description?: string;
-    is_visible: boolean;
-    weight?: number;
-  }[];
-  starter_code?: Record<string, string>;
+    id: string
+    input: string
+    expected_output: string
+    description?: string
+    is_visible: boolean
+    weight?: number
+  }[]
+  starter_code?: Record<string, string>
 }
 
 export interface CodeAttemptItem {
-  activityUuid: string;
-  title?: string;
-  description?: string;
-  settings: CodeItemSettings;
-  initialCode?: string;
-  initialLanguageId: number;
-  onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void;
-  onSubmit?: () => Promise<void> | void;
+  activityUuid: string
+  title?: string
+  description?: string
+  settings: CodeItemSettings
+  initialCode?: string
+  initialLanguageId: number
+  onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void
+  onSubmit?: () => Promise<void> | void
 }
 
 export function CodeItemAttempt({
@@ -53,26 +54,24 @@ export function CodeItemAttempt({
   answer,
   disabled,
   onAnswerChange,
-}: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | undefined>) {
+}: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined>) {
+  const initialCode = answer?.source ?? item.initialCode
+
   return (
-    <div className="bg-card min-h-[650px] overflow-hidden rounded-md border">
+    <div className="bg-card h-full overflow-hidden">
       <CodeChallengeEditor
         activityUuid={item.activityUuid}
         settings={item.settings}
-        initialCode={answer?.source ?? item.initialCode}
         initialLanguageId={answer?.language ?? item.initialLanguageId}
-        answer={answer}
-        onAnswerChange={onAnswerChange}
-        onSubmit={item.onSubmit}
-        disabled={disabled}
-        challengeTitle={item.title}
-        challengeDescription={item.description}
-        hideHeader
-        hideSubmitButton={disabled}
-        onSubmitControlChange={item.onSubmitControlChange}
+        {...(initialCode === undefined ? {} : { initialCode })}
+        {...(answer === undefined || answer === null ? {} : { answer })}
+        {...(onAnswerChange === undefined ? {} : { onAnswerChange })}
+        {...(item.onSubmit === undefined ? {} : { onSubmit: item.onSubmit })}
+        {...(disabled === undefined ? {} : { disabled })}
+        {...(item.onSubmitControlChange === undefined ? {} : { onSubmitControlChange: item.onSubmitControlChange })}
       />
     </div>
-  );
+  )
 }
 
 export function CodeItemLoading() {
@@ -82,29 +81,56 @@ export function CodeItemLoading() {
       <Skeleton className="h-4 w-2/3" />
       <Skeleton className="h-[500px] w-full" />
     </div>
-  );
+  )
 }
 
 export function useCodeSubmitControl() {
-  const [submitControl, setSubmitControl] = useState<CodeChallengeSubmitControl | null>(null);
-  const handleSubmitControlChange = useCallback((control: CodeChallengeSubmitControl | null) => {
-    setSubmitControl(control);
-  }, []);
-  return { submitControl, handleSubmitControlChange };
+  const [submitControl, setSubmitControl] = useState<CodeChallengeSubmitControl | null>(null)
+  const submitRef = useRef<CodeChallengeSubmitControl['submit'] | null>(null)
+  const submit = useCallback(() => submitRef.current?.(), [])
+
+  const handleSubmitControlChange = useCallback(
+    (control: CodeChallengeSubmitControl | null) => {
+      submitRef.current = control?.submit ?? null
+      setSubmitControl(prev => {
+        if (!prev && !control) return null
+        const next = control
+          ? {
+              canSubmit: control.canSubmit,
+              isSubmitting: control.isSubmitting,
+              submit,
+            }
+          : null
+        if (prev && next && prev.canSubmit === next.canSubmit && prev.isSubmitting === next.isSubmitting) {
+          return prev
+        }
+        return next
+      })
+    },
+    [submit],
+  )
+
+  return { submitControl, handleSubmitControlChange }
 }
 
-export function CodeItemReviewDetail({ answer }: ItemReviewDetailProps<CodeAttemptItem>) {
-  return (
-    <pre className="bg-muted max-h-96 overflow-auto rounded-md p-3 text-xs">
-      {JSON.stringify(answer ?? {}, null, 2)}
-    </pre>
-  );
+export function CodeItemReviewDetail({
+  item,
+  answer,
+}: ItemReviewDetailProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined>) {
+  const codeAnswer = answer?.kind === 'CODE' ? answer : null
+  const languageId = codeAnswer?.language ?? 0
+  const starterTemplate = item?.settings.starter_code?.[String(languageId)] ?? ''
+  return <CodeSubmissionReview answer={answer} starterTemplate={starterTemplate} />
 }
 
-registerItemKind({
+export const codeModule: ItemKindModule<
+  unknown,
+  CodeAttemptItem,
+  Extract<ItemAnswer, { kind: 'CODE' }> | null | undefined
+> = {
   kind: 'CODE',
   label: 'Code',
   Author: UnsupportedItemAuthor,
   Attempt: CodeItemAttempt,
   ReviewDetail: CodeItemReviewDetail,
-});
+}

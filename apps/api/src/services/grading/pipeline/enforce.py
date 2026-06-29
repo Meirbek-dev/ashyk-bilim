@@ -12,9 +12,10 @@ from fastapi import HTTPException, status
 
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
-    LATE_POLICY_ADAPTER,
     AssessmentPolicy,
+    LatePolicy,
     LatePolicyNone,
+    deserialize_late_policy,
 )
 from src.services.grading.pipeline.context import EffectivePolicy
 from src.services.grading.settings_loader import AssessmentSettings
@@ -35,7 +36,7 @@ def resolve_effective_policy(
     due_at: datetime | None = None
     allow_late = True
     passing_score = 60.0
-    late_policy = LatePolicyNone()
+    late_policy: LatePolicy = LatePolicyNone()
 
     # Policy overrides settings
     if policy is not None:
@@ -44,7 +45,7 @@ def resolve_effective_policy(
         due_at = policy.due_at
         allow_late = policy.allow_late
         passing_score = policy.passing_score
-        late_policy = LATE_POLICY_ADAPTER.validate_python(policy.late_policy_json or {})
+        late_policy = deserialize_late_policy(policy.late_policy_json)
 
     # Per-student override overrides policy
     if override is not None:
@@ -84,7 +85,7 @@ def enforce_attempt_limit(
     if completed_attempt_count >= effective.max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({effective.max_attempts}) reached",
+            detail=f"Достигнуто максимальное количество попыток ({effective.max_attempts})",
         )
 
 
@@ -107,7 +108,7 @@ def enforce_time_limit(
     if elapsed > effective.time_limit_seconds + SUBMIT_GRACE_SECONDS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Time limit ({effective.time_limit_seconds}s) exceeded",
+            detail=f"Лимит времени ({effective.time_limit_seconds} сек) превышен",
         )
 
 
@@ -125,7 +126,7 @@ def enforce_late_submission(
     if now > effective.due_at and not effective.allow_late:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Late submissions are not allowed for this activity",
+            detail="Поздние решения не разрешены для этой активности",
         )
 
 
@@ -140,8 +141,4 @@ def check_violations(
     """
     if settings.max_violations <= 0:
         return False
-    return (
-        settings.track_violations
-        and settings.block_on_violations
-        and violation_count >= settings.max_violations
-    )
+    return settings.track_violations and settings.block_on_violations and violation_count >= settings.max_violations

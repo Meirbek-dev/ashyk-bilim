@@ -1,88 +1,98 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react';
-import * as Si from '@icons-pack/react-simple-icons';
-import { NodeViewWrapper } from '@tiptap/react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
-import type { EmbedBlockAttrs } from './EmbedBlock';
-import { buildEmbedSrc } from './embed-validators';
-import { getEmbedProvider } from './embed-options';
-import type { EmbedType } from './embed-options';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useMemo, useRef, useState, createElement } from 'react'
+import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react'
+import * as Si from '@icons-pack/react-simple-icons'
+import { NodeViewWrapper } from '@tiptap/react'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
+import type { EmbedBlockAttrs } from './EmbedBlock'
+import { buildEmbedSrc } from './embed-validators'
+import { getEmbedProvider } from './embed-options'
+import type { EmbedType } from './embed-options'
+import { useTranslations } from 'next-intl'
 
-const MIN_HEIGHT = 240;
-const MAX_HEIGHT = 1600;
+const MIN_HEIGHT = 240
+const MAX_HEIGHT = 1600
 
 function clampHeight(value: number): number {
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value));
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value))
+}
+
+function getSimpleIcon(iconName?: string): AppIcon | null {
+  if (!iconName) return null
+  const iconCandidate = (Si as Record<string, unknown>)[iconName]
+  return typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
 }
 
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
-  const { node, editor, updateAttributes, deleteNode, getPos } = props;
-  const { type, url, height: attrHeight } = node.attrs;
-  const provider = getEmbedProvider(type);
-  const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const { isEditable } = editor;
-  const [mounted, setMounted] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(!isEditable);
-  const editButtonRef = useRef<HTMLButtonElement>(null);
-  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
-  const openForEdit = useEmbedPanelStore((state) => state.openForEdit);
+  const { node, editor, updateAttributes, deleteNode, getPos } = props
+  const { type, url, height: attrHeight } = node.attrs
+  const provider = getEmbedProvider(type)
+  const t = useTranslations('DashPage.Editor.EmbedPanel')
+  const { isEditable } = editor
+  const [mounted, setMounted] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(!isEditable)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const openForEdit = useEmbedPanelStore(state => state.openForEdit)
 
   const initialHeight = useMemo(() => {
-    const fallback = provider?.defaultHeight ?? 520;
-    return clampHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : fallback);
-  }, [attrHeight, provider?.defaultHeight]);
-  const [displayHeight, setDisplayHeight] = useState(initialHeight);
+    const fallback = provider?.defaultHeight ?? 520
+    return clampHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : fallback)
+  }, [attrHeight, provider?.defaultHeight])
+  const [displayHeight, setDisplayHeight] = useState(initialHeight)
+
+  const [prevInitialHeight, setPrevInitialHeight] = useState(initialHeight)
+  if (initialHeight !== prevInitialHeight) {
+    setPrevInitialHeight(initialHeight)
+    setDisplayHeight(initialHeight)
+  }
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    globalThis.setTimeout(() => {
+      setMounted(true)
+    }, 0)
+  }, [])
 
-  useEffect(() => {
-    setDisplayHeight(initialHeight);
-  }, [initialHeight]);
-
-  const src = provider && url ? buildEmbedSrc(provider.type, url) : '';
-  const providerLabel = provider ? t(`providers.${provider.type}.label`) : '';
+  const src = provider && url ? buildEmbedSrc(provider.type, url) : ''
+  const providerLabel = provider ? t(`providers.${provider.type}.label`) : ''
 
   const handleEdit = useCallback(() => {
-    const pos = typeof getPos === 'function' ? getPos() : undefined;
-    if (pos === undefined || !provider || !url) return;
-    openForEdit(pos, { type: provider.type as EmbedType, url }, editButtonRef);
-  }, [getPos, openForEdit, provider, url]);
+    const pos = typeof getPos === 'function' ? getPos() : undefined
+    if (pos === undefined || !provider || !url) return
+    openForEdit(pos, { type: provider.type as EmbedType, url }, editButtonRef)
+  }, [getPos, openForEdit, provider, url])
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!isEditable) return;
-      event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (!isEditable) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
       dragStateRef.current = {
         startY: event.clientY,
         startHeight: displayHeight,
-      };
+      }
     },
     [displayHeight, isEditable],
-  );
+  )
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragStateRef.current) return;
-    setDisplayHeight(clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY));
-  }, []);
+    if (!dragStateRef.current) return
+    setDisplayHeight(clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY))
+  }, [])
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragStateRef.current) return;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      const nextHeight = clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY);
-      dragStateRef.current = null;
-      setDisplayHeight(nextHeight);
-      updateAttributes({ height: nextHeight });
+      if (!dragStateRef.current) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      const nextHeight = clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY)
+      dragStateRef.current = null
+      setDisplayHeight(nextHeight)
+      updateAttributes({ height: nextHeight })
     },
     [updateAttributes],
-  );
+  )
 
   if (!provider || !url) {
     return (
@@ -91,16 +101,13 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
           {t('missingEmbed')}
         </div>
       </NodeViewWrapper>
-    );
+    )
   }
 
-  const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null;
+  const Icon = getSimpleIcon(provider.iconName)
 
   return (
-    <NodeViewWrapper
-      className="embed-block-node-view my-4 w-full"
-      data-drag-handle={isEditable ? '' : undefined}
-    >
+    <NodeViewWrapper className="embed-block-node-view my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>
       <div
         className="border-border bg-card relative w-full overflow-hidden rounded-lg border"
         style={{ height: displayHeight }}
@@ -120,8 +127,8 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         ) : (
           <div className="bg-muted/30 flex h-full min-h-[240px] flex-col items-center justify-center gap-4 p-6 text-center">
             {Icon && (
-              <div className="bg-background flex size-16 items-center justify-center rounded-2xl border shadow-sm transition-colors group-hover:bg-accent">
-                <Icon className="size-8" />
+              <div className="bg-background group-hover:bg-accent flex size-16 items-center justify-center rounded-2xl border shadow-sm transition-colors">
+                {createElement(Icon, { className: 'size-8' })}
               </div>
             )}
 
@@ -195,6 +202,5 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         ) : null}
       </div>
     </NodeViewWrapper>
-  );
+  )
 }
-

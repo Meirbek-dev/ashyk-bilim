@@ -1,10 +1,8 @@
-"""
-Unified Submission model for all assessment types.
-"""
+"""Unified Submission model for all assessment types."""
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import ClassVar, Self
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import (
@@ -21,8 +19,15 @@ from sqlalchemy import (
 from sqlmodel import Field as SQLField
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
+from src.types import JsonObject, JsonValue
 
 # ── Submission metadata sub-shapes ────────────────────────────────────────────
+
+
+def _coerce_json_datetime(value: object) -> object:
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return value
 
 
 class CodeRunRecord(PydanticStrictBaseModel):
@@ -39,8 +44,13 @@ class CodeRunRecord(PydanticStrictBaseModel):
     compile_output: str | None = None
     time: float | None = None
     memory: int | None = None
-    details: list[dict] = Field(default_factory=list)
+    details: list[JsonObject] = Field(default_factory=list)
     created_at: datetime | None = None
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def validate_created_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
 
 
 class AntiCheatViolation(PydanticStrictBaseModel):
@@ -50,6 +60,11 @@ class AntiCheatViolation(PydanticStrictBaseModel):
     occurred_at: datetime
     count: int = 1
 
+    @field_validator("occurred_at", mode="before")
+    @classmethod
+    def validate_occurred_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
+
 
 class PlagiarismScore(PydanticStrictBaseModel):
     """Plagiarism detection result for a CODE submission."""
@@ -57,7 +72,12 @@ class PlagiarismScore(PydanticStrictBaseModel):
     score: float  # 0–1 similarity score
     checked_at: datetime
     flagged: bool = False
-    details: dict = Field(default_factory=dict)
+    details: JsonObject = Field(default_factory=dict)
+
+    @field_validator("checked_at", mode="before")
+    @classmethod
+    def validate_checked_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
 
 
 class SubmissionMetadata(PydanticStrictBaseModel):
@@ -81,11 +101,12 @@ class SubmissionMetadata(PydanticStrictBaseModel):
     auto_submitted_at: str | None = None
     # Plagiarism detection outcome (populated post-submit by background task)
     plagiarism: PlagiarismScore | None = None
+    plagiarism_status: str | None = None
+    plagiarism_error: str | None = None
 
 
-def normalize_submission_metadata(value: object) -> dict[str, Any]:
+def normalize_submission_metadata(value: object) -> JsonObject:
     """Validate typed metadata sub-shapes while preserving unrecognized keys."""
-
     if isinstance(value, SubmissionMetadata):
         return value.model_dump(mode="json", exclude_none=True)
     if isinstance(value, dict):
@@ -99,7 +120,7 @@ def normalize_submission_metadata(value: object) -> dict[str, Any]:
 def merge_submission_metadata(
     existing: object,
     **updates: object,
-) -> dict[str, Any]:
+) -> JsonObject:
     merged = {
         **normalize_submission_metadata(existing),
         **{key: value for key, value in updates.items() if value is not None},
@@ -131,8 +152,8 @@ class GradedItem(SQLModelStrictBaseModel):
     correct: bool | None = None  # None for non-auto-gradeable items
     feedback: str = ""
     needs_manual_review: bool = False
-    user_answer: Any = None
-    correct_answer: Any = None
+    user_answer: JsonValue = None
+    correct_answer: JsonValue = None
 
 
 class GradingBreakdown(SQLModelStrictBaseModel):
@@ -158,7 +179,11 @@ class ItemFeedback(PydanticStrictBaseModel):
     @classmethod
     def validate_score(cls, v: object) -> object:
         if v is not None:
-            val = float(v)
+            if isinstance(v, (int, float, str, bytes)):
+                val = float(v)
+            else:
+                msg = f"Cannot coerce {type(v)} to float"
+                raise TypeError(msg)
             if val < 0 or val > 100:
                 msg = f"Score {val} is out of range (0–100)"
                 raise ValueError(msg)
@@ -172,7 +197,7 @@ class TeacherGradeInput(PydanticStrictBaseModel):
         ...,
         ge=0,
         le=100,
-        description="Final score 0–100",
+        description="Итоговый балл 0–100",
     )
     item_feedback: list[ItemFeedback] = Field(
         default_factory=list,
@@ -183,6 +208,19 @@ class TeacherGradeInput(PydanticStrictBaseModel):
     # RETURNED = send back for revision
     status: str = "GRADED"
     feedback: str = ""
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: object) -> object:
+        if isinstance(v, str):
+            val = v.upper().strip()
+            mapping = {
+                "SAVE": "GRADED",
+                "PUBLISH": "PUBLISHED",
+                "RETURN": "RETURNED",
+            }
+            return mapping.get(val, val)
+        return v
 
 
 # ── Submission base + table ───────────────────────────────────────────────────
@@ -248,10 +286,10 @@ class SubmissionRead(SubmissionBase):
 
     id: int
     submission_uuid: str
-    answers_json: dict = SQLField(default_factory=dict)
+    answers_json: JsonObject = SQLField(default_factory=dict)
     raw_grading_json: GradingBreakdown = SQLField(default_factory=GradingBreakdown)
     grading_json: GradingBreakdown = SQLField(default_factory=GradingBreakdown)
-    metadata_json: dict = SQLField(default_factory=dict)
+    metadata_json: JsonObject = SQLField(default_factory=dict)
     late_penalty_pct: float = 0.0
     late_penalty_reason: str | None = None
     started_at: datetime | None = None
@@ -261,6 +299,7 @@ class SubmissionRead(SubmissionBase):
     updated_at: datetime
     grading_version: int = 1
     version: int = 1  # optimistic lock counter — include in If-Match header
+    draft_version: int = 1  # student draft concurrency lock counter
 
     # Populated by the teacher list endpoint; None for student-facing endpoints
     user: SubmissionUser | None = None
@@ -268,9 +307,7 @@ class SubmissionRead(SubmissionBase):
     @model_validator(mode="after")
     def populate_late_penalty_reason(self) -> Self:
         if self.is_late and self.late_penalty_pct > 0 and not self.late_penalty_reason:
-            self.late_penalty_reason = (
-                f"Late submission penalty applied: {self.late_penalty_pct:g}%"
-            )
+            self.late_penalty_reason = f"Late submission penalty applied: {self.late_penalty_pct:g}%"
         return self
 
     @field_validator("raw_grading_json", "grading_json", mode="before")
@@ -292,8 +329,8 @@ class SubmissionUpdate(SQLModelStrictBaseModel):
 
     final_score: float | None = None
     status: SubmissionStatus | None = None
-    raw_grading_json: dict | None = None
-    grading_json: dict | None = None
+    raw_grading_json: JsonObject | None = None
+    grading_json: JsonObject | None = None
     graded_at: datetime | None = None
 
     @field_validator("status", mode="before")
@@ -307,7 +344,7 @@ class SubmissionUpdate(SQLModelStrictBaseModel):
 class Submission(SubmissionBase, table=True):
     """Single unified row per student per assessment attempt."""
 
-    __tablename__ = "submission"
+    __tablename__: ClassVar[str] = "submission"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_submission_user_activity", "user_id", "activity_id"),
         Index("ix_submission_uuid", "submission_uuid", unique=True),
@@ -349,9 +386,7 @@ class Submission(SubmissionBase, table=True):
         sa_column=Column("status", String, nullable=False, server_default="DRAFT"),
     )
 
-    activity_id: int = SQLField(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
+    activity_id: int = SQLField(sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE")))
     assessment_policy_id: int | None = SQLField(
         default=None,
         sa_column=Column(
@@ -360,24 +395,22 @@ class Submission(SubmissionBase, table=True):
             nullable=True,
         ),
     )
-    user_id: int = SQLField(
-        sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = SQLField(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
 
     # Typed payload — validated by Pydantic schemas before saving
-    answers_json: dict = SQLField(
+    answers_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
-    grading_json: dict = SQLField(
+    grading_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
-    raw_grading_json: dict = SQLField(
+    raw_grading_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column("raw_grading_json", JSON, nullable=False, server_default="{}"),
     )
-    metadata_json: dict = SQLField(
+    metadata_json: JsonObject = SQLField(
         default_factory=dict,
         sa_column=Column(JSON),
     )
@@ -388,7 +421,7 @@ class Submission(SubmissionBase, table=True):
         sa_column=Column(Boolean, nullable=False, server_default="false"),
     )
 
-    # Penalty applied to this submission's final score (0–100, snapshotted at submit).
+    # Штраф, применённый к итоговому баллу этой отправки (0–100, зафиксирован при отправке).
     late_penalty_pct: float = SQLField(
         default=0.0,
         sa_column=Column(
@@ -423,9 +456,7 @@ class Submission(SubmissionBase, table=True):
     # Schema version for safe JSON evolution
     grading_version: int = SQLField(
         default=1,
-        sa_column=Column(
-            "grading_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("grading_version", Integer, nullable=False, server_default="1"),
     )
 
     # Optimistic concurrency lock — incremented on every teacher grade write.
@@ -446,20 +477,18 @@ class Submission(SubmissionBase, table=True):
     # Phase 3: Versioning — snapshot at submit time
     content_version: int = SQLField(
         default=1,
-        sa_column=Column(
-            "content_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("content_version", Integer, nullable=False, server_default="1"),
     )
     policy_version: int = SQLField(
         default=1,
         sa_column=Column("policy_version", Integer, nullable=False, server_default="1"),
     )
-    items_snapshot: dict | None = SQLField(
-        default=None,
+    items_snapshot: JsonObject | None = SQLField(
+        default_factory=None,
         sa_column=Column("items_snapshot", JSON, nullable=True),
     )
-    policy_snapshot: dict | None = SQLField(
-        default=None,
+    policy_snapshot: JsonObject | None = SQLField(
+        default_factory=None,
         sa_column=Column("policy_snapshot", JSON, nullable=True),
     )
 
@@ -485,6 +514,13 @@ class SubmissionListResponse(SQLModelStrictBaseModel):
 # ── Aggregate stats ───────────────────────────────────────────────────────────
 
 
+class ScoreDistributionBucket(SQLModelStrictBaseModel):
+    """One 10-point score bucket for the distribution histogram."""
+
+    range: str  # e.g. "0–10"
+    count: int
+
+
 class SubmissionStats(SQLModelStrictBaseModel):
     """Aggregate statistics for the teacher dashboard header."""
 
@@ -494,3 +530,17 @@ class SubmissionStats(SQLModelStrictBaseModel):
     late_count: int  # count of PENDING submissions where is_late=True
     avg_score: float | None
     pass_rate: float | None  # percentage of GRADED/PUBLISHED scoring ≥ 50
+    score_distribution: list[ScoreDistributionBucket] = Field(default_factory=list)
+
+
+class ItemAnalytics(SQLModelStrictBaseModel):
+    """Per-question analytics row for the teacher Results tab."""
+
+    item_uuid: str
+    title: str
+    kind: str
+    max_score: float
+    response_count: int  # number of graded submissions that include this item
+    avg_score_pct: float | None  # average (item.score / item.max_score) * 100
+    correct_pct: float | None  # percentage of responses where correct == True
+    discrimination_index: float | None  # classic item discrimination (top27 − bottom27) / n

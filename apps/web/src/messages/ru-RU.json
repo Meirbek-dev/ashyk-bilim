@@ -1,173 +1,104 @@
 {
   "Activities": {
-    "AIActivityAsk": {
-      "AI": "Ashyk Ai",
-      "aiSender": "Ashyk Ai",
-      "askAI": "Спросить Ashyk Ai",
-      "closePanel": "Закрыть панель Ashyk Ai",
-      "copy": "Копировать",
-      "copied": "Скопировано!",
-      "errorTitle": "Что-то пошло не так",
-      "examplesAbbr": "пр. ",
-      "hello": "Здравствуйте",
-      "howCanWeHelp": "чем могу помочь?",
-      "logoAlt": "Логотип Ashyk Ai",
-      "placeholder": "Спросите Ashyk Ai об этой лекции",
-      "defaultUser": "Пользователь",
-      "dismiss": "Закрыть",
-      "questionAbout": "О чём эта активность?",
-      "questionExamples": "Объясните эту активность на практических примерах",
-      "questionFlashcards": "Создайте карточки по этой активности",
-      "stopGeneration": "Остановить генерацию",
-      "usernameComma": "{username},"
+    "AiAssistantPanel": {
+      "title": "Ассистент ИИ",
+      "suggestedPrompts": "Рекомендуемые запросы",
+      "currentActivity": "Текущая активность",
+      "askPlaceholder": "Спросите о чем угодно по этой активности...",
+      "aiComposerLabel": "Сообщение ИИ",
+      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
+      "closePanel": "Close AI assistant",
+      "composerHint": "Enter to send. Shift Enter for a new line.",
+      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
+      "emptyStateTitle": "Спросить ИИ",
+      "emptyStateDescription": "Использовать текущую активность в качестве контекста.",
+      "errorStateTitle": "Сбой запроса ИИ",
+      "defaultErrorMessage": "Сбой запроса ИИ. Попробуйте еще раз.",
+      "retry": "Повторить",
+      "dismiss": "Скрыть",
+      "sendMessage": "Send message",
+      "stopGeneration": "Stop generation",
+      "studentMode": "Student tutor",
+      "suggestions": {
+        "dynamic": {
+          "summarize": "Кратко изложите эту страницу для меня",
+          "explain": "Объясните ключевые понятия на этой странице",
+          "takeaways": "Каковы основные выводы?",
+          "quiz": "Создайте тест на основе этого содержимого"
+        },
+        "code": {
+          "hint": "Дайте мне подсказку, не раскрывая ответа",
+          "testcases": "Объясните тестовые случаи",
+          "algorithm": "Какой алгоритм мне использовать здесь?",
+          "error": "Объясните это сообщение об ошибке"
+        },
+        "exam": {
+          "hint": "Дайте мне подсказку к этому вопросу",
+          "concept": "Объясните проверяемую концепцию",
+          "review": "Какую тему мне следует повторить для этого?"
+        },
+        "file": {
+          "include": "Что мне следует включить в свою работу?",
+          "criteria": "Каковы критерии оценивания?",
+          "structure": "Помогите мне структурировать работу"
+        },
+        "video": {
+          "summarize": "Кратко опишите то, что я только что посмотрел",
+          "explain": "Объясните концепцию из этого видео",
+          "keypoints": "Каковы ключевые моменты?"
+        },
+        "default": {
+          "understand": "Помогите мне понять эту активность",
+          "concepts": "Каковы ключевые понятия здесь?",
+          "guidance": "Дайте мне рекомендации о том, как действовать"
+        }
+      }
     },
-    "AIStatus": {
-      "aborted": "Запрос отменён.",
-      "analyzing": "Анализируем ваш запрос без дополнительного поиска.",
-      "generating": "Формируем ответ.",
-      "processing": "Подготавливаем ваш запрос.",
-      "retrieving": "Подбираем релевантный контекст курса.",
-      "working": "Обрабатываем ваш запрос."
+    "AiStudio": {
+      "shellAriaLabel": "Студия обучения ИИ",
+      "learningContextAria": "Контекст обучения",
+      "currentArtifactAria": "Текущий артефакт",
+      "evidenceMapAria": "Карта доказательств",
+      "artifactTitle": "Артефакт",
+      "waiting": "ожидание",
+      "defaultSummary": "Сгенерированные объекты обучения появятся здесь после завершения запуска.",
+      "evidenceTitle": "Доказательства",
+      "noCitations": "К этому запуску пока не прикреплено ни одной цитаты.",
+      "aiRunConsoleAria": "Консоль запуска ИИ",
+      "toolTimelineAria": "Временная шкала инструментов",
+      "eventSequenceAria": "Последовательность событий",
+      "trustControlsAria": "Управление доверием",
+      "runConsoleTitle": "Консоль запуска",
+      "live": "активен",
+      "idle": "ожидание",
+      "defaultConsoleStatus": "Нет активного запуска. Здесь будут отображаться вызовы инструментов и события аудита.",
+      "toolsTitle": "Инструменты",
+      "noTools": "Инструменты не запускались.",
+      "eventsTitle": "События",
+      "nextRunStream": "Следующий запуск будет передавать упорядоченные события v2.",
+      "approvalBoundary": "Граница одобрения",
+      "approvalBoundaryDesc": "Изменения курса, вмешательства и действия по публикации требуют явного рассмотрения.",
+      "artifactCanvasAria": "Холст артефакта",
+      "artifactCanvasTitle": "Холст артефакта"
     },
-    "AICanvaToolkit": {
-      "aiIconAlt": "Иконка Ashyk Ai",
-      "aiTitle": "Ashyk Ai",
-      "examplesAbbr": "Пр. ",
-      "examplesLabel": "Примеры",
-      "examplesPrompt": "Приведите примеры, чтобы лучше понять \\\"{selection}\\\", если возможно, приведите контекст курса.",
-      "examplesTooltip": "Приведите примеры для лучшего понимания с помощью ИИ",
-      "explainLabel": "Объяснить",
-      "explainPrompt": "Объясните эту часть курса \\\"{selection}\\\", учитывая контекст курса.",
-      "explainTooltip": "Объясните слово или предложение с помощью ИИ",
-      "summarizeLabel": "Суммировать",
-      "summarizePrompt": "Суммируйте \\\"{selection}\\\", с учетом контекста курса.",
-      "summarizeTooltip": "Суммируйте длинный абзац или текст с помощью ИИ",
-      "translateLabel": "Перевести",
-      "translatePrompt": "Перевести \\\"{selection}\\\" на другой язык.",
-      "translateTooltip": "Переводите на разные языки с помощью ИИ"
-    },
-    "AIEditorToolkit": {
-      "ContinueWritingLabel": "Продолжить писать",
-      "CritisizeLabel": "Критика",
-      "GenerateQuizLabel": "Создать квиз",
-      "MakeLongerLabel": "Удлинить",
-      "TranslateLabel": "Перевести",
-      "WriterLabel": "Писатель",
-      "aiEditorTitle": "Ashyk Ai",
-      "aiIconAlt": "Иконка Ashyk Ai",
-      "applicationPending": "Заявка участника на рассмотрении",
-      "applyToContribute": "Подать заявку на участие",
-      "askAI": "Спросить Ashyk Ai",
-      "closeToolkit": "Закрыть инструменты Ashyk Ai",
-      "continuePlaceholder": "Поместите курсор в конец предложения, чтобы продолжить писать",
-      "critisizeLectureMissing": "Лекция пустая, добавьте контент",
-      "critisizePlaceholder": "Выберите часть лекции или критикуйте всю лекцию",
-      "critisizeScopeLabel": "Что критиковать",
-      "critisizeScopeLecture": "Вся лекция",
-      "critisizeScopeSelection": "Выделенный текст",
-      "critisizeSelectionMissing": "Выберите абзац для критики",
-      "dismissError": "Закрыть ошибку",
-      "errorTitle": "Что-то пошло не так",
-      "longerPlaceholder": "Выберите текст, чтобы сделать его длиннее",
-      "platformLogoAlt": "Логотип Ashyk Bilim",
-      "processingRequest": "Обрабатываю ваш запрос",
-      "prompt_continueWriting": "Продолжить писать о {selection}",
-      "prompt_critisize": "Раскритикуй этот фрагмент лекции и предложи улучшения: {selection}",
-      "prompt_critisizeLecture": "Раскритикуй лекцию целиком и предложи улучшения: {selection}",
-      "prompt_makeLonger": "Удлинить этот текст: {selection}",
-      "prompt_translateTo": "Перевести на {language}: {selection}",
-      "prompt_writer": "Написать о {selection}",
-      "sendMessage": "Отправить сообщение",
-      "thinking": "Думаю...",
-      "translateExample": "Японский, арабский, немецкий и т.д.",
-      "translatePlaceholder": "Перевести выделенный текст",
-      "translateToLanguageMissing": "Пожалуйста, введите язык для перевода",
-      "typePromptBelow": "Введите ваш запрос ниже",
-      "userInputPlaceholder": "Спросить Ashyk Ai",
-      "stop": "Остановить",
-      "writerPlaceholder": "Написать о..."
-    },
-    "AssignmentBoxUI": {
-      "currentPoints": "Текущие баллы: {points}",
-      "enterGradePlaceholder": "Введите оценку (макс. {max})",
-      "fileSubmissionTitle": "Загрузка файла",
-      "formTitle": "Форма",
-      "grade": "Оценка",
-      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
-      "quizTitle": "Тест",
-      "save": "Сохранить",
-      "saveProgress": "Сохранить прогресс",
-      "savingDisclaimer": "Не забудьте сохранить свой прогресс",
-      "teacherView": "Просмотр для преподавателя"
-    },
-    "AssignmentStudentActivity": {
-      "assignment": "Задание",
-      "blankLabel": "Поле {index}",
-      "descriptionTitle": "Описание задания",
-      "dueDate": "Срок сдачи",
-      "emptyOption": "Пустой вариант",
-      "hint": "Подсказка",
-      "loadSubmissionError": "Не удалось загрузить ваш ответ по заданию.",
-      "noTasks": "Нет доступных заданий",
-      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
-      "progressSaved": "Прогресс сохранён",
-      "questionLabel": "Вопрос {index}",
-      "referenceDocument": "Справочный документ",
-      "saveProgress": "Сохранить прогресс",
-      "saveSubmissionError": "Не удалось сохранить ваш ответ.",
-      "signInToSave": "Войдите в систему, чтобы сохранить ответ.",
-      "noAssessmentFound": "Оценка не найдена.",
-      "failedToStartAssessment": "Не удалось начать задание.",
-      "assessmentStarted": "Задание начато.",
-      "revisionDraftCreated": "Черновик для доработки создан.",
-      "recoveredSavedAnswers": "Сохраненные ответы восстановлены.",
-      "readyToRevise": "Готово к доработке",
-      "readyToBeginDescription": "Начните задание и отправьте его, когда будете готовы.",
-      "readyToReviseDescription": "Черновик для доработки готов. Обновите ответы и отправьте снова.",
-      "startRevision": "Начать доработку",
-      "startAssessment": "Начать задание",
-      "scoreLabel": "Оценка",
-      "task": "Задание {index}",
-      "taskContentUnavailable": "Содержимое этого задания пока недоступно в режиме студента.",
-      "taskTypeFile": "Загрузка файла",
-      "taskTypeForm": "Форма",
-      "taskTypeOther": "Другое",
-      "taskTypeQuiz": "Тест",
-      "untitledQuestion": "Вопрос без текста",
-      "unsavedChanges": "Есть несохранённые изменения",
-      "allowedFormats": "Разрешенные форматы: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Выберите файл для загрузки для задания",
-      "missingAssignmentInfo": "Отсутствует необходимая информация о задании",
-      "selectFile": "Выберите файл",
-      "submitFile": "Отправить файл",
-      "uploadFailed": "Не удалось загрузить файл",
-      "attemptNumber": "Попытка #{number}",
-      "latestSubmission": "Последняя отправка",
-      "workProgressTitle": "Прогресс работы",
-      "answeredProgress": "Отвечено {answered} из {total}",
-      "unansweredProgress": "{count, plural, =0 {На все вопросы есть ответ} one {Остался # вопрос} few {Осталось # вопроса} many {Осталось # вопросов} other {Осталось # вопроса}}",
-      "taskNavigatorTitle": "Навигация по заданиям",
-      "itemsLabel": "Задания",
-      "timeLimit": "Ограничение времени",
-      "unlimited": "Неограниченно",
-      "attemptsLabel": "Попытки",
-      "readyToBegin": "Готовы начать",
-      "noEditableDraft": "Нет доступного для редактирования черновика",
-      "minutesShort": "мин",
-      "attemptsRemaining": "осталось {remaining}",
-      "submissionReceivedTitle": "Ответ принят",
-      "submissionReceivedDescription": "Отправлено. Преподаватель опубликует оценку после проверки.",
-      "submissionReceivedWithDateDescription": "Отправлено {date}. Преподаватель опубликует оценку после проверки.",
-      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
-      "resultsWaitingForReleaseDescription": "Ваш последний ответ проверен. Оценка и комментарии появятся после публикации преподавателем.",
-      "returnedForRevision": "Возвращено на доработку",
-      "resultAvailable": "Результат доступен",
-      "resumedDraft": "Черновик восстановлен",
-      "resumedDraftDescription": "Последнее сохранение: {time}",
-      "pointsShort": "балл(ов)"
+    "AiArtifacts": {
+      "confidence": "{value}%",
+      "titles": {
+        "authoring_patch": "Authoring patch",
+        "code_review_hint": "Code mentor hint",
+        "flashcard_set": "Flashcards",
+        "hint_ladder": "Hint ladder",
+        "rubric_feedback": "Rubric feedback",
+        "safety_refusal": "Safety response",
+        "teacher_intervention": "Teacher intervention",
+        "tutor_answer": "Tutor answer"
+      }
     },
     "CodeChallenges": {
+      "untitledChallenge": "Новая задача",
+      "noProblemStatement": "Описание задачи не предоставлено.",
       "actualOutput": "Ваш вывод",
+      "compileOutput": "Результат компиляции",
       "addTestCase": "Добавить тестовый случай",
       "allOrNothing": "Всё или ничего",
       "allTestsPassed": "Все тесты пройдены! 🎉",
@@ -175,8 +106,13 @@
       "allowCustomInputDescription": "Позволить студентам тестировать код с собственными данными",
       "allowedLanguages": "Разрешённые языки",
       "allowedLanguagesDescription": "Выберите языки программирования, которые могут использовать студенты",
+      "languageServiceUnavailableDescription": "Judge0 недоступен из API. Пересоздайте сервис Judge0 и обновите страницу.",
+      "languageServiceUnavailableTitle": "Языки выполнения кода недоступны",
       "authRequired": "Требуется авторизация",
       "bestSubmission": "Лучшая отправка",
+      "complete": "Завершено",
+      "draftNeedsWork": "Черновик требует доработки",
+      "incomplete": "Не завершено",
       "cancel": "Отмена",
       "challengeSaved": "Задача успешно сохранена",
       "competitive": "Соревновательная",
@@ -195,7 +131,8 @@
       "enterCustomInput": "Введите тестовые данные здесь...",
       "expectedOutput": "Ожидаемый вывод",
       "expectedOutputPlaceholder": "Введите ожидаемый вывод...",
-      "failed": "Провален",
+      "exampleTestCaseLabel": "напр., Проверка пустого списка",
+      "failed": "Не пройден",
       "form": {
         "addHint": "Добавить подсказку",
         "addTestCase": "Добавить тестовый случай",
@@ -242,7 +179,11 @@
         "titlePlaceholder": "напр., Сумма двух чисел",
         "unlimitedSubmissions": "Неограниченно",
         "visible": "Видимый",
-        "starterCodePlaceholder": "Начальный код для {language}"
+        "starterCodePlaceholder": "Начальный код для {language}",
+        "promptPlaceholder": "Напишите описание задачи здесь...",
+        "inputSpecPlaceholder": "Опишите формат входных данных, диапазоны и т.д...",
+        "outputSpecPlaceholder": "Опишите формат ожидаемых выходных данных, точность и т.д...",
+        "constraintsPlaceholder": "напр., 1 <= N <= 10^5\nОдно ограничение на строку"
       },
       "generalSettings": "Общие настройки",
       "generalSettingsDescription": "Настройте базовые параметры задачи",
@@ -260,6 +201,7 @@
       "hiddenTestCases": "Скрытые тестовые сценарии",
       "hiddenTestCasesDescription": "Тесты, используемые только при финальной отправке",
       "history": "История",
+      "languageIdFallback": "Язык {id}",
       "input": "Ввод",
       "inputPlaceholder": "Введите тестовые данные...",
       "latestSubmission": "Последняя отправка",
@@ -291,6 +233,7 @@
       "runCode": "Запустить",
       "runFailed": "Не удалось запустить код",
       "runTests": "Запустить тесты",
+      "runningLabel": "Выполняется...",
       "runningTests": "Выполнение тестов...",
       "saveConfig": "Сохранить настройки",
       "saveFailed": "Не удалось сохранить задачу",
@@ -312,6 +255,7 @@
         "unknown": "Неизвестно",
         "wrongAnswer": "Неверный ответ"
       },
+      "unknownTime": "Неизвестное время",
       "stderr": "Вывод ошибок",
       "submission": {
         "accepted": "Принято",
@@ -324,6 +268,7 @@
       },
       "submissionFailed": "Ошибка отправки",
       "submissionQueued": "Решение добавлено в очередь на проверку",
+      "submissionHistoryItem": "Попытка {attempt} · {language}",
       "submit": "Отправить",
       "testCase": "Тестовый случай",
       "testCases": "Тестовые сценарии",
@@ -365,12 +310,207 @@
       },
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value}мс",
-      "memoryLimitValue": "{value}МБ"
+      "timeSecondsValue": "{value}с",
+      "hiddenTestsCount": "{count} скрытых тестов",
+      "memoryLimitValue": "{value}МБ",
+      "courseChallenges": "Курс / Задачи",
+      "problems": "Задачи",
+      "practiceModeActive": "Активен режим практики",
+      "runCodeShort": "Запуск",
+      "testCodeShort": "Тест",
+      "submitCodeShort": "Отправить",
+      "actions": "Действия",
+      "noCommandFound": "Команда не найдена.",
+      "commandPaletteTitle": "Палитра команд для кода",
+      "commandPalettePlaceholder": "Запустить, отправить, сбросить...",
+      "runVisibleTests": "Запустить видимые тесты",
+      "ctrlEnter": "Ctrl Enter",
+      "submitSolution": "Отправить решение",
+      "ctrlShiftEnter": "Ctrl Shift Enter",
+      "resetToStarterCode": "Сбросить к начальному коду",
+      "writeCodeBeforeRun": "Напишите код перед запуском.",
+      "programFinishedNoOutput": "Программа завершилась без вывода.",
+      "codeExecutionFailed": "Не удалось выполнить код.",
+      "writeCodeBeforeTests": "Напишите код перед запуском тестов.",
+      "testRunFailed": "Не удалось выполнить тесты.",
+      "writeCodeBeforeSubmit": "Напишите код перед отправкой.",
+      "codeTab": "Код",
+      "resetCode": "Сбросить",
+      "formatCode": "Форматировать",
+      "editorSettings": "Настройки редактора",
+      "wordWrap": "Перенос строк",
+      "minimap": "Миникарта",
+      "fontSize": "Размер шрифта",
+      "pxValue": "{size}px",
+      "hintsAndHelp": "Подсказки и помощь",
+      "unlockHintsDescription": "Разблокируйте подсказки для решения задачи. Каждая подсказка несет штраф по очкам или XP.",
+      "noHintsAvailable": "Для этой задачи нет доступных подсказок.",
+      "xpPenaltyValue": "-{penalty} XP штраф",
+      "reveal": "Показать",
+      "revealConfirm": "Вы уверены, что хотите открыть Подсказку {number}? Это отнимет {penalty} XP от вашего потенциального балла.",
+      "unlockWithPenalty": "Открыть (-{penalty} XP)",
+      "descriptionTab": "Описание",
+      "hintsTab": "Подсказки",
+      "submissionsTab": "Решения",
+      "examplesTitle": "Примеры",
+      "exampleNumber": "Пример {number}",
+      "useInput": "Использовать ввод",
+      "constraintsTitle": "Ограничения",
+      "testCaseTab": "Тест",
+      "resultTab": "Результат",
+      "consoleTab": "Консоль",
+      "customInputTitle": "Пользовательский ввод",
+      "passedFraction": "Пройдено {passed}/{total}",
+      "diagnosticsHidden": "Диагностика ввода и вывода скрыта для обеспечения честности оценивания.",
+      "hiddenCaseTitle": "Скрытый кейс {number}: {status}",
+      "noConsoleOutputYet": "Вывода консоли пока нет.",
+      "runningState": "выполняется",
+      "idleState": "ожидание",
+      "runTestsToSeeDiagnostics": "Запустите тесты, чтобы увидеть диагностику.",
+      "firstFailingCase": "Первый неудачный тест: {caseId}. {description}",
+      "locateAndInspect": "Найти и проверить",
+      "executingEnvironment": "Выполнение в среде Judge0",
+      "caseNumber": "Тест {number}",
+      "timeMsValue": "{value}мс",
+      "difference": "Разница",
+      "restoreCode": "Восстановить",
+      "saveSettings": "Сохранить настройки",
+      "stepProblem": "1. Описание",
+      "stepLanguages": "2. Языки",
+      "stepTestSuite": "3. Тесты",
+      "stepVerify": "4. Проверка",
+      "stepReview": "5. Публикация",
+      "referenceValidationFinished": "Проверка эталонного решения завершена.",
+      "validationEndpointFailed": "Эндпоинт проверки не сработал.",
+      "referenceValidationFailed": "Не удалось проверить эталонные решения.",
+      "selectLanguagePrompt": "Выберите хотя бы один разрешенный язык на боковой панели для настройки шаблонов.",
+      "starterTemplateCode": "Шаблон начального кода",
+      "referenceSolution": "Эталонное решение",
+      "problemConfiguration": "Настройка задачи",
+      "editor": "Редактор",
+      "liveStudentPreview": "Предпросмотр студента",
+      "maxScore": "Макс. балл",
+      "problemDescriptionMarkdown": "Описание задачи (Markdown)",
+      "inputSpecificationMarkdown": "Спецификация ввода (Markdown)",
+      "outputSpecificationMarkdown": "Спецификация вывода (Markdown)",
+      "constraintsOnePerLine": "Ограничения (по одному на строку)",
+      "inputFormat": "Формат ввода",
+      "outputFormat": "Формат вывода",
+      "publishReadinessCheck": "Проверка готовности к публикации",
+      "publishReadinessDescription": "Перед публикацией этой задачи для студентов убедитесь, что все настройки соответствуют требованиям.",
+      "passedVerification": "Проверка пройдена",
+      "notVerified": "Не проверено",
+      "readyToPublish": "Готово к публикации",
+      "readyToPublishDescription": "Задача прошла проверку и может быть безопасно опубликована.",
+      "verificationFailed": "Ошибка проверки",
+      "verificationFailedDescription": "Пожалуйста, исправьте проблемы ниже перед публикацией.",
+      "templateConfigured": "Шаблон настроен",
+      "templateMissing": "Не найден начальный шаблон или эталонное решение для: {langs}",
+      "referenceSolutionPassed": "Проверка эталонного решения пройдена",
+      "noVerificationRun": "Успешных проверочных запусков еще не проводилось.",
+      "languageConfigured": "Настроен хотя бы один язык",
+      "noLanguagesEnabled": "Для этой задачи не включены языки программирования.",
+      "testCaseConfigured": "Настроен хотя бы один тест",
+      "testCaseConfiguredDescription": "Для оценки решений студентов требуется хотя бы один тестовый случай.",
+      "problemStatementComplete": "Описание задачи заполнено",
+      "problemStatementEmpty": "Описание задачи и спецификация не могут быть пустыми.",
+      "outputComparison": "Сравнение вывода",
+      "sideBySide": "Рядом",
+      "inline": "Внутристрочно",
+      "noCodeAnswerSubmitted": "Для этого задания не отправлен код.",
+      "evaluatedLanguageId": "ID оцененного языка: {language}",
+      "testCasesPassedValue": "Пройдено тестов: {passed}/{total}",
+      "gradeValue": "Оценка: {score}%",
+      "submittedCode": "Отправленный код",
+      "compareAgainstTemplate": "Сравнить с шаблоном",
+      "diagnosticLogsCount": "Диагностические логи ({count})",
+      "noDiagnosticsAvailable": "Подробная диагностика тестов недоступна.",
+      "issuesPending": "Осталось невыполненных требований: {count}",
+      "checklistPending": "В списке требований есть невыполненные пункты",
+      "checklistAllPassed": "Все требования готовности к публикации выполнены!",
+      "readiness": {
+        "problem": {
+          "label": "Описание и название задачи",
+          "detail": "Требуется указать название задачи и описание на языке Markdown."
+        },
+        "languages": {
+          "label": "Разрешенные языки и шаблоны кода",
+          "detail": "Настройте разрешенные языки и убедитесь, что шаблоны начального кода и эталонные решения заданы для каждого языка."
+        },
+        "visible": {
+          "label": "Примеры тестов (видимые)",
+          "detail": "Добавьте как минимум один пример теста, чтобы студенты могли проверить код локально."
+        },
+        "hidden": {
+          "label": "Скрытые тесты для оценивания",
+          "detail": "Добавьте как минимум один скрытый тест. Скрытые тесты гарантируют, что решения не завязаны на простой вывод примеров."
+        },
+        "limits": {
+          "label": "Лимиты на выполнение ресурсов",
+          "detail": "Укажите лимиты времени (в секундах) и памяти (в МБ) для предотвращения бесконечных циклов и перерасхода ресурсов."
+        }
+      },
+      "referenceVerificationSuite": "Верификация эталонных решений",
+      "validateSolutions": "Проверить решения",
+      "selectLanguageBeforeValidation": "Пожалуйста, выберите хотя бы один язык на вкладке «Языки» перед проверкой.",
+      "starterCodeStatus": "Начальный код",
+      "present": "✓ Присутствует",
+      "missing": "✗ Отсутствует",
+      "solutionStatus": "Решение",
+      "passesTests": "Тесты пройдены",
+      "awaitingRun": "Ожидание запуска",
+      "compilationDiagnostic": "Диагностика компиляции",
+      "errorDetails": "Сведения об ошибке",
+      "executionCasesBreakdown": "Детализация выполнения тестов",
+      "addSampleVisible": "Добавить пример (видимый)",
+      "addHiddenCase": "Добавить скрытый тест",
+      "import": "Импорт",
+      "visibility": "Видимость",
+      "matchMode": "Режим сопоставления",
+      "exactMatch": "Точное совпадение",
+      "trimmedMatch": "Совпадение без пробелов по краям",
+      "ignoreWhitespace": "Игнорировать пробелы",
+      "floatTolerance": "Погрешность чисел с плавающей точкой",
+      "samplesLabel": "Примеры",
+      "hiddenTestsLabel": "Скрытые тесты",
+      "totalCasesLabel": "Всего тестов",
+      "totalWeightsLabel": "Общий вес",
+      "assertionDetails": "Детали утверждения",
+      "stdinInput": "Входной поток (stdin)",
+      "expectedStdout": "Ожидаемый вывод (stdout)",
+      "assertingMatches": "Сопоставление утверждений",
+      "selectTestCaseInstruction": "Выберите строку теста в таблице, чтобы отредактировать stdin/stdout.",
+      "sampleCase": "Пример теста",
+      "hiddenCase": "Скрытый тест",
+      "exactMatchDesc": "Точное совпадение требует посимвольного сравнения, включая пробелы и новые строки.",
+      "trimmedMatchDesc": "Совпадение без пробелов по краям удаляет начальные и конечные пробелы и новые строки перед сравнением.",
+      "ignoreWhitespaceDesc": "Игнорирование пробелов удаляет все пробелы, табуляцию и переводы строк перед сравнением.",
+      "floatToleranceDesc": "Погрешность чисел с плавающей точкой анализирует вещественные числа в выводе и сравнивает их с точностью до 1e-6.",
+      "descriptionLabel": "Описание",
+      "weightLabel": "Вес",
+      "visible": "Видимый",
+      "hidden": "Скрытый",
+      "testCaseRemoved": "Тестовый случай удален.",
+      "assertionDescriptionPlaceholder": "Объясните, почему этот случай важен...",
+      "stdinPlaceholder": "Сюда подается ввод консоли",
+      "expectedAssertionPlaceholder": "Здесь укажите ожидаемый вывод",
+      "exportSuccess": "Тесты успешно экспортированы как {format}.",
+      "exportFailed": "Не удалось экспортировать тесты.",
+      "importSuccess": "Успешно импортировано тестов: {count}.",
+      "importFailed": "Неверный формат файла импорта.",
+      "requirementsPending": "{count, plural, one {осталось # требование} few {осталось # требования} other {осталось # требований}}",
+      "allChecksPassed": "Все проверки пройдены",
+      "solutionAccepted": "Решение принято",
+      "submissionRequiresReview": "Решение требует проверки",
+      "testCasesPassed": "Пройдено тестов: {passed}/{total}",
+      "starterTemplate": "Начальный шаблон",
+      "studentSubmission": "Решение студента"
     },
     "DocumentPdf": {
-      "viewerTitle": "PDF Document Viewer"
+      "viewerTitle": "Просмотрщик PDF-документов"
     },
     "ExamActivity": {
+      "unansweredQuestions": "Неотвеченные вопросы",
       "activityNamePlaceholder": "напр., Итоговый тест",
       "allowResultReview": "Разрешить студентам просматривать результаты",
       "allowResultReviewDescription": "Студенты смогут увидеть свои ответы после сдачи",
@@ -412,6 +552,8 @@
       "explanation": "Объяснение",
       "flagged": "Помечено",
       "flaggedForReview": "Отмечено для проверки",
+      "flagQuestion": "Отметить для проверки",
+      "unflagQuestion": "Снять отметку",
       "fullscreenExited": "Выход из полноэкранного режима - нарушение зарегистрировано",
       "fullscreenRequiredDescription": "Для этого теста требуется полноэкранный режим. Нажмите кнопку ниже, чтобы браузер разрешил переход в полноэкранный режим.",
       "fullscreenRequiredTitle": "Перейдите в полноэкранный режим",
@@ -513,14 +655,20 @@
       "latestSubmission": "Последняя отправка",
       "resumedDraft": "Черновик восстановлен",
       "resumedDraftDescription": "Мы нашли ваш предыдущий черновик и восстановили ваши ответы.",
+      "switchToScrollMode": "Переключиться в режим прокрутки (все вопросы)",
+      "switchToCardMode": "Переключиться в режим карточек (по одному вопросу)",
       "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
-      "resultsWaitingForReleaseDescription": "Ваш тест проверен, но результаты будут доступны после того, как преподаватель их опубликует."
+      "resultsWaitingForReleaseDescription": "Ваш тест проверен, но результаты будут доступны после того, как преподаватель их опубликует.",
+      "resultAvailable": "Результат доступен",
+      "noQuestions": "В этом тесте нет вопросов.",
+      "testNotReadyTitle": "Тест не готов",
+      "noQuestionsWarning": "В этом тесте пока нет вопросов, поэтому его нельзя начать.",
+      "teacherNoQuestionsWarning": "В этом тесте пока нет вопросов. Пожалуйста, добавьте вопросы перед тем, как сделать его доступным для студентам."
     }
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Задание",
-      "codeChallenge": "Код задача",
+      "codeChallenge": "Код-зона",
       "document": "Документ",
       "exam": "Тест",
       "fileSubmission": "Отправка файлов",
@@ -544,24 +692,13 @@
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта активность еще не опубликована",
     "activityTypes": {
-      "assignment": "Задание",
       "document": "Документ",
       "dynamic": "Страница",
       "exam": "Тест",
       "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
       "video": "Видео",
-      "codeChallenge": "Code challenge"
-    },
-    "assignmentActions": {
-      "submit": "Отправить задание",
-      "submitConfirm": "Вы уверены, что хотите отправить задание на проверку? Вы не сможете внести изменения после отправки.",
-      "submitForGrading": "Отправить на проверку",
-      "submitYourAssingmentForGrading": "Отправьте задание на проверку"
-    },
-    "assignmentStatus": {
-      "graded": "Оценено",
-      "grading": "Оценка в процессе"
+      "codeChallenge": "Код-зона"
     },
     "chapter": "Глава",
     "chapters": "Главы",
@@ -577,8 +714,11 @@
     "enterFocusMode": "Войти в режим фокусировки",
     "exitFocusMode": "Выйти из режима фокусировки",
     "focusMode": "Режим фокусировки",
+    "aiAssistant": "Ashyk AI",
+    "keyboardShortcuts": "Сочетания клавиш",
     "lastUpdated": "Последнее обновление",
     "markAsComplete": "Отметить как завершенное",
+    "finishReadingBeforeComplete": "Дочитайте материал до конца, чтобы отметить его как завершенный",
     "markCompleteError": "Не удалось отметить активность как завершенную",
     "markStatus": {
       "markTooltipMessage": "Нажмите на флажок, чтобы отметить эту активность как завершенную",
@@ -589,6 +729,7 @@
     "nextActivityTitle": "Далее: {name}",
     "nextActivityTooltip": "Далее: {activityName}",
     "noContent": "Нет содержимого",
+    "emptyContentDescription": "На этой странице пока нет содержимого.",
     "noNextActivity": "Нет следующей активности",
     "noPrevActivity": "Нет предыдущей активности",
     "noPreviousActivity": "Нет предыдущей активности",
@@ -603,8 +744,8 @@
     "openAssessment": "Открыть оценивание",
     "status": "Статус",
     "statusComplete": "Завершено",
-    "submitErrorToast": "Не удалось отправить задание на проверку",
-    "submitSuccessToast": "Задание успешно отправлено на проверку",
+    "submitErrorToast": "Не удалось отправить учебная задача на проверку",
+    "submitSuccessToast": "Учебная задача успешно отправлено на проверку",
     "unknownGradingType": "Неизвестный тип оценивания",
     "unmarkActivity": "Снять отметку о завершении",
     "unmarkAsComplete": "Снять отметку о завершении",
@@ -613,17 +754,39 @@
     "unmarkDialogTitle": "Снять отметку о завершении активности?",
     "unpublishedActivity": "Эта активность еще не опубликована",
     "viewAllActivities": "Посмотреть все активности",
-    "assessmentUnavailable": "This assessment is not available yet.",
-    "backToCourse": "Back to course",
-    "courseComplete": "Course complete",
-    "fileSubmissionInlineAction": "Use the submission form",
-    "needsRevision": "Needs revision",
-    "noAction": "No action available",
-    "notStarted": "Not started",
-    "submitted": "Submitted",
-    "support": "Support",
-    "viewAssessment": "Перейти к заданию",
-    "viewResult": "Смотреть результат"
+    "assessmentUnavailable": "Этот тест еще не доступен.",
+    "backToCourse": "Назад к курсу",
+    "courseComplete": "Курс завершен",
+    "fileSubmissionInlineAction": "Используйте форму отправки",
+    "needsRevision": "Требует доработки",
+    "noAction": "Действия недоступны",
+    "notStarted": "Не начато",
+    "submitted": "Отправлено",
+    "support": "Поддержка",
+    "viewAssessment": "Перейти к учебной задаче",
+    "viewResult": "Смотреть результат",
+    "startActivity": "Начать",
+    "continueActivity": "Продолжить",
+    "submitButton": "Отправить",
+    "viewReceipt": "Посмотреть квитанцию",
+    "draft": "Черновик",
+    "failed": "Не пройдено",
+    "accessBlocked": "Доступ заблокирован",
+    "attemptExhausted": "Попытки исчерпаны",
+    "signInRequired": "Войдите, чтобы продолжить",
+    "attemptLimit": "Попыток доступно: {count}",
+    "passingScore": "Проходной балл: {score}%",
+    "releaseMode": "Публикация: {mode}",
+    "submittedAt": "Отправлено: {date}",
+    "gradedAt": "Оценено: {date}",
+    "unmarkComplete": "Снять отметку",
+    "onThisPage": "На этой странице",
+    "statusGradingInProgress": "Оценка выполняется",
+    "lockedTitle": "Этот материал недоступен",
+    "lockedReasonLocked": "Для доступа к этому материалу необходимо выполнить предыдущие обязательные задания.",
+    "attemptsUsed": "Использовано {used} из {max} попыток",
+    "attemptsUnlimited": "Неограниченное количество попыток",
+    "dueDate": "Срок сдачи"
   },
   "AdminUtils": {
     "priority": {
@@ -677,7 +840,6 @@
       "loading": "Загрузка...",
       "login": "Войти",
       "loginTo": "Войти в",
-      "newToAcme": "Впервые в Acme?",
       "or": "ИЛИ",
       "password": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
@@ -685,7 +847,6 @@
       "resetPassword": "Сбросить пароль",
       "showPassword": "Показать пароль",
       "signIn": "Войти",
-      "signInToAcme": "Вход в Acme",
       "signInWithGoogle": "Войти с помощью Google",
       "signup": "Зарегистрироваться",
       "sso": "Единый вход (SSO)",
@@ -696,6 +857,7 @@
       "sessionRecoveryFailed": "Не удалось восстановить сеанс. Пожалуйста, войдите снова.",
       "wrongCredentials": "Неверный адрес электронной почты или пароль",
       "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
+      "rateLimited": "Слишком много попыток. Пожалуйста, попробуйте позже.",
       "loginTitle": "Войти",
       "noAccount": "Нет аккаунта?"
     },
@@ -758,7 +920,7 @@
   "Certificates": {
     "ActivityIndicators": {
       "certificationAvailable": "Курс завершён!",
-      "completeAllActivities": "Завершите все задания для разблокировки",
+      "completeAllActivities": "Завершите все учебные задачи для разблокировки",
       "earnCertificate": "Получить сертификат",
       "viewCertificate": "Просмотреть сертификат"
     },
@@ -806,7 +968,7 @@
       "hasSuccessfullyCompleted": "успешно завершил(а)",
       "instructor": "Преподаватель",
       "instructorName": "Иван Петров",
-      "organizationLogoAlt": "Логотип Ashyk Bilim",
+      "organizationLogoAlt": "Логотип",
       "previewNote": "Предпросмотр использует только токены темы. Выбор шаблона теперь меняет плотность макета и обрамление, а не отдельные цветовые наборы.",
       "qrLabel": "QR",
       "scanToVerify": "Отсканируйте для проверки",
@@ -900,7 +1062,7 @@
       "defaultCertificationDescription": "Успешное завершение курса подтверждено.",
       "downloadCertificate": "Скачать сертификат",
       "earnedCertificate": "Ваш сертификат",
-      "encouragementMessage": "Вы отлично справляетесь! Завершите оставшиеся задания, чтобы получить сертификат о прохождении курса.",
+      "encouragementMessage": "Вы отлично справляетесь! Завершите оставшиеся учебные задачи, чтобы получить сертификат о прохождении курса.",
       "errorGeneratingPDF": "Не удалось сгенерировать PDF. Повторите попытку.",
       "exploreCourses": "Изучить другие курсы",
       "instructor": "Преподаватель",
@@ -913,7 +1075,7 @@
       "noCertificateAvailable": "Нет сертификата",
       "noCertificateFound": "Сертификат для этого курса не найден",
       "progress": "Прогресс",
-      "progressCompleted": "{completed} из {total} заданий выполнено",
+      "progressCompleted": "{completed} из {total} учебных задач выполнено",
       "progressPercentage": "{percentage}% завершено",
       "qrCodeAlt": "QR-код",
       "shareAchievement": "Поделитесь своим достижением",
@@ -1034,8 +1196,8 @@
     },
     "googleLogo": "Логотип Google",
     "loading": "Загрузка...",
-    "logoAlt": "Логотип Ashyk Bilim",
-    "platformLogoAlt": "Логотип Ashyk Bilim",
+    "logoAlt": "Логотип",
+    "appLogoAlt": "Логотип",
     "owner": "Создатель",
     "save": "Сохранить",
     "saved": "Сохранено",
@@ -1044,6 +1206,9 @@
     "unsavedChanges": "Несохраненные изменения"
   },
   "Components": {
+    "Calendar": {
+      "set": "Установить"
+    },
     "SaveStateBadge": {
       "unsaved": "Не сохранено",
       "saving": "Сохранение...",
@@ -1119,9 +1284,13 @@
       "autoSubmitThreshold": "Порог автосдачи"
     },
     "AiChat": {
+      "assistantName": "Ashyk Ai",
       "placeholder": "Спросите Ashyk Ai…",
       "sendMessage": "Отправить сообщение",
-      "stopGeneration": "Остановить генерацию"
+      "stopGeneration": "Остановить генерацию",
+      "copyResponse": "Копировать ответ",
+      "copied": "Скопировано",
+      "userName": "You"
     },
     "Spinner": {
       "loading": "Загрузка"
@@ -1136,7 +1305,7 @@
         "teacherWorkloadComparison": "Сравнение нагрузки учителей",
         "courseHealthRanking": "Рейтинг здоровья курса",
         "teacher": "Учитель",
-        "backlog": "Backlog",
+        "backlog": "Бэклог",
         "atRisk": "В зоне риска",
         "course": "Курс",
         "health": "Здоровье",
@@ -1497,18 +1666,16 @@
         "selectDifficulty": "Выберите сложность",
         "selectType": "Выберите тип",
         "subtitle": "Создайте программное упражнение с автоматической проверкой",
-        "title": "Создать код задачу",
+        "title": "Создать код-зону",
         "type": "Тип задачи",
         "typeCompetitive": "Соревновательный",
         "typeCompetitiveHint": "Включает таблицу лидеров по очкам и времени",
         "typeGeneral": "Практика",
         "typeGeneralHint": "Студенты могут отправлять решения без рейтинга"
       },
-      "assignments": "Задания",
-      "assignmentsDesc": "Создайте задание с текстовыми или файловыми ответами",
       "backToActivities": "Вернуться к активностям",
       "chooseType": "Выберите тип активности",
-      "codeChallenge": "Код задача",
+      "codeChallenge": "Код-зона",
       "codeChallengeDesc": "Создайте программное упражнение с автоматической проверкой",
       "document": "Документ",
       "documentDesc": "Загрузите PDF или документ для чтения студентами",
@@ -1519,7 +1686,8 @@
       "fileSubmission": "Отправка файлов",
       "fileSubmissionDesc": "Собирайте файлы студентов с проверкой и отзывами",
       "video": "Видео",
-      "videoDesc": "Загрузите или встройте видео для просмотра студентами"
+      "videoDesc": "Загрузите или встройте видео для просмотра студентами",
+      "opening": "Открытие…"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Разрешенные типы файлов",
@@ -1532,28 +1700,8 @@
       "maxFiles": "Максимум файлов",
       "maxSize": "Максимальный размер (МБ)",
       "requiredFields": "Название и инструкции обязательны",
+      "selectAll": "Выбрать все",
       "title": "Название"
-    },
-    "NewAssignmentModal": {
-      "alphabet": "Алфавитный",
-      "assignmentDescription": "Описание задания",
-      "assignmentTitle": "Название задания",
-      "createActivity": "Создать активность",
-      "createError": "Не удалось создать задание: {error}",
-      "createSuccess": "Задание успешно создано",
-      "creatingAssignment": "Создание задания...",
-      "dueDate": "Срок сдачи",
-      "gradingType": "Тип оценивания",
-      "numeric": "Числовой",
-      "percentage": "Процентный",
-      "selectDeadline": "Выберите крайний срок выполнения задания",
-      "selectGradingType": "Выберите тип оценивания",
-      "unexpectedError": "Произошла непредвиденная ошибка",
-      "unknownError": "Неизвестная ошибка",
-      "valueMissingDescription": "Пожалуйста, предоставьте описание задания",
-      "valueMissingDueDate": "Пожалуйста, укажите срок сдачи задания",
-      "valueMissingGradingType": "Пожалуйста, укажите тип оценивания",
-      "valueMissingTitle": "Пожалуйста, укажите название"
     },
     "NewChapterModal": {
       "chapterDescription": "Описание главы",
@@ -1601,32 +1749,32 @@
       "step1Desc": "Добро пожаловать в Ashyk Bilim, LMS, созданную для простоты, удобства использования и производительности. Откройте для себя новый способ создания, обмена и взаимодействия с образовательным контентом.",
       "step1Title": "Обучайте мир!",
       "step2Button": "Создать новый курс",
-      "step2Desc": "Курсы являются основными строительными блоками Ashyk Bilim, они всегда содержат Главы, а Главы содержат Активности.",
+      "step2Desc": "Курсы являются основными строительными блоками, они всегда содержат Главы, а Главы содержат Активности.",
       "step2Title": "Создание курсов",
       "step3Button": "Узнать больше об Активностях",
-      "step3Desc": "Активности - это элементы, которые вы можете добавлять в свои Курсы через Главы: Динамические страницы, Видео, Документы, Задания и многое другое в ближайшее время.",
+      "step3Desc": "Активности - это элементы, которые вы можете добавлять в свои Курсы через Главы: Динамические страницы, Видео, Документы, Учебные задачи и многое другое в ближайшее время.",
       "step3Title": "Активности",
       "step4Button": "Узнать больше о Динамических страницах и Редакторе",
       "step4Desc": "Динамические страницы - это страницы с динамическим контентом, подобным страницам Notion, они могут включать различные компоненты, такие как Тесты, Изображения, Видео, Документы и т. д.",
       "step4Title": "Динамические страницы и Редактор",
       "step5Button": "Узнать больше об Ashyk Ai",
-      "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента, который вы создаете в Ashyk Bilim",
+      "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента",
       "step5Title": "Искусственный интеллект",
       "step6Button": "Создать группы пользователей",
       "step6Desc": "С помощью групп пользователей вы можете разделить студентов на группы и предоставить доступ к курсам в зависимости от их потребностей",
       "step6Title": "Группируйте студентов и упрощайте доступ",
       "step7Desc": "Вы можете сделать Курсы доступными для поисковых систем и неаутентифицированных пользователей или предоставить доступ только аутентифицированным пользователям",
       "step7Title": "Выберите, следует ли делать Курсы публично доступными в Интернете",
-      "step8Button": "Создать задание",
-      "step8Desc": "Вовлекайте студентов в выполнение заданий, отслеживайте их прогресс и предоставляйте обратную связь с помощью интуитивно понятной системы оценивания.",
-      "step8Title": "Создание и оценка заданий",
+      "step8Button": "Создать учебная задача",
+      "step8Desc": "Вовлекайте студентов в выполнение учебных задач, отслеживайте их прогресс и предоставляйте обратную связь с помощью интуитивно понятной системы оценивания.",
+      "step8Title": "Создание и оценка учебных задач",
       "triggerText": "Онбординг"
     },
     "NavMenu": {
       "account": "Аккаунт",
       "closeMenu": "Закрыть меню",
       "language": "Язык",
-      "logoAlt": "Логотип Ashyk Bilim",
+      "logoAlt": "Логотип",
       "navigation": "Навигация",
       "openMenu": "Открыть меню",
       "overlayClose": "Закрыть меню",
@@ -1799,6 +1947,9 @@
         "updatedRole": "Роль успешно обновлена",
         "updating": "Обновление роли..."
       },
+      "updating": "Обновление роли...",
+      "updateRole": "Обновить роль",
+      "updatedRole": "Роль успешно обновлена",
       "acrossResourceTypes": "По {count} типам ресурсов",
       "actions": "Действия",
       "allPermissionsDescription": "Список всех доступных разрешений в системе.",
@@ -1812,7 +1963,7 @@
       "assignedRoleSuccess": "Роль успешно назначена",
       "basicAccess": "Базовый доступ",
       "cardDescription": "Управляйте ролями и разрешениями вашей организации",
-      "cardTitle": "Роли Ashyk Bilim",
+      "cardTitle": "Роли",
       "createRole": "Создать роль",
       "createRoleDescription": "Определите новую роль с конкретными разрешениями",
       "createRoleTitle": "Создание новой роли",
@@ -1881,8 +2032,8 @@
       "selectRolePlaceholder": "Выберите роль",
       "selectUserPlaceholder": "Выберите пользователя",
       "slugHelp": "Короткий уникальный идентификатор используемый в коде",
-      "slugCreateHelp": "Слаг — постоянный идентификатор для API и политик. После создания его нельзя изменить.",
-      "slugImmutableHelp": "Слаг — постоянный идентификатор для API и политик. Его нельзя изменить после создания.",
+      "slugCreateHelp": "Слаг - постоянный идентификатор для API и политик. После создания его нельзя изменить.",
+      "slugImmutableHelp": "Слаг - постоянный идентификатор для API и политик. Его нельзя изменить после создания.",
       "system": "системная",
       "systemWide": "На уровне всей системы",
       "systemRoleReadOnlyBanner": "Системные роли управляются платформой и не могут быть изменены. Клонируйте роль, чтобы создать редактируемую копию.",
@@ -2051,8 +2202,7 @@
     },
     "SignIn": {
       "emailLabel": "Электронная почта",
-      "emailPlaceholder": "you@example.com",
-      "newToPlatform": "Новый на Acme?",
+      "emailPlaceholder": "you@example.kz",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите ваш пароль",
       "rememberMe": "Запомнить меня",
@@ -2087,9 +2237,8 @@
       "expected": "Ожидалось:",
       "fillBlanksError": "Пожалуйста, заполните хотя бы один пропуск перед отправкой.",
       "fillInTheBlanks": "Заполните пропуски",
-      "gradeAssignment": "Оценить задание",
-      "gradeError": "Ошибка при оценивании задания, пожалуйста, попробуйте позже.",
-      "gradedSuccessfully": "Задание успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
+      "gradeError": "Ошибка при оценивании учебные задачи, пожалуйста, попробуйте позже.",
+      "gradedSuccessfully": "Учебная задача успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
       "hint": "Подсказка (необязательно)",
       "hintIcon": "💡",
       "hintLabel": "Подсказка",
@@ -2105,8 +2254,8 @@
       "removeBlank": "Удалить пропуск",
       "removeBlankError": "Нельзя удалить последний пропуск. Требуется как минимум один пропуск.",
       "removeQuestion": "Удалить вопрос",
-      "saveError": "Ошибка при сохранении задания, пожалуйста, попробуйте позже.",
-      "savedSuccessfully": "Задание успешно сохранено",
+      "saveError": "Ошибка при сохранении учебные задачи, пожалуйста, попробуйте позже.",
+      "savedSuccessfully": "Учебная задача успешно сохранено",
       "submissionSummary": "Итоги выполнения",
       "submitError": "Ошибка при отправке формы, пожалуйста, попробуйте позже.",
       "submitForGrading": "Отправить на проверку",
@@ -2290,7 +2439,7 @@
       "websiteUrl": "URL веб-сайта"
     },
     "WhitelistManagement": {
-      "accessModeSetToWhitelist": "Режим доступа установлен в WHITELIST - белый список будет применяться",
+      "accessModeSetToWhitelist": "Установлен WHITELIST режим доступа",
       "deselectAll": "Снять все",
       "errorFetchingStudents": "Не удалось загрузить студентов",
       "errorUpdatingWhitelist": "Не удалось обновить белый список",
@@ -2307,19 +2456,191 @@
     }
   },
   "Contexts": {
-    "Assignment": {
-      "loadError": "Не удалось загрузить данные задания"
-    },
     "Course": {
       "loadError": "Не удалось загрузить структуру курса"
     },
     "Platform": {
       "adminDescription": "Управляйте настройками платформы и доступом",
       "adminTitle": "Администрирование",
-      "fetchError": "Произошла ошибка при загрузке данных Ashyk Bilim",
+      "fetchError": "Произошла ошибка при загрузке данных",
       "home": "На главную",
-      "notMemberInfo": "Вы еще не являетесь членом Ashyk Bilim",
+      "notMemberInfo": "Вы еще не являетесь пользователем Ashyk Bilim",
       "signOut": "Выйти"
+    }
+  },
+  "MarkdownEditor": {
+    "toolbar": {
+      "label": "Панель инструментов редактора Markdown",
+      "bold": "Жирный",
+      "italic": "Курсив",
+      "strikethrough": "Зачёркнутый",
+      "inlineCode": "Встроенный код",
+      "h1": "Заголовок 1",
+      "h2": "Заголовок 2",
+      "h3": "Заголовок 3",
+      "bulletList": "Маркированный список",
+      "orderedList": "Нумерованный список",
+      "taskList": "Список задач",
+      "blockquote": "Цитата",
+      "codeBlock": "Блок кода",
+      "link": "Ссылка",
+      "image": "Вставить изображение",
+      "table": "Вставить таблицу",
+      "math": "Математика (встроенная)",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "fullscreen": "Полный экран",
+      "exitFullscreen": "Выйти из полного экрана",
+      "snippets": "Фрагменты",
+      "insertSnippet": "Вставить фрагмент",
+      "viewWrite": "Редактировать",
+      "viewSource": "Исходный код",
+      "viewSplit": "Предварительный просмотр",
+      "viewPreview": "Просмотр"
+    },
+    "statusBar": {
+      "empty": "Пусто",
+      "markdown": "Markdown",
+      "word": "слово",
+      "words": "слов",
+      "unsaved": "Несохранено",
+      "saving": "Сохранение…",
+      "saved": "Сохранено",
+      "saveFailed": "Ошибка сохранения",
+      "issueToggle": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}"
+    },
+    "linkDialog": {
+      "title": "Вставить ссылку",
+      "editTitle": "Редактировать ссылку",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com или /relative/path",
+      "urlError": "Введите безопасный URL (https, http, mailto или относительный путь).",
+      "openNewTab": "Открыть в новой вкладке",
+      "removeLink": "Удалить ссылку",
+      "cancel": "Отмена",
+      "insert": "Вставить",
+      "update": "Обновить"
+    },
+    "imageDialog": {
+      "preview": "Предпросмотр",
+      "title": "Вставить изображение",
+      "srcLabel": "URL изображения",
+      "srcPlaceholder": "Используйте ссылку на изображение, загруженное на платформу",
+      "srcError": "Пожалуйста, введите ссылку на изображение, загруженное на платформу.",
+      "altLabel": "Альтернативный текст",
+      "altLabelOptional": "(обязательно для публикуемого контента)",
+      "altPlaceholder": "Опишите изображение для программ чтения экрана",
+      "cancel": "Отмена",
+      "insert": "Вставить изображение"
+    },
+    "validation": {
+      "required": "Содержимое обязательно.",
+      "tooLong": "Содержимое превышает лимит на {count} символов.",
+      "nearLimit": "Содержимое приближается к лимиту символов.",
+      "rawHtml": "Встроенный HTML не поддерживается.",
+      "unsafeLink": "Одна или несколько ссылок используют небезопасный протокол.",
+      "codeFenceUnclosed": "Похоже, в блоке кода отсутствует закрывающий разделитель.",
+      "mathUnbalanced": "Похоже, в математическом выражении несбалансированный разделитель $.",
+      "tableColumnMismatch": "В таблице могут быть строки с разным количеством столбцов."
+    },
+    "presets": {
+      "shared": {
+        "objective": {
+          "label": "Цель задания",
+          "markdown": "## Цель\n\nОпишите, что должны создать учащиеся и почему это важно.\n"
+        },
+        "rubric": {
+          "label": "Таблица критериев",
+          "markdown": "| Критерий | Отлично | Нужно доработать |\n| --- | --- | --- |\n| Точность | Полный и корректный ответ | Не хватает ключевых требований |\n"
+        },
+        "checklist": {
+          "label": "Чек-лист",
+          "markdown": "- [ ] Прочитайте все требования\n- [ ] Проверьте форматирование\n- [ ] Отправьте до дедлайна\n"
+        },
+        "fileNamingRules": {
+          "label": "Правила именования файлов",
+          "markdown": "## Именование файлов\n\nИспользуйте формат: `lastname_firstname_taskname.ext`.\n"
+        },
+        "problemTemplate": {
+          "label": "Шаблон задачи",
+          "markdown": "## Задача\n\nОпишите задание.\n\n## Пример\n\n```text\nВвод:\n\nВывод:\n```\n\n## Ограничения\n\n- `1 <= n <= 10^5`\n"
+        },
+        "exampleBlock": {
+          "label": "Блок примера",
+          "markdown": "```text\nВвод:\n\nВывод:\n```\n\n**Пояснение:** Добавьте ход рассуждений.\n"
+        },
+        "complexityTarget": {
+          "label": "Целевой класс сложности",
+          "markdown": "**Ожидаемая сложность:** `O(n)` по времени и `O(1)` по дополнительной памяти.\n"
+        },
+        "courseOverview": {
+          "label": "Обзор курса",
+          "markdown": "## Обзор\n\nОпишите, для кого этот курс и что изучающие построят.\n"
+        },
+        "prerequisites": {
+          "label": "Требования",
+          "markdown": "## Требования\n\n- Базовое знакомство с темой\n- Необходимые инструменты или учетные записи\n"
+        },
+        "learningOutcomes": {
+          "label": "Результаты обучения",
+          "markdown": "## К концу курса вы сможете\n\n- Объяснить основные концепции\n- Применять навык на практике\n"
+        }
+      },
+      "assessmentDescription": {
+        "label": "Описание оценки",
+        "description": "Обзор для студентов, заметки о политике и инструкции к экзамену.",
+        "placeholder": "Введите инструкции к оценке, которые увидят студенты..."
+      },
+      "questionPrompt": {
+        "label": "Формулировка вопроса",
+        "description": "Текст, который показывается внутри вопросов оценки.",
+        "placeholder": "Введите формулировку вопроса..."
+      },
+      "explanation": {
+        "label": "Пояснение",
+        "description": "Критерии, объяснения и обратная связь преподавателя.",
+        "placeholder": "Введите пояснение или критерии оценивания..."
+      },
+      "fileSubmissionInstructions": {
+        "label": "Инструкции по сдаче",
+        "description": "Требования, принимаемые файлы, критерии и чек-лист отправки.",
+        "placeholder": "Введите понятные инструкции по загрузке, правила именования и требования к оценке..."
+      },
+      "codeProblemStatement": {
+        "label": "Условие задачи",
+        "description": "Условие в стиле спортивного программирования с примерами и ограничениями.",
+        "placeholder": "Введите условие кодовой задачи..."
+      },
+      "codeInputSpec": {
+        "label": "Описание входных данных",
+        "description": "Опишите формат stdin или вход функции.",
+        "placeholder": "Опишите формат входных данных..."
+      },
+      "codeOutputSpec": {
+        "label": "Описание выходных данных",
+        "description": "Опишите ожидаемый формат вывода.",
+        "placeholder": "Опишите формат выходных данных..."
+      },
+      "codeExampleExplanation": {
+        "label": "Пояснение примера",
+        "description": "Объясните видимый пример теста.",
+        "placeholder": "Объясните, почему этот пример даёт ожидаемый результат..."
+      },
+      "codeHint": {
+        "label": "Подсказка",
+        "description": "Пошаговая помощь без раскрытия полного решения.",
+        "placeholder": "Введите точечную подсказку..."
+      },
+      "codeEditorial": {
+        "label": "Разбор",
+        "description": "Пояснение решения, опубликованное по политике.",
+        "placeholder": "Объясните предполагаемое решение..."
+      },
+      "courseDescription": {
+        "label": "Описание курса",
+        "description": "Публичный обзор курса, который видят учащиеся.",
+        "placeholder": "Опишите курс, аудиторию, требования и результаты..."
+      }
     }
   },
   "CourseBreadcrumbs": {
@@ -2328,8 +2649,7 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Задание",
-        "codeChallenge": "Код задача",
+        "codeChallenge": "Код-зона",
         "document": "Документ",
         "dynamic": "Динамический",
         "exam": "Тест",
@@ -2348,7 +2668,6 @@
       "deleteTitle": "Удалить {name}?",
       "deleting": "Удаление...",
       "deletingActivity": "Удаление активности...",
-      "editAssignmentButton": "Редактировать задание",
       "editPageButton": "Редактировать страницу",
       "openEditPage": "Открыть страницу редактирования",
       "failedToUpdateActivityName": "Не удалось обновить название активности",
@@ -2386,7 +2705,7 @@
         "linkInputAriaLabel": "Введите URL-адрес ссылки для этого пункта обучения",
         "linkInputPlaceholder": "Введите URL-адрес для ссылки (необязательно)",
         "noItems": "Пока не добавлено ни одного элемента обучения.",
-        "placeholder": "Введите, что вы узнаете...",
+        "placeholder": "Что изучат студенты...",
         "removeItemAriaLabel": "Удалить элемент обучения",
         "removeItemTooltip": "Удалить элемент",
         "searchEmojis": "Искать эмодзи..."
@@ -2501,8 +2820,7 @@
       "selectItemHint": "Нажмите + Добавить активность под главой, чтобы начать",
       "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
       "emptyStateTitle": "Создайте учебный план",
-      "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и задания.",
-      "emptyStateAction": "Добавить первый раздел",
+      "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и учебные задачи.",
       "activity": "Активность",
       "chapter": "Глава"
     },
@@ -2522,7 +2840,6 @@
     },
     "activityNamePlaceholder": "Название активности",
     "activityTypes": {
-      "assignment": "Задание",
       "document": "Документ",
       "dynamic": "Динамический",
       "video": "Видео"
@@ -2542,7 +2859,7 @@
     "editButton": "Редактировать",
     "noActivities": "Пока нет активностей",
     "deleteChapterConfirmationBreakdown": "Это безвозвратно удалит раздел и его {count, plural, =0 {0 занятий} one {# занятие} few {# занятия} other {# занятий}} ({published} опубликованных, {drafts} черновиков).",
-    "noActivitiesHint": "Добавьте первое задание ниже",
+    "noActivitiesHint": "Добавьте первую активность",
     "save": "Сохранить",
     "cancel": "Отмена"
   },
@@ -2555,19 +2872,19 @@
   "CoursePage": {
     "about": "О курсе",
     "access": "Доступ",
-    "activitiesCount": "{count} заданий",
-    "activityCount": "{count, plural, =0 {0 заданий} one {# задание} few {# задания} other {# заданий}}",
+    "activitiesCount": "{count} учебных задач",
+    "activityCount": "{count, plural, =0 {0 учебных задач} one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
     "activityCounter": "{current} из {total}",
-    "activityNotPublished": "Это задание еще не опубликовано",
+    "activityNotPublished": "Это учебная задача еще не опубликовано",
     "admin": "Админ",
-    "assignment": "Задание",
     "fileSubmission": "Отправка файлов",
     "cancel": "Отмена",
     "confirmDelete": "Вы уверены, что хотите удалить это?",
     "confirmDeletePost": "Вы уверены, что хотите удалить этот пост?",
     "confirmDeleteReply": "Вы уверены, что хотите удалить этот ответ?",
     "content": "Содержание",
-    "contributeToActivity": "Внести вклад в задание",
+    "contributeToActivity": "Внести вклад в учебная задача",
+    "anonymous": "Аноним",
     "contributors": "Участники",
     "courseContent": "Содержание курса",
     "courseDiscussions": "Обсуждения курса",
@@ -2593,8 +2910,8 @@
     "nextActivityTitle": "Далее: {name}",
     "noDiscussions": "Пока нет обсуждений",
     "noDiscussionsDesc": "Станьте первым, кто начнет разговор об этом курсе!",
-    "noNextActivity": "Следующего задания нет",
-    "noPrevActivity": "Предыдущего задания нет",
+    "noNextActivity": "Следующего учебные задачи нет",
+    "noPrevActivity": "Предыдущего учебные задачи нет",
     "noReplies": "Пока нет ответов",
     "page": "Страница",
     "postDiscussion": "Опубликовать",
@@ -2608,11 +2925,11 @@
     "statusComplete": "Завершено",
     "statusGraded": "Оценено",
     "statusGradingInProgress": "Идет проверка",
-    "submitButton": "Отправить задание",
-    "submitConfirmationMessage": "Вы уверены, что хотите отправить задание на проверку? После отправки вы не сможете вносить изменения.",
-    "submitConfirmationTitle": "Отправить задание на проверку",
-    "submitErrorToast": "Не удалось отправить задание на проверку",
-    "submitSuccessToast": "Задание отправлено на проверку",
+    "submitButton": "Отправить учебная задача",
+    "submitConfirmationMessage": "Вы уверены, что хотите отправить учебная задача на проверку? После отправки вы не сможете вносить изменения.",
+    "submitConfirmationTitle": "Отправить учебная задача на проверку",
+    "submitErrorToast": "Не удалось отправить учебная задача на проверку",
+    "submitSuccessToast": "Учебная задача отправлено на проверку",
     "submitTrigger": "Отправить на проверку",
     "thumbnailTypeImage": "Изображение",
     "thumbnailTypeVideo": "Видео",
@@ -2629,6 +2946,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "unknownAuthor": "Неизвестно",
       "author": "Автор",
       "authors": "Авторы",
       "leaveCourse": "Покинуть курс",
@@ -2638,6 +2956,7 @@
       "startCourse": "Начать курс"
     },
     "CourseAuthors": {
+      "unknownAuthor": "Неизвестно",
       "and": " и ",
       "andMoreAuthors": "& {count, plural, one {# автор} few {# автора} many {# авторов} other {# авторов}}",
       "authorsAndUpdates": "Авторы и обновления",
@@ -2764,7 +3083,6 @@
       "startingCourse": "Начинаем курс...",
       "submittingContributorApplication": "Отправка заявки на участие...",
       "youAreAContributor": "Вы являетесь автором",
-      "youAreContributor": "Вы являетесь автором",
       "startError": "Не удалось начать курс. Попробуйте ещё раз."
     },
     "access": "Доступ",
@@ -2795,7 +3113,24 @@
         "rolesTitle": "Роли и разрешения",
         "rolesDescription": "Управляйте ролями и их разрешениями",
         "userRolesTitle": "Роли пользователей",
-        "userRolesDescription": "Назначайте роли участникам организации"
+        "userRolesDescription": "Назначайте роли участникам организации",
+        "rolesInSystem": "Ролей в системе: {count}",
+        "rolesDetails": "Настройка групп прав доступа и разрешений для сотрудников.",
+        "assignments": "Назначений: {count}",
+        "userRolesDetails": "Управление доступом конкретных пользователей платформы.",
+        "totalRoles": "Всего ролей",
+        "rolesAssigned": "Назначено ролей",
+        "totalAuditLogs": "Всего аудит-логов",
+        "goToSetting": "Перейти к настройке",
+        "recentChangesLog": "Журнал последних изменений",
+        "recentChangesDesc": "Лента недавних событий управления ролями и доступом на платформе",
+        "forRole": "для роли",
+        "initiator": "Инициатор ID: {actor}",
+        "system": "Система",
+        "noRecentAudit": "Нет недавних записей аудита",
+        "panelsTitle": "Панели управления",
+        "platformStatus": "Статус платформы",
+        "recentEvents": "Последние системные события"
       },
       "Alerts": {
         "actionRequired": "Требуется действие",
@@ -3227,7 +3562,7 @@
         "title": "Настройки аккаунта"
       },
       "Courses": {
-        "description": "Создавайте и управляйте курсами, главами и заданиями",
+        "description": "Создавайте и управляйте курсами, главами и учебные задачими",
         "errorOccurred": "Произошла ошибка",
         "title": "Курсы"
       },
@@ -3240,7 +3575,7 @@
         "title": "Платформа"
       },
       "Users": {
-        "description": "Управляйте пользователями и ролями Ashyk Bilim",
+        "description": "Управляйте пользователями и ролями",
         "title": "Пользователи"
       },
       "Admin": {
@@ -3249,8 +3584,13 @@
         "badge": "Системно"
       },
       "noAccess": "У вас пока нет доступа к функциям панели управления.",
-      "platformLogo": "Логотип Ashyk Bilim",
-      "touUniversity": "Торайгыров Университет"
+      "appLogo": "Логотип",
+      "touUniversity": "Торайгыров Университет",
+      "welcomeUser": "Рады вас видеть, {name}",
+      "defaultUser": "Пользователь",
+      "accountConnected": "Ваш аккаунт подключен. Выполнен вход в систему управления Ashyq Bilim.",
+      "sessionActive": "Сессия активна",
+      "availableSections": "Доступные разделы"
     },
     "CourseOverview": {
       "courseLabel": "Курс",
@@ -3284,7 +3624,7 @@
           }
         },
         "empty": {
-          "createAction": "Создать с пошаговой настройкой",
+          "createAction": "Создать первый курс",
           "title": "На этой странице нет подходящих курсов",
           "withQuery": "Измените поиск или пресет.",
           "withoutQuery": "Создайте курс или расширьте текущий пресет."
@@ -3293,7 +3633,7 @@
           "cannotDeleteSelection": "Невозможно удалить выбранные курсы.",
           "cannotUpdateSelection": "Невозможно обновить выбранные курсы."
         },
-        "guidedSetup": "Пошаговая настройка",
+        "guidedSetup": "Новый курс",
         "header": {
           "description": "Просматривайте каталог в таблице, ориентированной на управление, фильтруйте по этапам жизненного цикла и сразу переходите к созданию нового курса или существующему рабочему пространству курса.",
           "label": "Управление курсами",
@@ -3425,7 +3765,29 @@
           "certificate": "Сертификат",
           "collaboration": "Совместная работа"
         },
-        "workspacePulse": "Пульс рабочего пространства"
+        "workspacePulse": "Пульс рабочего пространства",
+        "tasks": {
+          "details": {
+            "label": "Добавить детали курса",
+            "description": "Укажите учебные результаты, теги и обложку, чтобы курс выглядел завершённым."
+          },
+          "curriculum": {
+            "label": "Создать учебный план",
+            "description": "Добавьте хотя бы одну главу и одно активность перед публикацией."
+          },
+          "access": {
+            "label": "Настроить доступ",
+            "description": "Подтвердите, кто может находить и записываться на этот курс."
+          },
+          "review": {
+            "label": "Проверить и опубликовать",
+            "description": "Проверьте качество контента, видимость и статус запуска."
+          }
+        },
+        "nextStepsHeading": "Следующие шаги",
+        "nextStepsDescription": "Выполните эти шаги, чтобы подготовить курс для учащихся.",
+        "completed": "Выполнено",
+        "continueSetup": "Продолжить настройку"
       },
       "Readiness": {
         "checklist": {
@@ -3487,6 +3849,99 @@
         "toasts": {
           "movedPrivate": "Курс снова переведён в приватный режим.",
           "published": "Курс опубликован."
+        }
+      },
+      "Create": {
+        "actions": {
+          "cancel": "Отмена",
+          "create": "Создать курс",
+          "creating": "Создание…"
+        },
+        "basics": {
+          "courseTitle": "Название курса",
+          "courseTitlePlaceholder": "Например: Анализ данных для учителей",
+          "description": "Краткое описание",
+          "descriptionHelp": "Объясните, что получат учащиеся и для кого этот курс.",
+          "descriptionPlaceholder": "Опишите цель курса, аудиторию и ключевые результаты."
+        },
+        "destination": {
+          "curriculum": {
+            "description": "Сразу перейдите к созданию глав и активностей.",
+            "title": "Открыть учебный план"
+          },
+          "overview": {
+            "description": "Сначала откройте чеклист настройки рабочего пространства.",
+            "title": "Открыть обзор"
+          }
+        },
+        "formLabel": "Создать курс",
+        "header": {
+          "description": "Укажите название, начальную структуру и куда перейти после создания.",
+          "title": "Создать курс"
+        },
+        "review": {
+          "blockingReasons": {
+            "description": "Добавьте краткое описание.",
+            "source": "Выберите исходный курс.",
+            "title": "Добавьте название курса."
+          },
+          "heading": "Готово к созданию",
+          "rows": {
+            "destination": "После создания",
+            "source": "Исходный курс",
+            "sourceEmpty": "Не выбран",
+            "sourceSelected": "Курс выбран",
+            "structure": "Начальная структура",
+            "title": "Название",
+            "titleEmpty": "Не задано",
+            "visibility": "Видимость"
+          }
+        },
+        "sections": {
+          "afterCreation": "После создания",
+          "afterCreationHelp": "Выберите, куда перейти после создания курса.",
+          "basics": "Основы",
+          "basicsHelp": "Публичное представление этого курса.",
+          "structure": "Начальная структура",
+          "structureHelp": "Выберите, с каким объёмом структуры начинается новый курс.",
+          "visibility": "Начальная видимость",
+          "visibilityHelp": "Управляйте тем, кто может найти курс после создания."
+        },
+        "structure": {
+          "blank": {
+            "description": "Начните с пустого курса. Создайте главы вручную.",
+            "title": "Пустой"
+          },
+          "copyOutline": {
+            "description": "Скопируйте названия глав из другого курса. Активности не включаются.",
+            "noResults": "Курсы не найдены.",
+            "searchError": "Не удалось загрузить курсы.",
+            "searching": "Поиск…",
+            "searchPlaceholder": "Поиск курсов…",
+            "selectPlaceholder": "Выберите курс",
+            "sourceCourseHelp": "Копирует только названия глав. Активности и контент остаются в исходном курсе.",
+            "sourceCourseLabel": "Исходный курс",
+            "title": "Копировать структуру"
+          },
+          "starter": {
+            "description": "Начните с двух готовых глав: Введение и Основные уроки.",
+            "title": "Стартовый шаблон"
+          }
+        },
+        "toasts": {
+          "created": "Курс создан.",
+          "partial": "Курс создан. {imported} из {imported, number} глав импортировано. {failed} не удалось."
+        },
+        "visibility": {
+          "private": {
+            "description": "Оставьте курс внутренним, пока команда его собирает и проверяет.",
+            "title": "Приватный"
+          },
+          "public": {
+            "description": "Видимый для всех сразу после создания.",
+            "title": "Публичный",
+            "warning": "Этот курс будет публично виден сразу. Вы можете сделать его приватным в настройках доступа."
+          }
         }
       },
       "Wizard": {
@@ -3604,6 +4059,7 @@
           "content": "Контент",
           "details": "Детали",
           "gradebook": "Журнал",
+          "overview": "Обзор",
           "publish": "Проверка и публикация",
           "settings": "Настройки"
         },
@@ -3693,7 +4149,7 @@
             "permissions": {
               "cannotChangeAccess": "Не может менять доступ",
               "cannotManageContributors": "Не может управлять авторами",
-              "createActivities": "Создавать задания",
+              "createActivities": "Создавать учебные задачи",
               "editCourseContent": "Редактировать материалы"
             }
           },
@@ -3719,7 +4175,7 @@
           }
         },
         "courseOwnershipTypes": "Типы владения курсом",
-        "description": "Разбор прав, ролей и доступа в Ashyk Bilim",
+        "description": "Разбор прав, ролей и доступа",
         "roleHierarchy": "Иерархия ролей",
         "roles": {
           "admin": {
@@ -3728,7 +4184,7 @@
             "permissions": {
               "allPermissions": "Все права",
               "manageCourses": "Управлять курсами",
-              "manageOrganization": "Управлять Ashyk Bilim",
+              "manageOrganization": "Управлять",
               "manageRoles": "Управлять ролями",
               "manageUsers": "Управлять пользователями"
             }
@@ -3737,9 +4193,7 @@
             "description": "Может создавать курсы, но для контента требуется владение",
             "name": "Преподаватель",
             "permissions": {
-              "createAssignments": "Создавать задания",
               "createCourses": "Создавать курсы",
-              "gradeAssignments": "Оценивать задания",
               "manageOwnCourses": "Управлять своими курсами"
             }
           },
@@ -3747,7 +4201,6 @@
             "description": "Менеджер среднего уровня с широкими правами",
             "name": "Модератор",
             "permissions": {
-              "manageAssignments": "Управлять заданиями",
               "manageCourses": "Управлять курсами",
               "manageUsers": "Управлять пользователями"
             }
@@ -3756,7 +4209,6 @@
             "description": "Обучающийся с правом только чтения",
             "name": "Пользователь",
             "permissions": {
-              "submitAssignments": "Сдавать задания",
               "takeAssessments": "Проходить тесты",
               "viewCourses": "Просматривать курсы"
             }
@@ -3771,7 +4223,7 @@
       "purchasedCourses": "Курсы, которые вы приобрели или на которые подписались",
       "title": "Курсы"
     },
-    "DashboardTitle": "Панель управления Ashyk Bilim",
+    "DashboardTitle": "Панель управления",
     "EditCourseContributors": {
       "active": "Активный",
       "activeBadge": "Активный",
@@ -3859,11 +4311,12 @@
       "InlineQuizExtension": {
         "title": "Встроенный тест",
         "editQuestions": "Редактировать вопросы",
-        "itemEditorComingSoon": "Редактор заданий для оценивания {assessmentUuid} (будет в Фазе 2)",
+        "itemEditorComingSoon": "Редактор учебных задач для оценивания {assessmentUuid} (будет в Фазе 2)",
         "score": "Балл: {score}%",
         "quizInfo": "Встроенный тест ({id}…)",
         "submit": "Отправить",
-        "close": "Закрыть"
+        "close": "Закрыть",
+        "quizNotConfigured": "Тест не настроен"
       },
       "BadgesExtension": {
         "deepDive": "Глубокое погружение",
@@ -3882,7 +4335,6 @@
         "searchEmojis": "Искать эмодзи..."
       },
       "Editor": {
-        "aiEditor": "Ashyk Ai",
         "mobileMessage1": "Редактор доступен только с настольного устройства.",
         "mobileMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра.",
         "mobileTitle": "Только для настольных ПК",
@@ -3918,7 +4370,11 @@
         "removeEmbedTitle": "Удалить встраивание",
         "urlButton": "URL",
         "urlPlaceholder": "Вставьте URL для встраивания (YouTube, Spotify и т.д.)",
-        "urlTip": "Подсказка: Вставьте любой URL для встраивания {productName} напрямую"
+        "urlTip": "Подсказка: Вставьте любой URL для встраивания {productName} напрямую",
+        "failedToRenderEmbed": "Встраивание {label}",
+        "embedRenderErrorMessage": "Не удалось отобразить это встраивание. Пожалуйста, попробуйте изменить или удалить его.",
+        "unknownEmbedType": "Неизвестный тип встраивания{type}. Пожалуйста, отредактируйте этот блок.",
+        "embeddedBlockRenderError": "Не удалось отобразить этот встроенный блок. Пожалуйста, попробуйте изменить или удалить его."
       },
       "FileUploadBlock": {
         "browseFiles": "Обзор файлов",
@@ -4094,7 +4550,6 @@
       "Toolbar": {
         "addColumnRight": "Добавить столбец справа",
         "addRowBelow": "Добавить строку ниже",
-        "aiEditor": "Ashyk Ai",
         "aria": {
           "insertInteractiveScenarios": "Вставить интерактивные сценарии"
         },
@@ -4198,6 +4653,7 @@
         "youtubeVideo": "Видео с YouTube"
       },
       "EmbedPanel": {
+        "embed": "встраивание",
         "title": "Вставить стороний объект",
         "popularLabel": "Популярные",
         "popularDescription": "Наиболее часто используемые сервисы преподавателями и студентами.",
@@ -4231,37 +4687,47 @@
         "cancelButton": "Отмена",
         "editButton": "Редактировать",
         "deleteButton": "Удалить",
-        "editTitle": "Edit Embed",
-        "description": "Choose a trusted service, then paste a share or embed URL.",
-        "categoryLabel": "Embed categories",
-        "serviceLabel": "Embed services",
-        "searchPlaceholder": "Search services...",
-        "urlLabel": "URL",
-        "urlForService": "{service} URL",
-        "selectServiceFirst": "Select a service to continue.",
-        "embedUrlHint": "Use the service embed/share URL for the most reliable result.",
-        "errorSelectType": "Please select an embed service",
-        "updateButton": "Update",
+        "editTitle": "Редактировать встроенный объект",
+        "description": "Выберите надежный сервис, а затем вставьте ссылку для общего доступа или встраивания.",
+        "categoryLabel": "Категории встраивания",
+        "serviceLabel": "Сервисы встраивания",
+        "searchPlaceholder": "Поиск сервисов...",
+        "urlLabel": "URL-адрес",
+        "urlForService": "URL-адрес {service}",
+        "selectServiceFirst": "Выберите сервис, чтобы продолжить.",
+        "embedUrlHint": "Для наиболее надежного результата используйте ссылку для встраивания или общего доступа, предоставленную сервисом.",
+        "errorSelectType": "Пожалуйста, выберите сервис встраивания",
+        "updateButton": "Обновить",
+        "useExample": "Использовать пример ссылки",
+        "howToGetLink": "Как получить ссылку:",
+        "viewDocs": "Официальная документация",
+        "urlValid": "URL-адрес действителен и готов.",
+        "defaultInstructions": "1. Откройте контент в сервисе.\n2. Нажмите кнопку «Поделиться» или «Встроить».\n3. Скопируйте URL и вставьте его сюда.",
         "providers": {
           "figma": {
             "label": "Figma",
-            "description": "Живые файлы дизайна и интерактивные прототипы."
+            "description": "Живые файлы дизайна и интерактивные прототипы.",
+            "instructions": "1. Откройте дизайн-файл или прототип в Figma.\n2. Нажмите кнопку **Share** (Поделиться) вверху справа.\n3. Выберите доступ **Anyone with the link**.\n4. Нажмите **Copy link**."
           },
           "canva": {
             "label": "Canva",
-            "description": "Плакаты, инфографика, презентации и элементы дизайна."
+            "description": "Плакаты, инфографика, презентации и элементы дизайна.",
+            "instructions": "1. Откройте ваш дизайн в Canva.\n2. Нажмите кнопку **Поделиться** вверху справа.\n3. Выберите **Еще** и найдите **Встроить**.\n4. Скопируйте ссылку для умного встраивания."
           },
           "miro": {
             "label": "Miro",
-            "description": "Совместные воркшопы, карты и доски групп."
+            "description": "Совместные воркшопы, карты и доски групп.",
+            "instructions": "1. Откройте доску Miro.\n2. Нажмите кнопку **Share** вверху справа.\n3. Разрешите доступ **Anyone with the link can view**.\n4. Скопируйте ссылку на доску."
           },
           "excalidraw": {
             "label": "Excalidraw",
-            "description": "Нарисованные от руки диаграммы и доски для мозгового штурма."
+            "description": "Нарисованные от руки диаграммы и доски для мозгового штурма.",
+            "instructions": "1. Создайте или откройте рисунок в Excalidraw.\n2. Нажмите иконку **Collaboration** (совместная работа).\n3. Нажмите **Start session** и скопируйте ссылку."
           },
           "tldraw": {
             "label": "tldraw",
-            "description": "Быстрый бесконечный холст для эскизов и визуального мышления."
+            "description": "Быстрый бесконечный холст для эскизов и визуального мышления.",
+            "instructions": "1. Создайте или откройте холст на tldraw.com.\n2. Скопируйте URL прямо из адресной строки браузера."
           },
           "mural": {
             "label": "Mural",
@@ -4293,7 +4759,8 @@
           },
           "google-slides": {
             "label": "Google Слайды",
-            "description": "Облачные презентации с совместной работой в реальном времени."
+            "description": "Облачные презентации с совместной работой в реальном времени.",
+            "instructions": "1. Откройте презентацию в Google Презентациях.\n2. Выберите **Файл -> Поделиться -> Опубликовать в интернете**.\n3. Нажмите кнопку **Опубликовать**.\n4. Скопируйте полученную ссылку."
           },
           "powerpoint": {
             "label": "PowerPoint Online",
@@ -4317,7 +4784,8 @@
           },
           "codepen": {
             "label": "CodePen",
-            "description": "Визуальные фронтенд-демо и интерактивные ручки."
+            "description": "Визуальные фронтенд-демо и интерактивные ручки.",
+            "instructions": "1. Откройте Pen в CodePen.\n2. Нажмите кнопку **Embed** в нижнем меню.\n3. Скопируйте URL из кода iframe или просто скопируйте обычную ссылку на Pen."
           },
           "replit": {
             "label": "Replit",
@@ -4373,7 +4841,8 @@
           },
           "youtube": {
             "label": "YouTube",
-            "description": "Образовательные видео, лекции и скринкасты."
+            "description": "Образовательные видео, лекции и скринкасты.",
+            "instructions": "1. Откройте видео на YouTube.\n2. Нажмите кнопку **Поделиться** под видео.\n3. Скопируйте ссылку."
           },
           "vimeo": {
             "label": "Vimeo",
@@ -4393,15 +4862,16 @@
           },
           "spotify": {
             "label": "Spotify",
-            "description": "Подкасты и кураторские учебные плейлисты."
+            "description": "Подкасты и кураторские учебные плейлисты.",
+            "instructions": "1. Откройте Spotify и перейдите к треку, альбому или плейлисту.\n2. Нажмите на **три точки (...)** рядом.\n3. Выберите **Поделиться -> Копировать ссылку**."
           },
           "soundcloud": {
             "label": "SoundCloud",
-            "description": "Примеры аудио, уроки музыки и задания на прослушивание."
+            "description": "Примеры аудио, уроки музыки и учебные задачи на прослушивание."
           },
           "suno": {
             "label": "Suno",
-            "description": "Песни, созданные ИИ, и творческие аудиозадания."
+            "description": "Песни, созданные ИИ, и творческие аудиоучебные задачи."
           },
           "sodaphonic": {
             "label": "Sodaphonic",
@@ -4409,11 +4879,11 @@
           },
           "rutube": {
             "label": "RuTube",
-            "description": "Российский видеохостинг — зеркала или дополнения к YouTube."
+            "description": "Российский видеохостинг - зеркала или дополнения к YouTube."
           },
           "vk-video": {
             "label": "VK Видео",
-            "description": "Видео ВКонтакте — широко просматривается в СНГ."
+            "description": "Видео ВКонтакте - широко просматривается в СНГ."
           },
           "vk-clips": {
             "label": "VK Клипы / Посты",
@@ -4425,7 +4895,7 @@
           },
           "deezer": {
             "label": "Deezer",
-            "description": "Музыкальные и подкаст-плейлисты для заданий на понимание."
+            "description": "Музыкальные и подкаст-плейлисты для учебных задач на понимание."
           },
           "mixcloud": {
             "label": "Mixcloud",
@@ -4441,7 +4911,7 @@
           },
           "h5p": {
             "label": "H5P",
-            "description": "Интерактивный контент LMS, такой как викторины и задания."
+            "description": "Интерактивный контент LMS, такой как викторины и учебные задачи."
           },
           "genially": {
             "label": "Genially",
@@ -4457,7 +4927,8 @@
           },
           "google-forms": {
             "label": "Google Формы",
-            "description": "Быстрые викторины и опросы по курсу."
+            "description": "Быстрые викторины и опросы по курсу.",
+            "instructions": "1. Откройте форму в Google Формах.\n2. Нажмите кнопку **Отправить** вверху справа.\n3. Выберите вкладку со ссылкой или кодом встраивания и скопируйте URL."
           },
           "tally": {
             "label": "Tally",
@@ -4505,7 +4976,7 @@
           },
           "wordwall": {
             "label": "Wordwall",
-            "description": "Геймифицированные задания по лексике и грамматике."
+            "description": "Геймифицированные учебные задачи по лексике и грамматике."
           },
           "poll-everywhere": {
             "label": "Poll Everywhere",
@@ -4517,7 +4988,8 @@
           },
           "google-sheets": {
             "label": "Google Таблицы",
-            "description": "Живые таблицы, наборы данных и графики."
+            "description": "Живые таблицы, наборы данных и графики.",
+            "instructions": "1. Откройте таблицу в Google Таблицах.\n2. Выберите **Файл -> Поделиться -> Опубликовать в интернете**.\n3. Нажмите кнопку **Опубликовать**.\n4. Скопируйте полученную ссылку."
           },
           "trello": {
             "label": "Trello",
@@ -4553,15 +5025,18 @@
           },
           "google-docs": {
             "label": "Google Документы",
-            "description": "Совместное редактирование документов."
+            "description": "Совместное редактирование документов.",
+            "instructions": "1. Откройте документ в Google Документах.\n2. Выберите **Файл -> Поделиться -> Опубликовать в интернете**.\n3. Нажмите кнопку **Опубликовать**.\n4. Скопируйте полученную ссылку."
           },
           "desmos": {
             "label": "Desmos",
-            "description": "Интерактивный графический калькулятор для математики."
+            "description": "Интерактивный графический калькулятор для математики.",
+            "instructions": "1. Откройте ваш график в Desmos.\n2. Нажмите кнопку **Share Graph** вверху справа.\n3. Скопируйте полученную ссылку."
           },
           "geogebra": {
             "label": "GeoGebra",
-            "description": "Геометрия, графики и математические симуляции 3D."
+            "description": "Геометрия, графики и математические симуляции 3D.",
+            "instructions": "1. Откройте материал в GeoGebra.\n2. Нажмите кнопку **Поделиться** вверху справа.\n3. Скопируйте ссылку."
           },
           "wolfram-alpha": {
             "label": "Wolfram Alpha",
@@ -4778,7 +5253,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "Эта страница доступна только на настольном устройстве.",
-      "desktopOnlyMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра и управления заданием.",
+      "desktopOnlyMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра и управления учебная задачам.",
       "desktopOnlyTitle": "Только для настольных устройств",
       "generalDescription": "Статистика",
       "generalTitle": "Статистика",
@@ -4861,24 +5336,18 @@
       "creatingProduct": "Создание продукта...",
       "currentPasswordLabel": "Текущий пароль",
       "deleting": "Удаление...",
-      "deletingStripeConfig": "Удаление конфигурации Stripe...",
       "deletingUserGroup": "Удаление группы пользователей...",
-      "enablingStripe": "Включение Stripe...",
       "errorGeneric": "Произошла ошибка",
       "errorNetwork": "Ошибка сети, проверьте соединение",
       "errors": {
         "archiveProductFailed": "Не удалось архивировать продукт.",
         "createProductError": "Ошибка создания продукта. Пожалуйста, попробуйте еще раз.",
         "createProductFailed": "Не удалось создать продукт.",
-        "deleteStripeConfigFailed": "Не удалось удалить конфигурацию Stripe.",
         "deleteUserGroupFailed": "Ошибка удаления группы пользователей.",
-        "enableStripeFailed": "Не удалось включить Stripe.",
         "fetchLinkedCoursesFailed": "Не удалось получить связанные курсы.",
         "linkCourseFailed": "Не удалось связать курс.",
         "loadCustomersFailed": "Ошибка загрузки клиентов.",
-        "loadStripeConfigFailed": "Не удалось загрузить конфигурацию Stripe.",
         "removeUserFailed": "Ошибка удаления пользователя.",
-        "startStripeOnboardingFailed": "Не удалось начать подключение Stripe.",
         "unlinkCourseFailed": "Не удалось разорвать связь с курсом.",
         "updateConfigFailed": "Не удалось обновить конфигурацию.",
         "updateProductFailed": "Не удалось обновить продукт."
@@ -4905,9 +5374,6 @@
       "saving": "Сохранение...",
       "savingLandingPage": "Сохранение домашней страницы...",
       "savingProfile": "Сохранение профиля...",
-      "startingStripeOnboarding": "Начало подключения Stripe...",
-      "stripeConfigDeletedSuccess": "Конфигурация Stripe успешно удалена.",
-      "stripeEnabledSuccess": "Stripe успешно включен!",
       "successGeneric": "Операция прошла успешно",
       "unsavedChanges": "Несохраненные изменения",
       "updating": "Обновление...",
@@ -4915,7 +5381,7 @@
       "uploadingAndCreating": "Загрузка файла и создание активности...",
       "uploadingImage": "Загрузка изображения...",
       "userGroupDeletedSuccess": "Группа пользователей удалена.",
-      "userRemovedSuccess": "Пользователь удален из Ashyk Bilim."
+      "userRemovedSuccess": "Пользователь удален."
     },
     "PlatformSettings": {
       "CollectionPage": {
@@ -4934,9 +5400,6 @@
           "descriptionMax": " ",
           "descriptionPlaceholder": "Краткое описание",
           "descriptionRequired": "Требуется краткое описание",
-          "exploreDescription": "Поделитесь курсами и контентом с сообществом Ashyk Bilim.<br/>Включите эту функцию, чтобы помочь учащимся найти ваши ценные образовательные ресурсы.",
-          "exploreLabel": "ИССЛЕДОВАТЬ",
-          "exploreTitle": "Показать в Ashyk Bilim Explore",
           "labelLabel": "Метка платформы",
           "labelPlaceholder": "Выберите метку платформы",
           "labelRequired": "Требуется метка",
@@ -4990,11 +5453,13 @@
           "ariaLabelLogo": "Выберите логотип для загрузки",
           "ariaLabelPreview": "Выберите предварительное изображение для загрузки",
           "ariaLabelThumbnail": "Выберите миниатюру для загрузки",
+          "organizationLogoAlt": "Логотип организации",
           "selectLogoFile": "Выберите файл логотипа",
           "selectPreviewFile": "Выберите предварительный просмотр файла",
           "selectThumbnailFile": "Выберите файл миниатюры",
           "uploadNewLogo": "Загрузить новый логотип",
           "uploadNewThumbnail": "Загрузить новый эскиз",
+          "platformThumbnailAlt": "Миниатюра платформы",
           "uploadingLogo": "Загрузка...",
           "uploadingThumbnail": "Загрузка..."
         },
@@ -5236,7 +5701,7 @@
         "savingButton": "Сохранение...",
         "title": "Домашняя страница"
       },
-      "Manage additional organization settings": "Управление дополнительными настройками Ashyk Bilim",
+      "Manage additional organization settings": "Управление дополнительными настройками",
       "Socials": {
         "Form": {
           "addCustomLinkButton": "Добавить ссылку",
@@ -5255,10 +5720,10 @@
         "customLinksTitle": "Пользовательские ссылки",
         "description": "Управляйте присутствием в социальных сетях",
         "platformUpdateFailed": "Не удалось обновить платформу",
-        "platformUpdatedSuccess": "Данные Ashyk Bilim обновлены",
+        "platformUpdatedSuccess": "Данные обновлены",
         "socialLinksTitle": "Социальные ссылки",
         "title": "Социальные ссылки",
-        "updatingPlatform": "Обновление данных Ashyk Bilim."
+        "updatingPlatform": "Обновление данных."
       },
       "general": "Общее",
       "generalDescription": "Управление настройками",
@@ -5310,7 +5775,7 @@
           "failedToSave": "Не удалось сохранить настройку",
           "lockedFeature": "Разблокируется на уровне {level}",
           "noAccessorySelected": "Аксессуар не выбран",
-          "noDataMessage": "Выполните задания, чтобы разблокировать настройку аватара!",
+          "noDataMessage": "Выполните учебные задачи, чтобы разблокировать настройку аватара!",
           "noFrameSelected": "Рамка не выбрана",
           "preview": "Предпросмотр",
           "previewChanges": "Просмотр изменений",
@@ -5384,7 +5849,7 @@
           "profile": "Профиль",
           "progress": "Прогресс",
           "quickStats": "Быстрая статистика",
-          "rank": "Место №{rank} в Ashyk Bilim",
+          "rank": "Место №{rank}",
           "rankInOrg": "Место №{rank} в Ashyk Bilim",
           "recentAchievements": "Недавние достижения",
           "recentActivity": "Недавние активности",
@@ -5413,13 +5878,13 @@
         },
         "emptyStates": {
           "noActivity": "Пока нет активности",
-          "noActivityDescription": "Выполняйте задания, чтобы начать зарабатывать опыт и подниматься в таблице лидеров!",
+          "noActivityDescription": "Выполняйте учебные задачи, чтобы начать зарабатывать опыт и подниматься в таблице лидеров!",
           "noLeaderboard": "Нет данных таблицы лидеров",
           "noLeaderboardDescription": "Станьте первым, кто заработает опыт в этой организации!",
           "noProgress": "Нет данных о прогрессе",
           "noProgressDescription": "Начните обучение, чтобы отслеживать свой прогресс здесь.",
           "noTransactions": "Нет недавней активности",
-          "noTransactionsDescription": "Ваши транзакции опыта будут отображаться здесь по мере выполнения заданий."
+          "noTransactionsDescription": "Ваши транзакции опыта будут отображаться здесь по мере выполнения учебных задач."
         },
         "engagement": {
           "activeDays": "Активные дни",
@@ -5451,9 +5916,10 @@
           "unknownError": "Произошла неизвестная ошибка"
         },
         "errors": {
-          "orgNotAvailable": "Данные Ashyk Bilim недоступны. Пожалуйста, обновите страницу."
+          "orgNotAvailable": "Данные недоступны. Пожалуйста, обновите страницу."
         },
         "leaderboard": {
+          "anonymous": "Аноним",
           "aria": {
             "rankings": "Таблица лидеров пользователей"
           },
@@ -5569,7 +6035,7 @@
             "xpToGo": "ОП осталось"
           },
           "requirements": {
-            "activitiesCompleted": "Завершено заданий: {count}",
+            "activitiesCompleted": "Завершено учебных задач: {count}",
             "level": "Уровень {level}",
             "streakDays": "Необходима серия {count} дн.",
             "xpRequired": "Требуется {xp} ОП"
@@ -5676,7 +6142,7 @@
           "learningStreak": "Серия обучения",
           "loginStreak": "Серия входов",
           "noData": "Нет данных о сериях",
-          "noDataSubtext": "Выполняйте задания, чтобы начать серию!",
+          "noDataSubtext": "Выполняйте учебные задачи, чтобы начать серию!",
           "personalBest": "Личный рекорд: {count} дн.",
           "retry": "Повторить",
           "retryLimit": "Достигнуто максимальное количество попыток. Обновите страницу.",
@@ -5684,7 +6150,7 @@
             "active": "{count} дн. подряд! 🔥",
             "atRisk": "Не прерывайте серию! {action} сегодня.",
             "broken": "Начните свою серию-{type} сегодня!",
-            "completeAction": "Выполните задание",
+            "completeAction": "Выполните учебная задача",
             "learning": "обучения",
             "login": "входа",
             "loginAction": "Войти"
@@ -5699,8 +6165,8 @@
           "titleCompact": "Серии",
           "tooltips": {
             "invalidDate": "Неверная дата",
-            "lastActivity": "Последнее задание",
-            "learning": "Выполняйте задания ежедневно, чтобы сохранять серию обучения!",
+            "lastActivity": "Последнее учебная задача",
+            "learning": "Выполняйте учебные задачи ежедневно, чтобы сохранять серию обучения!",
             "login": "Входите ежедневно, чтобы поддерживать серию и получать бонусные ОП!",
             "noActivity": "Еще нет активности"
           }
@@ -5764,11 +6230,10 @@
           "xpText": "ОП"
         },
         "xpSources": {
-          "activity_completion": "Задание выполнено",
-          "assignment_submission": "Задание отправлено",
+          "activity_completion": "Учебная задача выполнено",
           "course_completion": "Курс завершен",
           "discussion_post": "Сообщение в обсуждении",
-          "first_activity": "Первое задание",
+          "first_activity": "Первое учебная задача",
           "forum_participation": "Участие в форуме",
           "learning_streak_bonus": "Бонус за серию обучения",
           "login_bonus": "Ежедневный вход",
@@ -6180,7 +6645,7 @@
     },
     "UserSettings": {
       "add": "Пригласить участников",
-      "addDescription": "Пригласите участников присоединиться к Ashyk Bilim",
+      "addDescription": "Пригласите участников, отправив им приглашение по электронной почте. (BETA)",
       "addSection": {
         "description": "Отправить приглашение по электронной почте, через запятую",
         "emailHeader": "Электронная почта",
@@ -6193,7 +6658,7 @@
         "statusPending": "В ожидании",
         "statusSigned": "Зарегистрирован",
         "textAreaPlaceholder": "Пример: spike.spiegel@teachers.tou.edu.kz, michael.scott@students.tou.edu.kz",
-        "title": "Пригласить пользователей в Ashyk Bilim"
+        "title": "Пригласить пользователей"
       },
       "addTitle": "Пригласить участников",
       "desktopOnlyMessage1": "Эта страница доступна только с настольного устройства.",
@@ -6281,7 +6746,7 @@
         "noSearchResults": "Пользователи не найдены по вашему запросу.",
         "noUsersFound": "Пользователи не найдены.",
         "paginationInfo": "Показано {start}-{end} из {total} пользователей",
-        "removeFromOrgButton": "Удалить из Ashyk Bilim",
+        "removeFromOrgButton": "Удалить пользователя",
         "removeUserButton": "Удалить пользователя",
         "removeUserModalMessage": "Вы уверены, что хотите удалить этого пользователя из Ashyk Bilim?",
         "removeUserModalTitle": "Удалить {username}?",
@@ -6300,9 +6765,26 @@
   "Errors": {
     "errorLabel": "Ошибка:",
     "errorReference": "Ссылка на ошибку:",
+    "reference": "Ссылка",
+    "pageRenderFailed": "Страница не смогла отобразиться. Попробуйте снова или перезагрузите страницу, если ошибка повторяется.",
     "somethingWentWrong": "Что-то пошло не так!",
     "technicalDetails": "Технические детали:",
-    "tryAgain": "Попробуйте снова"
+    "tryAgain": "Попробуйте снова",
+    "accessDenied": "Доступ запрещен",
+    "accessDeniedMessage": "У вас нет прав для доступа к этому курсу.",
+    "assessmentsLoadError": "Произошла ошибка при загрузке этого теста. Пожалуйста, попробуйте обновить страницу или проверить подключение.",
+    "courseLoadError": "Произошла ошибка при загрузке этого курса. Пожалуйста, попробуйте обновить страницу или зайдите позже.",
+    "coursesListLoadError": "Произошла ошибка при загрузке списка курсов. Пожалуйста, попробуйте обновить страницу.",
+    "gradebookLoadError": "Не удалось загрузить журнал оценок",
+    "gradebookLoadErrorDescription": "Повторите запрос. Если ошибка повторится, данные журнала оценок могут быть временно недоступны.",
+    "retry": "Повторить",
+    "ref": "Код: {digest}",
+    "activityNotFound": "Активность не найдена",
+    "activityNotFoundMessage": "Запрашиваемая активность не существует или была удалена.",
+    "courseNotFound": "Курс не найден",
+    "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
+    "backToCourse": "Вернуться к курсу",
+    "backToDashboard": "В панель управления"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -6347,6 +6829,8 @@
     "course": "Курс",
     "courseEndTitle": "Поздравляем - Курс {course}",
     "courses": "Курсы",
+    "dashboard": "Главная панель",
+    "dashboardWelcome": "Добро пожаловать в панель управления платформой. Быстрый переход к основным разделам.",
     "creating": "Создание...",
     "currency": "Валюта",
     "delete": "Удалить",
@@ -6491,11 +6975,13 @@
     },
     "Panel": {
       "title": "Панель оценивания",
+      "selectSubmission": "Выберите работу, чтобы начать проверку.",
       "loading": "Загрузка...",
       "notYetSubmitted": "Ещё не сдано",
       "noData": "Нет данных",
       "attempt": "Попытка",
       "finalScore": "Итоговая оценка",
+      "scoreOutOf100": "/100",
       "autoScore": "Автоматическая оценка",
       "feedback": "Комментарий",
       "optional": "необязательно",
@@ -6557,6 +7043,9 @@
       "keyboardHintSave": "Сохранить черновик",
       "keyboardHintPublish": "Опубликовать",
       "keyboardHint": "Горячие клавиши",
+      "shortcutSave": "Ctrl↵",
+      "shortcutPublish": "Ctrl⇧↵",
+      "shortcutFocusGrade": "G",
       "loadingSubmission": "Загрузка работы...",
       "formUnavailable": "Форма оценивания недоступна."
     },
@@ -6664,7 +7153,7 @@
   },
   "HomePage": {
     "Collections": {
-      "collectionOfCourses": "Коллекции курсов от Ashyk Bilim",
+      "collectionOfCourses": "Коллекции курсов",
       "newCollection": "Новая коллекция",
       "noContent": "Пока нет коллекций",
       "noContentDescription": "Создавайте коллекции для организации ваших курсов и контента",
@@ -6740,7 +7229,7 @@
       "success": "Коллекция успешно создана!"
     },
     "visibilityLabel": "Видимость",
-    "visibilityPrivate": "Частная коллекция - Видна только членам Ashyk Bilim",
+    "visibilityPrivate": "Частная коллекция - Видна только пользователям",
     "visibilityPublic": "Публичная коллекция - Видна всем"
   },
   "NotFoundPage": {
@@ -6796,7 +7285,7 @@
       "manageCourses": "Управление курсами",
       "manageUsers": "Управление пользователями",
       "platformSettings": "Настройки платформы",
-      "platformLogo": "Логотип Ashyk Bilim",
+      "appLogo": "Логотип",
       "userAccountSettings": "Настройки аккаунта пользователя",
       "userSettings": "Настройки пользователя"
     },
@@ -6840,6 +7329,18 @@
     "submit": "Отправить"
   },
   "TeacherAnalytics": {
+    "tabs": {
+      "overview": "Обзор",
+      "watchlist": "Группа риска",
+      "courses": "Курсы",
+      "workload": "Нагрузка",
+      "grading": "Проверка",
+      "forecasting": "Прогноз",
+      "dataQuality": "Качество данных",
+      "performance": "Успеваемость и контент",
+      "operations": "Диагностика и операции",
+      "admin": "Админ-панель"
+    },
     "overview": {
       "label": "Аналитика",
       "heading": "Операционная аналитика по вовлечённости в курс, рискам учащихся и качеству оценивания.",
@@ -6860,7 +7361,7 @@
       "alertsEmpty": "Нет активных уведомлений для выбранных фильтров.",
       "showingCourses": "Показано 8 из {total} курсов.",
       "viewAllCourses": "Смотреть все →",
-      "showingAssessments": "Показано 8 из {total} заданий.",
+      "showingAssessments": "Показано 8 из {total} учебных задач.",
       "viewAllAssessments": "Смотреть все →",
       "watchlistTitle": "Срочный список наблюдения",
       "watchlistDescription": "Учащиеся с наибольшим риском, которым, вероятно, нужна помощь на этой неделе.",
@@ -6873,7 +7374,8 @@
         "resolved": "Решено",
         "recovered": "Восстановлено"
       },
-      "viewAllAtRisk": "Полный список учащихся в зоне риска →"
+      "viewAllAtRisk": "Полный список учащихся в зоне риска →",
+      "contentFriction": "Трудности с контентом"
     },
     "filters": {
       "label": "Аналитика",
@@ -6916,7 +7418,6 @@
         "none": "Без сравнения"
       },
       "assessmentType": {
-        "assignment": "Задание",
         "quiz": "Тест",
         "exam": "Экзамен",
         "codeChallenge": "Задача по коду"
@@ -6982,7 +7483,7 @@
         "activeLearners": "Уникальные учащиеся, выполнившие хотя бы одно действие за выбранный период.",
         "returningLearners": "Учащиеся, которые также были активны в предшествующем периоде равной длины.",
         "completionRate": "Доля зачисленных учащихся, полностью завершивших курс.",
-        "atRisk": "Учащиеся с оценкой 40+ по сводному индексу риска (неактивность + прогресс + неудачи + пропущенные задания + ожидание проверки).",
+        "atRisk": "Учащиеся с оценкой 40+ по сводному индексу риска (неактивность + прогресс + неудачи + пропущенные учебные задачи + ожидание проверки).",
         "ungradedSubmissions": "Работы, ожидающие проверки и оценки преподавателя.",
         "negativeCourses": "Курсы, в которых количество активных учащихся снизилось по сравнению с предыдущим периодом."
       }
@@ -7065,7 +7566,7 @@
     },
     "histogram": {
       "learners": "Учащиеся",
-      "emptyState": "Данные гистограммы недоступны для выбранного задания.",
+      "emptyState": "Данные гистограммы недоступны для выбранного учебные задачи.",
       "passLabel": "Проходной"
     },
     "courseHealth": {
@@ -7085,22 +7586,29 @@
       "emptyMessage": "Нет курсов, соответствующих текущему охвату аналитики."
     },
     "assessmentOutliers": {
-      "title": "Проблемные задания",
-      "description": "Ранжированные задания, тесты, экзамены и задачи по коду, требующие внимания.",
-      "colAssessment": "Задание",
+      "title": "Проблемные учебные задачи",
+      "description": "Ранжированные учебные задачи, тесты, экзамены и задачи по коду, требующие внимания.",
+      "colAssessment": "Учебная задача",
       "colCourse": "Курс",
       "colSubmission": "Отправки",
       "colPass": "Прохождение",
       "colMedian": "Медиана",
       "colDifficulty": "Сложность",
       "colSignals": "Сигналы",
-      "viewAssessment": "Просмотр задания {title}",
+      "viewAssessment": "Просмотр учебные задачи {title}",
       "healthy": "В норме",
-      "searchPlaceholder": "Поиск по заданиям...",
-      "emptyMessage": "Нет проблемных заданий для текущего охвата.",
-      "rowCount": "{count} проблемных заданий"
+      "searchPlaceholder": "Поиск по учебные задачим...",
+      "emptyMessage": "Нет проблемных учебных задач для текущего охвата.",
+      "rowCount": "{count} проблемных учебных задач"
     },
     "atRisk": {
+      "interventionsCount": "{count, plural, one {# мера поддержки зафиксирована} few {# меры поддержки зафиксировано} other {# мер поддержки зафиксировано}}",
+      "noInterventions": "Меры поддержки не зафиксированы",
+      "interventions": {
+        "message": "Сообщение",
+        "meeting": "Встреча",
+        "recovered": "Восстановлен"
+      },
       "defaultTitle": "Учащиеся в зоне риска",
       "defaultDescription": "Операционный список учащихся, ранжированных по срочности.",
       "colLearner": "Учащийся",
@@ -7114,6 +7622,8 @@
       "na": "н/д",
       "searchPlaceholder": "Поиск по учащимся, курсам или кодам причин...",
       "emptyMessage": "Нет учащихся в зоне риска для текущих фильтров.",
+      "interventionLogged": "Мера поддержки зафиксирована",
+      "interventionLogFailed": "Не удалось зафиксировать меру поддержки",
       "gradeSubmissions": "Проверить {count} работ(у) →",
       "riskComponents": {
         "inactivity": "Неактивность",
@@ -7144,15 +7654,17 @@
       "learners": "Учащиеся"
     },
     "pages": {
+      "assessmentsTitle": "Успеваемость по оцениваниям",
+      "shellTitle": "Аналитика и операции для преподавателя",
       "overviewDisabledTitle": "Аналитика недоступна",
       "overviewDisabledDesc": "В этой организации аналитика отключена или текущий сеанс не имеет доступа к аналитическим данным.",
       "overviewLoadError": "Не удалось загрузить службу аналитики.",
-      "assessmentsUnavailableTitle": "Аналитика заданий недоступна",
-      "assessmentsUnavailableDesc": "Для просмотра аналитики заданий требуется аутентифицированный сеанс.",
-      "assessmentsLoadError": "Не удалось загрузить представление аналитики заданий.",
-      "assessmentDetailTitle": "Детали задания недоступны",
-      "assessmentDetailDesc": "Для проверки аналитики задания требуется аутентифицированный сеанс.",
-      "assessmentDetailLoadError": "Не удалось загрузить детальное представление аналитики задания.",
+      "assessmentsUnavailableTitle": "Аналитика учебных задач недоступна",
+      "assessmentsUnavailableDesc": "Для просмотра аналитики учебных задач требуется аутентифицированный сеанс.",
+      "assessmentsLoadError": "Не удалось загрузить представление аналитики учебных задач.",
+      "assessmentDetailTitle": "Детали учебные задачи недоступны",
+      "assessmentDetailDesc": "Для проверки аналитики учебные задачи требуется аутентифицированный сеанс.",
+      "assessmentDetailLoadError": "Не удалось загрузить детальное представление аналитики учебные задачи.",
       "coursesUnavailableTitle": "Аналитика курсов недоступна",
       "coursesUnavailableDesc": "Для просмотра аналитики курсов требуется аутентифицированный сеанс.",
       "coursesLoadError": "Не удалось загрузить представление аналитики курсов.",
@@ -7179,17 +7691,17 @@
       "courseContentHealthTitle": "Здоровье контента",
       "courseAtRiskTitle": "Учащиеся в зоне риска в этом курсе",
       "courseAtRiskDescription": "Учащиеся с наибольшим риском, ограниченные выбранным курсом.",
-      "assessmentDetailBadge": "Задание #{id}",
+      "assessmentDetailBadge": "Учебная задача #{id}",
       "assessmentStatSubmissionRate": "Процент отправок",
       "assessmentStatPassRate": "Процент прохождения",
       "assessmentStatMedianScore": "Медиана баллов",
       "assessmentStatAvgAttempts": "Среднее количество попыток",
       "assessmentScoreDistTitle": "Распределение баллов",
-      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этому заданию.",
+      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этому учебной задаче.",
       "assessmentAttemptDistTitle": "Распределение попыток",
-      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить задание.",
+      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить учебная задача.",
       "assessmentQuestionTitle": "Сложность вопросов",
-      "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные задания.",
+      "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные учебные задачи.",
       "assessmentCommonFailuresTitle": "Частые ошибки",
       "assessmentNoCommonFailures": "В текущих данных не обнаружено кластера частых ошибок.",
       "assessmentOpsTitle": "Операционная готовность",
@@ -7280,17 +7792,25 @@
     }
   },
   "Features": {
+    "ContentMarkdown": {
+      "imageLabel": "Изображение"
+    },
     "Grading": {
       "Gradebook": {
         "title": "Прогресс курса",
         "loading": "Журнал оценок загружается...",
         "loadError": "Не удалось загрузить журнал оценок.",
         "unavailable": "Журнал оценок недоступен.",
+        "emptyTitle": "Нет учащихся по этим фильтрам",
+        "emptyDescription": "Измените поиск, тип активности или фильтр прогресса, чтобы увидеть учащихся.",
+        "pageStatus": "Страница {page} из {totalPages}",
+        "previousPage": "Предыдущая",
+        "nextPage": "Следующая",
         "backToGradebook": "Назад к журналу",
         "submissionReview": "Проверка работы",
         "searchLearner": "Поиск студента",
-        "activityType": "Тип задания",
-        "allActivityTypes": "Все типы заданий",
+        "activityType": "Тип учебные задачи",
+        "allActivityTypes": "Все типы учебных задач",
         "learner": "Студент",
         "email": "Email",
         "selectCell": "Выбрать ячейку прогресса",
@@ -7304,7 +7824,7 @@
         "defaultCohort": "Список курса",
         "summary": {
           "learners": "Студенты",
-          "activities": "Задания",
+          "activities": "Учебные задачи",
           "needsGrading": "На проверке",
           "overdue": "Просрочено",
           "notStarted": "Не начато",
@@ -7331,14 +7851,13 @@
         },
         "rollups": {
           "title": "Сводки прогресса",
-          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и заданиям.",
-          "assignment_group": "Группы",
+          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+          "activity_category": "Группы",
           "cohort": "Когорты",
           "learner": "Студенты",
-          "activity": "Задания"
+          "activity": "Учебные задачи"
         },
         "activityTypes": {
-          "assignment": "Задание",
           "exam": "Экзамен",
           "codeChallenge": "Задача по коду",
           "quiz": "Тест",
@@ -7409,7 +7928,14 @@
           "noCanonicalProjection": "Каноническая проекция недоступна для этого типа элементов.",
           "noAnswerPayload": "Данные об ответе не зафиксированы.",
           "itemLabel": "Элемент {index}",
-          "rubricGuidance": "Критерии оценивания"
+          "rubricGuidance": "Критерии оценивания",
+          "plagiarism": {
+            "failed": "Плагиат: Ошибка проверки",
+            "checking": "Плагиат: Проверяется",
+            "pending": "Плагиат: В ожидании",
+            "match": "Плагиат: {score}% совпадений",
+            "clear": "Плагиат: Чисто"
+          }
         },
         "bulkActions": {
           "selectedCount": "{count} выбрано",
@@ -7419,6 +7945,7 @@
           "publishSelected": "Опубликовать выбранное",
           "returnSelected": "Вернуть выбранное",
           "releaseHidden": "Открыть скрытые оценки",
+          "deadlinePlaceholder": "Выберите дату и время",
           "reasonPlaceholder": "Причина",
           "extend": "Продлить",
           "export": "Экспорт",
@@ -7433,7 +7960,7 @@
             "published": "Выбранные оценки опубликованы",
             "returned": "Выбранные работы возвращены",
             "bulkActionFailed": "Массовое действие не удалось",
-            "bulkPartialFailure": "{failed} работа(ы) не удалось обновить — смотрите подробности ниже.",
+            "bulkPartialFailure": "{failed} работа(ы) не удалось обновить - смотрите подробности ниже.",
             "deadlineQueued": "Продление срока поставлено в очередь",
             "extendFailed": "Не удалось продлить срок",
             "hiddenReleased": "Скрытые оценки опубликованы",
@@ -7460,7 +7987,7 @@
             "notSet": "Не задано",
             "noReason": "Причина не указана",
             "selectedHiddenSubmissions": "Выбранные скрытые работы",
-            "releaseHiddenDescription": "Это применит действие публикации оценок на уровне задания и откроет все уже проверенные, но ещё скрытые работы."
+            "releaseHiddenDescription": "Это применит действие публикации оценок на уровне учебные задачи и откроет все уже проверенные, но ещё скрытые работы."
           },
           "dialogs": {
             "publishTitle": "Опубликовать выбранные оценки",
@@ -7470,7 +7997,7 @@
             "extendTitle": "Продлить сроки",
             "extendDescription": "Поставьте в очередь продление срока для выбранных студентов.",
             "releaseTitle": "Открыть скрытые оценки",
-            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этому заданию.",
+            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этому учебной задаче.",
             "defaultTitle": "Массовое действие",
             "defaultDescription": "Подтвердите выбранное массовое действие."
           }
@@ -7490,6 +8017,7 @@
         },
         "Panel": {
           "title": "Панель оценивания",
+          "selectSubmission": "Выберите работу, чтобы начать проверку.",
           "loading": "Загрузка...",
           "notYetSubmitted": "Ещё не сдано",
           "noData": "Нет данных",
@@ -7556,6 +8084,14 @@
           "loadingSubmission": "Загрузка работы...",
           "formUnavailable": "Форма оценивания недоступна."
         },
+        "Annotation": {
+          "addNote": "Добавить заметку",
+          "cancel": "Отмена",
+          "removeAnnotation": "Удалить аннотацию",
+          "commentPlaceholder": "Ваш комментарий к выделенному фрагменту…",
+          "addNoteFor": "Комментарий к: «{text}»",
+          "ctrlEnterHint": "Ctrl+Enter для сохранения"
+        },
         "releaseStateHidden": "Скрыто",
         "releaseStateAwaitingRelease": "Ожидает публикации",
         "releaseStateVisible": "Видно",
@@ -7565,13 +8101,12 @@
     "Assessments": {
       "Studio": {
         "kinds": {
-          "ASSIGNMENT": "Задание",
           "EXAM": "Тест",
-          "CODE_CHALLENGE": "Код задача",
+          "CODE_CHALLENGE": "Код-зона",
           "QUIZ": "Квиз",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Тест",
-          "TYPE_CODE_CHALLENGE": "Код задача"
+          "TYPE_CODE_CHALLENGE": "Код-зона"
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",
@@ -7608,7 +8143,7 @@
         "NativeItemStudio": {
           "itemNouns": {
             "question": "Вопрос",
-            "task": "Задание"
+            "task": "Учебная задача"
           },
           "outlineTitle": "Структура {itemNoun}",
           "outlinePoints": "Всего баллов: {points}",
@@ -7622,6 +8157,7 @@
           },
           "addKind": "Добавить {kind}",
           "outlineEmptyMessage": "Добавьте {itemNoun}, чтобы начать.",
+          "newQuestion": "Новый вопрос",
           "noItemSelectedTitle": "{itemNoun} не выбран",
           "noItemSelectedDescription": "Создайте или выберите {itemNoun} из списка.",
           "untitledItem": "Элемент без названия ({itemNoun})",
@@ -7634,11 +8170,12 @@
           "copyOfItem": "Копия {itemNoun}",
           "assessmentDetailsTitle": "Детали активности",
           "assessmentDetailsExamDescription": "Название, инструкции, расписание и политика экзамена.",
-          "assessmentDetailsAssignmentDescription": "Название, инструкции, расписание и настройки оценивания.",
           "itemMetadataTitle": "Метаданные {itemNoun}",
           "itemMetadataDescription": "Общее название, инструкция и количество баллов.",
           "titleLabel": "Название",
           "pointsLabel": "Баллы",
+          "pointsCompact": "{points} б.",
+          "moreIssues": "...и еще {count}",
           "itemContentTitle": "Содержимое {itemNoun}",
           "itemContentDescription": "Редактирование содержимого.",
           "pointsAbbreviation": "б.",
@@ -7675,7 +8212,7 @@
           "releaseStepLabel": "Публикация",
           "releaseStepDescription": "Проверьте предпросмотр, расписание или публикацию после успешных проверок.",
           "validation": {
-            "assessment_empty": "Оценка не содержит заданий.",
+            "assessment_empty": "Оценка не содержит учебных задач.",
             "assessment_title_missing": "Название обязательно.",
             "policy_max_attempts_invalid": "Лимит попыток должен быть не менее 1.",
             "policy_time_limit_invalid": "Ограничение по времени должно быть больше нуля.",
@@ -7697,7 +8234,7 @@
             "open_text_prompt_missing": "Требуется формулировка вопроса свободного ответа.",
             "open_text_min_words_invalid": "Минимальное количество слов не может быть отрицательным.",
             "file_prompt_missing": "Требуется формулировка вопроса загрузки файла.",
-            "file_max_files_invalid": "Задание загрузки файлов должно разрешать загрузку хотя бы одного файла.",
+            "file_max_files_invalid": "Учебная задача загрузки файлов должно разрешать загрузку хотя бы одного файла.",
             "file_max_mb_invalid": "Максимальный размер файла должен быть больше нуля.",
             "file_mime_invalid": "Допустимые типы файлов не могут быть пустыми.",
             "form_prompt_missing": "Требуется формулировка вопроса формы.",
@@ -7710,8 +8247,13 @@
           "duplicate": "Дублировать",
           "delete": "Удалить",
           "descriptionLabel": "Описание",
-          "failedToSaveSettings": "Не удалось сохранить параметры задания",
+          "failedToSaveSettings": "Не удалось сохранить параметры учебные задачи",
           "failedToSaveItem": "Не удалось сохранить {itemNoun}",
+          "reorderFailed": "Не удалось сохранить порядок вопросов. Предыдущий порядок восстановлен.",
+          "saveLedger": {
+            "assessment": "Оценка",
+            "item": "Выбранный элемент"
+          },
           "defaultItemTitle": "Элемент без названия",
           "copyOf": "Копия {title}",
           "Form": {
@@ -7719,6 +8261,7 @@
           },
           "errorLoading": "Ошибка при загрузке студии",
           "Items": {
+            "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
             "OpenText": {
               "prompt": "Вопрос",
               "minWords": "Минимальное количество слов",
@@ -7744,7 +8287,414 @@
             }
           }
         },
-        "policyTitle": "Политика {kind}"
+        "policyTitle": "Политика {kind}",
+        "Tabs": {
+          "setup": "Настройки и политики",
+          "builder": "Конструктор вопросов",
+          "access": "Доступ",
+          "results": "Результаты",
+          "publish": "Проверка и публикация"
+        },
+        "Workspace": {
+          "workspace": "Рабочая область",
+          "navigator": "Навигация рабочей области оценки",
+          "mainArea": "Рабочая область оценки",
+          "currentView": "Текущий раздел",
+          "allSaved": "Все изменения сохранены",
+          "retrySave": "Повторить сохранение: {label}",
+          "readinessRail": "Готовность и блокеры публикации",
+          "readiness": "Готовность",
+          "blocked": "Есть блокеры",
+          "ready": "Готово",
+          "blockerCount": "{count} блок.",
+          "zeroBlockers": "0 блокеров",
+          "noIssues": "Блокеров публикации нет."
+        },
+        "GeneralSettingsTab": {
+          "detailsTitle": "Детали и описание",
+          "detailsDescription": "Общая информация об этом экзамене.",
+          "impactTitle": "Влияние на студента",
+          "impactTiming": "Время",
+          "impactAttempts": "Попытки",
+          "impactRelease": "Результаты",
+          "impactIntegrity": "Контроль",
+          "summaryTimed": "{minutes} мин. после старта",
+          "summaryUntimed": "Без таймера",
+          "summaryAttempts": "{count} попыток",
+          "summaryUnlimitedAttempts": "Без ограничения попыток",
+          "summaryIntegrityOn": "Включены контрольные ограничения",
+          "summaryIntegrityOff": "Контрольные ограничения выключены",
+          "warningsTitle": "Проверьте эти сочетания перед публикацией",
+          "warnings": {
+            "strictIntegrityNeedsAccommodation": "Полноэкранный режим, буфер обмена, правый клик или DevTools могут требовать адаптаций для вспомогательных технологий.",
+            "lowViolationThreshold": "Одно переключение вкладки может автоматически сдать экзамен. Используйте это только для важных экзаменов.",
+            "shortTimedExam": "Лимит меньше 10 минут может создать случайные ошибки при медленной сети или использовании вспомогательных сценариев.",
+            "highPenaltyHighPass": "Высокий порог зачета вместе со штрафом за ошибку может сделать экзамен жестче, чем задумано."
+          },
+          "timingTitle": "Доступ и сроки",
+          "timingDescription": "Дата сдачи, ограничения на попытки и время.",
+          "availableFromLabel": "Доступно с",
+          "gracePeriodLabel": "Льготный период (мин)",
+          "gracePeriodDesc": "Дополнительные минуты после истечения времени до автосдачи.",
+          "resultReviewTitle": "Просмотр результатов",
+          "resultReviewDescription": "Управление тем, что видят студенты после сдачи.",
+          "allowResultReviewDesc": "Разрешить студентам просматривать результаты после сдачи.",
+          "showCorrectAnswersDesc": "Показывать правильные ответы при проверке.",
+          "releasePolicy": {
+            "NONE": {
+              "title": "Скрыть результаты",
+              "description": "Студенты видят факт сдачи, но не баллы и ответы.",
+              "summary": "Скрыто после сдачи"
+            },
+            "SCORE_ONLY": {
+              "title": "Только балл",
+              "description": "Студенты видят балл, но не правильные ответы.",
+              "summary": "Только балл"
+            },
+            "FULL": {
+              "title": "Полная проверка",
+              "description": "Студенты видят балл, ответы и обратную связь.",
+              "summary": "Балл, ответы и обратная связь"
+            }
+          },
+          "integrityTitle": "Контроль честности",
+          "integrityDescription": "Ограничения, которые предупреждают и фиксируют рискованное поведение; это не живой прокторинг.",
+          "copyPasteProtectionDesc": "Блокировать операции с буфером обмена во время экзамена.",
+          "tabSwitchDetectionDesc": "Фиксировать переключение вкладок и применять порог нарушений.",
+          "devtoolsDetectionDesc": "Обнаруживать открытие DevTools браузера.",
+          "rightClickDisabledDesc": "Отключить контекстное меню правой кнопки мыши.",
+          "fullscreenEnforcementDesc": "Требовать полноэкранный режим; выход считается нарушением.",
+          "violationThresholdDesc": "Количество нарушений до автоматической сдачи.",
+          "accessibilityExceptionsTitle": "Адаптации доступности",
+          "accessibilityExceptionsDescription": "Индивидуальные исключения задавайте в разделе аудитории и адаптаций. Не полагайтесь на контрольные ограничения для студентов, которым нужны вспомогательные технологии, другой браузер или офлайн-наблюдение.",
+          "gradingTitle": "Оценивание",
+          "gradingDescription": "Пороговое значение для зачёта и правила начисления баллов.",
+          "passThresholdLabel": "Порог зачёта",
+          "passThresholdDesc": "Минимальный балл (0–100%) для зачёта. Оставьте пустым, чтобы не задавать порог.",
+          "negativeMarkingLabel": "Штраф за ошибку",
+          "negativeMarkingDesc": "Вычитать указанный процент от баллов за вопрос при полностью неправильном ответе. Оставьте пустым, чтобы отключить.",
+          "negativeMarkingPlaceholder": "напр. 25",
+          "partialCreditLabel": "Частичный балл",
+          "partialCreditDesc": "Начислять частичные баллы за частично правильные ответы с множественным выбором.",
+          "randomizationTitle": "Случайный порядок",
+          "randomizationDescription": "Рандомизация порядка вопросов и вариантов ответа для каждой попытки.",
+          "randomizeQuestionsLabel": "Случайный порядок вопросов",
+          "randomizeQuestionsDesc": "Показывать вопросы в случайном порядке для каждого студента.",
+          "randomizeOptionsLabel": "Случайный порядок вариантов",
+          "randomizeOptionsDesc": "Перемешивать варианты ответа внутри каждого вопроса."
+        },
+        "BuilderCanvas": {
+          "addShort": "{kind}",
+          "newQuestion": "Новый вопрос",
+          "pointsCompact": "{points} б.",
+          "moreIssues": "...и еще {count}",
+          "noItems": "Вопросов пока нет",
+          "noItemsDesc": "Добавьте вопрос для начала.",
+          "noItemSelected": "Выберите вопрос",
+          "noItemSelectedDesc": "Выберите вопрос из списка для редактирования.",
+          "deleteConfirm": "Удалить вопрос?",
+          "deleteConfirmDesc": "Это действие нельзя отменить.",
+          "outlinePoints": "{points} пт всего",
+          "defaultSectionLabel": "Раздел {n}",
+          "addSectionBefore": "Добавить раздел перед этим вопросом",
+          "renameSection": "Переименовать раздел",
+          "deleteSection": "Удалить раздел",
+          "bulkTitle": "Массовое редактирование",
+          "bulkPointsAria": "Баллы для всех вопросов",
+          "bulkApplied": "Обновлено вопросов: {count}.",
+          "bulkFailed": "Не удалось применить массовое изменение.",
+          "bulkInvalidPoints": "Баллы должны быть больше нуля.",
+          "apply": "Применить",
+          "windowedItems": "Скрыто в длинном списке: {count}",
+          "dragHandleAria": "Изменить порядок: {title}",
+          "moveUp": "Переместить вверх",
+          "moveDown": "Переместить вниз",
+          "moveUpAria": "Переместить {title} вверх",
+          "moveDownAria": "Переместить {title} вниз",
+          "feedbackTitle": "Обратная связь после проверки",
+          "feedbackDescription": "Объясните правильный ответ, чтобы студенты получили полезную обратную связь после публикации результатов.",
+          "feedbackPlaceholder": "Объясните, почему ответ правильный...",
+          "previewTitle": "Предпросмотр вопроса",
+          "previewUntitled": "Вопрос без названия",
+          "previewEmptyPrompt": "Здесь появится предпросмотр формулировки.",
+          "previewEmptyOption": "Пустой вариант",
+          "previewEmptyPair": "Пустое значение",
+          "previewEmptyField": "Поле без названия",
+          "previewFieldMeta": "{type} · {required}",
+          "previewMinWords": "Развернутый ответ студента · минимум {count} слов",
+          "previewOpenText": "Развернутый ответ студента",
+          "correct": "Верно",
+          "required": "обязательное",
+          "optional": "необязательное"
+        },
+        "Inspector": {
+          "title": "Инспектор",
+          "open": "Открыть инспектор",
+          "close": "Закрыть инспектор",
+          "pointsLabel": "Баллы",
+          "difficultyLabel": "Сложность",
+          "difficultyNote": "Сохраняется в метаданных вопроса.",
+          "difficulty": {
+            "easy": "Лёгкий",
+            "medium": "Средний",
+            "hard": "Сложный"
+          },
+          "estimatedMinutesLabel": "Расчетное время",
+          "estimatedMinutesDesc": "Используется для темпа и аналитики.",
+          "tagsLabel": "Теги",
+          "tagsPlaceholder": "алгебра, рубежный",
+          "outcomesLabel": "Результаты обучения",
+          "outcomesPlaceholder": "LO-1, LO-2",
+          "outcomesDesc": "Свяжите вопрос с результатами курса.",
+          "commaSeparated": "Разделяйте значения запятыми."
+        },
+        "PublishDashboard": {
+          "metricsTitle": "Метрики экзамена",
+          "totalQuestions": "Вопросы",
+          "totalPoints": "Всего баллов",
+          "timeLimit": "Ограничение по времени",
+          "timeLimitValue": "{minutes} мин",
+          "attemptLimit": "Ограничение попыток",
+          "unlimited": "Не ограничено",
+          "questionTypes": "Типы вопросов",
+          "preflightTitle": "Предполётный контроль",
+          "noIssues": "Все проверки пройдены",
+          "noIssuesDesc": "Этот экзамен готов к публикации.",
+          "assessmentIssues": "Проблемы экзамена",
+          "questionIssues": "Проблемы вопросов",
+          "goToSetup": "Исправить",
+          "goToQuestion": "Исправить",
+          "goToQuestions": "Добавить вопрос",
+          "questionContext": "В{number}: {title}",
+          "questionIssueSummary": "{count, plural, =1 {1 проблема в этом вопросе} one {# проблема в этом вопросе} few {# проблемы в этом вопросе} many {# проблем в этом вопросе} other {# проблемы в этом вопросе}}",
+          "untitledQuestion": "Вопрос без названия",
+          "unknownQuestion": "Неизвестный вопрос",
+          "statusPublished": "Опубликован",
+          "statusPublishedDesc": "Студенты теперь могут получить доступ к этому экзамену.",
+          "statusScheduled": "Запланирован",
+          "statusScheduledDesc": "Этот экзамен будет опубликован в запланированное время.",
+          "statusHasIssues": "{count} {count, plural, =1 {проблема} few {проблемы} other {проблем}} нужно устранить перед публикацией",
+          "statusHasIssuesDesc": "Устраните все проблемы в списке для разблокировки публикации.",
+          "statusReadyToPublish": "Готов к публикации",
+          "statusReadyDesc": "Все проверки пройдены. Вы можете опубликовать сейчас или запланировать.",
+          "revertToDraft": "Вернуть в черновики",
+          "publishNow": "Опубликовать",
+          "schedulePublication": "Запланировать публикацию",
+          "schedule": "Запланировать",
+          "previewGateTitle": "Предпросмотр для студента",
+          "previewGateDesc": "Проверьте студенческий опыт перед изменением статуса публикации.",
+          "previewGateHighStakesDesc": "Этот экзамен считается высокозначимым. Запустите хотя бы один предпросмотр перед публикацией или планированием.",
+          "previewCompletedCount": "{count, plural, =0 {Предпросмотры не запускались} one {# предпросмотр} few {# предпросмотра} many {# предпросмотров} other {# предпросмотра}}",
+          "previewScenarioGeneric": "Обычный учащийся",
+          "previewScenarioGenericDesc": "Стандартный вид доступного студента",
+          "previewScenarioSpecific": "Конкретный учащийся",
+          "previewScenarioSpecificDesc": "Проверка индивидуального исключения",
+          "previewScenarioExpiredTimer": "Истекший таймер",
+          "previewScenarioExpiredTimerDesc": "Лимит времени завершен",
+          "previewScenarioRetake": "Повтор заблокирован",
+          "previewScenarioRetakeDesc": "Лимит попыток исчерпан",
+          "previewScenarioLate": "Поздняя попытка",
+          "previewScenarioLateDesc": "Срок сдачи прошел",
+          "previewScenarioRestricted": "Ограниченный доступ",
+          "previewScenarioRestrictedDesc": "Учащийся вне аудитории",
+          "previewScenarioResults": "Просмотр результата",
+          "previewScenarioResultsDesc": "После сдачи и публикации",
+          "previewOutcomeGeneric": "Проверяет инструкции, таймер, попытки и отображение первого вопроса для обычного доступного учащегося.",
+          "previewOutcomeSpecific": "Проверяет индивидуальные исключения и состояние ограниченного доступа для указанного учащегося.",
+          "previewOutcomeExpiredTimer": "Проверяет, что работа блокируется и причина истечения таймера понятна.",
+          "previewOutcomeRetake": "Проверяет, что старт заблокирован при исчерпанных попытках.",
+          "previewOutcomeLate": "Проверяет сообщения о поздней попытке, штрафах или блокировке доступа.",
+          "previewOutcomeRestricted": "Проверяет, что учащиеся вне сохраненной аудитории не могут начать экзамен.",
+          "previewOutcomeResults": "Проверяет, что балл, обратная связь и видимость ответов соответствуют политике публикации.",
+          "specificLearnerLabel": "Конкретный учащийся",
+          "specificLearnerPlaceholder": "Имя, email или ID",
+          "runPreview": "Запустить предпросмотр",
+          "rerunPreview": "Запустить снова",
+          "previewScenarioPassed": "Предпросмотр этого сценария завершен.",
+          "previewScenarioPending": "Запустите предпросмотр перед тем, как полагаться на этот сценарий.",
+          "publishConfirmTitle": "Подтвердить публикацию",
+          "publishConfirmDesc": "Проверьте, что именно изменится, прежде чем студенты получат доступ к экзамену.",
+          "scheduleConfirmTitle": "Подтвердить расписание",
+          "scheduleConfirmDesc": "Проверьте, что изменится в запланированное время публикации.",
+          "impactLearners": "Затронутые учащиеся",
+          "impactQuestions": "Вопросы",
+          "impactPoints": "Баллы",
+          "impactTimeLimit": "Лимит времени",
+          "impactAttempts": "Попытки",
+          "impactPreviews": "Успешные предпросмотры",
+          "impactSchedule": "Запланировано на",
+          "unknown": "Неизвестно",
+          "auditNoteLabel": "Аудит-заметка",
+          "auditNotePlaceholder": "Причина, ссылка на согласование или подтверждение предпросмотра",
+          "auditNoteDesc": "Сохраняется вместе с изменением статуса для проверки высокозначимого экзамена.",
+          "previewRequiredBeforePublish": "Запустите хотя бы один студенческий предпросмотр перед подтверждением изменения статуса высокозначимого экзамена.",
+          "blockersRequiredBeforePublish": "Устраните все блокеры публикации перед подтверждением.",
+          "cancel": "Отмена",
+          "confirmPublish": "Опубликовать экзамен",
+          "confirmSchedule": "Запланировать экзамен",
+          "auditTimelineTitle": "Аудит-таймлайн",
+          "auditTimelineDesc": "События жизненного цикла показаны здесь, чтобы преподаватели могли проверить состояние перед публикацией.",
+          "auditDraft": "Черновик создан",
+          "auditScheduled": "Запланировано",
+          "auditPublished": "Опубликовано",
+          "auditArchived": "Архивировано",
+          "auditPresent": "Текущая запись",
+          "auditLifecycle": {
+            "DRAFT": "Черновик",
+            "SCHEDULED": "Запланировано",
+            "PUBLISHED": "Опубликовано",
+            "ARCHIVED": "Архивировано"
+          },
+          "archiveTitle": "Архивировать",
+          "archiveDesc": "Экзамен больше не будет доступен студентам."
+        },
+        "AccessManagement": {
+          "title": "Доступ к тесту",
+          "description": "Ограничьте тест выбранными учащимися или группами, у которых уже есть доступ к курсу.",
+          "eligible": "Доступны",
+          "effective": "Итог",
+          "allCourseLearners": "Все учащиеся курса",
+          "allCourseLearnersDesc": "Каждый учащийся с доступом к курсу может пройти этот тест.",
+          "restricted": "Выбранные учащиеся и группы",
+          "restrictedDesc": "Только выбранные учащиеся курса и группы могут пройти этот тест.",
+          "students": "Студенты",
+          "usergroups": "Группы",
+          "searchStudents": "Поиск студентов",
+          "searchGroups": "Поиск групп",
+          "noGroupDescription": "Нет описания",
+          "loading": "Загрузка доступа",
+          "loadFailed": "Не удалось загрузить настройки доступа.",
+          "save": "Сохранить доступ",
+          "saved": "Доступ сохранен.",
+          "saveFailed": "Не удалось сохранить доступ.",
+          "eligibleLoaded": "Загружено",
+          "effectivePreview": "Предпросмотр",
+          "searchFailed": "Поиск не выполнен.",
+          "retrySave": "Повторить сохранение",
+          "previewTitle": "Предпросмотр аудитории",
+          "previewMode": "Режим",
+          "previewSelectedUsers": "Выбранные учащиеся",
+          "previewSelectedGroups": "Выбранные группы",
+          "previewEffective": "Оценка доступа",
+          "previewExcludedLoaded": "Исключены из загруженного списка",
+          "previewNote": "Поиск выполняется на сервере и ограничен текущим окном результатов для больших курсов.",
+          "overrideBadge": "Исключение",
+          "expandGroup": "Показать раскрытие группы",
+          "groupExpansion": "Эта группа раскрывается в {count, plural, one {# учащегося} few {# учащихся} many {# учащихся} other {# учащегося}} до индивидуальных исключений.",
+          "selectedDrawerTitle": "Выбранная аудитория",
+          "selectedDrawerDesc": "Проверьте выбранных учащихся, группы и исключения политики перед сохранением.",
+          "selectedEmpty": "Ограниченная аудитория не выбрана.",
+          "removeSelected": "Удалить из выбранной аудитории",
+          "clearOverride": "Очистить",
+          "groupMembers": "{count, plural, one {# участник} few {# участника} many {# участников} other {# участника}}",
+          "accommodationsTitle": "Индивидуальные условия",
+          "accommodationsDesc": "Примените исключения по сроку, попыткам и штрафу за опоздание к выбранным учащимся.",
+          "overrideAttempts": "Лимит попыток",
+          "policyDefault": "По умолчанию",
+          "overrideDueAt": "Индивидуальный срок",
+          "waiveLatePenalty": "Отменить штраф за опоздание",
+          "overrideNote": "Внутренняя заметка",
+          "overrideNotePlaceholder": "Причина или ссылка на согласование",
+          "applyOverrides": "Применить к {count, plural, =0 {0 учащимся} one {# учащемуся} few {# учащимся} many {# учащимся} other {# учащегося}}",
+          "overrideNoUsers": "Выберите хотя бы одного учащегося перед применением индивидуальных условий.",
+          "overrideSaveFailed": "Не удалось сохранить индивидуальные условия.",
+          "overrideSaved": "Индивидуальные условия сохранены для {count, plural, one {# учащегося} few {# учащихся} many {# учащихся} other {# учащегося}}.",
+          "overrideDeleteFailed": "Не удалось очистить индивидуальные условия.",
+          "overrideDeleted": "Индивидуальные условия очищены.",
+          "retryOverrides": "Повторить условия",
+          "overrideAttemptsValue": "{count, plural, one {# попытка} few {# попытки} many {# попыток} other {# попытки}}",
+          "overrideDueValue": "индивидуальный срок",
+          "overrideWaiveLateValue": "штраф за опоздание отменен"
+        },
+        "ResultsReview": {
+          "title": "Проверка результатов",
+          "description": "Проверяйте сдачи, качество оценивания, публикацию и качество вопросов в одном рабочем месте.",
+          "openReview": "Открыть очередь проверки",
+          "export": "Экспорт CSV",
+          "exportFailed": "Не удалось экспортировать результаты.",
+          "submissions": "Сдачи",
+          "needsReview": "Требуют проверки",
+          "averageScore": "Средний балл",
+          "passRate": "Процент прохождения",
+          "scoreDistributionTitle": "Распределение баллов",
+          "queueTitle": "Очередь проверки",
+          "queueBody": "Оценивайте ручные задания, публикуйте завершенные результаты и возвращайте попытки на доработку.",
+          "queueTotal": "{count, plural, one {# сдача} few {# сдачи} many {# сдач} other {# сдачи}}",
+          "queueSelected": "{count, plural, one {# выбрана} few {# выбраны} many {# выбрано} other {# выбрано}}",
+          "searchLearner": "Поиск учащегося",
+          "statusFilter": "Фильтр статуса",
+          "filterAll": "Все",
+          "filterNeedsGrading": "Требуют проверки",
+          "filterPending": "Ожидает",
+          "filterGraded": "Оценено",
+          "filterPublished": "Опубликовано",
+          "filterReturned": "Возвращено",
+          "sortBy": "Сортировка",
+          "sortSubmitted": "Сдача",
+          "sortScore": "Балл",
+          "sortAttempt": "Попытка",
+          "sortAscending": "По возрастанию",
+          "sortDescending": "По убыванию",
+          "lateOnly": "Только поздние",
+          "questionQualityTitle": "Качество вопросов",
+          "questionQualityBody": "Используйте аналитику вопросов, чтобы находить непонятные, слишком легкие или слишком сложные вопросы.",
+          "releaseTitle": "Управление публикацией",
+          "releaseBody": "Держите оценки скрытыми во время проверки, затем публикуйте результаты, когда группа готова.",
+          "itemAnalyticsTitle": "Аналитика по вопросам",
+          "noAnalyticsData": "Нет проверенных работ - аналитика появится после того, как студенты сдадут и работы будут оценены.",
+          "loadingQueue": "Загрузка сдач...",
+          "emptyQueue": "Нет сдач по текущим фильтрам.",
+          "selectSubmission": "Выбрать сдачу: {name}",
+          "releaseHidden": "Скрыто",
+          "releaseAwaiting": "Ожидает публикации",
+          "releaseVisible": "Видно",
+          "releaseReturned": "Возвращено",
+          "integrityEventsValue": "{count, plural, one {# событие} few {# события} many {# событий} other {# события}}",
+          "noIntegrityEvents": "Нет событий",
+          "reviewSubmission": "Проверить",
+          "previousPage": "Назад",
+          "nextPage": "Далее",
+          "pageCount": "Страница {page} из {pages}",
+          "regradeTitle": "Повторное оценивание",
+          "regradeBody": "Отмечайте исправленные вопросы здесь, затем используйте очередь проверки для повторной проверки затронутых сдач.",
+          "integrityTitle": "Проверка честности",
+          "integrityBody": "Самое частое событие: {kind}. Откройте затронутые сдачи перед публикацией оценок.",
+          "integrityEmptyBody": "В текущем окне очереди нет событий честности.",
+          "questionActionTitle": "Действия по вопросам",
+          "questionActionBody": "Подсказки аналитики ведут к вопросам, которые нужно исправить или рассмотреть для переоценки.",
+          "analyticsPromptCount": "{count, plural, one {# подсказка} few {# подсказки} many {# подсказок} other {# подсказки}}",
+          "colQuestion": "Вопрос",
+          "colKind": "Тип",
+          "colMaxScore": "Баллы",
+          "colLearner": "Учащийся",
+          "colStatus": "Статус",
+          "colRelease": "Публикация",
+          "colScore": "Балл",
+          "colIntegrity": "Честность",
+          "colSubmitted": "Сдано",
+          "colAction": "Действие",
+          "colResponses": "Ответы",
+          "colAvgScore": "Средний балл",
+          "colCorrectPct": "% правильных",
+          "colDiscrimination": "Различимость",
+          "colPrompt": "Подсказка",
+          "itemPrompt": {
+            "reviewContent": "Проверить содержание",
+            "tooEasy": "Слишком легко",
+            "tooHard": "Слишком сложно",
+            "healthy": "Норма"
+          },
+          "markForRegrade": "На переоценку",
+          "regradeQueued": "В очереди"
+        },
+        "SecurityShield": {
+          "low": "Низкая защита",
+          "lowDescription": "Включите функции защиты для повышения безопасности экзамена.",
+          "medium": "Средняя защита",
+          "mediumDescription": "Некоторые защиты активны. Рассмотрите включение большего числа.",
+          "high": "Безопасный прокторинг",
+          "highDescription": "Активна надёжная защита от списывания."
+        }
       },
       "Shared": {
         "AntiCheatOverlay": {
@@ -7758,7 +8708,11 @@
         }
       },
       "Exam": {
-        "questions": "Вопросы"
+        "questions": "Вопросы",
+        "answeredOf": "{answered} из {total} отвечено",
+        "legendAnswered": "Отвечено",
+        "legendFlagged": "Отмечено для проверки",
+        "legendNotAnswered": "Нет ответа"
       },
       "ReviewWorkspace": {
         "loading": "Загрузка рабочего пространства проверки...",
@@ -7767,6 +8721,8 @@
       "Items": {
         "Choice": {
           "prompt": "Формулировка",
+          "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} other {# баллов}}",
+          "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
           "type": "Тип",
           "trueLabel": "Верно",
           "falseLabel": "Неверно",
@@ -7777,12 +8733,15 @@
             "matching": "Сопоставление"
           },
           "toggleCorrectAnswer": "Переключить правильный ответ",
+          "correctLabel": "Верно",
+          "removeOption": "Удалить вариант",
           "optionPlaceholder": "Вариант {label}",
           "addOption": "Добавить вариант",
           "selectMatch": "Выберите соответствие",
           "matching": {
             "left": "Левая часть",
             "right": "Правая часть",
+            "matchLabel": "Соответствие: {term}",
             "addPair": "Добавить пару"
           }
         },
@@ -7881,6 +8840,7 @@
           "termPlaceholder": "Термин {number}",
           "matchPlaceholder": "Соответствие {number}",
           "selectMatch": "Выберите соответствие",
+          "matchForLabel": "Соответствие для: {term}",
           "removePair": "Удалить пару",
           "addPair": "Добавить пару"
         },
@@ -8074,7 +9034,22 @@
           "resolveDraftConflict": "Разрешить конфликт черновиков",
           "draftConflictAvailable": "На сервере найдена более новая версия ваших ответов.",
           "keepMyLocalVersion": "Оставить мою локальную версию",
-          "useLatestSavedVersion": "Использовать последнюю сохраненную версию"
+          "useLatestSavedVersion": "Использовать последнюю сохраненную версию",
+          "flagQuestion": "Отметить для проверки",
+          "unflagQuestion": "Снять отметку",
+          "answered_short": "отв.",
+          "resumedDraftDescription": "Последнее сохранение: {time}",
+          "codeChallenge": "Задача по коду",
+          "securityViolationAlertTitle": "Обнаружено нарушение безопасности",
+          "securityViolationAlertDescription": "Пожалуйста, немедленно вернитесь в окно экзамена. Невыполнение этого требования приведет к автоматической отправке вашего экзамена.",
+          "secondsRemaining": "секунд осталось",
+          "reEnterFullscreen": "Вернуться в полноэкранный режим",
+          "clickBackToResume": "Вернитесь или сфокусируйтесь, чтобы продолжить.",
+          "assessmentTitle": "Оценивание",
+          "connectionLostTitle": "Подключение потеряно",
+          "connectionLostDescription": "Пожалуйста, проверьте интернет-соединение. Ваш прогресс сохраняется локально и синхронизируется при восстановлении сети.",
+          "draftConflictDescription": "Более новая версия #{latestVersion} ваших ответов была сохранена на сервере в {latestSavedAt}. Какую версию вы хотите использовать?",
+          "draftConflictAnswerCounts": "Локально: {localCount} ответов | На сервере: {serverCount} ответов"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",
@@ -8268,11 +9243,16 @@
           "loading": "Журнал оценок загружается...",
           "loadError": "Не удалось загрузить журнал оценок.",
           "unavailable": "Журнал оценок недоступен.",
+          "emptyTitle": "Нет учащихся по этим фильтрам",
+          "emptyDescription": "Измените поиск, тип активности или фильтр прогресса, чтобы увидеть учащихся.",
+          "pageStatus": "Страница {page} из {totalPages}",
+          "previousPage": "Предыдущая",
+          "nextPage": "Следующая",
           "backToGradebook": "Назад к журналу",
           "submissionReview": "Проверка работы",
           "searchLearner": "Поиск студента",
-          "activityType": "Тип задания",
-          "allActivityTypes": "Все типы заданий",
+          "activityType": "Тип учебные задачи",
+          "allActivityTypes": "Все типы учебных задач",
           "learner": "Студент",
           "email": "Email",
           "selectCell": "Выбрать ячейку прогресса",
@@ -8286,7 +9266,7 @@
           "defaultCohort": "Список курса",
           "summary": {
             "learners": "Студенты",
-            "activities": "Задания",
+            "activities": "Учебные задачи",
             "needsGrading": "На проверке",
             "overdue": "Просрочено",
             "notStarted": "Не начато",
@@ -8313,14 +9293,13 @@
           },
           "rollups": {
             "title": "Сводки прогресса",
-            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и заданиям.",
-            "assignment_group": "Группы",
+            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+            "activity_category": "Группы",
             "cohort": "Когорты",
             "learner": "Студенты",
-            "activity": "Задания"
+            "activity": "Учебные задачи"
           },
           "activityTypes": {
-            "assignment": "Задание",
             "exam": "Экзамен",
             "codeChallenge": "Задача по коду",
             "quiz": "Тест",
@@ -8332,23 +9311,49 @@
     },
     "ActivityWorkspace": {
       "questions": "Вопросы",
+      "readyToStart": "Готовы начать",
+      "readyToStartSubtitle": "Просмотрите детали и начните тест, когда будете готовы.",
       "timeLimit": "Ограничение по времени",
       "unlimited": "Без ограничений",
       "attempts": "Попытки",
       "dueDate": "Срок сдачи",
-      "assessmentBlocked": "Это задание сейчас недоступно для вас.",
+      "assessmentBlocked": "Эта задача сейчас недоступна",
       "waitingForRelease": "Ваша работа получена. Оценка будет опубликована после проверки преподавателем.",
-      "startAssessment": "Начать задание",
+      "startAssessment": "Начать",
       "startRevision": "Начать пересдачу",
       "revision": "Пересдача",
       "returnedForRevision": "Возвращено на доработку",
       "passed": "Пройдено",
       "failed": "Не пройдено",
       "pendingGrade": "Ожидание оценки",
-      "assessmentSubmitted": "Задание отправлено",
+      "assessmentSubmitted": "Учебная задача отправлено",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
-      "retryAssessment": "Повторить задание",
-      "nextActivity": "Следующее задание"
+      "retryAssessment": "Повторить учебная задача",
+      "nextActivity": "Следующее учебная задача",
+      "breakdown": "Посмотреть ответы",
+      "attempt": "Попытка",
+      "attemptHistory": "История попыток",
+      "antiCheatNotice": "Это задание отслеживает активность браузера. Не переключайте вкладки во время выполнения.",
+      "releaseHidden": "Результаты скрыты после сдачи",
+      "releaseHiddenDescription": "Ваша сдача записана, но баллы и ответы скрыты, пока преподаватель не изменит политику.",
+      "releaseScoreOnly": "Просмотр только балла",
+      "releaseScoreOnlyDescription": "После публикации вы увидите балл, но правильные ответы останутся скрыты.",
+      "releaseFull": "Полный просмотр результата",
+      "releaseFullDescription": "После публикации вы увидите балл, ответы и обратную связь.",
+      "passingScore": "Проходной балл",
+      "submittedOn": "Отправлено {date}",
+      "noQuestionsWarning": "В этом тесте пока нет вопросов, поэтому его нельзя начать.",
+      "teacherNoQuestionsWarning": "В этом тесте пока нет вопросов. Нажмите 'Редактировать вопросы', чтобы добавить их перед публикацией.",
+      "testNotReadyTitle": "Тест не готов",
+      "noQuestionsSidebar": "Этот тест нельзя начать, так как в нем нет вопросов.",
+      "teacherNoQuestionsSidebar": "Пожалуйста, добавьте вопросы перед публикацией.",
+      "startActivityFailed": "Не удалось запустить эту активность. Обновите страницу и попробуйте снова.",
+      "focusRestoredResume": "Фокус и полноэкранный режим восстановлены. Экзамен продолжается.",
+      "fullscreenUnsupported": "Полноэкранный режим не поддерживается в этом браузере.",
+      "fullscreenRecommended": "Для этой попытки рекомендуется полноэкранный режим.",
+      "fullscreenExited": "Выход из полноэкранного режима зафиксирован.",
+      "answersUpdatedElsewhere": "Ваши ответы были обновлены в другом месте. Просмотрите последнюю версию черновика перед отправкой.",
+      "submitFailed": "Не удалось отправить"
     }
   },
   "Themes": {
@@ -8775,6 +9780,7 @@
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
     "stepsLabel": "шагов",
+    "stepsProgress": "{completed} / {total} шагов",
     "viewCertificate": "Просмотреть сертификат"
   },
   "TrailPage": {
@@ -8813,8 +9819,6 @@
   "Validation": {
     "activityDescriptionRequired": "Требуется описание активности",
     "activityNameRequired": "Требуется название активности",
-    "assignmentDescriptionRequired": "Требуется описание задания",
-    "assignmentTitleRequired": "Требуется название задания",
     "chapterDescriptionRequired": "Требуется описание главы",
     "chapterNameRequired": "Требуется название главы",
     "contentRequired": "Требуется контент",
@@ -8846,11 +9850,14 @@
     "passwordTooLong": "Пароль должен содержать не более 128 символов",
     "passwordNeedsLowercase": "Пароль должен содержать хотя бы одну строчную букву",
     "passwordNeedsUppercase": "Пароль должен содержать хотя бы одну заглавную букву",
-    "passwordNeedsNumber": "Пароль должен содержать хотя бы одну цифру"
+    "passwordNeedsNumber": "Пароль должен содержать хотя бы одну цифру",
+    "titleTooLong": "Название не должно превышать 100 символов",
+    "descriptionTooLong": "Описание не должно превышать 8000 символов",
+    "sourceCourseRequired": "Выберите исходный курс",
+    "learningsInvalid": "Неверный формат результатов обучения"
   },
   "activity": "Активность",
   "additionalSettings": "Дополнительные настройки",
-  "aiEditor": "Ashyk Ai",
   "calendar": {
     "monthDropdown": "Месяц",
     "next": "Далее",
@@ -8876,7 +9883,7 @@
     "scope": "Область",
     "description": "Описание"
   },
-  "platformLogo": "Логотип Ashyk Bilim",
+  "appLogo": "Логотип",
   "previous": "Назад",
   "seconds": "Секунды",
   "selectDeadline": "Выберите дедлайн для выполнения задачи",
@@ -8892,8 +9899,8 @@
     "noAction": "Действие недоступно",
     "blocked": "Доступ заблокирован",
     "blockedReasons": {
-      "NOT_PUBLISHED": "Задание ещё не опубликовано.",
-      "BEFORE_WINDOW": "Задание ещё не доступно.",
+      "NOT_PUBLISHED": "Учебная задача ещё не опубликовано.",
+      "BEFORE_WINDOW": "Учебная задача ещё не доступно.",
       "AFTER_WINDOW": "Окно сдачи закрыто.",
       "MAX_ATTEMPTS_REACHED": "Вы использовали все попытки.",
       "NOT_ENROLLED": "Вы не записаны на этот курс.",
@@ -8920,6 +9927,11 @@
     "deleteConfirmDesc": "Это удалит все льготы для этого студента.",
     "cancel": "Отмена",
     "confirm": "Удалить",
+    "placeholders": {
+      "userIdExample": "например, 42",
+      "inheritBlank": "Оставьте пустым, чтобы унаследовать",
+      "optionalInternalNote": "Необязательная внутренняя заметка"
+    },
     "toasts": {
       "created": "Настройка создана",
       "updated": "Настройка обновлена",
@@ -8929,7 +9941,7 @@
   },
   "PolicyPreset": {
     "title": "Шаблон политики",
-    "description": "Применить рекомендуемую конфигурацию для данного типа задания.",
+    "description": "Применить рекомендуемую конфигурацию для данного типа учебные задачи.",
     "apply": "Применить шаблон",
     "applied": "Шаблон применён",
     "failed": "Не удалось применить шаблон"
@@ -8959,6 +9971,256 @@
       "published": "Оценка опубликована",
       "returned": "Возвращено на доработку",
       "failed": "Не удалось сохранить оценку"
+    }
+  },
+  "FileSubmission": {
+    "requirementMaxFiles": "{count, plural, one {До # файла} few {До # файлов} many {До # файлов} other {До # файла}}",
+    "requirementMaxSize": "До {size} МБ каждый",
+    "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",
+    "invalidFiles": "Некоторые файлы не соответствуют требованиям",
+    "notAvailable": "Загрузка файлов недоступна",
+    "uploadFailed": "Не удалось загрузить файл",
+    "submittedToast": "Файлы отправлены",
+    "draftSavedToast": "Черновик сохранен",
+    "saveFailed": "Не удалось сохранить отправку",
+    "startDraftFailed": "Не удалось начать черновик",
+    "gradedReleasePending": "Работа проверена. Оценка появится после публикации преподавателем.",
+    "late": "С опозданием",
+    "due": "Срок: {date}",
+    "dropzoneTitle": "Перетащите файлы сюда или выберите на устройстве",
+    "chooseFiles": "Выбрать файлы",
+    "submittedLocked": "Последняя попытка отправлена. Новые файлы можно добавить, если преподаватель вернет работу на доработку.",
+    "submitHelp": "Отправляйте только финальные файлы. Черновик остается приватным до отправки.",
+    "saveDraft": "Сохранить черновик",
+    "submitFiles": "Отправить файлы",
+    "submissionHistory": "История отправок",
+    "attemptNumber": "Попытка {number}",
+    "draft": "Черновик",
+    "fileCount": "{count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "submissionReceived": "Отправка получена",
+    "attempt": "Попытка",
+    "files": "Файлы",
+    "statusLabel": "Статус",
+    "awaitingReview": "Ожидает проверки",
+    "yourScore": "Ваш результат",
+    "latePenalty": "Штраф за опоздание: -{percent}%",
+    "returnedForRevision": "Возвращено на доработку",
+    "passed": "Зачтено",
+    "failed": "Не зачтено",
+    "teacherFeedback": "Комментарий преподавателя",
+    "startRevision": "Начать доработку",
+    "removeFile": "Удалить {name}",
+    "allowedTypes": "Допустимые форматы",
+    "status": {
+      "draft": "Черновик",
+      "submitted": "Отправлено",
+      "graded": "Проверено",
+      "published": "Опубликовано",
+      "returned": "Возвращено"
+    }
+  },
+  "FileSubmissionReview": {
+    "loadingSubmissions": "Загрузка отправок",
+    "reviewUnavailable": "Просмотр недоступен.",
+    "fileSubmissionReview": "Проверка файлов",
+    "refresh": "Обновить",
+    "openButton": "Открыть",
+    "downloadButton": "Скачать",
+    "noSubmissions": "Нет отправок, соответствующих этому фильтру.",
+    "attemptInfo": "Попытка {attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "submittedAt": "Отправлено {date}",
+    "submittedAsDraft": "Сохранено как черновик",
+    "late": "С опозданием",
+    "noFiles": "Нет прикрепленных файлов.",
+    "preview": "Предпросмотр",
+    "gradeAndFeedback": "Оценка и отзыв",
+    "finalScore": "Итоговый балл",
+    "scoreSlash": "/ 100",
+    "useRubricTotal": "Использовать сумму рубрики ({score})",
+    "saveGrade": "Сохранить оценку",
+    "returnForRevision": "Вернуть на доработку",
+    "publishResult": "Опубликовать результат",
+    "selectSubmission": "Выберите отправку.",
+    "rubric": "Критерии оценивания",
+    "submissionUpdated": "Отправка обновлена",
+    "updateSubmissionFailed": "Не удалось обновить отправку",
+    "openFileFailed": "Не удалось открыть файл",
+    "previewFileFailed": "Не удалось показать предпросмотр файла",
+    "searchLearnersPlaceholder": "Поиск по учащимся",
+    "scorePlaceholder": "0–100",
+    "feedbackPlaceholder": "Отзыв",
+    "rubricScorePlaceholder": "0",
+    "downloadCsv": "Скачать CSV",
+    "csv": "CSV"
+  },
+  "FileSubmissionStudio": {
+    "loadingStudio": "Загрузка студии отправки файлов",
+    "studioUnavailable": "Студия недоступна.",
+    "curriculum": "Учебный план",
+    "fileSubmission": "Отправка файлов",
+    "studio": "Студия",
+    "preview": "Предпросмотр",
+    "save": "Сохранить",
+    "publish": "Опубликовать",
+    "title": "Название",
+    "instructions": "Инструкции",
+    "dueDate": "Срок сдачи",
+    "maxFiles": "Макс. файлов",
+    "maxSize": "Макс. размер (МБ)",
+    "allowedFileTypes": "Разрешенные типы файлов",
+    "selectAll": "Выбрать все",
+    "allowedFileTypesDesc": "Оставьте все поля пустыми, чтобы разрешить любой тип файла. Если выбраны определенные типы, при отправке будут приниматься только они.",
+    "collectionRules": "Правила сбора",
+    "attempts": "Попытки",
+    "lateWork": "Сдача с опозданием",
+    "allowedFiles": "Разрешенные файлы",
+    "unlimitedAttempts": "Без ограничений",
+    "allowLateAllowed": "Разрешено",
+    "allowLateBlocked": "Заблокировано",
+    "anyFileType": "Любой тип файла",
+    "review": "Проверка",
+    "openSubmissions": "Открыть отправленные работы",
+    "unavailableError": "Отправка файлов недоступна",
+    "saveSuccess": "Отправка файлов сохранена",
+    "saveError": "Не удалось сохранить отправку файлов",
+    "publishSuccess": "Отправка файлов опубликована",
+    "publishError": "Не удалось опубликовать отправку файлов",
+    "fixInstructionsBeforeSaving": "Исправьте инструкции перед сохранением",
+    "fixInstructionsBeforePublishing": "Исправьте инструкции перед публикацией"
+  },
+  "AiExperience": {
+    "languageControl": {
+      "label": "Язык ответа",
+      "auto": "Авто",
+      "kk": "Казахский",
+      "ru": "Русский",
+      "en": "Английский",
+      "description": "ИИ следует языку курса, если установлено значение авто."
+    },
+    "evidencePanel": {
+      "noCitationsTitle": "Пока нет цитат",
+      "noCitationsDesc": "Результату необходимо подтверждение из курса, прежде чем ему можно будет доверять.",
+      "title": "Источники",
+      "description": "Источники, которые ИИ использовал для этого результата."
+    },
+    "errorRecovery": {
+      "title": "Сбой работы ИИ",
+      "retry": "Повторить"
+    },
+    "privacyNotice": {
+      "title": "Область данных",
+      "studentScope": "Только опубликованные материалы курса",
+      "teacherScope": "Черновики курса, критерии оценки и подтверждения преподавателя при наличии разрешения"
+    },
+    "humanReviewBar": {
+      "approve": "Одобрить",
+      "reject": "Отклонить"
+    },
+    "resultShell": {
+      "modelRecorded": "Модель: {name}",
+      "modelNotRecorded": "Модель: не записана",
+      "citationsCount": "Цитаты: {count}"
+    },
+    "states": {
+      "labels": {
+        "idle": "Готово",
+        "confirming": "Подтвердите действие",
+        "queued": "В очереди",
+        "collecting_context": "Сбор контекста",
+        "running": "Анализ",
+        "checking_evidence": "Проверка источников",
+        "complete": "Завершено",
+        "needs_human_review": "Требует проверки преподавателем",
+        "failed": "Ошибка",
+        "cancelled": "Отменено"
+      }
+    },
+    "lectureReview": {
+      "title": "Обзор лекции",
+      "defaultDescription": "Постоянные предложения по лекции готовы."
+    },
+    "lectureAIEntry": {
+      "title": "ИИ-обзор лекции",
+      "description": "Поиск неясных объяснений, недостающих примеров и слабого соответствия оценкам.",
+      "review": "Обзор",
+      "defaultStatus": "Запустите обзор после сохранения черновика лекции. Предложения остаются в состоянии проверки."
+    },
+    "qaInput": {
+      "label": "Вопрос",
+      "ask": "Спросить",
+      "description": "Ответы основаны на материалах курса.",
+      "emptyTitle": "Вопросов пока нет",
+      "emptyDesc": "Спросите об этом курсе, и ответ будет содержать ссылки на материалы курса."
+    },
+    "courseAIHub": {
+      "title": "ИИ-поддержка обучения",
+      "description": "Помощь на основе курса для учащихся и проверки качества преподавателями.",
+      "tabStudy": "Обучение",
+      "tabQA": "Вопросы и ответы",
+      "tabReview": "Обзор"
+    },
+    "courseAnalysisEntry": {
+      "title": "ИИ-анализ курса",
+      "description": "Оценка качества, подтверждения и риски исправления для этого курса.",
+      "rerun": "Запустить заново",
+      "analyze": "Анализировать",
+      "defaultStatus": "Запустите анализ, чтобы подготовить отчет о качестве перед публикацией руководства."
+    },
+    "courseAnalysisResultShell": {
+      "title": "Оценка качества курса {score}",
+      "defaultDescription": "Анализ курса готов к проверке.",
+      "publishScore": "Опубликовать оценку"
+    },
+    "submissionAIEntry": {
+      "title": "ИИ-анализ отправки",
+      "description": "Пробелы в знаниях, подтверждения и адаптивное исправление по выбору.",
+      "analyze": "Анализировать",
+      "generateGate": "Создать барьер исправления"
+    },
+    "submissionAnalysisResultShell": {
+      "title": "пробелов в знаниях: {count}",
+      "defaultDescription": "Анализ работы готов."
+    },
+    "studyCompanion": {
+      "label": "Спросите об этом курсе",
+      "placeholder": "Запросите объяснение, конспект, практику или карточки",
+      "send": "Отправить",
+      "description": "Ответы ссылаются на материалы курса и не содержат ответов на задания.",
+      "explain": "Объяснить",
+      "practice": "Практика",
+      "flashcards": "Карточки",
+      "summarize": "Конспект",
+      "deepen": "Углубить"
+    },
+    "remediation": {
+      "title": "Адаптивное исправление",
+      "activeGate": "Режим барьера активен, пока учащийся не сдаст тест.",
+      "assigned": "Назначено исправление-практика."
+    },
+    "budgetStatus": {
+      "label": "Ежемесячный бюджет токенов ИИ",
+      "used": "использовано: {percent}%"
+    },
+    "aiAdminPanel": {
+      "title": "Операции ИИ",
+      "featureFlags": "Флаги функций",
+      "flagsDescription": "Просмотр в режиме только для чтения. Измените флаги в серверной среде.",
+      "loading": "Загрузка использования ИИ."
+    },
+    "tokenUsageChart": {
+      "title": "ИИ-использование",
+      "description": "Использование токенов во всех запусках ИИ.",
+      "metricRuns": "Запуски",
+      "metricInput": "Входные токены",
+      "metricOutput": "Выходные токены"
+    },
+    "featureToggles": {
+      "description": "Управляется флагами функций бэкенда.",
+      "course-analysis": "Анализ курса",
+      "submission-analysis": "Анализ отправки",
+      "remediation": "Адаптивное исправление",
+      "study-companion": "Помощник в обучении",
+      "course-qa": "Вопросы и ответы по курсу"
     }
   }
 }

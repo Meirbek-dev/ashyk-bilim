@@ -1,68 +1,76 @@
-'use client';
+'use client'
 
-import { Check, Plus, Trash2, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Check, Circle, Plus, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown'
 
-import { registerItemKind } from '../registry';
-import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
+import type { ItemAttemptProps, ItemAuthorProps, ItemKindModule, ItemReviewDetailProps } from '../registry'
 
-export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING';
+export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING'
 
 export interface ChoiceOption {
-  id: string | number;
-  text: string;
-  isCorrect?: boolean;
+  id: string | number
+  text: string
+  isCorrect?: boolean
+}
+
+function buildChoiceOption(option: ChoiceOption): ChoiceOption {
+  return {
+    id: option.id,
+    text: option.text,
+    ...(option.isCorrect !== undefined ? { isCorrect: option.isCorrect } : {}),
+  }
 }
 
 export interface MatchingPair {
-  id: string | number;
-  left: string;
-  right: string;
+  id: string | number
+  left: string
+  right: string
 }
 
 export type ChoiceAuthorValue =
   | {
-      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE';
-      prompt: string;
-      points?: number;
-      options: ChoiceOption[];
+      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
+      prompt: string
+      points?: number
+      options: ChoiceOption[]
     }
   | {
-      kind: 'MATCHING';
-      prompt: string;
-      points?: number;
-      pairs: MatchingPair[];
-    };
+      kind: 'MATCHING'
+      prompt: string
+      points?: number
+      pairs: MatchingPair[]
+    }
 
 export type ChoiceAttemptItem =
   | {
-      id: string | number;
-      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE';
-      prompt: string;
-      points?: number;
-      options: ChoiceOption[];
+      id: string | number
+      kind: 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE'
+      prompt: string
+      points?: number
+      options: ChoiceOption[]
     }
   | {
-      id: string | number;
-      kind: 'MATCHING';
-      prompt: string;
-      points?: number;
-      pairs: MatchingPair[];
-    };
+      id: string | number
+      kind: 'MATCHING'
+      prompt: string
+      points?: number
+      pairs: MatchingPair[]
+    }
 
-export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined;
+export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined
 
 function optionId(option: ChoiceOption, index: number) {
-  return option.id ?? index;
+  return option.id ?? index
 }
 
 export function ChoiceItemAttempt({
@@ -71,15 +79,15 @@ export function ChoiceItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<ChoiceAttemptItem, ChoiceAnswer>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (item.kind === 'MATCHING') {
-    const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {};
-    const rightOptions = item.pairs.map((pair) => pair.right);
+    const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {}
+    const rightOptions = item.pairs.map(pair => pair.right)
 
     return (
       <div className="space-y-3">
-        {item.pairs.map((pair) => (
+        {item.pairs.map(pair => (
           <div
             key={pair.id}
             className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
@@ -88,21 +96,14 @@ export function ChoiceItemAttempt({
             <NativeSelect
               value={current[pair.left] ?? ''}
               disabled={disabled}
-              onChange={(event) => onAnswerChange({ ...current, [pair.left]: event.target.value })}
-              aria-label={`Match ${pair.left}`}
+              onChange={event => onAnswerChange({ ...current, [pair.left]: event.target.value })}
+              aria-label={t('matching.matchLabel', { term: pair.left })}
             >
-              <NativeSelectOption
-                value=""
-                disabled
-                hidden
-              >
+              <NativeSelectOption value="" disabled hidden>
                 {t('selectMatch')}
               </NativeSelectOption>
-              {rightOptions.map((right) => (
-                <NativeSelectOption
-                  key={right}
-                  value={right}
-                >
+              {rightOptions.map(right => (
+                <NativeSelectOption key={right} value={right}>
                   {right}
                 </NativeSelectOption>
               ))}
@@ -110,69 +111,77 @@ export function ChoiceItemAttempt({
           </div>
         ))}
       </div>
-    );
+    )
   }
 
   if (item.kind === 'CHOICE_MULTIPLE') {
-    const selected = Array.isArray(answer) ? answer : [];
+    const selected = Array.isArray(answer) ? answer : []
     return (
       <div className="space-y-2">
         {item.options.map((option, index) => {
-          const id = optionId(option, index);
+          const id = optionId(option, index)
           return (
-            <label
+            <Label
               key={String(id)}
               className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
             >
               <Checkbox
                 checked={selected.includes(id)}
                 disabled={disabled}
-                onCheckedChange={(checked) => {
-                  const next = checked ? [...selected, id] : selected.filter((itemId) => itemId !== id);
-                  onAnswerChange(next);
+                onCheckedChange={checked => {
+                  const next = checked ? [...selected, id] : selected.filter(itemId => itemId !== id)
+                  onAnswerChange(next)
                 }}
               />
-              <span className="text-sm leading-relaxed">{option.text || `Option ${index + 1}`}</span>
-            </label>
-          );
+              <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
+              </div>
+            </Label>
+          )
         })}
       </div>
-    );
+    )
   }
 
-  const current = answer === null || answer === undefined ? '' : String(answer);
+  const current = answer === null || answer === undefined ? '' : String(answer)
   return (
     <RadioGroup
       value={current}
-      onValueChange={(value) => onAnswerChange(Number.isNaN(Number(value)) ? value : Number(value))}
+      onValueChange={value => onAnswerChange(Number.isNaN(Number(value)) ? value : Number(value))}
       className="space-y-2"
       disabled={disabled}
     >
       {item.options.map((option, index) => {
-        const id = optionId(option, index);
+        const id = optionId(option, index)
         return (
-          <label
+          <Label
             key={String(id)}
             className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
           >
             <RadioGroupItem value={String(id)} />
-            <span className="text-sm leading-relaxed">{option.text || `Option ${index + 1}`}</span>
-          </label>
-        );
+            <div className="min-w-0 flex-1 text-sm leading-relaxed">
+              <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
+            </div>
+          </Label>
+        )
       })}
     </RadioGroup>
-  );
+  )
 }
 
-export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+export function ChoiceItemAuthor({
+  value,
+  disabled,
+  onChange,
+  invalidFields,
+}: ItemAuthorProps<ChoiceAuthorValue> & { invalidFields?: ReadonlySet<string> | undefined }) {
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   const setKind = (kind: ChoiceItemKind) => {
     if (kind === 'MATCHING') {
       onChange({
         kind,
         prompt: value.prompt,
-        points: value.points,
         pairs:
           value.kind === 'MATCHING'
             ? value.pairs
@@ -181,44 +190,61 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
                 left: option.text,
                 right: '',
               })),
-      });
-      return;
+        ...(value.points !== undefined ? { points: value.points } : {}),
+      })
+      return
     }
 
     onChange({
       kind,
       prompt: value.prompt,
-      points: value.points,
       options:
         kind === 'TRUE_FALSE'
           ? [
-              {
-                id: 0,
-                text: t('trueLabel'),
-                isCorrect: value.kind !== 'MATCHING' ? value.options[0]?.isCorrect : false,
-              },
-              {
-                id: 1,
-                text: t('falseLabel'),
-                isCorrect: value.kind !== 'MATCHING' ? value.options[1]?.isCorrect : false,
-              },
+              value.kind !== 'MATCHING' && value.options[0]?.isCorrect !== undefined
+                ? {
+                    id: 0,
+                    text: t('trueLabel'),
+                    isCorrect: value.options[0].isCorrect,
+                  }
+                : {
+                    id: 0,
+                    text: t('trueLabel'),
+                  },
+              value.kind !== 'MATCHING' && value.options[1]?.isCorrect !== undefined
+                ? {
+                    id: 1,
+                    text: t('falseLabel'),
+                    isCorrect: value.options[1].isCorrect,
+                  }
+                : {
+                    id: 1,
+                    text: t('falseLabel'),
+                  },
             ]
           : value.kind === 'MATCHING'
-            ? value.pairs.map((pair) => ({ id: pair.id, text: pair.left, isCorrect: false }))
+            ? value.pairs.map(pair => ({
+                id: pair.id,
+                text: pair.left,
+                isCorrect: false,
+              }))
             : value.options,
-    });
-  };
+      ...(value.points !== undefined ? { points: value.points } : {}),
+    })
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
-        <div className="space-y-2">
-          <Label htmlFor="choice-prompt">{t('prompt')}</Label>
-          <Input
-            id="choice-prompt"
+        <div id="choice-prompt-field" tabIndex={-1} className="space-y-2 rounded-md focus-visible:outline-none">
+          <Label>{t('prompt')}</Label>
+          <MarkdownEditor
             value={value.prompt}
-            disabled={disabled}
-            onChange={(event) => onChange({ ...value, prompt: event.target.value })}
+            placeholder={t('promptPlaceholder')}
+            preset="questionPrompt"
+            className={invalidFields?.has('prompt') ? 'border-destructive' : ''}
+            {...(disabled !== undefined ? { disabled } : {})}
+            onChange={md => onChange({ ...value, prompt: md })}
           />
         </div>
         <div className="space-y-2">
@@ -227,7 +253,7 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
             id="choice-kind"
             value={value.kind}
             disabled={disabled}
-            onChange={(event) => setKind(event.target.value as ChoiceItemKind)}
+            onChange={event => setKind(event.target.value as ChoiceItemKind)}
           >
             <NativeSelectOption value="CHOICE_SINGLE">{t('kinds.single')}</NativeSelectOption>
             <NativeSelectOption value="CHOICE_MULTIPLE">{t('kinds.multiple')}</NativeSelectOption>
@@ -238,63 +264,112 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       </div>
 
       {value.kind === 'MATCHING' ? (
-        <MatchingAuthor
-          value={value}
-          disabled={disabled}
-          onChange={onChange}
-        />
+        <MatchingAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
       ) : (
-        <OptionsAuthor
-          value={value}
-          disabled={disabled}
-          onChange={onChange}
-        />
+        <OptionsAuthor value={value} disabled={disabled ?? false} invalidFields={invalidFields} onChange={onChange} />
       )}
     </div>
-  );
+  )
 }
 
 function OptionsAuthor({
   value,
   disabled,
+  invalidFields,
   onChange,
-}: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+}: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>> & {
+  invalidFields?: ReadonlySet<string> | undefined
+}) {
+  const t = useTranslations('Features.Assessments.Items.Choice')
+  const isMultiple = value.kind === 'CHOICE_MULTIPLE'
+  const isTrueFalse = value.kind === 'TRUE_FALSE'
+  const hasOptionTextIssue = invalidFields?.has('options') === true
+  const hasCorrectOptionIssue = invalidFields?.has('correct_options') === true
+
   const toggleCorrect = (index: number) => {
-    const options = value.options.map((option, candidateIndex) => ({
-      ...option,
-      isCorrect:
-        value.kind === 'CHOICE_MULTIPLE'
+    const options = value.options.map((option, candidateIndex) =>
+      (() => {
+        const nextIsCorrect = isMultiple
           ? candidateIndex === index
             ? !option.isCorrect
             : option.isCorrect
-          : candidateIndex === index,
-    }));
-    onChange({ ...value, options });
-  };
+          : candidateIndex === index
+
+        return nextIsCorrect === undefined
+          ? buildChoiceOption(option)
+          : buildChoiceOption({ id: option.id, text: option.text, isCorrect: nextIsCorrect })
+      })(),
+    )
+    onChange({ ...value, options })
+  }
 
   return (
-    <div className="space-y-2">
+    <div
+      id="choice-options-field"
+      tabIndex={-1}
+      className="space-y-2 rounded-md focus-visible:outline-none"
+      aria-invalid={hasOptionTextIssue || hasCorrectOptionIssue}
+    >
       {value.options.map((option, index) => (
         <div
           key={String(option.id)}
-          className="flex items-center gap-2"
+          className={cn(
+            'group relative flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all duration-200',
+            option.isCorrect
+              ? 'border-emerald-400 bg-emerald-50/60 shadow-sm dark:border-emerald-700 dark:bg-emerald-950/20'
+              : hasOptionTextIssue
+                ? 'border-destructive/70 bg-destructive/5'
+                : 'border-border bg-card hover:border-border/80 hover:bg-muted/30',
+          )}
         >
-          <Button
+          {/* Correct toggle button */}
+          <button
             type="button"
-            variant={option.isCorrect ? 'default' : 'outline'}
-            size="icon"
             disabled={disabled}
             onClick={() => toggleCorrect(index)}
             aria-label={t('toggleCorrectAnswer')}
+            aria-pressed={option.isCorrect === true}
+            className={cn(
+              'flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+              option.isCorrect
+                ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-600 dark:bg-emerald-600'
+                : hasCorrectOptionIssue
+                  ? 'border-destructive text-destructive hover:bg-destructive/10'
+                  : 'border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600',
+              disabled && 'cursor-not-allowed opacity-60',
+            )}
           >
-            {option.isCorrect ? <Check className="size-4" /> : <X className="size-4" />}
-          </Button>
-          <Input
+            {option.isCorrect ? (
+              <Check className="size-3.5" />
+            ) : isMultiple ? (
+              <span className="size-2 rounded-sm border border-current" />
+            ) : (
+              <Circle className="size-3" />
+            )}
+          </button>
+
+          {/* Option letter */}
+          <span
+            className={cn(
+              'w-5 shrink-0 text-center text-sm font-semibold',
+              option.isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground',
+            )}
+          >
+            {String.fromCodePoint(65 + index)}
+          </span>
+
+          {/* Option text input */}
+          <input
             value={option.text}
-            placeholder={t('optionPlaceholder', { label: String.fromCodePoint(65 + index) })}
-            disabled={disabled || value.kind === 'TRUE_FALSE'}
-            onChange={(event) =>
+            placeholder={t('optionPlaceholder', {
+              label: String.fromCodePoint(65 + index),
+            })}
+            disabled={disabled || isTrueFalse}
+            className={cn(
+              'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60',
+              disabled && 'cursor-not-allowed',
+            )}
+            onChange={event =>
               onChange({
                 ...value,
                 options: value.options.map((candidate, candidateIndex) =>
@@ -303,38 +378,63 @@ function OptionsAuthor({
               })
             }
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            disabled={disabled || value.kind === 'TRUE_FALSE' || value.options.length <= 1}
-            onClick={() =>
-              onChange({ ...value, options: value.options.filter((_, candidateIndex) => candidateIndex !== index) })
-            }
-          >
-            <Trash2 className="size-4" />
-          </Button>
+
+          {/* Correct badge */}
+          {option.isCorrect ? (
+            <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              {t('correctLabel')}
+            </span>
+          ) : null}
+
+          {/* Delete button */}
+          {!isTrueFalse ? (
+            <button
+              type="button"
+              disabled={disabled || value.options.length <= 1}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  options: value.options.filter((_, i) => i !== index),
+                })
+              }
+              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
+              aria-label={t('removeOption')}
+            >
+              <Trash2 className="text-muted-foreground hover:text-destructive size-4 transition-colors" />
+            </button>
+          ) : null}
         </div>
       ))}
-      {value.kind !== 'TRUE_FALSE' ? (
-        <Button
+
+      {!isTrueFalse ? (
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           disabled={disabled}
           onClick={() =>
             onChange({
               ...value,
-              options: [...value.options, { id: `option_${crypto.randomUUID()}`, text: '', isCorrect: false }],
+              options: [
+                ...value.options,
+                {
+                  id: `option_${crypto.randomUUID()}`,
+                  text: '',
+                  isCorrect: false,
+                },
+              ],
             })
           }
+          className={cn(
+            'flex w-full items-center gap-2 rounded-xl border-2 border-dashed p-3.5 text-sm text-muted-foreground transition-colors',
+            'hover:border-border hover:text-foreground',
+            disabled && 'cursor-not-allowed opacity-50',
+          )}
         >
-          <Plus className="size-4" />
+          <Plus className="size-4 shrink-0" />
           {t('addOption')}
-        </Button>
+        </button>
       ) : null}
     </div>
-  );
+  )
 }
 
 function MatchingAuthor({
@@ -342,19 +442,16 @@ function MatchingAuthor({
   disabled,
   onChange,
 }: ItemAuthorProps<Extract<ChoiceAuthorValue, { kind: 'MATCHING' }>>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+  const t = useTranslations('Features.Assessments.Items.Choice')
   return (
     <div className="space-y-2">
       {value.pairs.map((pair, index) => (
-        <div
-          key={String(pair.id)}
-          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
-        >
+        <div key={String(pair.id)} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <Input
             value={pair.left}
             placeholder={t('matching.left')}
             disabled={disabled}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 ...value,
                 pairs: value.pairs.map((candidate, candidateIndex) =>
@@ -367,7 +464,7 @@ function MatchingAuthor({
             value={pair.right}
             placeholder={t('matching.right')}
             disabled={disabled}
-            onChange={(event) =>
+            onChange={event =>
               onChange({
                 ...value,
                 pairs: value.pairs.map((candidate, candidateIndex) =>
@@ -382,7 +479,10 @@ function MatchingAuthor({
             size="icon"
             disabled={disabled || value.pairs.length <= 1}
             onClick={() =>
-              onChange({ ...value, pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index) })
+              onChange({
+                ...value,
+                pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index),
+              })
             }
           >
             <Trash2 className="size-4" />
@@ -405,30 +505,56 @@ function MatchingAuthor({
         {t('matching.addPair')}
       </Button>
     </div>
-  );
+  )
+}
+
+function toChoiceSelectionKey(answer: unknown): string | null {
+  if (typeof answer === 'string' || typeof answer === 'number') {
+    return String(answer)
+  }
+
+  return null
+}
+
+function toChoiceAnswerLabel(answer: unknown): string {
+  if (answer === null || answer === undefined) {
+    return '-'
+  }
+
+  if (typeof answer === 'string' || typeof answer === 'number' || typeof answer === 'boolean') {
+    return String(answer)
+  }
+
+  try {
+    return JSON.stringify(answer)
+  } catch {
+    return '-'
+  }
 }
 
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
-  const t = useTranslations('Features.Assessments.Items.Choice');
+  const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (!item) {
-    return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>;
+    return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>
   }
 
+  const current = toChoiceSelectionKey(answer) ?? ''
+
   const answerLabel = (() => {
-    if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2);
+    if (item.kind === 'MATCHING') return JSON.stringify(answer ?? {}, null, 2)
     if (item.kind === 'CHOICE_MULTIPLE') {
-      const ids = Array.isArray(answer) ? answer : [];
+      const ids = Array.isArray(answer) ? answer : []
       return item.options
         .filter((option, index) => ids.includes(optionId(option, index)))
-        .map((option) => option.text)
-        .join(', ');
+        .map(option => option.text)
+        .join(', ')
     }
     return (
-      item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ??
-      String(answer ?? '-')
-    );
-  })();
+      item.options.find((option, index) => String(optionId(option, index)) === current)?.text ??
+      toChoiceAnswerLabel(answer)
+    )
+  })()
 
   return (
     <div className="bg-card rounded-md border p-3">
@@ -438,20 +564,23 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
           <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
         ) : null}
       </div>
-      <p className="text-sm font-medium">{item.prompt}</p>
+      <MarkdownContent mode="compactRichText" content={item.prompt} compact />
       <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
         {answerLabel}
       </pre>
     </div>
-  );
+  )
 }
 
-for (const kind of ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const) {
-  registerItemKind({
-    kind,
-    label: kind.replaceAll('_', ' ').toLowerCase(),
-    Author: ChoiceItemAuthor,
-    Attempt: ChoiceItemAttempt,
-    ReviewDetail: ChoiceItemReviewDetail,
-  });
-}
+export const choiceModules: ItemKindModule[] = (
+  ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const
+).map(
+  kind =>
+    ({
+      kind,
+      label: kind.replaceAll('_', ' ').toLowerCase(),
+      Author: ChoiceItemAuthor,
+      Attempt: ChoiceItemAttempt,
+      ReviewDetail: ChoiceItemReviewDetail,
+    }) as ItemKindModule,
+)

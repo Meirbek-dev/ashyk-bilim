@@ -1,18 +1,20 @@
 """Canonical assessment settings read/write path."""
 
+from collections.abc import Mapping
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
 from fastapi import HTTPException, status
-from pydantic import Field as PydanticField
-from pydantic import TypeAdapter
-from sqlmodel import Session, select
+from pydantic import Field as PydanticField, TypeAdapter, field_validator
+from sqlmodel import Session, col, select
 
 from src.db.assessments import Assessment, AssessmentItem
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.grading.progress import AssessmentPolicy
 from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.types import as_int
 
 
 class AccessModeEnum(StrEnum):
@@ -43,7 +45,7 @@ class CodeAssessmentSettings(PydanticStrictBaseModel):
     execution_mode: ExecutionMode = ExecutionMode.COMPLETE_FEEDBACK
     allow_custom_input: bool = True
     points: int = 100
-    due_date: str | None = None
+    due_date: datetime | None = None
     starter_code: dict[str, str] = PydanticField(default_factory=dict)
     visible_tests: list[dict[str, object]] = PydanticField(default_factory=list)
     hidden_tests: list[dict[str, object]] = PydanticField(default_factory=list)
@@ -53,6 +55,20 @@ class CodeAssessmentSettings(PydanticStrictBaseModel):
     scheduled_at: str | None = None
     published_at: str | None = None
     archived_at: str | None = None
+
+    @field_validator("grading_strategy", mode="before")
+    @classmethod
+    def validate_grading_strategy(cls, value: object) -> object:
+        if isinstance(value, str):
+            return GradingStrategy(value)
+        return value
+
+    @field_validator("execution_mode", mode="before")
+    @classmethod
+    def validate_execution_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return ExecutionMode(value)
+        return value
 
 
 class ExamAssessmentSettings(PydanticStrictBaseModel):
@@ -73,10 +89,18 @@ class ExamAssessmentSettings(PydanticStrictBaseModel):
     right_click_disable: bool = False
     fullscreen_enforcement: bool = False
     violation_threshold: int | None = 3
+    negative_marking_percent: float = 0.0
     lifecycle_status: str = "DRAFT"
     scheduled_at: str | None = None
     published_at: str | None = None
     archived_at: str | None = None
+
+    @field_validator("access_mode", mode="before")
+    @classmethod
+    def validate_access_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AccessModeEnum(value)
+        return value
 
 
 class QuizAssessmentSettings(PydanticStrictBaseModel):
@@ -86,21 +110,18 @@ class QuizAssessmentSettings(PydanticStrictBaseModel):
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     max_score_penalty_per_attempt: float | None = None
+    negative_marking_percent: float = 0.0
     track_violations: bool = False
     block_on_violations: bool = False
     max_violations: int = 3
 
 
 type AssessmentSettings = Annotated[
-    ExamAssessmentSettings
-    | QuizAssessmentSettings
-    | CodeAssessmentSettings,
+    ExamAssessmentSettings | QuizAssessmentSettings | CodeAssessmentSettings,
     PydanticField(discriminator="kind"),
 ]
 
-ASSESSMENT_SETTINGS_ADAPTER: TypeAdapter[AssessmentSettings] = TypeAdapter(
-    AssessmentSettings
-)
+ASSESSMENT_SETTINGS_ADAPTER: TypeAdapter[AssessmentSettings] = TypeAdapter(AssessmentSettings)
 
 
 def validate_settings(payload: dict[str, object]) -> AssessmentSettings:
@@ -109,6 +130,8 @@ def validate_settings(payload: dict[str, object]) -> AssessmentSettings:
 
 def get_settings(activity_id: int, db_session: Session) -> AssessmentSettings:
     activity = _get_activity_or_404(activity_id, db_session)
+    if _has_canonical_assessment_settings(activity, db_session):
+        return _settings_for_activity(activity, db_session)
     raw_settings = activity.settings or {}
     if raw_settings.get("kind"):
         return validate_settings(raw_settings)
@@ -133,15 +156,25 @@ def put_settings(
 
 
 def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     return activity
+
+
+def _has_canonical_assessment_settings(activity: Activity, db_session: Session) -> bool:
+    if activity.activity_type in {
+        ActivityTypeEnum.TYPE_EXAM,
+        ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+    }:
+        return True
+    if activity.id is None:
+        return False
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
+    return assessment is not None and AssessmentType(assessment.kind) == AssessmentType.QUIZ
 
 
 def _settings_for_activity(
@@ -150,34 +183,23 @@ def _settings_for_activity(
 ) -> AssessmentSettings:
     assessment = None
     if activity.id is not None:
-        assessment = db_session.exec(
-            select(Assessment).where(Assessment.activity_id == activity.id)
-        ).first()
+        assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
     policy = None
     if activity.id is not None:
-        policy = db_session.exec(
-            select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)
-        ).first()
+        policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).first()
 
     if activity.activity_type == ActivityTypeEnum.TYPE_EXAM:
-        return validate_settings(
-            _exam_settings_payload(activity, assessment, policy, db_session)
-        )
+        return validate_settings(_exam_settings_payload(activity, assessment, policy, db_session))
 
     if activity.activity_type == ActivityTypeEnum.TYPE_CODE_CHALLENGE:
-        return validate_settings(
-            _code_settings_payload(activity, assessment, policy, db_session)
-        )
+        return validate_settings(_code_settings_payload(activity, assessment, policy, db_session))
 
-    if (
-        assessment is not None
-        and AssessmentType(assessment.kind) == AssessmentType.QUIZ
-    ):
+    if assessment is not None and AssessmentType(assessment.kind) == AssessmentType.QUIZ:
         return validate_settings(_quiz_settings_payload(assessment, policy, db_session))
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Assessment settings are not available for this activity type",
+        detail="Настройки оценивания недоступны для этого типа активности",
     )
 
 
@@ -190,22 +212,20 @@ def _exam_settings_payload(
     question_limit = 0
     if assessment is not None and assessment.id is not None:
         question_limit = len(
-            db_session.exec(
-                select(AssessmentItem).where(
-                    AssessmentItem.assessment_id == assessment.id
-                )
-            ).all()
+            db_session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
         )
     anti_cheat = policy.anti_cheat_json if policy else {}
+    settings = dict(policy.settings_json or {}) if policy else {}
+    review_visibility = str(settings.get("review_visibility", "FULL"))
     return {
         "kind": "EXAM",
-        "time_limit": (
-            int(policy.time_limit_seconds / 60)
-            if policy and policy.time_limit_seconds
-            else None
-        ),
+        "time_limit": (int(policy.time_limit_seconds / 60) if policy and policy.time_limit_seconds else None),
         "attempt_limit": policy.max_attempts if policy else 1,
+        "shuffle_questions": _bool_setting(settings, "randomize_questions", "shuffle_questions"),
+        "shuffle_answers": _bool_setting(settings, "randomize_options", "shuffle_answers"),
         "question_limit": question_limit or None,
+        "allow_result_review": review_visibility != "NONE",
+        "show_correct_answers": review_visibility == "FULL",
         "passing_score": int(policy.passing_score) if policy else 60,
         "copy_paste_protection": anti_cheat.get("copy_paste_protection") is True,
         "tab_switch_detection": anti_cheat.get("tab_switch_detection") is True,
@@ -213,16 +233,11 @@ def _exam_settings_payload(
         "right_click_disable": anti_cheat.get("right_click_disable") is True,
         "fullscreen_enforcement": anti_cheat.get("fullscreen_enforcement") is True,
         "violation_threshold": anti_cheat.get("violation_threshold", 3),
+        "negative_marking_percent": _float_setting(settings, "negative_marking_percent") or 0.0,
         "lifecycle_status": _lifecycle_value(activity, assessment),
-        "scheduled_at": assessment.scheduled_at.isoformat()
-        if assessment and assessment.scheduled_at
-        else None,
-        "published_at": assessment.published_at.isoformat()
-        if assessment and assessment.published_at
-        else None,
-        "archived_at": assessment.archived_at.isoformat()
-        if assessment and assessment.archived_at
-        else None,
+        "scheduled_at": assessment.scheduled_at.isoformat() if assessment and assessment.scheduled_at else None,
+        "published_at": assessment.published_at.isoformat() if assessment and assessment.published_at else None,
+        "archived_at": assessment.archived_at.isoformat() if assessment and assessment.archived_at else None,
     }
 
 
@@ -231,14 +246,14 @@ def _quiz_settings_payload(
     policy: AssessmentPolicy | None,
     db_session: Session,
 ) -> dict[str, object]:
-    questions = []
+    questions: list[dict[str, object]] = []
     if assessment.id is not None:
         questions = [
             item.body_json
             for item in db_session.exec(
                 select(AssessmentItem)
                 .where(AssessmentItem.assessment_id == assessment.id)
-                .order_by(AssessmentItem.order, AssessmentItem.id)
+                .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
             ).all()
         ]
     anti_cheat = policy.anti_cheat_json if policy else {}
@@ -251,7 +266,7 @@ def _quiz_settings_payload(
         "max_score_penalty_per_attempt": None,
         "track_violations": anti_cheat.get("tab_switch_detection") is True,
         "block_on_violations": anti_cheat.get("violation_threshold") is not None,
-        "max_violations": int(anti_cheat.get("violation_threshold", 3)),
+        "max_violations": as_int(anti_cheat.get("violation_threshold", 3), field="violation_threshold"),
     }
 
 
@@ -266,40 +281,28 @@ def _code_settings_payload(
         item = db_session.exec(
             select(AssessmentItem)
             .where(AssessmentItem.assessment_id == assessment.id)
-            .order_by(AssessmentItem.order, AssessmentItem.id)
+            .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
         ).first()
         if item is not None and isinstance(item.body_json, dict):
             payload.setdefault("allowed_languages", item.body_json.get("languages", []))
             payload.setdefault("starter_code", item.body_json.get("starter_code", {}))
             payload.setdefault("visible_tests", item.body_json.get("tests", []))
-            payload.setdefault(
-                "time_limit", item.body_json.get("time_limit_seconds", 5)
-            )
-            payload.setdefault(
-                "memory_limit", item.body_json.get("memory_limit_mb", 256)
-            )
+            payload.setdefault("time_limit", item.body_json.get("time_limit_seconds", 5))
+            payload.setdefault("memory_limit", item.body_json.get("memory_limit_mb", 256))
     payload.setdefault("kind", "CODE_CHALLENGE")
-    payload.setdefault(
-        "due_date", policy.due_at.isoformat() if policy and policy.due_at else None
-    )
+    payload.setdefault("due_date", policy.due_at.isoformat() if policy and policy.due_at else None)
     payload.setdefault("lifecycle_status", _lifecycle_value(activity, assessment))
     payload.setdefault(
         "scheduled_at",
-        assessment.scheduled_at.isoformat()
-        if assessment and assessment.scheduled_at
-        else None,
+        assessment.scheduled_at.isoformat() if assessment and assessment.scheduled_at else None,
     )
     payload.setdefault(
         "published_at",
-        assessment.published_at.isoformat()
-        if assessment and assessment.published_at
-        else None,
+        assessment.published_at.isoformat() if assessment and assessment.published_at else None,
     )
     payload.setdefault(
         "archived_at",
-        assessment.archived_at.isoformat()
-        if assessment and assessment.archived_at
-        else None,
+        assessment.archived_at.isoformat() if assessment and assessment.archived_at else None,
     )
     return payload
 
@@ -313,3 +316,16 @@ def _lifecycle_value(activity: Activity, assessment: Assessment | None) -> str:
 
 def _dump_settings(settings: AssessmentSettings) -> dict[str, object]:
     return settings.model_dump(mode="json")
+
+
+def _bool_setting(payload: Mapping[str, object], *keys: str) -> bool:
+    return any(payload.get(key) is True for key in keys)
+
+
+def _float_setting(payload: Mapping[str, object], key: str) -> float | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None

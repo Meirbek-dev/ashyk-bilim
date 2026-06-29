@@ -1,31 +1,31 @@
-import createNextIntlPlugin from 'next-intl/plugin';
-import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin'
+import type { NextConfig } from 'next'
 
-type RemotePattern = NonNullable<NonNullable<NextConfig['images']>['remotePatterns']>[number];
+type RemotePattern = NonNullable<NonNullable<NextConfig['images']>['remotePatterns']>[number]
 
 const createRemotePattern = (value: string | undefined, pathname: string): RemotePattern | null => {
-  const normalizedValue = value?.trim();
-  if (!normalizedValue) return null;
+  const normalizedValue = value?.trim()
+  if (!normalizedValue) return null
 
   try {
-    const url = new URL(normalizedValue);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    const url = new URL(normalizedValue)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
 
     return {
       protocol: url.protocol.replace(':', '') as 'http' | 'https',
       hostname: url.hostname,
       port: url.port,
       pathname,
-    };
+    }
   } catch {
-    return null;
+    return null
   }
-};
+}
 
 const imageRemotePatterns = [
   createRemotePattern(process.env.NEXT_PUBLIC_MEDIA_URL ?? process.env.NEXT_PUBLIC_SITE_URL, '/content/platform/**'),
-  createRemotePattern(process.env.NEXT_PUBLIC_SITE_URL, '/platform_logo_full.svg'),
-].filter((pattern): pattern is RemotePattern => pattern !== null);
+  createRemotePattern(process.env.NEXT_PUBLIC_SITE_URL, '/app_logo_full.svg'),
+].filter((pattern): pattern is RemotePattern => pattern !== null)
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
@@ -50,15 +50,16 @@ const nextConfig: NextConfig = {
   // Build & Environment
   output: 'standalone',
   reactStrictMode: true,
+  transpilePackages: ['@base-ui/react'],
 
   allowedDevOrigins: ['https://cs-mooc.tou.edu.kz', 'http://192.168.12.35', 'http://192.168.1.46'],
   experimental: {
+    turbopackFileSystemCacheForDev: false,
     serverActions: {
       allowedOrigins: ['cs-mooc.tou.edu.kz', 'localhost:3000'],
     },
     // Turbopack / Package Optimization
     optimizePackageImports: [
-      '@base-ui/react',
       '@icons-pack/react-simple-icons',
       'lucide-react',
       // Animation
@@ -86,8 +87,8 @@ const nextConfig: NextConfig = {
       'tiptap-markdown',
     ],
   },
-};
+}
 
-const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(nextConfig)

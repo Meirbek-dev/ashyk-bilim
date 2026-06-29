@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import cast
 
 from sqlalchemy import and_, or_, select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import AnonymousUser, PublicUser
+from src.infra.db.execute import sa_execute
 from src.security.rbac import (
     AuthenticationRequired,
     PermissionChecker,
@@ -27,7 +28,7 @@ class TeacherAnalyticsScope:
     has_platform_scope: bool
 
 
-def _coerce_course_id(value: Any) -> int | None:
+def _coerce_course_id(value: object) -> int | None:
     if value is None:
         return None
     if isinstance(value, int):
@@ -40,27 +41,23 @@ def _coerce_course_id(value: Any) -> int | None:
         if not value:
             return None
         return _coerce_course_id(value[0])
-    return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
-def _has_analytics_scope(
-    checker: PermissionChecker, user_id: int, action: str, scope: str
-) -> bool:
+def _has_analytics_scope(checker: PermissionChecker, user_id: int, action: str, scope: str) -> bool:
     permissions = checker.get_expanded_permissions(user_id)
     return (
-        f"analytics:{action}:{scope}" in permissions
-        or f"analytics:*:{scope}" in permissions
-        or "*:*:*" in permissions
+        f"analytics:{action}:{scope}" in permissions or f"analytics:*:{scope}" in permissions or "*:*:*" in permissions
     )
 
 
-def ensure_analytics_access(
-    checker: PermissionChecker, user_id: int, action: str
-) -> None:
-    if any(
-        _has_analytics_scope(checker, user_id, action, scope)
-        for scope in ("assigned", "platform", "all")
-    ):
+def ensure_analytics_access(checker: PermissionChecker, user_id: int, action: str) -> None:
+    if any(_has_analytics_scope(checker, user_id, action, scope) for scope in ("assigned", "platform", "all")):
         return
     raise PermissionDenied(permission=f"analytics:{action}")
 
@@ -78,49 +75,52 @@ def resolve_teacher_scope(
 
     ensure_analytics_access(checker, current_user.id, action)
     has_platform_scope = any(
-        _has_analytics_scope(checker, current_user.id, action, scope)
-        for scope in ("platform", "all")
+        _has_analytics_scope(checker, current_user.id, action, scope) for scope in ("platform", "all")
     )
 
     teacher_user_id = filters.teacher_user_id or current_user.id
     target_user_id = teacher_user_id if has_platform_scope else current_user.id
 
     if has_platform_scope and filters.teacher_user_id:
-        course_ids = db_session.exec(
-            select(Course.id)
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
+        course_ids = (
+            sa_execute(
+                db_session,
+                select(col(Course.id))
+                .outerjoin(ResourceAuthor, col(ResourceAuthor.resource_uuid) == Course.course_uuid)
+                .where(
+                    or_(
+                        col(Course.creator_id) == target_user_id,
+                        and_(
+                            col(ResourceAuthor.user_id) == target_user_id,
+                            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ),
+                    )
+                ),
             )
-            .where(
-                or_(
-                    Course.creator_id == target_user_id,
-                    and_(
-                        ResourceAuthor.user_id == target_user_id,
-                        ResourceAuthor.authorship_status
-                        == ResourceAuthorshipStatusEnum.ACTIVE,
-                    ),
-                )
-            )
-        ).all()
+            .scalars()
+            .all()
+        )
     elif has_platform_scope:
-        course_ids = db_session.exec(select(Course.id)).all()
+        course_ids = sa_execute(db_session, select(col(Course.id))).scalars().all()
     else:
-        course_ids = db_session.exec(
-            select(Course.id)
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
+        course_ids = (
+            sa_execute(
+                db_session,
+                select(col(Course.id))
+                .outerjoin(ResourceAuthor, col(ResourceAuthor.resource_uuid) == Course.course_uuid)
+                .where(
+                    or_(
+                        col(Course.creator_id) == current_user.id,
+                        and_(
+                            col(ResourceAuthor.user_id) == current_user.id,
+                            col(ResourceAuthor.authorship_status) == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ),
+                    )
+                ),
             )
-            .where(
-                or_(
-                    Course.creator_id == current_user.id,
-                    and_(
-                        ResourceAuthor.user_id == current_user.id,
-                        ResourceAuthor.authorship_status
-                        == ResourceAuthorshipStatusEnum.ACTIVE,
-                    ),
-                )
-            )
-        ).all()
+            .scalars()
+            .all()
+        )
 
     normalized_course_ids = sorted({
         normalized_course_id
@@ -160,30 +160,27 @@ def resolve_course_id_for_assessment(
     assessment_id: int,
 ) -> int | None:
     if assessment_type in {"manual_assessment", "exam"}:
-        row = db_session.exec(
+        row = sa_execute(
+            db_session,
             select(Assessment, Activity)
-            .join(Activity, Activity.id == Assessment.activity_id)
-            .where(Assessment.id == assessment_id)
+            .join(Activity, col(Activity.id) == Assessment.activity_id)
+            .where(col(Assessment.id) == assessment_id),
         ).first()
         if row is None:
             return None
+        activity_obj: Activity | None
         if hasattr(row, "_mapping"):
-            activity = next(
-                value for value in row._mapping.values() if isinstance(value, Activity)
-            )
+            activity_obj = next((value for value in row._mapping.values() if isinstance(value, Activity)), None)
         else:
-            activity = row[1]
-        return activity.course_id
-    if assessment_type in {"quiz", "code_challenge"}:
-        activity = db_session.exec(
-            select(Activity).where(Activity.id == assessment_id)
-        ).first()
-        if activity is None or activity.course_id is None:
+            activity_obj = cast("Activity", row[1])
+        if activity_obj is None or not isinstance(activity_obj.course_id, int):
             return None
-        if (
-            assessment_type == "code_challenge"
-            and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE
-        ):
+        return activity_obj.course_id
+    if assessment_type in {"quiz", "code_challenge"}:
+        activity = sa_execute(db_session, select(Activity).where(col(Activity.id) == assessment_id)).scalars().first()
+        if activity is None or not isinstance(activity.course_id, int):
+            return None
+        if assessment_type == "code_challenge" and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE:
             return None
         return activity.course_id
     return None
@@ -195,9 +192,7 @@ def ensure_assessment_in_scope(
     assessment_type: str,
     assessment_id: int,
 ) -> None:
-    course_id = resolve_course_id_for_assessment(
-        db_session, assessment_type, assessment_id
-    )
+    course_id = resolve_course_id_for_assessment(db_session, assessment_type, assessment_id)
     if course_id is None:
         raise PermissionDenied(
             permission="analytics:read",

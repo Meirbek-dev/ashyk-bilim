@@ -25,6 +25,7 @@ from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +54,11 @@ async def create_inline_quiz(
 
     Idempotent: if an inline quiz already exists for this activity, returns it.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == payload.activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == payload.activity_id)).first()
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Parent activity not found",
+            detail="Родительская активность не найдена",
         )
 
     checker = PermissionChecker(db_session)
@@ -105,11 +104,12 @@ async def create_inline_quiz(
     )
     db_session.add(quiz_activity)
     db_session.flush()
+    quiz_activity_id = require_persisted_id(quiz_activity.id, model_name="Activity")
 
     # Create policy
     policy = AssessmentPolicy(
         policy_uuid=f"policy_{ULID()}",
-        activity_id=quiz_activity.id,
+        activity_id=quiz_activity_id,
         assessment_type=AssessmentType.QUIZ,
         grading_mode=AssessmentGradingMode.AUTO,
         grade_release_mode=GradeReleaseMode.IMMEDIATE,
@@ -120,16 +120,17 @@ async def create_inline_quiz(
     )
     db_session.add(policy)
     db_session.flush()
+    policy_id = require_persisted_id(policy.id, model_name="AssessmentPolicy")
 
     # Create assessment
     assessment = Assessment(
         assessment_uuid=f"assessment_{ULID()}",
-        activity_id=quiz_activity.id,
+        activity_id=quiz_activity_id,
         kind=AssessmentType.QUIZ,
         title=payload.title,
         lifecycle=AssessmentLifecycle.DRAFT,
         weight=0.0,  # inline quizzes don't affect course grade by default
-        policy_id=policy.id,
+        policy_id=policy_id,
         inline_parent_activity_id=payload.activity_id,
         is_inline=True,
         created_at=now,

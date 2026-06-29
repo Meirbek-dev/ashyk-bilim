@@ -8,16 +8,15 @@ emitted via the event bus after the main transaction commits.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
-from ulid import ULID
 
-from src.db.assessments import Assessment, CodeItemAnswer, CodeRunResult
+from src.db.assessments import Assessment, CodeItemAnswer, CodeItemBody, CodeRunResult
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import Activity
 from src.db.grading.overrides import StudentPolicyOverride
@@ -31,7 +30,6 @@ from src.db.grading.submissions import (
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.code_execution import get_code_execution_service
-from src.services.grading.pipeline.context import EffectivePolicy
 from src.services.grading.pipeline.emit import emit_submission_events
 from src.services.grading.pipeline.enforce import (
     check_violations,
@@ -46,6 +44,7 @@ from src.services.grading.pipeline.persist import persist_submission
 from src.services.grading.pipeline.validate import validate_and_parse
 from src.services.grading.settings_loader import AssessmentSettings
 from src.services.progress import submissions as progress_submissions
+from src.types import JsonObject, JsonValue, as_json_object
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +58,15 @@ _SUBMIT_PERMISSION: dict[AssessmentType, str] = {
 async def submit_assessment(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict,
+    answers_payload: JsonObject,
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
     *,
     violation_count: int = 0,
     submission_uuid: str | None = None,
+    skip_permission: bool = False,
+    skip_policy_constraints: bool = False,
 ) -> SubmissionRead:
     """Submit an assessment attempt through the canonical pipeline.
 
@@ -96,6 +97,8 @@ async def submit_assessment(
                 db_session=db_session,
                 violation_count=violation_count,
                 submission_uuid=submission_uuid,
+                skip_permission=skip_permission,
+                skip_policy_constraints=skip_policy_constraints,
             )
     except TimeoutError:
         logger.exception(
@@ -107,7 +110,7 @@ async def submit_assessment(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail={
                 "code": "GRADING_TIMEOUT",
-                "message": "Grading pipeline did not complete within the allowed time.",
+                "message": "Конвейер проверки не завершился в отведенное время.",
             },
         )
     except HTTPException:
@@ -122,7 +125,7 @@ async def submit_assessment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "code": "GRADING_ERROR",
-                "message": "An unexpected error occurred during grading.",
+                "message": "Произошла непредвиденная ошибка во время проверки.",
             },
         )
 
@@ -130,17 +133,20 @@ async def submit_assessment(
 async def _submit_assessment_inner(
     activity_id: int,
     assessment_type: AssessmentType,
-    answers_payload: dict,
+    answers_payload: JsonObject,
     settings: AssessmentSettings,
     current_user: PublicUser,
     db_session: Session,
     *,
     violation_count: int = 0,
     submission_uuid: str | None = None,
+    skip_permission: bool = False,
+    skip_policy_constraints: bool = False,
 ) -> SubmissionRead:
     # 1. Permission check
     activity = _get_activity_or_404(activity_id, db_session)
-    _require_permission(current_user, activity, assessment_type, db_session)
+    if not skip_permission:
+        _require_permission(current_user, activity, assessment_type, db_session)
 
     # 2. Get-or-create DRAFT
     draft = _get_or_create_draft(
@@ -161,9 +167,10 @@ async def _submit_assessment_inner(
 
     # 5. Enforce constraints
     attempt_count = _count_completed_attempts(activity_id, current_user.id, db_session)
-    enforce_attempt_limit(effective, attempt_count)
-    enforce_time_limit(draft.started_at, effective)
-    enforce_late_submission(effective)
+    if not skip_policy_constraints:
+        enforce_attempt_limit(effective, attempt_count)
+        enforce_time_limit(draft.started_at, effective)
+        enforce_late_submission(effective)
 
     # 6. Check violations
     violation_exceeded = check_violations(settings, violation_count)
@@ -172,11 +179,12 @@ async def _submit_assessment_inner(
     # and cap the violations list at 500 entries.
     MAX_VIOLATIONS_STORED = 500
     if violation_exceeded:
-        current_meta: dict = draft.metadata_json or {}
+        current_meta: JsonObject = dict(draft.metadata_json or {})
         current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
-        existing_violations: list = current_meta.get("violations", [])
+        raw_violations = current_meta.get("violations", [])
+        existing_violations: list[JsonValue] = raw_violations if isinstance(raw_violations, list) else []
         if len(existing_violations) > MAX_VIOLATIONS_STORED:
             current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True
@@ -186,7 +194,7 @@ async def _submit_assessment_inner(
 
     # 7. Run code (CODE_CHALLENGE only)
     answers_by_item_uuid = parsed.answers_by_item_uuid
-    final_payload = parsed.raw_payload
+    final_payload: dict[str, object] = dict(parsed.raw_payload)
     if assessment_type == AssessmentType.CODE_CHALLENGE:
         answers_by_item_uuid, final_payload = await _run_final_code_answers(
             db_session=db_session,
@@ -207,6 +215,7 @@ async def _submit_assessment_inner(
         max_score=100.0,
         code_strategy=settings.code_strategy,
         max_score_penalty_per_attempt=settings.max_score_penalty_per_attempt,
+        negative_marking_percent=settings.negative_marking_percent,
     )
 
     # 9. Apply penalties
@@ -221,36 +230,33 @@ async def _submit_assessment_inner(
         needs_manual_review=result.needs_manual_review,
     )
 
-    # 10. Persist (atomic)
-    draft = persist_submission(
-        db_session=db_session,
-        draft=draft,
-        result=result,
-        penalty=penalty,
-        effective=effective,
-        answers_payload=final_payload,
-        now=now,
-        policy=policy,
-        assessment_type=assessment_type,
-    )
+    # 10. Persist (atomic, shielded from timeout cancellation)
+    async def _persist_and_update() -> Submission:
+        d = persist_submission(
+            db_session=db_session,
+            draft=draft,
+            result=result,
+            penalty=penalty,
+            effective=effective,
+            answers_payload=as_json_object(final_payload, field="answers_payload"),
+            now=now,
+            policy=policy,
+            assessment_type=assessment_type,
+        )
+        progress_submissions.submit_activity(d, db_session)
+        return d
 
-    # Update progress
-    progress_submissions.submit_activity(draft, db_session)
+    draft = await asyncio.shield(_persist_and_update())
 
     # 11. Emit events (post-commit, non-blocking)
-    _is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE
-    _immediate_release = policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
+    is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE
+    immediate_release = policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
     await emit_submission_events(
         draft,
         file_keys=_extract_file_keys(final_payload),
         violation_count=violation_count,
         grade_published_at=(
-            now
-            if (
-                not result.needs_manual_review
-                and (_is_code_challenge or _immediate_release)
-            )
-            else None
+            now if (not result.needs_manual_review and (is_code_challenge or immediate_release)) else None
         ),
     )
 
@@ -261,13 +267,9 @@ async def _submit_assessment_inner(
 
 
 def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
     return activity
 
 
@@ -305,13 +307,11 @@ def _get_or_create_draft(
             )
         ).first()
         if draft is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
         if draft.status != SubmissionStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Submission is not a DRAFT (current status: {draft.status})",
+                detail=f"Отправка не является черновиком (текущий статус: {draft.status})",
             )
         return draft
 
@@ -327,13 +327,11 @@ def _get_or_create_draft(
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="No active draft found. Call /assessments/{uuid}/start first.",
+        detail="Активный черновик не найден. Сначала вызовите /assessments/{uuid}/start.",
     )
 
 
-def _count_completed_attempts(
-    activity_id: int, user_id: int, db_session: Session
-) -> int:
+def _count_completed_attempts(activity_id: int, user_id: int, db_session: Session) -> int:
     return db_session.exec(
         select(sql_func.count()).where(
             Submission.activity_id == activity_id,
@@ -343,12 +341,8 @@ def _count_completed_attempts(
     ).one()
 
 
-def _get_assessment_policy(
-    activity_id: int, db_session: Session
-) -> AssessmentPolicy | None:
-    return db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+def _get_assessment_policy(activity_id: int, db_session: Session) -> AssessmentPolicy | None:
+    return db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
 
 
 def _active_policy_override(
@@ -368,11 +362,7 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = (
-            override.expires_at
-            if override.expires_at.tzinfo
-            else override.expires_at.replace(tzinfo=UTC)
-        )
+        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
         if expires_at <= now:
             return None
     return override
@@ -382,41 +372,37 @@ async def _run_final_code_answers(
     *,
     db_session: Session,
     settings: AssessmentSettings,
-    answers_by_item_uuid: dict[str, Any],
-    answers_payload: dict,
+    answers_by_item_uuid: dict[str, object],
+    answers_payload: dict[str, object],
     current_user: PublicUser,
     draft: Submission,
-) -> tuple[dict[str, Any], dict]:
+) -> tuple[dict[str, object], dict[str, object]]:
     """Run final Judge0 grading for canonical CODE answers server-side."""
-    code_items = [item for item in settings.items if item.body.kind == "CODE"]
+    code_items = [item for item in settings.items if isinstance(item.body, CodeItemBody)]
     if not code_items:
         return answers_by_item_uuid, answers_payload
 
     service = get_code_execution_service()
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == draft.activity_id)
-    ).first()
-    assessment_uuid = (
-        assessment.assessment_uuid
-        if assessment is not None
-        else f"activity_{draft.activity_id}"
-    )
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == draft.activity_id)).first()
+    assessment_uuid = assessment.assessment_uuid if assessment is not None else f"activity_{draft.activity_id}"
     enriched_answers = dict(answers_by_item_uuid)
     for item in code_items:
+        body = item.body
+        assert isinstance(body, CodeItemBody)
         raw_answer = answers_by_item_uuid.get(item.item_uuid)
         answer = _coerce_code_answer(raw_answer)
         if answer is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Missing CODE answer for item {item.item_uuid}",
+                detail=f"Отсутствует ответ CODE для элемента {item.item_uuid}",
             )
-        if item.body.languages and answer.language not in item.body.languages:
+        if body.languages and answer.language not in body.languages:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "LANGUAGE_NOT_ALLOWED",
-                    "message": f"Language {answer.language} is not allowed.",
-                    "allowed_languages": item.body.languages,
+                    "message": f"Язык программирования {answer.language} не разрешен.",
+                    "allowed_languages": body.languages,
                 },
             )
 
@@ -429,18 +415,17 @@ async def _run_final_code_answers(
             purpose=CodeRunPurpose.FINAL,
             language_id=answer.language,
             source_code=answer.source,
-            test_cases=item.body.tests,
-            idempotency_key=f"final:{draft.submission_uuid}:{item.item_uuid}:{answer.language}",
-            time_limit_seconds=item.body.time_limit_seconds,
-            memory_limit_mb=item.body.memory_limit_mb,
+            test_cases=body.tests,
+            idempotency_key=f"final:{draft.submission_uuid}:{item.item_uuid}:{answer.language}:{hashlib.sha256(answer.source.encode('utf-8')).hexdigest()}",
+            time_limit_seconds=body.time_limit_seconds,
+            memory_limit_mb=body.memory_limit_mb,
         )
         if result.status == CodeRunStatus.DEGRADED:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
                     "code": "CODE_RUNNER_DEGRADED",
-                    "message": result.error_message
-                    or "Code runner temporarily unavailable.",
+                    "message": result.error_message or "Сервис выполнения кода временно недоступен.",
                     "is_retryable": True,
                 },
             )
@@ -449,11 +434,9 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "code": "COMPILE_ERROR",
-                    "message": "Source code failed to compile.",
+                    "message": "Не удалось скомпилировать исходный код.",
                     "compile_output": (
-                        result.grading_details()[0].get("compile_output")
-                        if result.grading_details()
-                        else None
+                        result.grading_details()[0].get("compile_output") if result.grading_details() else None
                     ),
                     "item_uuid": item.item_uuid,
                 },
@@ -467,7 +450,7 @@ async def _run_final_code_answers(
                 passed=result.passed,
                 total=result.total,
                 score=result.score,
-                details=result.grading_details(),
+                details=[dict(detail) for detail in result.grading_details()],
             ),
         )
 
@@ -475,16 +458,14 @@ async def _run_final_code_answers(
     next_payload["answers"] = [
         {
             "item_uuid": uuid,
-            "answer": ans.model_dump(mode="json")
-            if hasattr(ans, "model_dump")
-            else ans,
+            "answer": ans.model_dump(mode="json") if hasattr(ans, "model_dump") else ans,
         }
         for uuid, ans in enriched_answers.items()
     ]
     return enriched_answers, next_payload
 
 
-def _coerce_code_answer(raw_answer: Any) -> CodeItemAnswer | None:
+def _coerce_code_answer(raw_answer: object) -> CodeItemAnswer | None:
     if isinstance(raw_answer, CodeItemAnswer):
         return raw_answer
     if isinstance(raw_answer, dict):

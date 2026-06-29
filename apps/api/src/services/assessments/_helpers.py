@@ -15,7 +15,6 @@ from src.services.assessments._shared import (
     _default_activity_settings,
     _ensure_authorable,
     _get_activity_and_course,
-    _get_activity_by_uuid_or_404,
     _get_assessment_by_uuid_or_404,
     _get_chapter_or_404,
     _get_course_for_activity_or_404,
@@ -28,9 +27,10 @@ from src.services.assessments._shared import (
     _require_publish,
     _require_read,
     _require_submit_access,
-    _sync_activity_lifecycle,
     build_readiness,
+    sync_activity_lifecycle,
 )
+from src.services.courses._utils import _get_activity_by_uuid_or_404
 
 __all__ = [
     "_build_assessment_read",
@@ -54,6 +54,6 @@ __all__ = [
     "_require_publish",
     "_require_read",
     "_require_submit_access",
-    "_sync_activity_lifecycle",
     "build_readiness",
+    "sync_activity_lifecycle",
 ]

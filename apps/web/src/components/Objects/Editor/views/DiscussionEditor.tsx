@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Bold,
@@ -12,7 +12,7 @@ import {
   Redo,
   Undo,
   Upload,
-} from 'lucide-react';
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -21,25 +21,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { SiYoutube } from '@icons-pack/react-simple-icons';
-import { useEffect, useState, useTransition } from 'react';
-import { EditorContent } from '@tiptap/react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext';
-import { useEditorInstance } from '@components/Objects/Editor/core';
-import '@components/Objects/Editor/styles/prosemirror.css';
+} from '@/components/ui/dialog'
+import { SiYoutube } from '@icons-pack/react-simple-icons'
+import { useEffect, useState, useTransition } from 'react'
+import { EditorContent } from '@tiptap/react'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
+import { useEditorInstance } from '@components/Objects/Editor/core'
+
+import '@components/Objects/Editor/styles/prosemirror.css'
 
 interface DiscussionEditorProps {
-  content: string;
-  onChange: (content: string) => void;
-  placeholder?: string;
-  className?: string;
-  minHeight?: string;
+  content: string
+  onChange: (content: string) => void
+  placeholder?: string
+  className?: string
+  minHeight?: string
 }
 
 export function DiscussionEditor({
@@ -49,19 +50,19 @@ export function DiscussionEditor({
   className = '',
   minHeight = '150px',
 }: DiscussionEditorProps) {
-  const t = useTranslations('RichTextEditor');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
-  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const t = useTranslations('RichTextEditor')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const editor = useEditorInstance({
     preset: 'discussion',
     content,
-    onUpdate: (json) => onChange(JSON.stringify(json)),
+    onUpdate: json => onChange(JSON.stringify(json)),
     overrides: {
       editorProps: {
         attributes: {
@@ -70,35 +71,35 @@ export function DiscussionEditor({
         },
       },
     },
-  });
+  })
 
-  const [isPending, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition()
 
   // Sync content prop changes with editor
   useEffect(() => {
-    if (!editor || editor.isDestroyed || !editor.commands) return;
+    if (!editor || editor.isDestroyed || !editor.commands) return
 
-    const currentJson = JSON.stringify(editor.getJSON());
+    const currentJson = JSON.stringify(editor.getJSON())
     if (currentJson !== content) {
-      let parsedContent: string | object = content;
+      let parsedContent: string | object = content
       try {
-        const parsed = JSON.parse(content) as unknown;
-        if (parsed && typeof parsed === 'object') parsedContent = parsed;
+        const parsed = JSON.parse(content) as unknown
+        if (parsed && typeof parsed === 'object') parsedContent = parsed
       } catch {
         // treat as HTML string
       }
-      editor.commands.setContent(parsedContent, { emitUpdate: false });
+      editor.commands.setContent(parsedContent, { emitUpdate: false })
     }
-  }, [editor, content]);
+  }, [editor, content])
 
   const addLink = () => {
-    if (!(editor && linkUrl)) return;
+    if (!(editor && linkUrl)) return
 
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to);
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to)
 
     if (selectedText) {
-      editor.chain().focus().setLink({ href: linkUrl }).run();
+      editor.chain().focus().setLink({ href: linkUrl }).run()
     } else {
       editor
         .chain()
@@ -106,30 +107,39 @@ export function DiscussionEditor({
         .insertContent({
           type: 'text',
           text: linkUrl,
-          marks: [{ type: 'link', attrs: { href: linkUrl, target: '_blank', rel: 'noopener noreferrer' } }],
+          marks: [
+            {
+              type: 'link',
+              attrs: {
+                href: linkUrl,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+              },
+            },
+          ],
         })
-        .run();
+        .run()
     }
 
-    setLinkUrl('');
-    setIsLinkDialogOpen(false);
-  };
+    setLinkUrl('')
+    setIsLinkDialogOpen(false)
+  }
 
   const addImage = () => {
-    if (!(editor && imageUrl)) return;
-    editor.chain().focus().setImage({ src: imageUrl, alt: 'Uploaded image' }).run();
-    setImageUrl('');
-    setIsImageDialogOpen(false);
-  };
+    if (!(editor && imageUrl)) return
+    editor.chain().focus().setImage({ src: imageUrl, alt: 'Uploaded image' }).run()
+    setImageUrl('')
+    setIsImageDialogOpen(false)
+  }
 
   const addVideo = () => {
-    if (!(editor && videoUrl)) return;
+    if (!(editor && videoUrl)) return
 
-    const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/;
-    const match = youtubeRegex.exec(videoUrl);
+    const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
+    const match = youtubeRegex.exec(videoUrl)
 
     if (match) {
-      editor.chain().focus().setYoutubeVideo({ src: videoUrl }).run();
+      editor.chain().focus().setYoutubeVideo({ src: videoUrl }).run()
     } else {
       editor
         .chain()
@@ -137,26 +147,35 @@ export function DiscussionEditor({
         .insertContent({
           type: 'text',
           text: videoUrl,
-          marks: [{ type: 'link', attrs: { href: videoUrl, target: '_blank', rel: 'noopener noreferrer' } }],
+          marks: [
+            {
+              type: 'link',
+              attrs: {
+                href: videoUrl,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+              },
+            },
+          ],
         })
-        .run();
+        .run()
     }
 
-    setVideoUrl('');
-    setIsVideoDialogOpen(false);
-  };
+    setVideoUrl('')
+    setIsVideoDialogOpen(false)
+  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!(file && editor)) return;
+    const file = e.target.files?.[0]
+    if (!(file && editor)) return
 
-    startTransition(() => setIsUploading(true));
+    startTransition(() => setIsUploading(true))
 
     try {
-      const tempUrl = URL.createObjectURL(file);
+      const tempUrl = URL.createObjectURL(file)
 
       if (file.type.startsWith('image/')) {
-        editor.chain().focus().setImage({ src: tempUrl, alt: file.name }).run();
+        editor.chain().focus().setImage({ src: tempUrl, alt: file.name }).run()
       } else {
         editor
           .chain()
@@ -164,20 +183,29 @@ export function DiscussionEditor({
           .insertContent({
             type: 'text',
             text: file.name,
-            marks: [{ type: 'link', attrs: { href: tempUrl, target: '_blank', rel: 'noopener noreferrer' } }],
+            marks: [
+              {
+                type: 'link',
+                attrs: {
+                  href: tempUrl,
+                  target: '_blank',
+                  rel: 'noopener noreferrer',
+                },
+              },
+            ],
           })
-          .run();
+          .run()
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error uploading file:', error)
     } finally {
-      startTransition(() => setIsUploading(false));
-      e.target.value = '';
+      startTransition(() => setIsUploading(false))
+      e.target.value = ''
     }
-  };
+  }
 
   if (!editor) {
-    return null;
+    return null
   }
 
   return (
@@ -270,20 +298,8 @@ export function DiscussionEditor({
           <div className="bg-border mx-1 h-6 w-px" />
 
           {/* Media */}
-          <Dialog
-            open={isLinkDialogOpen}
-            onOpenChange={setIsLinkDialogOpen}
-          >
-            <DialogTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                />
-              }
-            >
+          <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <LinkIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -296,42 +312,23 @@ export function DiscussionEditor({
                 <Input
                   id="link-url"
                   value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onChange={e => setLinkUrl(e.target.value)}
                   placeholder={t('urlPlaceholder')}
                 />
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsLinkDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsLinkDialogOpen(false)}>
                   {t('cancel')}
                 </Button>
-                <Button
-                  type="button"
-                  onClick={addLink}
-                >
+                <Button type="button" onClick={addLink}>
                   {t('addLink')}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <Dialog
-            open={isImageDialogOpen}
-            onOpenChange={setIsImageDialogOpen}
-          >
-            <DialogTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                />
-              }
-            >
+          <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <ImageIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -344,42 +341,23 @@ export function DiscussionEditor({
                 <Input
                   id="image-url"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
+                  onChange={e => setImageUrl(e.target.value)}
                   placeholder={t('imagePlaceholder')}
                 />
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsImageDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsImageDialogOpen(false)}>
                   {t('cancel')}
                 </Button>
-                <Button
-                  type="button"
-                  onClick={addImage}
-                >
+                <Button type="button" onClick={addImage}>
                   {t('addImage')}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <Dialog
-            open={isVideoDialogOpen}
-            onOpenChange={setIsVideoDialogOpen}
-          >
-            <DialogTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                />
-              }
-            >
+          <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <SiYoutube size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -392,22 +370,15 @@ export function DiscussionEditor({
                 <Input
                   id="video-url"
                   value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
+                  onChange={e => setVideoUrl(e.target.value)}
                   placeholder={t('videoPlaceholder')}
                 />
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsVideoDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsVideoDialogOpen(false)}>
                   {t('cancel')}
                 </Button>
-                <Button
-                  type="button"
-                  onClick={addVideo}
-                >
+                <Button type="button" onClick={addVideo}>
                   {t('addVideo')}
                 </Button>
               </DialogFooter>
@@ -462,12 +433,8 @@ export function DiscussionEditor({
         </div>
 
         {/* Editor Content */}
-        <EditorContent
-          editor={editor}
-          className="prosemirror-discussion overflow-hidden"
-          placeholder={placeholder}
-        />
+        <EditorContent editor={editor} className="prosemirror-discussion overflow-hidden" placeholder={placeholder} />
       </div>
     </EditorOptionsProvider>
-  );
+  )
 }

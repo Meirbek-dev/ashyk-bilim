@@ -1,22 +1,45 @@
 import os
 import warnings
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import TypeGuard
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
+from sqlmodel._compat import SQLModelConfig
+
+from src.types import JsonObject, JsonPrimitive, JsonValue
 
 
-def coerce_date_to_end_of_day(value: Any) -> Any:
+def is_json_object(val: object) -> TypeGuard[JsonObject]:
+    return isinstance(val, dict)
+
+
+def is_str_list(value: object) -> TypeGuard[list[str]]:
+    return isinstance(value, list) and all(isinstance(x, str) for x in value)
+
+
+def is_mapping(value: object) -> TypeGuard[Mapping[str, object]]:
+    return isinstance(value, Mapping)
+
+
+def coerce_date_to_end_of_day(value: object) -> object:
     """Coerce date strings (YYYY-MM-DD) to end-of-day datetimes (UTC)."""
-    if isinstance(value, str) and len(value) == 10:
-        try:
-            d = date.fromisoformat(value)
-            return datetime.combine(
-                d, datetime.max.time().replace(microsecond=0), tzinfo=UTC
-            )
-        except ValueError:
-            pass
+    if isinstance(value, str):
+        if len(value) == 10:
+            try:
+                d = date.fromisoformat(value)
+                return datetime.combine(d, datetime.max.time().replace(microsecond=0), tzinfo=UTC)
+            except ValueError:
+                pass
+        else:
+            try:
+                # Handle full ISO 8601 strings. Even in strict mode,
+                # returning a datetime object from a 'before' validator
+                # will satisfy Pydantic's type check.
+                return datetime.fromisoformat(value)
+            except ValueError:
+                pass
     return value
 
 
@@ -46,7 +69,8 @@ _PYDANTIC_CONFIG: ConfigDict = ConfigDict(
     defer_build=False,
 )
 
-_SQLMODEL_CONFIG: ConfigDict = ConfigDict(
+
+_SQLMODEL_CONFIG: SQLModelConfig = SQLModelConfig(
     str_strip_whitespace=True,
     # slots=True is intentionally omitted: SQLModel table models rely on
     # SQLAlchemy instrumented descriptors which are incompatible with __slots__.
@@ -68,9 +92,15 @@ class SQLModelStrictBaseModel(SQLModel):
 SQLModelDefaultBase = SQLModelStrictBaseModel
 
 __all__: list[str] = [
+    "JsonObject",
+    "JsonPrimitive",
+    "JsonValue",
     "PydanticStrictBaseModel",
     "SQLModelDefaultBase",
     "SQLModelStrictBaseModel",
     "coerce_date_to_end_of_day",
     "is_dev_mode",
+    "is_json_object",
+    "is_mapping",
+    "is_str_list",
 ]

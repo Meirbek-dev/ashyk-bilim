@@ -24,9 +24,7 @@ def upgrade() -> None:
         sa.Column("teacher_user_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("view_type", sa.String(), nullable=False, server_default="overview"),
-        sa.Column(
-            "query", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")
-        ),
+        sa.Column("query", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -61,10 +59,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_analytics_saved_view_lookup", table_name="analytics_saved_view")
-    op.drop_index(
-        "ix_analytics_saved_view_view_type", table_name="analytics_saved_view"
-    )
-    op.drop_index(
-        "ix_analytics_saved_view_teacher_user_id", table_name="analytics_saved_view"
-    )
+    op.drop_index("ix_analytics_saved_view_view_type", table_name="analytics_saved_view")
+    op.drop_index("ix_analytics_saved_view_teacher_user_id", table_name="analytics_saved_view")
     op.drop_table("analytics_saved_view")

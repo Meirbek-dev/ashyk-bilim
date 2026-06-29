@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import type { Editor } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import { Bold, Italic, Strikethrough } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
+import type { Editor } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import { Bold, Italic, Strikethrough } from 'lucide-react'
+import { Toggle } from '@/components/ui/toggle'
 
 interface TextFormatGroupProps {
-  editor: Editor;
-  isBold: boolean;
-  isItalic: boolean;
-  isStrike: boolean;
+  editor: Editor
+  isBold: boolean
+  isItalic: boolean
+  isStrike: boolean
 }
 
 export function TextFormatGroup({ editor, isBold, isItalic, isStrike }: TextFormatGroupProps) {
-  const t = useTranslations('DashPage.Editor.Toolbar');
+  const t = useTranslations('DashPage.Editor.Toolbar')
 
   return (
     <div className="flex items-center gap-0.5">
@@ -45,5 +45,5 @@ export function TextFormatGroup({ editor, isBold, isItalic, isStrike }: TextForm
         <Strikethrough />
       </Toggle>
     </div>
-  );
+  )
 }

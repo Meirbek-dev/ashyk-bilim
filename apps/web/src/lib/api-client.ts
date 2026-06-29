@@ -9,244 +9,389 @@
  * will redirect to login if the refresh cookie is also invalid or missing.
  */
 
-import { getAPIUrl, getServerAPIUrl } from '@services/config/config';
-import { isAuthRoute } from '@/lib/auth/redirect';
-import { AUTH_COOKIE_NAMES } from '@/lib/auth/types';
+import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
+import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
+import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
+import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 
 type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   /** Override which base URL to use (defaults to environment-aware selection). */
-  baseUrl?: string;
+  baseUrl?: string
   /** Override the default request timeout. Use false for no client-side timeout. */
-  timeoutMs?: number | false;
-};
+  timeoutMs?: number | false
+  next?:
+    | {
+        tags?: string[] | undefined
+        revalidate?: number | false | undefined
+      }
+    | undefined
+}
 
 function apiBase(isServer: boolean, baseUrl?: string): string {
-  if (baseUrl) return baseUrl;
-  return isServer ? getServerAPIUrl() : getAPIUrl();
+  if (baseUrl) return baseUrl
+  return isServer ? getServerAPIUrl() : getAPIUrl()
 }
 
 function resolveRequestUrl(pathOrUrl: string, base: string): string {
   if (/^https?:\/\//i.test(pathOrUrl)) {
-    return pathOrUrl;
+    return pathOrUrl
   }
 
-  return `${base.replace(/\/+$/, '')}/${pathOrUrl.replace(/^\/+/, '')}`;
+  return `${base.replace(/\/+$/, '')}/${pathOrUrl.replace(/^\/+/, '')}`
 }
 
 function isRequestCookieUnavailableError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
+  if (!(error instanceof Error)) return false
+  const message = error.message.toLowerCase()
   return (
     message.includes('during prerendering') ||
     message.includes('prerender is complete') ||
     message.includes('outside a request scope') ||
     message.includes('requestasyncstorage')
-  );
+  )
 }
 
 async function getServerCookieHeader(): Promise<string> {
   try {
-    const { cookies } = await import('next/headers');
-    const cookieStore = await cookies();
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
 
     return cookieStore
       .getAll()
-      .filter((c) => (AUTH_COOKIE_NAMES as readonly string[]).includes(c.name))
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
+      .filter(c => (AUTH_COOKIE_NAMES as readonly string[]).includes(c.name))
+      .map(c => `${c.name}=${c.value}`)
+      .join('; ')
   } catch (error) {
-    if (isRequestCookieUnavailableError(error)) return '';
-    throw error;
+    if (isRequestCookieUnavailableError(error)) return ''
+    throw error
   }
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds
+const DEFAULT_TIMEOUT_MS = 30_000 // 30 seconds
 
 /** Prevents multiple concurrent 401 responses from racing to redirect. */
-let authRedirectPending = false;
+let authRedirectPending = false
+let authRefreshPromise: Promise<boolean> | null = null
 
 function createTimeoutReason(timeoutMs: number): Error {
-  const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`);
-  error.name = 'TimeoutError';
-  return error;
+  const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`)
+  error.name = 'TimeoutError'
+  return error
 }
 
-function combineAbortSignals(signals: AbortSignal[]): { signal: AbortSignal; cleanup: () => void } {
-  const activeSignals = signals.filter(Boolean);
+let serverRequestCounter = 0
+const serverProcessId = typeof globalThis.window === 'undefined' ? Math.random().toString(36).slice(2) : ''
 
-  if (activeSignals.length === 1) {
-    return { signal: activeSignals[0]!, cleanup: () => undefined };
+function createFrontendRequestId(): string {
+  if (typeof globalThis.window !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  // Server-side: use a process-level prefix and an incrementing counter to avoid
+  // calling dynamic APIs (Date.now(), Math.random(), etc.) during render. This
+  // prevents Next.js prerender warnings and keeps static routes cacheable.
+  serverRequestCounter += 1
+  return `web_${serverProcessId}_${serverRequestCounter}`
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'TimeoutError'
+}
+
+function combineAbortSignals(signals: (AbortSignal | undefined | null)[]): {
+  signal: AbortSignal
+  cleanup: () => void
+} {
+  const activeSignals = signals.filter((s): s is AbortSignal => Boolean(s))
+
+  if (activeSignals.length === 0) {
+    const controller = new AbortController()
+    return { signal: controller.signal, cleanup: () => undefined }
   }
 
-  const controller = new AbortController();
-  const listeners: { signal: AbortSignal; listener: () => void }[] = [];
+  if (activeSignals.length === 1) {
+    return { signal: activeSignals[0]!, cleanup: () => undefined }
+  }
+
+  if (typeof AbortSignal.any === 'function') {
+    return { signal: AbortSignal.any(activeSignals), cleanup: () => undefined }
+  }
+
+  const controller = new AbortController()
+  const listeners: { signal: AbortSignal; listener: () => void }[] = []
 
   const abortFrom = (signal: AbortSignal) => {
     if (!controller.signal.aborted) {
-      controller.abort(signal.reason ?? new Error('Request aborted'));
+      controller.abort(signal.reason ?? new Error('Request aborted'))
     }
-  };
+  }
 
   for (const signal of activeSignals) {
     if (signal.aborted) {
-      abortFrom(signal);
-      continue;
+      abortFrom(signal)
+      continue
     }
 
-    const listener = () => abortFrom(signal);
-    signal.addEventListener('abort', listener, { once: true });
-    listeners.push({ signal, listener });
+    const listener = () => abortFrom(signal)
+    signal.addEventListener('abort', listener, { once: true })
+    listeners.push({ signal, listener })
   }
 
   return {
     signal: controller.signal,
     cleanup: () => {
       for (const { signal, listener } of listeners) {
-        signal.removeEventListener('abort', listener);
+        signal.removeEventListener('abort', listener)
       }
     },
-  };
+  }
+}
+
+export function getBrowserReturnTo(): string {
+  const { pathname, search } = globalThis.location
+  return `${pathname}${search}` || '/'
+}
+
+export async function refreshBrowserSession(returnTo: string): Promise<boolean> {
+  authRefreshPromise ??= fetch(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      'x-auth-refresh': 'fetch',
+    },
+    credentials: 'include',
+    cache: 'no-store',
+    redirect: 'manual',
+  })
+    .then(response => response.ok)
+    .catch(() => false)
+    .finally(() => {
+      authRefreshPromise = null
+    })
+
+  return authRefreshPromise
+}
+
+export function redirectBrowserToLogin(returnTo: string): void {
+  if (authRedirectPending) return
+  authRedirectPending = true
+  globalThis.location.assign(buildLoginRedirect(returnTo))
+}
+
+export async function recoverBrowserSessionFrom401(returnTo = getBrowserReturnTo()): Promise<boolean> {
+  if (typeof globalThis.window === 'undefined' || isAuthRoute(globalThis.location.pathname)) {
+    return false
+  }
+
+  const refreshed = await refreshBrowserSession(returnTo)
+  if (!refreshed) {
+    redirectBrowserToLogin(returnTo)
+  }
+
+  return refreshed
 }
 
 export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
-  const isServer = typeof globalThis.window === 'undefined';
-  const { baseUrl, timeoutMs = DEFAULT_TIMEOUT_MS, signal: callerSignal, ...fetchInit } = init;
-  const base = apiBase(isServer, baseUrl);
-  const url = resolveRequestUrl(path, base);
+  const isServer = typeof globalThis.window === 'undefined'
+  const { baseUrl, timeoutMs = DEFAULT_TIMEOUT_MS, signal: callerSignal, ...fetchInit } = init
+  const base = apiBase(isServer, baseUrl)
+  const url = resolveRequestUrl(path, base)
 
   // When cache tags are provided (server-side Next.js Data Cache), opt-in to
   // force-cache so revalidateTag() actually works. Without this the default
   // 'no-store' would silently override the tags and disable caching entirely.
-  const hasCacheTags =
-    isServer && Array.isArray((fetchInit as any).next?.tags) && (fetchInit as any).next?.tags?.length > 0;
-  const defaultCache: RequestCache = hasCacheTags ? 'force-cache' : 'no-store';
-  const options: RequestInit = { ...fetchInit, credentials: 'include', cache: fetchInit.cache ?? defaultCache };
+  const hasCacheTags = isServer && Array.isArray(fetchInit.next?.tags) && fetchInit.next.tags.length > 0
+  const defaultCache: RequestCache = hasCacheTags ? 'force-cache' : 'no-store'
+  const options: RequestInit = {
+    ...fetchInit,
+    credentials: 'include',
+    cache: fetchInit.cache ?? defaultCache,
+  }
+
+  const normalizedHeaders = new Headers(options.headers ?? {})
+  if (!normalizedHeaders.has('X-Request-ID')) {
+    normalizedHeaders.set('X-Request-ID', createFrontendRequestId())
+  }
+  options.headers = Object.fromEntries(normalizedHeaders.entries())
 
   // Server: forward cookies from the incoming request.
   if (isServer) {
-    const existingHeaders = new Headers(options.headers ?? {});
+    const existingHeaders = new Headers(options.headers ?? {})
     if (!existingHeaders.has('Cookie')) {
-      const serverCookieHeader = await getServerCookieHeader();
+      const serverCookieHeader = await getServerCookieHeader()
       if (serverCookieHeader) {
-        options.headers = { ...Object.fromEntries(existingHeaders.entries()), Cookie: serverCookieHeader };
+        options.headers = {
+          ...Object.fromEntries(existingHeaders.entries()),
+          Cookie: serverCookieHeader,
+        }
       }
     }
   }
 
-  const effectiveTimeoutMs = typeof timeoutMs === 'number' ? timeoutMs : null;
-  const timeoutController = effectiveTimeoutMs === null ? null : new AbortController();
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const effectiveTimeoutMs = typeof timeoutMs === 'number' ? timeoutMs : null
+  const timeoutController = effectiveTimeoutMs === null ? null : new AbortController()
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   if (timeoutController && effectiveTimeoutMs !== null && effectiveTimeoutMs > 0) {
-    timeoutId = setTimeout(() => timeoutController.abort(createTimeoutReason(effectiveTimeoutMs)), effectiveTimeoutMs);
+    timeoutId = setTimeout(() => timeoutController.abort(createTimeoutReason(effectiveTimeoutMs)), effectiveTimeoutMs)
   }
 
   const abortSignals = [callerSignal, timeoutController?.signal].filter((signal): signal is AbortSignal =>
     Boolean(signal),
-  );
-  const combinedSignal = abortSignals.length > 0 ? combineAbortSignals(abortSignals) : null;
+  )
+  const combinedSignal = abortSignals.length > 0 ? combineAbortSignals(abortSignals) : null
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: combinedSignal?.signal,
-    });
+    let response: Response
+    try {
+      response = await fetch(url, {
+        ...options,
+        ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
+      })
+    } catch (error) {
+      const abortedReason = combinedSignal?.signal.aborted ? combinedSignal.signal.reason : undefined
+      const cause = abortedReason ?? error
+      if (isTimeoutError(cause)) {
+        throw clientApiError('CLIENT_TIMEOUT', cause.message, {
+          cause,
+          path: url,
+          requestId: normalizedHeaders.get('X-Request-ID'),
+        })
+      }
+      if (isAbortError(error) || combinedSignal?.signal.aborted) {
+        throw clientApiError('REQUEST_ABORTED', 'Request was aborted', {
+          cause,
+          path: url,
+          requestId: normalizedHeaders.get('X-Request-ID'),
+        })
+      }
+      throw clientApiError('NETWORK_UNAVAILABLE', 'Network request failed', {
+        cause: error,
+        path: url,
+        requestId: normalizedHeaders.get('X-Request-ID'),
+      })
+    }
 
-    if (!isServer && response.status === 401 && !authRedirectPending) {
-      const { pathname, search } = globalThis.location;
-      if (!isAuthRoute(pathname)) {
-        authRedirectPending = true;
-        globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`);
+    if (!isServer && response.status === 401) {
+      const refreshed = await recoverBrowserSessionFrom401()
+      if (refreshed) {
+        return fetch(url, {
+          ...options,
+          ...(combinedSignal ? { signal: combinedSignal.signal } : {}),
+        })
       }
     }
 
-    return response;
+    return response
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-    combinedSignal?.cleanup();
+    if (timeoutId) clearTimeout(timeoutId)
+    combinedSignal?.cleanup()
   }
 }
 
 export const apiFetcher = async <T = unknown>(url: string): Promise<T> => {
-  const response = await apiFetch(url, { method: 'GET' });
-  return errorHandling<T>(response);
-};
+  const response = await apiFetch(url, { method: 'GET' })
+  return errorHandling<T>(response)
+}
 
-export const fetchResponseMetadata = async (url: string): Promise<CustomResponseTyping> => {
-  const response = await apiFetch(url, {
-    method: 'GET',
-  });
-  return getResponseMetadata(response);
-};
-
-export const apiFetcherWithHeaders = async (url: string): Promise<{ data: any; headers: Record<string, string> }> => {
-  const response = await apiFetch(url, {
-    method: 'GET',
-  });
+export async function apiJson<T = unknown>(path: string, init: ApiFetchInit = {}): Promise<T> {
+  const response = await apiFetch(path, init)
   if (!response.ok) {
-    const error: any = new Error(response.statusText || 'Request failed');
-    error.status = response.status;
-    throw error;
+    throw await parseApiError(response, path)
   }
-  const data = await response.json();
-  const resHeaders: Record<string, string> = {};
+  if (response.status === 204) {
+    return undefined as T
+  }
+  return (await response.json()) as T
+}
+
+export async function apiResult<T = unknown>(
+  path: string,
+  init: ApiFetchInit = {},
+  parse?: (data: unknown) => T,
+): Promise<{ data: T; headers: Record<string, string>; requestId: string | null }> {
+  const response = await apiFetch(path, init)
+  if (!response.ok) {
+    throw await parseApiError(response, path)
+  }
+  const rawData = response.status === 204 ? undefined : await response.json()
+  const data = parse ? parse(rawData) : (rawData as T)
+  const headers: Record<string, string> = {}
   for (const [key, value] of response.headers.entries()) {
-    resHeaders[key.toLowerCase()] = value;
+    headers[key.toLowerCase()] = value
   }
-  return { data, headers: resHeaders };
-};
+  return {
+    data,
+    headers,
+    requestId: response.headers.get('x-request-id'),
+  }
+}
+
+export async function apiStreamFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
+  return apiFetch(path, {
+    ...init,
+    cache: init.cache ?? 'no-store',
+    timeoutMs: init.timeoutMs ?? false,
+  })
+}
+
+export const fetchResponseMetadata = async <T = unknown>(url: string): Promise<CustomResponseTyping<T>> => {
+  const response = await apiFetch(url, {
+    method: 'GET',
+  })
+  return getResponseMetadata<T>(response)
+}
+
+export const apiFetcherWithHeaders = async (
+  url: string,
+): Promise<{ data: unknown; headers: Record<string, string> }> => {
+  const response = await apiFetch(url, {
+    method: 'GET',
+  })
+  if (!response.ok) {
+    throw await parseApiError(response, url)
+  }
+  const data = (await response.json()) as unknown
+  const resHeaders: Record<string, string> = {}
+  for (const [key, value] of response.headers.entries()) {
+    resHeaders[key.toLowerCase()] = value
+  }
+  return { data, headers: resHeaders }
+}
 
 export async function errorHandling<T = unknown>(res: Response): Promise<T> {
   if (!res.ok) {
-    let data: any;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-
-    const detail =
-      typeof data?.detail === 'string'
-        ? data.detail
-        : Array.isArray(data?.detail)
-          ? data.detail
-              .map((item: { msg?: string }) => item?.msg)
-              .filter(Boolean)
-              .join(', ')
-          : res.statusText || 'Request failed';
-
-    const error: any = new Error(detail || 'Request failed');
-    error.status = res.status;
-    error.data = data;
-    error.detail = data?.detail;
-    throw error;
+    throw await parseApiError(res)
   }
-  return res.json() as Promise<T>;
+  return res.json() as Promise<T>
 }
 
-export interface CustomResponseTyping {
-  success: boolean;
-  data: any;
-  status: number;
-  HTTPmessage: string;
+export interface CustomResponseTyping<T = unknown> {
+  success: boolean
+  data: T
+  status: number
+  HTTPmessage: string
 }
 
-export const getResponseMetadata = async (response: Response): Promise<CustomResponseTyping> => {
-  let data: any = null;
+export const getResponseMetadata = async <T = unknown>(response: Response): Promise<CustomResponseTyping<T>> => {
+  let data: unknown = null
   try {
-    data = await response.json();
+    data = await response.json()
   } catch (error) {
     console.warn('Failed to parse response JSON in getResponseMetadata', {
       status: response.status,
       statusText: response.statusText,
       error,
-    });
+    })
   }
 
   return {
     success: response.ok,
-    data,
+    data: data as T,
     status: response.status,
     HTTPmessage: response.statusText,
-  };
-};
+  }
+}

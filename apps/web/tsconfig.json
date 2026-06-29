@@ -1,68 +1,65 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "noImplicitOverride": true,
-    "alwaysStrict": true,
-    "target": "esnext",
+    /* ── Runtime ─────────────────────────────────────────────────── */
+    "target": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "jsx": "react-jsx",
+    /* ── Module semantics ────────────────────────────────────────── */
+    // verbatimModuleSyntax supersedes isolatedModules + esModuleInterop
     "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
-    "esModuleInterop": true,
+    /* ── Strictness ──────────────────────────────────────────────── */
+    // strict: true already covers: noImplicitAny, noImplicitThis,
+    // strictNullChecks, strictFunctionTypes, strictBindCallApply,
+    // alwaysStrict, useUnknownInCatchVariables
     "strict": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noFallthroughCasesInSwitch": true,
-    "strictBindCallApply": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "useUnknownInCatchVariables": true,
-    "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": false,
+    "noImplicitOverride": true, // not in strict bundle
+    "noImplicitReturns": true, // not in strict bundle
+    /* ── Agentic / LLM-safe ──────────────────────────────────────── */
+    "noUncheckedIndexedAccess": true, // arr[i] → T | undefined
+    "exactOptionalPropertyTypes": true, // no undefined-widening on optionals
     "forceConsistentCasingInFileNames": true,
-
-    // enable at some point
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-
+    /* ── Dead code ───────────────────────────────────────────────── */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
+    /* ── Build ───────────────────────────────────────────────────── */
     "noEmit": true,
     "incremental": true,
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
     "skipLibCheck": true,
+    /* ── Paths ───────────────────────────────────────────────────── */
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
-      "@public/*": ["./public/*"],
-      "@styles/*": ["./src/styles/*"],
-      "@services/*": ["./src/services/*"],
       "@hooks/*": ["./src/hooks/*"],
+      "@services/*": ["./src/services/*"],
+      "@styles/*": ["./src/styles/*"],
       "@editor/*": ["./src/components/Objects/Editor/*"],
+      "@public/*": ["./public/*"],
       "@images/*": ["./public/img/*"]
     },
-    "allowJs": false,
-    "checkJs": false,
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "allowJs": true,
+    "esModuleInterop": true
   },
-  "exclude": ["node_modules", ".next", "out", "dist"],
   "include": [
     "next-env.d.ts",
+    "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
-    "next.config.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ]
+  ],
+  "exclude": ["node_modules", ".next", "dist", "out", "react-scan"]
 }

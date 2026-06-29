@@ -1,18 +1,18 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import UserBlockComponent from './UserBlockComponent';
-import { nodeView } from '@components/Objects/Editor/core';
+import UserBlockComponent from './UserBlockComponent'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 export interface UserBlockAttrs {
-  user_id: string | number | null;
+  user_id: string | number | null
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     blockUser: {
-      insertUserBlock: () => ReturnType;
-    };
+      insertUserBlock: () => ReturnType
+    }
   }
 }
 
@@ -27,7 +27,7 @@ export default Node.create({
       user_id: {
         default: '',
       },
-    };
+    }
   },
 
   parseHTML() {
@@ -35,11 +35,11 @@ export default Node.create({
       {
         tag: 'block-user',
       },
-    ];
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-user', mergeAttributes(HTMLAttributes)];
+    return ['block-user', mergeAttributes(HTMLAttributes)]
   },
 
   addCommands() {
@@ -48,10 +48,10 @@ export default Node.create({
         () =>
         ({ commands }: CommandProps) =>
           commands.insertContent({ type: this.name }),
-    };
+    }
   },
 
   addNodeView() {
-    return nodeView(UserBlockComponent);
+    return nodeView(UserBlockComponent)
   },
-});
+})

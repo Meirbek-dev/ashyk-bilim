@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Dialog,
@@ -8,76 +8,73 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@components/ui/dialog';
-import type { ReactElement, ReactNode } from 'react';
-import { Button } from '@components/ui/button';
-import { useTranslations } from 'next-intl';
-import { isValidElement } from 'react';
-import { cn } from '@/lib/utils';
+} from '@components/ui/dialog'
+import type { ReactElement, ReactNode } from 'react'
+import { Button } from '@components/ui/button'
+import { useTranslations } from 'next-intl'
+import { isValidElement } from 'react'
+import { cn } from '@/lib/utils'
 
 interface ModalParams {
-  dialogTitle?: string;
-  dialogDescription?: string;
-  dialogContent: ReactNode;
-  dialogClose?: ReactNode | null;
-  dialogTrigger?: ReactElement;
-  addDefCloseButton?: boolean;
-  onOpenChange: (open: boolean) => void;
-  isDialogOpen?: boolean;
-  minHeight?: 'sm' | 'md' | 'lg' | 'xl' | 'no-min';
-  minWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'no-min';
-  customHeight?: string;
-  customWidth?: string;
+  dialogTitle?: string
+  dialogDescription?: string
+  dialogContent: ReactNode
+  dialogClose?: ReactNode | null
+  dialogTrigger?: ReactElement
+  addDefCloseButton?: boolean
+  onOpenChange: (open: boolean) => void
+  isDialogOpen?: boolean
+  minHeight?: 'sm' | 'md' | 'lg' | 'xl' | 'no-min'
+  minWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'no-min'
+  customHeight?: string
+  customWidth?: string
 }
 
 const Modal = (params: ModalParams) => {
-  const t = useTranslations('Components.Modal');
+  const t = useTranslations('Components.Modal')
 
   const getMinHeight = () => {
     switch (params.minHeight) {
       case 'sm': {
-        return 'md:min-h-[300px]';
+        return 'md:min-h-[300px]'
       }
       case 'md': {
-        return 'md:min-h-[500px]';
+        return 'md:min-h-[500px]'
       }
       case 'lg': {
-        return 'md:min-h-[700px]';
+        return 'md:min-h-[700px]'
       }
       case 'xl': {
-        return 'md:min-h-[900px]';
+        return 'md:min-h-[900px]'
       }
       default: {
-        return '';
+        return ''
       }
     }
-  };
+  }
 
   const getMinWidth = () => {
     switch (params.minWidth) {
       case 'sm': {
-        return 'md:min-w-[600px]';
+        return 'md:min-w-[600px]'
       }
       case 'md': {
-        return 'md:min-w-[800px]';
+        return 'md:min-w-[800px]'
       }
       case 'lg': {
-        return 'md:min-w-[1000px]';
+        return 'md:min-w-[1000px]'
       }
       case 'xl': {
-        return 'md:min-w-[1200px]';
+        return 'md:min-w-[1200px]'
       }
       default: {
-        return '';
+        return ''
       }
     }
-  };
+  }
 
   return (
-    <Dialog
-      open={params.isDialogOpen ?? false}
-      onOpenChange={params.onOpenChange}
-    >
+    <Dialog open={params.isDialogOpen ?? false} onOpenChange={params.onOpenChange}>
       {params.dialogTrigger ? (
         <DialogTrigger
           // Mark as native when the trigger is a real <button> element or when
@@ -130,7 +127,7 @@ const Modal = (params: ModalParams) => {
         ) : null}
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
-export default Modal;
+export default Modal

@@ -24,60 +24,67 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+def _cols(table: str) -> set[str]:
+    return {col["name"] for col in sa.inspect(op.get_bind()).get_columns(table)}
+
+
 def upgrade() -> None:
     # ── assessment ──────────────────────────────────────────────────────────
-    with op.batch_alter_table("assessment") as batch_op:
-        batch_op.add_column(
+    if "content_version" not in _cols("assessment"):
+        op.add_column(
+            "assessment",
             sa.Column(
                 "content_version",
                 sa.Integer(),
                 nullable=False,
                 server_default="1",
-            )
+            ),
         )
 
     # ── assessment_policy ───────────────────────────────────────────────────
-    with op.batch_alter_table("assessment_policy") as batch_op:
-        batch_op.add_column(
+    if "policy_version" not in _cols("assessment_policy"):
+        op.add_column(
+            "assessment_policy",
             sa.Column(
                 "policy_version",
                 sa.Integer(),
                 nullable=False,
                 server_default="1",
-            )
+            ),
         )
 
     # ── submission ──────────────────────────────────────────────────────────
-    with op.batch_alter_table("submission") as batch_op:
-        batch_op.add_column(
+    submission_cols = _cols("submission")
+    if "content_version" not in submission_cols:
+        op.add_column(
+            "submission",
             sa.Column(
                 "content_version",
                 sa.Integer(),
                 nullable=False,
                 server_default="1",
-            )
+            ),
         )
-        batch_op.add_column(
+    if "policy_version" not in submission_cols:
+        op.add_column(
+            "submission",
             sa.Column(
                 "policy_version",
                 sa.Integer(),
                 nullable=False,
                 server_default="1",
-            )
+            ),
         )
-        batch_op.add_column(sa.Column("items_snapshot", sa.JSON(), nullable=True))
-        batch_op.add_column(sa.Column("policy_snapshot", sa.JSON(), nullable=True))
+    if "items_snapshot" not in submission_cols:
+        op.add_column("submission", sa.Column("items_snapshot", sa.JSON(), nullable=True))
+    if "policy_snapshot" not in submission_cols:
+        op.add_column("submission", sa.Column("policy_snapshot", sa.JSON(), nullable=True))
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("submission") as batch_op:
-        batch_op.drop_column("policy_snapshot")
-        batch_op.drop_column("items_snapshot")
-        batch_op.drop_column("policy_version")
-        batch_op.drop_column("content_version")
-
-    with op.batch_alter_table("assessment_policy") as batch_op:
-        batch_op.drop_column("policy_version")
-
-    with op.batch_alter_table("assessment") as batch_op:
-        batch_op.drop_column("content_version")
+    op.execute("ALTER TABLE submission DROP COLUMN IF EXISTS policy_snapshot")
+    op.execute("ALTER TABLE submission DROP COLUMN IF EXISTS items_snapshot")
+    op.execute("ALTER TABLE submission DROP COLUMN IF EXISTS policy_version")
+    op.execute("ALTER TABLE submission DROP COLUMN IF EXISTS content_version")
+    op.execute("ALTER TABLE assessment_policy DROP COLUMN IF EXISTS policy_version")
+    op.execute("ALTER TABLE assessment DROP COLUMN IF EXISTS content_version")

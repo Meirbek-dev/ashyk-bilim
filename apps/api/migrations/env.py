@@ -1,4 +1,3 @@
-import logging
 from logging.config import fileConfig
 
 import sqlalchemy as sa
@@ -13,10 +12,7 @@ from src.db.model_registry import import_orm_models
 # Alembic Config object
 config = context.config
 
-database_url = (
-    get_settings().database_config.sql_connection_string
-    or config.get_main_option("sqlalchemy.url")
-)
+database_url = get_settings().database_config.sql_connection_string or config.get_main_option("sqlalchemy.url")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
@@ -44,7 +40,7 @@ _AUTOGENERATE_EXCLUDED_TABLES = {
 }
 
 
-def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to):
+def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to) -> bool:
     if not name:
         return True
 
@@ -54,9 +50,7 @@ def include_object(object_, name: str | None, type_: str, reflected: bool, compa
         if parent_table is not None and getattr(parent_table, "name", None):
             table_name = parent_table.name
 
-    return not (
-        reflected and compare_to is None and table_name in _AUTOGENERATE_EXCLUDED_TABLES
-    )
+    return not (reflected and compare_to is None and table_name in _AUTOGENERATE_EXCLUDED_TABLES)
 
 
 def compare_type(
@@ -65,12 +59,10 @@ def compare_type(
     _metadata_column,
     inspected_type,
     metadata_type,
-):
+) -> bool | None:
     # Treat String / Text / AutoString as interchangeable to avoid spurious diffs.
     stringish_types = (sa.String, sa.Text, AutoString)
-    if isinstance(inspected_type, stringish_types) and isinstance(
-        metadata_type, stringish_types
-    ):
+    if isinstance(inspected_type, stringish_types) and isinstance(metadata_type, stringish_types):
         return False
     return None
 

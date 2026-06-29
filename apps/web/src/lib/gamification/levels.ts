@@ -5,11 +5,11 @@
  * Note: Imports LevelInfo from types for consistency
  */
 
-import { Crown, Star, Target, Trophy, Zap } from 'lucide-react';
-import type { LevelInfo } from '@/types/gamification/profile';
+import { Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
+import type { LevelInfo } from '@/types/gamification/profile'
 
 // Level configuration with RPG-style progression (translation keys)
-export const LEVEL_CONFIG: Record<number, LevelInfo> = {
+const LEVEL_CONFIG: Record<number, LevelInfo> = {
   1: {
     level: 1,
     title: 'novice',
@@ -30,7 +30,7 @@ export const LEVEL_CONFIG: Record<number, LevelInfo> = {
     level: 10,
     title: 'scholar',
     color: 'text-purple-500',
-    icon: Zap,
+    icon: GraduationCap,
     minXP: 3000,
     unlocks: ['customAvatarHat'],
   },
@@ -58,7 +58,7 @@ export const LEVEL_CONFIG: Record<number, LevelInfo> = {
     minXP: 30_000,
     unlocks: ['legendaryStatus'],
   },
-};
+}
 
 // Avatar customization unlocks (translation keys)
 export const AVATAR_UNLOCKS = {
@@ -74,48 +74,48 @@ export const AVATAR_UNLOCKS = {
     { id: 'glasses', level: 15, name: 'smartGlasses', icon: '🤓' },
     { id: 'cape', level: 30, name: 'knowledgeCape', icon: '🦸' },
   ],
-} as const;
+} as const
 
 // Helper to select level info and localize title
 export function getLevelInfo(level: number, t: (key: string) => string): LevelInfo {
   const availableLevels = Object.keys(LEVEL_CONFIG)
     .map(Number)
-    .toSorted((a, b) => b - a);
-  const currentLevelConfig = availableLevels.find((configLevel) => level >= configLevel) || 1;
-  const baseConfig = LEVEL_CONFIG[currentLevelConfig] ?? LEVEL_CONFIG[1];
+    .toSorted((a, b) => b - a)
+  const currentLevelConfig = availableLevels.find(configLevel => level >= configLevel) || 1
+  const baseConfig = LEVEL_CONFIG[currentLevelConfig] ?? LEVEL_CONFIG[1]
 
   if (!baseConfig) {
-    throw new Error('Invalid level configuration');
+    throw new Error('Invalid level configuration')
   }
 
   return {
     ...baseConfig,
     level,
     title: t(`levels.titles.${baseConfig.title}`),
-  };
+  }
 }
 
 export function getUnlockedFeatures(level: number, t: (key: string) => string): string[] {
-  const unlocked: string[] = [];
+  const unlocked: string[] = []
 
-  Object.values(LEVEL_CONFIG).forEach((config) => {
+  Object.values(LEVEL_CONFIG).forEach(config => {
     if (level >= config.level && config.unlocks) {
-      config.unlocks.forEach((unlock) => {
-        unlocked.push(t(`levels.unlocks.${unlock}`));
-      });
+      config.unlocks.forEach(unlock => {
+        unlocked.push(t(`levels.unlocks.${unlock}`))
+      })
     }
-  });
+  })
 
-  AVATAR_UNLOCKS.frames.forEach((frame) => {
+  AVATAR_UNLOCKS.frames.forEach(frame => {
     if (level >= frame.level) {
-      unlocked.push(t(`avatar.frames.${frame.name}`));
+      unlocked.push(t(`avatar.frames.${frame.name}`))
     }
-  });
-  AVATAR_UNLOCKS.accessories.forEach((accessory) => {
+  })
+  AVATAR_UNLOCKS.accessories.forEach(accessory => {
     if (level >= accessory.level) {
-      unlocked.push(t(`avatar.accessories.${accessory.name}`));
+      unlocked.push(t(`avatar.accessories.${accessory.name}`))
     }
-  });
+  })
 
-  return unlocked;
+  return unlocked
 }

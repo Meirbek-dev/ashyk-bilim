@@ -1,23 +1,45 @@
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, MutableMapping
+from typing import cast, override
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Receive, Scope, Send
 
+from src.app.errors import api_error_response
 from src.infra.settings import AppSettings
 
 _STATIC_CACHE_HEADER = "public, max-age=31536000, immutable"
+_MAX_REQUEST_ID_LENGTH = 128
+
+
+def _safe_request_id(value: str | None) -> str:
+    if value and 0 < len(value) <= _MAX_REQUEST_ID_LENGTH and all(ch.isprintable() for ch in value):
+        return value
+    return str(uuid.uuid4())
+
+
+def _safe_correlation_id(request: Request, request_id: str) -> str:
+    header_value = request.headers.get("X-Correlation-ID") or request.headers.get("traceparent")
+    if (
+        header_value
+        and 0 < len(header_value) <= _MAX_REQUEST_ID_LENGTH
+        and all(ch.isprintable() for ch in header_value)
+    ):
+        return header_value
+    return request_id
 
 
 class CachedStaticFiles(StaticFiles):
+    @override
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        async def send_with_cache(message: dict) -> None:
+        async def send_with_cache(message: MutableMapping[str, object]) -> None:
             if message["type"] == "http.response.start":
-                headers = dict(message.get("headers", []))
+                raw_headers = cast("list[tuple[bytes, bytes]]", message.get("headers", []))
+                headers = dict(raw_headers)
                 headers[b"cache-control"] = _STATIC_CACHE_HEADER.encode()
                 message = {**message, "headers": list(headers.items())}
             await send(message)
@@ -33,36 +55,40 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
         allow_methods=["*"],
         allow_credentials=True,
         allow_headers=["*"],
+        expose_headers=["Retry-After", "X-Request-ID", "X-Total-Count", "X-Structure-Version"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     @app.middleware("http")
     async def add_correlation_id(
         request: Request,
-        call_next: Callable[[Request], Awaitable],
-    ):
-        req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        req_id = _safe_request_id(request.headers.get("X-Request-ID"))
+        correlation_id = _safe_correlation_id(request, req_id)
+        request.state.request_id = req_id
+        request.state.correlation_id = correlation_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
 
     @app.middleware("http")
     async def enforce_sec_fetch_site(
         request: Request,
-        call_next: Callable[[Request], Awaitable],
-    ):
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         sec_fetch_site = request.headers.get("sec-fetch-site")
         if (
             sec_fetch_site == "cross-site"
             and request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
             and not request.headers.get("authorization")
         ):
-            return JSONResponse(
+            return api_error_response(
+                request,
                 status_code=403,
-                content={
-                    "error_code": "CSRF_CROSS_SITE_REQUEST",
-                    "message": "Cross-site requests are not allowed",
-                },
+                code="CSRF_CROSS_SITE_REQUEST",
+                message="Cross-site requests are not allowed",
             )
 
         return await call_next(request)

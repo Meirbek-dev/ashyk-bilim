@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { Card, CardContent } from '@/components/ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
-import { Monitor } from 'lucide-react';
-import React from 'react';
+import { Card, CardContent } from '@/components/ui/card'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
+import { Monitor } from 'lucide-react'
+import React from 'react'
 
 interface Props {
-  Icon?: React.ComponentType<{ className?: string; size?: number }>;
-  children: React.ReactNode;
-  title?: string;
-  description?: string;
-  supportingText?: string;
-  className?: string;
+  Icon?: React.ComponentType<{ className?: string; size?: number }>
+  children: React.ReactNode
+  title?: string
+  description?: string
+  supportingText?: string
+  className?: string
 }
 
 export default function DesktopOnlyGuard({
@@ -24,8 +24,8 @@ export default function DesktopOnlyGuard({
   supportingText,
   className,
 }: Props) {
-  const t = useTranslations('DashPage.UserSettings');
-  const isMobile = useIsMobile();
+  const t = useTranslations('DashPage.UserSettings')
+  const isMobile = useIsMobile()
 
   if (isMobile) {
     return (
@@ -47,8 +47,8 @@ export default function DesktopOnlyGuard({
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
-  return <>{children}</>;
+  return <>{children}</>
 }

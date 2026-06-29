@@ -9,127 +9,139 @@ import {
   ImageIcon,
   Loader2,
   Upload,
-} from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import NextImage from '@components/ui/NextImage';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import NextImage from '@components/ui/NextImage'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
 
-import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { getActivityBlockMediaDirectory } from '@services/media/media';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { uploadNewImageFile } from '@services/blocks/Image/images';
-import { useCourse } from '@components/Contexts/CourseContext';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { constructAcceptValue } from '@/lib/constants';
-import { cn } from '@/lib/utils';
+import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
+import { getActivityBlockMediaDirectory } from '@services/media/media'
+import { usePlatform } from '@/components/Contexts/PlatformContext'
+import { uploadNewImageFile } from '@services/blocks/Image/images'
+import { useCourse } from '@components/Contexts/CourseContext'
+import Modal from '@/components/Objects/Elements/Modal/Modal'
+import { constructAcceptValue } from '@/lib/constants'
+import { cn } from '@/lib/utils'
+import { compressImage } from '@/lib/image-compression'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type Alignment = 'left' | 'center' | 'right';
+type Alignment = 'left' | 'center' | 'right'
 
 interface BlockObject {
-  block_uuid: string;
+  block_uuid: string
   content: {
-    file_id: string;
-    file_format: string;
-  };
+    file_id: string
+    file_format: string
+  }
 }
 
 interface ImageBlockProps {
   node: {
     attrs: {
-      blockObject?: BlockObject | null;
-      size?: { width: number };
-      alignment?: Alignment;
-    };
-  };
-  updateAttributes: (attrs: Partial<ImageBlockProps['node']['attrs']>) => void;
+      blockObject?: BlockObject | null
+      size?: { width: number }
+      alignment?: Alignment
+    }
+  }
+  updateAttributes: (attrs: Partial<ImageBlockProps['node']['attrs']>) => void
   extension: {
     options: {
-      activity: { activity_uuid: string };
-    };
-  };
+      activity: { activity_uuid: string }
+    }
+  }
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif']);
-const DEFAULT_WIDTH = 400;
-const MIN_WIDTH = 150;
-const MAX_WIDTH = 1200;
+const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif'])
+const DEFAULT_WIDTH = 400
+const MIN_WIDTH = 150
+const MAX_WIDTH = 1200
 
 const ALIGNMENT_CONFIG = {
   left: { class: 'mr-auto', icon: AlignLeft },
   center: { class: 'mx-auto', icon: AlignCenter },
   right: { class: 'ml-auto', icon: AlignRight },
-} as const;
+} as const
 
 // ============================================================================
 // Hooks
 // ============================================================================
 
 interface UseImageUploadOptions {
-  activityUuid: string;
-  onSuccess: (blockObject: BlockObject) => void;
-  t: ReturnType<typeof useTranslations>;
+  activityUuid: string
+  onSuccess: (blockObject: BlockObject) => void
+  t: ReturnType<typeof useTranslations>
 }
 
 function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleFileSelect = useCallback(
-    (selectedFile: File | null) => {
-      setError(null);
+    async (selectedFile: File | null) => {
+      setError(null)
 
       if (!selectedFile) {
-        setFile(null);
-        setPreview(null);
-        return;
+        setFile(null)
+        setPreview(null)
+        return
       }
 
       // Validate file type
       if (!selectedFile.type.startsWith('image/')) {
-        setError(t('invalidImageFile'));
-        return;
+        setError(t('invalidImageFile'))
+        return
       }
 
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
+      try {
+        const compressed = await compressImage(selectedFile, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.8,
+        })
+        setFile(compressed)
+        setPreview(URL.createObjectURL(compressed))
+      } catch (compressionError) {
+        console.error('Image compression failed, using original file', compressionError)
+        setFile(selectedFile)
+        setPreview(URL.createObjectURL(selectedFile))
+      }
     },
     [t],
-  );
+  )
 
   const handleUpload = useCallback(async () => {
-    if (!file) return;
+    if (!file) return
 
-    setIsUploading(true);
-    setError(null);
+    setIsUploading(true)
+    setError(null)
 
     try {
-      const result = await uploadNewImageFile(file, activityUuid);
-      onSuccess(result);
-      setFile(null);
-      setPreview(null);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : t('uploadFailed'));
+      const result = await uploadNewImageFile(file, activityUuid)
+      onSuccess(result)
+      setFile(null)
+      setPreview(null)
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : t('uploadFailed'))
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  }, [file, activityUuid, onSuccess, t]);
+  }, [file, activityUuid, onSuccess, t])
 
   const reset = useCallback(() => {
-    setFile(null);
-    setPreview(null);
-    setError(null);
-  }, []);
+    setFile(null)
+    setPreview(null)
+    setError(null)
+  }, [])
 
   return {
     file,
@@ -139,47 +151,51 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
     handleFileSelect,
     handleUpload,
     reset,
-  };
+  }
 }
 
 function useImageResize(initialWidth: number, onResize: (width: number) => void) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(initialWidth);
-  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(initialWidth)
+  const [isResizing, setIsResizing] = useState(false)
+  const onResizeRef = useRef(onResize)
+  const widthRef = useRef(width)
 
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault();
-      setIsResizing(true);
+  useEffect(() => {
+    onResizeRef.current = onResize
+    widthRef.current = width
+  }, [onResize, width])
 
-      const startX = 'touches' in e ? (e.touches?.[0]?.clientX ?? 0) : e.clientX;
-      const startWidth = width;
+  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
 
-      const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-        const currentX = 'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX;
-        const delta = currentX - startX;
-        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta * 2)); // *2 because handle is centered
-        setWidth(newWidth);
-      };
+    const startX = 'touches' in e ? (e.touches?.[0]?.clientX ?? 0) : e.clientX
+    const startWidth = widthRef.current
 
-      const handleEnd = () => {
-        setIsResizing(false);
-        onResize(width);
-        document.removeEventListener('mousemove', handleMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.removeEventListener('touchmove', handleMove);
-        document.removeEventListener('touchend', handleEnd);
-      };
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const currentX = 'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX
+      const delta = currentX - startX
+      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta * 2)) // *2 because handle is centered
+      setWidth(newWidth)
+    }
 
-      document.addEventListener('mousemove', handleMove);
-      document.addEventListener('mouseup', handleEnd);
-      document.addEventListener('touchmove', handleMove);
-      document.addEventListener('touchend', handleEnd);
-    },
-    [width, onResize],
-  );
+    const handleEnd = () => {
+      setIsResizing(false)
+      onResizeRef.current(widthRef.current)
+      document.removeEventListener('mousemove', handleMove)
+      document.removeEventListener('mouseup', handleEnd)
+      document.removeEventListener('touchmove', handleMove)
+      document.removeEventListener('touchend', handleEnd)
+    }
 
-  return { containerRef, width, isResizing, handleResizeStart, setWidth };
+    document.addEventListener('mousemove', handleMove)
+    document.addEventListener('mouseup', handleEnd)
+    document.addEventListener('touchmove', handleMove)
+    document.addEventListener('touchend', handleEnd)
+  }
+
+  return { containerRef, width, isResizing, handleResizeStart, setWidth }
 }
 
 // ============================================================================
@@ -187,77 +203,66 @@ function useImageResize(initialWidth: number, onResize: (width: number) => void)
 // ============================================================================
 
 interface IconButtonProps {
-  onClick: () => void;
-  icon: React.ElementType;
-  title: string;
-  isActive?: boolean;
-  variant?: 'default' | 'overlay';
-  className?: string;
+  onClick: () => void
+  icon: React.ElementType
+  title: string
+  isActive?: boolean
+  variant?: 'default' | 'overlay'
+  className?: string
 }
 
 function IconButton({ onClick, icon: Icon, title, isActive, variant = 'default', className }: IconButtonProps) {
-  const baseStyles = 'rounded-md p-1.5 transition-colors';
+  const baseStyles = 'rounded-md p-1.5 transition-colors'
   const variants = {
     default: cn('text-gray-600 hover:bg-gray-100 hover:text-gray-900', isActive && 'bg-gray-100 text-gray-900'),
     overlay: 'bg-black/50 text-white hover:bg-black/70 rounded-full p-2 backdrop-blur-sm',
-  };
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(baseStyles, variants[variant], className)}
-      title={title}
-    >
+    <button type="button" onClick={onClick} className={cn(baseStyles, variants[variant], className)} title={title}>
       <Icon size={16} />
     </button>
-  );
+  )
 }
 
 interface DropZoneProps {
-  onFileSelect: (file: File | null) => void;
-  preview: string | null;
-  isUploading: boolean;
-  error: string | null;
-  onUpload: () => void;
-  onReset: () => void;
-  t: ReturnType<typeof useTranslations>;
+  onFileSelect: (file: File | null) => void
+  preview: string | null
+  isUploading: boolean
+  error: string | null
+  onUpload: () => void
+  onReset: () => void
+  t: ReturnType<typeof useTranslations>
 }
 
 function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset, t }: DropZoneProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file) onFileSelect(file);
+      e.preventDefault()
+      setIsDragOver(false)
+      const file = e.dataTransfer.files[0]
+      if (file) onFileSelect(file)
     },
     [onFileSelect],
-  );
+  )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
+    e.preventDefault()
+    setIsDragOver(true)
+  }, [])
 
   const handleDragLeave = useCallback(() => {
-    setIsDragOver(false);
-  }, []);
+    setIsDragOver(false)
+  }, [])
 
   if (preview) {
     return (
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
         <div className="mx-auto h-48 w-full overflow-hidden rounded-md">
-          <NextImage
-            src={preview}
-            alt={t('previewImageAlt')}
-            fill
-            className="object-contain"
-            sizes="100vw"
-          />
+          <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
         <div className="mt-4 flex justify-center gap-2">
           <button
@@ -276,10 +281,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
           >
             {isUploading ? (
               <>
-                <Loader2
-                  size={16}
-                  className="animate-spin"
-                />
+                <Loader2 size={16} className="animate-spin" />
                 {t('uploading')}
               </>
             ) : (
@@ -291,7 +293,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -312,7 +314,7 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         ref={inputRef}
         type="file"
         accept={SUPPORTED_FILES}
-        onChange={(e) => onFileSelect(e.target.files?.[0] || null)}
+        onChange={e => onFileSelect(e.target.files?.[0] || null)}
         className="hidden"
       />
 
@@ -329,21 +331,21 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
         </>
       )}
     </div>
-  );
+  )
 }
 
 interface ImageToolbarProps {
-  alignment: Alignment;
-  onAlignmentChange: (alignment: Alignment) => void;
-  onExpand: () => void;
-  t: ReturnType<typeof useTranslations>;
+  alignment: Alignment
+  onAlignmentChange: (alignment: Alignment) => void
+  onExpand: () => void
+  t: ReturnType<typeof useTranslations>
 }
 
 function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolbarProps) {
   return (
     <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/95 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
-      {(Object.keys(ALIGNMENT_CONFIG) as Alignment[]).map((align) => {
-        const config = ALIGNMENT_CONFIG[align];
+      {(Object.keys(ALIGNMENT_CONFIG) as Alignment[]).map(align => {
+        const config = ALIGNMENT_CONFIG[align]
         return (
           <IconButton
             key={align}
@@ -352,21 +354,17 @@ function ImageToolbar({ alignment, onAlignmentChange, onExpand, t }: ImageToolba
             title={t(`align${align.charAt(0).toUpperCase() + align.slice(1)}`)}
             isActive={alignment === align}
           />
-        );
+        )
       })}
       <div className="mx-1 h-4 w-px bg-gray-200" />
-      <IconButton
-        onClick={onExpand}
-        icon={Expand}
-        title={t('expand')}
-      />
+      <IconButton onClick={onExpand} icon={Expand} title={t('expand')} />
     </div>
-  );
+  )
 }
 
 interface ResizeHandleProps {
-  onResizeStart: (e: React.MouseEvent | React.TouchEvent) => void;
-  isResizing: boolean;
+  onResizeStart: (e: React.MouseEvent | React.TouchEvent) => void
+  isResizing: boolean
 }
 
 function ResizeHandle({ onResizeStart, isResizing }: ResizeHandleProps) {
@@ -379,37 +377,24 @@ function ResizeHandle({ onResizeStart, isResizing }: ResizeHandleProps) {
         isResizing && 'opacity-100 ring-2 ring-blue-400',
       )}
     >
-      <GripHorizontal
-        size={12}
-        className="text-gray-400"
-      />
+      <GripHorizontal size={12} className="text-gray-400" />
     </div>
-  );
+  )
 }
 
 interface ViewerControlsProps {
-  onExpand: () => void;
-  onDownload: () => void;
-  t: ReturnType<typeof useTranslations>;
+  onExpand: () => void
+  onDownload: () => void
+  t: ReturnType<typeof useTranslations>
 }
 
 function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
   return (
     <div className="absolute top-2 right-2 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-      <IconButton
-        onClick={onExpand}
-        icon={Expand}
-        title={t('expand')}
-        variant="overlay"
-      />
-      <IconButton
-        onClick={onDownload}
-        icon={Download}
-        title={t('download')}
-        variant="overlay"
-      />
+      <IconButton onClick={onExpand} icon={Expand} title={t('expand')} variant="overlay" />
+      <IconButton onClick={onDownload} icon={Download} title={t('download')} variant="overlay" />
     </div>
-  );
+  )
 }
 
 // ============================================================================
@@ -417,73 +402,73 @@ function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
 // ============================================================================
 
 export default function ImageBlockComponent({ node, updateAttributes, extension }: ImageBlockProps) {
-  const t = useTranslations('DashPage.Editor.ImageBlock');
-  usePlatform();
-  const course = useCourse();
-  const { isEditable } = useEditorProvider();
-  const [blockObject, setBlockObject] = useState(node.attrs.blockObject);
-  const [alignment, setAlignment] = useState<Alignment>(node.attrs.alignment || 'center');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const t = useTranslations('DashPage.Editor.ImageBlock')
+  usePlatform()
+  const course = useCourse()
+  const { isEditable } = useEditorProvider()
+  const [blockObject, setBlockObject] = useState(node.attrs.blockObject)
+  const [alignment, setAlignment] = useState<Alignment>(node.attrs.alignment || 'center')
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const activityUuid = extension.options.activity.activity_uuid;
-  const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH;
+  const activityUuid = extension.options.activity.activity_uuid
+  const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH
 
   // Image URL computation
   const imageUrl = useMemo(() => {
-    if (!blockObject || !course) return null;
+    if (!blockObject || !course) return null
 
-    const fileId = `${blockObject.content.file_id}.${blockObject.content.file_format}`;
+    const fileId = `${blockObject.content.file_id}.${blockObject.content.file_format}`
     return getActivityBlockMediaDirectory({
       courseId: course.courseStructure.course_uuid,
       activityId: activityUuid,
       blockId: blockObject.block_uuid,
       fileId,
       type: 'imageBlock',
-    });
-  }, [blockObject, course, activityUuid]);
+    })
+  }, [blockObject, course, activityUuid])
 
   // Upload handling
-  const { file, preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
+  const { preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
     activityUuid,
-    onSuccess: (newBlockObject) => {
-      setBlockObject(newBlockObject);
-      updateAttributes({ blockObject: newBlockObject });
+    onSuccess: newBlockObject => {
+      setBlockObject(newBlockObject)
+      updateAttributes({ blockObject: newBlockObject })
     },
     t,
-  });
+  })
 
   // Resize handling
   const handleResize = useCallback(
     (newWidth: number) => {
-      updateAttributes({ size: { width: newWidth } });
+      updateAttributes({ size: { width: newWidth } })
     },
     [updateAttributes],
-  );
+  )
 
-  const { width, isResizing, handleResizeStart } = useImageResize(initialWidth, handleResize);
+  const { width, isResizing, handleResizeStart } = useImageResize(initialWidth, handleResize)
 
   // Alignment change
   const handleAlignmentChange = useCallback(
     (newAlignment: Alignment) => {
-      setAlignment(newAlignment);
-      updateAttributes({ alignment: newAlignment });
+      setAlignment(newAlignment)
+      updateAttributes({ alignment: newAlignment })
     },
     [updateAttributes],
-  );
+  )
 
   // Download handler
   const handleDownload = useCallback(() => {
-    if (!imageUrl || !blockObject) return;
+    if (!imageUrl || !blockObject) return
 
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `image-${blockObject.block_uuid}.${blockObject.content.file_format}`;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.click();
-  }, [imageUrl, blockObject]);
+    const link = document.createElement('a')
+    link.href = imageUrl
+    link.download = `image-${blockObject.block_uuid}.${blockObject.content.file_format}`
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.click()
+  }, [imageUrl, blockObject])
 
-  const alignmentClass = ALIGNMENT_CONFIG[alignment].class;
+  const alignmentClass = ALIGNMENT_CONFIG[alignment].class
 
   return (
     <>
@@ -503,10 +488,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
 
         {/* Edit Mode */}
         {blockObject && imageUrl && isEditable && (
-          <div
-            className={cn('group relative', alignmentClass)}
-            style={{ width }}
-          >
+          <div className={cn('group relative', alignmentClass)} style={{ width }}>
             <NextImage
               src={imageUrl}
               alt=""
@@ -524,19 +506,13 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
               onExpand={() => setIsModalOpen(true)}
               t={t}
             />
-            <ResizeHandle
-              onResizeStart={handleResizeStart}
-              isResizing={isResizing}
-            />
+            <ResizeHandle onResizeStart={handleResizeStart} isResizing={isResizing} />
           </div>
         )}
 
         {/* View Mode */}
         {blockObject && imageUrl && !isEditable && (
-          <div
-            className={cn('group relative', alignmentClass)}
-            style={{ width }}
-          >
+          <div className={cn('group relative', alignmentClass)} style={{ width }}>
             <NextImage
               src={imageUrl}
               alt=""
@@ -544,11 +520,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
               height={Math.round(MAX_WIDTH * 0.5625)}
               className="h-auto w-full rounded-lg shadow-sm"
             />
-            <ViewerControls
-              onExpand={() => setIsModalOpen(true)}
-              onDownload={handleDownload}
-              t={t}
-            />
+            <ViewerControls onExpand={() => setIsModalOpen(true)} onDownload={handleDownload} t={t} />
           </div>
         )}
       </NodeViewWrapper>
@@ -575,5 +547,5 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
         />
       )}
     </>
-  );
+  )
 }

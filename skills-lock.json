@@ -1,23 +1,47 @@
 {
   "version": 1,
   "skills": {
-    "caveman": {
-      "source": "juliusbrussee/caveman",
+    "building-pydantic-ai-agents": {
+      "source": "pydantic/skills",
       "sourceType": "github",
-      "skillPath": "caveman/SKILL.md",
-      "computedHash": "c9bc6c69829953233bb175d1e3951a7bc53ebbf573bddcaadc3299ca8154bbb2"
+      "skillPath": "skills/building-pydantic-ai-agents/SKILL.md",
+      "computedHash": "c570b062ad72a4cb2241669eeaa1a46f8929873e4fd6b6f70f7e4ed9c2c5af10"
+    },
+    "design-taste-frontend": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
     },
     "executing-plans": {
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/executing-plans/SKILL.md",
-      "computedHash": "b41c919caf1bb07fbacb0e29899ac513f9eb11cd4dd695975ad352c2c03cc4d7"
+      "computedHash": "d3e5b64b97d4713e3a7f33625cae12ed9305898d85a1c6309f46765c39a9d789"
+    },
+    "fastapi": {
+      "source": "fastapi/fastapi",
+      "sourceType": "github",
+      "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
+      "computedHash": "187b2e06c41cdb6c6beeab15e6db4aeb1bf62f57735974646ad5646af8aacc66"
+    },
+    "fastapi-async-patterns": {
+      "source": "thebushidocollective/han",
+      "sourceType": "github",
+      "skillPath": "plugins/frameworks/fastapi/skills/fastapi-async-patterns/SKILL.md",
+      "computedHash": "d0c1d5dcdee3459acb609b23b815396e99c315d7c96a1f9d1c5d2b1931ef62cf"
     },
     "fix-errors": {
       "source": "microsoft/vscode",
       "sourceType": "github",
       "skillPath": ".github/skills/fix-errors/SKILL.md",
       "computedHash": "356d24d2637dd0db3a783381929755dcf7ae563564cd62032bbc0a6d69eb404c"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
     },
     "javascript-testing-patterns": {
       "source": "wshobson/agents",
@@ -31,23 +55,77 @@
       "skillPath": "skills/next-best-practices/SKILL.md",
       "computedHash": "f4678aef4ffc10a5ea64a91e57abe5a5081af813b06d58d565caf3e8ef56e26c"
     },
+    "next-cache-components": {
+      "source": "vercel-labs/next-skills",
+      "sourceType": "github",
+      "skillPath": "skills/next-cache-components/SKILL.md",
+      "computedHash": "f835d8226c28abf012cc013928e2627c8a7a046de61127ef229be1711bd1f255"
+    },
     "playwright-generate-test": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/playwright-generate-test/SKILL.md",
       "computedHash": "8f963da3e25f705ff39755b8b990f20da0c0320cb86ac83fcc4d2d4eca91f6e4"
     },
+    "ponytail": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "ceef852b0aa6ba5fe1db2b5976c2383a7998dba562f62fed0142193a894ece53"
+    },
     "python-testing-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/python-development/skills/python-testing-patterns/SKILL.md",
-      "computedHash": "a16a6d7d7e0a5154a5058fd9aacf8e675368b2a4a0dc5edf0fee775169c6abe0"
+      "computedHash": "f4de9bdbf2db1c1f8e8211e6af463ad49956f15aa604e2f08ae716c71e71f64b"
+    },
+    "python-type-safety": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/python-development/skills/python-type-safety/SKILL.md",
+      "computedHash": "6162b7a7f1c86888a818833eb4801e348a85fc59a5f15125542ae2d89db67b5a"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "0dc0edeeaec2ae491ae506806517866a3f9bd48d04e0458feb37e0252862891f"
+    },
+    "stop-slop": {
+      "source": "hardikpandya/stop-slop",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5c1c27a2c9f80806b8cfa4364882d4caf10cd735fad4fa7b8a87d7430c220934"
+    },
+    "tanstack-query-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tanstack-query/SKILL.md",
+      "computedHash": "addf4358803d7746f7fe0475a3370d835775217e00dd5fc7bbd8a7d6c53d81e5"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "20c0ed05adb01fde3db5bb1aeefd61d33db2471bdadfd9c9ce19d30dd54a12fd"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "575757e3e25761c8c562d6e395d29f0b76c98b1273c0bd72d88e6ab1bc9c7d42"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
       "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
     }
   }
 }

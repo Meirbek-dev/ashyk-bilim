@@ -73,11 +73,12 @@ def require_course_permission(
         HTTPException(403): When the check fails.
         HTTPException(401): If *current_user* is anonymous and the action is
             not publicly accessible.
+
     """
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
+            detail="Требуется аутентификация.",
         )
 
     is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
@@ -95,20 +96,29 @@ def require_course_action(
     current_user: PublicUser | AnonymousUser,
     course: Course,
     checker: PermissionChecker,
-    **kwargs,
+    resource_owner_id: int | None = None,
+    is_owner: bool | None = None,
+    is_assigned: bool = False,
 ) -> None:
     """Require a course-related permission with course authorship as ownership."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
+            detail="Требуется аутентификация.",
         )
 
-    is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
-    kwargs.setdefault("resource_owner_id", course.creator_id)
-    kwargs.setdefault("is_owner", is_owner)
+    resolved_is_owner = (
+        is_course_owner(checker.db, current_user.id, course.course_uuid) if is_owner is None else is_owner
+    )
+    resolved_owner_id = course.creator_id if resource_owner_id is None else resource_owner_id
 
-    checker.require(current_user.id, action, **kwargs)
+    checker.require(
+        current_user.id,
+        action,
+        resource_owner_id=resolved_owner_id,
+        is_owner=resolved_is_owner,
+        is_assigned=is_assigned,
+    )
 
 
 def check_course_action(
@@ -116,13 +126,22 @@ def check_course_action(
     current_user: PublicUser | AnonymousUser,
     course: Course,
     checker: PermissionChecker,
-    **kwargs,
+    resource_owner_id: int | None = None,
+    is_owner: bool | None = None,
+    is_assigned: bool = False,
 ) -> bool:
     """Check a course-related permission with course authorship as ownership."""
-    is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
-    kwargs.setdefault("resource_owner_id", course.creator_id)
-    kwargs.setdefault("is_owner", is_owner)
-    return checker.check(current_user.id, action, **kwargs)
+    resolved_is_owner = (
+        is_course_owner(checker.db, current_user.id, course.course_uuid) if is_owner is None else is_owner
+    )
+    resolved_owner_id = course.creator_id if resource_owner_id is None else resource_owner_id
+    return checker.check(
+        current_user.id,
+        action,
+        resource_owner_id=resolved_owner_id,
+        is_owner=resolved_is_owner,
+        is_assigned=is_assigned,
+    )
 
 
 def require_course_read_access(

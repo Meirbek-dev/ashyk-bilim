@@ -1,32 +1,34 @@
-'use client';
+'use client'
 
-import { useCallback, useMemo, useState } from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/components/providers/theme-provider';
-import { Label } from '@/components/ui/label';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Moon, Shuffle, Sun } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
+import { useTheme } from '@/components/providers/theme-provider'
+import { Label } from '@/components/ui/label'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Moon, Shuffle, Sun } from 'lucide-react'
 
 interface ThemeSelectorProps {
-  className?: string;
+  className?: string
 }
 
 const ColorBox = ({ color }: { color: string }) => (
-  <div
-    className="border-border h-3 w-3 rounded-sm border"
-    style={{ backgroundColor: color }}
-  />
-);
+  <div className="border-border h-3 w-3 rounded-sm border" style={{ backgroundColor: color }} />
+)
 
 const ThemeColors = ({
   colors,
 }: {
-  colors: { primary: string; secondary: string; accent: string; background: string };
+  colors: {
+    primary: string
+    secondary: string
+    accent: string
+    background: string
+  }
 }) => (
   <div className="flex gap-0.5">
     <ColorBox color={colors.primary} />
@@ -34,53 +36,54 @@ const ThemeColors = ({
     <ColorBox color={colors.accent} />
     <ColorBox color={colors.background} />
   </div>
-);
+)
 
 export function ThemeSelector({ className }: ThemeSelectorProps) {
-  const { theme: currentTheme, themes, setTheme, isDark, toggleMode } = useTheme();
-  const t = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector');
-  const tThemes = useTranslations('Themes');
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(false);
+  const { theme: currentTheme, themes, setTheme, isDark, toggleMode } = useTheme()
+  const t = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector')
+  const tThemes = useTranslations('Themes')
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
 
   const filteredThemes = useMemo(() => {
-    if (!search.trim()) return [...themes];
-    const lower = search.toLowerCase();
-    return themes.filter((theme) => tThemes(`${theme.name}.name`).toLowerCase().includes(lower));
-  }, [themes, search, tThemes]);
+    if (!search.trim()) return [...themes]
+    const lower = search.toLowerCase()
+    return themes.filter(theme => {
+      const name = tThemes(`${theme.name}.name`).toLowerCase()
+      const description = tThemes(`${theme.name}.description`).toLowerCase()
+      return name.includes(lower) || description.includes(lower)
+    })
+  }, [themes, search, tThemes])
 
-  const currentIndex = useMemo(
-    () => themes.findIndex((th) => th.name === currentTheme.name),
-    [themes, currentTheme.name],
-  );
+  const currentIndex = useMemo(() => themes.findIndex(th => th.name === currentTheme.name), [themes, currentTheme.name])
 
   const cycleTheme = useCallback(
     (direction: 'prev' | 'next') => {
-      const len = themes.length;
-      if (len === 0) return;
-      const next = direction === 'next' ? (currentIndex + 1) % len : (currentIndex - 1 + len) % len;
-      const nextTheme = themes[next];
-      if (!nextTheme) return;
-      setTheme(nextTheme.name);
+      const len = themes.length
+      if (len === 0) return
+      const next = direction === 'next' ? (currentIndex + 1) % len : (currentIndex - 1 + len) % len
+      const nextTheme = themes[next]
+      if (!nextTheme) return
+      setTheme(nextTheme.name)
     },
     [currentIndex, themes, setTheme],
-  );
+  )
 
   const randomize = useCallback(() => {
-    const len = themes.length;
-    if (len === 0) return;
-    const random = Math.floor(Math.random() * len);
-    const nextTheme = themes[random];
-    if (!nextTheme) return;
-    setTheme(nextTheme.name);
-  }, [themes, setTheme]);
+    const len = themes.length
+    if (len === 0) return
+    const random = Math.floor(Math.random() * len)
+    const nextTheme = themes[random]
+    if (!nextTheme) return
+    setTheme(nextTheme.name)
+  }, [themes, setTheme])
 
   const handleModeToggle = useCallback(
     (e: React.MouseEvent) => {
-      toggleMode({ x: e.clientX, y: e.clientY });
+      toggleMode({ x: e.clientX, y: e.clientY })
     },
     [toggleMode],
-  );
+  )
 
   return (
     <TooltipProvider>
@@ -89,10 +92,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
 
         <div className="flex items-stretch">
           {/* Popover trigger */}
-          <Popover
-            open={open}
-            onOpenChange={setOpen}
-          >
+          <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger className="border-border bg-background hover:bg-muted focus-visible:ring-ring inline-flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg rounded-e-none border px-4 py-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:w-[420px]">
               <div className="flex min-w-0 items-center gap-3">
                 <ThemeColors colors={currentTheme.colors} />
@@ -108,12 +108,8 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
               align="start"
               sideOffset={4}
             >
-              <Command>
-                <CommandInput
-                  placeholder={t('searchPlaceholder')}
-                  value={search}
-                  onValueChange={setSearch}
-                />
+              <Command shouldFilter={false}>
+                <CommandInput placeholder={t('searchPlaceholder')} value={search} onValueChange={setSearch} />
 
                 {/* Controls row */}
                 <div className="flex items-center justify-between px-3 py-2">
@@ -147,14 +143,14 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                 <CommandList className="max-h-[480px]">
                   <CommandEmpty>{t('noThemesFound')}</CommandEmpty>
                   <CommandGroup>
-                    {filteredThemes.map((theme) => (
+                    {filteredThemes.map(theme => (
                       <CommandItem
                         key={theme.name}
                         value={theme.name}
                         onSelect={() => {
-                          setTheme(theme.name);
-                          setSearch('');
-                          setOpen(false);
+                          setTheme(theme.name)
+                          setSearch('')
+                          setOpen(false)
                         }}
                         className="data-[selected=true]:bg-primary/10 flex cursor-pointer items-center gap-3 py-2 transition-colors data-[selected=false]:bg-transparent"
                       >
@@ -214,5 +210,5 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
         <p className="text-muted-foreground text-xs">{tThemes(`${currentTheme.name}.description`)}</p>
       </div>
     </TooltipProvider>
-  );
+  )
 }

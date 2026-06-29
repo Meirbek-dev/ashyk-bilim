@@ -1,27 +1,29 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import * as Si from '@icons-pack/react-simple-icons';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
-import { buildExcalidrawSrc } from './embed-validators';
-import type { EmbedBlockAttrs } from './EmbedBlock';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import * as Si from '@icons-pack/react-simple-icons'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
+import { buildExcalidrawSrc } from './embed-validators'
+import type { EmbedBlockAttrs } from './EmbedBlock'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const DEFAULT_HEIGHT = 500;
-const MIN_HEIGHT = 100;
-const MAX_HEIGHT = 1200;
+const DEFAULT_HEIGHT = 500
+const MIN_HEIGHT = 100
+const MAX_HEIGHT = 1200
 
 /**
  * Clamps a height value to the Excalidraw-specific range [MIN_HEIGHT, MAX_HEIGHT].
  * Note: clampEmbedHeight uses [200, 1200] globally; Excalidraw allows min 100px.
  */
 function clampExcalidrawHeight(raw: number): number {
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, raw));
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, raw))
 }
+
+const emptySubscribe = () => () => {}
 
 // ── ExcalidrawNodeView ────────────────────────────────────────────────────────
 
@@ -36,86 +38,91 @@ function clampExcalidrawHeight(raw: number): number {
  *   the iframe so students can interact with the canvas (Requirement 5.4).
  */
 const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
-  const { node, editor, getPos, updateAttributes } = props;
-  const { url, height: attrHeight } = node.attrs;
+  const { node, editor, getPos, updateAttributes } = props
+  const { url, height: attrHeight } = node.attrs
 
-  const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const tCommon = useTranslations('Common');
-  const { isEditable } = editor;
+  const t = useTranslations('DashPage.Editor.EmbedPanel')
+  const tCommon = useTranslations('Common')
+  const { isEditable } = editor
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   // ── Height state ───────────────────────────────────────────────────────────
+  const [prevAttrHeight, setPrevAttrHeight] = useState(attrHeight)
   const [height, setHeight] = useState<number>(() =>
     clampExcalidrawHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : DEFAULT_HEIGHT),
-  );
+  )
 
-  // Keep local height in sync when node attrs change externally
-  useEffect(() => {
+  // Keep local height in sync when node attrs change externally (render-phase sync)
+  if (attrHeight !== prevAttrHeight) {
+    setPrevAttrHeight(attrHeight)
     if (typeof attrHeight === 'number' && attrHeight > 0) {
-      setHeight(clampExcalidrawHeight(attrHeight));
+      setHeight(clampExcalidrawHeight(attrHeight))
     }
-  }, [attrHeight]);
+  }
 
   // ── Resize drag logic ──────────────────────────────────────────────────────
-  const dragStartY = useRef<number>(0);
-  const dragStartHeight = useRef<number>(0);
-  const isDragging = useRef<boolean>(false);
+  const dragStartY = useRef<number>(0)
+  const dragStartHeight = useRef<number>(0)
+  const isDragging = useRef<boolean>(false)
+  const updateAttributesRef = useRef(updateAttributes)
+  const heightRef = useRef(height)
 
-  const handlePointerMove = useCallback((e: PointerEvent) => {
-    if (!isDragging.current) return;
-    const delta = e.clientY - dragStartY.current;
-    const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta);
-    setHeight(newHeight);
-  }, []);
+  useEffect(() => {
+    updateAttributesRef.current = updateAttributes
+    heightRef.current = height
+  }, [updateAttributes, height])
 
-  const handlePointerUp = useCallback(
-    (e: PointerEvent) => {
-      if (!isDragging.current) return;
-      isDragging.current = false;
-      const delta = e.clientY - dragStartY.current;
-      const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta);
-      setHeight(finalHeight);
-      updateAttributes({ height: finalHeight });
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
-    },
-    [handlePointerMove, updateAttributes],
-  );
+  const handleResizeHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.current = true
+    dragStartY.current = e.clientY
+    dragStartHeight.current = heightRef.current
 
-  const handleResizeHandlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      isDragging.current = true;
-      dragStartY.current = e.clientY;
-      dragStartHeight.current = height;
-      document.addEventListener('pointermove', handlePointerMove);
-      document.addEventListener('pointerup', handlePointerUp);
-    },
-    [height, handlePointerMove, handlePointerUp],
-  );
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!isDragging.current) return
+      const delta = moveEvent.clientY - dragStartY.current
+      const newHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+      setHeight(newHeight)
+    }
+
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      if (!isDragging.current) return
+      isDragging.current = false
+      const delta = upEvent.clientY - dragStartY.current
+      const finalHeight = clampExcalidrawHeight(dragStartHeight.current + delta)
+      setHeight(finalHeight)
+      updateAttributesRef.current({ height: finalHeight })
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
+    }
+
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
+  }
 
   // ── Embed Panel store ──────────────────────────────────────────────────────
-  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit);
-  const editTriggerRef = useRef<HTMLButtonElement>(null);
+  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit)
+  const editTriggerRef = useRef<HTMLButtonElement>(null)
 
   const handleEdit = useCallback(() => {
-    const pos = typeof getPos === 'function' ? getPos() : undefined;
-    if (pos === undefined || !url) return;
-    openForEdit(pos, { type: 'excalidraw', url }, editTriggerRef);
-  }, [getPos, openForEdit, url]);
+    const pos = typeof getPos === 'function' ? getPos() : undefined
+    if (pos === undefined || !url) return
+    openForEdit(pos, { type: 'excalidraw', url }, editTriggerRef)
+  }, [getPos, openForEdit, url])
 
   const handleDelete = useCallback(() => {
-    editor.chain().focus().deleteNode('embedBlock').run();
-  }, [editor]);
+    editor.chain().focus().deleteNode('embedBlock').run()
+  }, [editor])
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const iframeSrc = url ? buildExcalidrawSrc(url) : '';
+  const iframeSrc = url ? buildExcalidrawSrc(url) : ''
 
   return (
     <NodeViewWrapper className="excalidraw-node-view w-full">
@@ -220,8 +227,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         )}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default ExcalidrawNodeView;
-
+export default ExcalidrawNodeView

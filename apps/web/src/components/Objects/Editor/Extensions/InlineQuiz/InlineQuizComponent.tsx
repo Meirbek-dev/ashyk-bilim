@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 /**
  * InlineQuizComponent — NodeView for the InlineQuiz TipTap node.
@@ -7,47 +7,36 @@
  * attempt view (for students consuming the lesson).
  */
 
-import { useCallback } from 'react';
-import { NodeViewWrapper } from '@tiptap/react';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import type { InlineQuizAttrs } from './types';
-import InlineQuizAuthor from './InlineQuizAuthor';
-import InlineQuizAttempt from './InlineQuizAttempt';
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import type { InlineQuizAttrs } from './types'
+import InlineQuizAuthor from './InlineQuizAuthor'
+import InlineQuizAttempt from './InlineQuizAttempt'
 
 const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
-  const { node, updateAttributes, editor } = props;
-  const { assessmentUuid } = node.attrs;
-  const editable = editor.isEditable;
-
-  const handleAssessmentCreated = useCallback(
-    (uuid: string) => {
-      updateAttributes({ assessmentUuid: uuid });
-    },
-    [updateAttributes],
-  );
+  const { node, editor } = props
+  const { assessmentUuid } = node.attrs
+  const editable = editor.isEditable
+  const t = useTranslations('DashPage.Editor.InlineQuizExtension')
 
   const renderContent = () => {
     if (editable) {
-      return (
-        <InlineQuizAuthor
-          assessmentUuid={assessmentUuid}
-          onAssessmentCreated={handleAssessmentCreated}
-        />
-      );
+      return <InlineQuizAuthor assessmentUuid={assessmentUuid} />
     }
 
     if (!assessmentUuid) {
       return (
         <div className="border-muted-foreground/30 text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-          Quiz not configured
+          {t('quizNotConfigured')}
         </div>
-      );
+      )
     }
 
-    return <InlineQuizAttempt assessmentUuid={assessmentUuid} />;
-  };
+    return <InlineQuizAttempt assessmentUuid={assessmentUuid} />
+  }
 
-  return <NodeViewWrapper className="inline-quiz">{renderContent()}</NodeViewWrapper>;
-};
+  return <NodeViewWrapper className="inline-quiz">{renderContent()}</NodeViewWrapper>
+}
 
-export default InlineQuizComponent;
+export default InlineQuizComponent

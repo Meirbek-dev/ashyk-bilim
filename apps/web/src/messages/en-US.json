@@ -1,172 +1,104 @@
 {
   "Activities": {
-    "AIActivityAsk": {
-      "AI": "Ashyk Ai",
-      "aiSender": "Ashyk Ai",
-      "askAI": "Ask Ashyk Ai",
-      "closePanel": "Close Ashyk Ai panel",
-      "copy": "Copy",
-      "copied": "Copied!",
-      "errorTitle": "Something wrong happened",
-      "examplesAbbr": "ex. ",
-      "hello": "Hello",
-      "howCanWeHelp": "how can I help?",
-      "logoAlt": "Ashyk Ai Logo",
-      "placeholder": "Ask Ashyk Ai About this Lecture",
-      "defaultUser": "User",
+    "AiAssistantPanel": {
+      "title": "AI Assistant",
+      "suggestedPrompts": "Suggested prompts",
+      "currentActivity": "Current activity",
+      "askPlaceholder": "Ask anything about this activity...",
+      "aiComposerLabel": "AI message",
+      "approvalBoundary": "AI suggestions stay separate until you choose an action.",
+      "closePanel": "Close AI assistant",
+      "composerHint": "Enter to send. Shift Enter for a new line.",
+      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
+      "emptyStateTitle": "Ask AI",
+      "emptyStateDescription": "Use the current activity as context.",
+      "errorStateTitle": "AI request failed",
+      "defaultErrorMessage": "The AI request failed. Try again.",
+      "retry": "Retry",
       "dismiss": "Dismiss",
-      "questionAbout": "What is this Activity about?",
-      "questionExamples": "Explain this Activity in practical examples",
-      "questionFlashcards": "Generate flashcards about this Activity",
-      "stopGeneration": "Stop generation",
-      "usernameComma": "{username},"
-    },
-    "AIStatus": {
-      "aborted": "Request cancelled.",
-      "analyzing": "Analyzing your request without additional retrieval.",
-      "generating": "Generating the response.",
-      "processing": "Preparing your request.",
-      "retrieving": "Retrieving relevant course context.",
-      "working": "Working on your request."
-    },
-    "AICanvaToolkit": {
-      "aiIconAlt": "Ashyk Ai Icon",
-      "aiTitle": "Ashyk Ai",
-      "examplesAbbr": "Ex",
-      "examplesLabel": "Examples",
-      "examplesPrompt": "Give examples to understand \\\"{selection}\\\" better, if possible give context in the course.",
-      "examplesTooltip": "Give examples to understand better with AI",
-      "explainLabel": "Explain",
-      "explainPrompt": "Explain this part of the course \\\"{selection}\\\" keep this course context in mind.",
-      "explainTooltip": "Explain a word or a sentence with AI",
-      "summarizeLabel": "Summarize",
-      "summarizePrompt": "Summarize this \\\"{selection}\\\" with the course context in mind.",
-      "summarizeTooltip": "Summarize a long paragraph or text with AI",
-      "translateLabel": "Translate",
-      "translatePrompt": "Translate \\\"{selection}\\\" to another language.",
-      "translateTooltip": "Translate to different languages with AI"
-    },
-    "AIEditorToolkit": {
-      "ContinueWritingLabel": "Continue Writing",
-      "CritisizeLabel": "Criticize",
-      "GenerateQuizLabel": "Generate Quiz",
-      "MakeLongerLabel": "Make Longer",
-      "TranslateLabel": "Translate",
-      "WriterLabel": "Writer",
-      "aiEditorTitle": "Ashyk Ai Editor",
-      "aiIconAlt": "Ashyk Ai Icon",
-      "applicationPending": "Contributor application pending",
-      "applyToContribute": "Apply to contribute",
-      "askAI": "Ask Ashyk Ai",
-      "closeToolkit": "Close Ashyk Ai toolkit",
-      "continuePlaceholder": "Place your cursor at the end of a sentence to continue writing",
-      "critisizeLectureMissing": "Lecture is empty, add some content first",
-      "critisizePlaceholder": "Select a passage or critique the entire lecture",
-      "critisizeScopeLabel": "Critique scope",
-      "critisizeScopeLecture": "Whole lecture",
-      "critisizeScopeSelection": "Selected text",
-      "critisizeSelectionMissing": "Select a paragraph to critique",
-      "dismissError": "Dismiss error",
-      "errorTitle": "Something wrong happened",
-      "longerPlaceholder": "Select text to make longer",
-      "platformLogoAlt": "Ashyk Bilim logo",
-      "processingRequest": "Processing your request",
-      "prompt_continueWriting": "Continue writing about {selection}",
-      "prompt_critisize": "Critique this lecture section and suggest improvements: {selection}",
-      "prompt_critisizeLecture": "Critique this lecture overall and suggest improvements: {selection}",
-      "prompt_makeLonger": "Make this text longer: {selection}",
-      "prompt_translateTo": "Translate to {language}: {selection}",
-      "prompt_writer": "Write about {selection}",
       "sendMessage": "Send message",
-      "thinking": "Thinking...",
-      "translateExample": "Japanese, Arabic, German, etc.",
-      "translatePlaceholder": "Translate selected text to",
-      "translateToLanguageMissing": "Please enter a language to translate to",
-      "typePromptBelow": "Type your prompt below",
-      "userInputPlaceholder": "Ask Ashyk Ai",
-      "stop": "Stop",
-      "writerPlaceholder": "Write about..."
+      "stopGeneration": "Stop generation",
+      "studentMode": "Student tutor",
+      "suggestions": {
+        "dynamic": {
+          "summarize": "Summarize this page for me",
+          "explain": "Explain the key concepts on this page",
+          "takeaways": "What are the main takeaways?",
+          "quiz": "Create a quiz from this content"
+        },
+        "code": {
+          "hint": "Give me a hint without revealing the answer",
+          "testcases": "Explain the test cases",
+          "algorithm": "What algorithm should I use here?",
+          "error": "Explain this error message"
+        },
+        "exam": {
+          "hint": "Give me a hint for this question",
+          "concept": "Explain the concept being tested",
+          "review": "What topic should I review for this?"
+        },
+        "file": {
+          "include": "What should I include in my submission?",
+          "criteria": "What are the grading criteria?",
+          "structure": "Help me structure my work"
+        },
+        "video": {
+          "summarize": "Summarize what I just watched",
+          "explain": "Explain a concept from this video",
+          "keypoints": "What are the key points?"
+        },
+        "default": {
+          "understand": "Help me understand this activity",
+          "concepts": "What are the key concepts here?",
+          "guidance": "Give me guidance on how to approach this"
+        }
+      }
     },
-    "AssignmentBoxUI": {
-      "currentPoints": "Current points: {points}",
-      "enterGradePlaceholder": "Enter grade (max {max})",
-      "fileSubmissionTitle": "File Submission",
-      "formTitle": "Form",
-      "grade": "Grade",
-      "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
-      "quizTitle": "Quiz",
-      "save": "Save draft",
-      "saveProgress": "Save your progress",
-      "savingDisclaimer": "Don't forget to save your progress",
-      "teacherView": "Teacher view"
+    "AiStudio": {
+      "shellAriaLabel": "AI Learning Studio",
+      "learningContextAria": "Learning context",
+      "currentArtifactAria": "Current artifact",
+      "evidenceMapAria": "Evidence map",
+      "artifactTitle": "Artifact",
+      "waiting": "waiting",
+      "defaultSummary": "Generated learning objects will anchor here when the run finishes.",
+      "evidenceTitle": "Evidence",
+      "noCitations": "No citations attached to this run yet.",
+      "aiRunConsoleAria": "AI run console",
+      "toolTimelineAria": "Tool timeline",
+      "eventSequenceAria": "Event sequence",
+      "trustControlsAria": "Trust controls",
+      "runConsoleTitle": "Run console",
+      "live": "live",
+      "idle": "idle",
+      "defaultConsoleStatus": "No active run. Tool calls and audit events appear here.",
+      "toolsTitle": "Tools",
+      "noTools": "No tools have run.",
+      "eventsTitle": "Events",
+      "nextRunStream": "The next run will stream ordered v2 events.",
+      "approvalBoundary": "Approval boundary",
+      "approvalBoundaryDesc": "Course edits, interventions, and publishing actions require explicit review.",
+      "artifactCanvasAria": "Artifact canvas",
+      "artifactCanvasTitle": "Artifact canvas"
     },
-    "AssignmentStudentActivity": {
-      "assignment": "Assignment",
-      "blankLabel": "Field {index}",
-      "descriptionTitle": "Assignment Description",
-      "dueDate": "Due Date",
-      "emptyOption": "Empty option",
-      "hint": "Hint",
-      "loadSubmissionError": "Could not load your assignment answer.",
-      "noTasks": "No tasks available",
-      "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
-      "progressSaved": "Progress saved",
-      "questionLabel": "Question {index}",
-      "referenceDocument": "Reference Document",
-      "saveProgress": "Save draft",
-      "saveSubmissionError": "Could not save your answer.",
-      "itemsLabel": "Items",
-      "minutesShort": "min",
-      "unlimited": "Unlimited",
-      "attemptsLabel": "Attempts",
-      "attemptsRemaining": "{remaining} left",
-      "noAssessmentFound": "No assessment found.",
-      "failedToStartAssessment": "Failed to start assessment.",
-      "assessmentStarted": "Assessment started.",
-      "revisionDraftCreated": "Revision draft created.",
-      "recoveredSavedAnswers": "Recovered saved answers.",
-      "readyToRevise": "Ready to revise",
-      "readyToBegin": "Ready to begin",
-      "readyToBeginDescription": "Start your assignment and submit when you're ready.",
-      "readyToReviseDescription": "A revision draft is ready. Update your answers and submit again.",
-      "startRevision": "Start revision",
-      "startAssessment": "Start assessment",
-      "scoreLabel": "Score",
-      "timeLimit": "Time Limit",
-      "noEditableDraft": "No editable draft available",
-      "submissionReceivedTitle": "Submission received",
-      "submissionReceivedDescription": "Submitted. Your teacher will release the grade when review is complete.",
-      "submissionReceivedWithDateDescription": "Submitted on {date}. Your teacher will release the grade when review is complete.",
-      "resultsWaitingForReleaseTitle": "Results are waiting for release",
-      "resultsWaitingForReleaseDescription": "Your latest submission has been graded. Scores and feedback will appear after your teacher releases them.",
-      "returnedForRevision": "Returned for revision",
-      "resultAvailable": "Result available",
-      "resumedDraft": "Resumed draft",
-      "resumedDraftDescription": "Last saved at {time}",
-      "pointsShort": "pts",
-      "task": "Task {index}",
-      "taskContentUnavailable": "This task content is not available in student mode yet.",
-      "taskTypeFile": "File upload",
-      "taskTypeForm": "Form",
-      "taskTypeOther": "Other",
-      "taskTypeQuiz": "Quiz",
-      "untitledQuestion": "Untitled question",
-      "unsavedChanges": "Unsaved changes",
-      "allowedFormats": "Allowed formats: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Choose file to upload for assignment",
-      "missingAssignmentInfo": "Missing required assignment information",
-      "selectFile": "Select File",
-      "submitFile": "Submit File",
-      "uploadFailed": "Upload failed",
-      "attemptNumber": "Attempt #{number}",
-      "latestSubmission": "Latest submission",
-      "workProgressTitle": "Work progress",
-      "answeredProgress": "{answered} of {total} answered",
-      "unansweredProgress": "{count, plural, =0 {All questions have an answer} one {# question left} other {# questions left}}",
-      "taskNavigatorTitle": "Task navigator"
+    "AiArtifacts": {
+      "confidence": "{value}%",
+      "titles": {
+        "authoring_patch": "Authoring patch",
+        "code_review_hint": "Code mentor hint",
+        "flashcard_set": "Flashcards",
+        "hint_ladder": "Hint ladder",
+        "rubric_feedback": "Rubric feedback",
+        "safety_refusal": "Safety response",
+        "teacher_intervention": "Teacher intervention",
+        "tutor_answer": "Tutor answer"
+      }
     },
     "CodeChallenges": {
+      "untitledChallenge": "Untitled Challenge",
+      "noProblemStatement": "No problem description provided.",
       "actualOutput": "Your Output",
+      "compileOutput": "Compile output",
       "addTestCase": "Add Test Case",
       "allOrNothing": "All or Nothing",
       "allTestsPassed": "All tests passed! 🎉",
@@ -174,8 +106,13 @@
       "allowCustomInputDescription": "Let students test their code with custom input",
       "allowedLanguages": "Allowed Languages",
       "allowedLanguagesDescription": "Select which programming languages students can use",
+      "languageServiceUnavailableDescription": "Judge0 is not reachable from the API. Recreate the Judge0 service and reload this page.",
+      "languageServiceUnavailableTitle": "Code execution languages unavailable",
       "authRequired": "Authentication required",
       "bestSubmission": "Best Submission",
+      "complete": "Complete",
+      "draftNeedsWork": "Draft needs work",
+      "incomplete": "Incomplete",
       "cancel": "Cancel",
       "challengeSaved": "Challenge saved successfully",
       "competitive": "Competitive",
@@ -194,6 +131,7 @@
       "enterCustomInput": "Enter your test input here...",
       "expectedOutput": "Expected Output",
       "expectedOutputPlaceholder": "Enter expected output...",
+      "exampleTestCaseLabel": "e.g., Empty list check",
       "failed": "Failed",
       "form": {
         "addHint": "Add Hint",
@@ -259,6 +197,7 @@
       "hiddenTestCases": "Hidden Test Cases",
       "hiddenTestCasesDescription": "Test cases only used during final submission",
       "history": "History",
+      "languageIdFallback": "Language {id}",
       "input": "Input",
       "inputPlaceholder": "Enter test input...",
       "latestSubmission": "Latest Submission",
@@ -279,6 +218,8 @@
       "notConfiguredDescription": "This code challenge hasn't been set up yet. Please contact your instructor.",
       "underConstructionIcon": "🛠️",
       "timeLimitValue": "{value}ms",
+      "timeSecondsValue": "{value}s",
+      "hiddenTestsCount": "{count} hidden tests",
       "memoryLimitValue": "{value}MB",
       "otherLanguages": "Other Languages",
       "output": "Output",
@@ -293,6 +234,7 @@
       "runCode": "Run",
       "runFailed": "Failed to run code",
       "runTests": "Run Tests",
+      "runningLabel": "Running...",
       "runningTests": "Running tests...",
       "saveConfig": "Save Configuration",
       "saveFailed": "Failed to save challenge",
@@ -314,6 +256,10 @@
         "unknown": "Unknown",
         "wrongAnswer": "Wrong Answer"
       },
+      "assertionDescriptionPlaceholder": "Explain why this case matters...",
+      "stdinPlaceholder": "Console inputs feed here",
+      "expectedAssertionPlaceholder": "Expected output assertion here",
+      "unknownTime": "Unknown time",
       "stderr": "Error Output",
       "submission": {
         "accepted": "Accepted",
@@ -326,6 +272,7 @@
       },
       "submissionFailed": "Submission failed",
       "submissionQueued": "Submission queued for evaluation",
+      "submissionHistoryItem": "Attempt {attempt} · {language}",
       "submit": "Submit",
       "testCase": "Test Case",
       "testCases": "Test Cases",
@@ -364,12 +311,202 @@
         "content": "Content",
         "contentPlaceholder": "Explain one useful direction without giving away the full solution.",
         "xpPenalty": "XP penalty"
-      }
+      },
+      "courseChallenges": "Course / Challenges",
+      "problems": "Problems",
+      "practiceModeActive": "Practice mode active",
+      "runCodeShort": "Run",
+      "testCodeShort": "Test",
+      "submitCodeShort": "Submit",
+      "actions": "Actions",
+      "noCommandFound": "No command found.",
+      "commandPaletteTitle": "Code command palette",
+      "commandPalettePlaceholder": "Run, submit, reset...",
+      "runVisibleTests": "Run visible tests",
+      "ctrlEnter": "Ctrl Enter",
+      "submitSolution": "Submit solution",
+      "ctrlShiftEnter": "Ctrl Shift Enter",
+      "resetToStarterCode": "Reset to starter code",
+      "writeCodeBeforeRun": "Write code before running it.",
+      "programFinishedNoOutput": "Program finished with no output.",
+      "codeExecutionFailed": "Code execution failed.",
+      "writeCodeBeforeTests": "Write code before running tests.",
+      "testRunFailed": "Test run failed.",
+      "writeCodeBeforeSubmit": "Write code before submitting.",
+      "codeTab": "Code",
+      "resetCode": "Reset",
+      "formatCode": "Format",
+      "editorSettings": "Editor Settings",
+      "wordWrap": "Word wrap",
+      "minimap": "Minimap",
+      "fontSize": "Font Size",
+      "pxValue": "{size}px",
+      "hintsAndHelp": "Hints & Help",
+      "unlockHintsDescription": "Unlock hints to help solve the problem. Each hint carries a score or XP penalty.",
+      "noHintsAvailable": "No hints available for this challenge.",
+      "xpPenaltyValue": "-{penalty} XP penalty",
+      "reveal": "Reveal",
+      "revealConfirm": "Are you sure you want to reveal Hint {number}? Doing so will deduct {penalty} XP from your potential score.",
+      "unlockWithPenalty": "Unlock (-{penalty} XP)",
+      "descriptionTab": "Description",
+      "hintsTab": "Hints",
+      "submissionsTab": "Submissions",
+      "examplesTitle": "Examples",
+      "exampleNumber": "Example {number}",
+      "useInput": "Use input",
+      "constraintsTitle": "Constraints",
+      "testCaseTab": "Testcase",
+      "resultTab": "Result",
+      "consoleTab": "Console",
+      "customInputTitle": "Custom input",
+      "passedFraction": "Passed {passed}/{total}",
+      "diagnosticsHidden": "Input and output diagnostics are hidden to ensure evaluation integrity.",
+      "hiddenCaseTitle": "Hidden case {number}: {status}",
+      "noConsoleOutputYet": "No console output yet.",
+      "runningState": "running",
+      "idleState": "idle",
+      "runTestsToSeeDiagnostics": "Run tests to see diagnostics.",
+      "firstFailingCase": "First failing case: {caseId}. {description}",
+      "locateAndInspect": "Locate & Inspect",
+      "executingEnvironment": "Executing Judge0 Environment",
+      "caseNumber": "Case {number}",
+      "timeMsValue": "{value}ms",
+      "difference": "Difference",
+      "restoreCode": "Restore",
+      "saveSettings": "Save Settings",
+      "stepProblem": "1. Problem",
+      "stepLanguages": "2. Languages",
+      "stepTestSuite": "3. Test Suite",
+      "stepVerify": "4. Verify Solution",
+      "stepReview": "5. Publish Review",
+      "referenceValidationFinished": "Reference solution validation finished.",
+      "validationEndpointFailed": "Validation endpoint failed.",
+      "referenceValidationFailed": "Failed to validate reference solutions.",
+      "selectLanguagePrompt": "Select at least one allowed language in the sidebar to configure templates.",
+      "starterTemplateCode": "Starter Template Code",
+      "referenceSolution": "Reference Solution",
+      "problemConfiguration": "Problem Configuration",
+      "editor": "Editor",
+      "liveStudentPreview": "Live Student Preview",
+      "maxScore": "Max Score (Pts)",
+      "problemDescriptionMarkdown": "Problem Description (Markdown)",
+      "inputSpecificationMarkdown": "Input Specification (Markdown)",
+      "outputSpecificationMarkdown": "Output Specification (Markdown)",
+      "constraintsOnePerLine": "Constraints (One per line)",
+      "inputFormat": "Input Format",
+      "outputFormat": "Output Format",
+      "publishReadinessCheck": "Publish Readiness Check",
+      "publishReadinessDescription": "Before publishing this challenge to students, verify that all configurations meet grading requirements.",
+      "passedVerification": "Passed verification",
+      "notVerified": "Not verified",
+      "readyToPublish": "Ready to Publish",
+      "readyToPublishDescription": "The challenge has passed verification and can be safely published.",
+      "verificationFailed": "Verification Failed",
+      "verificationFailedDescription": "Please fix the outstanding issues below before publishing.",
+      "templateConfigured": "Template configured",
+      "templateMissing": "No starter template or reference solution found for: {langs}",
+      "referenceSolutionPassed": "Reference solution verification passed",
+      "noVerificationRun": "No successful verification run has been performed yet.",
+      "languageConfigured": "At least one allowed language configured",
+      "noLanguagesEnabled": "No programming languages have been enabled for this challenge.",
+      "testCaseConfigured": "At least one test case configured",
+      "testCaseConfiguredDescription": "At least one test case is required to evaluate student submissions.",
+      "problemStatementComplete": "Problem statement complete",
+      "problemStatementEmpty": "The challenge description and specification cannot be empty.",
+      "outputComparison": "Output Comparison",
+      "sideBySide": "Side-by-side",
+      "inline": "Inline",
+      "noCodeAnswerSubmitted": "No code answer was submitted for this item.",
+      "evaluatedLanguageId": "Evaluated Language ID: {language}",
+      "testCasesPassedValue": "{passed}/{total} Test Cases Passed",
+      "gradeValue": "Grade: {score}%",
+      "submittedCode": "Submitted Code",
+      "compareAgainstTemplate": "Compare against Template",
+      "diagnosticLogsCount": "Diagnostic Logs ({count})",
+      "noDiagnosticsAvailable": "No detailed test diagnostics are available.",
+      "issuesPending": "{count} Issues Pending",
+      "checklistPending": "Checklist pending requirements",
+      "checklistAllPassed": "All publish readiness requirements have passed!",
+      "readiness": {
+        "problem": {
+          "label": "Problem Statement & Title",
+          "detail": "A non-empty challenge title and description prompt in markdown format are required."
+        },
+        "languages": {
+          "label": "Allowed Languages & Code Harnesses",
+          "detail": "Configure allowed languages and verify starter code templates and reference solutions exist for every language."
+        },
+        "visible": {
+          "label": "Visible Samples",
+          "detail": "Provide at least one visible test case sample so students can verify standard outputs locally."
+        },
+        "hidden": {
+          "label": "Hidden Grading Tests",
+          "detail": "Provide at least one hidden grading test case. Hidden cases ensure submissions cannot simply hardcode expected sample outputs."
+        },
+        "limits": {
+          "label": "Execution Limits & Thresholds",
+          "detail": "Specify execution time limits (seconds) and memory usage limits (MB) to prevent infinite loops and resource exhaustions."
+        }
+      },
+      "referenceVerificationSuite": "Reference Verification Suite",
+      "validateSolutions": "Validate Solutions",
+      "selectLanguageBeforeValidation": "Please select at least one language in the \"Languages\" tab before validation.",
+      "starterCodeStatus": "Starter code",
+      "present": "✓ Present",
+      "missing": "✗ Missing",
+      "solutionStatus": "Solution",
+      "passesTests": "Passes Tests",
+      "awaitingRun": "Awaiting Run",
+      "compilationDiagnostic": "Compilation Diagnostic",
+      "errorDetails": "Error Details",
+      "executionCasesBreakdown": "Execution cases breakdown",
+      "addSampleVisible": "Add Sample (Visible)",
+      "addHiddenCase": "Add Hidden Case",
+      "import": "Import",
+      "visibility": "Visibility",
+      "matchMode": "Match Mode",
+      "exactMatch": "Exact Match",
+      "trimmedMatch": "Trimmed Match",
+      "ignoreWhitespace": "Ignore Whitespace",
+      "floatTolerance": "Float Tolerance",
+      "samplesLabel": "Samples",
+      "hiddenTestsLabel": "Hidden tests",
+      "totalCasesLabel": "Total cases",
+      "totalWeightsLabel": "Total weights",
+      "assertionDetails": "Assertion Details",
+      "stdinInput": "Stdin Input",
+      "expectedStdout": "Expected stdout",
+      "assertingMatches": "Asserting Matches",
+      "selectTestCaseInstruction": "Select a test case row in the spreadsheet to edit stdin/stdout.",
+      "sampleCase": "Sample Case",
+      "hiddenCase": "Hidden Case",
+      "exactMatchDesc": "Exact Match requires character-for-character comparison including whitespace and trailing newlines.",
+      "trimmedMatchDesc": "Trimmed Match strips surrounding leading/trailing blank spaces and newlines before comparing.",
+      "ignoreWhitespaceDesc": "Ignore Whitespace strips all whitespace, tabs, and line boundaries for comparative checks.",
+      "floatToleranceDesc": "Float Tolerance parses float numbers in outputs and compares them within delta = 1e-6.",
+      "descriptionLabel": "Description",
+      "weightLabel": "Weight",
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "testCaseRemoved": "Test case removed.",
+      "exportSuccess": "Successfully exported test suite as {format}.",
+      "exportFailed": "Failed to export test suite.",
+      "importSuccess": "Successfully imported {count} test cases.",
+      "importFailed": "Invalid import file format.",
+      "requirementsPending": "{count, plural, one {# requirement pending} other {# requirements pending}}",
+      "allChecksPassed": "All checks passed",
+      "solutionAccepted": "Solution Accepted",
+      "submissionRequiresReview": "Submission Requires Review",
+      "testCasesPassed": "{passed}/{total} Test Cases Passed",
+      "starterTemplate": "Starter Template",
+      "studentSubmission": "Student Submission"
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
     },
     "ExamActivity": {
+      "unansweredQuestions": "Unanswered questions",
       "activityNamePlaceholder": "e.g., Final Exam",
       "allowResultReview": "Allow Students to Review Results",
       "allowResultReviewDescription": "Students can see their answers after submission",
@@ -411,6 +548,8 @@
       "explanation": "Explanation",
       "flagged": "Flagged",
       "flaggedForReview": "Flagged for review",
+      "flagQuestion": "Flag for review",
+      "unflagQuestion": "Remove flag",
       "fullscreenExited": "Fullscreen exited - violation recorded",
       "fullscreenRequiredDescription": "This exam requires fullscreen mode. Use the button below so the browser can grant fullscreen access.",
       "fullscreenRequiredTitle": "Enter fullscreen to continue",
@@ -509,12 +648,22 @@
       "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
       "violationsRecorded": "{count} violations recorded during this exam",
       "yourAnswer": "Your Answer",
-      "latestSubmission": "Latest submission"
+      "latestSubmission": "Latest submission",
+      "resultsWaitingForReleaseTitle": "Results awaiting publication",
+      "resultsWaitingForReleaseDescription": "Your test has been graded, but results will be available after the teacher publishes them.",
+      "resultAvailable": "Result available",
+      "noQuestions": "There are no questions in this exam.",
+      "testNotReadyTitle": "Test is not ready",
+      "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
+      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Please add questions before making it available to students.",
+      "resumedDraft": "Resuming exam",
+      "resumedDraftDescription": "Last saved: {time}",
+      "switchToScrollMode": "Switch to scroll mode (view all questions)",
+      "switchToCardMode": "Switch to card mode (one question at a time)"
     }
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Assignment",
       "codeChallenge": "Code Challenge",
       "document": "Document",
       "exam": "Exam",
@@ -539,7 +688,6 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "activityTypes": {
-      "assignment": "Assignment",
       "document": "Document",
       "dynamic": "Page",
       "exam": "Exam",
@@ -547,16 +695,6 @@
       "fileSubmission": "File Submission",
       "learningMaterial": "Learning Material",
       "video": "Video"
-    },
-    "assignmentActions": {
-      "submit": "Submit",
-      "submitConfirm": "Are you sure you want to submit the assignment for grading? You will not be able to make changes after submission.",
-      "submitForGrading": "Submit",
-      "submitYourAssingmentForGrading": "Submit your assignment for grading"
-    },
-    "assignmentStatus": {
-      "graded": "Graded",
-      "grading": "Grading in progress"
     },
     "chapter": "Chapter",
     "chapters": "Chapters",
@@ -572,8 +710,11 @@
     "enterFocusMode": "Enter focus mode",
     "exitFocusMode": "Exit focus mode",
     "focusMode": "Focus Mode",
+    "aiAssistant": "AI Assistant",
+    "keyboardShortcuts": "Keyboard shortcuts",
     "lastUpdated": "Last updated",
     "markAsComplete": "Mark as complete",
+    "finishReadingBeforeComplete": "Finish reading the content before marking it complete",
     "markCompleteError": "Failed to mark activity as complete",
     "markStatus": {
       "markTooltipMessage": "Click the checkbox to mark this activity as complete",
@@ -584,6 +725,7 @@
     "nextActivityTitle": "Next: {name}",
     "nextActivityTooltip": "Next: {activityName}",
     "noContent": "No content available",
+    "emptyContentDescription": "This page does not have any content yet.",
     "noNextActivity": "No next activity",
     "noPrevActivity": "No previous activity",
     "noPreviousActivity": "No previous activity",
@@ -607,8 +749,8 @@
     "statusComplete": "Complete",
     "submitted": "Submitted",
     "support": "Support",
-    "submitErrorToast": "Failed to submit assignment for grading",
-    "submitSuccessToast": "Assignment submitted for grading",
+    "submitErrorToast": "Failed to submit assessment task for grading",
+    "submitSuccessToast": "Assessment task submitted for grading",
     "unknownGradingType": "Unknown grading type",
     "unmarkActivity": "Unmark Activity",
     "unmarkAsComplete": "Unmark as complete",
@@ -618,7 +760,29 @@
     "unpublishedActivity": "This activity is not published yet",
     "viewAllActivities": "View all activities",
     "viewAssessment": "View Assessment",
-    "viewResult": "View Result"
+    "viewResult": "View Result",
+    "startActivity": "Start activity",
+    "continueActivity": "Continue",
+    "submitButton": "Submit",
+    "viewReceipt": "View receipt",
+    "draft": "Draft",
+    "failed": "Failed",
+    "accessBlocked": "Access blocked",
+    "attemptExhausted": "Attempts exhausted",
+    "signInRequired": "Sign in to continue",
+    "attemptLimit": "{count, plural, one {# attempt} other {# attempts}} allowed",
+    "passingScore": "Passing score: {score}%",
+    "releaseMode": "Release: {mode}",
+    "submittedAt": "Submitted {date}",
+    "gradedAt": "Graded {date}",
+    "unmarkComplete": "Unmark complete",
+    "onThisPage": "On this page",
+    "statusGradingInProgress": "Grading in progress",
+    "lockedTitle": "This activity is not available",
+    "lockedReasonLocked": "You need to complete prerequisite activities before you can access this one.",
+    "attemptsUsed": "{used} of {max} attempts used",
+    "attemptsUnlimited": "Unlimited attempts",
+    "dueDate": "Due date"
   },
   "AdminUtils": {
     "priority": {
@@ -691,6 +855,7 @@
       "sessionRecoveryFailed": "We could not recover your session. Please sign in again.",
       "wrongCredentials": "Wrong email or password",
       "serviceUnavailable": "Service temporarily unavailable. Please try again.",
+      "rateLimited": "Too many attempts. Please try again later.",
       "loginTitle": "Login",
       "noAccount": "Don't have an account?"
     },
@@ -1029,7 +1194,7 @@
     "googleLogo": "Google logo",
     "loading": "Loading...",
     "logoAlt": "Ashyk Bilim logo",
-    "platformLogoAlt": "Ashyk Bilim logo",
+    "appLogoAlt": "Ashyk Bilim logo",
     "owner": "Owner",
     "save": "Save draft",
     "saved": "Saved",
@@ -1038,6 +1203,9 @@
     "unsavedChanges": "Unsaved changes"
   },
   "Components": {
+    "Calendar": {
+      "set": "Set"
+    },
     "SaveStateBadge": {
       "unsaved": "Unsaved",
       "saving": "Saving...",
@@ -1113,9 +1281,13 @@
       "autoSubmitThreshold": "Auto-submit threshold"
     },
     "AiChat": {
+      "assistantName": "Ashyk Ai",
       "placeholder": "Ask Ashyk Ai…",
       "sendMessage": "Send message",
-      "stopGeneration": "Stop generation"
+      "stopGeneration": "Stop generation",
+      "copyResponse": "Copy response",
+      "copied": "Copied",
+      "userName": "You"
     },
     "Spinner": {
       "loading": "Loading"
@@ -1514,8 +1686,6 @@
         "typeGeneral": "Practice",
         "typeGeneralHint": "Students can submit multiple times without ranking"
       },
-      "assignments": "Assignments",
-      "assignmentsDesc": "Create a task with written or file-based submissions",
       "backToActivities": "Back to Activities",
       "chooseType": "Choose activity type",
       "codeChallenge": "Code Challenge",
@@ -1529,7 +1699,8 @@
       "fileSubmission": "File Submission",
       "fileSubmissionDesc": "Collect student files with review and feedback",
       "video": "Video",
-      "videoDesc": "Upload or embed a video for students to watch"
+      "videoDesc": "Upload or embed a video for students to watch",
+      "opening": "Opening…"
     },
     "NewFileSubmissionModal": {
       "allowedTypes": "Allowed file types",
@@ -1542,28 +1713,8 @@
       "maxFiles": "Max files",
       "maxSize": "Max size (MB)",
       "requiredFields": "Title and instructions are required",
+      "selectAll": "Select all",
       "title": "Title"
-    },
-    "NewAssignmentModal": {
-      "alphabet": "Alphabetical",
-      "assignmentDescription": "Assignment Description",
-      "assignmentTitle": "Assignment Title",
-      "createActivity": "Create Activity",
-      "createError": "Failed to create assignment: {error}",
-      "createSuccess": "Assignment created successfully",
-      "creatingAssignment": "Creating assignment...",
-      "dueDate": "Due Date",
-      "gradingType": "Grading Type",
-      "numeric": "Numeric",
-      "percentage": "Percentage",
-      "selectDeadline": "Select a deadline for completing the task",
-      "selectGradingType": "Select grading type",
-      "unexpectedError": "An unexpected error occurred",
-      "unknownError": "Unknown error",
-      "valueMissingDescription": "Please provide a description for your assignment",
-      "valueMissingDueDate": "Please provide a due date for your assignment",
-      "valueMissingGradingType": "Please provide a grading type for your assignment",
-      "valueMissingTitle": "Please provide a title for your assignment"
     },
     "NewChapterModal": {
       "chapterDescription": "Chapter Description",
@@ -1614,7 +1765,7 @@
       "step2Desc": "Courses are the main building blocks of Ashyk Bilim, they always contain Chapters and Chapters contain Activities.",
       "step2Title": "Create Courses",
       "step3Button": "Learn more about Activities",
-      "step3Desc": "Activities are the elements you can add to your Courses via Chapters: Dynamic Pages, Videos, Documents, Assignments and more coming soon.",
+      "step3Desc": "Activities are the elements you can add to your Courses via Chapters: Dynamic Pages, Videos, Documents, Assessment tasks and more coming soon.",
       "step3Title": "Activities",
       "step4Button": "Learn more about Dynamic Pages and the Editor",
       "step4Desc": "Dynamic pages are pages with dynamic content like Notion pages, they can include different components like Quizzes, Images, Videos, Documents, etc.",
@@ -1627,9 +1778,9 @@
       "step6Title": "Group Students and Simplify Access",
       "step7Desc": "You can make your Courses available to search engines and non authenticated users or only grant access to authenticated users",
       "step7Title": "Choose whether or not to make Courses available on the Internet",
-      "step8Button": "Create an Assignment",
-      "step8Desc": "Engage students with assignments, track their progress, and provide feedback through our intuitive grading system.",
-      "step8Title": "Create and Grade Assignments",
+      "step8Button": "Create an Assessment task",
+      "step8Desc": "Engage students with assessment tasks, track their progress, and provide feedback through our intuitive grading system.",
+      "step8Title": "Create and Grade Assessment tasks",
       "triggerText": "Onboarding"
     },
     "NavMenu": {
@@ -1809,6 +1960,9 @@
         "updatedRole": "Role updated successfully",
         "updating": "Updating role..."
       },
+      "updating": "Updating role...",
+      "updateRole": "Update Role",
+      "updatedRole": "Role updated successfully",
       "basicAccess": "Basic access",
       "cardTitle": "Organization Roles",
       "createRole": "Create Role",
@@ -2081,7 +2235,6 @@
       "expected": "Expected:",
       "fillBlanksError": "Please fill in at least one blank before submitting.",
       "fillInTheBlanks": "Fill in the blanks",
-      "gradeAssignment": "Grade Assignment",
       "gradeError": "Error grading task, please retry later.",
       "gradedSuccessfully": "Task graded successfully with {finalGrade} points ({correctAnswers}/{totalBlanks} correct)",
       "hint": "Hint (optional)",
@@ -2301,9 +2454,6 @@
     }
   },
   "Contexts": {
-    "Assignment": {
-      "loadError": "Failed to load assignment data"
-    },
     "Course": {
       "loadError": "Failed to load course structure"
     },
@@ -2316,13 +2466,187 @@
       "signOut": "Sign Out"
     }
   },
+  "MarkdownEditor": {
+    "toolbar": {
+      "label": "Markdown editor toolbar",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strikethrough": "Strikethrough",
+      "inlineCode": "Inline code",
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "taskList": "Task list",
+      "blockquote": "Blockquote",
+      "codeBlock": "Code block",
+      "link": "Link",
+      "image": "Insert image",
+      "table": "Insert table",
+      "math": "Math (inline)",
+      "undo": "Undo",
+      "redo": "Redo",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "snippets": "Snippets",
+      "insertSnippet": "Insert snippet",
+      "viewWrite": "Write",
+      "viewSource": "Source",
+      "viewSplit": "Split preview",
+      "viewPreview": "Preview"
+    },
+    "statusBar": {
+      "empty": "Empty",
+      "markdown": "Markdown",
+      "word": "word",
+      "words": "words",
+      "unsaved": "Unsaved",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "Save failed",
+      "issueToggle": "{count, plural, one {# issue} other {# issues}}"
+    },
+    "linkDialog": {
+      "title": "Insert link",
+      "editTitle": "Edit link",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com or /relative/path",
+      "urlError": "Please enter a safe URL (https, http, mailto, or relative path).",
+      "openNewTab": "Open in new tab",
+      "removeLink": "Remove link",
+      "cancel": "Cancel",
+      "insert": "Insert",
+      "update": "Update"
+    },
+    "imageDialog": {
+      "preview": "Preview",
+      "title": "Insert image",
+      "srcLabel": "Image URL",
+      "srcPlaceholder": "Use a platform-uploaded image URL",
+      "srcError": "Please enter a platform-uploaded image URL.",
+      "altLabel": "Alt text",
+      "altLabelOptional": "(required for published content)",
+      "altPlaceholder": "Describe the image for screen readers",
+      "cancel": "Cancel",
+      "insert": "Insert image"
+    },
+    "validation": {
+      "required": "Content is required.",
+      "tooLong": "Content is {count} characters over the limit.",
+      "nearLimit": "Content is approaching the character limit.",
+      "rawHtml": "Raw HTML is not supported.",
+      "unsafeLink": "One or more links use an unsafe protocol.",
+      "codeFenceUnclosed": "A code block appears to be missing a closing fence.",
+      "mathUnbalanced": "A math expression appears to have an unbalanced $ delimiter.",
+      "tableColumnMismatch": "A table appears to have rows with different column counts."
+    },
+    "presets": {
+      "shared": {
+        "objective": {
+          "label": "Task objective",
+          "markdown": "## Objective\n\nDescribe what learners need to produce and why it matters.\n"
+        },
+        "rubric": {
+          "label": "Rubric table",
+          "markdown": "| Criteria | Excellent | Needs work |\n| --- | --- | --- |\n| Accuracy | Complete and correct | Missing key requirements |\n"
+        },
+        "checklist": {
+          "label": "Checklist",
+          "markdown": "- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n"
+        },
+        "fileNamingRules": {
+          "label": "File naming rules",
+          "markdown": "## File naming\n\nUse this format: `lastname_firstname_taskname.ext`.\n"
+        },
+        "problemTemplate": {
+          "label": "Problem template",
+          "markdown": "## Problem\n\nDescribe the task.\n\n## Example\n\n```text\nInput:\n\nOutput:\n```\n\n## Constraints\n\n- `1 <= n <= 10^5`\n"
+        },
+        "exampleBlock": {
+          "label": "Example block",
+          "markdown": "```text\nInput:\n\nOutput:\n```\n\n**Explanation:** Add the reasoning here.\n"
+        },
+        "complexityTarget": {
+          "label": "Complexity target",
+          "markdown": "**Expected complexity:** `O(n)` time and `O(1)` extra memory.\n"
+        },
+        "courseOverview": {
+          "label": "Course overview",
+          "markdown": "## Overview\n\nDescribe who this course is for and what learners will build.\n"
+        },
+        "prerequisites": {
+          "label": "Prerequisites",
+          "markdown": "## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n"
+        },
+        "learningOutcomes": {
+          "label": "Learning outcomes",
+          "markdown": "## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n"
+        }
+      },
+      "assessmentDescription": {
+        "label": "Assessment description",
+        "description": "Student-facing overview, policy notes, and exam instructions.",
+        "placeholder": "Write the assessment instructions students will see..."
+      },
+      "questionPrompt": {
+        "label": "Question prompt",
+        "description": "Prompt text shown inside assessment questions.",
+        "placeholder": "Write the question prompt..."
+      },
+      "explanation": {
+        "label": "Explanation",
+        "description": "Rubrics, explanations, and teacher feedback.",
+        "placeholder": "Write an explanation or rubric..."
+      },
+      "fileSubmissionInstructions": {
+        "label": "Submission instructions",
+        "description": "Requirements, accepted files, rubric, and submission checklist.",
+        "placeholder": "Write clear upload instructions, naming rules, and grading expectations..."
+      },
+      "codeProblemStatement": {
+        "label": "Problem statement",
+        "description": "Competitive-programming style statement with examples and constraints.",
+        "placeholder": "Write the coding challenge statement..."
+      },
+      "codeInputSpec": {
+        "label": "Input specification",
+        "description": "Describe stdin or function input shape.",
+        "placeholder": "Describe the input format..."
+      },
+      "codeOutputSpec": {
+        "label": "Output specification",
+        "description": "Describe expected output shape.",
+        "placeholder": "Describe the output format..."
+      },
+      "codeExampleExplanation": {
+        "label": "Example explanation",
+        "description": "Explain a visible sample test.",
+        "placeholder": "Explain why this sample produces the expected output..."
+      },
+      "codeHint": {
+        "label": "Hint",
+        "description": "Progressive help without revealing the full solution.",
+        "placeholder": "Write a focused hint..."
+      },
+      "codeEditorial": {
+        "label": "Editorial",
+        "description": "Solution explanation released by policy.",
+        "placeholder": "Explain the intended solution..."
+      },
+      "courseDescription": {
+        "label": "Course description",
+        "description": "Public course overview shown to learners.",
+        "placeholder": "Describe the course, audience, prerequisites, and outcomes..."
+      }
+    }
+  },
   "CourseBreadcrumbs": {
     "courses": "Courses"
   },
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Assignment",
         "codeChallenge": "Code Challenge",
         "document": "Document",
         "dynamic": "Dynamic",
@@ -2342,7 +2666,6 @@
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
       "deletingActivity": "Deleting activity...",
-      "editAssignmentButton": "Edit Assignment",
       "editPageButton": "Edit Page",
       "openEditPage": "Open edit page",
       "failedToUpdateActivityName": "Failed to update activity name",
@@ -2516,7 +2839,6 @@
     },
     "activityNamePlaceholder": "Activity name",
     "activityTypes": {
-      "assignment": "Assignment",
       "document": "Document",
       "dynamic": "Dynamic",
       "video": "Video"
@@ -2554,7 +2876,6 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "admin": "Admin",
-    "assignment": "Assignment",
     "fileSubmission": "File Submission",
     "cancel": "Cancel",
     "confirmDelete": "Are you sure you want to delete this?",
@@ -2562,6 +2883,7 @@
     "confirmDeleteReply": "Are you sure you want to delete this reply?",
     "content": "Content",
     "contributeToActivity": "Contribute to activity",
+    "anonymous": "Anonymous",
     "contributors": "Contributors",
     "courseContent": "Course Content",
     "courseDiscussions": "Course Discussion",
@@ -2602,11 +2924,11 @@
     "statusComplete": "Complete",
     "statusGraded": "Graded",
     "statusGradingInProgress": "Grading in progress",
-    "submitButton": "Submit assignment",
-    "submitConfirmationMessage": "Are you sure you want to submit the assignment for review? You will not be able to make changes after submission.",
-    "submitConfirmationTitle": "Submit your assignment for review",
-    "submitErrorToast": "Failed to submit assignment for review",
-    "submitSuccessToast": "Assignment submitted for review",
+    "submitButton": "Submit assessment task",
+    "submitConfirmationMessage": "Are you sure you want to submit the assessment task for review? You will not be able to make changes after submission.",
+    "submitConfirmationTitle": "Submit your assessment task for review",
+    "submitErrorToast": "Failed to submit assessment task for review",
+    "submitSuccessToast": "Assessment task submitted for review",
     "submitTrigger": "Submit for review",
     "thumbnailTypeImage": "Image",
     "thumbnailTypeVideo": "Video",
@@ -2623,6 +2945,7 @@
   },
   "Courses": {
     "CourseActionsMobile": {
+      "unknownAuthor": "Unknown",
       "author": "Author",
       "authors": "Authors",
       "leaveCourse": "Leave Course",
@@ -2632,6 +2955,7 @@
       "startCourse": "Start Course"
     },
     "CourseAuthors": {
+      "unknownAuthor": "Unknown",
       "and": " & ",
       "andMoreAuthors": "& {count, plural, one {# more} other {# more}}",
       "authorsAndUpdates": "Authors & Updates ",
@@ -2774,7 +3098,24 @@
         "rolesTitle": "Roles & Permissions",
         "rolesDescription": "Manage roles and their permissions",
         "userRolesTitle": "User Roles",
-        "userRolesDescription": "Assign roles to organization members"
+        "userRolesDescription": "Assign roles to organization members",
+        "rolesInSystem": "Roles in system: {count}",
+        "rolesDetails": "Configure access groups and permissions for staff members.",
+        "assignments": "Assignments: {count}",
+        "userRolesDetails": "Manage access for specific platform users.",
+        "totalRoles": "Total Roles",
+        "rolesAssigned": "Assigned Roles",
+        "totalAuditLogs": "Total Audit Logs",
+        "goToSetting": "Go to settings",
+        "recentChangesLog": "Recent Activity Log",
+        "recentChangesDesc": "Feed of recent role management and access control events on the platform",
+        "forRole": "for role",
+        "initiator": "Initiator ID: {actor}",
+        "system": "System",
+        "noRecentAudit": "No recent audit entries",
+        "panelsTitle": "Control Panels",
+        "platformStatus": "Platform Status",
+        "recentEvents": "Recent System Events"
       },
       "Alerts": {
         "actionRequired": "Action Required",
@@ -3206,7 +3547,7 @@
         "title": "Account Settings"
       },
       "Courses": {
-        "description": "Create and manage courses, chapters, and assignments",
+        "description": "Create and manage courses, chapters, and assessment tasks",
         "errorOccurred": "An error occurred",
         "title": "Courses"
       },
@@ -3228,8 +3569,14 @@
         "badge": "System"
       },
       "noAccess": "You don’t have access to dashboard features yet.",
-      "platformLogo": "Ashyk Bilim Logo",
-      "touUniversity": "Toraighyrov University"
+      "appLogo": "Ashyk Bilim Logo",
+      "touUniversity": "Toraighyrov University",
+      "welcomeUser": "Welcome, {name}",
+      "defaultUser": "User",
+      "accountConnected": "Your account is connected. Logged into Ashyq Bilim management system.",
+      "sessionActive": "Session active",
+      "availableSections": "Available Sections",
+      "quickLinks": "Quick Links"
     },
     "CourseOverview": {
       "courseLabel": "Course",
@@ -3263,7 +3610,7 @@
           }
         },
         "empty": {
-          "createAction": "Create with guided setup",
+          "createAction": "Create your first course",
           "title": "No matching courses on this page",
           "withQuery": "Adjust the search or preset.",
           "withoutQuery": "Create a course or widen the current preset."
@@ -3272,7 +3619,7 @@
           "cannotDeleteSelection": "No selected courses can be deleted.",
           "cannotUpdateSelection": "No selected courses can be updated."
         },
-        "guidedSetup": "Guided setup",
+        "guidedSetup": "New Course",
         "header": {
           "description": "Review the catalog in a management-first table, filter by lifecycle state, and launch directly into the guided creation flow or an existing course workspace.",
           "label": "Course management",
@@ -3404,7 +3751,29 @@
           "certificate": "Certificate",
           "collaboration": "Collaboration"
         },
-        "workspacePulse": "Workspace pulse"
+        "workspacePulse": "Workspace pulse",
+        "tasks": {
+          "details": {
+            "label": "Add course details",
+            "description": "Set learning outcomes, tags, and thumbnail so the course looks intentional."
+          },
+          "curriculum": {
+            "label": "Build curriculum",
+            "description": "Add at least one chapter and one activity before publishing."
+          },
+          "access": {
+            "label": "Review access",
+            "description": "Confirm who can discover and enroll in this course."
+          },
+          "review": {
+            "label": "Review and publish",
+            "description": "Confirm content quality, visibility, and launch state."
+          }
+        },
+        "nextStepsHeading": "Next steps",
+        "nextStepsDescription": "Complete these steps to get the course ready for learners.",
+        "completed": "Completed",
+        "continueSetup": "Continue setup"
       },
       "Readiness": {
         "checklist": {
@@ -3466,6 +3835,99 @@
         "toasts": {
           "movedPrivate": "Course moved back to private.",
           "published": "Course is now public."
+        }
+      },
+      "Create": {
+        "actions": {
+          "cancel": "Cancel",
+          "create": "Create Course",
+          "creating": "Creating…"
+        },
+        "basics": {
+          "courseTitle": "Course title",
+          "courseTitlePlaceholder": "e.g. Data Analysis for Teachers",
+          "description": "Short description",
+          "descriptionHelp": "Explain what learners will get from this course and who it is for.",
+          "descriptionPlaceholder": "Describe the course goal, audience, and key outcomes."
+        },
+        "destination": {
+          "curriculum": {
+            "description": "Jump straight into building chapters and activities.",
+            "title": "Open curriculum"
+          },
+          "overview": {
+            "description": "See the workspace setup checklist first.",
+            "title": "Open overview"
+          }
+        },
+        "formLabel": "Create course",
+        "header": {
+          "description": "Set the title, starting structure, and where to go after creation.",
+          "title": "Create Course"
+        },
+        "review": {
+          "blockingReasons": {
+            "description": "Add a short description.",
+            "source": "Select a source course.",
+            "title": "Add a course title."
+          },
+          "heading": "Ready to create",
+          "rows": {
+            "destination": "After creation",
+            "source": "Source course",
+            "sourceEmpty": "Not selected",
+            "sourceSelected": "Course selected",
+            "structure": "Starting structure",
+            "title": "Title",
+            "titleEmpty": "Not set",
+            "visibility": "Visibility"
+          }
+        },
+        "sections": {
+          "afterCreation": "After creation",
+          "afterCreationHelp": "Choose where to land after the course is created.",
+          "basics": "Basics",
+          "basicsHelp": "The public-facing identity for this course.",
+          "structure": "Starting structure",
+          "structureHelp": "Choose how much structure the new course starts with.",
+          "visibility": "Initial visibility",
+          "visibilityHelp": "Control who can find this course after creation."
+        },
+        "structure": {
+          "blank": {
+            "description": "Start with an empty course. Build chapters manually.",
+            "title": "Blank"
+          },
+          "copyOutline": {
+            "description": "Copy chapter titles from another course. Activities are not included.",
+            "noResults": "No courses found.",
+            "searchError": "Unable to load courses.",
+            "searching": "Searching…",
+            "searchPlaceholder": "Search courses…",
+            "selectPlaceholder": "Select a course",
+            "sourceCourseHelp": "Copies chapter titles only. Activities and content stay in the source course.",
+            "sourceCourseLabel": "Source course",
+            "title": "Copy outline"
+          },
+          "starter": {
+            "description": "Start with two pre-built chapters: Introduction and Core Lessons.",
+            "title": "Starter outline"
+          }
+        },
+        "toasts": {
+          "created": "Course created.",
+          "partial": "Course created. {imported} of {imported, number} chapters imported. {failed} failed."
+        },
+        "visibility": {
+          "private": {
+            "description": "Keep this course internal while the team builds and reviews it.",
+            "title": "Private"
+          },
+          "public": {
+            "description": "Visible to everyone after creation.",
+            "title": "Public",
+            "warning": "This course will be publicly visible immediately. You can move it to private from the access settings."
+          }
         }
       },
       "Wizard": {
@@ -3583,6 +4045,7 @@
           "content": "Content",
           "details": "Details",
           "gradebook": "Gradebook",
+          "overview": "Overview",
           "publish": "Review & Publish",
           "settings": "Settings"
         },
@@ -3716,9 +4179,7 @@
             "description": "Can create courses but need ownership for content creation",
             "name": "Instructor",
             "permissions": {
-              "createAssignments": "Create assignments",
               "createCourses": "Create courses",
-              "gradeAssignments": "Grade assignments",
               "manageOwnCourses": "Manage own courses"
             }
           },
@@ -3726,7 +4187,6 @@
             "description": "Mid-level manager with wide permissions",
             "name": "Maintainer",
             "permissions": {
-              "manageAssignments": "Manage assignments",
               "manageCourses": "Manage courses",
               "manageUsers": "Manage users"
             }
@@ -3735,7 +4195,6 @@
             "description": "Read-Only Learner",
             "name": "User",
             "permissions": {
-              "submitAssignments": "Submit assignments",
               "takeAssessments": "Take assessments",
               "viewCourses": "View courses"
             }
@@ -3842,7 +4301,8 @@
         "score": "Score: {score}%",
         "quizInfo": "Inline quiz ({id}…)",
         "submit": "Submit",
-        "close": "Close"
+        "close": "Close",
+        "quizNotConfigured": "Quiz not configured"
       },
       "BadgesExtension": {
         "deepDive": "Deep Dive",
@@ -3861,7 +4321,6 @@
         "searchEmojis": "Search emojis..."
       },
       "Editor": {
-        "aiEditor": "Ashyk Ai Editor",
         "mobileMessage1": "The editor is only accessible from a desktop device.",
         "mobileMessage2": "Please switch to a desktop to view.",
         "mobileTitle": "Desktop Only",
@@ -3897,7 +4356,11 @@
         "removeEmbedTitle": "Remove embed",
         "urlButton": "URL",
         "urlPlaceholder": "Paste embed URL (YouTube, Spotify, etc.)",
-        "urlTip": "Tip: Paste any {productName} embed URL directly"
+        "urlTip": "Tip: Paste any {productName} embed URL directly",
+        "failedToRenderEmbed": "{label} embed",
+        "embedRenderErrorMessage": "This embed could not be rendered. Please try editing or removing it.",
+        "unknownEmbedType": "Unknown embed type{type}. Please edit this block.",
+        "embeddedBlockRenderError": "This embedded block could not be rendered. Please try editing or removing it."
       },
       "FileUploadBlock": {
         "browseFiles": "Browse Files",
@@ -4073,7 +4536,6 @@
       "Toolbar": {
         "addColumnRight": "Add column right",
         "addRowBelow": "Add row below",
-        "aiEditor": "Ashyk Ai Editor",
         "aria": {
           "insertInteractiveScenarios": "Insert interactive scenarios"
         },
@@ -4177,6 +4639,7 @@
         "youtubeVideo": "YouTube video"
       },
       "EmbedPanel": {
+        "embed": "embed",
         "title": "Insert Embed",
         "editTitle": "Edit Embed",
         "description": "Choose a trusted service, then paste a share or embed URL.",
@@ -4221,26 +4684,36 @@
         "cancelButton": "Cancel",
         "editButton": "Edit",
         "deleteButton": "Delete",
+        "useExample": "Use Example Link",
+        "howToGetLink": "How to get the link:",
+        "viewDocs": "Official Documentation",
+        "urlValid": "URL is valid and ready.",
+        "defaultInstructions": "1. Open the content in the service.\n2. Click the Share or Embed button.\n3. Copy the URL and paste it here.",
         "providers": {
           "figma": {
             "label": "Figma",
-            "description": "Live design files and clickable prototypes."
+            "description": "Live design files and clickable prototypes.",
+            "instructions": "1. Open your design file or prototype in Figma.\n2. Click the **Share** button in the top right.\n3. Set permissions to **Anyone with the link**.\n4. Click **Copy link**."
           },
           "canva": {
             "label": "Canva",
-            "description": "Posters, infographics, presentations, and design assets."
+            "description": "Posters, infographics, presentations, and design assets.",
+            "instructions": "1. Open your design in Canva.\n2. Click the **Share** button in the top right.\n3. Select **More** and find **Embed**.\n4. Copy the **Smart Embed Link**."
           },
           "miro": {
             "label": "Miro",
-            "description": "Collaborative workshops, mapping, and group boards."
+            "description": "Collaborative workshops, mapping, and group boards.",
+            "instructions": "1. Open your Miro board.\n2. Click the **Share** button in the top right.\n3. Set access to **Anyone with the link can view**.\n4. Click **Copy board link**."
           },
           "excalidraw": {
             "label": "Excalidraw",
-            "description": "Hand-drawn diagrams and brainstorming boards."
+            "description": "Hand-drawn diagrams and brainstorming boards.",
+            "instructions": "1. Create or open your drawing in Excalidraw.\n2. Click the **Collaboration** (live share) icon in the toolbar.\n3. Click **Start session** and copy the share link."
           },
           "tldraw": {
             "label": "tldraw",
-            "description": "Fast infinite canvas for sketches and visual thinking."
+            "description": "Fast infinite canvas for sketches and visual thinking.",
+            "instructions": "1. Create or open your canvas on tldraw.com.\n2. Copy the URL directly from your browser's address bar."
           },
           "mural": {
             "label": "Mural",
@@ -4272,7 +4745,8 @@
           },
           "google-slides": {
             "label": "Google Slides",
-            "description": "Cloud-based presentations with real-time collaboration."
+            "description": "Cloud-based presentations with real-time collaboration.",
+            "instructions": "1. Open your presentation in Google Slides.\n2. Click **File -> Share -> Publish to web**.\n3. Select the **Link** or **Embed** tab.\n4. Click **Publish** and copy the URL."
           },
           "powerpoint": {
             "label": "PowerPoint Online",
@@ -4296,7 +4770,8 @@
           },
           "codepen": {
             "label": "CodePen",
-            "description": "Visual front-end demos and interactive pens."
+            "description": "Visual front-end demos and interactive pens.",
+            "instructions": "1. Open the Pen on CodePen.\n2. Click the **Embed** button in the footer.\n3. Copy the URL from the iframe code, or just copy the regular Pen URL."
           },
           "replit": {
             "label": "Replit",
@@ -4352,7 +4827,8 @@
           },
           "youtube": {
             "label": "YouTube",
-            "description": "Educational videos, lectures, and screencasts."
+            "description": "Educational videos, lectures, and screencasts.",
+            "instructions": "1. Open the video on YouTube.\n2. Click the **Share** button below the video.\n3. Copy the URL."
           },
           "vimeo": {
             "label": "Vimeo",
@@ -4372,7 +4848,8 @@
           },
           "spotify": {
             "label": "Spotify",
-            "description": "Podcasts and curated study playlists."
+            "description": "Podcasts and curated study playlists.",
+            "instructions": "1. Click the **three dots** (...) next to the album, song, or playlist.\n2. Choose **Share -> Copy link**."
           },
           "soundcloud": {
             "label": "SoundCloud",
@@ -4380,7 +4857,7 @@
           },
           "suno": {
             "label": "Suno",
-            "description": "AI-generated songs and creative audio assignments."
+            "description": "AI-generated songs and creative audio assessment tasks."
           },
           "sodaphonic": {
             "label": "Sodaphonic",
@@ -4436,7 +4913,8 @@
           },
           "google-forms": {
             "label": "Google Forms",
-            "description": "Quick data-driven quizzes and course surveys."
+            "description": "Quick data-driven quizzes and course surveys.",
+            "instructions": "1. Open your form in Google Forms.\n2. Click **Send** in the top right.\n3. Select the Link or Embed tab, and copy the URL."
           },
           "tally": {
             "label": "Tally",
@@ -4496,7 +4974,8 @@
           },
           "google-sheets": {
             "label": "Google Sheets",
-            "description": "Live tables, datasets, and charts."
+            "description": "Live tables, datasets, and charts.",
+            "instructions": "1. Open your sheet in Google Sheets.\n2. Click **File -> Share -> Publish to web**.\n3. Under the **Link** or **Embed** tab, click **Publish**.\n4. Copy the link."
           },
           "trello": {
             "label": "Trello",
@@ -4532,15 +5011,18 @@
           },
           "google-docs": {
             "label": "Google Docs",
-            "description": "Collaborative word processing and document editing."
+            "description": "Collaborative word processing and document editing.",
+            "instructions": "1. Open your document in Google Docs.\n2. Click **File -> Share -> Publish to web**.\n3. Under the **Link** or **Embed** tab, click **Publish**.\n4. Copy the link."
           },
           "desmos": {
             "label": "Desmos",
-            "description": "Interactive graphing calculator for math."
+            "description": "Interactive graphing calculator for math.",
+            "instructions": "1. Open your graph on Desmos.\n2. Click the **Share Graph** button in the top right.\n3. Copy the URL."
           },
           "geogebra": {
             "label": "GeoGebra",
-            "description": "Geometry, graphing, and 3D math simulations."
+            "description": "Geometry, graphing, and 3D math simulations.",
+            "instructions": "1. Open the material on GeoGebra.\n2. Click **Share** and copy the link."
           },
           "wolfram-alpha": {
             "label": "Wolfram Alpha",
@@ -4616,7 +5098,7 @@
           },
           "flip": {
             "label": "Flip",
-            "description": "Asynchronous video discussion boards for reflective assignments."
+            "description": "Asynchronous video discussion boards for reflective assessment tasks."
           }
         }
       },
@@ -4757,7 +5239,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "This page is only available on a desktop device.",
-      "desktopOnlyMessage2": "Please switch to a desktop device to view and manage the assignment.",
+      "desktopOnlyMessage2": "Please switch to a desktop device to view and manage the assessment task.",
       "desktopOnlyTitle": "Desktop Only",
       "generalDescription": "Metrics",
       "generalTitle": "Metrics",
@@ -4969,11 +5451,13 @@
           "ariaLabelLogo": "Choose organization logo to upload",
           "ariaLabelPreview": "Choose preview image to upload",
           "ariaLabelThumbnail": "Choose organization thumbnail to upload",
+          "organizationLogoAlt": "Organization logo",
           "selectLogoFile": "Select Logo File",
           "selectPreviewFile": "Select Preview File",
           "selectThumbnailFile": "Select Thumbnail File",
           "uploadNewLogo": "Upload New Logo",
           "uploadNewThumbnail": "Upload New Thumbnail",
+          "platformThumbnailAlt": "Platform thumbnail",
           "uploadingLogo": "Uploading...",
           "uploadingThumbnail": "Uploading..."
         },
@@ -5433,6 +5917,7 @@
           "orgNotAvailable": "Organization data not available. Please refresh the page."
         },
         "leaderboard": {
+          "anonymous": "Anonymous",
           "aria": {
             "rankings": "User rankings leaderboard"
           },
@@ -5744,7 +6229,6 @@
         },
         "xpSources": {
           "activity_completion": "Activity Completed",
-          "assignment_submission": "Assignment Submitted",
           "course_completion": "Course Completed",
           "discussion_post": "Discussion Post",
           "first_activity": "First Activity",
@@ -6279,9 +6763,26 @@
   "Errors": {
     "errorLabel": "Error:",
     "errorReference": "Error Reference:",
+    "reference": "Reference",
+    "pageRenderFailed": "The page failed to render. You can retry, or reload if the error keeps returning.",
     "somethingWentWrong": "Something went wrong!",
     "technicalDetails": "Technical details:",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "You don't have permission to access this course.",
+    "assessmentsLoadError": "An error occurred while loading this assessment view. Please try reloading or check your connection.",
+    "courseLoadError": "An error occurred while loading this course. Please try reloading or check back shortly.",
+    "coursesListLoadError": "An error occurred while loading the courses list. Please try reloading the page.",
+    "gradebookLoadError": "Gradebook failed to load",
+    "gradebookLoadErrorDescription": "Retry the request. If the error persists, the gradebook data may be temporarily unavailable.",
+    "retry": "Retry",
+    "ref": "Ref: {digest}",
+    "activityNotFound": "Activity Not Found",
+    "activityNotFoundMessage": "The activity you are looking for does not exist or has been removed.",
+    "courseNotFound": "Course Not Found",
+    "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
+    "backToCourse": "Back to Course",
+    "backToDashboard": "Back to Dashboard"
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -6326,6 +6827,8 @@
     "course": "Course",
     "courseEndTitle": "Congratulations - {course} Course",
     "courses": "Courses",
+    "dashboard": "Dashboard",
+    "dashboardWelcome": "Welcome to the platform management dashboard. Quick access to main sections.",
     "creating": "Creating...",
     "currency": "Currency",
     "delete": "Delete",
@@ -6465,10 +6968,12 @@
     },
     "Panel": {
       "title": "Grading panel",
+      "selectSubmission": "Select a submission to begin reviewing.",
       "loading": "Loading...",
       "notYetSubmitted": "Not yet submitted",
       "noData": "No submission data",
       "finalScore": "Final Score",
+      "scoreOutOf100": "/100",
       "autoScore": "Auto score",
       "feedback": "Feedback",
       "optional": "optional",
@@ -6531,6 +7036,9 @@
       "keyboardHintSave": "Save draft",
       "keyboardHintPublish": "Publish",
       "keyboardHint": "Keyboard shortcuts",
+      "shortcutSave": "Ctrl↵",
+      "shortcutPublish": "Ctrl⇧↵",
+      "shortcutFocusGrade": "G",
       "loadingSubmission": "Loading submission...",
       "formUnavailable": "Grading form is unavailable."
     },
@@ -6770,7 +7278,7 @@
       "manageCourses": "Manage courses",
       "manageUsers": "Manage users",
       "platformSettings": "Platform settings",
-      "platformLogo": "Ashyk Bilim logo",
+      "appLogo": "Ashyk Bilim logo",
       "userAccountSettings": "User account settings",
       "userSettings": "User settings"
     },
@@ -6814,6 +7322,18 @@
     "submit": "Submit"
   },
   "TeacherAnalytics": {
+    "tabs": {
+      "overview": "Overview",
+      "watchlist": "Student Watchlist",
+      "courses": "Courses",
+      "workload": "Workload",
+      "grading": "Grading",
+      "forecasting": "Forecasting",
+      "dataQuality": "Data Quality",
+      "performance": "Performance Insights",
+      "operations": "Diagnostics & Operations",
+      "admin": "Admin Console"
+    },
     "overview": {
       "label": "Teacher Analytics",
       "heading": "Operational analytics for course engagement, learner risk, and assessment quality.",
@@ -6847,7 +7367,8 @@
         "resolved": "Resolved",
         "recovered": "Recovered"
       },
-      "viewAllAtRisk": "View full at-risk list →"
+      "viewAllAtRisk": "View full at-risk list →",
+      "contentFriction": "Content Friction"
     },
     "filters": {
       "label": "Teacher Analytics",
@@ -6890,7 +7411,6 @@
         "none": "No comparison"
       },
       "assessmentType": {
-        "assignment": "Assignment",
         "quiz": "Quiz",
         "exam": "Exam",
         "codeChallenge": "Code challenge"
@@ -6957,7 +7477,7 @@
         "returningLearners": "Learners who were also active in the immediately preceding period of equal length.",
         "completionRate": "Percentage of enrolled learners who have fully completed the course.",
         "atRisk": "Learners scoring 40+ on the composite risk index (inactivity + progress gap + failures + missing assessments + grading blocks).",
-        "ungradedSubmissions": "Assignment submissions currently awaiting teacher review and grading.",
+        "ungradedSubmissions": "Assessment task submissions currently awaiting teacher review and grading.",
         "negativeCourses": "Courses where the active learner count has declined compared to the previous period."
       }
     },
@@ -7050,7 +7570,7 @@
     },
     "assessmentOutliers": {
       "title": "Assessment outliers",
-      "description": "Ranked assignments, quizzes, exams, and code challenges needing attention.",
+      "description": "Ranked assessment tasks, quizzes, exams, and code challenges needing attention.",
       "colAssessment": "Assessment",
       "colCourse": "Course",
       "colSubmission": "Submission",
@@ -7065,6 +7585,13 @@
       "rowCount": "{count} assessment outliers"
     },
     "atRisk": {
+      "interventionsCount": "{count, plural, =1 {# intervention logged} other {# interventions logged}}",
+      "noInterventions": "No interventions logged",
+      "interventions": {
+        "message": "Message",
+        "meeting": "Meeting",
+        "recovered": "Recovered"
+      },
       "defaultTitle": "At-risk learners",
       "defaultDescription": "Operational learner list ranked by urgency.",
       "colLearner": "Learner",
@@ -7078,6 +7605,8 @@
       "na": "n/a",
       "searchPlaceholder": "Search learners, courses, or reason codes...",
       "emptyMessage": "No at-risk learners are visible for the current filters.",
+      "interventionLogged": "Intervention logged",
+      "interventionLogFailed": "Failed to log intervention",
       "gradeSubmissions": "Grade {count} pending submission(s) →",
       "riskComponents": {
         "inactivity": "Inactivity",
@@ -7108,6 +7637,8 @@
       "learners": "Learners"
     },
     "pages": {
+      "assessmentsTitle": "Assessment Performance",
+      "shellTitle": "Teacher Analytics & Operations",
       "overviewDisabledTitle": "Analytics unavailable",
       "overviewDisabledDesc": "This organization has analytics disabled or the current session cannot access analytics data.",
       "overviewLoadError": "The analytics service could not be loaded.",
@@ -7244,12 +7775,20 @@
     }
   },
   "Features": {
+    "ContentMarkdown": {
+      "imageLabel": "Image"
+    },
     "Grading": {
       "Gradebook": {
         "title": "Course progress",
         "loading": "Loading gradebook...",
         "loadError": "Failed to load gradebook.",
         "unavailable": "Gradebook is unavailable.",
+        "emptyTitle": "No learners match these filters",
+        "emptyDescription": "Adjust the search, activity type, or progress filter to see learners.",
+        "pageStatus": "Page {page} of {totalPages}",
+        "previousPage": "Previous",
+        "nextPage": "Next",
         "backToGradebook": "Back to gradebook",
         "submissionReview": "Submission review",
         "searchLearner": "Search learner",
@@ -7295,14 +7834,13 @@
         },
         "rollups": {
           "title": "Progress rollups",
-          "description": "Switch views to compare course progress by group, cohort, learner, or activity.",
-          "assignment_group": "Groups",
+          "description": "Switch views to compare course progress by activity category, cohort, learner, or activity.",
+          "activity_category": "Activity categories",
           "cohort": "Cohorts",
           "learner": "Learners",
           "activity": "Activities"
         },
         "activityTypes": {
-          "assignment": "Assignment",
           "exam": "Exam",
           "codeChallenge": "Code Challenge",
           "quiz": "Quiz",
@@ -7373,7 +7911,14 @@
           "noCanonicalProjection": "No canonical projection available for this item type.",
           "noAnswerPayload": "No answer payload recorded.",
           "itemLabel": "Item {index}",
-          "rubricGuidance": "Rubric guidance"
+          "rubricGuidance": "Rubric guidance",
+          "plagiarism": {
+            "failed": "Plagiarism: Failed",
+            "checking": "Plagiarism: Checking",
+            "pending": "Plagiarism: Pending",
+            "match": "Plagiarism: {score}% Match",
+            "clear": "Plagiarism: Clear"
+          }
         },
         "bulkActions": {
           "selectedCount": "{count} selected",
@@ -7383,6 +7928,7 @@
           "publishSelected": "Publish selected",
           "returnSelected": "Return selected",
           "releaseHidden": "Release hidden grades",
+          "deadlinePlaceholder": "Pick date and time",
           "reasonPlaceholder": "Reason",
           "extend": "Extend",
           "export": "Export",
@@ -7454,6 +8000,7 @@
         },
         "Panel": {
           "title": "Grading panel",
+          "selectSubmission": "Select a submission to begin reviewing.",
           "loading": "Loading...",
           "notYetSubmitted": "Not yet submitted",
           "noData": "No submission data",
@@ -7520,6 +8067,14 @@
           "loadingSubmission": "Loading submission...",
           "formUnavailable": "Grading form is unavailable."
         },
+        "Annotation": {
+          "addNote": "Add note",
+          "cancel": "Cancel",
+          "removeAnnotation": "Remove annotation",
+          "commentPlaceholder": "Your comment about the selected passage…",
+          "addNoteFor": "Comment on: \"{text}\"",
+          "ctrlEnterHint": "Ctrl+Enter to save"
+        },
         "releaseStateHidden": "Hidden",
         "releaseStateAwaitingRelease": "Awaiting release",
         "releaseStateVisible": "Visible",
@@ -7540,7 +8095,11 @@
         }
       },
       "Exam": {
-        "questions": "Questions"
+        "questions": "Questions",
+        "answeredOf": "{answered} of {total} answered",
+        "legendAnswered": "Answered",
+        "legendFlagged": "Flagged for review",
+        "legendNotAnswered": "Not answered"
       },
       "ReviewWorkspace": {
         "loading": "Loading review workspace...",
@@ -7549,6 +8108,8 @@
       "Items": {
         "Choice": {
           "prompt": "Prompt",
+          "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
+          "promptPlaceholder": "Write your question here. Supports **Markdown** and $\\LaTeX$ math.",
           "type": "Type",
           "trueLabel": "True",
           "falseLabel": "False",
@@ -7559,11 +8120,14 @@
             "matching": "Matching"
           },
           "toggleCorrectAnswer": "Toggle correct answer",
+          "correctLabel": "Correct",
+          "removeOption": "Remove option",
           "optionPlaceholder": "Option {label}",
           "addOption": "Add option",
           "matching": {
             "left": "Left",
             "right": "Right",
+            "matchLabel": "Match {term}",
             "addPair": "Add pair"
           }
         },
@@ -7662,6 +8226,7 @@
           "termPlaceholder": "Term {number}",
           "matchPlaceholder": "Match {number}",
           "selectMatch": "Select match",
+          "matchForLabel": "Match for: {term}",
           "removePair": "Remove pair",
           "addPair": "Add pair"
         },
@@ -7838,7 +8403,38 @@
           "resolveDraftConflict": "Resolve draft conflict",
           "draftConflictAvailable": "A newer version of your answers was found on the server.",
           "keepMyLocalVersion": "Keep my local version",
-          "useLatestSavedVersion": "Use latest saved version"
+          "useLatestSavedVersion": "Use latest saved version",
+          "returnedForRevisionTitle": "Returned for revision",
+          "returnedForRevisionDescription": "The teacher has returned your submission for revisions. Please review the comments and resubmit.",
+          "antiCheatDefaultNotice": "Copy protection, navigation tracking, and fullscreen requirements may apply.",
+          "antiCheatCopyPaste": "copy-paste blocking",
+          "antiCheatTabSwitch": "tab switch tracking",
+          "antiCheatDevTools": "developer tools detection",
+          "antiCheatRightClick": "right-click blocking",
+          "antiCheatFullscreen": "enforced fullscreen",
+          "antiCheatActiveChecks": "Active checks: {checks}.",
+          "antiCheatActiveNotice": "Attempt integrity checks are active.",
+          "resultsAwaitingReleaseTitle": "Results awaiting release",
+          "resultsAwaitingReleaseDescription": "Your work has been graded, but scores and feedback are hidden until the teacher releases them.",
+          "submissionReceivedTitle": "Submission received",
+          "submissionReceivedDescription": "Your answers have been successfully submitted. Results will be hidden until grading is complete.",
+          "resultsAvailableTitle": "Results available",
+          "resultsAvailableDescription": "The published scores and feedback for your latest attempt are visible below.",
+          "flagQuestion": "Flag for review",
+          "unflagQuestion": "Remove flag",
+          "answered_short": "ans",
+          "resumedDraftDescription": "Last saved: {time}",
+          "codeChallenge": "Code Challenge",
+          "securityViolationAlertTitle": "Security Violation Detected",
+          "securityViolationAlertDescription": "Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.",
+          "secondsRemaining": "seconds remaining",
+          "reEnterFullscreen": "Re-enter Fullscreen",
+          "clickBackToResume": "Click back or refocus to resume.",
+          "assessmentTitle": "Assessment",
+          "connectionLostTitle": "Connection Lost",
+          "connectionLostDescription": "Please check your internet connection. Your progress is saved locally and will sync when online.",
+          "draftConflictDescription": "A newer version #{latestVersion} of your answers was saved on the server at {latestSavedAt}. Which version do you want to use?",
+          "draftConflictAnswerCounts": "Local: {localCount} answers | Server: {serverCount} answers"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -7915,7 +8511,11 @@
             "title": "Challenge Title",
             "titlePlaceholder": "e.g., Two Sum",
             "unlimitedSubmissions": "Unlimited",
-            "visible": "Visible"
+            "visible": "Visible",
+            "promptPlaceholder": "Write your problem description here...",
+            "inputSpecPlaceholder": "Describe the input format, bounds, etc...",
+            "outputSpecPlaceholder": "Describe the output format, precision, etc...",
+            "constraintsPlaceholder": "e.g., 1 <= N <= 10^5\nOne constraint per line"
           },
           "generalSettings": "General Settings",
           "generalSettingsDescription": "Configure basic challenge parameters",
@@ -8027,7 +8627,6 @@
         "outlineEmptyMessage": "No items yet. Click + to add your first question or block.",
         "itemInfo": "{kind} • {max_score} pts",
         "kinds": {
-          "ASSIGNMENT": "Assignment",
           "EXAM": "Exam",
           "CODE_CHALLENGE": "Code Challenge",
           "QUIZ": "Quiz",
@@ -8083,6 +8682,7 @@
           },
           "addKind": "Add {kind}",
           "outlineEmptyMessage": "Add a {itemNoun} to begin.",
+          "newQuestion": "New question",
           "noItemSelectedTitle": "No {itemNoun} selected",
           "noItemSelectedDescription": "Create or select a {itemNoun} from the outline.",
           "untitledItem": "Untitled {itemNoun}",
@@ -8095,11 +8695,12 @@
           "copyOfItem": "Copy of {itemNoun}",
           "assessmentDetailsTitle": "Assessment details",
           "assessmentDetailsExamDescription": "Title, instructions, schedule, and exam policy.",
-          "assessmentDetailsAssignmentDescription": "Title, instructions, schedule, and grading settings.",
           "itemMetadataTitle": "{itemNoun} metadata",
           "itemMetadataDescription": "Shared title, prompt, and point value.",
           "titleLabel": "Title",
           "pointsLabel": "Points",
+          "pointsCompact": "{points} pts",
+          "moreIssues": "...and {count} more",
           "itemContentTitle": "{itemNoun} content",
           "itemContentDescription": "Canonical item authoring.",
           "pointsAbbreviation": "pts",
@@ -8173,6 +8774,11 @@
           "descriptionLabel": "Description",
           "failedToSaveSettings": "Failed to save assessment settings",
           "failedToSaveItem": "Failed to save {itemNoun}",
+          "reorderFailed": "Question order could not be saved. The previous order was restored.",
+          "saveLedger": {
+            "assessment": "Assessment",
+            "item": "Selected item"
+          },
           "defaultItemTitle": "Untitled item",
           "copyOf": "{title} copy",
           "Form": {
@@ -8180,6 +8786,7 @@
           },
           "errorLoading": "Error loading studio",
           "Items": {
+            "promptPlaceholder": "Write your prompt here. Supports **Markdown** and $\\LaTeX$ math.",
             "OpenText": {
               "prompt": "Prompt",
               "minWords": "Minimum words",
@@ -8205,7 +8812,414 @@
             }
           }
         },
-        "policyTitle": "{kind} policy"
+        "policyTitle": "{kind} policy",
+        "Tabs": {
+          "setup": "Setup & Policies",
+          "builder": "Questions Builder",
+          "access": "Access",
+          "results": "Results",
+          "publish": "Review & Publish"
+        },
+        "Workspace": {
+          "workspace": "Workspace",
+          "navigator": "Assessment workspace navigation",
+          "mainArea": "Assessment workspace",
+          "currentView": "Current view",
+          "allSaved": "All changes saved",
+          "retrySave": "Retry saving {label}",
+          "readinessRail": "Readiness and publish blockers",
+          "readiness": "Readiness",
+          "blocked": "Blocked",
+          "ready": "Ready",
+          "blockerCount": "{count} blockers",
+          "zeroBlockers": "0 blockers",
+          "noIssues": "No publish blockers."
+        },
+        "GeneralSettingsTab": {
+          "detailsTitle": "Details & Description",
+          "detailsDescription": "General information about this exam.",
+          "impactTitle": "Student impact",
+          "impactTiming": "Time",
+          "impactAttempts": "Attempts",
+          "impactRelease": "Results",
+          "impactIntegrity": "Integrity",
+          "summaryTimed": "{minutes} minutes after start",
+          "summaryUntimed": "No timer",
+          "summaryAttempts": "{count} attempt(s)",
+          "summaryUnlimitedAttempts": "Unlimited attempts",
+          "summaryIntegrityOn": "Deterrent checks enabled",
+          "summaryIntegrityOff": "No deterrent checks",
+          "warningsTitle": "Review these combinations before publishing",
+          "warnings": {
+            "strictIntegrityNeedsAccommodation": "Fullscreen, clipboard, right-click, or DevTools restrictions may need accommodations for assistive technology.",
+            "lowViolationThreshold": "One tab-switch violation can auto-submit the exam. Use this only for high-stakes exams.",
+            "shortTimedExam": "A time limit under 10 minutes can create accidental failures for slow networks or assistive workflows.",
+            "highPenaltyHighPass": "A high pass threshold combined with negative marking can make the exam harsher than intended."
+          },
+          "timingTitle": "Access & Timing",
+          "timingDescription": "Due date, attempt limits, and time constraints.",
+          "availableFromLabel": "Available from",
+          "gracePeriodLabel": "Grace period (min)",
+          "gracePeriodDesc": "Extra minutes after the time limit before auto-submission fires.",
+          "resultReviewTitle": "Result Review",
+          "resultReviewDescription": "Control what students see after submission.",
+          "allowResultReviewDesc": "Allow students to view their graded results after submission.",
+          "showCorrectAnswersDesc": "Show which answers were correct during review.",
+          "releasePolicy": {
+            "NONE": {
+              "title": "Hide results",
+              "description": "Students see that the attempt was submitted, but no score or answers.",
+              "summary": "Hidden after submission"
+            },
+            "SCORE_ONLY": {
+              "title": "Score only",
+              "description": "Students see the score, but not correct answers.",
+              "summary": "Score only"
+            },
+            "FULL": {
+              "title": "Full review",
+              "description": "Students see score, answers, and feedback.",
+              "summary": "Score, answers, and feedback"
+            }
+          },
+          "integrityTitle": "Integrity controls",
+          "integrityDescription": "Deterrent controls that explain and record risky behavior; they are not live monitoring.",
+          "copyPasteProtectionDesc": "Block clipboard operations during the exam.",
+          "tabSwitchDetectionDesc": "Record browser tab switches and apply the violation threshold.",
+          "devtoolsDetectionDesc": "Detect and alert when browser DevTools are opened.",
+          "rightClickDisabledDesc": "Disable right-click context menu during exam.",
+          "fullscreenEnforcementDesc": "Require fullscreen mode; exit counts as a violation.",
+          "violationThresholdDesc": "Number of violations allowed before auto-submission.",
+          "accessibilityExceptionsTitle": "Accessibility exceptions",
+          "accessibilityExceptionsDescription": "Use the Audience phase accommodations for individual exceptions. Do not rely on integrity controls for students who need assistive technology, alternate browsers, or supervised offline arrangements.",
+          "gradingTitle": "Grading",
+          "gradingDescription": "Pass threshold and credit rules.",
+          "passThresholdLabel": "Pass threshold",
+          "passThresholdDesc": "Minimum score (0–100%) required to pass. Leave empty for no threshold.",
+          "negativeMarkingLabel": "Negative marking",
+          "negativeMarkingDesc": "Deduct this percentage of item points for a fully wrong answer. Leave empty to disable.",
+          "negativeMarkingPlaceholder": "e.g. 25",
+          "partialCreditLabel": "Partial credit",
+          "partialCreditDesc": "Award partial points for partially-correct multi-select answers.",
+          "randomizationTitle": "Randomization",
+          "randomizationDescription": "Randomize question and option order per attempt.",
+          "randomizeQuestionsLabel": "Randomize questions",
+          "randomizeQuestionsDesc": "Present questions in a different order for each student.",
+          "randomizeOptionsLabel": "Randomize options",
+          "randomizeOptionsDesc": "Shuffle answer options within each question."
+        },
+        "BuilderCanvas": {
+          "addShort": "{kind}",
+          "newQuestion": "New question",
+          "pointsCompact": "{points} pts",
+          "moreIssues": "...and {count} more",
+          "noItems": "No questions yet",
+          "noItemsDesc": "Add a question to get started.",
+          "noItemSelected": "Select a question",
+          "noItemSelectedDesc": "Choose a question from the outline to edit it.",
+          "deleteConfirm": "Delete question?",
+          "deleteConfirmDesc": "This action cannot be undone.",
+          "outlinePoints": "{points} pts total",
+          "defaultSectionLabel": "Section {n}",
+          "addSectionBefore": "Add section before this question",
+          "renameSection": "Rename section",
+          "deleteSection": "Delete section",
+          "bulkTitle": "Batch edit all",
+          "bulkPointsAria": "Points for all questions",
+          "bulkApplied": "Updated {count} questions.",
+          "bulkFailed": "Could not apply batch edit.",
+          "bulkInvalidPoints": "Points must be greater than zero.",
+          "apply": "Apply",
+          "windowedItems": "{count} hidden in this long outline",
+          "dragHandleAria": "Reorder {title}",
+          "moveUp": "Move up",
+          "moveDown": "Move down",
+          "moveUpAria": "Move {title} up",
+          "moveDownAria": "Move {title} down",
+          "feedbackTitle": "Feedback shown after review",
+          "feedbackDescription": "Explain the correct answer here so students see useful feedback when results are released.",
+          "feedbackPlaceholder": "Explain why the correct answer is correct...",
+          "previewTitle": "Item preview",
+          "previewUntitled": "Untitled question",
+          "previewEmptyPrompt": "Prompt preview will appear here.",
+          "previewEmptyOption": "Empty option",
+          "previewEmptyPair": "Empty value",
+          "previewEmptyField": "Untitled field",
+          "previewFieldMeta": "{type} · {required}",
+          "previewMinWords": "Student long answer · minimum {count} words",
+          "previewOpenText": "Student long answer",
+          "correct": "Correct",
+          "required": "required",
+          "optional": "optional"
+        },
+        "Inspector": {
+          "title": "Inspector",
+          "open": "Open inspector",
+          "close": "Close inspector",
+          "pointsLabel": "Points",
+          "difficultyLabel": "Difficulty",
+          "difficultyNote": "Saved with the item metadata.",
+          "difficulty": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+          },
+          "estimatedMinutesLabel": "Estimated time",
+          "estimatedMinutesDesc": "Used for pacing and review analytics.",
+          "tagsLabel": "Tags",
+          "tagsPlaceholder": "algebra, midterm",
+          "outcomesLabel": "Outcomes",
+          "outcomesPlaceholder": "LO-1, LO-2",
+          "outcomesDesc": "Connect this item to course outcomes.",
+          "commaSeparated": "Separate values with commas."
+        },
+        "PublishDashboard": {
+          "metricsTitle": "Exam Metrics",
+          "totalQuestions": "Questions",
+          "totalPoints": "Total Points",
+          "timeLimit": "Time Limit",
+          "timeLimitValue": "{minutes} min",
+          "attemptLimit": "Attempt Limit",
+          "unlimited": "Unlimited",
+          "questionTypes": "Question Types",
+          "preflightTitle": "Pre-flight Checklist",
+          "noIssues": "All checks passed",
+          "noIssuesDesc": "This exam is ready to publish.",
+          "assessmentIssues": "Assessment Issues",
+          "questionIssues": "Question Issues",
+          "goToSetup": "Fix",
+          "goToQuestion": "Fix",
+          "goToQuestions": "Add question",
+          "questionContext": "Q{number}: {title}",
+          "questionIssueSummary": "{count, plural, =1 {1 issue in this question} other {# issues in this question}}",
+          "untitledQuestion": "Untitled question",
+          "unknownQuestion": "Unknown question",
+          "statusPublished": "Published",
+          "statusPublishedDesc": "Students can now access this exam.",
+          "statusScheduled": "Scheduled",
+          "statusScheduledDesc": "This exam will be published at the scheduled time.",
+          "statusHasIssues": "{count} {count, plural, =1 {issue} other {issues}} must be fixed before publishing",
+          "statusHasIssuesDesc": "Resolve all issues in the checklist to unlock publishing.",
+          "statusReadyToPublish": "Ready to Publish",
+          "statusReadyDesc": "All checks passed. You can publish now or schedule.",
+          "revertToDraft": "Revert to Draft",
+          "publishNow": "Publish Now",
+          "schedulePublication": "Schedule Publication",
+          "schedule": "Schedule",
+          "previewGateTitle": "Student preview gate",
+          "previewGateDesc": "Preview the student experience before changing lifecycle state.",
+          "previewGateHighStakesDesc": "This exam is treated as high-stakes. Run at least one preview before publishing or scheduling.",
+          "previewCompletedCount": "{count, plural, =0 {No previews run} =1 {# preview run} other {# previews run}}",
+          "previewScenarioGeneric": "Generic learner",
+          "previewScenarioGenericDesc": "Default eligible student view",
+          "previewScenarioSpecific": "Specific learner",
+          "previewScenarioSpecificDesc": "Check an individual exception path",
+          "previewScenarioExpiredTimer": "Expired timer",
+          "previewScenarioExpiredTimerDesc": "Time limit has elapsed",
+          "previewScenarioRetake": "Retake blocked",
+          "previewScenarioRetakeDesc": "Attempt limit reached",
+          "previewScenarioLate": "Late attempt",
+          "previewScenarioLateDesc": "Due date has passed",
+          "previewScenarioRestricted": "Restricted access",
+          "previewScenarioRestrictedDesc": "Learner outside audience",
+          "previewScenarioResults": "Result view",
+          "previewScenarioResultsDesc": "After submission and release",
+          "previewOutcomeGeneric": "Confirms instructions, timer, attempts, and first question render for a normal eligible learner.",
+          "previewOutcomeSpecific": "Confirms learner-specific overrides and restricted access state for the entered learner.",
+          "previewOutcomeExpiredTimer": "Confirms the runtime blocks continued work and explains why the timer expired.",
+          "previewOutcomeRetake": "Confirms the start action is blocked when attempts are exhausted.",
+          "previewOutcomeLate": "Confirms late-attempt messaging, penalties, or blocked access.",
+          "previewOutcomeRestricted": "Confirms learners outside the saved audience cannot start the exam.",
+          "previewOutcomeResults": "Confirms the score, feedback, and answer visibility match the release policy.",
+          "specificLearnerLabel": "Specific learner",
+          "specificLearnerPlaceholder": "Name, email, or ID",
+          "runPreview": "Run preview",
+          "rerunPreview": "Run again",
+          "previewScenarioPassed": "Preview completed for this scenario.",
+          "previewScenarioPending": "Run this preview before relying on the scenario.",
+          "publishConfirmTitle": "Confirm publish",
+          "publishConfirmDesc": "Review exactly what changes before students can access this exam.",
+          "scheduleConfirmTitle": "Confirm schedule",
+          "scheduleConfirmDesc": "Review exactly what will change at the scheduled publication time.",
+          "impactLearners": "Affected learners",
+          "impactQuestions": "Questions",
+          "impactPoints": "Points",
+          "impactTimeLimit": "Time limit",
+          "impactAttempts": "Attempts",
+          "impactPreviews": "Successful previews",
+          "impactSchedule": "Scheduled for",
+          "unknown": "Unknown",
+          "auditNoteLabel": "Audit note",
+          "auditNotePlaceholder": "Reason, approval reference, or preview evidence",
+          "auditNoteDesc": "Saved with the lifecycle transition for high-stakes review.",
+          "previewRequiredBeforePublish": "Run at least one student preview before confirming this high-stakes lifecycle change.",
+          "blockersRequiredBeforePublish": "Resolve all publish blockers before confirming.",
+          "cancel": "Cancel",
+          "confirmPublish": "Publish exam",
+          "confirmSchedule": "Schedule exam",
+          "auditTimelineTitle": "Audit timeline",
+          "auditTimelineDesc": "Lifecycle events are shown here so instructors can verify the current state before publishing.",
+          "auditDraft": "Draft created",
+          "auditScheduled": "Scheduled",
+          "auditPublished": "Published",
+          "auditArchived": "Archived",
+          "auditPresent": "Current record",
+          "auditLifecycle": {
+            "DRAFT": "Draft",
+            "SCHEDULED": "Scheduled",
+            "PUBLISHED": "Published",
+            "ARCHIVED": "Archived"
+          },
+          "archiveTitle": "Archive",
+          "archiveDesc": "This exam will no longer be accessible to students."
+        },
+        "AccessManagement": {
+          "title": "Test access",
+          "description": "Restrict this test to selected learners or groups that already have access to the course.",
+          "eligible": "Eligible",
+          "effective": "Effective",
+          "allCourseLearners": "All course learners",
+          "allCourseLearnersDesc": "Every learner with course access can take this test.",
+          "restricted": "Selected learners and groups",
+          "restrictedDesc": "Only selected course learners and selected course groups can take this test.",
+          "students": "Students",
+          "usergroups": "Usergroups",
+          "searchStudents": "Search students",
+          "searchGroups": "Search groups",
+          "noGroupDescription": "No description",
+          "loading": "Loading access",
+          "loadFailed": "Failed to load access settings.",
+          "save": "Save access",
+          "saved": "Access saved.",
+          "saveFailed": "Failed to save access.",
+          "eligibleLoaded": "Loaded",
+          "effectivePreview": "Preview",
+          "searchFailed": "Search failed.",
+          "retrySave": "Retry save",
+          "previewTitle": "Audience preview",
+          "previewMode": "Mode",
+          "previewSelectedUsers": "Selected learners",
+          "previewSelectedGroups": "Selected groups",
+          "previewEffective": "Estimated access",
+          "previewExcludedLoaded": "Excluded from loaded list",
+          "previewNote": "Search is server-side and capped to the current result window for large courses.",
+          "overrideBadge": "Accommodation",
+          "expandGroup": "Show group expansion",
+          "groupExpansion": "This group expands to {count, plural, =1 {# learner} other {# learners}} before individual exclusions.",
+          "selectedDrawerTitle": "Selected audience",
+          "selectedDrawerDesc": "Review selected learners, groups, and policy exceptions before saving.",
+          "selectedEmpty": "No restricted audience selected.",
+          "removeSelected": "Remove from selected audience",
+          "clearOverride": "Clear",
+          "groupMembers": "{count, plural, =1 {# member} other {# members}}",
+          "accommodationsTitle": "Individual accommodations",
+          "accommodationsDesc": "Apply deadline, attempt, and late-penalty exceptions to selected learners.",
+          "overrideAttempts": "Attempt limit",
+          "policyDefault": "Policy default",
+          "overrideDueAt": "Custom due date",
+          "waiveLatePenalty": "Waive late penalty",
+          "overrideNote": "Internal note",
+          "overrideNotePlaceholder": "Reason or approval reference",
+          "applyOverrides": "Apply to {count, plural, =0 {0 learners} =1 {# learner} other {# learners}}",
+          "overrideNoUsers": "Select at least one learner before applying accommodations.",
+          "overrideSaveFailed": "Failed to save accommodations.",
+          "overrideSaved": "Accommodations saved for {count, plural, =1 {# learner} other {# learners}}.",
+          "overrideDeleteFailed": "Failed to clear accommodation.",
+          "overrideDeleted": "Accommodation cleared.",
+          "retryOverrides": "Retry accommodations",
+          "overrideAttemptsValue": "{count, plural, =1 {# attempt} other {# attempts}}",
+          "overrideDueValue": "custom due date",
+          "overrideWaiveLateValue": "late penalty waived"
+        },
+        "ResultsReview": {
+          "title": "Results review",
+          "description": "Review submissions, scoring health, release state, and question quality from one operations surface.",
+          "openReview": "Open review queue",
+          "export": "Export CSV",
+          "exportFailed": "Failed to export results.",
+          "submissions": "Submissions",
+          "needsReview": "Needs review",
+          "averageScore": "Average score",
+          "passRate": "Pass rate",
+          "scoreDistributionTitle": "Score distribution",
+          "queueTitle": "Review queue",
+          "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
+          "queueTotal": "{count, plural, =1 {# submission} other {# submissions}}",
+          "queueSelected": "{count, plural, =1 {# selected} other {# selected}}",
+          "searchLearner": "Search learner",
+          "statusFilter": "Status filter",
+          "filterAll": "All",
+          "filterNeedsGrading": "Needs grading",
+          "filterPending": "Pending",
+          "filterGraded": "Graded",
+          "filterPublished": "Published",
+          "filterReturned": "Returned",
+          "sortBy": "Sort by",
+          "sortSubmitted": "Submitted",
+          "sortScore": "Score",
+          "sortAttempt": "Attempt",
+          "sortAscending": "Ascending",
+          "sortDescending": "Descending",
+          "lateOnly": "Late only",
+          "questionQualityTitle": "Question quality",
+          "questionQualityBody": "Use item-level analytics to identify confusing, too easy, or too difficult questions.",
+          "releaseTitle": "Release control",
+          "releaseBody": "Keep grades hidden while reviewing, then publish results when the cohort is ready.",
+          "itemAnalyticsTitle": "Per-question analytics",
+          "noAnalyticsData": "No graded submissions yet — analytics will appear after students complete and are graded.",
+          "loadingQueue": "Loading submissions...",
+          "emptyQueue": "No submissions match the current filters.",
+          "selectSubmission": "Select submission from {name}",
+          "releaseHidden": "Hidden",
+          "releaseAwaiting": "Awaiting release",
+          "releaseVisible": "Visible",
+          "releaseReturned": "Returned",
+          "integrityEventsValue": "{count, plural, =1 {# event} other {# events}}",
+          "noIntegrityEvents": "No events",
+          "reviewSubmission": "Review",
+          "previousPage": "Previous",
+          "nextPage": "Next",
+          "pageCount": "Page {page} of {pages}",
+          "regradeTitle": "Regrade workflow",
+          "regradeBody": "Mark corrected items here, then use the review queue to revisit affected submissions.",
+          "integrityTitle": "Integrity review",
+          "integrityBody": "Most frequent event: {kind}. Open affected submissions before releasing grades.",
+          "integrityEmptyBody": "No integrity events in the current queue window.",
+          "questionActionTitle": "Question actions",
+          "questionActionBody": "Analytics prompts point to questions that need revision or regrade consideration.",
+          "analyticsPromptCount": "{count, plural, =1 {# action prompt} other {# action prompts}}",
+          "colQuestion": "Question",
+          "colKind": "Type",
+          "colMaxScore": "Points",
+          "colLearner": "Learner",
+          "colStatus": "Status",
+          "colRelease": "Release",
+          "colScore": "Score",
+          "colIntegrity": "Integrity",
+          "colSubmitted": "Submitted",
+          "colAction": "Action",
+          "colResponses": "Responses",
+          "colAvgScore": "Avg. Score",
+          "colCorrectPct": "Correct %",
+          "colDiscrimination": "Discrimination",
+          "colPrompt": "Prompt",
+          "itemPrompt": {
+            "reviewContent": "Review content",
+            "tooEasy": "Too easy",
+            "tooHard": "Too hard",
+            "healthy": "Healthy"
+          },
+          "markForRegrade": "Mark regrade",
+          "regradeQueued": "Queued"
+        },
+        "SecurityShield": {
+          "low": "Low Security",
+          "lowDescription": "Enable anti-cheat features to increase exam integrity.",
+          "medium": "Medium Security",
+          "mediumDescription": "Some protections are active. Consider enabling more.",
+          "high": "Secure Proctoring",
+          "highDescription": "Strong anti-cheat protections are active."
+        }
       },
       "Review": {
         "Gradebook": {
@@ -8213,6 +9227,11 @@
           "loading": "Loading gradebook...",
           "loadError": "Failed to load gradebook.",
           "unavailable": "Gradebook is unavailable.",
+          "emptyTitle": "No learners match these filters",
+          "emptyDescription": "Adjust the search, activity type, or progress filter to see learners.",
+          "pageStatus": "Page {page} of {totalPages}",
+          "previousPage": "Previous",
+          "nextPage": "Next",
           "backToGradebook": "Back to gradebook",
           "submissionReview": "Submission review",
           "searchLearner": "Search learner",
@@ -8258,14 +9277,13 @@
           },
           "rollups": {
             "title": "Progress rollups",
-            "description": "Switch views to compare course progress by group, cohort, learner, or activity.",
-            "assignment_group": "Groups",
+            "description": "Switch views to compare course progress by activity category, cohort, learner, or activity.",
+            "activity_category": "Activity categories",
             "cohort": "Cohorts",
             "learner": "Learners",
             "activity": "Activities"
           },
           "activityTypes": {
-            "assignment": "Assignment",
             "exam": "Exam",
             "codeChallenge": "Code Challenge",
             "quiz": "Quiz",
@@ -8277,6 +9295,8 @@
     },
     "ActivityWorkspace": {
       "questions": "Questions",
+      "readyToStart": "Ready to Start",
+      "readyToStartSubtitle": "Review details and start the exam when you're ready.",
       "timeLimit": "Time limit",
       "unlimited": "Unlimited",
       "attempts": "Attempts",
@@ -8293,7 +9313,31 @@
       "assessmentSubmitted": "Assessment submitted",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
       "retryAssessment": "Retry assessment",
-      "nextActivity": "Next activity"
+      "nextActivity": "Next activity",
+      "breakdown": "View answers",
+      "attempt": "Attempt",
+      "attemptHistory": "Attempt history",
+      "antiCheatNotice": "This assessment monitors browser activity. Do not switch tabs or windows during the attempt.",
+      "releaseHidden": "Results hidden after submission",
+      "releaseHiddenDescription": "Your submission is recorded, but scores and answers stay hidden until the teacher changes the policy.",
+      "releaseScoreOnly": "Score-only review",
+      "releaseScoreOnlyDescription": "You can see your score after release, but correct answers stay hidden.",
+      "releaseFull": "Full result review",
+      "releaseFullDescription": "You can see your score, answers, and feedback after results are released.",
+      "passingScore": "Pass",
+      "submittedOn": "Submitted {date}",
+      "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
+      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Click 'Manage Questions' to add some before publishing.",
+      "testNotReadyTitle": "Test is not ready",
+      "noQuestionsSidebar": "This exam cannot be started because it has no questions.",
+      "teacherNoQuestionsSidebar": "Please add questions before publishing.",
+      "startActivityFailed": "Unable to start this activity. Please refresh and try again.",
+      "focusRestoredResume": "Focus and screen compliance restored. Resuming exam.",
+      "fullscreenUnsupported": "Fullscreen is not supported in this browser.",
+      "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
+      "fullscreenExited": "Fullscreen was exited.",
+      "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
+      "submitFailed": "Failed to submit"
     }
   },
   "Themes": {
@@ -8719,6 +9763,7 @@
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
     "stepsLabel": "steps",
+    "stepsProgress": "{completed} / {total} steps",
     "viewCertificate": "View Certificate"
   },
   "TrailPage": {
@@ -8757,8 +9802,6 @@
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",
     "activityNameRequired": "Activity name is required",
-    "assignmentDescriptionRequired": "Assignment description is required",
-    "assignmentTitleRequired": "Assignment title is required",
     "chapterDescriptionRequired": "Chapter description is required",
     "chapterNameRequired": "Chapter name is required",
     "contentRequired": "Content is required",
@@ -8790,11 +9833,14 @@
     "passwordTooLong": "Password must be at most 128 characters",
     "passwordNeedsLowercase": "Password must contain at least one lowercase letter",
     "passwordNeedsUppercase": "Password must contain at least one uppercase letter",
-    "passwordNeedsNumber": "Password must contain at least one number"
+    "passwordNeedsNumber": "Password must contain at least one number",
+    "titleTooLong": "Title must not exceed 100 characters",
+    "descriptionTooLong": "Description must not exceed 8000 characters",
+    "sourceCourseRequired": "Please select a source course",
+    "learningsInvalid": "Invalid format for learning outcomes"
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",
-  "aiEditor": "Ashyk Ai Editor",
   "calendar": {
     "monthDropdown": "Month",
     "next": "Next",
@@ -8820,7 +9866,7 @@
     "scope": "Scope",
     "description": "Description"
   },
-  "platformLogo": "Ashyk Bilim logo",
+  "appLogo": "Ashyk Bilim logo",
   "previous": "Previous",
   "seconds": "Seconds",
   "selectDeadline": "Select a deadline for completing the task",
@@ -8864,6 +9910,11 @@
     "deleteConfirmDesc": "This will remove all accommodations for this student.",
     "cancel": "Cancel",
     "confirm": "Remove",
+    "placeholders": {
+      "userIdExample": "e.g. 42",
+      "inheritBlank": "Leave blank to inherit",
+      "optionalInternalNote": "Optional internal note"
+    },
     "toasts": {
       "created": "Override created",
       "updated": "Override updated",
@@ -8903,6 +9954,256 @@
       "published": "Grade published",
       "returned": "Returned for revision",
       "failed": "Failed to save grading"
+    }
+  },
+  "FileSubmission": {
+    "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
+    "requirementMaxSize": "{size} MB each",
+    "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",
+    "invalidFiles": "Some files do not meet activity requirements",
+    "notAvailable": "File submission is not available",
+    "uploadFailed": "Upload failed",
+    "submittedToast": "Files submitted successfully",
+    "draftSavedToast": "Draft saved",
+    "saveFailed": "Unable to save submission",
+    "startDraftFailed": "Unable to start draft",
+    "gradedReleasePending": "Your submission has been graded. Grade release is pending.",
+    "late": "Late",
+    "due": "Due {date}",
+    "dropzoneTitle": "Drop files here or choose from your device",
+    "chooseFiles": "Choose files",
+    "submittedLocked": "Your latest attempt has been submitted. New files can be added if the teacher returns it for revision.",
+    "submitHelp": "Submit only final files. Saving a draft keeps files private until you submit.",
+    "saveDraft": "Save draft",
+    "submitFiles": "Submit files",
+    "submissionHistory": "Submission history",
+    "attemptNumber": "Attempt {number}",
+    "draft": "Draft",
+    "fileCount": "{count, plural, one {# file} other {# files}}",
+    "submissionReceived": "Submission received",
+    "attempt": "Attempt",
+    "files": "Files",
+    "statusLabel": "Status",
+    "awaitingReview": "Awaiting review",
+    "yourScore": "Your score",
+    "latePenalty": "Late penalty: -{percent}%",
+    "returnedForRevision": "Returned for revision",
+    "passed": "Passed",
+    "failed": "Failed",
+    "teacherFeedback": "Teacher feedback",
+    "startRevision": "Start revision",
+    "removeFile": "Remove {name}",
+    "allowedTypes": "Accepted formats",
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "graded": "Graded",
+      "published": "Published",
+      "returned": "Returned"
+    }
+  },
+  "FileSubmissionReview": {
+    "loadingSubmissions": "Loading submissions",
+    "reviewUnavailable": "Review is unavailable.",
+    "fileSubmissionReview": "File Submission Review",
+    "refresh": "Refresh",
+    "openButton": "Open",
+    "downloadButton": "Download",
+    "noSubmissions": "No submissions match this view.",
+    "attemptInfo": "Attempt {attemptNumber} · {count, plural, one {# file} other {# files}}",
+    "submittedAt": "Submitted {date}",
+    "submittedAsDraft": "Submitted as draft",
+    "late": "Late",
+    "noFiles": "No files attached.",
+    "preview": "Preview",
+    "gradeAndFeedback": "Grade and feedback",
+    "finalScore": "Final score",
+    "scoreSlash": "/ 100",
+    "useRubricTotal": "Use rubric total ({score})",
+    "saveGrade": "Save grade",
+    "returnForRevision": "Return for revision",
+    "publishResult": "Publish result",
+    "selectSubmission": "Select a submission.",
+    "rubric": "Rubric",
+    "submissionUpdated": "Submission updated",
+    "updateSubmissionFailed": "Unable to update submission",
+    "openFileFailed": "Unable to open file",
+    "previewFileFailed": "Unable to preview file",
+    "searchLearnersPlaceholder": "Search learners",
+    "scorePlaceholder": "0–100",
+    "feedbackPlaceholder": "Feedback",
+    "rubricScorePlaceholder": "0",
+    "downloadCsv": "Download CSV",
+    "csv": "CSV"
+  },
+  "FileSubmissionStudio": {
+    "loadingStudio": "Loading file submission studio",
+    "studioUnavailable": "Studio is unavailable.",
+    "curriculum": "Curriculum",
+    "fileSubmission": "File Submission",
+    "studio": "Studio",
+    "preview": "Preview",
+    "save": "Save",
+    "publish": "Publish",
+    "title": "Title",
+    "instructions": "Instructions",
+    "dueDate": "Due date",
+    "maxFiles": "Max files",
+    "maxSize": "Max size MB",
+    "allowedFileTypes": "Allowed file types",
+    "selectAll": "Select all",
+    "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
+    "collectionRules": "Collection rules",
+    "attempts": "Attempts",
+    "lateWork": "Late work",
+    "allowedFiles": "Allowed files",
+    "unlimitedAttempts": "Unlimited",
+    "allowLateAllowed": "Allowed",
+    "allowLateBlocked": "Blocked",
+    "anyFileType": "Any file type",
+    "review": "Review",
+    "openSubmissions": "Open submissions",
+    "unavailableError": "File submission is unavailable",
+    "saveSuccess": "File submission saved",
+    "saveError": "Unable to save file submission",
+    "publishSuccess": "File submission published",
+    "publishError": "Unable to publish file submission",
+    "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
+    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
+  },
+  "AiExperience": {
+    "languageControl": {
+      "label": "Response language",
+      "auto": "Auto",
+      "kk": "Kazakh",
+      "ru": "Russian",
+      "en": "English",
+      "description": "The AI follows course language when set to auto."
+    },
+    "evidencePanel": {
+      "noCitationsTitle": "No citations yet",
+      "noCitationsDesc": "The result needs course evidence before it can be trusted.",
+      "title": "Evidence",
+      "description": "Sources the AI used for this result."
+    },
+    "errorRecovery": {
+      "title": "AI run failed",
+      "retry": "Retry"
+    },
+    "privacyNotice": {
+      "title": "Data scope",
+      "studentScope": "Published course material only",
+      "teacherScope": "Course drafts, rubrics, and teacher evidence when permitted"
+    },
+    "humanReviewBar": {
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "resultShell": {
+      "modelRecorded": "Model: {name}",
+      "modelNotRecorded": "Model: not recorded",
+      "citationsCount": "Citations: {count}"
+    },
+    "states": {
+      "labels": {
+        "idle": "Ready",
+        "confirming": "Confirm action",
+        "queued": "Queued",
+        "collecting_context": "Collecting context",
+        "running": "Analyzing",
+        "checking_evidence": "Checking evidence",
+        "complete": "Complete",
+        "needs_human_review": "Needs teacher review",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "lectureReview": {
+      "title": "Lecture review",
+      "defaultDescription": "Persistent lecture suggestions are ready."
+    },
+    "lectureAIEntry": {
+      "title": "AI lecture review",
+      "description": "Find unclear explanations, missing examples, and weak assessment alignment.",
+      "review": "Review",
+      "defaultStatus": "Run a review after saving the lecture draft. Suggestions stay in human-review state."
+    },
+    "qaInput": {
+      "label": "Question",
+      "ask": "Ask",
+      "description": "Answers are grounded in course material.",
+      "emptyTitle": "No questions yet",
+      "emptyDesc": "Ask about this course and the answer will cite course material."
+    },
+    "courseAIHub": {
+      "title": "AI learning support",
+      "description": "Course-grounded help for learners and teacher-reviewed quality checks.",
+      "tabStudy": "Study",
+      "tabQA": "Q&A",
+      "tabReview": "Review"
+    },
+    "courseAnalysisEntry": {
+      "title": "Course AI review",
+      "description": "Quality score, evidence, and remediation risks for this course.",
+      "rerun": "Rerun",
+      "analyze": "Analyze",
+      "defaultStatus": "Run an analysis to prepare a teacher-reviewed quality report before publishing AI-visible guidance."
+    },
+    "courseAnalysisResultShell": {
+      "title": "Course quality score {score}",
+      "defaultDescription": "Course analysis is ready for review.",
+      "publishScore": "Publish score"
+    },
+    "submissionAIEntry": {
+      "title": "AI submission insight",
+      "description": "Knowledge gaps, evidence, and optional adaptive remediation.",
+      "analyze": "Analyze",
+      "generateGate": "Generate remediation gate"
+    },
+    "submissionAnalysisResultShell": {
+      "title": "{count} knowledge gaps",
+      "defaultDescription": "Submission analysis is ready."
+    },
+    "studyCompanion": {
+      "label": "Ask about this course",
+      "placeholder": "Ask for an explanation, summary, practice, or flashcards",
+      "send": "Send",
+      "description": "Answers cite course material and avoid assessment answers.",
+      "explain": "Explain",
+      "practice": "Practice",
+      "flashcards": "Flashcards",
+      "summarize": "Summarize",
+      "deepen": "Deepen"
+    },
+    "remediation": {
+      "title": "Adaptive remediation",
+      "activeGate": "Gate mode is active until the learner passes.",
+      "assigned": "Practice remediation is assigned."
+    },
+    "budgetStatus": {
+      "label": "Monthly AI token budget",
+      "used": "{percent}% used"
+    },
+    "aiAdminPanel": {
+      "title": "AI operations",
+      "featureFlags": "Feature flags",
+      "flagsDescription": "Read-only runtime view. Change flags in backend environment.",
+      "loading": "Loading AI usage."
+    },
+    "tokenUsageChart": {
+      "title": "AI usage",
+      "description": "Token usage across AI runs.",
+      "metricRuns": "Runs",
+      "metricInput": "Input tokens",
+      "metricOutput": "Output tokens"
+    },
+    "featureToggles": {
+      "description": "Managed by backend feature flags.",
+      "course-analysis": "Course analysis",
+      "submission-analysis": "Submission analysis",
+      "remediation": "Adaptive remediation",
+      "study-companion": "Study companion",
+      "course-qa": "Course Q&A"
     }
   }
 }

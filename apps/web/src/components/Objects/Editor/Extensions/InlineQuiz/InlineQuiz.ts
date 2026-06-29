@@ -5,23 +5,23 @@
  * reference; all quiz content is managed through the canonical assessment API.
  */
 
-import { Node, mergeAttributes } from '@tiptap/core';
-import type { CommandProps } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core'
+import type { CommandProps } from '@tiptap/core'
 
-import InlineQuizComponent from './InlineQuizComponent';
-import { nodeView } from '@components/Objects/Editor/core';
+import InlineQuizComponent from './InlineQuizComponent'
+import { nodeView } from '@components/Objects/Editor/core/nodeview-types'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     inlineQuiz: {
-      insertInlineQuiz: () => ReturnType;
-    };
+      insertInlineQuiz: () => ReturnType
+    }
   }
 }
 
 export interface InlineQuizOptions {
-  editable: boolean;
-  activity: { activity_uuid?: string; course_id?: number } | null;
+  editable: boolean
+  activity: { activity_uuid?: string; course_id?: number } | null
 }
 
 const InlineQuiz = Node.create<InlineQuizOptions>({
@@ -33,27 +33,27 @@ const InlineQuiz = Node.create<InlineQuizOptions>({
     return {
       editable: false,
       activity: null,
-    };
+    }
   },
 
   addAttributes() {
     return {
       assessmentUuid: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-assessment-uuid'),
-        renderHTML: (attributes) => ({
+        parseHTML: element => element.getAttribute('data-assessment-uuid'),
+        renderHTML: attributes => ({
           'data-assessment-uuid': attributes.assessmentUuid,
         }),
       },
-    };
+    }
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-type="inline-quiz"]' }];
+    return [{ tag: 'div[data-type="inline-quiz"]' }]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'inline-quiz' })];
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'inline-quiz' })]
   },
 
   addCommands() {
@@ -61,13 +61,16 @@ const InlineQuiz = Node.create<InlineQuizOptions>({
       insertInlineQuiz:
         () =>
         ({ commands }: CommandProps) =>
-          commands.insertContent({ type: this.name, attrs: { assessmentUuid: null } }),
-    };
+          commands.insertContent({
+            type: this.name,
+            attrs: { assessmentUuid: null },
+          }),
+    }
   },
 
   addNodeView() {
-    return nodeView(InlineQuizComponent);
+    return nodeView(InlineQuizComponent)
   },
-});
+})
 
-export default InlineQuiz;
+export default InlineQuiz

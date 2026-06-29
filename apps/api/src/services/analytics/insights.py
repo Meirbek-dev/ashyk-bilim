@@ -41,27 +41,25 @@ def build_insight_feed(
             )
         )
 
-    for row in assessment_rows:
-        if row.pass_rate is None or row.pass_rate >= 65:
+    for assessment_row in assessment_rows:
+        if assessment_row.pass_rate is None or assessment_row.pass_rate >= 65:
             continue
         reason = (
-            "диагностикой качества"
-            if row.discrimination_index is not None
-            else "низким уровнем прохождения"
+            "диагностикой качества" if assessment_row.discrimination_index is not None else "низким уровнем прохождения"
         )
         items.append(
             InsightFeedItem(
-                id=f"assessment-{row.assessment_type}-{row.assessment_id}",
+                id=f"assessment-{assessment_row.assessment_type}-{assessment_row.assessment_id}",
                 category="assessment",
-                severity="critical" if row.pass_rate < 45 else "warning",
-                priority=80 + int(65 - row.pass_rate),
-                title=f"Уровень прохождения {row.title} составляет {row.pass_rate}%.",
+                severity="critical" if assessment_row.pass_rate < 45 else "warning",
+                priority=80 + int(65 - assessment_row.pass_rate),
+                title=f"Уровень прохождения {assessment_row.title} составляет {assessment_row.pass_rate}%.",
                 body=f"Аномалия вызвана {reason}; откройте диагностику оценивания перед повторным использованием.",
-                course_id=row.course_id,
-                activity_id=row.activity_id,
-                assessment_type=row.assessment_type,
-                assessment_id=row.assessment_id,
-                href=f"/dash/analytics/assessments/{row.assessment_type}/{row.assessment_id}",
+                course_id=assessment_row.course_id,
+                activity_id=assessment_row.activity_id,
+                assessment_type=assessment_row.assessment_type,
+                assessment_id=assessment_row.assessment_id,
+                href=f"/dash/analytics/assessments/{assessment_row.assessment_type}/{assessment_row.assessment_id}",
             )
         )
 
@@ -70,9 +68,7 @@ def build_insight_feed(
             id=f"content-{bottleneck.signal}-{bottleneck.activity_id}",
             category="content",
             severity=bottleneck.severity,
-            priority=70
-            + (20 if bottleneck.severity == "critical" else 10)
-            + min(10, bottleneck.exit_count),
+            priority=70 + (20 if bottleneck.severity == "critical" else 10) + min(10, bottleneck.exit_count),
             title=f"{bottleneck.activity_name} является узким местом контента.",
             body=bottleneck.note,
             course_id=bottleneck.course_id,
@@ -99,8 +95,7 @@ def build_insight_feed(
     improved_courses = [
         row
         for row in course_rows
-        if row.historical_completion_delta_pct is not None
-        and row.historical_completion_delta_pct >= 10
+        if row.historical_completion_delta_pct is not None and row.historical_completion_delta_pct >= 10
     ]
     items.extend(
         InsightFeedItem(
@@ -117,7 +112,5 @@ def build_insight_feed(
     )
 
     severity_score = {"critical": 2, "warning": 1, "info": 0}
-    items.sort(
-        key=lambda item: (item.priority, severity_score[item.severity]), reverse=True
-    )
+    items.sort(key=lambda item: (item.priority, severity_score[item.severity]), reverse=True)
     return items[:limit]

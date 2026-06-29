@@ -1,8 +1,14 @@
-"""
-Permission Enums - single source of truth for RBAC definitions.
-"""
+"""Permission Enums - single source of truth for RBAC definitions."""
 
 from enum import StrEnum
+from typing import TypedDict
+
+
+class SystemRoleDetails(TypedDict):
+    name: str
+    description: str
+    priority: int
+    permissions: list[str]
 
 
 class Action(StrEnum):
@@ -68,7 +74,7 @@ class RoleSlug(StrEnum):
 # System role definitions - what each built-in role can do
 # ============================================================================
 
-SYSTEM_ROLES: dict[str, dict] = {
+SYSTEM_ROLES: dict[str, SystemRoleDetails] = {
     RoleSlug.ADMIN: {
         "name": "Администратор",
         "description": "Администратор платформы с полным доступом к системе",

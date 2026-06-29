@@ -1,29 +1,30 @@
-import { getTheme, THEME_CACHE_STORAGE_KEY, THEME_MODE_STORAGE_KEY } from '@/lib/themes';
-import type { Theme } from '@/lib/themes';
+import { THEME_CACHE_STORAGE_KEY, THEME_MODE_STORAGE_KEY, getTheme } from '@/lib/themes'
+import type { Theme } from '@/lib/themes'
 import {
-  GOOGLE_FONT_QUERY_BY_FAMILY,
+  CYRILLIC_FALLBACK_MAP,
   GOOGLE_FONTS_ASSET_ORIGIN,
   GOOGLE_FONTS_STYLESHEET_ORIGIN,
+  GOOGLE_FONT_QUERY_BY_FAMILY,
   SYSTEM_FONT_FAMILY_KEYS,
   THEME_FONT_FAMILIES_ATTRIBUTE,
   THEME_FONT_LINK_ATTRIBUTE,
   THEME_FONT_TOKENS,
-} from '@/lib/theme-fonts';
+} from '@/lib/theme-fonts'
 
 function safeJson(value: unknown): string {
-  const json = JSON.stringify(value);
-  return json === undefined ? 'undefined' : json.replace(/</g, '\\u003c');
+  const json = JSON.stringify(value)
+  return json === undefined ? 'undefined' : json.replace(/</g, '\\u003c')
 }
 
 interface ThemeScriptProps {
-  initialTheme: Theme;
+  initialTheme: Theme
 }
 
 export function ThemeScript({ initialTheme }: ThemeScriptProps) {
   const defaultTokensByMode = {
     light: getTheme(initialTheme.name, 'light').tokens,
     dark: getTheme(initialTheme.name, 'dark').tokens,
-  };
+  }
 
   const scriptContent = `
     (function() {
@@ -33,12 +34,13 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
       var cacheStorageKey = ${safeJson(THEME_CACHE_STORAGE_KEY)};
       var defaultTokensByMode = ${safeJson(defaultTokensByMode)};
       var fontTokens = ${safeJson(THEME_FONT_TOKENS)};
-      var systemFonts = ${safeJson(Object.fromEntries(SYSTEM_FONT_FAMILY_KEYS.map((family) => [family, true])))};
+      var systemFonts = ${safeJson(Object.fromEntries(SYSTEM_FONT_FAMILY_KEYS.map(family => [family, true])))};
       var googleFontQueries = ${safeJson(GOOGLE_FONT_QUERY_BY_FAMILY)};
       var googleFontsStylesheetOrigin = ${safeJson(GOOGLE_FONTS_STYLESHEET_ORIGIN)};
       var googleFontsAssetOrigin = ${safeJson(GOOGLE_FONTS_ASSET_ORIGIN)};
       var themeFontLinkAttribute = ${safeJson(THEME_FONT_LINK_ATTRIBUTE)};
       var themeFontFamiliesAttribute = ${safeJson(THEME_FONT_FAMILIES_ATTRIBUTE)};
+      var cyrillicFallbackMap = ${safeJson(CYRILLIC_FALLBACK_MAP)};
 
       function getStoredMode() {
         try {
@@ -226,19 +228,20 @@ export function ThemeScript({ initialTheme }: ThemeScriptProps) {
         var families = [];
         fontTokens.forEach(function(token) {
           var family = getGoogleFontFamily(tokens[token]);
-          if (family) families.push(family);
+          if (family) {
+            families.push(family);
+            var fallback = cyrillicFallbackMap[family];
+            if (fallback) {
+              families.push(fallback);
+            }
+          }
         });
         loadGoogleFonts(families);
       } catch (error) {
         console.warn("Theme font initialization failed:", error);
       }
     })();
-  `;
+  `
 
-  return (
-    <script
-      dangerouslySetInnerHTML={{ __html: scriptContent }}
-      suppressHydrationWarning
-    />
-  );
+  return <script dangerouslySetInnerHTML={{ __html: scriptContent }} suppressHydrationWarning />
 }

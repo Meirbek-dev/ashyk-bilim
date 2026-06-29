@@ -1,120 +1,119 @@
-'use client';
+'use client'
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { createCollection } from '@services/courses/collections';
-import { revalidateTags } from '@/lib/cache/revalidate';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useMemo, useState, useTransition } from 'react';
-import { useCourseList } from '@/hooks/useCourseList';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import NextImage from '@/components/ui/NextImage';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import type { ChangeEvent } from 'react';
-import { toast } from 'sonner';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { createCollection } from '@services/courses/collections'
+import { revalidateTags } from '@/lib/cache/revalidate'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useMemo, useState, useTransition } from 'react'
+import { useCourseList } from '@/hooks/useCourseList'
+import { Textarea } from '@/components/ui/textarea'
+import { extractMarkdownSummary } from '@/features/content-markdown'
+import { Checkbox } from '@/components/ui/checkbox'
+import NextImage from '@/components/ui/NextImage'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import type { ChangeEvent, FormEvent } from 'react'
+import { toast } from 'sonner'
 
 interface CourseListItem {
-  id: number;
-  name: string;
-  description?: string | null;
-  course_uuid: string;
-  thumbnail_image?: string | null;
+  id: number
+  name: string
+  description?: string | null
+  course_uuid: string
+  thumbnail_image?: string | null
 }
 
 const NewCollection = () => {
-  const t = useTranslations('NewCollectionPage');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const [searchQuery, setSearchQuery] = useState('');
-  const router = useRouter();
-  const { data: courses, error, isLoading } = useCourseList();
-  const [isPublic, setIsPublic] = useState(true);
+  const t = useTranslations('NewCollectionPage')
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
+  const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
+  const [isPublic, setIsPublic] = useState(true)
 
   const filteredCourses = useMemo(() => {
-    if (!courses || !searchQuery.trim()) return courses || [];
-    const query = searchQuery.toLowerCase();
+    if (!courses || !searchQuery.trim()) return courses || []
+    const query = searchQuery.toLowerCase()
     return courses.filter(
       (course: CourseListItem) =>
         course.name.toLowerCase().includes(query) || course.description?.toLowerCase().includes(query),
-    );
-  }, [courses, searchQuery]);
+    )
+  }, [courses, searchQuery])
 
   const handleVisibilityChange = (value: string) => {
-    setIsPublic(value === 'true');
-  };
+    setIsPublic(value === 'true')
+  }
 
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setName(event.target.value);
-  };
+    setName(event.target.value)
+  }
 
   const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(event.target.value);
-  };
+    setDescription(event.target.value)
+  }
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
 
     if (!name.trim()) {
-      toast.error(t('toast.missingName'));
-      return;
+      toast.error(t('toast.missingName'))
+      return
     }
 
     if (!description.trim()) {
-      toast.error(t('toast.missingDescription'));
-      return;
+      toast.error(t('toast.missingDescription'))
+      return
     }
 
     if (selectedCourses.length === 0) {
-      toast.error(t('toast.noCoursesSelected'));
-      return;
+      toast.error(t('toast.noCoursesSelected'))
+      return
     }
 
-    startTransition(() => setIsSubmitting(true));
+    startTransition(() => setIsSubmitting(true))
     try {
       const collection = {
         name: name.trim(),
         description: description.trim(),
         courses: selectedCourses,
         public: isPublic,
-      };
-      await createCollection(collection);
-      await revalidateTags(['collections']);
-      toast.success(t('toast.success'));
-      startTransition(() => router.push(getAbsoluteUrl('/collections')));
+      }
+      await createCollection(collection)
+      await revalidateTags(['collections'])
+      toast.success(t('toast.success'))
+      startTransition(() => router.push(getAbsoluteUrl('/collections')))
     } catch {
-      toast.error(t('toast.failure'));
+      toast.error(t('toast.failure'))
     } finally {
-      startTransition(() => setIsSubmitting(false));
+      startTransition(() => setIsSubmitting(false))
     }
-  };
+  }
 
   const toggleCourse = (courseId: number) => {
-    setSelectedCourses((prev) =>
-      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId],
-    );
-  };
+    setSelectedCourses(prev => (prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]))
+  }
 
   const selectAll = () => {
-    if (filteredCourses.length === 0) return;
-    const allIds = filteredCourses.map((c: CourseListItem) => c.id);
-    setSelectedCourses(allIds);
-  };
+    if (filteredCourses.length === 0) return
+    const allIds = filteredCourses.map((c: CourseListItem) => c.id)
+    setSelectedCourses(allIds)
+  }
 
   const deselectAll = () => {
-    setSelectedCourses([]);
-  };
+    setSelectedCourses([])
+  }
 
   const visibilityItems = [
     {
@@ -125,7 +124,7 @@ const NewCollection = () => {
       value: 'false',
       label: t('visibilityPrivate'),
     },
-  ] as const;
+  ] as const
 
   if (error) {
     return (
@@ -137,7 +136,7 @@ const NewCollection = () => {
           </CardHeader>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -147,10 +146,7 @@ const NewCollection = () => {
         <p className="text-muted-foreground mt-2">{t('description')}</p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Collection Details Card */}
         <Card>
           <CardHeader>
@@ -160,10 +156,7 @@ const NewCollection = () => {
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label
-                  htmlFor="collection-name"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="collection-name" className="text-sm font-medium">
                   {t('nameLabel')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -179,31 +172,22 @@ const NewCollection = () => {
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="collection-visibility"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="collection-visibility" className="text-sm font-medium">
                   {t('visibilityLabel')} <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={String(isPublic)}
-                  onValueChange={(value) => value !== null && handleVisibilityChange(value)}
+                  onValueChange={value => value !== null && handleVisibilityChange(value)}
                   items={visibilityItems}
                 >
-                  <SelectTrigger
-                    id="collection-visibility"
-                    className="h-10"
-                  >
+                  <SelectTrigger id="collection-visibility" className="h-10">
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
                     <SelectGroup>
-                      {visibilityItems.map((item) => (
-                        <SelectItem
-                          key={item.value}
-                          value={item.value}
-                        >
+                      {visibilityItems.map(item => (
+                        <SelectItem key={item.value} value={item.value}>
                           <div className="flex items-center gap-2">
                             {item.value === 'true' ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                             <span>{item.label}</span>
@@ -217,10 +201,7 @@ const NewCollection = () => {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="collection-description"
-                className="text-sm font-medium"
-              >
+              <Label htmlFor="collection-description" className="text-sm font-medium">
                 {t('descriptionLabel')} <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -250,10 +231,7 @@ const NewCollection = () => {
                 <CardDescription>{t('selectCoursesDescription')}</CardDescription>
               </div>
               {selectedCourses.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-auto"
-                >
+                <Badge variant="secondary" className="ml-auto">
                   {t('selectedCount', { count: selectedCourses.length })}
                 </Badge>
               )}
@@ -281,7 +259,7 @@ const NewCollection = () => {
                     <Input
                       placeholder={t('searchPlaceholder')}
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={e => setSearchQuery(e.target.value)}
                       className="pl-9"
                     />
                   </div>
@@ -316,7 +294,7 @@ const NewCollection = () => {
                       </div>
                     ) : (
                       filteredCourses.map((course: CourseListItem) => {
-                        const isSelected = selectedCourses.includes(course.id);
+                        const isSelected = selectedCourses.includes(course.id)
                         return (
                           <div
                             key={course.id}
@@ -355,11 +333,13 @@ const NewCollection = () => {
                             <div className="min-w-0 flex-1">
                               <h3 className="text-foreground leading-tight font-medium">{course.name}</h3>
                               {course.description && (
-                                <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{course.description}</p>
+                                <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                                  {extractMarkdownSummary(course.description, 140)}
+                                </p>
                               )}
                             </div>
                           </div>
-                        );
+                        )
                       })
                     )}
                   </div>
@@ -373,18 +353,10 @@ const NewCollection = () => {
         <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-4">
           <p className="text-muted-foreground text-sm">{t('selectedCount', { count: selectedCourses.length })}</p>
           <div className="flex gap-3">
-            <Button
-              type="button"
-              onClick={() => router.back()}
-              variant="outline"
-            >
+            <Button type="button" onClick={() => router.back()} variant="outline">
               {t('cancelButton')}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || isPending}
-              className="min-w-[120px]"
-            >
+            <Button type="submit" disabled={isSubmitting || isPending} className="min-w-[120px]">
               {isSubmitting || isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -398,7 +370,7 @@ const NewCollection = () => {
         </div>
       </form>
     </div>
-  );
-};
+  )
+}
 
-export default NewCollection;
+export default NewCollection

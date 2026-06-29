@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from src.db.grading.progress import ActivityProgressState
 from src.db.grading.submissions import AssessmentType
@@ -81,6 +81,16 @@ class GradebookSummary(PydanticStrictBaseModel):
     completed_count: int
 
 
+class GradebookPageInfo(PydanticStrictBaseModel):
+    page: int
+    page_size: int
+    total_students: int
+    total_activities: int
+    has_previous: bool
+    has_next: bool
+    activity_types: list[str] = Field(default_factory=list)
+
+
 class CourseGradebookResponse(PydanticStrictBaseModel):
     course_uuid: str
     course_id: int
@@ -90,3 +100,4 @@ class CourseGradebookResponse(PydanticStrictBaseModel):
     cells: list[ActivityProgressCell]
     teacher_actions: list[TeacherAction]
     summary: GradebookSummary
+    page_info: GradebookPageInfo | None = None

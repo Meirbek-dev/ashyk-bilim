@@ -4,16 +4,21 @@ These are the canonical verbs for authoring, lifecycle, attempts, drafts, and
 teacher submission lists.
 """
 
+import asyncio
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.core.http import get_content_disposition_header
 from src.db.assessments import (
+    AssessmentAccessRead,
+    AssessmentAccessUpdate,
+    AssessmentAccessUserGroupRead,
+    AssessmentAccessUserRead,
     AssessmentAttemptProjection,
     AssessmentCreate,
     AssessmentDraftPatch,
@@ -37,12 +42,15 @@ from src.db.assessments import (
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
+from src.db.audit import AuditEventRead
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    ItemAnalytics,
     SubmissionStats,
     TeacherGradeInput,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.services.assessments.core import (
@@ -54,15 +62,19 @@ from src.services.assessments.core import (
     delete_student_policy_override,
     duplicate_assessment,
     get_assessment,
+    get_assessment_access,
     get_assessment_by_activity_uuid,
     get_assessment_submission,
     get_assessment_submission_stats,
     get_assessment_submissions,
     get_attempt_state,
     get_code_item_run,
+    get_item_analytics,
     get_my_assessment_draft,
     get_my_assessment_submissions,
     get_policy_preset,
+    list_assessment_access_eligible_usergroups,
+    list_assessment_access_eligible_users,
     list_student_policy_overrides,
     publish_assessment_grades,
     reorder_assessment_items,
@@ -74,6 +86,7 @@ from src.services.assessments.core import (
     submit_assessment,
     transition_assessment_lifecycle,
     update_assessment,
+    update_assessment_access,
     update_assessment_item,
     update_student_policy_override,
 )
@@ -83,8 +96,45 @@ from src.services.assessments.inline_quiz import (
     create_inline_quiz,
 )
 from src.services.grading.teacher import export_grades_csv
+from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
+
+_SUBMIT_SEMAPHORE = asyncio.Semaphore(15)
 
 router = APIRouter()
+
+
+class AssessmentDetailResponse(PydanticStrictBaseModel):
+    detail: str
+
+
+class CodeChallengeValidationDetail(PydanticStrictBaseModel):
+    test_id: str | None = None
+    passed: bool
+    status_description: str | None = None
+    time: float | None = None
+    memory: int | None = None
+
+
+class CodeChallengeValidationResult(PydanticStrictBaseModel):
+    ok: bool
+    status: str
+    message: str | None = None
+    passed: int | None = None
+    total: int | None = None
+    score: float | None = None
+    compile_output: str | None = None
+    details: list[CodeChallengeValidationDetail] | None = None
+
+
+class CodeChallengeValidationResponse(PydanticStrictBaseModel):
+    results: dict[int, CodeChallengeValidationResult]
+
+
+class AssessmentAuditTrailResponse(PydanticStrictBaseModel):
+    items: list[AuditEventRead]
+    total: int
+    page: int
+    page_size: int
 
 
 @router.post("", response_model=AssessmentRead)
@@ -99,22 +149,16 @@ async def api_create_assessment(
 @router.get("/activity/{activity_uuid}", response_model=AssessmentRead)
 async def api_get_assessment_by_activity(
     activity_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentRead:
-    return await get_assessment_by_activity_uuid(
-        activity_uuid, current_user, db_session
-    )
+    return await get_assessment_by_activity_uuid(activity_uuid, current_user, db_session)
 
 
 @router.get("/{assessment_uuid}", response_model=AssessmentRead)
 async def api_get_assessment(
     assessment_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentRead:
     return await get_assessment(assessment_uuid, current_user, db_session)
@@ -137,9 +181,7 @@ async def api_transition_lifecycle(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentRead:
-    return await transition_assessment_lifecycle(
-        assessment_uuid, payload, current_user, db_session
-    )
+    return await transition_assessment_lifecycle(assessment_uuid, payload, current_user, db_session)
 
 
 @router.get("/{assessment_uuid}/readiness", response_model=AssessmentReadiness)
@@ -151,6 +193,62 @@ async def api_check_readiness(
     return await check_publish_readiness(assessment_uuid, current_user, db_session)
 
 
+@router.get("/{assessment_uuid}/access", response_model=AssessmentAccessRead)
+async def api_get_access(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AssessmentAccessRead:
+    return await get_assessment_access(assessment_uuid, current_user, db_session)
+
+
+@router.put("/{assessment_uuid}/access", response_model=AssessmentAccessRead)
+async def api_update_access(
+    assessment_uuid: str,
+    payload: AssessmentAccessUpdate,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AssessmentAccessRead:
+    return await update_assessment_access(assessment_uuid, payload, current_user, db_session)
+
+
+@router.get(
+    "/{assessment_uuid}/access/eligible-learners",
+    response_model=list[AssessmentAccessUserRead],
+)
+async def api_list_access_eligible_learners(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> list[AssessmentAccessUserRead]:
+    return await list_assessment_access_eligible_users(assessment_uuid, current_user, db_session, query=q, limit=limit)
+
+
+@router.get(
+    "/{assessment_uuid}/access/eligible-usergroups",
+    response_model=list[AssessmentAccessUserGroupRead],
+)
+async def api_list_access_eligible_usergroups(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+    q: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> list[AssessmentAccessUserGroupRead]:
+    return await list_assessment_access_eligible_usergroups(
+        assessment_uuid,
+        current_user,
+        db_session,
+        query=q,
+        limit=limit,
+    )
+
+
+# ── Items CRUD ─────────────────────────────────────────────────────────────────
+
+
 @router.post("/{assessment_uuid}/items", response_model=AssessmentReadItem)
 async def api_create_item(
     assessment_uuid: str,
@@ -158,9 +256,7 @@ async def api_create_item(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentReadItem:
-    return await create_assessment_item(
-        assessment_uuid, payload, current_user, db_session
-    )
+    return await create_assessment_item(assessment_uuid, payload, current_user, db_session)
 
 
 @router.patch("/{assessment_uuid}/items/{item_uuid}", response_model=AssessmentReadItem)
@@ -171,35 +267,32 @@ async def api_update_item(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentReadItem:
-    return await update_assessment_item(
-        assessment_uuid, item_uuid, payload, current_user, db_session
-    )
+    return await update_assessment_item(assessment_uuid, item_uuid, payload, current_user, db_session)
 
 
-@router.post(
-    "/{assessment_uuid}/items:reorder", response_model=list[AssessmentReadItem]
-)
+@router.post("/{assessment_uuid}/items:reorder", response_model=list[AssessmentReadItem])
 async def api_reorder_items(
     assessment_uuid: str,
     payload: AssessmentItemReorder,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[AssessmentReadItem]:
-    return await reorder_assessment_items(
-        assessment_uuid, payload, current_user, db_session
-    )
+    return await reorder_assessment_items(assessment_uuid, payload, current_user, db_session)
 
 
-@router.delete("/{assessment_uuid}/items/{item_uuid}")
+@router.delete("/{assessment_uuid}/items/{item_uuid}", response_model=AssessmentDetailResponse)
 async def api_delete_item(
     assessment_uuid: str,
     item_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict[str, str]:
-    return await delete_assessment_item(
-        assessment_uuid, item_uuid, current_user, db_session
+) -> AssessmentDetailResponse:
+    return AssessmentDetailResponse.model_validate(
+        await delete_assessment_item(assessment_uuid, item_uuid, current_user, db_session)
     )
+
+
+# ── Student attempt flow ───────────────────────────────────────────────────────
 
 
 @router.post("/{assessment_uuid}/start", response_model=StudentSubmissionRead)
@@ -237,23 +330,53 @@ async def api_save_draft(
     )
 
 
-@router.post("/{assessment_uuid}/submit", response_model=StudentSubmissionRead)
+@router.post(
+    "/{assessment_uuid}/submit",
+    response_model=StudentSubmissionRead,
+    dependencies=[
+        Depends(
+            rate_limit_dependency(
+                namespace="assessment:submit",
+                max_requests=3,
+                window_seconds=10,
+                key_func=auth_or_ip_key,
+            )
+        )
+    ],
+)
 async def api_submit_assessment(
     assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
     payload: AssessmentDraftPatch | None = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
     violation_count: Annotated[int, Query(ge=0)] = 0,
+    auto_submit: Annotated[bool, Query()] = False,
 ) -> StudentSubmissionRead:
-    return await submit_assessment(
-        assessment_uuid,
-        payload,
-        current_user,
-        db_session,
-        violation_count=violation_count,
-        if_match=if_match,
-    )
+    try:
+        await asyncio.wait_for(_SUBMIT_SEMAPHORE.acquire(), timeout=0.1)
+    except TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "SERVER_OVERLOADED",
+                "message": "Система временно перегружена. Пожалуйста, попробуйте позже.",
+            },
+            headers={"Retry-After": "10"},
+        )
+
+    try:
+        return await submit_assessment(
+            assessment_uuid,
+            payload,
+            current_user,
+            db_session,
+            violation_count=violation_count,
+            if_match=if_match,
+            auto_submit=auto_submit,
+        )
+    finally:
+        _SUBMIT_SEMAPHORE.release()
 
 
 @router.get("/{assessment_uuid}/me", response_model=list[StudentSubmissionRead])
@@ -262,9 +385,7 @@ async def api_get_my_submissions(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[StudentSubmissionRead]:
-    return await get_my_assessment_submissions(
-        assessment_uuid, current_user, db_session
-    )
+    return await get_my_assessment_submissions(assessment_uuid, current_user, db_session)
 
 
 @router.get("/{assessment_uuid}/submissions", response_model=ReviewQueueRead)
@@ -307,28 +428,32 @@ async def api_get_submission_stats(
     )
 
 
-@router.get("/{assessment_uuid}/submissions/export")
+@router.get("/{assessment_uuid}/item-analytics", response_model=list[ItemAnalytics])
+async def api_get_item_analytics(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> list[ItemAnalytics]:
+    """Вернуть аналитику по каждому вопросу для страницы результатов преподавателя."""
+    return await get_item_analytics(assessment_uuid, current_user, db_session)
+
+
+@router.get("/{assessment_uuid}/submissions/export", response_class=StreamingResponse)
 async def api_export_assessment_submissions_csv(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     assessment_type: Annotated[
         str | None,
-        Query(
-            description="Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)"
-        ),
+        Query(description="Фильтр по типу оценивания (QUIZ, OPEN_TEXT, CODE_CHALLENGE и т. д.)"),
     ] = None,
     submitted_after: Annotated[
         datetime | None,
-        Query(
-            description="Only include submissions submitted after this ISO-8601 datetime"
-        ),
+        Query(description="Включать только отправки после этой даты и времени в формате ISO-8601"),
     ] = None,
     submitted_before: Annotated[
         datetime | None,
-        Query(
-            description="Only include submissions submitted before this ISO-8601 datetime"
-        ),
+        Query(description="Включать только отправки до этой даты и времени в формате ISO-8601"),
     ] = None,
 ) -> StreamingResponse:
     assessment = await get_assessment(assessment_uuid, current_user, db_session)
@@ -342,11 +467,7 @@ async def api_export_assessment_submissions_csv(
             submitted_before=submitted_before,
         ),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": get_content_disposition_header(
-                f"grades-assessment-{assessment_uuid}.csv"
-            )
-        },
+        headers={"Content-Disposition": get_content_disposition_header(f"grades-assessment-{assessment_uuid}.csv")},
     )
 
 
@@ -390,9 +511,7 @@ async def api_save_grade(
     )
 
 
-@router.post(
-    "/{assessment_uuid}/publish-grades", response_model=BulkPublishGradesResponse
-)
+@router.post("/{assessment_uuid}/publish-grades", response_model=BulkPublishGradesResponse)
 async def api_publish_grades(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -420,7 +539,7 @@ async def api_save_grading_draft(
     db_session: Annotated[Session, Depends(get_db_session)],
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> TeacherSubmissionRead:
-    """Save an item-level grading draft. Final score is computed from item scores."""
+    """Сохранить черновик оценки по элементам. Итоговый балл вычисляется по сумме баллов элементов."""
     return await save_grading_draft(
         assessment_uuid,
         submission_uuid,
@@ -445,10 +564,8 @@ async def api_run_code_item(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CodeRunResponse:
-    """Run student code against visible test cases (does not affect grade)."""
-    return await run_code_item(
-        assessment_uuid, item_uuid, payload, current_user, db_session
-    )
+    """Запустить код студента на видимых тестах (не влияет на оценку)."""
+    return await run_code_item(assessment_uuid, item_uuid, payload, current_user, db_session)
 
 
 @router.get(
@@ -462,9 +579,24 @@ async def api_get_code_item_run(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CodeRunResponse:
-    """Fetch a previously-created student-safe code run."""
-    return await get_code_item_run(
-        assessment_uuid, item_uuid, run_uuid, current_user, db_session
+    """Получить ранее созданный безопасный для студента запуск кода."""
+    return await get_code_item_run(assessment_uuid, item_uuid, run_uuid, current_user, db_session)
+
+
+@router.post(
+    "/{assessment_uuid}/code-challenge/validate",
+    response_model=CodeChallengeValidationResponse,
+)
+async def api_validate_code_challenge(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> CodeChallengeValidationResponse:
+    """Проверить эталонные решения для всех настроенных языков на тестовом наборе."""
+    from src.services.assessments.attempt_service import validate_code_challenge_service
+
+    return CodeChallengeValidationResponse.model_validate(
+        await validate_code_challenge_service(assessment_uuid, current_user, db_session)
     )
 
 
@@ -480,7 +612,7 @@ async def api_get_attempt_state(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentAttemptProjection:
-    """Return the authoritative attempt state for the current student."""
+    """Вернуть каноническое состояние попытки для текущего студента."""
     return await get_attempt_state(assessment_uuid, current_user, db_session)
 
 
@@ -495,13 +627,11 @@ async def api_get_policy_preset(
     kind: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> AssessmentPolicyPreset:
-    """Return default policy settings for a given assessment kind."""
+    """Вернуть настройки политики по умолчанию для заданного типа оценивания."""
     try:
         assessment_kind = AssessmentType(kind)
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail=f"Unknown assessment kind: {kind!r}"
-        )
+        raise HTTPException(status_code=400, detail=f"Неизвестный тип оценивания: {kind!r}")
     return get_policy_preset(assessment_kind)
 
 
@@ -517,10 +647,8 @@ async def api_list_overrides(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[StudentPolicyOverrideRead]:
-    """List per-student policy overrides for this assessment."""
-    return await list_student_policy_overrides(
-        assessment_uuid, current_user, db_session
-    )
+    """Показать индивидуальные исключения политики для этого оценивания."""
+    return await list_student_policy_overrides(assessment_uuid, current_user, db_session)
 
 
 @router.post(
@@ -534,10 +662,8 @@ async def api_create_override(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StudentPolicyOverrideRead:
-    """Create a per-student policy exception (due date extension, attempt limit, etc.)."""
-    return await create_student_policy_override(
-        assessment_uuid, payload, current_user, db_session
-    )
+    """Создать индивидуальное исключение политики для студента (продление срока, лимит попыток и т. д.)."""
+    return await create_student_policy_override(assessment_uuid, payload, current_user, db_session)
 
 
 @router.patch(
@@ -551,20 +677,18 @@ async def api_update_override(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StudentPolicyOverrideRead:
-    return await update_student_policy_override(
-        assessment_uuid, user_id, payload, current_user, db_session
-    )
+    return await update_student_policy_override(assessment_uuid, user_id, payload, current_user, db_session)
 
 
-@router.delete("/{assessment_uuid}/overrides/{user_id}")
+@router.delete("/{assessment_uuid}/overrides/{user_id}", response_model=AssessmentDetailResponse)
 async def api_delete_override(
     assessment_uuid: str,
     user_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> dict[str, str]:
-    return await delete_student_policy_override(
-        assessment_uuid, user_id, current_user, db_session
+) -> AssessmentDetailResponse:
+    return AssessmentDetailResponse.model_validate(
+        await delete_student_policy_override(assessment_uuid, user_id, current_user, db_session)
     )
 
 
@@ -577,27 +701,27 @@ async def api_create_inline_quiz(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> InlineQuizResponse:
-    """Create a new inline quiz assessment linked to a parent activity."""
+    """Создать новое встроенное оценивание-quiz, привязанное к родительской активности."""
     return await create_inline_quiz(payload, current_user, db_session)
 
 
 # ── Audit trail ────────────────────────────────────────────────────────────────
 
 
-@router.get("/{assessment_uuid}/audit")
+@router.get("/{assessment_uuid}/audit", response_model=AssessmentAuditTrailResponse)
 async def api_get_audit_trail(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
-):
-    """List audit events for an assessment (teacher-only)."""
-    from sqlalchemy import desc, func
-    from sqlmodel import select
+) -> AssessmentAuditTrailResponse:
+    """Показать события аудита для оценивания (только для преподавателя)."""
+    from sqlalchemy import func
+    from sqlmodel import col, select
 
-    from src.db.audit import AuditEvent, AuditEventRead
-    from src.services.assessments.core import (
+    from src.db.audit import AuditEvent
+    from src.services.assessments._shared import (
         _get_activity_and_course,
         _get_assessment_by_uuid_or_404,
         _require_grade,
@@ -608,20 +732,18 @@ async def api_get_audit_trail(
     _require_grade(current_user, course, db_session)
 
     query = (
-        select(AuditEvent)
-        .where(AuditEvent.target_uuid == assessment_uuid)
-        .order_by(desc(AuditEvent.created_at))
+        select(AuditEvent).where(AuditEvent.target_uuid == assessment_uuid).order_by(col(AuditEvent.created_at).desc())
     )
     total = db_session.exec(select(func.count()).select_from(query.subquery())).one()
     offset = (page - 1) * page_size
     rows = db_session.exec(query.offset(offset).limit(page_size)).all()
 
-    return {
+    return AssessmentAuditTrailResponse.model_validate({
         "items": [AuditEventRead.model_validate(row) for row in rows],
         "total": total,
         "page": page,
         "page_size": page_size,
-    }
+    })
 
 
 @router.post("/{assessment_uuid}/duplicate", response_model=AssessmentRead)
@@ -629,7 +751,7 @@ async def api_duplicate_assessment(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> AssessmentRead:
     """Duplicate an assessment.
 
     Creates a full deep-copy of the assessment, its items, and its policy.

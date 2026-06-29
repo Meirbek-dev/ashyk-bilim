@@ -68,16 +68,10 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True
-    )
-    op.create_index(
-        "ix_assessment_activity_id", "assessment", ["activity_id"], unique=True
-    )
+    op.create_index("ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True)
+    op.create_index("ix_assessment_activity_id", "assessment", ["activity_id"], unique=True)
     op.create_index("ix_assessment_kind", "assessment", ["kind"], unique=False)
-    op.create_index(
-        "ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False
-    )
+    op.create_index("ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False)
 
     op.create_table(
         "assessment_item",
@@ -106,9 +100,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.ForeignKeyConstraint(
-            ["assessment_id"], ["assessment.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["assessment_id"], ["assessment.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -155,6 +147,7 @@ def upgrade() -> None:
     op.create_index("ix_upload_upload_id", "upload", ["upload_id"], unique=True)
     op.create_index("ix_upload_user_status", "upload", ["user_id", "status"])
 
+    _ensure_item_feedback_table()
     _seed_permissions()
     _backfill_assessments()
     _backfill_items()
@@ -224,85 +217,126 @@ def _seed_permissions() -> None:
             )
 
 
-def _backfill_assessments() -> None:
-    op.execute("""
-        INSERT INTO assessment (
-            assessment_uuid,
-            activity_id,
-            kind,
-            title,
-            description,
-            lifecycle,
-            scheduled_at,
-            published_at,
-            archived_at,
-            weight,
-            grading_type,
-            policy_id,
-            created_at,
-            updated_at
-        )
-        SELECT
-            'assessment_' || assignment.assignment_uuid,
-            assignment.activity_id,
-            'ASSIGNMENT',
-            assignment.title,
-            assignment.description,
-            assignment.status,
-            assignment.scheduled_publish_at,
-            assignment.published_at,
-            assignment.archived_at,
-            assignment.weight,
-            assignment.grading_type,
-            assessment_policy.id,
-            assignment.created_at,
-            assignment.updated_at
-        FROM assignment
-        LEFT JOIN assessment_policy
-          ON assessment_policy.activity_id = assignment.activity_id
-        WHERE NOT EXISTS (
-            SELECT 1 FROM assessment WHERE assessment.activity_id = assignment.activity_id
-        )
-    """)
+def _ensure_item_feedback_table() -> None:
+    if sa.inspect(op.get_bind()).has_table("item_feedback"):
+        return
 
-    op.execute("""
-        INSERT INTO assessment (
-            assessment_uuid,
-            activity_id,
-            kind,
-            title,
-            description,
-            lifecycle,
-            weight,
-            grading_type,
-            policy_id,
-            created_at,
-            updated_at
-        )
-        SELECT
-            'assessment_' || exam.exam_uuid,
-            exam.activity_id,
-            'EXAM',
-            exam.title,
-            exam.description,
-            CASE
-                WHEN exam.settings ->> 'lifecycle_status' IN ('DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED')
-                    THEN exam.settings ->> 'lifecycle_status'
-                WHEN exam.published THEN 'PUBLISHED'
-                ELSE 'DRAFT'
-            END,
-            1.0,
-            'PERCENTAGE',
-            assessment_policy.id,
-            COALESCE(NULLIF(exam.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(exam.update_date, '')::timestamptz, now())
-        FROM exam
-        LEFT JOIN assessment_policy
-          ON assessment_policy.activity_id = exam.activity_id
-        WHERE NOT EXISTS (
-            SELECT 1 FROM assessment WHERE assessment.activity_id = exam.activity_id
-        )
-    """)
+    op.create_table(
+        "item_feedback",
+        sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
+        sa.Column("grading_entry_id", sa.Integer(), nullable=False),
+        sa.Column("submission_id", sa.Integer(), nullable=False),
+        sa.Column("task_id", sa.Integer(), nullable=True),
+        sa.Column("item_ref", sa.String(), nullable=False),
+        sa.Column("comment", sa.Text(), nullable=False),
+        sa.Column("score", sa.Float(), nullable=True),
+        sa.Column("max_score", sa.Float(), nullable=True),
+        sa.Column("annotation_type", sa.String(), nullable=False, server_default="TEXT"),
+        sa.Column("annotation_data_key", sa.String(), nullable=True),
+        sa.Column("graded_by", sa.Integer(), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["grading_entry_id"], ["grading_entry.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["submission_id"], ["submission.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["task_id"], ["assessment_item.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["graded_by"], ["user.id"], ondelete="SET NULL"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_item_feedback_grading_entry_id", "item_feedback", ["grading_entry_id"], unique=False)
+    op.create_index("ix_item_feedback_submission_item", "item_feedback", ["submission_id", "item_ref"], unique=False)
+
+
+def _backfill_assessments() -> None:
+    inspector = sa.inspect(op.get_bind())
+    existing_tables = set(inspector.get_table_names())
+
+    if "assignment" in existing_tables:
+        op.execute("""
+            INSERT INTO assessment (
+                assessment_uuid,
+                activity_id,
+                kind,
+                title,
+                description,
+                lifecycle,
+                scheduled_at,
+                published_at,
+                archived_at,
+                weight,
+                grading_type,
+                policy_id,
+                created_at,
+                updated_at
+            )
+            SELECT
+                'assessment_' || assignment.assignment_uuid,
+                assignment.activity_id,
+                'ASSIGNMENT',
+                assignment.title,
+                assignment.description,
+                assignment.status,
+                assignment.scheduled_publish_at,
+                assignment.published_at,
+                assignment.archived_at,
+                assignment.weight,
+                assignment.grading_type,
+                assessment_policy.id,
+                assignment.created_at,
+                assignment.updated_at
+            FROM assignment
+            LEFT JOIN assessment_policy
+              ON assessment_policy.activity_id = assignment.activity_id
+            WHERE NOT EXISTS (
+                SELECT 1 FROM assessment WHERE assessment.activity_id = assignment.activity_id
+            )
+        """)
+
+    if "exam" in existing_tables:
+        op.execute("""
+            INSERT INTO assessment (
+                assessment_uuid,
+                activity_id,
+                kind,
+                title,
+                description,
+                lifecycle,
+                published_at,
+                weight,
+                grading_type,
+                policy_id,
+                created_at,
+                updated_at
+            )
+            SELECT
+                'assessment_' || exam.exam_uuid,
+                exam.activity_id,
+                'EXAM',
+                exam.title,
+                exam.description,
+                CASE
+                    WHEN exam.settings ->> 'lifecycle_status' IN ('DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED')
+                        THEN exam.settings ->> 'lifecycle_status'
+                    WHEN exam.published OR activity.published THEN 'PUBLISHED'
+                    ELSE 'DRAFT'
+                END,
+                CASE
+                    WHEN exam.published OR activity.published
+                        THEN COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, NULLIF(exam.creation_date::text, '')::timestamptz, now())
+                    ELSE NULL
+                END,
+                1.0,
+                'PERCENTAGE',
+                assessment_policy.id,
+                COALESCE(NULLIF(exam.creation_date::text, '')::timestamptz, now()),
+                COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, now())
+            FROM exam
+            JOIN activity ON activity.id = exam.activity_id
+            LEFT JOIN assessment_policy
+              ON assessment_policy.activity_id = exam.activity_id
+            WHERE NOT EXISTS (
+                SELECT 1 FROM assessment WHERE assessment.activity_id = exam.activity_id
+            )
+        """)
 
     op.execute("""
         INSERT INTO assessment (
@@ -333,12 +367,12 @@ def _backfill_assessments() -> None:
             1.0,
             'PERCENTAGE',
             assessment_policy.id,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         LEFT JOIN assessment_policy
           ON assessment_policy.activity_id = activity.id
-        WHERE activity.activity_type = 'TYPE_CODE_CHALLENGE'
+        WHERE activity.activity_type::text = 'TYPE_CODE_CHALLENGE'
           AND NOT EXISTS (
               SELECT 1 FROM assessment WHERE assessment.activity_id = activity.id
           )
@@ -346,79 +380,80 @@ def _backfill_assessments() -> None:
 
 
 def _backfill_items() -> None:
-    op.execute("""
-        INSERT INTO assessment_item (
-            item_uuid,
-            assessment_id,
-            "order",
-            kind,
-            title,
-            body_json,
-            max_score,
-            created_at,
-            updated_at
-        )
-        SELECT
-            assignmenttask.assignment_task_uuid,
-            assessment.id,
-            assignmenttask."order",
-            CASE
-                WHEN assignmenttask.assignment_type = 'FILE_SUBMISSION' THEN 'FILE_UPLOAD'
-                WHEN assignmenttask.assignment_type = 'FORM' THEN 'FORM'
-                WHEN assignmenttask.assignment_type = 'QUIZ' THEN 'CHOICE'
-                ELSE 'OPEN_TEXT'
-            END,
-            assignmenttask.title,
-            CASE
-                WHEN assignmenttask.assignment_type = 'FILE_SUBMISSION'
-                    THEN json_build_object(
-                        'kind', 'FILE_UPLOAD',
+    if sa.inspect(op.get_bind()).has_table("assignmenttask"):
+        op.execute("""
+            INSERT INTO assessment_item (
+                item_uuid,
+                assessment_id,
+                "order",
+                kind,
+                title,
+                body_json,
+                max_score,
+                created_at,
+                updated_at
+            )
+            SELECT
+                assignmenttask.assignment_task_uuid,
+                assessment.id,
+                assignmenttask."order",
+                CASE
+                    WHEN assignmenttask.assignment_type = 'FILE_SUBMISSION' THEN 'FILE_UPLOAD'
+                    WHEN assignmenttask.assignment_type = 'FORM' THEN 'FORM'
+                    WHEN assignmenttask.assignment_type = 'QUIZ' THEN 'CHOICE'
+                    ELSE 'OPEN_TEXT'
+                END,
+                assignmenttask.title,
+                CASE
+                    WHEN assignmenttask.assignment_type = 'FILE_SUBMISSION'
+                        THEN json_build_object(
+                            'kind', 'FILE_UPLOAD',
+                            'prompt', COALESCE(assignmenttask.description, ''),
+                            'max_files',
+                                CASE
+                                    WHEN assignmenttask.contents ->> 'max_files' ~ '^[0-9]+$'
+                                        THEN (assignmenttask.contents ->> 'max_files')::int
+                                    ELSE 1
+                                END,
+                            'max_mb',
+                                CASE
+                                    WHEN assignmenttask.contents ->> 'max_file_size_mb' ~ '^[0-9]+$'
+                                        THEN (assignmenttask.contents ->> 'max_file_size_mb')::int
+                                    ELSE NULL
+                                END,
+                            'mimes', COALESCE(assignmenttask.contents -> 'allowed_mime_types', '[]'::json)
+                        )
+                    WHEN assignmenttask.assignment_type = 'FORM'
+                        THEN json_build_object(
+                            'kind', 'FORM',
+                            'prompt', COALESCE(assignmenttask.description, ''),
+                            'fields', '[]'::json
+                        )
+                    WHEN assignmenttask.assignment_type = 'QUIZ'
+                        THEN json_build_object(
+                            'kind', 'CHOICE',
+                            'prompt', COALESCE(assignmenttask.description, ''),
+                            'options', '[]'::json,
+                            'multiple', false
+                        )
+                    ELSE json_build_object(
+                        'kind', 'OPEN_TEXT',
                         'prompt', COALESCE(assignmenttask.description, ''),
-                        'max_files',
-                            CASE
-                                WHEN assignmenttask.contents ->> 'max_files' ~ '^[0-9]+$'
-                                    THEN (assignmenttask.contents ->> 'max_files')::int
-                                ELSE 1
-                            END,
-                        'max_mb',
-                            CASE
-                                WHEN assignmenttask.contents ->> 'max_file_size_mb' ~ '^[0-9]+$'
-                                    THEN (assignmenttask.contents ->> 'max_file_size_mb')::int
-                                ELSE NULL
-                            END,
-                        'mimes', COALESCE(assignmenttask.contents -> 'allowed_mime_types', '[]'::json)
+                        'rubric', NULL
                     )
-                WHEN assignmenttask.assignment_type = 'FORM'
-                    THEN json_build_object(
-                        'kind', 'FORM',
-                        'prompt', COALESCE(assignmenttask.description, ''),
-                        'fields', '[]'::json
-                    )
-                WHEN assignmenttask.assignment_type = 'QUIZ'
-                    THEN json_build_object(
-                        'kind', 'CHOICE',
-                        'prompt', COALESCE(assignmenttask.description, ''),
-                        'options', '[]'::json,
-                        'multiple', false
-                    )
-                ELSE json_build_object(
-                    'kind', 'OPEN_TEXT',
-                    'prompt', COALESCE(assignmenttask.description, ''),
-                    'rubric', NULL
-                )
-            END,
-            assignmenttask.max_grade_value,
-            assignmenttask.created_at,
-            assignmenttask.updated_at
-        FROM assignmenttask
-        JOIN assessment ON assessment.activity_id = assignmenttask.activity_id
-        WHERE assessment.kind = 'ASSIGNMENT'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM assessment_item
-              WHERE assessment_item.item_uuid = assignmenttask.assignment_task_uuid
-          )
-    """)
+                END,
+                assignmenttask.max_grade_value,
+                assignmenttask.created_at,
+                assignmenttask.updated_at
+            FROM assignmenttask
+            JOIN assessment ON assessment.activity_id = assignmenttask.activity_id
+            WHERE assessment.kind = 'ASSIGNMENT'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM assessment_item
+                  WHERE assessment_item.item_uuid = assignmenttask.assignment_task_uuid
+              )
+        """)
 
 
 def _backfill_legacy_submissions() -> None:
@@ -748,8 +783,8 @@ def _backfill_legacy_submissions() -> None:
                     THEN (activity.details ->> 'points')::float
                 ELSE 100.0
             END,
-            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
-            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
+            COALESCE(NULLIF(activity.creation_date::text, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date::text, '')::timestamptz, now())
         FROM activity
         JOIN assessment ON assessment.activity_id = activity.id
         WHERE assessment.kind = 'CODE_CHALLENGE'

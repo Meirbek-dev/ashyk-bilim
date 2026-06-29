@@ -34,10 +34,10 @@ ALTER TABLE usergroup ADD COLUMN tenant_id INTEGER REFERENCES tenants(id) ON DEL
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE course ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation_users ON users 
+CREATE POLICY tenant_isolation_users ON users
     USING (tenant_id = current_setting('app.current_tenant_id')::integer);
-    
-CREATE POLICY tenant_isolation_course ON course 
+
+CREATE POLICY tenant_isolation_course ON course
     USING (tenant_id = current_setting('app.current_tenant_id')::integer);
 
 ```
@@ -142,6 +142,6 @@ With a DAG (`node_prerequisite`), your FastAPI backend can evaluate learning pat
 
 If you execute these three rewrites, your application transitions from a **Static Course Player** to an **Adaptive, Multi-Tenant LMS**.
 
-* **Rewrite 1** secures your data and opens the door for enterprise sales.
-* **Rewrite 2** empowers teachers to build rich, randomized curricula via Question Banks.
-* **Rewrite 3** allows your product to offer personalized, adaptive learning paths rather than linear playlists.
+- **Rewrite 1** secures your data and opens the door for enterprise sales.
+- **Rewrite 2** empowers teachers to build rich, randomized curricula via Question Banks.
+- **Rewrite 3** allows your product to offer personalized, adaptive learning paths rather than linear playlists.

@@ -1,6 +1,7 @@
 import contextlib
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
+from typing import cast
 
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import sessionmaker
@@ -11,7 +12,7 @@ SessionFactory = Callable[[], contextlib.AbstractContextManager[Session]]
 
 
 @contextlib.contextmanager
-def session_scope(session_factory: sessionmaker[Session]) -> Iterator[Session]:
+def session_scope(session_factory: sessionmaker[Session]) -> Generator[Session]:
     """Context manager for DB access outside of a FastAPI request (CLI, background tasks).
 
     Callers must supply the session factory explicitly — there is no hidden global.
@@ -26,7 +27,7 @@ def session_scope(session_factory: sessionmaker[Session]) -> Iterator[Session]:
         session.close()
 
 
-def get_db_session(request: Request) -> Iterator[Session]:
+def get_db_session(request: Request) -> Generator[Session]:
     """FastAPI dependency that yields a request-scoped DB session.
 
     Reads the session factory from ``app.state``, which is set during lifespan
@@ -50,10 +51,11 @@ def get_db_session(request: Request) -> Iterator[Session]:
 def get_session_factory(request: Request) -> SessionFactory:
     factory = getattr(request.app.state, "session_factory", None)
     if factory is not None:
-        return factory
+        return cast("SessionFactory", factory)
 
     override = request.app.dependency_overrides.get(get_db_session)
     if override is not None:
         return contextlib.contextmanager(override)
 
-    raise RuntimeError("Database session factory is not configured")
+    msg = "Database session factory is not configured"
+    raise RuntimeError(msg)

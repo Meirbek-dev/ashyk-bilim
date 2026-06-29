@@ -6,13 +6,13 @@ or run as a repair/backfill job to rebuild `activity_progress` and
 """
 
 from datetime import UTC, datetime
+from typing import SupportsInt, cast
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from ulid import ULID
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.courses import Course
 from src.db.grading.progress import (
     ActivityProgress,
@@ -30,6 +30,7 @@ from src.db.grading.submissions import (
 from src.db.trail_runs import TrailRun
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
+from src.types import JsonObject, require_persisted_id
 
 _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE: dict[str, AssessmentType] = {
     ActivityTypeEnum.TYPE_EXAM.value: AssessmentType.EXAM,
@@ -70,6 +71,92 @@ def publish_grade(submission: Submission, db_session: Session) -> None:
     _record_submission_change(submission, db_session)
 
 
+def mark_manual_activity_complete(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+    *,
+    commit: bool = True,
+) -> ActivityProgress | None:
+    """Mark a non-submission activity complete in canonical progress.
+
+    Assessments and file submissions are completed by their own submission
+    pipelines. This helper is for learning content such as dynamic lessons,
+    videos, and documents where the student explicitly marks completion.
+    """
+    activity = db_session.get(Activity, activity_id)
+    if activity is None or activity.course_id is None:
+        return None
+
+    now = datetime.now(UTC)
+    progress = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.activity_id == activity_id,
+            ActivityProgress.user_id == user_id,
+        )
+    ).first()
+    if progress is None:
+        progress = ActivityProgress(
+            course_id=activity.course_id,
+            activity_id=activity_id,
+            user_id=user_id,
+        )
+
+    progress.required = True
+    progress.state = ActivityProgressState.COMPLETED
+    progress.completed_at = now
+    progress.last_activity_at = now
+    progress.teacher_action_required = False
+    progress.status_reason = None
+    progress.updated_at = now
+    db_session.add(progress)
+
+    recalculate_course_progress(activity.course_id, user_id, db_session, commit=False)
+
+    if commit:
+        db_session.commit()
+        db_session.refresh(progress)
+    return progress
+
+
+def unmark_manual_activity_complete(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+    *,
+    commit: bool = True,
+) -> ActivityProgress | None:
+    """Remove explicit completion for a non-submission activity."""
+    activity = db_session.get(Activity, activity_id)
+    if activity is None or activity.course_id is None:
+        return None
+
+    progress = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.activity_id == activity_id,
+            ActivityProgress.user_id == user_id,
+        )
+    ).first()
+    if progress is None:
+        return None
+
+    now = datetime.now(UTC)
+    progress.state = ActivityProgressState.NOT_STARTED
+    progress.completed_at = None
+    progress.last_activity_at = now
+    progress.teacher_action_required = False
+    progress.status_reason = None
+    progress.updated_at = now
+    db_session.add(progress)
+
+    recalculate_course_progress(activity.course_id, user_id, db_session, commit=False)
+
+    if commit:
+        db_session.commit()
+        db_session.refresh(progress)
+    return progress
+
+
 def recalculate_activity_progress(
     activity_id: int,
     user_id: int,
@@ -82,10 +169,7 @@ def recalculate_activity_progress(
     if activity is None or activity.course_id is None:
         return None
 
-    if (
-        _enum_value(activity.activity_type)
-        == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
-    ):
+    if _enum_value(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value:
         return _recalculate_file_submission_progress(
             activity,
             user_id,
@@ -175,12 +259,10 @@ def recalculate_course_progress(
     if scored_activity_ids:
         assessment_rows = db_session.exec(
             select(Assessment.activity_id, Assessment.weight).where(
-                Assessment.activity_id.in_(scored_activity_ids)
+                col(Assessment.activity_id).in_(scored_activity_ids)
             )
         ).all()
-        weight_by_activity = {
-            row.activity_id: float(row.weight) for row in assessment_rows
-        }
+        weight_by_activity = {act_id: float(w) for act_id, w in assessment_rows}
 
     weighted_numerator = 0.0
     weighted_denominator = 0.0
@@ -188,15 +270,11 @@ def recalculate_course_progress(
         if row.score is None:
             continue
         w = weight_by_activity.get(row.activity_id, 1.0)
-        if w == 0.0:
+        if w <= 0.0:
             continue  # zero-weight activities are excluded from the average
         weighted_numerator += row.score * w
         weighted_denominator += w
-    weighted_grade_average = (
-        round(weighted_numerator / weighted_denominator, 2)
-        if weighted_denominator
-        else None
-    )
+    weighted_grade_average = round(weighted_numerator / weighted_denominator, 2) if weighted_denominator else None
 
     progress = db_session.exec(
         select(CourseProgress).where(
@@ -261,26 +339,20 @@ def _ensure_course_activity_progress_rows(
             continue
         policy = _get_or_create_policy(activity, db_session)
         file_due_at = None
-        if (
-            _enum_value(activity.activity_type)
-            == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
-        ):
+        if _enum_value(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value:
             from src.db.file_submissions import FileSubmissionActivity
 
             file_submission = db_session.exec(
-                select(FileSubmissionActivity).where(
-                    FileSubmissionActivity.activity_id == activity.id
-                )
+                select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
             ).first()
             file_due_at = file_submission.due_at if file_submission else None
         db_session.add(
             ActivityProgress(
                 course_id=course_id,
-                activity_id=activity.id,
+                activity_id=require_persisted_id(activity.id, model_name="Activity"),
                 user_id=user_id,
                 required=True,
-                due_at=file_due_at
-                or (_coerce_datetime(policy.due_at) if policy else None),
+                due_at=file_due_at or (_coerce_datetime(policy.due_at) if policy else None),
                 updated_at=now,
             )
         )
@@ -293,15 +365,10 @@ def backfill_activity_progress(
     commit: bool = True,
 ) -> dict[str, int]:
     """Repair canonical progress rows for known enrolled/interacting learners."""
-
     activity_query = select(Activity).where(Activity.published)
     if course_id is not None:
         activity_query = activity_query.where(Activity.course_id == course_id)
-    activities = [
-        activity
-        for activity in db_session.exec(activity_query).all()
-        if activity.course_id is not None
-    ]
+    activities = [activity for activity in db_session.exec(activity_query).all() if activity.course_id is not None]
 
     user_ids_by_course = _known_user_ids_by_course(db_session, activities)
 
@@ -311,7 +378,7 @@ def backfill_activity_progress(
         _get_or_create_policy(activity, db_session)
         for user_id in user_ids_by_course.get(activity.course_id, set()):
             recalculate_activity_progress(
-                activity.id,
+                require_persisted_id(activity.id, model_name="Activity"),
                 user_id,
                 db_session,
                 commit=False,
@@ -374,16 +441,10 @@ def _apply_progress_from_submissions(
     now = datetime.now(UTC)
     latest = max(submissions, key=_submission_sort_key, default=None)
     submitted_attempts = [
-        submission
-        for submission in submissions
-        if _enum_value(submission.status) != SubmissionStatus.DRAFT.value
+        submission for submission in submissions if _enum_value(submission.status) != SubmissionStatus.DRAFT.value
     ]
     best = max(
-        (
-            submission
-            for submission in submitted_attempts
-            if _submission_score(submission) is not None
-        ),
+        (submission for submission in submitted_attempts if _submission_score(submission) is not None),
         key=lambda submission: _submission_score(submission) or 0,
         default=None,
     )
@@ -490,15 +551,11 @@ def _get_or_create_policy(
     db_session: Session,
     assessment_type: AssessmentType | None = None,
 ) -> AssessmentPolicy | None:
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).first()
     if policy is not None:
         return policy
 
-    assessment_type = assessment_type or _assessment_type_for_activity(
-        activity, db_session
-    )
+    assessment_type = assessment_type or _assessment_type_for_activity(activity, db_session)
     if assessment_type is None:
         return None
 
@@ -513,13 +570,13 @@ def _get_or_create_policy(
 
     policy = AssessmentPolicy(
         policy_uuid=f"policy_{ULID()}",
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         assessment_type=assessment_type,
         grading_mode=grading_mode,
         completion_rule=completion_rule,
         passing_score=60,
-        anti_cheat_json=anti_cheat_json,
-        settings_json=settings_json,
+        anti_cheat_json=cast("JsonObject", anti_cheat_json),
+        settings_json=cast("JsonObject", settings_json),
     )
     db_session.add(policy)
     db_session.flush()
@@ -546,30 +603,30 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
     value = settings.get(key)
     if value is None:
         return None
+    if not isinstance(value, (str, bytes, bytearray, SupportsInt)):
+        return None
     try:
         parsed = int(value)
     except TypeError, ValueError:
-        return 0.0
+        return None
     return parsed if parsed > 0 else None
 
 
 def _number_setting(settings: dict[str, object], key: str, default: float) -> float:
     value = settings.get(key)
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except TypeError, ValueError:
-        return default
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    return default
 
 
 def _assessment_type_for_activity(
     activity: Activity,
     db_session: Session,
 ) -> AssessmentType | None:
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity.id)
-    ).first()
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
     if assessment is not None:
         try:
             return AssessmentType(assessment.kind)
@@ -604,9 +661,7 @@ def _get_or_create_progress_submission(
     assessment_type: AssessmentType,
     db_session: Session,
 ) -> Submission:
-    existing = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    existing = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if existing is not None:
         return existing
     now = datetime.now(UTC)
@@ -633,46 +688,43 @@ def _known_user_ids_by_course(
     activity_ids = {activity.id for activity in activities if activity.id is not None}
     result: dict[int, set[int]] = {course_id: set() for course_id in course_ids}
 
-    for row in db_session.exec(select(TrailRun.course_id, TrailRun.user_id)).all():
-        if row.course_id in result:
-            result[row.course_id].add(row.user_id)
+    for c_id, u_id in db_session.exec(select(TrailRun.course_id, TrailRun.user_id)).all():
+        if c_id in result:
+            result[c_id].add(u_id)
 
     activity_course = {activity.id: activity.course_id for activity in activities}
-    for row in db_session.exec(
-        select(Submission.activity_id, Submission.user_id).where(
-            Submission.activity_id.in_(activity_ids)
-        )
+    for act_id, u_id in db_session.exec(
+        select(Submission.activity_id, Submission.user_id).where(col(Submission.activity_id).in_(activity_ids))
     ).all():
-        course_id = activity_course.get(row.activity_id)
+        course_id = activity_course.get(act_id)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(u_id)
 
     from src.db.file_submissions import FileSubmissionAttempt
 
-    for row in db_session.exec(
+    for act_id, u_id in db_session.exec(
         select(FileSubmissionAttempt.activity_id, FileSubmissionAttempt.user_id).where(
-            FileSubmissionAttempt.activity_id.in_(activity_ids)
+            col(FileSubmissionAttempt.activity_id).in_(activity_ids)
         )
     ).all():
-        course_id = activity_course.get(row.activity_id)
+        course_id = activity_course.get(act_id)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(u_id)
 
     course_uuid_to_id = {
         course.course_uuid: course.id
-        for course in db_session.exec(
-            select(Course).where(Course.id.in_(course_ids))
-        ).all()
+        for course in db_session.exec(select(Course).where(col(Course.id).in_(course_ids))).all()
+        if course.id is not None
     }
-    for row in db_session.exec(
+    for res_uuid, u_id in db_session.exec(
         select(UserGroupResource.resource_uuid, UserGroupUser.user_id).join(
             UserGroupUser,
-            UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+            col(UserGroupUser.usergroup_id) == UserGroupResource.usergroup_id,
         )
     ).all():
-        course_id = course_uuid_to_id.get(row.resource_uuid)
+        course_id = course_uuid_to_id.get(res_uuid)
         if course_id in result:
-            result[course_id].add(row.user_id)
+            result[course_id].add(u_id)
 
     return result
 
@@ -752,9 +804,7 @@ def _recalculate_file_submission_progress(
     )
 
     file_submission = db_session.exec(
-        select(FileSubmissionActivity).where(
-            FileSubmissionActivity.activity_id == activity.id
-        )
+        select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
     ).first()
     attempts = list(
         db_session.exec(
@@ -772,8 +822,8 @@ def _recalculate_file_submission_progress(
     ).first()
     if progress is None:
         progress = ActivityProgress(
-            course_id=activity.course_id,
-            activity_id=activity.id,
+            course_id=require_persisted_id(activity.course_id, model_name="Activity"),
+            activity_id=require_persisted_id(activity.id, model_name="Activity"),
             user_id=user_id,
         )
 
@@ -783,9 +833,7 @@ def _recalculate_file_submission_progress(
         default=None,
     )
     submitted_attempts = [
-        attempt
-        for attempt in attempts
-        if _enum_value(attempt.status) != FileSubmissionAttemptStatus.DRAFT.value
+        attempt for attempt in attempts if _enum_value(attempt.status) != FileSubmissionAttemptStatus.DRAFT.value
     ]
     state = ActivityProgressState.NOT_STARTED
     score = latest.final_score if latest else None
@@ -804,13 +852,10 @@ def _recalculate_file_submission_progress(
         elif latest_status == FileSubmissionAttemptStatus.RETURNED.value:
             state = ActivityProgressState.RETURNED
             status_reason = "returned_for_revision"
-        elif latest_status in {
-            FileSubmissionAttemptStatus.GRADED.value,
-            FileSubmissionAttemptStatus.PUBLISHED.value,
-        }:
-            state = (
-                ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
-            )
+        elif latest_status == FileSubmissionAttemptStatus.GRADED.value:
+            state = ActivityProgressState.GRADED
+        elif latest_status == FileSubmissionAttemptStatus.PUBLISHED.value:
+            state = ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
             completed_at = latest.graded_at or latest.submitted_at or latest.updated_at
 
     progress.required = True
@@ -834,7 +879,7 @@ def _recalculate_file_submission_progress(
 
     if update_course_progress:
         recalculate_course_progress(
-            activity.course_id,
+            require_persisted_id(activity.course_id, model_name="Activity"),
             user_id,
             db_session,
             commit=False,

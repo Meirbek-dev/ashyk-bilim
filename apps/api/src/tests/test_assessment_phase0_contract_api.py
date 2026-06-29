@@ -2,17 +2,24 @@
 
 import pathlib
 import sys
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
+from starlette.testclient import TestClient
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -38,6 +45,10 @@ from src.db.grading.submissions import (
     Submission,
     SubmissionStatus,
 )
+from src.db.resource_authors import ResourceAuthor
+from src.db.usergroup_resources import UserGroupResource
+from src.db.usergroup_user import UserGroupUser
+from src.db.usergroups import UserGroup
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
@@ -47,10 +58,14 @@ from src.services.assessments import core
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     tables = [
         User.__table__,
+        ResourceAuthor.__table__,
+        UserGroup.__table__,
+        UserGroupUser.__table__,
+        UserGroupResource.__table__,
         Course.__table__,
         Chapter.__table__,
         Activity.__table__,
@@ -60,6 +75,9 @@ def db_session_factory_fixture():
         StudentPolicyOverride.__table__,
         Submission.__table__,
         GradingEntry.__table__,
+        AssessmentAccessPolicy.__table__,
+        AssessmentAccessUser.__table__,
+        AssessmentAccessUserGroup.__table__,
     ]
     SQLModel.metadata.create_all(engine, tables=tables)
     factory = build_session_factory(engine)
@@ -95,12 +113,12 @@ def student_user_fixture() -> PublicUser:
 
 @pytest.fixture(name="api_client")
 def api_client_fixture(
-    db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch
-):
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -117,7 +135,7 @@ def api_client_fixture(
     return TestClient(app)
 
 
-def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
+def _seed_base(db_session_factory: Callable[[], Session], *, lifecycle: AssessmentLifecycle) -> tuple[str, str]:
     with db_session_factory() as session:
         teacher = User(
             id=1,
@@ -222,14 +240,8 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
             description="",
             lifecycle=lifecycle,
             scheduled_at=None,
-            published_at=(
-                datetime.now(UTC)
-                if lifecycle == AssessmentLifecycle.PUBLISHED
-                else None
-            ),
-            archived_at=(
-                datetime.now(UTC) if lifecycle == AssessmentLifecycle.ARCHIVED else None
-            ),
+            published_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.PUBLISHED else None),
+            archived_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.ARCHIVED else None),
             weight=1.0,
             grading_type=AssessmentGradingType.PERCENTAGE,
             policy_id=policy.id,
@@ -254,15 +266,11 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
 
 def test_canonical_student_me_masks_unpublished_batch_grade(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.activity_uuid == "activity_phase0")
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_phase0")).one()
         submission = Submission(
             submission_uuid="submission_hidden",
             assessment_type=AssessmentType.EXAM,
@@ -270,9 +278,7 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
             user_id=2,
             status=SubmissionStatus.GRADED,
             attempt_number=1,
-            answers_json={
-                "answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}
-            },
+            answers_json={"answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}},
             grading_json=GradingBreakdown(feedback="Hidden feedback").model_dump(),
             auto_score=82,
             final_score=82,
@@ -318,11 +324,9 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
 
 def test_start_is_blocked_when_assessment_is_not_published(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.DRAFT
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.DRAFT)
 
     response = api_client.post(f"/assessments/{assessment_uuid}/start")
 
@@ -332,7 +336,7 @@ def test_start_is_blocked_when_assessment_is_not_published(
 
 def test_activity_lookup_does_not_create_canonical_assessment_rows(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
     with db_session_factory() as session:
         teacher = User(
@@ -405,15 +409,11 @@ def test_activity_lookup_does_not_create_canonical_assessment_rows(
 
 def test_published_assessment_with_submissions_rejects_item_edits(
     api_client: TestClient,
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.activity_uuid == "activity_phase0")
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_phase0")).one()
         session.add(
             Submission(
                 submission_uuid="submission_existing",

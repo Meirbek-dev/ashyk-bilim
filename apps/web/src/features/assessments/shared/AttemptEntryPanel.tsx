@@ -1,33 +1,33 @@
-'use client';
+'use client'
 
-import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { ArrowRight, LoaderCircle } from 'lucide-react'
 
-import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
-import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
+import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export interface AttemptEntryMetric {
-  icon: LucideIcon;
-  label: string;
-  value: string;
+  icon: LucideIcon
+  label: string
+  value: string
 }
 
 interface AttemptEntryPanelProps {
-  title: string;
-  description?: string | null;
-  metrics: AttemptEntryMetric[];
-  historyItems: AttemptHistoryItem[];
-  actionTitle: string;
-  actionDescription: string;
-  actionLabel?: string;
-  actionDisabled?: boolean;
-  actionPending?: boolean;
-  blockedMessage?: string | null;
-  onAction?: () => void;
-  notices?: ReactNode;
+  title: string
+  description?: string | null
+  metrics: AttemptEntryMetric[]
+  historyItems: AttemptHistoryItem[]
+  actionTitle: string
+  actionDescription: string
+  actionLabel?: string
+  actionDisabled?: boolean
+  actionPending?: boolean
+  blockedMessage?: string | null
+  onAction?: () => void
+  notices?: ReactNode
 }
 
 export default function AttemptEntryPanel({
@@ -54,10 +54,7 @@ export default function AttemptEntryPanel({
         <CardContent className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-3">
             {metrics.map(({ icon: Icon, label, value }) => (
-              <div
-                key={label}
-                className="rounded-md border p-3"
-              >
+              <div key={label} className="rounded-md border p-3">
                 <Icon className="text-muted-foreground mb-2 size-4" />
                 <div className="text-muted-foreground text-xs">{label}</div>
                 <div className="text-lg font-semibold">{value}</div>
@@ -77,12 +74,7 @@ export default function AttemptEntryPanel({
           </CardHeader>
           <CardContent className="space-y-3">
             {onAction && actionLabel ? (
-              <Button
-                className="w-full"
-                size="lg"
-                disabled={actionDisabled || actionPending}
-                onClick={onAction}
-              >
+              <Button className="w-full" size="lg" disabled={actionDisabled || actionPending} onClick={onAction}>
                 {actionPending ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
                 {actionLabel}
               </Button>
@@ -94,5 +86,5 @@ export default function AttemptEntryPanel({
         <AttemptHistoryList items={historyItems} />
       </aside>
     </div>
-  );
+  )
 }

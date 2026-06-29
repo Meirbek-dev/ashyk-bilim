@@ -7,7 +7,7 @@ storage, but new API surfaces should read and write this module.
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
 from sqlalchemy import (
@@ -24,6 +24,8 @@ from sqlalchemy import (
 from sqlmodel import Field as SQLField
 from ulid import ULID
 
+from src.db.assessment_access import AssessmentAccessMode
+from src.db.assessment_contracts import AssessmentCanonicalPolicy
 from src.db.courses.activities import ActivityAssessmentPolicyRead
 from src.db.grading.progress import (
     AssessmentCompletionRule,
@@ -109,7 +111,13 @@ class CodeTestCase(PydanticStrictBaseModel):
     is_visible: bool = True
     weight: int = 1
     description: str | None = None
-    match_mode: Literal["EXACT"] = "EXACT"
+    match_mode: Literal[
+        "EXACT",
+        "TRIMMED",
+        "IGNORE_WHITESPACE",
+        "NUMERIC_TOLERANCE",
+        "CUSTOM_CHECKER",
+    ] = "EXACT"
 
 
 class CodeItemBody(PydanticStrictBaseModel):
@@ -146,11 +154,7 @@ class MatchingItemBody(PydanticStrictBaseModel):
 
 
 type ItemBody = Annotated[
-    ChoiceItemBody
-    | OpenTextItemBody
-    | FormItemBody
-    | CodeItemBody
-    | MatchingItemBody,
+    ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody,
     Field(discriminator="kind"),
 ]
 
@@ -200,15 +204,49 @@ class MatchingItemAnswer(PydanticStrictBaseModel):
 
 
 type ItemAnswer = Annotated[
-    ChoiceItemAnswer
-    | OpenTextItemAnswer
-    | FormItemAnswer
-    | CodeItemAnswer
-    | MatchingItemAnswer,
+    ChoiceItemAnswer | OpenTextItemAnswer | FormItemAnswer | CodeItemAnswer | MatchingItemAnswer,
     Field(discriminator="kind"),
 ]
 
 ITEM_ANSWER_ADAPTER: TypeAdapter[ItemAnswer] = TypeAdapter(ItemAnswer)
+
+
+class AssessmentItemMetadata(PydanticStrictBaseModel):
+    section_label: str | None = None
+    difficulty: Literal["easy", "medium", "hard"] | None = None
+    tags: list[str] = Field(default_factory=list)
+    outcome_ids: list[str] = Field(default_factory=list)
+    estimated_minutes: int | None = None
+
+    @field_validator("section_label", mode="before")
+    @classmethod
+    def normalize_section_label(cls, value: object) -> object:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("tags", "outcome_ids", mode="before")
+    @classmethod
+    def normalize_string_list(cls, value: object) -> object:
+        if value is None:
+            empty_list: list[str] = []
+            return empty_list
+        if not isinstance(value, list):
+            return value
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for item in value:
+            if not isinstance(item, str):
+                continue
+            stripped = item.strip()
+            key = stripped.lower()
+            if stripped and key not in seen:
+                seen.add(key)
+                normalized.append(stripped)
+        return normalized
 
 
 # ── Tables ────────────────────────────────────────────────────────────────────
@@ -217,7 +255,7 @@ ITEM_ANSWER_ADAPTER: TypeAdapter[ItemAnswer] = TypeAdapter(ItemAnswer)
 class Assessment(SQLModelStrictBaseModel, table=True):
     """Canonical assessment row for one gradeable activity."""
 
-    __tablename__ = "assessment"
+    __tablename__ = "assessment"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_assessment_uuid", "assessment_uuid", unique=True),
         Index("ix_assessment_activity_id", "activity_id", unique=True),
@@ -334,7 +372,7 @@ class Assessment(SQLModelStrictBaseModel, table=True):
 class AssessmentItem(SQLModelStrictBaseModel, table=True):
     """Single authoring item inside an assessment."""
 
-    __tablename__ = "assessment_item"
+    __tablename__ = "assessment_item"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_assessment_item_uuid", "item_uuid", unique=True),
         Index("ix_assessment_item_assessment_order", "assessment_id", "order"),
@@ -356,6 +394,10 @@ class AssessmentItem(SQLModelStrictBaseModel, table=True):
     kind: ItemKind = SQLField(sa_column=Column("kind", String, nullable=False))
     title: str = ""
     body_json: dict[str, object] = SQLField(
+        default_factory=dict,
+        sa_column=Column(JSON, nullable=False, server_default="{}"),
+    )
+    metadata_json: dict[str, object] = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
@@ -397,18 +439,27 @@ class AssessmentPolicyPatch(PydanticStrictBaseModel):
     grading_mode: AssessmentGradingMode | None = None
     completion_rule: AssessmentCompletionRule | None = None
     passing_score: float | None = None
-    # Required flag (stored in settings_json)
+    # Required flag
     required: bool | None = None
     # Review visibility: what students see after release
     review_visibility: Literal["NONE", "SCORE_ONLY", "FULL"] | None = None
+    # Delivery policy
+    randomize_questions: bool | None = None
+    randomize_options: bool | None = None
+    partial_credit: bool | None = None
+    negative_marking_percent: float | None = None
+    grace_period_minutes: int | None = None
     # Anti-cheat
-    anti_cheat_json: dict[str, object] | None = None
-    # Arbitrary extension fields
-    settings_json: dict[str, object] | None = None
+    copy_paste_protection: bool | None = None
+    tab_switch_detection: bool | None = None
+    devtools_detection: bool | None = None
+    right_click_disabled: bool | None = None
+    fullscreen_required: bool | None = None
+    violation_threshold: int | None = None
 
     @field_validator("due_at", mode="before")
     @classmethod
-    def validate_due_at(cls, v: Any) -> Any:
+    def validate_due_at(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
     @field_validator("late_policy", mode="before")
@@ -477,6 +528,7 @@ class AssessmentUpdate(PydanticStrictBaseModel):
 class AssessmentLifecycleTransition(PydanticStrictBaseModel):
     to: AssessmentLifecycle
     scheduled_at: datetime | None = None
+    audit_note: str | None = Field(default=None, max_length=1000)
 
     @field_validator("to", mode="before")
     @classmethod
@@ -484,6 +536,11 @@ class AssessmentLifecycleTransition(PydanticStrictBaseModel):
         if isinstance(value, str):
             return AssessmentLifecycle(value)
         return value
+
+    @field_validator("scheduled_at", mode="before")
+    @classmethod
+    def validate_scheduled_at(cls, v: object) -> object:
+        return coerce_date_to_end_of_day(v)
 
 
 class AssessmentReadItem(PydanticStrictBaseModel):
@@ -493,6 +550,7 @@ class AssessmentReadItem(PydanticStrictBaseModel):
     kind: ItemKind
     title: str
     body: ItemBody
+    metadata: AssessmentItemMetadata = Field(default_factory=AssessmentItemMetadata)
     max_score: float
     created_at: datetime
     updated_at: datetime
@@ -521,6 +579,7 @@ class AssessmentEffectivePolicy(PydanticStrictBaseModel):
     grade_release_mode: GradeReleaseMode = GradeReleaseMode.IMMEDIATE
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
+    canonical_policy: AssessmentCanonicalPolicy = Field(default_factory=AssessmentCanonicalPolicy)
 
     @field_validator("grade_release_mode", mode="before")
     @classmethod
@@ -565,9 +624,7 @@ class AttemptStateRead(PydanticStrictBaseModel):
     is_result_visible: bool = False
     score: AssessmentScoreProjection = Field(default_factory=AssessmentScoreProjection)
     disabled_action_reasons: list[str] = Field(default_factory=list)
-    effective_policy: AssessmentEffectivePolicy = Field(
-        default_factory=AssessmentEffectivePolicy
-    )
+    effective_policy: AssessmentEffectivePolicy = Field(default_factory=AssessmentEffectivePolicy)
     # Authoritative server timestamps
     server_now: datetime | None = None
     started_at: datetime | None = None
@@ -583,6 +640,13 @@ class AttemptStateRead(PydanticStrictBaseModel):
 
 class AssessmentAttemptProjection(AttemptStateRead):
     """Backward-compatible OpenAPI name for the attempt state contract."""
+
+
+type AssessmentReviewSort = Literal["submitted_at", "final_score", "attempt_number"]
+
+
+def _default_assessment_review_sorts() -> list[AssessmentReviewSort]:
+    return ["submitted_at", "final_score", "attempt_number"]
 
 
 class AssessmentReviewProjection(PydanticStrictBaseModel):
@@ -601,15 +665,7 @@ class AssessmentReviewProjection(PydanticStrictBaseModel):
     ] = "NEEDS_GRADING"
     supports_search: bool = True
     supports_late_only: bool = True
-    supported_sorts: list[Literal["submitted_at", "final_score", "attempt_number"]] = (
-        Field(
-            default_factory=lambda: [
-                "submitted_at",
-                "final_score",
-                "attempt_number",
-            ]
-        )
-    )
+    supported_sorts: list[AssessmentReviewSort] = Field(default_factory=_default_assessment_review_sorts)
 
     @field_validator("kind", mode="before")
     @classmethod
@@ -699,8 +755,52 @@ class TeacherSubmissionRead(SubmissionRead):
 
 
 class ReviewQueueRead(SubmissionListResponse):
-    items: list[TeacherSubmissionRead]
+    items: list[TeacherSubmissionRead]  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
     contract_version: int = 1
+
+
+class AssessmentAccessUserRead(PydanticStrictBaseModel):
+    id: int
+    user_uuid: str
+    username: str
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str
+
+
+class AssessmentAccessUserGroupRead(PydanticStrictBaseModel):
+    id: int
+    usergroup_uuid: str
+    name: str
+    description: str = ""
+    member_count: int = 0
+
+
+class AssessmentAccessRead(PydanticStrictBaseModel):
+    mode: AssessmentAccessMode = AssessmentAccessMode.ALL_COURSE_LEARNERS
+    users: list[AssessmentAccessUserRead] = Field(default_factory=list)
+    usergroups: list[AssessmentAccessUserGroupRead] = Field(default_factory=list)
+    effective_user_count: int = 0
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def validate_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentAccessMode(value)
+        return value
+
+
+class AssessmentAccessUpdate(PydanticStrictBaseModel):
+    mode: AssessmentAccessMode = AssessmentAccessMode.ALL_COURSE_LEARNERS
+    user_ids: list[int] = Field(default_factory=list)
+    usergroup_ids: list[int] = Field(default_factory=list)
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def validate_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentAccessMode(value)
+        return value
 
 
 class AssessmentCreateResponse(PydanticStrictBaseModel):
@@ -711,6 +811,7 @@ class AssessmentItemCreate(PydanticStrictBaseModel):
     kind: ItemKind
     title: str = ""
     body: ItemBody
+    metadata: AssessmentItemMetadata = Field(default_factory=AssessmentItemMetadata)
     max_score: float = 0.0
 
     @field_validator("kind", mode="before")
@@ -723,7 +824,8 @@ class AssessmentItemCreate(PydanticStrictBaseModel):
     @model_validator(mode="after")
     def kind_matches_body(self) -> Self:
         if str(self.kind) != str(self.body.kind):
-            raise ValueError("Item kind must match body.kind")
+            msg = "Item kind must match body.kind"
+            raise ValueError(msg)
         return self
 
 
@@ -731,6 +833,7 @@ class AssessmentItemUpdate(PydanticStrictBaseModel):
     kind: ItemKind | None = None
     title: str | None = None
     body: ItemBody | None = None
+    metadata: AssessmentItemMetadata | None = None
     max_score: float | None = None
 
     @field_validator("kind", mode="before")
@@ -742,12 +845,9 @@ class AssessmentItemUpdate(PydanticStrictBaseModel):
 
     @model_validator(mode="after")
     def kind_matches_body(self) -> Self:
-        if (
-            self.kind is not None
-            and self.body is not None
-            and str(self.kind) != str(self.body.kind)
-        ):
-            raise ValueError("Item kind must match body.kind")
+        if self.kind is not None and self.body is not None and str(self.kind) != str(self.body.kind):
+            msg = "Item kind must match body.kind"
+            raise ValueError(msg)
         return self
 
 
@@ -764,11 +864,21 @@ class ReadinessIssue(PydanticStrictBaseModel):
     code: str
     message: str
     item_uuid: str | None = None
+    severity: Literal["blocker", "warning", "advice", "audit"] = "blocker"
+    area: Literal["details", "questions", "policy", "audience", "results", "publish", "system"] = "publish"
+    why: str | None = None
+    field: str | None = None
+    view: Literal["settings", "questions", "audience", "results", "publish"] = "publish"
+    action_label: str | None = None
+    auto_fix: str | None = None
 
 
 class AssessmentReadiness(PydanticStrictBaseModel):
     ok: bool
     issues: list[ReadinessIssue] = Field(default_factory=list)
+    blocker_count: int = 0
+    warning_count: int = 0
+    contract_version: int = 1
 
 
 class AssessmentAnswerPatch(PydanticStrictBaseModel):
@@ -797,9 +907,9 @@ class StudentPolicyOverrideCreate(PydanticStrictBaseModel):
     note: str = ""
     expires_at: datetime | None = None
 
-    @field_validator("due_at_override", mode="before")
+    @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
-    def validate_due_at_override(cls, v: Any) -> Any:
+    def validate_due_at_override(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -811,9 +921,9 @@ class StudentPolicyOverrideUpdate(PydanticStrictBaseModel):
     note: str | None = None
     expires_at: datetime | None = None
 
-    @field_validator("due_at_override", mode="before")
+    @field_validator("due_at_override", "expires_at", mode="before")
     @classmethod
-    def validate_due_at_override(cls, v: Any) -> Any:
+    def validate_due_at_override(cls, v: object) -> object:
         return coerce_date_to_end_of_day(v)
 
 
@@ -846,6 +956,10 @@ class CodeRunRequest(PydanticStrictBaseModel):
 class CodeRunTestResult(PydanticStrictBaseModel):
     test_id: str
     passed: bool
+    status_id: int | None = None
+    status_description: str | None = None
+    description: str | None = None
+    weight: float | None = None
     stdin: str | None = None
     expected: str | None = None
     actual: str | None = None
@@ -911,6 +1025,19 @@ class GradingDraftSave(PydanticStrictBaseModel):
     override_reason: str | None = None
     # GRADED = save (teacher-only); PUBLISHED = publish to student; RETURNED = revise
     status: str = "GRADED"
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: object) -> object:
+        if isinstance(v, str):
+            val = v.upper().strip()
+            mapping = {
+                "SAVE": "GRADED",
+                "PUBLISH": "PUBLISHED",
+                "RETURN": "RETURNED",
+            }
+            return mapping.get(val, val)
+        return v
 
 
 class AssessmentPolicyPreset(PydanticStrictBaseModel):

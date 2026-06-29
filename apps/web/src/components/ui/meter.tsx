@@ -1,22 +1,19 @@
-'use client';
+'use client'
 
-import { Meter as MeterPrimitive } from '@base-ui/react/meter';
-import type React from 'react';
-import { cn } from '@/lib/utils';
+import { Meter as MeterPrimitive } from '@base-ui/react/meter'
+import type React from 'react'
+import { cn } from '@/lib/utils'
 
 export function Meter({ className, children, ...props }: MeterPrimitive.Root.Props): React.ReactElement {
   return (
-    <MeterPrimitive.Root
-      className={cn('flex w-full flex-col gap-2', className)}
-      {...props}
-    >
+    <MeterPrimitive.Root className={cn('flex w-full flex-col gap-2', className)} {...props}>
       {children || (
         <MeterTrack>
           <MeterIndicator />
         </MeterTrack>
       )}
     </MeterPrimitive.Root>
-  );
+  )
 }
 
 export function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props): React.ReactElement {
@@ -26,7 +23,7 @@ export function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props):
       data-slot="meter-label"
       {...props}
     />
-  );
+  )
 }
 
 export function MeterTrack({ className, ...props }: MeterPrimitive.Track.Props): React.ReactElement {
@@ -36,7 +33,7 @@ export function MeterTrack({ className, ...props }: MeterPrimitive.Track.Props):
       data-slot="meter-track"
       {...props}
     />
-  );
+  )
 }
 
 export function MeterIndicator({ className, ...props }: MeterPrimitive.Indicator.Props): React.ReactElement {
@@ -46,7 +43,7 @@ export function MeterIndicator({ className, ...props }: MeterPrimitive.Indicator
       data-slot="meter-indicator"
       {...props}
     />
-  );
+  )
 }
 
 export function MeterValue({ className, ...props }: MeterPrimitive.Value.Props): React.ReactElement {
@@ -56,7 +53,7 @@ export function MeterValue({ className, ...props }: MeterPrimitive.Value.Props):
       data-slot="meter-value"
       {...props}
     />
-  );
+  )
 }
 
-export { MeterPrimitive };
+export { MeterPrimitive }

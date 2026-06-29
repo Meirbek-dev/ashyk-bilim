@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useSession } from '@/hooks/useSession';
-import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar';
-import { Calendar, Flame, TrendingUp, Trophy, Zap } from 'lucide-react';
-import { GlowingLevelBadge, getLevelInfo } from '@/lib/gamification';
-import type { UserGamificationProfile } from '@/types/gamification';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { useLocale, useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import { useSession } from '@/hooks/useSession'
+import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
+import { Activity, Calendar, CalendarCheck, TrendingUp, Trophy } from 'lucide-react'
+import { GlowingLevelBadge, getLevelInfo } from '@/lib/gamification'
+import type { UserGamificationProfile } from '@/types/gamification'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { useLocale, useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 interface HeroSectionProps {
-  profile: UserGamificationProfile;
-  userRank?: number | null;
-  className?: string;
+  profile: UserGamificationProfile
+  userRank?: number | null
+  className?: string
 }
 
 /**
@@ -26,38 +26,38 @@ interface HeroSectionProps {
  * - Next milestone preview
  */
 export function HeroSection({ profile, userRank, className }: HeroSectionProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const locale = useLocale();
-  const { user: viewer } = useSession();
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const formatNumber = (value: number) => numberFormatter.format(value);
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const locale = useLocale()
+  const { user: viewer } = useSession()
+  const numberFormatter = new Intl.NumberFormat(locale)
+  const formatNumber = (value: number) => numberFormatter.format(value)
 
-  const xpToNext = Math.max(0, profile.xp_to_next_level || 0);
-  const currentLevelXp = profile.xp_in_current_level || 0;
-  const xpProgress = xpToNext > 0 ? (currentLevelXp / (currentLevelXp + xpToNext)) * 100 : 0;
+  const xpToNext = Math.max(0, profile.xp_to_next_level || 0)
+  const currentLevelXp = profile.xp_in_current_level || 0
+  const xpProgress = xpToNext > 0 ? (currentLevelXp / (currentLevelXp + xpToNext)) * 100 : 0
 
   // Daily XP progress (out of cap - hardcoded for now, will be added to backend)
-  const dailyCap = 500;
-  const dailyEarned = profile.daily_xp_earned || 0;
-  const dailyXpProgress = Math.min((dailyEarned / dailyCap) * 100, 100);
+  const dailyCap = 500
+  const dailyEarned = profile.daily_xp_earned || 0
+  const dailyXpProgress = Math.min((dailyEarned / dailyCap) * 100, 100)
 
   // Next milestone
-  const nextMilestone = [5, 10, 15, 25, 50, 100].find((l) => l > profile.level);
+  const nextMilestone = [5, 10, 15, 25, 50, 100].find(l => l > profile.level)
 
   // Streak status
   const streakStatus = {
     login: profile.login_streak || 0,
     learning: profile.learning_streak || 0,
     max: Math.max(profile.login_streak || 0, profile.learning_streak || 0),
-  };
+  }
 
   // Get level info
-  const levelInfo = getLevelInfo(profile.level, t);
+  const levelInfo = getLevelInfo(profile.level, t)
 
   // Get display name from session
   const displayName = viewer?.first_name
     ? [viewer.first_name, viewer.middle_name, viewer.last_name].filter(Boolean).join(' ')
-    : viewer?.username;
+    : viewer?.username
 
   return (
     <Card className={cn('py-2', className)}>
@@ -76,26 +76,14 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 
               {/* Level badge - positioned on avatar */}
               <div className="absolute -right-0.5 -bottom-0.5">
-                <GlowingLevelBadge
-                  level={profile.level}
-                  size="lg"
-                  animated={false}
-                />
+                <GlowingLevelBadge level={profile.level} size="lg" animated={false} />
               </div>
             </div>
 
             {/* Streak indicators */}
             <div className="flex gap-2">
-              <StreakBadge
-                type="fire"
-                value={streakStatus.login}
-                label={t('streaks.loginStreak')}
-              />
-              <StreakBadge
-                type="zap"
-                value={streakStatus.learning}
-                label={t('streaks.learningStreak')}
-              />
+              <StreakBadge type="login" value={streakStatus.login} label={t('streaks.loginStreak')} />
+              <StreakBadge type="learning" value={streakStatus.learning} label={t('streaks.learningStreak')} />
             </div>
           </div>
 
@@ -170,7 +158,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
+                  <Activity className="h-3.5 w-3.5 text-sky-500" />
                   {t('progress.dailyXP')}
                 </span>
                 <span className="text-muted-foreground text-xs tabular-nums">
@@ -207,43 +195,39 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                 icon={TrendingUp}
                 label={t('stats.rank')}
                 value={userRank ? `#${userRank}` : '-'}
-                iconColor="text-sky-500"
+                iconColor="text-blue-500"
               />
               <StatCard
                 icon={Calendar}
                 label={t('stats.nextMilestone')}
                 value={nextMilestone ? `${t('progress.levelShort')} ${nextMilestone}` : t('stats.maxLevel')}
-                iconColor="text-violet-500"
+                iconColor="text-stone-500"
               />
             </div>
           </div>
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 /**
  * Streak Badge
  */
-function StreakBadge({ type, value, label }: { type: 'fire' | 'zap'; value: number; label: string }) {
-  const Icon = type === 'fire' ? Flame : Zap;
-  const activeIconColor = type === 'fire' ? 'text-orange-500' : 'text-amber-500';
+function StreakBadge({ type, value, label }: { type: 'login' | 'learning'; value: number; label: string }) {
+  const Icon = type === 'login' ? CalendarCheck : Activity
+  const activeIconColor = type === 'login' ? 'text-sky-600' : 'text-emerald-600'
   const activeBadgeClass =
-    type === 'fire'
-      ? 'border-orange-300/40 bg-orange-50 dark:bg-orange-950/30'
-      : 'border-amber-300/40 bg-amber-50 dark:bg-amber-950/30';
+    type === 'login'
+      ? 'border-sky-300/40 bg-sky-50 dark:bg-sky-950/30'
+      : 'border-emerald-300/40 bg-emerald-50 dark:bg-emerald-950/30'
 
   return (
-    <Badge
-      variant="secondary"
-      className={cn('gap-1.5 px-2.5 py-1', value > 0 && activeBadgeClass)}
-      title={label}
-    >
+    <Badge variant="secondary" className={cn('gap-1.5 px-2.5 py-1', value > 0 && activeBadgeClass)} title={label}>
       <Icon className={cn('h-3.5 w-3.5', value > 0 ? activeIconColor : 'text-muted-foreground')} />
       <span className={cn('text-xs font-semibold', value === 0 && 'text-muted-foreground')}>{value}</span>
     </Badge>
-  );
+  )
 }
 
 /**
@@ -255,10 +239,10 @@ function StatCard({
   value,
   iconColor,
 }: {
-  icon: any;
-  label: string;
-  value: string;
-  iconColor?: string;
+  icon: AppIcon
+  label: string
+  value: string
+  iconColor?: string
 }) {
   return (
     <div className="bg-muted/40 space-y-1 rounded-md p-3 text-center">
@@ -266,17 +250,17 @@ function StatCard({
       <p className="text-muted-foreground text-xs">{label}</p>
       <p className="text-sm font-semibold tabular-nums">{value}</p>
     </div>
-  );
+  )
 }
 
 /**
  * Helper to get level title key
  */
 function getLevelKey(level: number): string {
-  if (level >= 50) return 'grandmaster';
-  if (level >= 25) return 'master';
-  if (level >= 15) return 'expert';
-  if (level >= 10) return 'scholar';
-  if (level >= 5) return 'apprentice';
-  return 'novice';
+  if (level >= 50) return 'grandmaster'
+  if (level >= 25) return 'master'
+  if (level >= 15) return 'expert'
+  if (level >= 10) return 'scholar'
+  if (level >= 5) return 'apprentice'
+  return 'novice'
 }

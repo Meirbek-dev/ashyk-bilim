@@ -1,5 +1,4 @@
-"""
-RBAC API Endpoints
+"""RBAC API Endpoints.
 
 - POST /check           - check single permission (returns granted/denied, never 403)
 - POST /check/batch     - batch check
@@ -11,17 +10,17 @@ RBAC API Endpoints
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.db.permissions import Role, UserRole
-from src.db.users import AnonymousUser, PublicUser
-from src.db.users import User as UserModel
+from src.db.users import AnonymousUser, PublicUser, User as UserModel
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
+from src.types import JsonObject, as_json_object
 
 audit_log = logging.getLogger("rbac.audit")
 
@@ -81,7 +80,7 @@ class RoleRevocationRequest(BaseModel):
 
 
 class UserPermissionsResponse(BaseModel):
-    roles: list[dict]
+    roles: list[JsonObject]
     permissions: list[str]
 
 
@@ -113,6 +112,10 @@ class UserRoleAssignmentResponse(BaseModel):
     role: UserRoleSummary
 
 
+class RoleMutationResponse(BaseModel):
+    message: str
+
+
 # ============================================================================
 # Permission check endpoints (never 403 - used by frontend for UI state)
 # ============================================================================
@@ -126,11 +129,9 @@ class UserRoleAssignmentResponse(BaseModel):
 def check_permission(
     request: Request,
     body: PermissionCheckRequest,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> PermissionCheckResponse:
     # Anonymous users resolve through the ``guest`` role (user_id=0), so public
     # read actions return granted=True. Returning a hard False here would hide
     # public UI affordances (e.g. "view course" buttons) from signed-out users.
@@ -147,11 +148,9 @@ def check_permission(
 def check_permissions_batch(
     request: Request,
     body: BatchPermissionCheckRequest,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> BatchPermissionCheckResponse:
     perms = [f"{c.resource}:{c.action}" for c in body.checks]
     results = checker.check_many(current_user.id, perms)
     return BatchPermissionCheckResponse(results=results)
@@ -164,11 +163,9 @@ def check_permissions_batch(
 
 @router.get("/me/permissions", response_model=UserPermissionsResponse)
 def get_my_permissions(
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> UserPermissionsResponse:
     # Anonymous users resolve to the guest role's permissions so the frontend
     # can gate public UI on the same Set.has() path used for signed-in users.
     if isinstance(current_user, AnonymousUser):
@@ -179,7 +176,7 @@ def get_my_permissions(
     permissions = sorted(checker.get_expanded_permissions(current_user.id))
 
     return UserPermissionsResponse(
-        roles=roles,
+        roles=[as_json_object(dict(role), field="roles") for role in roles],
         permissions=permissions,
     )
 
@@ -192,17 +189,17 @@ def get_my_permissions(
 @router.get("/user-roles", response_model=list[UserRoleAssignmentResponse])
 def list_user_roles(
     db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    checker: PermissionCheckerDep = None,
-):
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    checker: PermissionCheckerDep,
+) -> list[UserRoleAssignmentResponse]:
     """List user↔role assignments."""
     checker.require(current_user.id, "role:read")
 
     rows = db_session.exec(
         select(UserRole, UserModel, Role)
-        .join(UserModel, UserModel.id == UserRole.user_id)
-        .join(Role, Role.id == UserRole.role_id)
-        .order_by(UserRole.assigned_at.desc())
+        .join(UserModel, col(UserModel.id) == UserRole.user_id)
+        .join(Role, col(Role.id) == UserRole.role_id)
+        .order_by(col(UserRole.assigned_at).desc())
     ).all()
 
     return [
@@ -233,15 +230,14 @@ def list_user_roles(
     ]
 
 
-@router.post("/roles/assign")
+@router.post("/roles/assign", response_model=RoleMutationResponse)
 async def assign_role(
     request: RoleAssignmentRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
-    """
-    Assign a role to a user.
+) -> RoleMutationResponse:
+    """Assign a role to a user.
 
     **Required Permission**: `role:create`
     """
@@ -267,18 +263,17 @@ async def assign_role(
             "role_id": request.role_id,
         },
     )
-    return {"message": "Role assigned"}
+    return RoleMutationResponse(message="Role assigned")
 
 
-@router.post("/roles/revoke")
+@router.post("/roles/revoke", response_model=RoleMutationResponse)
 async def revoke_role(
     request: RoleRevocationRequest,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     db_session: Annotated[Session, Depends(get_db_session)],
-):
-    """
-    Revoke a role from a user.
+) -> RoleMutationResponse:
+    """Revoke a role from a user.
 
     **Required Permission**: `role:delete`
     """
@@ -303,4 +298,4 @@ async def revoke_role(
             "role_id": request.role_id,
         },
     )
-    return {"message": "Role revoked"}
+    return RoleMutationResponse(message="Role revoked")

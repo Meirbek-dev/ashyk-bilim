@@ -4,16 +4,16 @@
  * Single, flexible skeleton component with content-aware variants.
  */
 
-'use client';
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface LoadingStateProps {
-  title?: string;
-  variant?: 'profile' | 'stats' | 'list' | 'feed';
-  itemCount?: number;
-  className?: string;
+  title?: string
+  variant?: 'profile' | 'stats' | 'list' | 'feed'
+  itemCount?: number
+  className?: string
 }
 
 export function LoadingState({ title, variant = 'list', itemCount = 5, className = '' }: LoadingStateProps) {
@@ -31,7 +31,7 @@ export function LoadingState({ title, variant = 'list', itemCount = 5, className
         {variant === 'feed' && <FeedSkeletonContent itemCount={itemCount} />}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 // Internal skeleton content components
@@ -48,34 +48,28 @@ function ProfileSkeletonContent() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function StatsSkeletonContent() {
   return (
     <div className="grid grid-cols-2 gap-4">
       {[...Array(4)].map((_, i) => (
-        <div
-          key={i}
-          className="space-y-2"
-        >
+        <div key={i} className="space-y-2">
           <Skeleton className="h-8 w-8" />
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-6 w-12" />
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 function ListSkeletonContent({ itemCount }: { itemCount: number }) {
   return (
     <div className="space-y-3">
       {[...Array(itemCount)].map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3"
-        >
+        <div key={i} className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -84,17 +78,14 @@ function ListSkeletonContent({ itemCount }: { itemCount: number }) {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 function FeedSkeletonContent({ itemCount }: { itemCount: number }) {
   return (
     <div className="space-y-4">
       {[...Array(itemCount)].map((_, i) => (
-        <div
-          key={i}
-          className="flex items-start gap-3"
-        >
+        <div key={i} className="flex items-start gap-3">
           <Skeleton className="h-10 w-10 shrink-0 rounded" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-2/3" />
@@ -103,5 +94,5 @@ function FeedSkeletonContent({ itemCount }: { itemCount: number }) {
         </div>
       ))}
     </div>
-  );
+  )
 }

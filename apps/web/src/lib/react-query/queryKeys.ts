@@ -10,7 +10,9 @@ export const queryKeys = {
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
     draft: (assessmentUuid: string | null | undefined) =>
       ['assessments', 'draft', assessmentUuid || 'missing'] as const,
+    itemAnalytics: (assessmentUuid: string) => ['assessments', 'item-analytics', assessmentUuid] as const,
     readiness: (assessmentUuid: string) => ['assessments', 'readiness', assessmentUuid] as const,
+    stats: (assessmentUuid: string) => ['assessments', 'submission-stats', assessmentUuid] as const,
   },
   codeChallenges: {
     languages: () => ['code-challenges', 'languages'] as const,
@@ -50,13 +52,13 @@ export const queryKeys = {
     gradebook: (courseUuid: string) => ['grading', 'gradebook', courseUuid] as const,
     stats: (assessmentUuid: string) => ['grading', 'submission-stats', assessmentUuid] as const,
     submissions: (params: {
-      assessmentUuid: string;
-      page: number;
-      pageSize: number;
-      search: string;
-      sortBy: string;
-      sortDir: 'asc' | 'desc';
-      status: string;
+      assessmentUuid: string
+      page: number
+      pageSize: number
+      search: string
+      sortBy: string
+      sortDir: 'asc' | 'desc'
+      status: string
     }) => ['grading', 'submissions', params] as const,
   },
   landing: {
@@ -64,6 +66,10 @@ export const queryKeys = {
   },
   search: {
     content: (query: string, page: number, limit: number) => ['search', 'content', { query, page, limit }] as const,
+  },
+  studentActivity: {
+    runtime: (courseUuid: string, activityUuid: string) =>
+      ['student-activity', 'runtime', courseUuid, activityUuid] as const,
   },
   platform: {
     config: () => ['platform', 'config'] as const,
@@ -90,4 +96,4 @@ export const queryKeys = {
     roleAssignments: () => ['users', 'role-assignments'] as const,
     roles: () => ['users', 'roles'] as const,
   },
-};
+}

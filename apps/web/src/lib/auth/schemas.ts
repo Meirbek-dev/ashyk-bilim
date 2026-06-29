@@ -1,4 +1,4 @@
-import * as v from 'valibot';
+import * as v from 'valibot'
 
 /**
  * Reusable password schema factory.
@@ -19,4 +19,4 @@ export const passwordSchema = (t: (key: string) => string) =>
     v.regex(/[a-z]/, t('passwordNeedsLowercase')),
     v.regex(/[A-Z]/, t('passwordNeedsUppercase')),
     v.regex(/[0-9]/, t('passwordNeedsNumber')),
-  );
+  )

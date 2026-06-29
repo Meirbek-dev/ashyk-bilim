@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import type {
   DashboardData,
@@ -7,65 +7,64 @@ import type {
   UserGamificationProfile,
   XPAwardRequest,
   XPAwardResponse,
-} from '@/types/gamification';
+} from '@/types/gamification'
 import {
   awardXPAction,
   getDashboardDataAction,
   getLeaderboardAction,
   updatePreferencesAction,
   updateStreakAction,
-} from '@/app/actions/gamification';
-import { create } from 'zustand';
-import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+} from '@/app/actions/gamification'
+import { create } from 'zustand'
+import { createJSONStorage, devtools, persist } from 'zustand/middleware'
+import { IS_DEVELOPMENT } from '@/services/config/env'
+import { getErrorMessage, getErrorStatus } from '@/types/shared'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface XPToastPayload {
-  amount: number;
-  source?: string;
+  amount: number
+  source?: string
 }
 
 interface GamificationState {
-  profile: UserGamificationProfile | null;
-  dashboard: DashboardData | null;
-  leaderboard: PlatformLeaderboard | null;
-  isLoading: boolean;
-  error: GamificationError | null;
-  levelUpQueue: { newLevel: number }[];
-  pendingXPToasts: XPToastPayload[];
+  profile: UserGamificationProfile | null
+  dashboard: DashboardData | null
+  leaderboard: PlatformLeaderboard | null
+  isLoading: boolean
+  error: GamificationError | null
+  levelUpQueue: { newLevel: number }[]
+  pendingXPToasts: XPToastPayload[]
   // Circuit breaker
-  fetchAttempts: number;
-  lastFetchTime: number;
+  fetchAttempts: number
+  lastFetchTime: number
 }
 
 interface GamificationActions {
   /** Hydrate from server-provided initial data (called by GamificationProvider). */
   _hydrate: (data: {
-    profile?: UserGamificationProfile | null;
-    dashboard?: DashboardData | null;
-    leaderboard?: PlatformLeaderboard | null;
-  }) => void;
+    profile?: UserGamificationProfile | null
+    dashboard?: DashboardData | null
+    leaderboard?: PlatformLeaderboard | null
+  }) => void
   /** Fetch data only when not already loaded and circuit breaker allows it. */
-  fetchIfNeeded: () => Promise<void>;
-  refetch: () => Promise<void>;
-  awardXP: (payload: XPAwardRequest, options?: { silent?: boolean }) => Promise<XPAwardResponse>;
-  updateStreak: (type: 'login' | 'learning') => Promise<void>;
-  updatePreferences: (preferences: Record<string, any>) => Promise<void>;
+  fetchIfNeeded: () => Promise<void>
+  refetch: () => Promise<void>
+  awardXP: (payload: XPAwardRequest, options?: { silent?: boolean }) => Promise<XPAwardResponse>
+  updateStreak: (type: 'login' | 'learning') => Promise<void>
+  updatePreferences: (preferences: Record<string, unknown>) => Promise<void>
   /** Push an XP toast to the queue for the UI bridge to drain. */
-  showXPToast: (amount: number, source?: string) => void;
-  showLevelUpCelebration: (newLevel: number) => void;
-  dismissLevelUpCelebration: () => void;
+  showXPToast: (amount: number, source?: string) => void
+  showLevelUpCelebration: (newLevel: number) => void
+  dismissLevelUpCelebration: () => void
   /** Drain and return all pending XP toasts (called by GamificationProvider). */
-  consumeXPToasts: () => XPToastPayload[];
+  consumeXPToasts: () => XPToastPayload[]
 }
 
-const MAX_FETCH_ATTEMPTS = 3;
-const FETCH_COOLDOWN_MS = 60_000;
+const MAX_FETCH_ATTEMPTS = 3
+const FETCH_COOLDOWN_MS = 60_000
 
 // ── Store ─────────────────────────────────────────────────────────────────────
-
-// Transient state that should never be persisted (UI queues, loading flags)
-type TransientKeys = 'isLoading' | 'error' | 'levelUpQueue' | 'pendingXPToasts' | 'fetchAttempts' | 'lastFetchTime';
 
 export const useGamificationStore = create<GamificationState & GamificationActions>()(
   devtools(
@@ -83,79 +82,82 @@ export const useGamificationStore = create<GamificationState & GamificationActio
         lastFetchTime: 0,
 
         // Actions
-        _hydrate: (data) =>
-          set((s) => ({
+        _hydrate: data =>
+          set(s => ({
             profile: data.profile !== undefined ? (data.profile ?? null) : s.profile,
             dashboard: data.dashboard !== undefined ? (data.dashboard ?? null) : s.dashboard,
             leaderboard: data.leaderboard !== undefined ? (data.leaderboard ?? null) : s.leaderboard,
           })),
 
         fetchIfNeeded: async () => {
-          const { profile, isLoading, fetchAttempts, lastFetchTime } = get();
-          if (profile || isLoading) return;
+          const { profile, isLoading, fetchAttempts, lastFetchTime } = get()
+          if (profile || isLoading) return
 
-          const now = Date.now();
+          const now = Date.now()
           if (fetchAttempts >= MAX_FETCH_ATTEMPTS && now - lastFetchTime < FETCH_COOLDOWN_MS) {
-            console.warn('Gamification fetch circuit breaker triggered - too many failed attempts');
-            return;
+            console.warn('Gamification fetch circuit breaker triggered - too many failed attempts')
+            return
           }
           if (fetchAttempts >= MAX_FETCH_ATTEMPTS) {
-            set({ fetchAttempts: 0 });
+            set({ fetchAttempts: 0 })
           }
 
-          set({ isLoading: true, lastFetchTime: now });
+          set({ isLoading: true, lastFetchTime: now })
           try {
             const [dashboardData, leaderboardData] = await Promise.all([
               getDashboardDataAction(),
               getLeaderboardAction(),
-            ]);
+            ])
             if (dashboardData) {
               set({
                 profile: dashboardData.profile,
                 dashboard: dashboardData,
                 fetchAttempts: 0,
-              });
+              })
             } else {
-              set((s) => ({ fetchAttempts: s.fetchAttempts + 1 }));
+              set(s => ({ fetchAttempts: s.fetchAttempts + 1 }))
             }
-            if (leaderboardData) set({ leaderboard: leaderboardData });
+            if (leaderboardData) set({ leaderboard: leaderboardData })
           } catch (error) {
-            console.error('Failed to fetch initial gamification data:', error);
-            set((s) => ({ fetchAttempts: s.fetchAttempts + 1 }));
+            console.error('Failed to fetch initial gamification data:', error)
+            set(s => ({ fetchAttempts: s.fetchAttempts + 1 }))
           } finally {
-            set({ isLoading: false });
+            set({ isLoading: false })
           }
         },
 
         refetch: async () => {
-          set({ isLoading: true });
+          set({ isLoading: true })
           try {
             const [dashboardData, leaderboardData] = await Promise.all([
               getDashboardDataAction(),
               getLeaderboardAction(),
-            ]);
-            if (dashboardData) set({ profile: dashboardData.profile, dashboard: dashboardData });
-            if (leaderboardData) set({ leaderboard: leaderboardData });
+            ])
+            if (dashboardData) set({ profile: dashboardData.profile, dashboard: dashboardData })
+            if (leaderboardData) set({ leaderboard: leaderboardData })
           } catch (error) {
-            console.error('Failed to refetch gamification data:', error);
+            console.error('Failed to refetch gamification data:', error)
           } finally {
-            set({ isLoading: false });
+            set({ isLoading: false })
           }
         },
 
         awardXP: async (payload, options = {}) => {
-          set({ error: null });
+          set({ error: null })
           try {
-            const result = await awardXPAction(payload);
+            const result = await awardXPAction(payload)
             if (result.profile) {
-              set((s) => {
-                const newPendingXPToasts = [...s.pendingXPToasts];
-                const newLevelUpQueue = [...s.levelUpQueue];
+              set(s => {
+                const newPendingXPToasts = [...s.pendingXPToasts]
+                const newLevelUpQueue = [...s.levelUpQueue]
 
                 if (!options.silent && result.transaction.amount > 0) {
-                  newPendingXPToasts.push({ amount: result.transaction.amount, source: payload.source });
+                  newPendingXPToasts.push({
+                    amount: result.transaction.amount,
+                    source: payload.source,
+                  })
                   if (result.triggered_level_up) {
-                    newLevelUpQueue.push({ newLevel: result.profile.level });
+                    newLevelUpQueue.push({ newLevel: result.profile.level })
                   }
                 }
 
@@ -164,95 +166,98 @@ export const useGamificationStore = create<GamificationState & GamificationActio
                   dashboard: s.dashboard ? { ...s.dashboard, profile: result.profile } : s.dashboard,
                   pendingXPToasts: newPendingXPToasts,
                   levelUpQueue: newLevelUpQueue,
-                };
-              });
-            }
-            return result;
-          } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to award XP';
-            const statusCode = (error as any)?.statusCode ?? 500;
-            const gamificationError: GamificationError = {
-              type: 'SERVER_ERROR',
-              message,
-              timestamp: new Date().toISOString(),
-              statusCode,
-            };
-            set({ error: gamificationError });
-            throw gamificationError;
-          }
-        },
-
-        updateStreak: async (type) => {
-          set({ error: null });
-          try {
-            const result = await updateStreakAction(type);
-            if (result) {
-              set((s) => {
-                if (!s.profile) return s;
-                const newProfile = { ...s.profile };
-                if (type === 'login') {
-                  newProfile.login_streak = result.current_streak;
-                  newProfile.longest_login_streak = result.longest_streak;
-                } else {
-                  newProfile.learning_streak = result.current_streak;
-                  newProfile.longest_learning_streak = result.longest_streak;
                 }
-                return { profile: newProfile };
-              });
+              })
             }
+            return result
           } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to update streak';
-            const statusCode = (error as any)?.statusCode ?? 500;
+            const message = getErrorMessage(error, 'Failed to award XP')
+            const statusCode = getErrorStatus(error)
             const gamificationError: GamificationError = {
               type: 'SERVER_ERROR',
               message,
               timestamp: new Date().toISOString(),
               statusCode,
-            };
-            set({ error: gamificationError });
-            throw gamificationError;
+            }
+            set({ error: gamificationError })
+            throw gamificationError
           }
         },
 
-        updatePreferences: async (preferences) => {
-          set({ error: null });
+        updateStreak: async type => {
+          set({ error: null })
           try {
-            await updatePreferencesAction(preferences);
-            set((s) => {
+            const result = await updateStreakAction(type)
+            if (result) {
+              set(s => {
+                if (!s.profile) return s
+                const newProfile = { ...s.profile }
+                if (type === 'login') {
+                  newProfile.login_streak = result.current_streak
+                  newProfile.longest_login_streak = result.longest_streak
+                } else {
+                  newProfile.learning_streak = result.current_streak
+                  newProfile.longest_learning_streak = result.longest_streak
+                }
+                return { profile: newProfile }
+              })
+            }
+          } catch (error) {
+            const message = getErrorMessage(error, 'Failed to update streak')
+            const statusCode = getErrorStatus(error)
+            const gamificationError: GamificationError = {
+              type: 'SERVER_ERROR',
+              message,
+              timestamp: new Date().toISOString(),
+              statusCode,
+            }
+            set({ error: gamificationError })
+            throw gamificationError
+          }
+        },
+
+        updatePreferences: async preferences => {
+          set({ error: null })
+          try {
+            await updatePreferencesAction(preferences)
+            set(s => {
               if (s.profile) {
                 return {
                   profile: {
                     ...s.profile,
                     preferences: { ...s.profile.preferences, ...preferences },
                   },
-                };
+                }
               }
-              return s;
-            });
+              return s
+            })
           } catch (error) {
-            const message = (error as any)?.message ?? 'Failed to update preferences';
-            const statusCode = (error as any)?.statusCode ?? 500;
+            const message = getErrorMessage(error, 'Failed to update preferences')
+            const statusCode = getErrorStatus(error)
             const gamificationError: GamificationError = {
               type: 'SERVER_ERROR',
               message,
               timestamp: new Date().toISOString(),
               statusCode,
-            };
-            set({ error: gamificationError });
-            throw gamificationError;
+            }
+            set({ error: gamificationError })
+            throw gamificationError
           }
         },
 
-        showXPToast: (amount, source) => set((s) => ({ pendingXPToasts: [...s.pendingXPToasts, { amount, source }] })),
+        showXPToast: (amount, source) =>
+          set(s => ({
+            pendingXPToasts: [...s.pendingXPToasts, source === undefined ? { amount } : { amount, source }],
+          })),
 
-        showLevelUpCelebration: (newLevel) => set((s) => ({ levelUpQueue: [...s.levelUpQueue, { newLevel }] })),
+        showLevelUpCelebration: newLevel => set(s => ({ levelUpQueue: [...s.levelUpQueue, { newLevel }] })),
 
-        dismissLevelUpCelebration: () => set((s) => ({ levelUpQueue: s.levelUpQueue.slice(1) })),
+        dismissLevelUpCelebration: () => set(s => ({ levelUpQueue: s.levelUpQueue.slice(1) })),
 
         consumeXPToasts: () => {
-          const toasts = get().pendingXPToasts;
-          set({ pendingXPToasts: [] });
-          return toasts;
+          const toasts = get().pendingXPToasts
+          set({ pendingXPToasts: [] })
+          return toasts
         },
       }),
       {
@@ -261,7 +266,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
           typeof globalThis.window !== 'undefined' ? globalThis.sessionStorage : ({} as Storage),
         ),
         // Only persist slow-changing profile/dashboard data — not transient UI state
-        partialize: (state) => ({
+        partialize: state => ({
           profile: state.profile,
           dashboard: state.dashboard,
         }),
@@ -269,9 +274,12 @@ export const useGamificationStore = create<GamificationState & GamificationActio
         version: 1,
       },
     ),
-    { name: 'GamificationStore', enabled: process.env.NODE_ENV === 'development' },
+    {
+      name: 'GamificationStore',
+      enabled: IS_DEVELOPMENT,
+    },
   ),
-);
+)
 
 // ── Selectors ─────────────────────────────────────────────────────────────────
 
@@ -280,4 +288,4 @@ export const selectStreaks = (s: GamificationState) => ({
   learning: s.profile?.learning_streak ?? 0,
   maxLogin: s.profile?.longest_login_streak ?? 0,
   maxLearning: s.profile?.longest_learning_streak ?? 0,
-});
+})

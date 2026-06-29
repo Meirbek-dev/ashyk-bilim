@@ -1,31 +1,27 @@
-import os
+import pathlib
+import sys
 from datetime import UTC, datetime
 
 import pytest
 
-# Set development mode to enable Pydantic strict mode
-os.environ["PLATFORM_DEVELOPMENT_MODE"] = "1"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-# Force re-evaluation of strict_base_model if it was already imported?
-# In tests, it might have been imported by other modules.
-# But here we are in a fresh process if we run pytest on this file alone.
+from pydantic import ValidationError
 
-from src.db.strict_base_model import _PYDANTIC_CONFIG
 from src.db.uploads import UploadRead, UploadStatus
 
+# Set development mode to enable Pydantic strict mode for this test specifically
+UploadRead.model_config["strict"] = True
+UploadRead.model_rebuild(force=True)
 
-def test_pydantic_is_strict():
-    """Verify that strict mode is actually enabled for the test."""
-    assert _PYDANTIC_CONFIG["strict"] is True
 
-
-def test_upload_read_status_coercion():
-    """
-    Verify that UploadRead allows 'status' to be a string even in strict mode.
+def test_upload_read_status_coercion() -> None:
+    """Verify that UploadRead allows 'status' to be a string even in strict mode.
     This simulates reading from a database column defined as String.
     """
     now = datetime.now(UTC)
-    data = {
+    data: dict[str, object] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",
@@ -45,12 +41,10 @@ def test_upload_read_status_coercion():
     assert isinstance(upload_read.status, UploadStatus)
 
 
-def test_upload_read_other_fields_remain_strict():
-    """
-    Verify that other fields (like size_bytes) still enforce strict types.
-    """
+def test_upload_read_other_fields_remain_strict() -> None:
+    """Verify that other fields (like size_bytes) still enforce strict types."""
     now = datetime.now(UTC)
-    data = {
+    data: dict[str, object] = {
         "upload_uuid": "ul_01KRN7W538CNMGNH9F17Q53XBM",
         "filename": "test.png",
         "content_type": "image/png",
@@ -62,7 +56,7 @@ def test_upload_read_other_fields_remain_strict():
         "finalized_at": None,
     }
 
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(ValidationError) as excinfo:
         UploadRead.model_validate(data)
 
     # It should be a Pydantic ValidationError

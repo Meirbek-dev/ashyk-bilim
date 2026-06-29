@@ -1,9 +1,10 @@
 """Upload endpoints for assessment files and chunked uploads."""
 
 import hashlib
+import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
@@ -31,16 +32,18 @@ from src.db.uploads import (
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.utils.chunked_upload import (
+    ChunkedUploadSession,
     cleanup_session,
     complete_upload,
     create_upload_session,
-    get_session_status,
+    get_upload_session,
     process_chunk,
 )
 from src.services.utils.upload_content import upload_content
 
 router = APIRouter()
-_TEMP_UPLOAD_ROOT = Path("temp_uploads/assessment")
+_TEMP_UPLOAD_ROOT = Path("content/uploads/assessment")
+_TEMP_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 class ChunkedUploadInitiateResponse(PydanticStrictBaseModel):
@@ -77,17 +80,43 @@ def _temp_upload_path(upload_uuid: str) -> Path:
     return _TEMP_UPLOAD_ROOT / upload_uuid / "bytes"
 
 
+def cleanup_stale_assessment_uploads(*, max_age_hours: int = 24) -> int:
+    """Remove orphaned single-file upload bytes left behind after cancellation."""
+    if not _TEMP_UPLOAD_ROOT.exists():
+        return 0
+
+    cutoff = datetime.now(UTC) - timedelta(hours=max_age_hours)
+    removed = 0
+    for upload_dir in _TEMP_UPLOAD_ROOT.iterdir():
+        if not upload_dir.is_dir():
+            continue
+        try:
+            mtime = datetime.fromtimestamp(upload_dir.stat().st_mtime, UTC)
+        except FileNotFoundError:
+            continue
+        if mtime >= cutoff:
+            continue
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        removed += 1
+    return removed
+
+
 def _read_upload(upload_uuid: str, db_session: Session) -> Upload | None:
-    return db_session.exec(
-        select(Upload).where(Upload.upload_uuid == upload_uuid)
-    ).first()
+    return db_session.exec(select(Upload).where(Upload.upload_uuid == upload_uuid)).first()
 
 
 def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload:
     upload = _read_upload(upload_uuid, db_session)
     if upload is None or upload.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Upload not found")
+        raise HTTPException(status_code=404, detail="Загрузка не найдена")
     return upload
+
+
+def _owned_chunked_session(upload_id: str, user_id: int) -> ChunkedUploadSession:
+    session = get_upload_session(upload_id)
+    if session.owner_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Сессия загрузки не найдена")
+    return session
 
 
 def _upload_key(upload: Upload, sha256: str, user_uuid: str) -> str:
@@ -122,9 +151,7 @@ async def create_assessment_upload(
     db_session.add(upload)
     db_session.commit()
     db_session.refresh(upload)
-    put_url = str(
-        request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_uuid)
-    )
+    put_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_uuid))
     return UploadCreateResponse(
         upload_uuid=upload.upload_uuid,
         put_url=put_url,
@@ -141,9 +168,9 @@ async def put_assessment_upload_bytes(
 ) -> UploadRead:
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status in {UploadStatus.FINALIZED, UploadStatus.CANCELLED}:
-        raise HTTPException(status_code=409, detail="Upload is already closed")
+        raise HTTPException(status_code=409, detail="Загрузка уже закрыта")
     if upload.expires_at < datetime.now(UTC):
-        raise HTTPException(status_code=410, detail="Upload has expired")
+        raise HTTPException(status_code=410, detail="Срок загрузки истек")
 
     content = await request.body()
 
@@ -154,7 +181,7 @@ async def put_assessment_upload_bytes(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail={
                 "code": "FILE_TOO_LARGE",
-                "message": "Upload exceeds the maximum allowed size of 100 MB.",
+                "message": "Загрузка превышает максимально допустимый размер 100 МБ.",
                 "max_bytes": MAX_UPLOAD_BYTES,
                 "actual_bytes": len(content),
             },
@@ -184,15 +211,15 @@ async def finalize_assessment_upload(
     if upload.status == UploadStatus.FINALIZED:
         return UploadRead.model_validate(upload)
     if upload.status == UploadStatus.CANCELLED:
-        raise HTTPException(status_code=409, detail="Upload is cancelled")
+        raise HTTPException(status_code=409, detail="Загрузка отменена")
 
     temp_path = _temp_upload_path(upload.upload_uuid)
     if not temp_path.exists():
-        raise HTTPException(status_code=400, detail="Upload bytes are missing")
+        raise HTTPException(status_code=400, detail="Байты загрузки отсутствуют")
     content = temp_path.read_bytes()
     sha256 = hashlib.sha256(content).hexdigest()
     if sha256.lower() != payload.sha256.lower():
-        raise HTTPException(status_code=422, detail="Upload sha256 mismatch")
+        raise HTTPException(status_code=422, detail="Несовпадение sha256 загрузки")
 
     user_uuid = current_user.user_uuid or str(current_user.id)
     key = _upload_key(upload, sha256, user_uuid)
@@ -232,12 +259,27 @@ async def delete_assessment_upload(
     if upload.referenced_count > 0:
         raise HTTPException(
             status_code=409,
-            detail="Upload is referenced by a submission and cannot be deleted",
+            detail="Загрузка используется отправкой и не может быть удалена",
         )
     upload.status = UploadStatus.CANCELLED
     upload.updated_at = datetime.now(UTC)
     db_session.add(upload)
     db_session.commit()
+    temp_path = _temp_upload_path(upload.upload_uuid)
+    if temp_path.exists():
+        temp_path.unlink(missing_ok=True)
+        shutil.rmtree(temp_path.parent, ignore_errors=True)
+
+
+@router.delete("/chunked/{upload_id}", status_code=204)
+async def cancel_chunked_upload(
+    upload_id: str,
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> None:
+    """Cancel a resumable chunked upload and remove all staged chunk files."""
+    assert current_user is not None
+    _owned_chunked_session(upload_id, current_user.id)
+    cleanup_session(upload_id)
 
 
 class UploadUrlResponse(PydanticStrictBaseModel):
@@ -256,14 +298,12 @@ async def get_assessment_upload_url(
     """Return a short-lived signed URL to read a finalised upload."""
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status != UploadStatus.FINALIZED:
-        raise HTTPException(status_code=409, detail="Upload is not finalised")
+        raise HTTPException(status_code=409, detail="Загрузка не завершена")
     # In development / without a real object-store, return the finalize URL as a
     # placeholder.  In production this would be replaced with a presigned S3 GET URL.
     get_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload_id))
     expires_at = datetime.now(UTC) + timedelta(hours=1)
-    return UploadUrlResponse(
-        upload_uuid=upload_id, get_url=get_url, expires_at=expires_at
-    )
+    return UploadUrlResponse(upload_uuid=upload_id, get_url=get_url, expires_at=expires_at)
 
 
 @router.post("/initiate", response_model=ChunkedUploadInitiateResponse)
@@ -274,10 +314,9 @@ async def initiate_chunked_upload(
     total_chunks: Annotated[int, Form()],
     file_size: Annotated[int, Form()],
     uuid: Annotated[str | None, Form()] = None,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
-    """
-    Initiate a chunked upload session.
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> ChunkedUploadInitiateResponse:
+    """Initiate a chunked upload session.
 
     Args:
         directory: Target directory (e.g., "courses/xxx/activities/yyy/video")
@@ -289,20 +328,28 @@ async def initiate_chunked_upload(
 
     Returns:
         upload_uuid: Unique identifier for this upload session
+
     """
+    assert current_user is not None
+    if type_of_dir not in {"platform", "users"}:
+        raise HTTPException(status_code=400, detail="Параметр type_of_dir должен быть 'platform' или 'users'")
+    if type_of_dir == "users" and (uuid is None or uuid == ""):
+        raise HTTPException(status_code=400, detail="Параметр uuid обязателен")
+    upload_dir_type: Literal["platform", "users"] = "platform" if type_of_dir == "platform" else "users"
     upload_id = create_upload_session(
         directory=directory,
-        type_of_dir=type_of_dir,
+        type_of_dir=upload_dir_type,
         uuid=uuid,
+        owner_user_id=current_user.id,
         filename=filename,
         total_chunks=total_chunks,
         file_size=file_size,
     )
 
-    return {
-        "upload_uuid": upload_id,
-        "message": "Upload session initiated",
-    }
+    return ChunkedUploadInitiateResponse(
+        upload_uuid=upload_id,
+        message="Сессия загрузки начата",
+    )
 
 
 @router.post("/chunk", response_model=ChunkedUploadChunkResponse)
@@ -310,10 +357,9 @@ async def upload_chunk(
     upload_id: Annotated[str, Form()],
     chunk_index: Annotated[int, Form()],
     chunk: Annotated[UploadFile, File()],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
-    """
-    Upload a single chunk.
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> ChunkedUploadChunkResponse:
+    """Upload a single chunk.
 
     Args:
         upload_id: Upload session ID from initiate endpoint
@@ -322,34 +368,39 @@ async def upload_chunk(
 
     Returns:
         Status of the upload including progress
+
     """
+    assert current_user is not None
+    _owned_chunked_session(upload_id, current_user.id)
     result = await process_chunk(upload_id, chunk_index, chunk)
 
-    return {
+    return ChunkedUploadChunkResponse.model_validate({
         "success": True,
         "upload_uuid": result["upload_id"],
         "chunk_index": result["chunk_index"],
         "chunks_received": result["chunks_received"],
         "total_chunks": result["total_chunks"],
         "is_complete": result["is_complete"],
-    }
+    })
 
 
 @router.post("/complete", response_model=ChunkedUploadCompleteResponse)
 async def complete_chunked_upload(
     upload_id: Annotated[str, Form()],
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
-    """
-    Complete the chunked upload by assembling all chunks.
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> ChunkedUploadCompleteResponse:
+    """Complete the chunked upload by assembling all chunks.
 
     Args:
         upload_id: Upload session ID
 
     Returns:
         Final filename and upload details
+
     """
     try:
+        assert current_user is not None
+        _owned_chunked_session(upload_id, current_user.id)
         # Assemble chunks
         file_data, session = await complete_upload(upload_id)
 
@@ -366,12 +417,12 @@ async def complete_chunked_upload(
         # Clean up
         cleanup_session(upload_id)
 
-        return {
-            "success": True,
-            "filename": session.filename,
-            "file_size": session.file_size,
-            "message": "Upload completed successfully",
-        }
+        return ChunkedUploadCompleteResponse(
+            success=True,
+            filename=session.filename,
+            file_size=session.file_size,
+            message="Загрузка успешно завершена",
+        )
 
     except Exception:
         # Clean up on error
@@ -382,23 +433,24 @@ async def complete_chunked_upload(
 @router.get("/status/{upload_id}", response_model=ChunkedUploadStatusResponse)
 async def get_upload_status(
     upload_id: str,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-):
-    """
-    Get the status of an upload session.
+    current_user: Annotated[PublicUser | None, Depends(get_public_user)] = None,
+) -> ChunkedUploadStatusResponse:
+    """Get the status of an upload session.
 
     Args:
         upload_id: Upload session ID
 
     Returns:
         Upload progress and details
+
     """
-    status = get_session_status(upload_id)
-    return {
-        "upload_uuid": status["upload_id"],
-        "filename": status["filename"],
-        "chunks_received": status["chunks_received"],
-        "total_chunks": status["total_chunks"],
-        "is_complete": status["is_complete"],
-        "file_size": status["file_size"],
-    }
+    assert current_user is not None
+    session = _owned_chunked_session(upload_id, current_user.id)
+    return ChunkedUploadStatusResponse(
+        upload_uuid=session.upload_id,
+        filename=session.filename,
+        chunks_received=len(session.chunks_received),
+        total_chunks=session.total_chunks,
+        is_complete=session.is_complete(),
+        file_size=session.file_size,
+    )

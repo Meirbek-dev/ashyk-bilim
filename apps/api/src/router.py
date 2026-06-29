@@ -19,7 +19,7 @@ from src.routers import (
     usergroups,
     users,
 )
-from src.routers.ai import ai
+from src.routers.ai.router import router as ai_router
 from src.routers.assessments import unified as assessment_unified
 from src.routers.courses import (
     certifications,
@@ -34,21 +34,14 @@ from src.routers.grading.sse import router as grading_sse_router
 from src.routers.grading.teacher import router as grading_teacher_router
 from src.routers.uploads import chunked_upload
 from src.routers.utils import router as utils_router
-from src.services.dev.dev import isDevModeEnabledOrRaise
+from src.services.dev.dev import is_dev_mode_enabled_or_raise
 
 v1_router = APIRouter(prefix="/api/v1", route_class=StrictAPIRoute)
 
 
 # Auth domains
 v1_router.include_router(
-    fastapi_users.get_reset_password_router(),
-    prefix="/auth",
-    tags=["auth"],
-    dependencies=[Depends(auth.auth_sensitive_rate_limit)],
-)
-
-v1_router.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
+    fastapi_users.get_register_router(UserRead, UserCreate),  # type: ignore[type-var]
     prefix="/auth",
     tags=["auth"],
     dependencies=[Depends(auth.auth_sensitive_rate_limit)],
@@ -82,12 +75,8 @@ v1_router.include_router(
     prefix="/file-submissions",
     tags=["file-submissions"],
 )
-v1_router.include_router(
-    certifications.router, prefix="/certifications", tags=["certifications"]
-)
-v1_router.include_router(
-    collections.router, prefix="/collections", tags=["collections"]
-)
+v1_router.include_router(certifications.router, prefix="/certifications", tags=["certifications"])
+v1_router.include_router(collections.router, prefix="/collections", tags=["collections"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 
 # Gamification
@@ -97,25 +86,24 @@ v1_router.include_router(
     tags=["gamification"],
 )
 v1_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+v1_router.include_router(ai_router, prefix="/ai", tags=["ai"])
 v1_router.include_router(
     code_execution.router,
     prefix="/code-execution",
     tags=["code-execution"],
 )
 
-# Unified grading system (replaces fragmented assignment/quiz grading)
+# Unified grading system for assessment and submission workflows.
 v1_router.include_router(grading_teacher_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_feedback_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_sse_router, prefix="/grading", tags=["grading"])
-
-v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 
 # Dev routes
 v1_router.include_router(
     dev.router,
     prefix="/dev",
     tags=["dev"],
-    dependencies=[Depends(isDevModeEnabledOrRaise)],
+    dependencies=[Depends(is_dev_mode_enabled_or_raise)],
 )
 
 __all__ = ["v1_router"]

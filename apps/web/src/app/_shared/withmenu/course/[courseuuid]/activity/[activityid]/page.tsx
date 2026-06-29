@@ -1,42 +1,45 @@
-import { getActivity } from '@services/courses/activities';
-import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
-import { getCourseMetadata } from '@services/courses/courses';
-import { getTranslations } from 'next-intl/server';
-import { jetBrainsMono } from '@/lib/fonts';
-import type { Metadata } from 'next';
-import { cache } from 'react';
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { courseContributorsQueryOptions, trailCurrentQueryOptions } from '@/features/courses/queries/course.query';
+import { getActivity } from '@services/courses/activities'
+import { getCourseMetadata } from '@services/courses/courses'
+import { getTranslations } from 'next-intl/server'
+import { jetBrainsMono } from '@/lib/fonts'
+import type { Metadata } from 'next'
+import { cache } from 'react'
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
+import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
-import ActivityClient from './activity';
-import { getSession } from '@/lib/auth/session';
+import ActivityClient from './activity'
+import { getSession } from '@/lib/auth/session'
 
 interface MetadataProps {
-  params: Promise<{ courseuuid: string; activityid: string }>;
+  params: Promise<{ courseuuid: string; activityid: string }>
 }
 
 // Add this function at the top level to avoid duplicate fetches
 const fetchCourseMetadata = cache(async (courseuuid: string) => {
-  const session = await getSession();
-  return await getCourseMetadata(courseuuid, undefined, !!session);
-});
+  const session = await getSession()
+  return await getCourseMetadata(courseuuid, undefined, !!session)
+})
 
-const fetchActivity = cache(async (activityid: string) => getActivity(activityid));
+const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const { courseuuid, activityid } = await props.params;
-  const t = await getTranslations('General');
+  const { courseuuid, activityid } = await props.params
+  const t = await getTranslations('General')
 
-  const course_meta = await fetchCourseMetadata(courseuuid);
+  const course_meta = await fetchCourseMetadata(courseuuid)
 
   // Don't fetch activity if it's the end page
-  const isCourseEnd = activityid === 'end';
-  const activity = isCourseEnd ? null : await fetchActivity(activityid);
+  const isCourseEnd = activityid === 'end'
+  const activity = isCourseEnd ? null : await fetchActivity(activityid)
 
   // Localized page title
   const pageTitle = isCourseEnd
     ? t('courseEndTitle', { course: course_meta.name })
-    : t('activityTitle', { activity: activity?.name ?? '', course: course_meta.name });
+    : t('activityTitle', {
+        activity: activity?.name ?? '',
+        course: course_meta.name,
+      })
 
   // SEO
   return {
@@ -48,8 +51,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       follow: true,
       nocache: true,
       googleBot: {
-        'index': true,
-        'follow': true,
+        index: true,
+        follow: true,
         'max-image-preview': 'large',
       },
     },
@@ -59,38 +62,24 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       publishedTime: course_meta.creation_date,
       tags: course_meta.learnings,
     },
-  };
+  }
 }
 
-const ActivityPage = async (params: any) => {
-  const { courseuuid, activityid } = await params.params;
+const ActivityPage = async (params: { params: Promise<{ courseuuid: string; activityid: string }> }) => {
+  const { courseuuid, activityid } = await params.params
 
   // Don't fetch activity if it's the end page
-  const isCourseEnd = activityid === 'end';
+  const isCourseEnd = activityid === 'end'
 
-  const [course_meta, activity, session] = await Promise.all([
+  const [course_meta, activity, runtime] = await Promise.all([
     fetchCourseMetadata(courseuuid),
     isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
-    getSession(),
-  ]);
+    isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
+  ])
 
-  const assessment =
-    !isCourseEnd &&
-    activity &&
-    ['TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_CUSTOM'].includes(activity.activity_type ?? '')
-      ? await getAssessmentByActivityUuid(activity.activity_uuid)
-      : null;
-
-  const queryClient = new QueryClient();
-
-  if (session?.user && course_meta?.course_uuid) {
-    const normalizedCourseUuid = course_meta.course_uuid.startsWith('course_')
-      ? course_meta.course_uuid
-      : `course_${course_meta.course_uuid}`;
-    await Promise.all([
-      queryClient.prefetchQuery(courseContributorsQueryOptions(normalizedCourseUuid)),
-      queryClient.prefetchQuery(trailCurrentQueryOptions()),
-    ]);
+  const queryClient = new QueryClient()
+  if (runtime) {
+    queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
   }
 
   return (
@@ -98,14 +87,14 @@ const ActivityPage = async (params: any) => {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ActivityClient
           activityid={activityid}
-          assessmentUuid={assessment?.assessment_uuid ?? null}
           courseuuid={courseuuid}
           activity={activity}
           course={course_meta}
+          runtime={runtime}
         />
       </HydrationBoundary>
     </div>
-  );
-};
+  )
+}
 
-export default ActivityPage;
+export default ActivityPage

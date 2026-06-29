@@ -10,7 +10,10 @@ if str(APP_ROOT) not in sys.path:
 
 
 def main() -> None:
-    from app import app
+    from config.config import get_settings
+    from src.app.factory import create_app
+
+    app = create_app(get_settings())
 
     output_path = APP_ROOT / "openapi.json"
     schema = app.openapi()

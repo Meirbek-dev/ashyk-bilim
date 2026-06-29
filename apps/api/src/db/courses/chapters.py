@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
+from typing import ClassVar
 
-from pydantic import ConfigDict, field_validator
+from pydantic import field_validator
 from sqlalchemy import DateTime, String, func
 from sqlmodel import Column, Field, ForeignKey, Integer
+from sqlmodel._compat import SQLModelConfig
 
 from src.db.courses.activities import ActivityRead, ActivityReadWithPermissions
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
@@ -12,11 +14,7 @@ class ChapterBase(SQLModelStrictBaseModel):
     name: str
     description: str | None = ""
     thumbnail_image: str | None = ""
-    course_id: int = Field(
-        sa_column=Column(
-            "course_id", Integer, ForeignKey("course.id", ondelete="CASCADE")
-        )
-    )
+    course_id: int = Field(sa_column=Column("course_id", Integer, ForeignKey("course.id", ondelete="CASCADE")))
 
 
 class Chapter(ChapterBase, table=True):
@@ -30,9 +28,7 @@ class Chapter(ChapterBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     order: int = Field(default=0)
     creator_id: int | None = Field(
@@ -65,11 +61,11 @@ class ChapterRead(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(arbitrary_types_allowed=True)  # type: ignore[mutable-override]
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object) -> object:
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):
@@ -90,11 +86,11 @@ class ChapterReadWithPermissions(ChapterBase):
     creation_date: datetime
     update_date: datetime
     order: int = 0
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(arbitrary_types_allowed=True)  # type: ignore[mutable-override]
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object) -> object:
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):

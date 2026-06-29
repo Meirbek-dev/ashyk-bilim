@@ -1,34 +1,34 @@
-'use client';
+'use client'
 
-import type { MetricCard, TimeSeriesPoint } from '@/types/analytics';
-import KpiActiveLearnerLineChart from './KpiActiveLearnerLineChart';
-import KpiSubmissionAreaChart from './KpiSubmissionAreaChart';
-import KpiPeriodCompBarChart from './KpiPeriodCompBarChart';
-import KpiHealthRingsChart from './KpiHealthRingsChart';
-import KpiHealthRadarChart from './KpiHealthRadarChart';
-import { useLocale, useTranslations } from 'next-intl';
-import KpiCompletionGauge from './KpiCompletionGauge';
+import type { MetricCard, TimeSeriesPoint } from '@/types/analytics'
+import KpiActiveLearnerLineChart from './KpiActiveLearnerLineChart'
+import KpiSubmissionAreaChart from './KpiSubmissionAreaChart'
+import KpiPeriodCompBarChart from './KpiPeriodCompBarChart'
+import KpiHealthRingsChart from './KpiHealthRingsChart'
+import KpiHealthRadarChart from './KpiHealthRadarChart'
+import { useLocale, useTranslations } from 'next-intl'
+import KpiCompletionGauge from './KpiCompletionGauge'
 
 interface TeacherKpiChartsProps {
   metrics: {
-    active_learners: MetricCard;
-    returning_learners: MetricCard;
-    completion_rate: MetricCard;
-    at_risk_learners: MetricCard;
-    ungraded_submissions: MetricCard;
-    negative_engagement_courses: MetricCard;
-  };
+    active_learners: MetricCard
+    returning_learners: MetricCard
+    completion_rate: MetricCard
+    at_risk_learners: MetricCard
+    ungraded_submissions: MetricCard
+    negative_engagement_courses: MetricCard
+  }
   trends: {
-    active_learners: TimeSeriesPoint[];
-    completions: TimeSeriesPoint[];
-    submissions: TimeSeriesPoint[];
-    grading_completed: TimeSeriesPoint[];
-  };
+    active_learners: TimeSeriesPoint[]
+    completions: TimeSeriesPoint[]
+    submissions: TimeSeriesPoint[]
+    grading_completed: TimeSeriesPoint[]
+  }
 }
 
 /** Returns the previous-period absolute value for a metric, or null if comparison is unavailable. */
 function prevValue(m: MetricCard): number | null {
-  return m.delta_value !== null ? m.value - m.delta_value : null;
+  return m.delta_value !== null ? m.value - m.delta_value : null
 }
 
 /**
@@ -37,10 +37,10 @@ function prevValue(m: MetricCard): number | null {
  * - Count metrics start at a neutral 50 and shift by half of delta_pct in the "better" direction.
  */
 function getHealthPct(m: MetricCard): number {
-  if (m.unit === '%') return Math.min(100, Math.max(0, m.value));
-  if (m.delta_pct === null) return 50;
-  const trending = m.is_higher_better ? m.delta_pct : -m.delta_pct;
-  return Math.min(100, Math.max(0, 50 + trending / 2));
+  if (m.unit === '%') return Math.min(100, Math.max(0, m.value))
+  if (m.delta_pct === null) return 50
+  const trending = m.is_higher_better ? m.delta_pct : -m.delta_pct
+  return Math.min(100, Math.max(0, 50 + trending / 2))
 }
 
 const CHART_COLORS = [
@@ -50,26 +50,32 @@ const CHART_COLORS = [
   'var(--chart-4)',
   'var(--chart-5)',
   'var(--chart-1)',
-];
+]
 
 export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsProps) {
-  const t = useTranslations('TeacherAnalytics');
-  const locale = useLocale();
-  const m = metrics;
+  const t = useTranslations('TeacherAnalytics')
+  const locale = useLocale()
+  const m = metrics
 
   // ── Area chart data ───────────────────────────────────────────────────────
-  const gradingMap = new Map(trends.grading_completed.map((p) => [p.bucket_start, p.value]));
-  const areaData = trends.submissions.map((p) => ({
-    bucket: new Date(p.bucket_start).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+  const gradingMap = new Map(trends.grading_completed.map(p => [p.bucket_start, p.value]))
+  const areaData = trends.submissions.map(p => ({
+    bucket: new Date(p.bucket_start).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+    }),
     submissions: p.value,
     grading: gradingMap.get(p.bucket_start) ?? 0,
-  }));
+  }))
 
   // ── Line chart data ───────────────────────────────────────────────────────
-  const lineData = trends.active_learners.map((p) => ({
-    bucket: new Date(p.bucket_start).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+  const lineData = trends.active_learners.map(p => ({
+    bucket: new Date(p.bucket_start).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+    }),
     active: p.value,
-  }));
+  }))
 
   // ── Bar chart data ────────────────────────────────────────────────────────
   const barData = [
@@ -98,7 +104,7 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
       current: m.negative_engagement_courses.value,
       previous: prevValue(m.negative_engagement_courses),
     },
-  ];
+  ]
 
   // ── Radar chart data ──────────────────────────────────────────────────────
   const radarKeys = [
@@ -107,24 +113,27 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
     { subject: t('kpiCharts.completionRate'), key: 'completion_rate' },
     { subject: t('kpiCharts.atRiskLearners'), key: 'at_risk_learners' },
     { subject: t('kpiCharts.ungradedSubs'), key: 'ungraded_submissions' },
-    { subject: t('kpiCharts.negativeEngagement'), key: 'negative_engagement_courses' },
-  ] as const;
+    {
+      subject: t('kpiCharts.negativeEngagement'),
+      key: 'negative_engagement_courses',
+    },
+  ] as const
 
   const radarData = radarKeys.map(({ subject, key }) => {
-    const metric = m[key];
-    const currHealth = getHealthPct(metric);
-    let prevHealth: number;
+    const metric = m[key]
+    const currHealth = getHealthPct(metric)
+    let prevHealth: number
     if (metric.unit === '%') {
-      const prev = prevValue(metric);
-      prevHealth = prev !== null ? Math.min(100, Math.max(0, prev)) : currHealth;
+      const prev = prevValue(metric)
+      prevHealth = prev !== null ? Math.min(100, Math.max(0, prev)) : currHealth
     } else if (metric.delta_pct === null) {
-      prevHealth = 50;
+      prevHealth = 50
     } else {
-      const trending = metric.is_higher_better ? metric.delta_pct : -metric.delta_pct;
-      prevHealth = Math.min(100, Math.max(0, currHealth - trending / 2));
+      const trending = metric.is_higher_better ? metric.delta_pct : -metric.delta_pct
+      prevHealth = Math.min(100, Math.max(0, currHealth - trending / 2))
     }
-    return { subject, current: currHealth, previous: prevHealth };
-  });
+    return { subject, current: currHealth, previous: prevHealth }
+  })
 
   // ── Radial chart data ─────────────────────────────────────────────────────
   const radialData = [
@@ -164,7 +173,7 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
       value: getHealthPct(m.negative_engagement_courses),
       fill: CHART_COLORS[5] ?? 'var(--chart-1)',
     },
-  ];
+  ]
 
   return (
     <div className="flex flex-col gap-6">
@@ -185,5 +194,5 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
         <KpiHealthRingsChart data={radialData} />
       </div>
     </div>
-  );
+  )
 }

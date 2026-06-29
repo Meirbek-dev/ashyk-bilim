@@ -1,118 +1,115 @@
-import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview';
-import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
+import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
+import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
 import {
   downloadPdfBlob,
   generateCertificatePdfBlob,
   sanitizePdfFileName,
-} from '@/features/certifications/utils/pdfmeCertificate';
-import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react';
-import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
-import { useGamificationStore } from '@/stores/gamification';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+} from '@/features/certifications/utils/pdfmeCertificate'
+import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react'
+import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
+import { useGamificationStore } from '@/stores/gamification'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
 // Gamification imports
-import { LevelProgress } from '@/lib/gamification';
-import NextImage from '@components/ui/NextImage';
-import Link from '@components/ui/ServerLink';
-import confetti from 'canvas-confetti';
-import type { FC } from 'react';
+import { LevelProgress } from '@/lib/gamification'
+import NextImage from '@components/ui/NextImage'
+import Link from '@components/ui/ServerLink'
+import confetti from 'canvas-confetti'
+import type { FC } from 'react'
 
 interface CourseEndViewProps {
-  courseName: string;
-  courseUuid: string;
-  thumbnailImage: string;
-  course: any;
-  trailData: any;
+  courseName: string
+  courseUuid: string
+  thumbnailImage: string
+  course: AppCourse
+  trailData: AppTrailData
 }
 
 const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
-  const locale = useLocale();
-  const t = useTranslations('Certificates.CourseEndView');
-  const [dialogAlertOpen, setDialogAlertOpen] = useState(false);
-  const [dialogAlertMessage, setDialogAlertMessage] = useState('');
+  const locale = useLocale()
+  const t = useTranslations('Certificates.CourseEndView')
+  const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
+  const [dialogAlertMessage, setDialogAlertMessage] = useState('')
 
-  const gamificationProfile = useGamificationStore((s) => s.profile);
-  const gamificationRefetch = useGamificationStore((s) => s.refetch);
+  const gamificationProfile = useGamificationStore(s => s.profile)
+  const gamificationRefetch = useGamificationStore(s => s.refetch)
 
-  const refetchedOnMountRef = useRef(false);
-  const refetchedOnCertificateRef = useRef(false);
+  const refetchedOnMountRef = useRef(false)
+  const refetchedOnCertificateRef = useRef(false)
 
   // Check if course is actually completed
   const isCourseCompleted = (() => {
-    if (!(trailData && course)) return false;
+    if (!(trailData && course)) return false
 
     // Flatten all activities
-    const allActivities = course.chapters.flatMap((chapter: any) =>
-      chapter.activities.map((activity: any) => ({
-        ...activity,
-        chapterId: chapter.id,
-      })),
-    );
+    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
+      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
+    )
 
     // Check if all activities are completed
-    const isActivityDone = (activity: any) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '');
-      const run = trailData?.runs?.find((run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-        return cleanRunCourseUuid === cleanCourseUuid;
-      });
+    const isActivityDone = (activity: AppActivity) => {
+      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
+        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
+        return cleanRunCourseUuid === cleanCourseUuid
+      })
 
       if (run) {
-        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true);
+        return (run.steps ?? []).find(
+          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
+        )
       }
-      return false;
-    };
+      return false
+    }
 
-    const totalActivities = allActivities.length;
-    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length;
-    return totalActivities > 0 && completedActivities === totalActivities;
-  })();
-  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
-  const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null);
-  const userCertificate = certificateQuery.data?.data?.[0] ?? null;
-  const isLoadingCertificate = isCourseCompleted && certificateQuery.isPending;
+    const totalActivities = allActivities.length
+    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
+    return totalActivities > 0 && completedActivities === totalActivities
+  })()
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
+  const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null)
+  const userCertificate = certificateQuery.data?.data?.[0] ?? null
+  const isLoadingCertificate = isCourseCompleted && certificateQuery.isPending
   const certificateError = certificateQuery.error
     ? t('loadingError')
     : !isLoadingCertificate && isCourseCompleted && !userCertificate
       ? t('noCertificateFound')
-      : null;
-  const qrCodeLink = getAbsoluteUrl(
-    `/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`,
-  );
+      : null
+  const qrCodeLink = getAbsoluteUrl(`/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`)
 
   useEffect(() => {
-    if (!userCertificate || typeof gamificationRefetch !== 'function') return;
-    if (refetchedOnCertificateRef.current) return;
+    if (!userCertificate || typeof gamificationRefetch !== 'function') return
+    if (refetchedOnCertificateRef.current) return
 
-    refetchedOnCertificateRef.current = true;
+    refetchedOnCertificateRef.current = true
     gamificationRefetch().catch((error: unknown) =>
       console.warn('Failed to refetch gamification after course completion:', error),
-    );
-  }, [userCertificate, gamificationRefetch]);
+    )
+  }, [userCertificate, gamificationRefetch])
 
   // Refetch gamification data on mount if course is completed
   // This ensures recent activity feed shows course completion XP
   useEffect(() => {
-    if (!isCourseCompleted || typeof gamificationRefetch !== 'function') return;
+    if (!isCourseCompleted || typeof gamificationRefetch !== 'function') return
 
     // Ensure we only trigger this refetch once on mount after completion
-    if (refetchedOnMountRef.current) return;
-    refetchedOnMountRef.current = true;
+    if (refetchedOnMountRef.current) return
+    refetchedOnMountRef.current = true
 
     const timer = setTimeout(() => {
       gamificationRefetch().catch((error: unknown) =>
         console.warn('Failed to refetch gamification on CourseEndView mount:', error),
-      );
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [isCourseCompleted, gamificationRefetch]);
+      )
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [isCourseCompleted, gamificationRefetch])
 
   useEffect(() => {
-    if (!isCourseCompleted) return;
+    if (!isCourseCompleted) return
 
-    const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#ffffff'];
+    const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#ffffff']
 
     // Big opening bursts
     confetti({
@@ -122,7 +119,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       scalar: 1.6,
       ticks: 400,
       colors,
-    });
+    })
     const t1 = setTimeout(() => {
       confetti({
         particleCount: 90,
@@ -132,8 +129,8 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         origin: { y: 0.4 },
         ticks: 350,
         colors,
-      });
-    }, 200);
+      })
+    }, 200)
     const t2 = setTimeout(() => {
       confetti({
         particleCount: 80,
@@ -142,7 +139,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         scalar: 1.5,
         ticks: 300,
         colors,
-      });
+      })
       confetti({
         particleCount: 80,
         spread: 70,
@@ -150,15 +147,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         scalar: 1.5,
         ticks: 300,
         colors,
-      });
-    }, 500);
+      })
+    }, 500)
 
     // Continuous cannons from both sides for 3 seconds
-    const end = Date.now() + 3000;
+    const end = Date.now() + 3000
     const interval = setInterval(() => {
       if (Date.now() > end) {
-        clearInterval(interval);
-        return;
+        clearInterval(interval)
+        return
       }
       confetti({
         particleCount: 7,
@@ -168,7 +165,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         scalar: 1.4,
         ticks: 300,
         colors,
-      });
+      })
       confetti({
         particleCount: 7,
         angle: 120,
@@ -177,57 +174,57 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         scalar: 1.4,
         ticks: 300,
         colors,
-      });
-    }, 50);
+      })
+    }, 50)
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearInterval(interval);
-    };
-  }, [isCourseCompleted]);
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearInterval(interval)
+    }
+  }, [isCourseCompleted])
 
   const getCertificationTypeLabel = (type: string) => {
     switch (type) {
       case 'completion': {
-        return t('certificationTypes.completion');
+        return t('certificationTypes.completion')
       }
       case 'achievement': {
-        return t('certificationTypes.achievement');
+        return t('certificationTypes.achievement')
       }
       case 'assessment': {
-        return t('certificationTypes.assessment');
+        return t('certificationTypes.assessment')
       }
       case 'participation': {
-        return t('certificationTypes.participation');
+        return t('certificationTypes.participation')
       }
       case 'mastery': {
-        return t('certificationTypes.mastery');
+        return t('certificationTypes.mastery')
       }
       case 'professional': {
-        return t('certificationTypes.professional');
+        return t('certificationTypes.professional')
       }
       case 'continuing': {
-        return t('certificationTypes.continuing');
+        return t('certificationTypes.continuing')
       }
       case 'workshop': {
-        return t('certificationTypes.workshop');
+        return t('certificationTypes.workshop')
       }
       case 'specialization': {
-        return t('certificationTypes.specialization');
+        return t('certificationTypes.specialization')
       }
       default: {
-        return t('certificationTypes.completion');
+        return t('certificationTypes.completion')
       }
     }
-  };
+  }
 
   const downloadCertificate = async () => {
-    if (!userCertificate) return;
+    if (!userCertificate) return
 
     try {
-      const certificateId = userCertificate.certificate_user.user_certification_uuid;
-      const certificationName = userCertificate.certification.config.certification_name;
+      const certificateId = userCertificate.certificate_user.user_certification_uuid
+      const certificationName = userCertificate.certification.config.certification_name
       const blob = await generateCertificatePdfBlob({
         awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
           year: 'numeric',
@@ -239,7 +236,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
         certificationName,
         certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
-        instructor: userCertificate.certification.config.certificate_instructor,
+        instructor: userCertificate.certification.config.certificate_instructor ?? null,
         labels: {
           authenticityGuaranteed: t('verifyCertificate'),
           awarded: t('labelAwarded'),
@@ -249,62 +246,59 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           instructor: t('instructor'),
           verificationNote: t('certificateCanBeVerified'),
         },
-        pattern: userCertificate.certification.config.certificate_pattern,
+        pattern: userCertificate.certification.config.certificate_pattern ?? '',
         verificationUrl: qrCodeLink,
-      });
+      })
 
-      downloadPdfBlob(blob, `${sanitizePdfFileName(certificationName)}_Certificate.pdf`);
+      downloadPdfBlob(blob, `${sanitizePdfFileName(certificationName)}_Certificate.pdf`)
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      setDialogAlertMessage(t('errorGeneratingPDF'));
-      setDialogAlertOpen(true);
+      console.error('Error generating PDF:', error)
+      setDialogAlertMessage(t('errorGeneratingPDF'))
+      setDialogAlertOpen(true)
     }
-  };
+  }
 
   // Calculate progress for incomplete courses
   const progressInfo = (() => {
-    if (!(trailData && course) || isCourseCompleted) return null;
+    if (!(trailData && course) || isCourseCompleted) return null
 
-    const allActivities = course.chapters.flatMap((chapter: any) =>
-      chapter.activities.map((activity: any) => ({
-        ...activity,
-        chapterId: chapter.id,
-      })),
-    );
+    const allActivities = (course.chapters ?? []).flatMap((chapter: AppChapter) =>
+      (chapter.activities ?? []).map((activity: AppActivity) => Object.assign(activity, { chapterId: chapter.id })),
+    )
 
-    const isActivityDone = (activity: any) => {
-      const cleanCourseUuid = course.course_uuid?.replace('course_', '');
-      const run = trailData?.runs?.find((run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-        return cleanRunCourseUuid === cleanCourseUuid;
-      });
+    const isActivityDone = (activity: AppActivity) => {
+      const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+      const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
+        const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
+        return cleanRunCourseUuid === cleanCourseUuid
+      })
 
       if (run) {
-        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true);
+        return (run.steps ?? []).find(
+          (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
+        )
       }
-      return false;
-    };
+      return false
+    }
 
-    const totalActivities = allActivities.length;
-    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length;
-    const progressPercentage = Math.round((completedActivities / totalActivities) * 100);
+    const totalActivities = allActivities.length
+    const completedActivities = allActivities.filter((activity: AppActivity) => isActivityDone(activity)).length
+    const progressPercentage = Math.round((completedActivities / totalActivities) * 100)
 
     return {
       completed: completedActivities,
       total: totalActivities,
       percentage: progressPercentage,
-    };
-  })();
+      percentageString: `${progressPercentage}%`,
+    }
+  })()
 
   if (isCourseCompleted) {
+    const congratsText = `${t('congratulations')} 🎉`
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <SimpleAlertDialog
-          open={dialogAlertOpen}
-          onOpenChange={setDialogAlertOpen}
-          description={dialogAlertMessage}
-        />
+        <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
         <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
@@ -324,7 +318,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-gray-900">{`${t('congratulations')} 🎉`}</h1>
+          <h1 className="text-4xl font-bold text-gray-900">{congratsText}</h1>
 
           <p className="text-xl text-gray-600">
             {t('courseCompleted')}
@@ -345,11 +339,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 <div className="space-y-2">
                   <div className="text-center">
                     {gamificationProfile && (
-                      <LevelProgress
-                        profile={gamificationProfile}
-                        showMilestones={false}
-                        className="justify-center"
-                      />
+                      <LevelProgress profile={gamificationProfile} showMilestones={false} className="justify-center" />
                     )}
                   </div>
                 </div>
@@ -378,17 +368,14 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           ) : userCertificate ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold text-gray-900">{t('earnedCertificate')}</h2>
-              <div
-                className="mx-auto max-w-2xl"
-                id="certificate-preview"
-              >
+              <div className="mx-auto max-w-2xl" id="certificate-preview">
                 <div id="certificate-content">
                   <CertificatePreview
                     certificationName={userCertificate.certification.config.certification_name}
-                    certificationDescription={userCertificate.certification.config.certification_description}
+                    certificationDescription={userCertificate.certification.config.certification_description ?? ''}
                     certificationType={userCertificate.certification.config.certification_type}
-                    certificatePattern={userCertificate.certification.config.certificate_pattern}
-                    certificateInstructor={userCertificate.certification.config.certificate_instructor}
+                    certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
+                    certificateInstructor={userCertificate.certification.config.certificate_instructor ?? undefined}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
                     awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',
@@ -437,16 +424,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         </div>
       </div>
-    );
+    )
   }
+
+  const keepGoingText = `${t('keepGoing')} 💪`
+
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <SimpleAlertDialog
-        open={dialogAlertOpen}
-        onOpenChange={setDialogAlertOpen}
-        description={dialogAlertMessage}
-      />
+      <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
       <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (
@@ -466,7 +452,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           </div>
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-900">{`${t('keepGoing')} 💪`}</h1>
+        <h1 className="text-4xl font-bold text-gray-900">{keepGoingText}</h1>
 
         <p className="text-xl text-gray-600">
           {t('youAreMakingProgress')}
@@ -483,7 +469,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">{t('progress')}</span>
-                <span className="font-semibold text-gray-900">{`${progressInfo.percentage}%`}</span>
+                <span className="font-semibold text-gray-900">{progressInfo.percentageString}</span>
               </div>
 
               <div className="h-3 w-full rounded-full bg-gray-200">
@@ -516,7 +502,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CourseEndView;
+export default CourseEndView

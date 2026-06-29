@@ -1,9 +1,9 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 
 from src.services.utils.upload_content import upload_content
 
 
-async def upload_thumbnail(thumbnail_file, name_in_disk, course_id):
+async def upload_thumbnail(thumbnail_file: UploadFile, name_in_disk: str, course_id: int | str) -> None:
     contents = thumbnail_file.file.read()
     try:
         await upload_content(
@@ -18,5 +18,5 @@ async def upload_thumbnail(thumbnail_file, name_in_disk, course_id):
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail="There was an error uploading the file",
+            detail="Произошла ошибка при загрузке файла",
         ) from exc

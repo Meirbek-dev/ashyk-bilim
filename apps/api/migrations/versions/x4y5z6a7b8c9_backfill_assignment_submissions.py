@@ -14,6 +14,7 @@ from typing import Any
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.engine.base import Connection
 from ulid import ULID
 
 revision: str = "x4y5z6a7b8c9"
@@ -104,34 +105,24 @@ def _answer_from_task_submission(
         "content_type": content_type,
         "answer_metadata": {
             "legacy_assignment_type": task.get("assignment_type"),
-            "legacy_task_submission_uuid": task_submission.get(
-                "assignment_task_submission_uuid"
-            )
+            "legacy_task_submission_uuid": task_submission.get("assignment_task_submission_uuid")
             if task_submission
             else None,
         },
     }
 
     if content_type == "file":
-        file_key = (
-            raw_submission.get("file_key")
-            or raw_submission.get("fileUUID")
-            or raw_submission.get("file_uuid")
-        )
+        file_key = raw_submission.get("file_key") or raw_submission.get("fileUUID") or raw_submission.get("file_uuid")
         if file_key:
             answer["file_key"] = file_key
     elif content_type == "form":
         form_data = raw_submission.get("form_data")
-        answer["form_data"] = (
-            form_data if isinstance(form_data, dict) else raw_submission
-        )
+        answer["form_data"] = form_data if isinstance(form_data, dict) else raw_submission
     elif content_type == "quiz":
         quiz_answers = raw_submission.get("quiz_answers")
         if not isinstance(quiz_answers, dict):
             quiz_answers = raw_submission.get("answers")
-        answer["quiz_answers"] = (
-            quiz_answers if isinstance(quiz_answers, dict) else raw_submission
-        )
+        answer["quiz_answers"] = quiz_answers if isinstance(quiz_answers, dict) else raw_submission
     else:
         text_content = raw_submission.get("text_content")
         if isinstance(text_content, str):
@@ -156,15 +147,12 @@ def _build_grading_json(
         if task_submission:
             task_feedback = task_submission.get("task_submission_grade_feedback") or ""
             task_score = float(task_submission.get("grade") or 0)
-            task_submission_uuid = task_submission.get(
-                "assignment_task_submission_uuid"
-            )
+            task_submission_uuid = task_submission.get("assignment_task_submission_uuid")
 
         legacy_item_graded = assignment_is_graded or bool(task_feedback)
         user_answer = (
             _answer_from_task_submission(task, task_submission)
-            if task_submission
-            and _has_submitted_work(task_submission.get("task_submission"))
+            if task_submission and _has_submitted_work(task_submission.get("task_submission"))
             else None
         )
         items.append({
@@ -202,11 +190,34 @@ def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def _column_names(conn: Connection, table_name: str) -> set[str]:
+    return {column["name"] for column in sa.inspect(conn).get_columns(table_name)}
+
+
+def _ensure_assignment_contract_columns(conn: Connection) -> None:
+    assignment_columns = _column_names(conn, "assignment")
+    if "due_at" not in assignment_columns:
+        op.add_column(
+            "assignment",
+            sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
+        )
+
+    inspector = sa.inspect(conn)
+    if "assignmenttask" not in inspector.get_table_names():
+        return
+
+    assignment_task_columns = _column_names(conn, "assignmenttask")
+    if "order" not in assignment_task_columns:
+        op.add_column(
+            "assignmenttask",
+            sa.Column("order", sa.Integer(), server_default="0", nullable=True),
+        )
+
+
 def _next_activity_order(conn, chapter_id: int) -> int:
     row = _fetch_one(
         conn,
-        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order '
-        "FROM activity WHERE chapter_id = :chapter_id",
+        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order FROM activity WHERE chapter_id = :chapter_id',
         chapter_id=chapter_id,
     )
     return int(row["next_order"] if row else 0)
@@ -280,8 +291,7 @@ def _create_assignment_activity(
                 "activity_order": _next_activity_order(conn, assignment["chapter_id"]),
                 "creator_id": (course or {}).get("creator_id"),
                 "activity_uuid": activity_uuid,
-                "creation_date": _coerce_datetime(assignment.get("creation_date"))
-                or now,
+                "creation_date": _coerce_datetime(assignment.get("creation_date")) or now,
                 "update_date": _coerce_datetime(assignment.get("update_date")) or now,
             },
         )
@@ -291,7 +301,7 @@ def _create_assignment_activity(
     return int(row["id"])
 
 
-def _ensure_assignment_activities(conn) -> None:
+def _ensure_assignment_activities(conn: Connection) -> None:
     assignments = _fetch_all(conn, "SELECT * FROM assignment ORDER BY id")
     seen_activity_ids: set[int] = set()
 
@@ -311,16 +321,11 @@ def _ensure_assignment_activities(conn) -> None:
                 source_activity,
             )
             conn.execute(
-                sa.text(
-                    "UPDATE assignment SET activity_id = :activity_id WHERE id = :id"
-                ),
+                sa.text("UPDATE assignment SET activity_id = :activity_id WHERE id = :id"),
                 {"activity_id": new_activity_id, "id": assignment["id"]},
             )
             conn.execute(
-                sa.text(
-                    "UPDATE assignmenttask SET activity_id = :activity_id "
-                    "WHERE assignment_id = :assignment_id"
-                ),
+                sa.text("UPDATE assignmenttask SET activity_id = :activity_id WHERE assignment_id = :assignment_id"),
                 {
                     "activity_id": new_activity_id,
                     "assignment_id": assignment["id"],
@@ -361,7 +366,21 @@ def _ensure_assignment_activities(conn) -> None:
         seen_activity_ids.add(activity_id)
 
 
-def _backfill_due_at(conn) -> None:
+def _backfill_due_at(conn: Connection) -> None:
+    # Re-check via information_schema so we are not relying on the SQLAlchemy
+    # inspector cache, which may not reflect DDL added earlier in the same
+    # transaction (e.g. when _ensure_assignment_contract_columns just ran
+    # op.add_column on a DB where w3x4y5z6a7b8 returned its early-exit guard).
+    exists = _fetch_one(
+        conn,
+        """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'assignment' AND column_name = 'due_at'
+        """,
+    )
+    if exists is None:
+        return  # column not yet present; nothing to backfill
+
     assignments = _fetch_all(
         conn,
         "SELECT id, due_date, due_at FROM assignment WHERE due_at IS NULL",
@@ -376,7 +395,7 @@ def _backfill_due_at(conn) -> None:
         )
 
 
-def _backfill_task_order(conn) -> None:
+def _backfill_task_order(conn: Connection) -> None:
     rows = _fetch_all(
         conn,
         "SELECT id, assignment_id FROM assignmenttask ORDER BY assignment_id, id",
@@ -408,10 +427,7 @@ def _best_submitted_at(
     if task_times:
         return min(task_times)
     if assignment_submission:
-        return _coerce_datetime(
-            assignment_submission.get("submitted_at")
-            or assignment_submission.get("creation_date")
-        )
+        return _coerce_datetime(assignment_submission.get("submitted_at") or assignment_submission.get("creation_date"))
     return None
 
 
@@ -425,9 +441,7 @@ def _best_graded_at(
             return explicit
     task_times = [
         candidate
-        for candidate in (
-            _coerce_datetime(row.get("update_date")) for row in task_submissions
-        )
+        for candidate in (_coerce_datetime(row.get("update_date")) for row in task_submissions)
         if candidate is not None
     ]
     return max(task_times) if task_times else None
@@ -456,17 +470,9 @@ def _upsert_assignment_submission(
     assignment_submission: dict[str, Any] | None,
     user_id: int,
 ) -> None:
-    task_submissions_by_task_id = {
-        row["assignment_task_id"]: row for row in task_submissions
-    }
-    has_work = any(
-        _has_submitted_work(row.get("task_submission")) for row in task_submissions
-    )
-    legacy_status = (
-        assignment_submission.get("submission_status")
-        if assignment_submission
-        else None
-    )
+    task_submissions_by_task_id = {row["assignment_task_id"]: row for row in task_submissions}
+    has_work = any(_has_submitted_work(row.get("task_submission")) for row in task_submissions)
+    legacy_status = assignment_submission.get("submission_status") if assignment_submission else None
     status = _legacy_status_to_submission_status(legacy_status, has_work=has_work)
     existing = _fetch_one(
         conn,
@@ -490,14 +496,10 @@ def _upsert_assignment_submission(
 
     answers_json = {
         "tasks": [
-            _answer_from_task_submission(
-                task, task_submissions_by_task_id.get(task["id"])
-            )
+            _answer_from_task_submission(task, task_submissions_by_task_id.get(task["id"]))
             for task in tasks
             if task["id"] in task_submissions_by_task_id
-            and _has_submitted_work(
-                task_submissions_by_task_id[task["id"]].get("task_submission")
-            )
+            and _has_submitted_work(task_submissions_by_task_id[task["id"]].get("task_submission"))
         ]
     }
     assignment_is_graded = status == "GRADED"
@@ -515,31 +517,14 @@ def _upsert_assignment_submission(
             assignment_submission,
         )
     )
-    graded_at = (
-        _best_graded_at(task_submissions, assignment_submission)
-        if status == "GRADED"
-        else None
-    )
+    graded_at = _best_graded_at(task_submissions, assignment_submission) if status == "GRADED" else None
     due_at = _coerce_datetime(assignment.get("due_at"))
-    is_late = bool(
-        legacy_status == "LATE" or (submitted_at and due_at and submitted_at > due_at)
-    )
+    is_late = bool(legacy_status == "LATE" or (submitted_at and due_at and submitted_at > due_at))
     now = datetime.now(UTC)
-    created_at = (
-        _coerce_datetime((assignment_submission or {}).get("creation_date"))
-        or submitted_at
-        or now
-    )
-    updated_at = (
-        _coerce_datetime((assignment_submission or {}).get("update_date"))
-        or graded_at
-        or submitted_at
-        or now
-    )
+    created_at = _coerce_datetime((assignment_submission or {}).get("creation_date")) or submitted_at or now
+    updated_at = _coerce_datetime((assignment_submission or {}).get("update_date")) or graded_at or submitted_at or now
     final_score = (
-        float(assignment_submission.get("grade") or 0)
-        if assignment_is_graded and assignment_submission
-        else None
+        float(assignment_submission.get("grade") or 0) if assignment_is_graded and assignment_submission else None
     )
 
     bind_json = [
@@ -638,7 +623,7 @@ def _upsert_assignment_submission(
     )
 
 
-def _backfill_unified_assignment_submissions(conn) -> None:
+def _backfill_unified_assignment_submissions(conn: Connection) -> None:
     assignments = _fetch_all(conn, "SELECT * FROM assignment ORDER BY id")
     for assignment in assignments:
         tasks = _fetch_all(
@@ -660,9 +645,7 @@ def _backfill_unified_assignment_submissions(conn) -> None:
             """,
             assignment_id=assignment["id"],
         )
-        assignment_submission_by_user = {
-            row["user_id"]: row for row in legacy_assignment_submissions
-        }
+        assignment_submission_by_user = {row["user_id"]: row for row in legacy_assignment_submissions}
         task_submissions = _fetch_all(
             conn,
             """
@@ -682,9 +665,7 @@ def _backfill_unified_assignment_submissions(conn) -> None:
             existing_index = next(
                 (
                     index
-                    for index, existing in enumerate(
-                        task_submission_by_user[row["user_id"]]
-                    )
+                    for index, existing in enumerate(task_submission_by_user[row["user_id"]])
                     if existing["assignment_task_id"] == row["assignment_task_id"]
                 ),
                 None,
@@ -708,6 +689,14 @@ def _backfill_unified_assignment_submissions(conn) -> None:
 
 def upgrade() -> None:
     conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    # Guard: skip entirely if the legacy assignment table was never created.
+    if "assignment" not in existing_tables:
+        return
+
+    _ensure_assignment_contract_columns(conn)
     _ensure_assignment_activities(conn)
     _backfill_due_at(conn)
     _backfill_task_order(conn)
@@ -721,4 +710,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint("uq_assignment_activity_id", "assignment", type_="unique")
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if "assignment" in inspector.get_table_names():
+        op.drop_constraint("uq_assignment_activity_id", "assignment", type_="unique")

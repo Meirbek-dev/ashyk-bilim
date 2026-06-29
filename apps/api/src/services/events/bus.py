@@ -16,12 +16,12 @@ from collections import defaultdict
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-Handler = Callable[[Any], Coroutine[Any, Any, None]]
+type Handler[T] = Callable[[T], Coroutine[object, object, None]]
 
 MAX_RETRIES = 3
 BACKOFF_BASE_SECONDS = 2.0
@@ -41,14 +41,14 @@ class EventBus:
     """Typed async event bus with bounded retry."""
 
     def __init__(self) -> None:
-        self._handlers: dict[type, list[Handler]] = defaultdict(list)
+        self._handlers: dict[type[object], list[Handler[object]]] = defaultdict(list)
         self._dead_letters: list[DeadLetterEntry] = []
 
-    def subscribe(self, event_type: type[T], handler: Handler) -> None:
+    def subscribe(self, event_type: type[T], handler: Handler[T]) -> None:
         """Register a handler for an event type."""
-        self._handlers[event_type].append(handler)
+        self._handlers[event_type].append(handler)  # type: ignore[arg-type]
 
-    def unsubscribe(self, event_type: type[T], handler: Handler) -> None:
+    def unsubscribe(self, event_type: type[T], handler: Handler[T]) -> None:
         """Remove a handler (useful in tests)."""
         handlers = self._handlers.get(event_type, [])
         if handler in handlers:
@@ -69,7 +69,7 @@ class EventBus:
         tasks = [self._dispatch(handler, event) for handler in handlers]
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    async def _dispatch(self, handler: Handler, event: object) -> None:
+    async def _dispatch(self, handler: Handler[object], event: object) -> None:
         """Invoke a single handler with retry logic."""
         handler_name = getattr(handler, "__qualname__", str(handler))
         for attempt in range(MAX_RETRIES):

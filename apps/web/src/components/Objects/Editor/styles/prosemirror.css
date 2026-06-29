@@ -4,6 +4,8 @@
  * Uses CSS custom properties from the shadcn/ui design system.
  */
 
+@import 'prosemirror-view/style/prosemirror.css';
+
 /* ── Base ──────────────────────────────────────────────────────── */
 
 .ProseMirror {
@@ -314,6 +316,9 @@
 
 /* Resizable embed blocks manage their own dimensions. */
 .ProseMirror .embed-block iframe,
+.ProseMirror .embed-block-node-view iframe,
+.ProseMirror .youtube-node-view iframe,
+.ProseMirror lite-youtube iframe,
 .ProseMirror block-embed iframe,
 .ProseMirror .block-pdf iframe,
 .ProseMirror block-pdf iframe {
@@ -376,15 +381,17 @@
 .prosemirror-interactive .ProseMirror {
   font-size: 1rem;
   width: 100%;
+  padding: clamp(1rem, 2vw, 2rem) 0;
 }
 
-/* TOC sidebar layout */
+/* Interactive reading layout: content first, bounded TOC second */
 .prosemirror-interactive-layout {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1rem, 2vw, 2rem);
   width: 100%;
   max-width: 100%;
+  margin-inline: auto;
   align-items: start;
 }
 
@@ -394,8 +401,8 @@
 }
 
 .prosemirror-interactive-layout-toc {
-  flex: 0 0 auto;
-  width: clamp(15rem, 20vw, 22rem);
+  display: none;
+  width: min(100%, 16rem);
   position: sticky;
   top: 2rem;
   align-self: flex-start;
@@ -406,18 +413,47 @@
 
 /* Main content always fills remaining space */
 .prosemirror-interactive-layout-content {
-  flex: 1 1 0;
   min-width: 0;
+  width: 100%;
 }
 
-@media (max-width: 1023px) {
-  .prosemirror-interactive-layout {
-    flex-wrap: wrap;
-    gap: 1rem;
+.prosemirror-interactive-layout-content .ProseMirror {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: clamp(1rem, 2vw, 2rem);
+}
+
+.prosemirror-interactive-layout-content .ProseMirror > * {
+  width: 100%;
+  max-width: 100%;
+  justify-self: start;
+}
+
+.prosemirror-interactive-layout-content .ProseMirror > .tableWrapper,
+.prosemirror-interactive-layout-content .ProseMirror > .embed-block,
+.prosemirror-interactive-layout-content .ProseMirror > .block-pdf,
+.prosemirror-interactive-layout-content .ProseMirror > block-embed,
+.prosemirror-interactive-layout-content .ProseMirror > block-pdf,
+.prosemirror-interactive-layout-content .ProseMirror > img,
+.prosemirror-interactive-layout-content .ProseMirror > pre,
+.prosemirror-interactive-layout-content .ProseMirror > .lesson-wide,
+.prosemirror-interactive-layout-content .ProseMirror > .lesson-full {
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+}
+
+.prosemirror-interactive-layout-content .ProseMirror > .lesson-full {
+  width: 100%;
+}
+
+@media (min-width: 1280px) {
+  .prosemirror-interactive--with-toc .prosemirror-interactive-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
   }
 
-  .prosemirror-interactive-layout-toc {
-    display: none;
+  .prosemirror-interactive--with-toc .prosemirror-interactive-layout-toc {
+    display: block;
   }
 }
 

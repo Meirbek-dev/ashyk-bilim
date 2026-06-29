@@ -18,16 +18,16 @@ from src.services.utils.link_preview import (
 
 
 class _FakeStream:
-    def __init__(self, server_addr) -> None:
+    def __init__(self, server_addr: tuple[str, int]) -> None:
         self._server_addr = server_addr
 
-    def get_extra_info(self, info: str):
+    def get_extra_info(self, info: str) -> tuple[str, int] | None:
         if info == "server_addr":
             return self._server_addr
         return None
 
 
-def test_link_preview_rejects_non_http_and_local_hosts():
+def test_link_preview_rejects_non_http_and_local_hosts() -> None:
     with pytest.raises(UnsafeLinkPreviewURL):
         _normalize_user_url("file:///etc/passwd")
 
@@ -39,7 +39,7 @@ def test_link_preview_rejects_non_http_and_local_hosts():
 
 
 @pytest.mark.asyncio
-async def test_link_preview_rejects_private_ip_literal():
+async def test_link_preview_rejects_private_ip_literal() -> None:
     with pytest.raises(UnsafeLinkPreviewURL):
         await _assert_public_destination("http://127.0.0.1/")
 
@@ -47,18 +47,14 @@ async def test_link_preview_rejects_private_ip_literal():
         await _assert_public_destination("http://169.254.169.254/")
 
 
-def test_link_preview_requires_html_content_type():
-    _assert_html_response(
-        Response(200, headers={"content-type": "text/html; charset=utf-8"})
-    )
+def test_link_preview_requires_html_content_type() -> None:
+    _assert_html_response(Response(200, headers={"content-type": "text/html; charset=utf-8"}))
 
     with pytest.raises(LinkPreviewError):
-        _assert_html_response(
-            Response(200, headers={"content-type": "application/json"})
-        )
+        _assert_html_response(Response(200, headers={"content-type": "application/json"}))
 
 
-def test_link_preview_revalidates_connected_peer_address():
+def test_link_preview_revalidates_connected_peer_address() -> None:
     _assert_response_peer_is_public(
         Response(
             200,
@@ -77,7 +73,7 @@ def test_link_preview_revalidates_connected_peer_address():
         )
 
 
-def test_link_preview_parser_extracts_metadata_and_resolves_assets():
+def test_link_preview_parser_extracts_metadata_and_resolves_assets() -> None:
     preview = _parse_preview(
         "https://example.com/posts/1",
         """
@@ -100,7 +96,7 @@ def test_link_preview_parser_extracts_metadata_and_resolves_assets():
 
 
 @pytest.mark.asyncio
-async def test_link_preview_omits_unsafe_asset_urls():
+async def test_link_preview_omits_unsafe_asset_urls() -> None:
     preview = {
         "title": "Unsafe asset",
         "description": None,
@@ -118,7 +114,7 @@ async def test_link_preview_omits_unsafe_asset_urls():
 
 
 @pytest.mark.asyncio
-async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch):
+async def test_link_preview_memory_cache_avoids_repeated_work(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(link_preview, "get_async_redis_client", lambda: None)
     settings = LinkPreviewConfig(cache_ttl_seconds=60)
     url = "https://example.com/"

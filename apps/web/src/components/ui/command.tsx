@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Command as CommandPrimitive } from 'cmdk';
+import * as React from 'react'
+import { Command as CommandPrimitive } from 'cmdk'
 
-import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { InputGroup, InputGroupAddon } from '@/components/ui/input-group';
-import { SearchIcon, CheckIcon } from 'lucide-react';
+import { cn } from '@/lib/utils'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { InputGroup, InputGroupAddon } from '@/components/ui/input-group'
+import { CheckIcon, SearchIcon } from 'lucide-react'
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -18,7 +18,7 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
       )}
       {...props}
     />
-  );
+  )
 }
 
 function CommandDialog({
@@ -29,11 +29,11 @@ function CommandDialog({
   showCloseButton = false,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, 'children'> & {
-  title?: string;
-  description?: string;
-  className?: string;
-  showCloseButton?: boolean;
-  children: React.ReactNode;
+  title?: string
+  description?: string
+  className?: string
+  showCloseButton?: boolean
+  children: React.ReactNode
 }) {
   return (
     <Dialog {...props}>
@@ -45,18 +45,17 @@ function CommandDialog({
         className={cn('top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0', className)}
         showCloseButton={showCloseButton}
       >
-        {children}
+        <Command className="[&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-2 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:font-medium">
+          {children}
+        </Command>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 function CommandInput({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div
-      data-slot="command-input-wrapper"
-      className="p-1 pb-0"
-    >
+    <div data-slot="command-input-wrapper" className="p-1 pb-0">
       <InputGroup className="border-input/30 bg-input/30 h-8! rounded-lg! shadow-none! *:data-[slot=input-group-addon]:ps-2!">
         <CommandPrimitive.Input
           data-slot="command-input"
@@ -68,7 +67,7 @@ function CommandInput({ className, ...props }: React.ComponentProps<typeof Comma
         </InputGroupAddon>
       </InputGroup>
     </div>
-  );
+  )
 }
 
 function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
@@ -78,7 +77,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
       className={cn('no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none', className)}
       {...props}
     />
-  );
+  )
 }
 
 function CommandEmpty({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
@@ -88,7 +87,7 @@ function CommandEmpty({ className, ...props }: React.ComponentProps<typeof Comma
       className={cn('py-6 text-center text-sm', className)}
       {...props}
     />
-  );
+  )
 }
 
 function CommandGroup({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Group>) {
@@ -101,7 +100,7 @@ function CommandGroup({ className, ...props }: React.ComponentProps<typeof Comma
       )}
       {...props}
     />
-  );
+  )
 }
 
 function CommandSeparator({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
@@ -111,7 +110,7 @@ function CommandSeparator({ className, ...props }: React.ComponentProps<typeof C
       className={cn('-mx-1 h-px bg-border', className)}
       {...props}
     />
-  );
+  )
 }
 
 function CommandItem({ className, children, ...props }: React.ComponentProps<typeof CommandPrimitive.Item>) {
@@ -127,7 +126,7 @@ function CommandItem({ className, children, ...props }: React.ComponentProps<typ
       {children}
       <CheckIcon className="ms-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
-  );
+  )
 }
 
 function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>) {
@@ -140,7 +139,7 @@ function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>) 
       )}
       {...props}
     />
-  );
+  )
 }
 
 export {
@@ -153,4 +152,4 @@ export {
   CommandItem,
   CommandShortcut,
   CommandSeparator,
-};
+}

@@ -1,38 +1,39 @@
-'use client';
+'use client'
 
-import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
-import { AuthErrorBanner, AuthSuccessBanner, AuthSubmitButton } from '@components/auth/AuthForm';
-import PasswordInput from '@components/ui/custom/password-input';
-import { getAbsoluteUrl } from '@services/config/config';
-import { resetPassword } from '@services/auth/auth';
-import { useActionState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import AuthLogo from '@components/auth/logo';
-import AuthCard from '@components/auth/card';
-import { Input } from '@components/ui/input';
-import { useTranslations } from 'next-intl';
-import Link from '@components/ui/AppLink';
-import * as v from 'valibot';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field'
+import { AuthErrorBanner, AuthSubmitButton, AuthSuccessBanner } from '@components/auth/AuthForm'
+import PasswordInput from '@components/ui/custom/password-input'
+import { getAbsoluteUrl } from '@services/config/config'
+import { resetPassword } from '@services/auth/auth'
+import { useActionState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import AuthLogo from '@components/auth/logo'
+import AuthCard from '@components/auth/card'
+import { Input } from '@components/ui/input'
+import { useTranslations } from 'next-intl'
+import Link from '@components/ui/AppLink'
+import { getApiErrorMessage } from '@/lib/api/assertSuccess'
+import * as v from 'valibot'
 
 interface ResetState {
-  error: string | null;
-  message: string | null;
+  error: string | null
+  message: string | null
   fieldErrors: {
-    email?: string;
-    reset_code?: string;
-    new_password?: string;
-    confirm_password?: string;
-  };
+    email?: string
+    reset_code?: string
+    new_password?: string
+    confirm_password?: string
+  }
 }
 
 const ResetPasswordClient = () => {
-  const validationT = useTranslations('Validation');
-  const t = useTranslations('Auth.Reset');
-  const searchParams = useSearchParams();
+  const validationT = useTranslations('Validation')
+  const t = useTranslations('Auth.Reset')
+  const searchParams = useSearchParams()
 
   // Pre-filled from email link — passed as uncontrolled defaultValue.
-  const token = searchParams.get('token') ?? searchParams.get('resetCode') ?? '';
-  const email = searchParams.get('email') ?? '';
+  const token = searchParams.get('token') ?? searchParams.get('resetCode') ?? ''
+  const email = searchParams.get('email') ?? ''
 
   const schema = v.pipe(
     v.object({
@@ -48,12 +49,12 @@ const ResetPasswordClient = () => {
     v.forward(
       v.partialCheck(
         [['new_password'], ['confirm_password']],
-        (data) => data.new_password === data.confirm_password,
+        data => data.new_password === data.confirm_password,
         validationT('passwordsDoNotMatch'),
       ),
       ['confirm_password'],
     ),
-  );
+  )
 
   const [state, action, isPending] = useActionState(
     async (_prev: ResetState, formData: FormData): Promise<ResetState> => {
@@ -62,32 +63,40 @@ const ResetPasswordClient = () => {
         new_password: formData.get('new_password'),
         confirm_password: formData.get('confirm_password'),
         reset_code: formData.get('reset_code'),
-      });
+      })
 
       if (!result.success) {
-        const flat = v.flatten(result.issues);
+        const flat = v.flatten(result.issues)
+        const emailError = flat.nested?.email?.[0]
+        const resetCodeError = flat.nested?.reset_code?.[0]
+        const newPasswordError = flat.nested?.new_password?.[0]
+        const confirmPasswordError = flat.nested?.confirm_password?.[0]
         return {
           error: null,
           message: null,
           fieldErrors: {
-            email: flat.nested?.email?.[0],
-            reset_code: flat.nested?.reset_code?.[0],
-            new_password: flat.nested?.new_password?.[0],
-            confirm_password: flat.nested?.confirm_password?.[0],
+            ...(emailError ? { email: emailError } : {}),
+            ...(resetCodeError ? { reset_code: resetCodeError } : {}),
+            ...(newPasswordError ? { new_password: newPasswordError } : {}),
+            ...(confirmPasswordError ? { confirm_password: confirmPasswordError } : {}),
           },
-        };
+        }
       }
 
-      const res = await resetPassword(result.output.reset_code, result.output.new_password);
+      const res = await resetPassword(result.output.reset_code, result.output.new_password)
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { detail?: string };
-        return { error: body?.detail ?? t('unknownError'), message: null, fieldErrors: {} };
+        const body = await res.json().catch(() => null)
+        return {
+          error: getApiErrorMessage(body, t('unknownError')),
+          message: null,
+          fieldErrors: {},
+        }
       }
 
-      return { error: null, message: t('success'), fieldErrors: {} };
+      return { error: null, message: t('success'), fieldErrors: {} }
     },
     { error: null, message: null, fieldErrors: {} },
-  );
+  )
 
   return (
     <AuthCard className="max-w-md">
@@ -104,19 +113,13 @@ const ResetPasswordClient = () => {
       {state.message ? (
         <div className="mt-4 w-full space-y-2">
           <AuthSuccessBanner message={state.message} />
-          <Link
-            href={getAbsoluteUrl('/login')}
-            className="block text-center text-sm underline"
-          >
+          <Link href={getAbsoluteUrl('/login')} className="block text-center text-sm underline">
             {t('loginAgain')}
           </Link>
         </div>
       ) : null}
 
-      <form
-        className="mt-6 w-full space-y-4"
-        action={action}
-      >
+      <form className="mt-6 w-full space-y-4" action={action}>
         <Field>
           <FieldLabel>{t('email')}</FieldLabel>
           <FieldContent>
@@ -173,14 +176,10 @@ const ResetPasswordClient = () => {
           <FieldError>{state.fieldErrors.confirm_password}</FieldError>
         </Field>
 
-        <AuthSubmitButton
-          isPending={isPending}
-          label={t('changePassword')}
-          pendingLabel={t('loading')}
-        />
+        <AuthSubmitButton isPending={isPending} label={t('changePassword')} pendingLabel={t('loading')} />
       </form>
     </AuthCard>
-  );
-};
+  )
+}
 
-export default ResetPasswordClient;
+export default ResetPasswordClient

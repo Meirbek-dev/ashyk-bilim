@@ -7,7 +7,6 @@ Create Date: 2026-04-11 17:18:34.949653
 """
 
 from collections.abc import Sequence
-from typing import Union
 
 import sqlalchemy as sa
 from alembic import op
@@ -95,9 +94,7 @@ def downgrade() -> None:
     )
     op.drop_index(op.f("ix_auth_sessions_token_family_id"), table_name="auth_sessions")
     op.drop_index(op.f("ix_auth_sessions_session_id"), table_name="auth_sessions")
-    op.drop_index(
-        op.f("ix_auth_sessions_refresh_token_hash"), table_name="auth_sessions"
-    )
+    op.drop_index(op.f("ix_auth_sessions_refresh_token_hash"), table_name="auth_sessions")
     op.alter_column(
         "auth_sessions",
         "created_at",

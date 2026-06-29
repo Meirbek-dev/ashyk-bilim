@@ -27,6 +27,7 @@ from typing import Any
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.engine.base import Connection
 from ulid import ULID
 
 revision: str = "e5f6g7h8i9j0"
@@ -54,11 +55,11 @@ def _json_value(value: Any, default: Any) -> Any:
     return value
 
 
-def _fetch_all(conn, sql: str, **params: Any) -> list[dict[str, Any]]:
+def _fetch_all(conn: Connection, sql: str, **params: Any) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute(sa.text(sql), params).mappings()]
 
 
-def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
+def _fetch_one(conn: Connection, sql: str, **params: Any) -> dict[str, Any] | None:
     row = conn.execute(sa.text(sql), params).mappings().first()
     return dict(row) if row else None
 
@@ -66,8 +67,7 @@ def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
 def _next_activity_order(conn, chapter_id: int) -> int:
     row = _fetch_one(
         conn,
-        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order '
-        "FROM activity WHERE chapter_id = :chapter_id",
+        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order FROM activity WHERE chapter_id = :chapter_id',
         chapter_id=chapter_id,
     )
     return int(row["next_order"] if row else 0)
@@ -107,9 +107,7 @@ def _map_quiz_settings(quiz_settings: dict[str, Any]) -> dict[str, Any]:
     # max_attempts → attempt_limit (1..5)
     max_attempts = quiz_settings.get("max_attempts")
     if isinstance(max_attempts, int) and max_attempts > 0:
-        attempt_limit: int | None = _clamp(
-            max_attempts, _ATTEMPT_LIMIT_MIN, _ATTEMPT_LIMIT_MAX
-        )
+        attempt_limit: int | None = _clamp(max_attempts, _ATTEMPT_LIMIT_MIN, _ATTEMPT_LIMIT_MAX)
     else:
         # Quiz default was None=unlimited; exam default is 1.
         attempt_limit = 1
@@ -119,12 +117,7 @@ def _map_quiz_settings(quiz_settings: dict[str, Any]) -> dict[str, Any]:
     max_violations = quiz_settings.get("max_violations")
     track_violations = bool(quiz_settings.get("track_violations", True))
     block_on_violations = bool(quiz_settings.get("block_on_violations", True))
-    if (
-        track_violations
-        and block_on_violations
-        and isinstance(max_violations, int)
-        and max_violations > 0
-    ):
+    if track_violations and block_on_violations and isinstance(max_violations, int) and max_violations > 0:
         violation_threshold: int | None = _clamp(
             max_violations,
             _VIOLATION_THRESHOLD_MIN,
@@ -392,7 +385,7 @@ def _create_question(conn, *, exam_id: int, payload: dict[str, Any]) -> None:
 
 
 def _convert_quiz_task_to_exam(
-    conn,
+    conn: Connection,
     *,
     assignment: dict[str, Any],
     task: dict[str, Any],
@@ -457,7 +450,7 @@ def _convert_quiz_task_to_exam(
             order_cursor += 1
 
 
-def _delete_empty_assignment(conn, assignment: dict[str, Any]) -> None:
+def _delete_empty_assignment(conn: Connection, assignment: dict[str, Any]) -> None:
     """Drop an Assignment with no remaining tasks plus its source activity.
 
     Cascade chain (per existing FK constraints):
@@ -485,6 +478,11 @@ def _delete_empty_assignment(conn, assignment: dict[str, Any]) -> None:
 
 def upgrade() -> None:
     conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+
+    if "assignment" not in existing_tables or "assignmenttask" not in existing_tables:
+        return
 
     quiz_assignments = _fetch_all(
         conn,
@@ -515,11 +513,7 @@ def upgrade() -> None:
 
         # Drop the legacy QUIZ tasks now that their data lives in the new Exam.
         conn.execute(
-            sa.text(
-                "DELETE FROM assignmenttask "
-                "WHERE assignment_id = :assignment_id "
-                "  AND assignment_type = 'QUIZ'"
-            ),
+            sa.text("DELETE FROM assignmenttask WHERE assignment_id = :assignment_id   AND assignment_type = 'QUIZ'"),
             {"assignment_id": assignment["id"]},
         )
 
@@ -527,8 +521,7 @@ def upgrade() -> None:
         # together with its (now-redundant) source activity.
         remaining = _fetch_one(
             conn,
-            "SELECT COUNT(*) AS count FROM assignmenttask "
-            "WHERE assignment_id = :assignment_id",
+            "SELECT COUNT(*) AS count FROM assignmenttask WHERE assignment_id = :assignment_id",
             assignment_id=assignment["id"],
         )
         if int((remaining or {}).get("count", 0)) == 0:

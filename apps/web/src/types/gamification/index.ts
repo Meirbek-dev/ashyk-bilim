@@ -12,37 +12,13 @@
  */
 
 // Re-export all types from domain modules
-export * from './errors';
-export * from './profile';
-export * from './transactions';
-export * from './leaderboard';
-export * from './preferences';
-export * from './customization';
-export * from './dashboard';
-
-// Re-export type guards for convenience
-export {
-  isNetworkError,
-  isAuthError,
-  isDailyLimitExceededError,
-  isValidationError,
-  isServerError,
-  isUnknownError,
-} from './errors';
-
-// Common type aliases for convenience
-export type { GamificationError } from './errors';
-export type { UserGamificationProfile, LevelInfo, StreakInfo } from './profile';
-export type { XPSource, XPTransaction, XPAwardRequest, XPAwardResponse } from './transactions';
-export type { LeaderboardEntry, PlatformLeaderboard, UserRank, LeaderboardFilters } from './leaderboard';
-export type {
-  GamificationPreferences,
-  NotificationPreferences,
-  PrivacyPreferences,
-  DisplayPreferences,
-} from './preferences';
-export type { AvatarFrame, AvatarAccessory, AvatarCustomization } from './customization';
-export type { DashboardData, StreakUpdate } from './dashboard';
+export * from './errors'
+export * from './profile'
+export * from './transactions'
+export type * from './leaderboard'
+export * from './preferences'
+export * from './customization'
+export type * from './dashboard'
 
 // Streak type (used across modules)
-export type StreakType = 'login' | 'learning';
+export type StreakType = 'login' | 'learning'

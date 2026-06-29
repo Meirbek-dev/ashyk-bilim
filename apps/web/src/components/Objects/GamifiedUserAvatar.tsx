@@ -1,41 +1,41 @@
-'use client';
+'use client'
 
-import type { UserGamificationProfile } from '@/types/gamification';
-import { AVATAR_UNLOCKS } from '@/lib/gamification/levels';
-import { cn } from '@/lib/utils';
+import type { UserGamificationProfile } from '@/types/gamification'
+import { AVATAR_UNLOCKS } from '@/lib/gamification/levels'
+import { cn } from '@/lib/utils'
 
-import UserAvatar from './UserAvatar';
-import UserProfilePopup from './UserProfilePopup';
-import type { UserAvatarProps } from './UserAvatar';
+import UserAvatar from './UserAvatar'
+import UserProfilePopup from './UserProfilePopup'
+import type { UserAvatarProps } from './UserAvatar'
 
-export type AvatarSize = UserAvatarProps['size'];
-export type AvatarVariant = UserAvatarProps['variant'];
+export type AvatarSize = UserAvatarProps['size']
+export type AvatarVariant = UserAvatarProps['variant']
 
 interface GamifiedUserAvatarProps extends Omit<UserAvatarProps, 'showProfilePopup'> {
-  showProfilePopup?: boolean;
-  showLevelIndicator?: boolean;
-  showLevelBadge?: boolean;
-  gamificationProfile?: UserGamificationProfile | null;
-  levelIndicatorPosition?: 'top-right' | 'bottom-right' | 'bottom-center';
-  showAvatarFrame?: boolean;
-  showAvatarAccessories?: boolean;
+  showProfilePopup?: boolean
+  showLevelIndicator?: boolean
+  showLevelBadge?: boolean
+  gamificationProfile?: UserGamificationProfile | null
+  levelIndicatorPosition?: 'top-right' | 'bottom-right' | 'bottom-center'
+  showAvatarFrame?: boolean
+  showAvatarAccessories?: boolean
 }
 
 const levelIndicatorSizes = {
-  'xs': 'h-2 w-2 text-[8px]',
-  'sm': 'h-3 w-3 text-[10px]',
-  'md': 'h-4 w-4 text-xs',
-  'lg': 'h-5 w-5 text-sm',
-  'xl': 'h-6 w-6 text-sm',
+  xs: 'h-2 w-2 text-[8px]',
+  sm: 'h-3 w-3 text-[10px]',
+  md: 'h-4 w-4 text-xs',
+  lg: 'h-5 w-5 text-sm',
+  xl: 'h-6 w-6 text-sm',
   '2xl': 'h-6 w-6 text-base',
   '3xl': 'h-9 w-9 text-lg',
-};
+}
 
 // Disabled until the backend persists equipped frame and accessory ids.
-const ENABLE_AVATAR_CUSTOMIZATION = false;
+const ENABLE_AVATAR_CUSTOMIZATION = false
 
 const getHighestUnlock = <T extends { level: number }>(level: number, unlocks: readonly T[]) =>
-  unlocks.filter((unlock) => level >= unlock.level).at(-1) ?? null;
+  unlocks.findLast(unlock => level >= unlock.level) ?? null
 
 const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
   const {
@@ -50,32 +50,29 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     showAvatarFrame = false,
     showAvatarAccessories = false,
     ...avatarProps
-  } = props;
+  } = props
 
   const frame =
     ENABLE_AVATAR_CUSTOMIZATION && showAvatarFrame && gamificationProfile
       ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.frames)
-      : null;
+      : null
   const accessory =
     ENABLE_AVATAR_CUSTOMIZATION && showAvatarAccessories && gamificationProfile
       ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.accessories)
-      : null;
+      : null
 
   const avatarElement = (
     <span className="relative inline-flex">
       <UserAvatar
         {...avatarProps}
         size={size}
-        userId={userId}
+        {...(userId === undefined ? {} : { userId })}
         showProfilePopup={false}
         className={cn(frame?.color && 'border-4', frame?.color, className)}
       />
 
       {accessory && (
-        <span
-          aria-hidden="true"
-          className="absolute -top-1 -right-1 text-sm leading-none"
-        >
+        <span aria-hidden="true" className="absolute -top-1 -right-1 text-sm leading-none">
           {accessory.icon}
         </span>
       )}
@@ -111,13 +108,13 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
         />
       )}
     </span>
-  );
+  )
 
   if (showProfilePopup && userId) {
-    return <UserProfilePopup userId={userId}>{avatarElement}</UserProfilePopup>;
+    return <UserProfilePopup userId={userId}>{avatarElement}</UserProfilePopup>
   }
 
-  return avatarElement;
-};
+  return avatarElement
+}
 
-export default GamifiedUserAvatar;
+export default GamifiedUserAvatar

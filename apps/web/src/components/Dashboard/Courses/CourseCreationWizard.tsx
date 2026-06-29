@@ -1,37 +1,37 @@
-'use client';
+'use client'
 
-import { buildCourseWorkspacePath, cleanCourseUuid, prefixedCourseUuid } from '@/lib/course-management';
-import { createNewCourse, getCourseMetadata, searchEditableCourses } from '@services/courses/courses';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
-import { CourseChoiceCard, courseWorkflowSummaryCardClass } from './courseWorkflowUi';
-import { CheckCircle2, ChevronDown, Loader2, Search, Sparkles } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CourseWizardValues } from '@/schemas/courseSchemas';
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { courseWizardSchema } from '@/schemas/courseSchemas';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createChapter } from '@services/courses/chapters';
-import { RadioGroup } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useTranslations } from 'next-intl';
-import { useForm, useWatch } from 'react-hook-form';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import type * as v from 'valibot';
+import { buildCourseWorkspacePath, cleanCourseUuid, prefixedCourseUuid } from '@/lib/course-management'
+import { createNewCourse, getCourseMetadata, searchEditableCourses } from '@services/courses/courses'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
+import { CourseChoiceCard, courseWorkflowSummaryCardClass } from './courseWorkflowUi'
+import { BookOpen, CheckCircle2, ChevronDown, ListTree, Loader2, Lock, Search } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CourseWizardValues } from '@/schemas/courseSchemas'
+import { valibotResolver } from '@hookform/resolvers/valibot'
+import { courseWizardSchema } from '@/schemas/courseSchemas'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createChapter } from '@services/courses/chapters'
+import { RadioGroup } from '@/components/ui/radio-group'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useTranslations } from 'next-intl'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import type * as v from 'valibot'
+import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 
 export default function CourseCreationWizard() {
-  const t = useTranslations('DashPage.CourseManagement.Wizard');
-  const tCommon = useTranslations('Common');
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const t = useTranslations('DashPage.CourseManagement.Wizard')
+  const tCommon = useTranslations('Common')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
-  type CourseWizardInputValues = v.InferInput<typeof courseWizardSchema>;
+  type CourseWizardInputValues = v.InferInput<typeof courseWizardSchema>
 
-  const form = useForm<CourseWizardInputValues, any, CourseWizardValues>({
+  const form = useForm<CourseWizardInputValues, unknown, CourseWizardValues>({
     resolver: valibotResolver(courseWizardSchema),
     defaultValues: {
       name: '',
@@ -40,87 +40,116 @@ export default function CourseCreationWizard() {
       template: 'blank',
       sourceCourseUuid: '',
     },
-  });
+  })
 
-  const name = useWatch({ control: form.control, name: 'name', defaultValue: '' });
-  const description = useWatch({ control: form.control, name: 'description', defaultValue: '' });
-  const template = useWatch({ control: form.control, name: 'template', defaultValue: 'blank' });
-  const sourceCourseUuid = useWatch({ control: form.control, name: 'sourceCourseUuid', defaultValue: '' });
-  const isPublic = useWatch({ control: form.control, name: 'public', defaultValue: false });
+  const name = useWatch({ control: form.control, name: 'name', defaultValue: '' })
+  const description = useWatch({
+    control: form.control,
+    name: 'description',
+    defaultValue: '',
+  })
+  const template = useWatch({
+    control: form.control,
+    name: 'template',
+    defaultValue: 'blank',
+  })
+  const sourceCourseUuid = useWatch({
+    control: form.control,
+    name: 'sourceCourseUuid',
+    defaultValue: '',
+  })
+  const isPublic = useWatch({
+    control: form.control,
+    name: 'public',
+    defaultValue: false,
+  })
 
   // ── Async source-course combobox ──────────────────────────────────────────
-  const [sourceQuery, setSourceQuery] = useState('');
-  const [sourceOptions, setSourceOptions] = useState<{ course_uuid: string; name: string; cleanUuid: string }[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedSourceName, setSelectedSourceName] = useState('');
-  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sourceQuery, setSourceQuery] = useState('')
+  const [sourceOptions, setSourceOptions] = useState<{ course_uuid: string; name: string; cleanUuid: string }[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedSourceName, setSelectedSourceName] = useState('')
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleSourceSearch = useCallback((query: string) => {
-    setSourceQuery(query);
+    setSourceQuery(query)
 
-    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    if (searchDebounce.current) clearTimeout(searchDebounce.current)
     searchDebounce.current = setTimeout(async () => {
-      setIsSearching(true);
+      setIsSearching(true)
       try {
-        const results = await searchEditableCourses(query, 20);
+        const results = await searchEditableCourses(query, 20)
         setSourceOptions(
-          results.map((c: any) => ({
+          results.map((c: AppCourse) => ({
             course_uuid: c.course_uuid,
-            name: c.name,
+            name: c.name ?? c.course_uuid,
             cleanUuid: cleanCourseUuid(c.course_uuid) ?? c.course_uuid,
           })),
-        );
+        )
       } catch {
         // ignore search errors
       } finally {
-        setIsSearching(false);
+        setIsSearching(false)
       }
-    }, 300);
-  }, []);
+    }, 300)
+  }, [])
 
   // Trigger initial load when outline panel opens
   useEffect(() => {
     if (template === 'outline' && sourceOptions.length === 0) {
-      handleSourceSearch('');
+      queueMicrotask(() => {
+        handleSourceSearch('')
+      })
     }
-  }, [template, sourceOptions.length, handleSourceSearch]);
+  }, [template, sourceOptions.length, handleSourceSearch])
 
   useEffect(() => {
-    const templateParam = searchParams.get('tpl');
-    const sourceParam = searchParams.get('src');
+    const templateParam = searchParams.get('tpl')
+    const sourceParam = searchParams.get('src')
 
-    if (templateParam === 'outline' || templateParam === 'starter' || templateParam === 'blank') {
-      form.setValue('template', templateParam);
-      setShowAdvancedOptions(templateParam !== 'blank');
-    }
+    queueMicrotask(() => {
+      if (templateParam === 'outline' || templateParam === 'starter' || templateParam === 'blank') {
+        form.setValue('template', templateParam)
+        setShowAdvancedOptions(templateParam !== 'blank')
+      }
 
-    if (sourceParam?.trim()) {
-      form.setValue('sourceCourseUuid', cleanCourseUuid(sourceParam));
-      form.setValue('template', 'outline');
-      setShowAdvancedOptions(true);
-    }
-  }, [form, searchParams]);
+      if (sourceParam?.trim()) {
+        form.setValue('sourceCourseUuid', cleanCourseUuid(sourceParam))
+        form.setValue('template', 'outline')
+        setShowAdvancedOptions(true)
+      }
+    })
+  }, [form, searchParams])
 
   const canCreate =
     name.trim().length > 0 &&
-    description.trim().length > 0 &&
-    (template !== 'outline' || Boolean(sourceCourseUuid?.trim()));
+    !isMarkdownStructurallyEmpty(description) &&
+    (template !== 'outline' || Boolean(sourceCourseUuid?.trim()))
 
-  const createOutlineFromSource = async (createdCourse: any) => {
-    if (!sourceCourseUuid) return;
-    const sourceMetadata = await getCourseMetadata(prefixedCourseUuid(sourceCourseUuid), undefined, true);
-    const chapters = Array.isArray(sourceMetadata?.chapters) ? sourceMetadata.chapters : [];
+  const createOutlineFromSource = async (createdCourse: AppCourse) => {
+    if (!sourceCourseUuid) return
+    const sourceMetadata = await getCourseMetadata(prefixedCourseUuid(sourceCourseUuid), undefined, true)
+    const chapters = Array.isArray(sourceMetadata?.chapters) ? sourceMetadata.chapters : []
     for (const chapter of chapters) {
       await createChapter({
         name: chapter.name || t('importedChapterName'),
         description: chapter.description || t('importedChapterDescription'),
         thumbnail_image: '',
         course_uuid: createdCourse.course_uuid,
-      });
+      })
     }
-  };
+  }
 
-  const handleCreate = form.handleSubmit(async (values) => {
+  const handleCreate = form.handleSubmit(async values => {
+    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', {
+      intent: 'publish',
+      required: true,
+    })
+    if (!descriptionGate.canPublish) {
+      toast.error(descriptionGate.errors[0]?.message ?? t('errors.createWorkspace'))
+      return
+    }
+
     try {
       const result = await createNewCourse(
         {
@@ -132,29 +161,29 @@ export default function CourseCreationWizard() {
           template: values.template !== 'outline' ? values.template : undefined,
         },
         null,
-      );
+      )
 
-      const createdCourse = result.data;
+      const createdCourse = result.data
 
       if (!result.success || !createdCourse || !('course_uuid' in createdCourse)) {
         const detail =
           createdCourse && typeof createdCourse === 'object' && 'detail' in createdCourse
             ? createdCourse.detail
-            : undefined;
-        throw new Error((typeof detail === 'string' ? detail : undefined) || t('errors.creationFailed'));
+            : undefined
+        throw new Error((typeof detail === 'string' ? detail : undefined) || t('errors.creationFailed'))
       }
 
       if (values.template === 'outline') {
-        await createOutlineFromSource(createdCourse);
+        await createOutlineFromSource(createdCourse)
       }
 
-      const destination = buildCourseWorkspacePath(createdCourse.course_uuid, 'curriculum');
-      toast.success(t('toasts.created'));
-      router.replace(destination);
-    } catch (error: any) {
-      toast.error(error?.message || t('errors.createWorkspace'));
+      const destination = buildCourseWorkspacePath(createdCourse.course_uuid, 'curriculum')
+      toast.success(t('toasts.created'))
+      router.replace(destination)
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('errors.createWorkspace'))
     }
-  });
+  })
 
   const summaryContent = (
     <div className="text-muted-foreground space-y-4 text-sm">
@@ -183,7 +212,7 @@ export default function CourseCreationWizard() {
         </div>
       ) : null}
     </div>
-  );
+  )
 
   return (
     <div className="bg-background min-h-screen px-4 py-8 lg:px-8">
@@ -200,9 +229,10 @@ export default function CourseCreationWizard() {
           <Collapsible>
             <CollapsibleTrigger
               render={
-                <button
+                <Button
                   type="button"
-                  className="group bg-card text-foreground flex w-full items-center justify-between rounded-t-xl border px-5 py-4"
+                  variant="ghost"
+                  className="group bg-card text-foreground flex h-auto w-full items-center justify-between rounded-t-xl border px-5 py-4"
                 />
               }
             >
@@ -236,11 +266,20 @@ export default function CourseCreationWizard() {
               <Field>
                 <FieldLabel htmlFor="course-description">{t('basics.shortDescription')}</FieldLabel>
                 <FieldContent>
-                  <Textarea
-                    id="course-description"
-                    {...form.register('description')}
-                    placeholder={t('basics.shortDescriptionPlaceholder')}
-                    className="min-h-32"
+                  <Controller
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <MarkdownEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        preset="courseDescription"
+                        placeholder={t('basics.shortDescriptionPlaceholder')}
+                        required
+                        minHeight={220}
+                      />
+                    )}
                   />
                 </FieldContent>
                 <FieldError errors={[form.formState.errors.description]} />
@@ -250,7 +289,7 @@ export default function CourseCreationWizard() {
                 <legend className="text-foreground text-sm font-medium">{t('basics.audienceDefault')}</legend>
                 <RadioGroup
                   value={isPublic ? 'public' : 'private'}
-                  onValueChange={(val) => form.setValue('public', val === 'public')}
+                  onValueChange={val => form.setValue('public', val === 'public')}
                   className="grid gap-3 md:grid-cols-2"
                 >
                   {[
@@ -264,7 +303,7 @@ export default function CourseCreationWizard() {
                       title: t('visibility.public.title'),
                       description: t('visibility.public.description'),
                     },
-                  ].map((option) => (
+                  ].map(option => (
                     <CourseChoiceCard
                       key={option.value}
                       id={`vis-${option.value}`}
@@ -272,22 +311,20 @@ export default function CourseCreationWizard() {
                       checked={(isPublic ? 'public' : 'private') === option.value}
                       title={option.title}
                       description={option.description}
-                      icon={option.value === 'public' ? CheckCircle2 : Sparkles}
-                      onSelect={(value) => form.setValue('public', value === 'public')}
+                      icon={option.value === 'public' ? CheckCircle2 : Lock}
+                      onSelect={value => form.setValue('public', value === 'public')}
                     />
                   ))}
                 </RadioGroup>
               </fieldset>
 
-              <Collapsible
-                open={showAdvancedOptions}
-                onOpenChange={setShowAdvancedOptions}
-              >
+              <Collapsible open={showAdvancedOptions} onOpenChange={setShowAdvancedOptions}>
                 <CollapsibleTrigger
                   render={
-                    <button
+                    <Button
                       type="button"
-                      className="group bg-muted/30 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left"
+                      variant="ghost"
+                      className="group bg-muted/30 flex h-auto w-full items-center justify-between rounded-xl border px-4 py-3 text-left"
                     />
                   }
                 >
@@ -300,7 +337,7 @@ export default function CourseCreationWizard() {
                 <CollapsibleContent className="bg-card mt-4 space-y-5 rounded-xl border p-4">
                   <RadioGroup
                     value={template}
-                    onValueChange={(val) => form.setValue('template', val as CourseWizardValues['template'])}
+                    onValueChange={val => form.setValue('template', val as CourseWizardValues['template'])}
                     className="grid gap-3"
                   >
                     {[
@@ -319,7 +356,7 @@ export default function CourseCreationWizard() {
                         title: t('template.outline.title'),
                         description: t('template.outline.description'),
                       },
-                    ].map((option) => (
+                    ].map(option => (
                       <CourseChoiceCard
                         key={option.value}
                         id={`tpl-${option.value}`}
@@ -328,25 +365,16 @@ export default function CourseCreationWizard() {
                         title={option.title}
                         description={option.description}
                         icon={
-                          option.value === 'outline'
-                            ? ChevronDown
-                            : option.value === 'starter'
-                              ? Sparkles
-                              : CheckCircle2
+                          option.value === 'outline' ? ListTree : option.value === 'starter' ? BookOpen : CheckCircle2
                         }
-                        onSelect={(value) => form.setValue('template', value as CourseWizardValues['template'])}
+                        onSelect={value => form.setValue('template', value as CourseWizardValues['template'])}
                       />
                     ))}
                   </RadioGroup>
 
                   {template === 'outline' ? (
                     <div className="space-y-2">
-                      <label
-                        htmlFor="source-course-search"
-                        className="text-foreground text-sm font-medium"
-                      >
-                        {t('template.sourceCourse')}
-                      </label>
+                      <FieldLabel htmlFor="source-course-search">{t('template.sourceCourse')}</FieldLabel>
 
                       {/* Async search input */}
                       <div className="relative">
@@ -354,7 +382,7 @@ export default function CourseCreationWizard() {
                         <Input
                           id="source-course-search"
                           value={sourceQuery}
-                          onChange={(e) => handleSourceSearch(e.target.value)}
+                          onChange={e => handleSourceSearch(e.target.value)}
                           placeholder={t('template.selectCourse')}
                           className="pl-9"
                         />
@@ -366,22 +394,23 @@ export default function CourseCreationWizard() {
                       {/* Results list */}
                       {sourceOptions.length > 0 && (
                         <div className="bg-popover max-h-48 overflow-y-auto rounded-lg border shadow-md">
-                          {sourceOptions.map((course) => (
-                            <button
+                          {sourceOptions.map(course => (
+                            <Button
                               key={course.course_uuid}
                               type="button"
+                              variant="ghost"
                               className={cn(
-                                'w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
+                                'h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
                                 sourceCourseUuid === course.cleanUuid && 'bg-accent font-medium',
                               )}
                               onClick={() => {
-                                form.setValue('sourceCourseUuid', course.cleanUuid);
-                                setSelectedSourceName(course.name);
-                                setSourceQuery(course.name);
+                                form.setValue('sourceCourseUuid', course.cleanUuid)
+                                setSelectedSourceName(course.name)
+                                setSourceQuery(course.name)
                               }}
                             >
                               {course.name}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       )}
@@ -405,11 +434,7 @@ export default function CourseCreationWizard() {
                 {tCommon('cancel')}
               </Button>
 
-              <Button
-                type="button"
-                onClick={handleCreate}
-                disabled={!canCreate || form.formState.isSubmitting}
-              >
+              <Button type="button" onClick={handleCreate} disabled={!canCreate || form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -431,5 +456,5 @@ export default function CourseCreationWizard() {
         </div>
       </div>
     </div>
-  );
+  )
 }

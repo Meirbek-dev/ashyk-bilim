@@ -1,27 +1,27 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed';
-import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard';
-import TrailCourseElement from '@components/Pages/Trail/TrailCourseElement';
-import { useSession } from '@/hooks/useSession';
-import UserCertificates from '@components/Pages/Trail/UserCertificates';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useGamificationStore } from '@/stores/gamification';
-import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/useTrail';
-import { useTranslations } from 'next-intl';
-import { BookOpen } from 'lucide-react';
+'use client'
+import { useSyncExternalStore } from 'react'
+import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed'
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
+import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard'
+import TrailCourseElement from '@components/Pages/Trail/TrailCourseElement'
+import { useSession } from '@/hooks/useSession'
+import UserCertificates from '@components/Pages/Trail/UserCertificates'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useGamificationStore } from '@/stores/gamification'
+import { useTrailCurrent, useTrailLeaderboard } from '@/features/trail/hooks/useTrail'
+import { useTranslations } from 'next-intl'
+import type { XPTransaction } from '@/types/gamification'
+import { BookOpen } from 'lucide-react'
 
-const EMPTY_RECENT_TRANSACTIONS: any[] = [];
+const emptySubscribe = () => () => {}
+
+const EMPTY_RECENT_TRANSACTIONS: XPTransaction[] = []
 
 function TrailCourseSkeletons() {
   return (
     <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="border-border bg-card flex gap-4 rounded-xl border p-4"
-        >
+      {[1, 2, 3].map(i => (
+        <div key={i} className="border-border bg-card flex gap-4 rounded-xl border p-4">
           <Skeleton className="h-[76px] w-[108px] shrink-0 rounded-lg" />
           <div className="flex flex-1 flex-col justify-between gap-3 py-0.5">
             <div className="space-y-1.5">
@@ -39,33 +39,36 @@ function TrailCourseSkeletons() {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 const Trail = () => {
-  const { user: currentUser } = useSession();
-  const t = useTranslations('TrailPage');
+  const { user: currentUser } = useSession()
+  const t = useTranslations('TrailPage')
 
-  const { data: trail, isLoading: isTrailLoading } = useTrailCurrent();
+  const { data: trail, isLoading: isTrailLoading } = useTrailCurrent()
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
-  const gamificationProfile = useGamificationStore((s) => s.profile);
-  const recentTransactions = useGamificationStore((s) => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS);
-  const userRank = useGamificationStore((s) => s.dashboard?.user_rank);
-  const isGamificationLoading = useGamificationStore((s) => s.isLoading);
+  const gamificationProfile = useGamificationStore(s => s.profile)
+  const recentTransactions = useGamificationStore(
+    s => (s.dashboard?.recent_transactions as XPTransaction[] | undefined) ?? EMPTY_RECENT_TRANSACTIONS,
+  )
+  const userRank = useGamificationStore(s => s.dashboard?.user_rank)
+  const isGamificationLoading = useGamificationStore(s => s.isLoading)
   const gamificationData = {
     profile: gamificationProfile,
     recent_transactions: recentTransactions,
     user_rank: userRank,
-  };
+  }
 
-  const { data: leaderboardData } = useTrailLeaderboard(10);
+  const { data: leaderboardData } = useTrailLeaderboard(10)
 
-  const userRankData = { rank: gamificationData.user_rank };
+  const userRankData = { rank: gamificationData.user_rank }
 
   return (
     <GeneralWrapper>
@@ -94,12 +97,8 @@ const Trail = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {trail.runs.map((run: any) => (
-                <TrailCourseElement
-                  key={run.course.course_uuid}
-                  run={run}
-                  course={run.course}
-                />
+              {trail.runs.map((run: AppTrailRun) => (
+                <TrailCourseElement key={run.course.course_uuid} run={run} course={run.course} />
               ))}
             </div>
           )}
@@ -112,8 +111,8 @@ const Trail = () => {
         <div className="grid gap-6 lg:grid-cols-2">
           <Leaderboard
             entries={leaderboardData?.entries || []}
-            currentUserId={currentUser?.id || undefined}
-            userRank={userRankData?.rank}
+            {...(currentUser?.id === undefined ? {} : { currentUserId: currentUser.id })}
+            {...(userRankData?.rank === undefined ? {} : { userRank: userRankData.rank })}
           />
           <RecentActivityFeed
             transactions={gamificationData?.recent_transactions || []}
@@ -122,7 +121,7 @@ const Trail = () => {
         </div>
       </div>
     </GeneralWrapper>
-  );
-};
+  )
+}
 
-export default Trail;
+export default Trail

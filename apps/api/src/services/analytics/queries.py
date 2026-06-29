@@ -5,11 +5,10 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from statistics import median
-from typing import Any, TypeVar
+from typing import TypeVar
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity
@@ -68,6 +67,15 @@ class AssessmentAnalyticsRow:
 
 
 @dataclass(slots=True)
+class QuizQuestionStat:
+    activity_id: int
+    question_id: str
+    correct_count: int
+    total_attempts: int
+    avg_time_seconds: float | None = None
+
+
+@dataclass(slots=True)
 class AnalyticsContext:
     generated_at: datetime
     courses_by_id: dict[int, Course]
@@ -85,14 +93,14 @@ class AnalyticsContext:
     exams: list[AssessmentAnalyticsRow]
     exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_submissions: list[tuple[Submission, Activity]]
-    quiz_question_stats: list[Any]
+    quiz_question_stats: list[QuizQuestionStat]
     code_submissions: list[tuple[Submission, Activity]]
     users_by_id: dict[int, User]
     usergroup_names_by_id: dict[int, str]
     cohort_ids_by_user: dict[int, set[int]]
 
 
-def _unwrap_model[ModelT](value: Any, model_type: type[ModelT]) -> ModelT:
+def _unwrap_model[ModelT](value: object, model_type: type[ModelT]) -> ModelT:
     if isinstance(value, model_type):
         return value
     if hasattr(value, "_mapping"):
@@ -108,12 +116,10 @@ def _unwrap_model[ModelT](value: Any, model_type: type[ModelT]) -> ModelT:
 
 
 def _unwrap_pair[LeftT, RightT](
-    value: Any, left_type: type[LeftT], right_type: type[RightT]
+    value: object, left_type: type[LeftT], right_type: type[RightT]
 ) -> tuple[LeftT, RightT]:
     if isinstance(value, (tuple, list)):
-        left = next(
-            (candidate for candidate in value if isinstance(candidate, left_type)), None
-        )
+        left = next((candidate for candidate in value if isinstance(candidate, left_type)), None)
         right = next(
             (candidate for candidate in value if isinstance(candidate, right_type)),
             None,
@@ -123,19 +129,11 @@ def _unwrap_pair[LeftT, RightT](
     if hasattr(value, "_mapping"):
         mapped_values = list(value._mapping.values())
         left = next(
-            (
-                candidate
-                for candidate in mapped_values
-                if isinstance(candidate, left_type)
-            ),
+            (candidate for candidate in mapped_values if isinstance(candidate, left_type)),
             None,
         )
         right = next(
-            (
-                candidate
-                for candidate in mapped_values
-                if isinstance(candidate, right_type)
-            ),
+            (candidate for candidate in mapped_values if isinstance(candidate, right_type)),
             None,
         )
         if left is not None and right is not None:
@@ -244,14 +242,22 @@ def manual_assessment_score(submission: Submission) -> float | None:
     return float(score) if score is not None else None
 
 
-def manual_assessment_submitted_at(submission: Submission) -> object:
-    return submission.submitted_at or submission.updated_at or submission.created_at
+def _get_submission_time(submission: Submission) -> datetime:
+    if submission.submitted_at is not None:
+        return submission.submitted_at
+    return submission.updated_at
 
 
-def manual_assessment_graded_at(submission: Submission) -> object | None:
+def manual_assessment_submitted_at(submission: Submission) -> datetime:
+    return _get_submission_time(submission)
+
+
+def manual_assessment_graded_at(submission: Submission) -> datetime | None:
     if not manual_assessment_is_graded(submission):
         return None
-    return submission.graded_at or submission.updated_at
+    if submission.graded_at is not None:
+        return submission.graded_at
+    return submission.updated_at
 
 
 def display_name(user: User | None) -> str:
@@ -285,12 +291,8 @@ def build_series(
     while cursor <= end_local:
         buckets[cursor] = set() if distinct_users else 0.0
         # Advance by calendar day/week to avoid DST drift: increment date then re-normalize
-        next_date = cursor.date() + (
-            timedelta(weeks=1) if bucket == "week" else timedelta(days=1)
-        )
-        cursor = datetime(
-            next_date.year, next_date.month, next_date.day, 0, 0, 0, tzinfo=tzinfo
-        )
+        next_date = cursor.date() + (timedelta(weeks=1) if bucket == "week" else timedelta(days=1))
+        cursor = datetime(next_date.year, next_date.month, next_date.day, 0, 0, 0, tzinfo=tzinfo)
 
     for event in events:
         if event.ts < start or event.ts > end:
@@ -317,28 +319,18 @@ def build_series(
     return series
 
 
-def cohort_user_ids(
-    context: AnalyticsContext, cohort_ids: Iterable[int]
-) -> set[int] | None:
+def cohort_user_ids(context: AnalyticsContext, cohort_ids: Iterable[int]) -> set[int] | None:
     requested = list(cohort_ids)
     if not requested:
         return None
     # Only filter by cohort IDs that are known to this platform context.
     # If none of the requested IDs are known, return an empty set so the
     # caller does NOT silently fall back to showing all learners.
-    normalized = {
-        cohort_id
-        for cohort_id in requested
-        if cohort_id in context.usergroup_names_by_id
-    }
+    normalized = {cohort_id for cohort_id in requested if cohort_id in context.usergroup_names_by_id}
     if not normalized:
         # Requested cohorts exist but none overlap with this scope — yield empty result
         return set()
-    return {
-        user_id
-        for user_id, memberships in context.cohort_ids_by_user.items()
-        if memberships & normalized
-    }
+    return {user_id for user_id, memberships in context.cohort_ids_by_user.items() if memberships & normalized}
 
 
 def cohort_names_for_user(
@@ -395,96 +387,75 @@ def load_analytics_context(
 
     courses = [
         _unwrap_model(course, Course)
-        for course in db_session.exec(
-            select(Course).where(Course.id.in_(course_ids))
-        ).all()
+        for course in db_session.exec(select(Course).where(col(Course.id).in_(course_ids))).all()
     ]
     course_map = {course.id: course for course in courses if course.id is not None}
 
     activities = [
         _unwrap_model(activity, Activity)
-        for activity in db_session.exec(
-            select(Activity).where(Activity.course_id.in_(course_ids))
-        ).all()
+        for activity in db_session.exec(select(Activity).where(col(Activity.course_id).in_(course_ids))).all()
     ]
-    activity_map = {
-        activity.id: activity for activity in activities if activity.id is not None
-    }
+    activity_map = {activity.id: activity for activity in activities if activity.id is not None}
 
     course_chapters = [
         _unwrap_model(item, Chapter)
-        for item in db_session.exec(
-            select(Chapter).where(Chapter.course_id.in_(course_ids))
-        ).all()
+        for item in db_session.exec(select(Chapter).where(col(Chapter.course_id).in_(course_ids))).all()
     ]
     [item.id for item in course_chapters]
 
-    chapter_map = {
-        chapter.id: chapter for chapter in course_chapters if chapter.id is not None
-    }
+    chapter_map = {chapter.id: chapter for chapter in course_chapters if chapter.id is not None}
 
     chapter_activities = [
         _unwrap_model(item, Activity)
-        for item in db_session.exec(
-            select(Activity).where(Activity.course_id.in_(course_ids))
-        ).all()
+        for item in db_session.exec(select(Activity).where(col(Activity.course_id).in_(course_ids))).all()
     ]
 
-    trail_run_stmt = select(TrailRun).where(TrailRun.course_id.in_(course_ids))
-    trail_runs = [
-        _unwrap_model(run, TrailRun) for run in db_session.exec(trail_run_stmt).all()
-    ]
-    trail_step_stmt = select(TrailStep).where(TrailStep.course_id.in_(course_ids))
+    trail_run_stmt = select(TrailRun).where(col(TrailRun.course_id).in_(course_ids))
+    trail_runs = [_unwrap_model(run, TrailRun) for run in db_session.exec(trail_run_stmt).all()]
+    trail_step_stmt = select(TrailStep).where(col(TrailStep.course_id).in_(course_ids))
     if activity_end is not None:
-        trail_step_stmt = trail_step_stmt.where(TrailStep.update_date <= activity_end)
-    trail_steps = [
-        _unwrap_model(step, TrailStep)
-        for step in db_session.exec(trail_step_stmt).all()
-    ]
+        trail_step_stmt = trail_step_stmt.where(col(TrailStep.update_date) <= activity_end)
+    trail_steps = [_unwrap_model(step, TrailStep) for step in db_session.exec(trail_step_stmt).all()]
     activity_progress = [
         _unwrap_model(row, ActivityProgress)
         for row in db_session.exec(
-            select(ActivityProgress).where(ActivityProgress.course_id.in_(course_ids))
+            select(ActivityProgress).where(col(ActivityProgress.course_id).in_(course_ids))
         ).all()
     ]
     course_progress = [
         _unwrap_model(row, CourseProgress)
-        for row in db_session.exec(
-            select(CourseProgress).where(CourseProgress.course_id.in_(course_ids))
-        ).all()
+        for row in db_session.exec(select(CourseProgress).where(col(CourseProgress.course_id).in_(course_ids))).all()
     ]
 
     assessment_rows = [
         _unwrap_pair(row, Assessment, Activity)
         for row in db_session.exec(
             select(Assessment, Activity)
-            .join(Activity, Activity.id == Assessment.activity_id)
-            .where(Activity.course_id.in_(course_ids))
+            .join(Activity, col(Activity.id) == col(Assessment.activity_id))
+            .where(col(Activity.course_id).in_(course_ids))
         ).all()
     ]
     analytics_assessments = [
         AssessmentAnalyticsRow(
             id=assessment.id or 0,
             activity_id=activity.id or 0,
-            course_id=activity.course_id,
+            course_id=activity.course_id or 0,
             title=assessment.title,
-            settings=activity.settings if isinstance(activity.settings, dict) else {},
+            settings=activity.settings or {},
         )
         for assessment, activity in assessment_rows
-        if assessment.id is not None and activity.id is not None
+        if assessment.id is not None and activity.id is not None and activity.course_id is not None
     ]
     assessments_by_activity = {row.activity_id: row for row in analytics_assessments}
 
     manual_assessments: list[AssessmentAnalyticsRow] = []
-    manual_assessment_activity_ids: list[int] = []
     manual_assessment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]] = []
 
     exams = [
         row
         for row in analytics_assessments
         if any(
-            assessment.activity_id == row.activity_id
-            and str(assessment.kind) == AssessmentType.EXAM.value
+            assessment.activity_id == row.activity_id and str(assessment.kind) == AssessmentType.EXAM.value
             for assessment, _activity in assessment_rows
         )
     ]
@@ -493,19 +464,16 @@ def load_analytics_context(
     if exam_activity_ids:
         exam_attempt_stmt = (
             select(Submission)
-            .where(Submission.activity_id.in_(exam_activity_ids))
-            .where(Submission.assessment_type == AssessmentType.EXAM)
-            .where(Submission.status != SubmissionStatus.DRAFT)
+            .where(col(Submission.activity_id).in_(exam_activity_ids))
+            .where(col(Submission.assessment_type) == AssessmentType.EXAM)
+            .where(col(Submission.status) != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
-            exam_attempt_stmt = exam_attempt_stmt.where(
-                Submission.started_at >= activity_start
-            )
+            exam_attempt_stmt = exam_attempt_stmt.where(col(Submission.started_at) >= activity_start)
         exam_attempts = [
             (sub, assessments_by_activity[sub.activity_id])
             for row in db_session.exec(exam_attempt_stmt).all()
-            if (sub := _unwrap_model(row, Submission)).activity_id
-            in assessments_by_activity
+            if (sub := _unwrap_model(row, Submission)).activity_id in assessments_by_activity
         ]
 
     activity_ids = [activity.id for activity in activities if activity.id is not None]
@@ -513,46 +481,40 @@ def load_analytics_context(
     if activity_ids:
         quiz_submission_stmt = (
             select(Submission, Activity)
-            .join(Activity, Activity.id == Submission.activity_id)
-            .where(Activity.id.in_(activity_ids))
-            .where(Submission.assessment_type == AssessmentType.QUIZ)
-            .where(Submission.status != SubmissionStatus.DRAFT)
+            .join(Activity, col(Activity.id) == col(Submission.activity_id))
+            .where(col(Activity.id).in_(activity_ids))
+            .where(col(Submission.assessment_type) == AssessmentType.QUIZ)
+            .where(col(Submission.status) != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
-            quiz_submission_stmt = quiz_submission_stmt.where(
-                Submission.submitted_at >= activity_start
-            )
+            quiz_submission_stmt = quiz_submission_stmt.where(col(Submission.submitted_at) >= activity_start)
         quiz_submissions = [
-            _unwrap_pair(row, Submission, Activity)
-            for row in db_session.exec(quiz_submission_stmt).all()
+            _unwrap_pair(row, Submission, Activity) for row in db_session.exec(quiz_submission_stmt).all()
         ]
 
-    quiz_question_stats: list[Any] = []
+    quiz_question_stats: list[QuizQuestionStat] = []
 
     code_submissions: list[tuple[Submission, Activity]] = []
     if activity_ids:
         code_submission_stmt = (
             select(Submission, Activity)
-            .join(Activity, Activity.id == Submission.activity_id)
-            .where(Activity.id.in_(activity_ids))
-            .where(Submission.assessment_type == AssessmentType.CODE_CHALLENGE)
-            .where(Submission.status != SubmissionStatus.DRAFT)
+            .join(Activity, col(Activity.id) == col(Submission.activity_id))
+            .where(col(Activity.id).in_(activity_ids))
+            .where(col(Submission.assessment_type) == AssessmentType.CODE_CHALLENGE)
+            .where(col(Submission.status) != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
-            code_submission_stmt = code_submission_stmt.where(
-                Submission.created_at >= activity_start
-            )
+            code_submission_stmt = code_submission_stmt.where(col(Submission.created_at) >= activity_start)
         code_submissions = [
-            _unwrap_pair(row, Submission, Activity)
-            for row in db_session.exec(code_submission_stmt).all()
+            _unwrap_pair(row, Submission, Activity) for row in db_session.exec(code_submission_stmt).all()
         ]
 
     certificate_rows = [
         _unwrap_pair(row, CertificateUser, Certifications)
         for row in db_session.exec(
             select(CertificateUser, Certifications)
-            .join(Certifications, Certifications.id == CertificateUser.certification_id)
-            .where(Certifications.course_id.in_(course_ids))
+            .join(Certifications, col(Certifications.id) == col(CertificateUser.certification_id))
+            .where(col(Certifications.course_id).in_(course_ids))
         ).all()
     ]
 
@@ -561,27 +523,19 @@ def load_analytics_context(
     user_ids.update(trail_step.user_id for trail_step in trail_steps)
     user_ids.update(progress.user_id for progress in activity_progress)
     user_ids.update(progress.user_id for progress in course_progress)
-    user_ids.update(
-        submission.user_id for submission, _manual_assessment in manual_assessment_submissions
-    )
+    user_ids.update(submission.user_id for submission, _manual_assessment in manual_assessment_submissions)
     user_ids.update(attempt.user_id for attempt, _exam in exam_attempts)
     user_ids.update(submission.user_id for submission, _activity in quiz_submissions)
     user_ids.update(submission.user_id for submission, _activity in code_submissions)
-    user_ids.update(
-        certificate.user_id for certificate, _certification in certificate_rows
-    )
-    creator_ids = {
-        course.creator_id for course in courses if course.creator_id is not None
-    }
+    user_ids.update(certificate.user_id for certificate, _certification in certificate_rows)
+    creator_ids = {course.creator_id for course in courses if course.creator_id is not None}
     user_ids.update(creator_ids)
 
-    users = []
+    users: list[User] = []
     if user_ids:
         users = [
             _unwrap_model(user, User)
-            for user in db_session.exec(
-                select(User).where(User.id.in_(sorted(user_ids)))
-            ).all()
+            for user in db_session.exec(select(User).where(col(User.id).in_(sorted(user_ids)))).all()
         ]
     user_map = {user.id: user for user in users if user.id is not None}
 
@@ -593,7 +547,7 @@ def load_analytics_context(
         membership_rows = [
             _unwrap_model(row, UserGroupUser)
             for row in db_session.exec(
-                select(UserGroupUser).where(UserGroupUser.user_id.in_(sorted(user_ids)))
+                select(UserGroupUser).where(col(UserGroupUser.user_id).in_(sorted(user_ids)))
             ).all()
         ]
         for membership in membership_rows:
@@ -604,15 +558,11 @@ def load_analytics_context(
             usergroups = [
                 _unwrap_model(usergroup, UserGroup)
                 for usergroup in db_session.exec(
-                    select(UserGroup).where(
-                        UserGroup.id.in_(sorted(relevant_group_ids))
-                    )
+                    select(UserGroup).where(col(UserGroup.id).in_(sorted(relevant_group_ids)))
                 ).all()
             ]
             usergroup_names_by_id = {
-                usergroup.id: usergroup.name
-                for usergroup in usergroups
-                if usergroup.id is not None
+                usergroup.id: usergroup.name for usergroup in usergroups if usergroup.id is not None
             }
 
     return AnalyticsContext(
@@ -640,9 +590,7 @@ def load_analytics_context(
     )
 
 
-def build_activity_events(
-    context: AnalyticsContext, allowed_user_ids: set[int] | None = None
-) -> list[ActivityEvent]:
+def build_activity_events(context: AnalyticsContext, allowed_user_ids: set[int] | None = None) -> list[ActivityEvent]:
     events: list[ActivityEvent] = []
 
     for progress in context.activity_progress:
@@ -670,9 +618,7 @@ def build_activity_events(
     for submission, activity in context.quiz_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        ts = parse_timestamp(
-            submission.submitted_at or submission.updated_at or submission.created_at
-        )
+        ts = parse_timestamp(_get_submission_time(submission))
         if ts is None or activity.course_id is None:
             continue
         events.append(
@@ -690,9 +636,7 @@ def build_activity_events(
     for attempt, exam in context.exam_attempts:
         if allowed_user_ids is not None and attempt.user_id not in allowed_user_ids:
             continue
-        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(
-            attempt.started_at
-        )
+        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(attempt.started_at)
         if ts is None:
             continue
         events.append(
@@ -710,11 +654,7 @@ def build_activity_events(
     for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        ts = (
-            parse_timestamp(getattr(submission, "submitted_at", None))
-            or parse_timestamp(submission.updated_at)
-            or parse_timestamp(submission.created_at)
-        )
+        ts = parse_timestamp(_get_submission_time(submission))
         if ts is None:
             continue
         events.append(
@@ -732,11 +672,7 @@ def build_activity_events(
     for submission, activity in context.code_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if (
-            submission.status
-            not in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED}
-            or activity.course_id is None
-        ):
+        if submission.status not in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED} or activity.course_id is None:
             continue
         ts = parse_timestamp(submission.created_at)
         if ts is None:
@@ -762,29 +698,23 @@ def progress_snapshots(
     # Canonical required-course progress comes from ActivityProgress and
     # CourseProgress. TrailStep is intentionally excluded here; it is personal
     # trail UX state and must not drive certificates or teacher analytics.
-    activity_progress_by_course_user: dict[tuple[int, int], list[ActivityProgress]] = (
-        defaultdict(list)
-    )
-    for progress in context.activity_progress:
-        if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
+    activity_progress_by_course_user: dict[tuple[int, int], list[ActivityProgress]] = defaultdict(list)
+    for act_progress in context.activity_progress:
+        if allowed_user_ids is not None and act_progress.user_id not in allowed_user_ids:
             continue
-        activity_progress_by_course_user[progress.course_id, progress.user_id].append(
-            progress
-        )
+        activity_progress_by_course_user[act_progress.course_id, act_progress.user_id].append(act_progress)
 
     course_progress_by_course_user: dict[tuple[int, int], CourseProgress] = {}
-    for progress in context.course_progress:
-        if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
+    for crs_progress in context.course_progress:
+        if allowed_user_ids is not None and crs_progress.user_id not in allowed_user_ids:
             continue
-        course_progress_by_course_user[progress.course_id, progress.user_id] = progress
+        course_progress_by_course_user[crs_progress.course_id, crs_progress.user_id] = crs_progress
 
     trailrun_by_course_user: dict[tuple[int, int], int] = {}
     for trail_run in context.trail_runs:
         if allowed_user_ids is not None and trail_run.user_id not in allowed_user_ids:
             continue
-        trailrun_by_course_user[trail_run.course_id, trail_run.user_id] = (
-            trail_run.id or 0
-        )
+        trailrun_by_course_user[trail_run.course_id, trail_run.user_id] = trail_run.id or 0
 
     certificate_pairs = {
         (certification.course_id, certificate.user_id)
@@ -817,14 +747,8 @@ def progress_snapshots(
             progress_last_activity = course_progress.last_activity_at
         else:
             total_steps = sum(1 for row in activity_rows if row.required)
-            completed_steps = sum(
-                1
-                for row in activity_rows
-                if row.required and row.completed_at is not None
-            )
-            progress_pct = (
-                round((completed_steps / total_steps) * 100, 1) if total_steps else 0.0
-            )
+            completed_steps = sum(1 for row in activity_rows if row.required and row.completed_at is not None)
+            progress_pct = round((completed_steps / total_steps) * 100, 1) if total_steps else 0.0
             is_completed = total_steps > 0 and completed_steps >= total_steps
             progress_last_activity = max(
                 (row.last_activity_at for row in activity_rows if row.last_activity_at),
@@ -842,16 +766,13 @@ def progress_snapshots(
             progress_pct=100.0 if is_completed else progress_pct,
             is_completed=is_completed,
             has_certificate=has_certificate,
-            last_activity_at=progress_last_activity
-            or last_activity.get((course_id, user_id)),
+            last_activity_at=progress_last_activity or last_activity.get((course_id, user_id)),
             trailrun_id=trailrun_by_course_user.get((course_id, user_id)),
         )
     return snapshots
 
 
-def course_last_content_update(
-    context: AnalyticsContext, course_id: int
-) -> datetime | None:
+def course_last_content_update(context: AnalyticsContext, course_id: int) -> datetime | None:
     candidates: list[datetime] = []
     course = context.courses_by_id.get(course_id)
     if course is not None:
@@ -875,8 +796,10 @@ def hours_between(start_value: object, end_value: object) -> float | None:
     return round((end - start).total_seconds() / 3600, 2)
 
 
-def assessment_pass_threshold(settings: dict | None) -> float:
+def assessment_pass_threshold(settings: dict[str, object] | None) -> float:
     raw = (settings or {}).get("passing_score", 60)
+    if not isinstance(raw, int | float | str):
+        return 60.0
     try:
         return float(raw)
     except TypeError, ValueError:

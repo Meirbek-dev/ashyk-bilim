@@ -1,12 +1,12 @@
-"""Pipeline stage: apply late and attempt penalties.
+"""Стадия конвейера: применить штрафы за опоздание и попытки.
 
-Pure functions — no I/O. Takes the auto_score from the grading stage and
-applies policy-driven penalties to produce the final score.
+Чистые функции — без I/O. Берёт auto_score из стадии оценивания и
+применяет штрафы по политике, чтобы получить итоговый балл.
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from src.db.grading.overrides import StudentPolicyOverride
 from src.services.grading.pipeline.context import EffectivePolicy, PenaltyResult
@@ -23,10 +23,10 @@ def apply_penalties(
     violation_exceeded: bool,
     needs_manual_review: bool,
 ) -> PenaltyResult:
-    """Compute the final score after all penalties.
+    """Вычислить итоговый балл после всех штрафов.
 
-    If `needs_manual_review` is True, final_score is left at 0 (teacher sets it).
-    If `violation_exceeded` is True, final_score is zeroed.
+    Если `needs_manual_review` истинно, final_score остаётся 0 (преподаватель задаёт его вручную).
+    Если `violation_exceeded` истинно, final_score обнуляется.
     """
     if violation_exceeded:
         return PenaltyResult(
@@ -37,7 +37,7 @@ def apply_penalties(
         )
 
     if needs_manual_review:
-        # Teacher will set the final score; we don't apply penalties yet
+        # Итоговый балл задаст преподаватель; штрафы пока не применяем
         return PenaltyResult(
             late_penalty_pct=0.0,
             attempt_penalty_applied=False,
@@ -45,7 +45,7 @@ def apply_penalties(
             violation_zeroed=False,
         )
 
-    # 1. Attempt penalty (caps the max achievable score)
+    # 1. Штраф за попытки (ограничивает максимальный достижимый балл)
     penalized_score = _apply_attempt_penalty(
         auto_score,
         attempt_number,
@@ -55,12 +55,7 @@ def apply_penalties(
 
     # 2. Late penalty
     waive_late = override is not None and override.waive_late_penalty
-    if waive_late:
-        late_penalty_pct = 0.0
-    else:
-        late_penalty_pct = _calculate_late_penalty(
-            submitted_at, effective.due_at, effective
-        )
+    late_penalty_pct = 0.0 if waive_late else _calculate_late_penalty(submitted_at, effective.due_at, effective)
 
     # Apply late penalty to the (possibly attempt-penalized) score
     final_score = _apply_late_penalty(penalized_score, late_penalty_pct)

@@ -16,17 +16,25 @@
  *       → these become internal Judge0 detail; outer Submission stays at PENDING/GRADED
  */
 
-import type { components } from '@/lib/api/generated/schema';
+import type { components } from '@/lib/api/generated/schema'
 
-export type SubmissionStatus = components['schemas']['SubmissionStatus'];
+export type SubmissionStatus = components['schemas']['SubmissionStatus']
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
-  DRAFT: 'Draft',
-  PENDING: 'Awaiting grade',
-  GRADED: 'Graded',
-  PUBLISHED: 'Released',
-  RETURNED: 'Returned',
-};
+  DRAFT: 'statusDraft',
+  PENDING: 'statusPending',
+  GRADED: 'statusGraded',
+  PUBLISHED: 'statusPublished',
+  RETURNED: 'statusReturned',
+}
+
+/**
+ * Get localized label for a submission status.
+ * Requires a translator function scoped to 'Grading.Table' namespace.
+ */
+export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: string) => string): string {
+  return t(SUBMISSION_STATUS_LABELS[status])
+}
 
 export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, SubmissionStatus[]> = {
   DRAFT: ['PENDING'],
@@ -34,24 +42,24 @@ export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, Submission
   GRADED: ['PUBLISHED', 'RETURNED'],
   PUBLISHED: ['GRADED', 'RETURNED'],
   RETURNED: ['PENDING'],
-};
+}
 
 export function canTransitionSubmission(from: SubmissionStatus, to: SubmissionStatus): boolean {
-  return SUBMISSION_ALLOWED_TRANSITIONS[from].includes(to);
+  return SUBMISSION_ALLOWED_TRANSITIONS[from].includes(to)
 }
 
 export function needsTeacherAction(status: SubmissionStatus): boolean {
-  return status === 'PENDING';
+  return status === 'PENDING'
 }
 
 export function canTeacherEditGrade(status: SubmissionStatus): boolean {
-  return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED';
+  return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED'
 }
 
 export function canPublishGrade(status: SubmissionStatus): boolean {
-  return status === 'GRADED';
+  return status === 'GRADED'
 }
 
 export function canReturnSubmission(status: SubmissionStatus): boolean {
-  return status === 'PENDING' || status === 'GRADED' || status === 'PUBLISHED';
+  return status === 'PENDING' || status === 'GRADED' || status === 'PUBLISHED'
 }

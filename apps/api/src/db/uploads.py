@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, ClassVar
 
 from pydantic import ConfigDict, Field
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String
@@ -21,7 +21,7 @@ class UploadStatus(StrEnum):
 class Upload(SQLModelStrictBaseModel, table=True):
     """One user-owned upload before it is referenced by a submission answer."""
 
-    __tablename__ = "upload"
+    __tablename__: ClassVar[str] = "upload"  # type: ignore[mutable-override]  # pyright: ignore[reportIncompatibleVariableOverride]
     __table_args__ = (
         Index("ix_upload_upload_uuid", "upload_uuid", unique=True),
         Index("ix_upload_user_status", "user_id", "status"),
@@ -29,9 +29,7 @@ class Upload(SQLModelStrictBaseModel, table=True):
 
     id: int | None = SQLField(default=None, primary_key=True)
     upload_uuid: str
-    user_id: int = SQLField(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = SQLField(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     filename: str = ""
     content_type: str = ""
     size_bytes: int | None = None
@@ -46,9 +44,7 @@ class Upload(SQLModelStrictBaseModel, table=True):
     # deletes FINALIZED rows where referenced_count=0 and finalized_at < now-24h).
     referenced_count: int = SQLField(
         default=0,
-        sa_column=Column(
-            "referenced_count", Integer, nullable=False, server_default="0"
-        ),
+        sa_column=Column("referenced_count", Integer, nullable=False, server_default="0"),
     )
     expires_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC) + timedelta(hours=24),

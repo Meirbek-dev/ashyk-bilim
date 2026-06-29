@@ -7,5 +7,5 @@
  */
 export interface InlineQuizAttrs {
   /** UUID of the linked assessment. null = not yet created (pending first save). */
-  assessmentUuid: string | null;
+  assessmentUuid: string | null
 }

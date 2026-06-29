@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 /**
  * useAssessment — unified data hook for any assessable activity.
@@ -12,28 +12,25 @@
  * fully-populated StudioViewModel / AttemptViewModel from the domain layer.
  */
 
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
-import { apiFetcher } from '@/lib/api-client';
-import type { components } from '@/lib/api/generated/schema';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { reportClientError } from '@/services/telemetry/client';
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
+import { apiFetcher } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { reportClientError } from '@/services/telemetry/client'
 
-import { assessmentByActivityQueryOptions } from '../queries';
-import { isAssessmentEditable, canPublish, canSchedule, canArchive } from '../domain/lifecycle';
-import { classifyValidationIssue } from '../domain/readiness';
-import { policyFromAssessmentPolicy } from '../domain/policy';
-import type { AssessmentPolicyDTO } from '../domain/policy';
-import { assessmentTypeToKind } from '../domain/view-models';
-import type { AssessmentKind, AssessmentSurface, StudioViewModel, AttemptViewModel } from '../domain/view-models';
-import type { AssessmentItem } from '../domain/items';
-import type { SubmissionStatus } from '../domain/submission-status';
-
-type AssessmentDetail = components['schemas']['AssessmentRead'];
+import { assessmentByActivityQueryOptions } from '../queries'
+import { canArchive, canPublish, canSchedule, isAssessmentEditable } from '../domain/lifecycle'
+import { classifyValidationIssue } from '../domain/readiness'
+import { policyFromAssessmentPolicy } from '../domain/policy'
+import type { AssessmentPolicyDTO } from '../domain/policy'
+import { assessmentTypeToKind } from '../domain/view-models'
+import type { AssessmentKind, AssessmentSurface, AttemptViewModel, StudioViewModel } from '../domain/view-models'
+import type { AssessmentItem } from '../domain/items'
+import type { SubmissionStatus } from '../domain/submission-status'
 
 interface ReadinessPayload {
-  ok: boolean;
-  issues: { code: string; message: string; item_uuid?: string | null }[];
+  ok: boolean
+  issues: { code: string; message: string; item_uuid?: string | null }[]
 }
 
 function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {
@@ -42,20 +39,30 @@ function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {
     queryFn: () => apiFetcher<ReadinessPayload>(`assessments/${assessmentUuid}/readiness`),
     enabled,
     retry: false,
-  });
+  })
 }
 
 // ── Public hook ───────────────────────────────────────────────────────────────
 
 export interface UseAssessmentOptions {
-  surface: AssessmentSurface;
+  surface: AssessmentSurface
 }
 
 export type AssessmentViewModel =
   | { surface: 'STUDIO'; vm: StudioViewModel; kind: AssessmentKind }
   | { surface: 'REVIEW'; kind: AssessmentKind }
   | { surface: 'ATTEMPT'; vm: AttemptViewModel; kind: AssessmentKind }
-  | null;
+  | null
+
+const RECOMMENDED_ACTION_MAP: Record<string, AttemptViewModel['recommendedAction']> = {
+  START: 'start',
+  CONTINUE_DRAFT: 'continueDraft',
+  SUBMIT: 'submit',
+  WAIT_FOR_RELEASE: 'waitForRelease',
+  VIEW_RESULT: 'viewResult',
+  START_REVISION: 'startRevision',
+  NO_ACTION: 'noAction',
+}
 
 /**
  * Fetches activity metadata and returns a typed view model for the requested
@@ -64,15 +71,15 @@ export type AssessmentViewModel =
  * @param activityUuid  Raw activity UUID (with or without "activity_" prefix).
  * @param options.surface  Which product surface the caller is rendering.
  */
-export function useAssessment(
+function useAssessment(
   activityUuid: string | null | undefined,
   options: UseAssessmentOptions,
 ): {
-  vm: AssessmentViewModel;
-  isLoading: boolean;
-  error: Error | null;
+  vm: AssessmentViewModel
+  isLoading: boolean
+  error: Error | null
 } {
-  const normalizedUuid = activityUuid?.replace(/^activity_/, '') ?? '';
+  const normalizedUuid = activityUuid?.replace(/^activity_/, '') ?? ''
 
   const {
     data: assessment,
@@ -81,41 +88,41 @@ export function useAssessment(
   } = useQuery({
     ...assessmentByActivityQueryOptions(normalizedUuid),
     enabled: Boolean(normalizedUuid),
-  });
+  })
 
-  const reportedErrorRef = useRef<string | null>(null);
+  const reportedErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!error) return;
-    const key = `${options.surface}:${normalizedUuid}:${error.message}`;
-    if (reportedErrorRef.current === key) return;
-    reportedErrorRef.current = key;
+    if (!error) return
+    const key = `${options.surface}:${normalizedUuid}:${error.message}`
+    if (reportedErrorRef.current === key) return
+    reportedErrorRef.current = key
     void reportClientError({
       scope: 'assessment-flow',
       phase: 'load-assessment',
       surface: options.surface,
       activityUuid: normalizedUuid,
       error: error.message,
-    }).catch(() => undefined);
-  }, [error, normalizedUuid, options.surface]);
+    }).catch(() => undefined)
+  }, [error, normalizedUuid, options.surface])
 
   const readiness = useQuery({
     ...readinessQueryOptions(assessment?.assessment_uuid ?? '', options.surface === 'STUDIO' && Boolean(assessment)),
-  });
+  })
 
   if (isLoading || !assessment) {
-    return { vm: null, isLoading, error };
+    return { vm: null, isLoading, error }
   }
 
-  const kind = assessmentTypeToKind(assessment.kind);
+  const kind = assessmentTypeToKind(assessment.kind)
   if (!kind) {
-    return { vm: null, isLoading: false, error: null };
+    return { vm: null, isLoading: false, error: null }
   }
 
-  const { surface } = options;
+  const { surface } = options
 
   if (surface === 'STUDIO') {
-    const { lifecycle } = assessment;
+    const { lifecycle } = assessment
 
     const vm: StudioViewModel = {
       surface: 'STUDIO',
@@ -132,28 +139,33 @@ export function useAssessment(
       policy: policyFromAssessmentPolicy(assessment.assessment_policy),
       items: (assessment.items ?? []) as AssessmentItem[],
       validationIssues:
-        readiness.data?.issues.map((issue) =>
+        readiness.data?.issues.map(issue =>
           classifyValidationIssue({
             code: issue.code,
             message: issue.message,
-            itemUuid: issue.item_uuid ?? undefined,
+            ...(issue.item_uuid ? { itemUuid: issue.item_uuid } : {}),
           }),
         ) ?? [],
-    };
-    return { vm: { surface: 'STUDIO', vm, kind }, isLoading: false, error: null };
+    }
+    return { vm: { surface: 'STUDIO', vm, kind }, isLoading: false, error: null }
   }
 
   if (surface === 'REVIEW') {
-    const reviewKind = assessmentTypeToKind(assessment.review_projection?.kind ?? assessment.kind);
+    const reviewKind = assessmentTypeToKind(assessment.review_projection?.kind ?? assessment.kind)
     if (!reviewKind) {
-      return { vm: null, isLoading: false, error: null };
+      return { vm: null, isLoading: false, error: null }
     }
-    return { vm: { surface: 'REVIEW', kind: reviewKind }, isLoading: false, error: null };
+    return {
+      vm: { surface: 'REVIEW', kind: reviewKind },
+      isLoading: false,
+      error: null,
+    }
   }
 
   // ATTEMPT surface
-  const attemptProjection = assessment.attempt_projection;
-  const effectivePolicy = attemptProjection?.effective_policy as AssessmentPolicyDTO | null | undefined;
+  const attemptProjection = assessment.attempt_projection
+  const effectivePolicy = attemptProjection?.effective_policy as AssessmentPolicyDTO | null | undefined
+  const disabledReasons = attemptProjection?.disabled_action_reasons ?? []
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
@@ -175,7 +187,7 @@ export function useAssessment(
     canSubmit: attemptProjection?.can_submit ?? false,
     isReturnedForRevision: attemptProjection?.is_returned_for_revision ?? false,
     isResultVisible: attemptProjection?.is_result_visible ?? false,
-    disabledActionReasons: attemptProjection?.disabled_action_reasons ?? [],
+    disabledActionReasons: disabledReasons,
     serverNow: attemptProjection?.server_now ?? null,
     availableAt: attemptProjection?.available_at ?? null,
     closesAt: attemptProjection?.closes_at ?? null,
@@ -187,25 +199,27 @@ export function useAssessment(
     canContinue: attemptProjection?.can_continue ?? false,
     canViewResult: attemptProjection?.can_view_result ?? false,
     canStartRevision: attemptProjection?.can_start_revision ?? false,
-    recommendedAction: (attemptProjection?.recommended_action as AttemptViewModel['recommendedAction']) ?? 'noAction',
+    recommendedAction: (() => {
+      if (disabledReasons.length > 0) {
+        return 'blocked'
+      }
+      const rawAction = attemptProjection?.recommended_action
+      return rawAction ? (RECOMMENDED_ACTION_MAP[rawAction] ?? 'noAction') : 'noAction'
+    })(),
     primaryButtonLabelKey: attemptProjection?.primary_button_label_key ?? 'noAction',
     startedAt: attemptProjection?.started_at ?? null,
     timerStartedAt: attemptProjection?.timer_started_at ?? null,
     timerExpiresAt: attemptProjection?.timer_expires_at ?? null,
-  };
-  return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null };
+  }
+  return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
 }
 
 // ── Convenience selector hooks ─────────────────────────────────────────────────
 
 export function useAssessmentStudio(activityUuid: string | null | undefined) {
-  return useAssessment(activityUuid, { surface: 'STUDIO' });
+  return useAssessment(activityUuid, { surface: 'STUDIO' })
 }
 
 export function useAssessmentAttempt(activityUuid: string | null | undefined) {
-  return useAssessment(activityUuid, { surface: 'ATTEMPT' });
-}
-
-export function useAssessmentReview(activityUuid: string | null | undefined) {
-  return useAssessment(activityUuid, { surface: 'REVIEW' });
+  return useAssessment(activityUuid, { surface: 'ATTEMPT' })
 }

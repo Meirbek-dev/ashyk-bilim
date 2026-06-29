@@ -23,7 +23,7 @@ export const spacing = {
     md: 'gap-3',
     lg: 'gap-4',
   },
-} as const;
+} as const
 
 // ============================================
 // ANIMATIONS
@@ -46,7 +46,7 @@ export const animations = {
     slow: 'transition-all duration-300 ease-in-out',
     smooth: 'transition-all duration-200 cubic-bezier(0.4, 0, 0.2, 1)',
   },
-} as const;
+} as const
 
 // ============================================
 // COLORS (Semantic + Accessibility)
@@ -86,98 +86,4 @@ export const colors = {
     25: 'text-orange-500',
     50: 'text-red-500',
   },
-} as const;
-
-// ============================================
-// SHADOWS & EFFECTS
-// ============================================
-export const effects = {
-  glow: {
-    sm: 'shadow-sm hover:shadow-md',
-    md: 'shadow-md hover:shadow-lg',
-    lg: 'shadow-lg hover:shadow-xl',
-  },
-  blur: {
-    sm: 'backdrop-blur-sm',
-    md: 'backdrop-blur-md',
-    lg: 'backdrop-blur-lg',
-  },
-} as const;
-
-// ============================================
-// SIZES
-// ============================================
-export const sizes = {
-  avatar: {
-    'xs': 'h-6 w-6',
-    'sm': 'h-8 w-8',
-    'md': 'h-10 w-10',
-    'lg': 'h-12 w-12',
-    'xl': 'h-16 w-16',
-    '2xl': 'h-20 w-20',
-    '3xl': 'h-32 w-32',
-  },
-  icon: {
-    xs: 'h-3 w-3',
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6',
-    xl: 'h-8 w-8',
-  },
-  badge: {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base',
-  },
-} as const;
-
-// ============================================
-// FRAMER MOTION VARIANTS
-// ============================================
-export const motionVariants = {
-  fadeIn: {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-  },
-  slideUp: {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  },
-  slideDown: {
-    initial: { opacity: 0, y: -20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: 20 },
-  },
-  scaleIn: {
-    initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.9 },
-  },
-  bounce: {
-    initial: { opacity: 0, scale: 0.3 },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 260,
-        damping: 20,
-      },
-    },
-    exit: { opacity: 0, scale: 0.8 },
-  },
-} as const;
-
-// ============================================
-// NOTIFICATION POSITIONS
-// ============================================
-export const notificationPositions = {
-  'top-left': 'top-4 left-4',
-  'top-center': 'top-4 left-1/2 -translate-x-1/2',
-  'top-right': 'top-4 right-4',
-  'bottom-left': 'bottom-4 left-4',
-  'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
-  'bottom-right': 'bottom-4 right-4',
-} as const;
+} as const

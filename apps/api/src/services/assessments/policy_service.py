@@ -13,81 +13,38 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
-from ulid import ULID
 
 from src.db.assessments import (
-    AssessmentPolicyPreset,
     StudentPolicyOverrideCreate,
     StudentPolicyOverrideRead,
     StudentPolicyOverrideUpdate,
 )
 from src.db.audit import AuditEventType
 from src.db.grading.overrides import StudentPolicyOverride
-from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
-    AssessmentPolicy,
-    GradeReleaseMode,
-)
-from src.db.grading.submissions import AssessmentType
+from src.db.grading.progress import AssessmentPolicy
 from src.db.users import PublicUser
-from src.security.rbac import PermissionChecker
 from src.services.assessments._helpers import (
     _get_activity_and_course,
     _get_assessment_by_uuid_or_404,
     _require_grade,
 )
 from src.services.audit import record_audit_event
+from src.types import require_persisted_id
 
 logger = logging.getLogger(__name__)
 
 
-def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
-    """Return default policy settings for a given assessment kind."""
-    presets: dict[AssessmentType, AssessmentPolicyPreset] = {
-        AssessmentType.QUIZ: AssessmentPolicyPreset(
-            kind=AssessmentType.QUIZ,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.GRADED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
-        AssessmentType.EXAM: AssessmentPolicyPreset(
-            kind=AssessmentType.EXAM,
-            grade_release_mode=GradeReleaseMode.BATCH,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.GRADED,
-            passing_score=60.0,
-            max_attempts=1,
-            time_limit_seconds=3600,
-            allow_late=False,
-            anti_cheat_enabled=True,
-            review_visibility="SCORE_ONLY",
-        ),
-        AssessmentType.CODE_CHALLENGE: AssessmentPolicyPreset(
-            kind=AssessmentType.CODE_CHALLENGE,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.AUTO,
-            completion_rule=AssessmentCompletionRule.PASSED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
-    }
-    if kind not in presets:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy preset not found",
-        )
-    return presets[kind]
+def _reject_unsupported_time_limit_override(time_limit_override_seconds: int | None) -> None:
+    if time_limit_override_seconds is None:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail={
+            "code": "POLICY_OVERRIDE_FIELD_UNSUPPORTED",
+            "field": "time_limit_override_seconds",
+            "message": "Индивидуальный лимит времени будет включен в разделе доступности и льгот.",
+        },
+    )
 
 
 async def list_student_policy_overrides(
@@ -101,18 +58,12 @@ async def list_student_policy_overrides(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         return []
 
-    overrides = db_session.exec(
-        select(StudentPolicyOverride).where(
-            StudentPolicyOverride.policy_id == policy.id
-        )
-    ).all()
+    overrides = db_session.exec(select(StudentPolicyOverride).where(StudentPolicyOverride.policy_id == policy.id)).all()
     return [_build_override_read(o) for o in overrides]
 
 
@@ -128,14 +79,12 @@ async def create_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     # Check for existing override
@@ -148,12 +97,13 @@ async def create_student_policy_override(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Override already exists for this student",
+            detail="Исключение для этого студента уже существует",
         )
+    _reject_unsupported_time_limit_override(payload.time_limit_override_seconds)
 
     now = datetime.now(UTC)
     override = StudentPolicyOverride(
-        policy_id=policy.id,
+        policy_id=require_persisted_id(policy.id, model_name="AssessmentPolicy"),
         user_id=payload.user_id,
         max_attempts_override=payload.max_attempts_override,
         due_at_override=payload.due_at_override,
@@ -175,9 +125,7 @@ async def create_student_policy_override(
         payload={
             "user_id": payload.user_id,
             "max_attempts_override": payload.max_attempts_override,
-            "due_at_override": payload.due_at_override.isoformat()
-            if payload.due_at_override
-            else None,
+            "due_at_override": payload.due_at_override.isoformat() if payload.due_at_override else None,
             "waive_late_penalty": payload.waive_late_penalty,
         },
     )
@@ -200,14 +148,12 @@ async def update_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     override = db_session.exec(
@@ -219,10 +165,12 @@ async def update_student_policy_override(
     if override is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Override not found",
+            detail="Исключение не найдено",
         )
+    _reject_unsupported_time_limit_override(payload.time_limit_override_seconds)
 
     changes = payload.model_dump(exclude_unset=True)
+    changes.pop("time_limit_override_seconds", None)
     for field, value in changes.items():
         setattr(override, field, value)
     override.updated_at = datetime.now(UTC)
@@ -254,14 +202,12 @@ async def delete_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     override = db_session.exec(
@@ -273,7 +219,7 @@ async def delete_student_policy_override(
     if override is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Override not found",
+            detail="Исключение не найдено",
         )
 
     record_audit_event(
@@ -287,12 +233,12 @@ async def delete_student_policy_override(
 
     db_session.delete(override)
     db_session.commit()
-    return {"detail": "Override deleted"}
+    return {"detail": "Исключение удалено"}
 
 
 def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:
     return StudentPolicyOverrideRead(
-        id=override.id,
+        id=require_persisted_id(override.id, model_name="StudentPolicyOverride"),
         user_id=override.user_id,
         policy_id=override.policy_id,
         max_attempts_override=override.max_attempts_override,

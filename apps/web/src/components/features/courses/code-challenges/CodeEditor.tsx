@@ -1,38 +1,36 @@
-'use client';
+'use client'
 
-import { useCallback, useMemo, useRef } from 'react';
-import type { OnChange, OnMount } from '@monaco-editor/react';
-import dynamic from 'next/dynamic';
+import { useCallback, useMemo, useRef, useState } from 'react'
+import Editor from '@monaco-editor/react'
+import type { OnChange, OnMount } from '@monaco-editor/react'
 
-import { useTheme } from '@/components/providers/theme-provider';
-import { cn } from '@/lib/utils';
-
-const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((mod) => mod.Editor), { ssr: false });
+import { useTheme } from '@/components/providers/theme-provider'
+import { cn } from '@/lib/utils'
 
 export interface Language {
-  id: number;
-  name: string;
-  monacoLanguage?: string;
+  id: number
+  name: string
+  monacoLanguage?: string
 }
 
 function getMonacoLanguage(_languageId: number): string {
-  return 'plaintext';
+  return 'plaintext'
 }
 
 interface CodeEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  languageId: number;
-  monacoLanguage?: string;
-  readOnly?: boolean;
-  height?: string | number;
-  className?: string;
-  onMount?: OnMount;
-  options?: Record<string, unknown>;
-  readOnlyMessage?: string;
+  value: string
+  onChange: (value: string) => void
+  languageId: number
+  monacoLanguage?: string
+  readOnly?: boolean
+  height?: string | number
+  className?: string
+  onMount?: OnMount
+  options?: Record<string, unknown>
+  readOnlyMessage?: string
 }
 
-const DEFAULT_OPTIONS = {};
+const DEFAULT_OPTIONS = {}
 
 export function CodeEditor({
   value,
@@ -46,23 +44,27 @@ export function CodeEditor({
   options = DEFAULT_OPTIONS,
   readOnlyMessage,
 }: CodeEditorProps) {
-  const { resolvedTheme } = useTheme();
-  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const { resolvedTheme } = useTheme()
+  const [editorKey, setEditorKey] = useState(0)
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
 
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
-      editorRef.current = editor;
-      onMount?.(editor, monaco);
+      editorRef.current = editor
+      editor.onDidDispose(() => {
+        setEditorKey(prev => prev + 1)
+      })
+      onMount?.(editor, monaco)
     },
     [onMount],
-  );
+  )
 
   const handleChange: OnChange = useCallback(
-    (newValue) => {
-      onChange(newValue || '');
+    newValue => {
+      onChange(newValue || '')
     },
     [onChange],
-  );
+  )
 
   const editorOptions = useMemo(
     () => ({
@@ -83,12 +85,11 @@ export function CodeEditor({
       smoothScrolling: true,
       padding: { top: 16, bottom: 16 },
       readOnly,
-      domReadOnly: readOnly,
-      readOnlyMessage: readOnlyMessage ? { value: readOnlyMessage } : undefined,
+      ...(readOnlyMessage ? { readOnlyMessage: { value: readOnlyMessage } } : {}),
       ...options,
     }),
     [readOnly, options, readOnlyMessage],
-  );
+  )
 
   return (
     <div className={cn('relative overflow-hidden rounded-lg border', className)}>
@@ -97,25 +98,26 @@ export function CodeEditor({
           {readOnlyMessage}
         </div>
       ) : null}
-      <MonacoEditor
+      <Editor
+        key={editorKey}
         height={height}
         language={monacoLanguage ?? getMonacoLanguage(languageId)}
         value={value}
         onChange={handleChange}
         onMount={handleMount}
-        theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'}
+        theme={(options.theme as string) || (resolvedTheme === 'dark' ? 'vs-dark' : 'light')}
         options={editorOptions}
         loading={
           <div
             className="bg-muted flex animate-pulse items-center justify-center rounded-lg"
-            style={{ height: typeof height === 'number' ? `${height}px` : height }}
+            style={{
+              height: typeof height === 'number' ? `${height}px` : height,
+            }}
           >
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
           </div>
         }
       />
     </div>
-  );
+  )
 }
-
-export default CodeEditor;

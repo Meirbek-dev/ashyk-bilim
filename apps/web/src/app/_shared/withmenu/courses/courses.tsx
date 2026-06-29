@@ -1,30 +1,33 @@
-'use client';
-
-import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle';
-import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { Actions, Resources, Scopes } from '@/components/Security';
-import { useSession } from '@/hooks/useSession';
-import CreateCourseTrigger from '@/components/Landings/CreateCourseTrigger';
-import CourseGridClient from '@components/Landings/CourseGridClient';
-
-import { useTranslations } from 'next-intl';
+import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle'
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper'
+import CreateCourseTrigger from '@/components/Landings/CreateCourseTrigger'
+import CourseGridClient from '@components/Landings/CourseGridClient'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
 interface CourseProps {
-  courses: any[];
-  totalCourses: number;
+  courses: AppCourse[]
+  totalCourses: number
+  trailData: AppTrailData | null
+  currentPage: number
+  isAuthenticated: boolean
+  canManagePlatform: boolean
 }
 
-const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) => (
+const EmptyStateMessage = ({
+  canManagePlatform,
+  createCourseTrigger,
+  t,
+}: {
+  canManagePlatform: boolean
+  createCourseTrigger: ReactNode
+  t: AppTranslator
+}) => (
   <div className="col-span-full flex items-center justify-center py-12">
     <div className="max-w-md text-center">
       <div className="mb-6">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-          <svg
-            className="h-8 w-8 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+        <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+          <svg className="text-muted-foreground h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -34,51 +37,46 @@ const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) =
           </svg>
         </div>
       </div>
-      <h1 className="mb-3 text-2xl font-bold text-gray-700">{t('noCourses')}</h1>
-      <p className="mb-6 text-lg text-gray-500">{canManagePlatform ? t('createACourse') : t('noCoursesAvailable')}</p>
+      <h1 className="text-foreground mb-3 text-2xl font-bold">{t('noCourses')}</h1>
+      <p className="text-muted-foreground mb-6 text-base">
+        {canManagePlatform ? t('createACourse') : t('noCoursesAvailable')}
+      </p>
       {canManagePlatform ? <div className="flex justify-center">{createCourseTrigger}</div> : null}
     </div>
   </div>
-);
+)
 
 const Courses = (props: CourseProps) => {
-  const t = useTranslations('CoursesPage');
-  const { courses, totalCourses } = props;
-  const { can } = useSession();
-  const canManagePlatform = can(Resources.PLATFORM, Actions.MANAGE, Scopes.OWN);
+  const t = useTranslations('CoursesPage')
+  const { courses, totalCourses, trailData, currentPage, isAuthenticated, canManagePlatform } = props
 
-  const createCourseTrigger = <CreateCourseTrigger />;
-
-  const hasCourses = courses.length > 0 || totalCourses > 0;
+  const createCourseTrigger = <CreateCourseTrigger />
+  const hasCourses = courses.length > 0 || totalCourses > 0
 
   return (
     <div className="w-full">
       <GeneralWrapper>
         <div className="mb-2 flex flex-col space-y-2">
           <div className="flex items-center justify-between">
-            <TypeOfContentTitle
-              title={t('title')}
-              type="cou"
-            />
+            <TypeOfContentTitle title={t('title')} type="cou" />
             {createCourseTrigger}
           </div>
 
           {!hasCourses ? (
-            <EmptyStateMessage
-              canManagePlatform={canManagePlatform}
-              t={t}
-              createCourseTrigger={createCourseTrigger}
-            />
+            <EmptyStateMessage canManagePlatform={canManagePlatform} t={t} createCourseTrigger={createCourseTrigger} />
           ) : (
             <CourseGridClient
               initialCourses={courses}
               initialTotal={totalCourses}
+              trailData={trailData}
+              currentPage={currentPage}
+              isAuthenticated={isAuthenticated}
             />
           )}
         </div>
       </GeneralWrapper>
     </div>
-  );
-};
+  )
+}
 
-export default Courses;
+export default Courses

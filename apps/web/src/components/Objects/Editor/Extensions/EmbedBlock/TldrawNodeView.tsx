@@ -1,111 +1,114 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { NodeViewWrapper } from '@tiptap/react';
-import { useTranslations } from 'next-intl';
-import * as Si from '@icons-pack/react-simple-icons';
-import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
-import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
-import type { EmbedBlockAttrs } from './EmbedBlock';
-import { clampEmbedHeight } from './EmbedBlockNodeView';
-import { buildTldrawSrc } from './embed-validators';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
+import { NodeViewWrapper } from '@tiptap/react'
+import { useTranslations } from 'next-intl'
+
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
+import * as Si from '@icons-pack/react-simple-icons'
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
+import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
+import type { EmbedBlockAttrs } from './EmbedBlock'
+import { clampEmbedHeight } from './embed-options'
+import { buildTldrawSrc } from './embed-validators'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TLDRAW_MIN_HEIGHT = 200;
-const TLDRAW_MAX_HEIGHT = 2000;
-const TLDRAW_DEFAULT_HEIGHT = 500;
+const TLDRAW_MIN_HEIGHT = 200
+const TLDRAW_MAX_HEIGHT = 2000
+const TLDRAW_DEFAULT_HEIGHT = 500
 
 // ── TldrawNodeView ────────────────────────────────────────────────────────────
 
 const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
-  const { node, updateAttributes, deleteNode, getPos, editor } = props;
-  const { url, height: attrHeight } = node.attrs;
+  const { node, updateAttributes, deleteNode, getPos, editor } = props
+  const { url, height: attrHeight } = node.attrs
 
-  const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const tCommon = useTranslations('Common');
-  const { isEditable } = editor;
+  const t = useTranslations('DashPage.Editor.EmbedPanel')
+  const tCommon = useTranslations('Common')
+  const { isEditable } = editor
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
 
   // ── Height state (local during drag, persisted on commit) ──────────────────
   const initialHeight =
-    typeof attrHeight === 'number' && attrHeight > 0 ? clampEmbedHeight(attrHeight) : TLDRAW_DEFAULT_HEIGHT;
+    typeof attrHeight === 'number' && attrHeight > 0 ? clampEmbedHeight(attrHeight) : TLDRAW_DEFAULT_HEIGHT
 
-  const [displayHeight, setDisplayHeight] = useState(initialHeight);
+  const [displayHeight, setDisplayHeight] = useState(initialHeight)
+  const [prevAttrHeight, setPrevAttrHeight] = useState(attrHeight)
 
-  // Keep display height in sync when the node attribute changes externally
-  useEffect(() => {
+  if (attrHeight !== prevAttrHeight) {
+    setPrevAttrHeight(attrHeight)
     if (typeof attrHeight === 'number' && attrHeight > 0) {
-      setDisplayHeight(clampEmbedHeight(attrHeight));
+      setDisplayHeight(clampEmbedHeight(attrHeight))
     }
-  }, [attrHeight]);
+  }
 
   // ── Drag-handle resize ─────────────────────────────────────────────────────
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef<{
-    startY: number;
-    startHeight: number;
-  } | null>(null);
+    startY: number
+    startHeight: number
+  } | null>(null)
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isEditable) return;
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
+      if (!isEditable) return
+      e.preventDefault()
+      e.currentTarget.setPointerCapture(e.pointerId)
 
       dragStateRef.current = {
         startY: e.clientY,
         startHeight: displayHeight,
-      };
+      }
     },
     [isEditable, displayHeight],
-  );
+  )
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragStateRef.current) return;
-    const delta = e.clientY - dragStateRef.current.startY;
-    const raw = dragStateRef.current.startHeight + delta;
-    const clamped = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw));
-    setDisplayHeight(clamped);
-  }, []);
+    if (!dragStateRef.current) return
+    const delta = e.clientY - dragStateRef.current.startY
+    const raw = dragStateRef.current.startHeight + delta
+    const clamped = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw))
+    setDisplayHeight(clamped)
+  }, [])
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragStateRef.current) return;
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (!dragStateRef.current) return
+      e.currentTarget.releasePointerCapture(e.pointerId)
 
-      const delta = e.clientY - dragStateRef.current.startY;
-      const raw = dragStateRef.current.startHeight + delta;
-      const committed = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw));
-      dragStateRef.current = null;
+      const delta = e.clientY - dragStateRef.current.startY
+      const raw = dragStateRef.current.startHeight + delta
+      const committed = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw))
+      dragStateRef.current = null
 
-      updateAttributes({ height: committed });
+      updateAttributes({ height: committed })
     },
     [updateAttributes],
-  );
+  )
 
   // ── Edit button ────────────────────────────────────────────────────────────
-  const editButtonRef = useRef<HTMLButtonElement>(null);
-  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit);
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit)
 
   const handleEdit = useCallback(() => {
-    const pos = typeof getPos === 'function' ? getPos() : undefined;
-    if (pos === undefined || !url) return;
-    openForEdit(pos, { type: 'tldraw', url }, editButtonRef);
-  }, [getPos, openForEdit, url]);
+    const pos = typeof getPos === 'function' ? getPos() : undefined
+    if (pos === undefined || !url) return
+    openForEdit(pos, { type: 'tldraw', url }, editButtonRef)
+  }, [getPos, openForEdit, url])
 
   // ── Delete button ──────────────────────────────────────────────────────────
   const handleDelete = useCallback(() => {
-    deleteNode();
-  }, [deleteNode]);
+    deleteNode()
+  }, [deleteNode])
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const iframeSrc = url ? buildTldrawSrc(url) : null;
+  const loadingLabel = `${tCommon('loading')} ${t('providers.tldraw.label')}…`
+  const iframeSrc = url ? buildTldrawSrc(url) : null
 
   return (
     <NodeViewWrapper className="tldraw-node-view w-full">
@@ -128,7 +131,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50">
             <Si.SiTldraw className="size-10 text-gray-300" />
-            <p className="text-sm text-gray-400">{`${tCommon('loading')} ${t('providers.tldraw.label')}…`}</p>
+            <p className="text-sm text-gray-400">{loadingLabel}</p>
           </div>
         )}
 
@@ -172,8 +175,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         )}
       </div>
     </NodeViewWrapper>
-  );
-};
+  )
+}
 
-export default TldrawNodeView;
-
+export default TldrawNodeView

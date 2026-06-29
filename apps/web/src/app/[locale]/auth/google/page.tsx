@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { getAbsoluteUrl } from '@services/config/config';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import AuthLogo from '@components/auth/logo';
-import AuthCard from '@components/auth/card';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import Link from '@components/ui/AppLink';
+import { getAbsoluteUrl } from '@services/config/config'
+import { AlertTriangle, Loader2 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import AuthLogo from '@components/auth/logo'
+import AuthCard from '@components/auth/card'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
+import Link from '@components/ui/AppLink'
 
 /**
  * Google OAuth callback page.
@@ -18,20 +18,17 @@ import Link from '@components/ui/AppLink';
  *   - otherwise        — redirect into the authenticated app flow
  */
 const GoogleCallbackPage = () => {
-  const searchParams = useSearchParams();
-  const t = useTranslations('Auth.Login');
-  const [error, setError] = useState('');
+  const searchParams = useSearchParams()
+  const t = useTranslations('Auth.Login')
+
+  const oauthError = searchParams.get('error')
+  const error = oauthError ? t('wrongCredentials') : ''
 
   useEffect(() => {
-    const oauthError = searchParams.get('error');
-
-    if (oauthError) {
-      setError(t('wrongCredentials'));
-      return;
+    if (!oauthError) {
+      globalThis.location.href = '/redirect_from_auth'
     }
-
-    globalThis.location.href = '/redirect_from_auth';
-  }, [searchParams, t]);
+  }, [oauthError])
 
   return (
     <AuthCard>
@@ -46,10 +43,7 @@ const GoogleCallbackPage = () => {
               <AlertTriangle size={18} />
               <span className="text-sm font-semibold">{error}</span>
             </div>
-            <Link
-              href={getAbsoluteUrl('/login')}
-              className="text-muted-foreground text-sm underline"
-            >
+            <Link href={getAbsoluteUrl('/login')} className="text-muted-foreground text-sm underline">
               {t('login')}
             </Link>
           </>
@@ -61,7 +55,7 @@ const GoogleCallbackPage = () => {
         )}
       </div>
     </AuthCard>
-  );
-};
+  )
+}
 
-export default GoogleCallbackPage;
+export default GoogleCallbackPage

@@ -1,5 +1,4 @@
-"""
-RoleRepository — all DB operations for Role, Permission, RolePermission.
+"""RoleRepository — all DB operations for Role, Permission, RolePermission.
 
 Authorization is NOT performed here; callers must call PermissionChecker.require()
 before any mutating operation.  Seeding (idempotent upsert of system roles) lives
@@ -12,7 +11,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from src.db.permissions import (
     Permission,
@@ -23,6 +22,7 @@ from src.db.permissions import (
     UserRole,
 )
 from src.infra.db.session import get_db_session
+from src.types import JsonObject
 
 
 class RoleRepository:
@@ -34,68 +34,65 @@ class RoleRepository:
     def get_or_404(self, role_id: int) -> Role:
         role = self.db.get(Role, role_id)
         if not role:
-            raise HTTPException(404, detail="Role not found")
+            raise HTTPException(404, detail="Роль не найдена")
         return role
 
     def get_permission_or_404(self, permission_id: int) -> Permission:
         perm = self.db.get(Permission, permission_id)
         if not perm:
-            raise HTTPException(404, detail="Permission not found")
+            raise HTTPException(404, detail="Разрешение не найдено")
         return perm
 
     def list_all(self) -> list[Role]:
-        return self.db.exec(select(Role).order_by(Role.priority.desc())).all()
+        return list(self.db.exec(select(Role).order_by(col(Role.priority).desc())).all())
 
     def list_all_permissions(self) -> list[Permission]:
-        return self.db.exec(
-            select(Permission).order_by(Permission.resource_type, Permission.action)
-        ).all()
+        return list(
+            self.db.exec(select(Permission).order_by(col(Permission.resource_type), col(Permission.action))).all()
+        )
 
     def get_role_permissions(self, role_id: int) -> list[Permission]:
-        return self.db.exec(
-            select(Permission)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .where(RolePermission.role_id == role_id)
-        ).all()
+        return list(
+            self.db.exec(
+                select(Permission)
+                .join(RolePermission, col(RolePermission.permission_id) == col(Permission.id))
+                .where(col(RolePermission.role_id) == role_id)
+            ).all()
+        )
 
     def bulk_counts(self, role_ids: list[int]) -> tuple[dict[int, int], dict[int, int]]:
         """Return (permission_count_map, user_count_map) for a list of role IDs."""
         perm_rows = self.db.exec(
-            select(RolePermission.role_id, func.count(RolePermission.permission_id))
-            .where(RolePermission.role_id.in_(role_ids))
-            .group_by(RolePermission.role_id)
+            select(RolePermission.role_id, func.count(col(RolePermission.permission_id)))
+            .where(col(RolePermission.role_id).in_(role_ids))
+            .group_by(col(RolePermission.role_id))
         ).all()
         user_rows = self.db.exec(
-            select(UserRole.role_id, func.count(UserRole.user_id))
-            .where(UserRole.role_id.in_(role_ids))
-            .group_by(UserRole.role_id)
+            select(UserRole.role_id, func.count(col(UserRole.user_id)))
+            .where(col(UserRole.role_id).in_(role_ids))
+            .group_by(col(UserRole.role_id))
         ).all()
-        return dict(perm_rows), dict(user_rows)
+        return (
+            {int(r[0]): int(r[1]) for r in perm_rows},
+            {int(r[0]): int(r[1]) for r in user_rows},
+        )
 
     def get_counts(self, role_id: int) -> tuple[int, int]:
         """Return (permissions_count, users_count) for a single role."""
         perm_count = (
             self.db.exec(
-                select(func.count(RolePermission.permission_id)).where(
-                    RolePermission.role_id == role_id
-                )
+                select(func.count(col(RolePermission.permission_id))).where(col(RolePermission.role_id) == role_id)
             ).one()
             or 0
         )
         user_count = (
-            self.db.exec(
-                select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)
-            ).one()
-            or 0
+            self.db.exec(select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)).one() or 0
         )
         return perm_count, user_count
 
     def get_user_count(self, role_id: int) -> int:
         return (
-            self.db.exec(
-                select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)
-            ).one()
-            or 0
+            self.db.exec(select(func.count(col(UserRole.user_id))).where(col(UserRole.role_id) == role_id)).one() or 0
         )
 
     # ── Mutations ─────────────────────────────────────────────────────────
@@ -113,7 +110,7 @@ class RoleRepository:
         self.db.refresh(role)
         return role
 
-    def update_role(self, role: Role, body: RoleUpdate) -> tuple[Role, dict]:
+    def update_role(self, role: Role, body: RoleUpdate) -> tuple[Role, JsonObject]:
         """Apply non-unset fields from body to role. Returns (updated_role, changed_fields)."""
         changed = body.model_dump(exclude_unset=True)
         for field, value in changed.items():
@@ -128,28 +125,24 @@ class RoleRepository:
 
     def add_permission_to_role(self, role_id: int, permission_id: int) -> None:
         existing = self.db.exec(
-            select(RolePermission).where(
-                RolePermission.role_id == role_id,
-                RolePermission.permission_id == permission_id,
-            )
+            select(RolePermission)
+            .where(col(RolePermission.role_id) == role_id)
+            .where(col(RolePermission.permission_id) == permission_id)
         ).first()
         if existing:
-            raise HTTPException(409, detail="Permission already assigned to role")
+            raise HTTPException(409, detail="Разрешение уже назначено этой роли")
         self.db.add(RolePermission(role_id=role_id, permission_id=permission_id))
         self.db.commit()
 
-    def remove_permission_from_role(
-        self, role_id: int, permission_id: int
-    ) -> Permission | None:
+    def remove_permission_from_role(self, role_id: int, permission_id: int) -> Permission | None:
         """Remove permission from role. Returns the Permission row for audit logging."""
         rp = self.db.exec(
-            select(RolePermission).where(
-                RolePermission.role_id == role_id,
-                RolePermission.permission_id == permission_id,
-            )
+            select(RolePermission)
+            .where(col(RolePermission.role_id) == role_id)
+            .where(col(RolePermission.permission_id) == permission_id)
         ).first()
         if not rp:
-            raise HTTPException(404, detail="Permission not assigned to this role")
+            raise HTTPException(404, detail="Разрешение не назначено этой роли")
         self.db.delete(rp)
         self.db.commit()
         # Return the Permission for the caller's audit log (still in identity map)
@@ -164,7 +157,7 @@ class RoleRepository:
         created: list[str] = []
 
         for slug, role_def in SYSTEM_ROLES.items():
-            role = self.db.exec(select(Role).where(Role.slug == slug)).first()
+            role = self.db.exec(select(Role).where(col(Role.slug) == slug)).first()
             if not role:
                 role = Role(
                     slug=slug,
@@ -183,9 +176,7 @@ class RoleRepository:
                     continue
                 resource, action, scope = parts
 
-                perm = self.db.exec(
-                    select(Permission).where(Permission.name == perm_str)
-                ).first()
+                perm = self.db.exec(select(Permission).where(col(Permission.name) == perm_str)).first()
                 if not perm:
                     perm = Permission(
                         name=perm_str,
@@ -196,10 +187,12 @@ class RoleRepository:
                     self.db.add(perm)
                     self.db.flush()
 
+                assert role.id is not None
+                assert perm.id is not None
                 existing_rp = self.db.exec(
                     select(RolePermission)
-                    .where(RolePermission.role_id == role.id)
-                    .where(RolePermission.permission_id == perm.id)
+                    .where(col(RolePermission.role_id) == role.id)
+                    .where(col(RolePermission.permission_id) == perm.id)
                 ).first()
                 if not existing_rp:
                     self.db.add(RolePermission(role_id=role.id, permission_id=perm.id))
@@ -212,7 +205,7 @@ class RoleRepository:
 
 
 def get_role_repository(
-    db: Annotated[Session, Depends(get_db_session)] = None,
+    db: Annotated[Session | None, Depends(get_db_session)] = None,
 ) -> RoleRepository:
     assert db is not None
     return RoleRepository(db)

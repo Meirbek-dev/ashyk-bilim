@@ -1,23 +1,26 @@
-'use client';
+'use client'
 
-import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react';
-import { getAbsoluteUrl } from '@services/config/config';
-import { useFormatter, useTranslations } from 'next-intl';
-import { useUserCertificates } from '@/features/certifications/hooks/useCertifications';
-import Link from '@components/ui/AppLink';
-import { useState, useEffect } from 'react';
-import type React from 'react';
+import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react'
+import { getAbsoluteUrl } from '@services/config/config'
+import { useFormatter, useTranslations } from 'next-intl'
+import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
+import Link from '@components/ui/AppLink'
+import { useSyncExternalStore } from 'react'
+import type React from 'react'
+
+const emptySubscribe = () => () => {}
 
 const UserCertificates: React.FC = () => {
-  const format = useFormatter();
-  const t = useTranslations('Certificates.UserCertificates');
+  const format = useFormatter()
+  const t = useTranslations('Certificates.UserCertificates')
 
-  const { data: certificates, error, isLoading } = useUserCertificates();
+  const { data: certificates, error, isLoading } = useUserCertificates()
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
 
   if (!mounted || isLoading) {
     return (
@@ -27,15 +30,12 @@ const UserCertificates: React.FC = () => {
           <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
         </div>
         <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-muted h-20 rounded-lg"
-            />
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-muted h-20 rounded-lg" />
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -49,11 +49,10 @@ const UserCertificates: React.FC = () => {
           <p className="text-muted-foreground">{t('failedToLoadCertificates')}</p>
         </div>
       </div>
-    );
+    )
   }
 
-  // Handle the actual API response structure - certificates are returned as an array directly
-  const certificatesData = Array.isArray(certificates) ? certificates : certificates?.data || [];
+  const certificatesData = Array.isArray(certificates) ? certificates : []
 
   if (!certificatesData || certificatesData.length === 0) {
     return (
@@ -68,7 +67,7 @@ const UserCertificates: React.FC = () => {
           <p className="text-muted-foreground mt-1 text-sm">{t('completeCoursesToEarn')}</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -82,17 +81,17 @@ const UserCertificates: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {certificatesData.map((certificate: any) => {
+        {certificatesData.map((certificate: AppCertification) => {
           const verificationLink = getAbsoluteUrl(
             `/certificates/${certificate.certificate_user.user_certification_uuid}/verify`,
-          );
+          )
           const awardedDate = format.dateTime(new Date(certificate.certificate_user.created_at), {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             // Use Almaty timezone to avoid ENVIRONMENT_FALLBACK errors and match the platform locale
             timeZone: 'Asia/Almaty',
-          });
+          })
 
           return (
             <div
@@ -144,11 +143,11 @@ const UserCertificates: React.FC = () => {
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default UserCertificates;
+export default UserCertificates

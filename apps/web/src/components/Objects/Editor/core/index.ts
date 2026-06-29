@@ -1,13 +1,12 @@
-export * from './editor-content';
-export * from './editor-kernel';
-export * from './editor-extensions';
-export type * from './editor-modes';
-export * from './editor-presets';
-export type * from './editor-types';
-export * from './heading-ids';
-export * from './heading-with-ids';
-export * from './image-paste';
-export * from './nodeview-types';
-export * from './shiki';
-export * from './slash-command';
-export * from './use-editor-instance';
+export * from './editor-content'
+export * from './editor-kernel'
+export * from './editor-extensions'
+export type * from './editor-modes'
+export * from './editor-presets'
+export type * from './editor-types'
+export * from './heading-ids'
+export * from './heading-with-ids'
+export * from './image-paste'
+export * from './nodeview-types'
+export * from './slash-command'
+export * from './use-editor-instance'

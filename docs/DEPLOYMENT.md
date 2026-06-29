@@ -21,12 +21,12 @@ Networks
 
 ## Compose Profiles
 
-| Profile | What it adds |
-|---|---|
-| _(none)_ | nginx, web, api, db, redis — always started with `up` |
-| `code-runner` | judge0-server, judge0-workers |
-| `ops` | backup cron |
-| `migrate` | one-shot migration container (use with `run --rm`) |
+| Profile       | What it adds                                          |
+| ------------- | ----------------------------------------------------- |
+| _(none)_      | nginx, web, api, db, redis — always started with `up` |
+| `code-runner` | judge0-server, judge0-workers                         |
+| `ops`         | backup cron                                           |
+| `migrate`     | one-shot migration container (use with `run --rm`)    |
 
 ---
 
@@ -127,6 +127,8 @@ docker-compose build
 
 # 3. Apply migrations (only if this release includes schema changes)
 docker-compose ps db                  # confirm healthy
+docker-compose run --rm --entrypoint "" migrate \
+  uv run --no-sync python scripts/check_migration_graph.py --require-single-head
 docker-compose run --rm migrate
 docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic current   # verify revision
@@ -165,6 +167,16 @@ docker-compose run --rm --entrypoint "" migrate \
 ```bash
 docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic downgrade -1
+```
+
+**Rollback from the current head:**
+
+The current schema head is `44e39d920b74`. To roll back only that migration,
+downgrade to its parent revision:
+
+```bash
+docker-compose run --rm --entrypoint "" migrate \
+  uv run --no-sync alembic downgrade c4d5e6f7a8b9
 ```
 
 **Rollback to a specific revision:**
@@ -207,12 +219,12 @@ docker-compose exec backup backup
 
 **What gets backed up:**
 
-| Volume | Contents |
-|---|---|
-| `postgres_data` | PostgreSQL (includes pgvector) |
-| `redis_data` | Redis |
-| `app_content` | User uploads and media |
-| `judge0_box` | Judge0 sandbox (when code-runner is active) |
+| Volume          | Contents                                    |
+| --------------- | ------------------------------------------- |
+| `postgres_data` | PostgreSQL (includes pgvector)              |
+| `redis_data`    | Redis                                       |
+| `app_content`   | User uploads and media                      |
+| `judge0_box`    | Judge0 sandbox (when code-runner is active) |
 
 Files land in `./backups/` as `backup-YYYY-MM-DDTHH-MM-SS.tar.zst`.
 Retention: 7 days.
@@ -227,7 +239,7 @@ AWS_ACCESS_KEY_ID: ...
 AWS_SECRET_ACCESS_KEY: ...
 
 # Notifications (Slack, Discord, etc.)
-NOTIFICATION_URLS: "slack://token@channel"
+NOTIFICATION_URLS: 'slack://token@channel'
 
 # Encryption
 GPG_PASSPHRASE: ...
@@ -297,6 +309,7 @@ rm -rf temp-restore
 
 **Windows (Git Bash or WSL):** same commands work as-is.
 **Windows (7-Zip):**
+
 ```powershell
 & "C:\Program Files\7-Zip\7z.exe" x .\backups\backup-....tar.zst -o.\
 & "C:\Program Files\7-Zip\7z.exe" x .\backup-....tar -o.\temp-restore -snl
@@ -309,13 +322,13 @@ rm -rf temp-restore
 
 ## Volumes
 
-| Volume | Contents | Backed up |
-|---|---|---|
-| `postgres_data` | PostgreSQL database | Yes |
-| `redis_data` | Redis | Yes |
-| `app_content` | User uploads, media | Yes |
-| `judge0_box` | Judge0 sandbox | Yes (when used) |
-| `nginx_cache` | Nginx proxy cache | No (ephemeral) |
+| Volume          | Contents            | Backed up       |
+| --------------- | ------------------- | --------------- |
+| `postgres_data` | PostgreSQL database | Yes             |
+| `redis_data`    | Redis               | Yes             |
+| `app_content`   | User uploads, media | Yes             |
+| `judge0_box`    | Judge0 sandbox      | Yes (when used) |
+| `nginx_cache`   | Nginx proxy cache   | No (ephemeral)  |
 
 ---
 

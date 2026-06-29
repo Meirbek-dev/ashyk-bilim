@@ -5,9 +5,9 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from cachebox import TTLCache
 from fastapi import HTTPException, Request, status
 
+from cachebox import TTLCache
 from src.services.cache.redis_client import get_async_redis_client
 
 
@@ -20,7 +20,7 @@ class RateLimitRule:
 
 RateLimitKeyFunc = Callable[[Request], str | Awaitable[str]]
 
-_LOCAL_LIMITS: TTLCache[str, list[float]] = TTLCache(maxsize=20_000, ttl=3600)
+_LOCAL_LIMITS: TTLCache[str, list[float]] = TTLCache(maxsize=20_000, global_ttl=3600)
 _LOCAL_LIMIT_LOCK = asyncio.Lock()
 
 
@@ -82,11 +82,7 @@ async def _local_check(key: str, rule: RateLimitRule) -> int | None:
     window_start = now - rule.window_seconds
 
     async with _LOCAL_LIMIT_LOCK:
-        timestamps = [
-            timestamp
-            for timestamp in _LOCAL_LIMITS.get(key, [])
-            if timestamp >= window_start
-        ]
+        timestamps: list[float] = [timestamp for timestamp in _LOCAL_LIMITS.get(key, []) if timestamp >= window_start]
         if len(timestamps) >= rule.max_requests:
             oldest = min(timestamps)
             retry_after = max(1, int(rule.window_seconds - (now - oldest)))
@@ -114,7 +110,7 @@ async def check_rate_limit(key: str, rule: RateLimitRule) -> None:
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail={
             "error_code": "RATE_LIMIT_EXCEEDED",
-            "message": "Too many requests. Please try again later.",
+            "message": "Слишком много запросов. Пожалуйста, попробуйте еще раз позже.",
             "retry_after": retry_after,
         },
         headers={"Retry-After": str(retry_after)},
@@ -127,7 +123,7 @@ def rate_limit_dependency(
     max_requests: int,
     window_seconds: int,
     key_func: RateLimitKeyFunc = ip_key,
-):
+) -> Callable[[Request], Awaitable[None]]:
     rule = RateLimitRule(
         namespace=namespace,
         max_requests=max_requests,

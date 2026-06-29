@@ -1,53 +1,47 @@
-'use client';
+'use client'
 
-import { Activity, Crown, Flame, Star, Target, Trophy, Zap } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar';
-import { AVATAR_UNLOCKS, getLevelInfo } from '@/lib/gamification/levels';
-import { GlowingLevelBadge, LevelProgress } from '@/lib/gamification';
-import type { UserGamificationProfile } from '@/types/gamification';
-import { useGamificationStore } from '@/stores/gamification';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import { Activity, CalendarCheck, Crown, GraduationCap, Star, Target, Trophy } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
+import { getLevelInfo } from '@/lib/gamification/levels'
+import { GlowingLevelBadge, LevelProgress } from '@/lib/gamification'
+import type { UserGamificationProfile } from '@/types/gamification'
+import { useGamificationStore } from '@/stores/gamification'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 interface GamificationProfileSectionProps {
-  userId?: number;
-  className?: string;
-  variant?: 'full' | 'compact';
-  showUnlocks?: boolean;
-  data?: UserGamificationProfile | null;
+  userId?: number
+  className?: string
+  variant?: 'full' | 'compact'
+  data?: UserGamificationProfile | null
 }
 
 export function GamificationProfileSection({
   userId: _userId,
   className,
   variant: _variant = 'full',
-  showUnlocks = true,
   data,
 }: GamificationProfileSectionProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const storeProfile = useGamificationStore((s) => s.profile);
-  const storeIsLoading = useGamificationStore((s) => s.isLoading);
-  const profile = data ?? storeProfile ?? null;
-  const isLoading = !profile && storeIsLoading;
-  const { levelInfo, nextMilestone, unlockedFrames, unlockedAccessories } = (() => {
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const storeProfile = useGamificationStore(s => s.profile)
+  const storeIsLoading = useGamificationStore(s => s.isLoading)
+  const profile = data ?? storeProfile ?? null
+  const isLoading = !profile && storeIsLoading
+  const { levelInfo, nextMilestone } = (() => {
     if (!profile) {
       return {
         levelInfo: null,
         nextMilestone: null,
-        unlockedFrames: [] as (typeof AVATAR_UNLOCKS.frames)[number][],
-        unlockedAccessories: [] as (typeof AVATAR_UNLOCKS.accessories)[number][],
-      };
+      }
     }
     return {
       levelInfo: getLevelInfo(profile.level, t),
       nextMilestone: getNextMilestone(profile.level),
-      unlockedFrames: AVATAR_UNLOCKS.frames.filter((f) => profile.level >= f.level),
-      unlockedAccessories: AVATAR_UNLOCKS.accessories.filter((a) => profile.level >= a.level),
-    };
-  })();
+    }
+  })()
 
   if (isLoading) {
     return (
@@ -66,7 +60,7 @@ export function GamificationProfileSection({
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (!profile) {
@@ -82,16 +76,16 @@ export function GamificationProfileSection({
           <p className="text-muted-foreground py-4 text-center">{t('dashboard.noData')}</p>
         </CardContent>
       </Card>
-    );
+    )
   }
   const localizeLevelTitle = (raw: string) => {
-    const key = raw.toLowerCase();
+    const key = raw.toLowerCase()
     try {
-      return t(`levels.titles.${key}`);
+      return t(`levels.titles.${key}`)
     } catch {
-      return raw; // fallback if missing
+      return raw // fallback if missing
     }
-  };
+  }
 
   return (
     <Card className={className}>
@@ -102,13 +96,10 @@ export function GamificationProfileSection({
             {t('dashboard.title')}
           </div>
           {levelInfo && (
-            <Badge
-              variant="outline"
-              className={cn('flex items-center gap-1', levelInfo.color)}
-            >
+            <Badge variant="outline" className={cn('flex items-center gap-1', levelInfo.color)}>
               {(() => {
-                const Icon = levelInfo.icon;
-                return Icon ? <Icon className="h-3 w-3" /> : null;
+                const Icon = levelInfo.icon
+                return Icon ? <Icon className="h-3 w-3" /> : null
               })()}
               {levelInfo.title}
             </Badge>
@@ -130,11 +121,7 @@ export function GamificationProfileSection({
           <div className="flex-1 space-y-3">
             {/* Level Badge and Progress */}
             <div className="flex items-center justify-between">
-              <GlowingLevelBadge
-                level={profile.level}
-                size="lg"
-                animated
-              />
+              <GlowingLevelBadge level={profile.level} size="lg" animated />
               <div className="text-right text-sm">
                 <div className="font-semibold">{profile.total_xp.toLocaleString()} XP</div>
                 <div className="text-muted-foreground text-xs">
@@ -143,16 +130,12 @@ export function GamificationProfileSection({
               </div>
             </div>
 
-            <LevelProgress
-              profile={profile}
-              showMilestones
-              animated
-            />
+            <LevelProgress profile={profile} showMilestones animated />
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <Flame className="h-4 w-4 text-orange-500" />
+                <CalendarCheck className="h-4 w-4 text-sky-600" />
                 <span>
                   {t('streaks.login.title')}
                   {': '}
@@ -178,26 +161,24 @@ export function GamificationProfileSection({
               <Target className="h-4 w-4" />
               {t('dashboard.nextMilestone')}
             </h4>
-            <Card className="bg-muted/30">
-              <CardContent className="">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <nextMilestone.icon className={cn('h-5 w-5', nextMilestone.color)} />
-                    <div>
-                      <p className="font-medium">
-                        {t('levelIndicators.level')} {nextMilestone.level}
-                      </p>
-                      <p className="text-muted-foreground text-sm">{localizeLevelTitle(nextMilestone.title)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-muted-foreground text-sm">
-                      {nextMilestone.minXP - profile.total_xp} {t('levelIndicators.xpToNext')}
+            <div className="bg-muted/30 border-border rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <nextMilestone.icon className={cn('h-5 w-5', nextMilestone.color)} />
+                  <div>
+                    <p className="text-sm leading-none font-semibold">
+                      {t('levelIndicators.level')} {nextMilestone.level}
                     </p>
+                    <p className="text-muted-foreground mt-1 text-xs">{localizeLevelTitle(nextMilestone.title)}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {nextMilestone.minXP - profile.total_xp} {t('levelIndicators.xpToNext')}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -256,18 +237,48 @@ export function GamificationProfileSection({
         */}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 // Helper function to get next milestone
 function getNextMilestone(currentLevel: number) {
   const milestones = [
-    { level: 5, title: 'Apprentice', color: 'text-blue-500', icon: Star, minXP: 1000 },
-    { level: 10, title: 'Scholar', color: 'text-purple-500', icon: Zap, minXP: 3000 },
-    { level: 15, title: 'Expert', color: 'text-green-500', icon: Trophy, minXP: 6000 },
-    { level: 25, title: 'Master', color: 'text-orange-500', icon: Crown, minXP: 12_000 },
-    { level: 50, title: 'Grandmaster', color: 'text-red-500', icon: Crown, minXP: 30_000 },
-  ];
+    {
+      level: 5,
+      title: 'Apprentice',
+      color: 'text-blue-500',
+      icon: Star,
+      minXP: 1000,
+    },
+    {
+      level: 10,
+      title: 'Scholar',
+      color: 'text-slate-500',
+      icon: GraduationCap,
+      minXP: 3000,
+    },
+    {
+      level: 15,
+      title: 'Expert',
+      color: 'text-green-500',
+      icon: Trophy,
+      minXP: 6000,
+    },
+    {
+      level: 25,
+      title: 'Master',
+      color: 'text-orange-500',
+      icon: Crown,
+      minXP: 12_000,
+    },
+    {
+      level: 50,
+      title: 'Grandmaster',
+      color: 'text-red-500',
+      icon: Crown,
+      minXP: 30_000,
+    },
+  ]
 
-  return milestones.find((milestone) => currentLevel < milestone.level);
+  return milestones.find(milestone => currentLevel < milestone.level)
 }

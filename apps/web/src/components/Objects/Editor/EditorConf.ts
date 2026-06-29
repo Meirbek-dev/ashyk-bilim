@@ -1,11 +1,11 @@
-import { Link as LinkExtension } from '@tiptap/extension-link';
+import { Link as LinkExtension } from '@tiptap/extension-link'
 
-type LinkOptions = Parameters<typeof LinkExtension.configure>[0];
+type LinkOptions = Parameters<typeof LinkExtension.configure>[0]
 
 interface LinkValidationContext {
-  defaultProtocol: string;
-  defaultValidate: (url: string) => boolean;
-  protocols: (string | { scheme: string })[];
+  defaultProtocol: string
+  defaultValidate: (url: string) => boolean
+  protocols: (string | { scheme: string })[]
 }
 
 const LINK_DEFAULTS: LinkOptions = {
@@ -17,7 +17,7 @@ const LINK_DEFAULTS: LinkOptions = {
   autolink: true,
   defaultProtocol: 'https',
   protocols: ['http', 'https'],
-};
+}
 
 export const getLinkExtension = (options: Partial<LinkOptions> = {}) => {
   return LinkExtension.configure({
@@ -30,49 +30,49 @@ export const getLinkExtension = (options: Partial<LinkOptions> = {}) => {
     isAllowedUri: (url: string, ctx: LinkValidationContext) => {
       try {
         // construct URL
-        const parsedUrl = url.includes(':') ? new URL(url) : new URL(`${ctx.defaultProtocol}://${url}`);
+        const parsedUrl = url.includes(':') ? new URL(url) : new URL(`${ctx.defaultProtocol}://${url}`)
 
         // use default validation
         if (!ctx.defaultValidate(parsedUrl.href)) {
-          return false;
+          return false
         }
 
         // disallowed protocols
-        const disallowedProtocols = ['ftp', 'file', 'mailto'];
-        const protocol = parsedUrl.protocol.replace(':', '');
+        const disallowedProtocols = ['ftp', 'file', 'mailto']
+        const protocol = parsedUrl.protocol.replace(':', '')
 
         if (disallowedProtocols.includes(protocol)) {
-          return false;
+          return false
         }
 
         // only allow protocols specified in ctx.protocols
-        const allowedProtocols = ctx.protocols.map((protocol) =>
-          typeof protocol === 'string' ? protocol : protocol.scheme,
-        );
+        const allowedProtocols = ctx.protocols.map(allowedScheme =>
+          typeof allowedScheme === 'string' ? allowedScheme : allowedScheme.scheme,
+        )
 
         if (!allowedProtocols.includes(protocol)) {
-          return false;
+          return false
         }
 
         // all checks have passed
-        return true;
+        return true
       } catch {
-        return false;
+        return false
       }
     },
     shouldAutoLink: (url: string) => {
       try {
         // construct URL
-        const parsedUrl = url.includes(':') ? new URL(url) : new URL(`https://${url}`);
+        const parsedUrl = url.includes(':') ? new URL(url) : new URL(`https://${url}`)
 
         // only auto-link if the domain is not in the disallowed list
-        const disallowedDomains = ['example-no-autolink.com', 'another-no-autolink.com'];
-        const domain = parsedUrl.hostname;
+        const disallowedDomains = ['example-no-autolink.com', 'another-no-autolink.com']
+        const domain = parsedUrl.hostname
 
-        return !disallowedDomains.includes(domain);
+        return !disallowedDomains.includes(domain)
       } catch {
-        return false;
+        return false
       }
     },
-  });
-};
+  })
+}

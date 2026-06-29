@@ -1,6 +1,7 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 import pathlib
 import sys
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -49,7 +50,7 @@ _ALL_TABLES = [
 
 
 @pytest.fixture(name="db_session_factory")
-def db_session_factory_fixture():
+def db_session_factory_fixture() -> Iterator[Callable[[], Session]]:
     engine = build_engine(get_settings())
     SQLModel.metadata.create_all(engine, tables=_ALL_TABLES)
     factory = build_session_factory(engine)
@@ -83,11 +84,13 @@ def student_user_fixture() -> PublicUser:
     )
 
 
-def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> FastAPI:
+def _make_app(
+    db_session_factory: Callable[[], Session], current_user: PublicUser, monkeypatch: pytest.MonkeyPatch
+) -> FastAPI:
     app = FastAPI()
     app.include_router(file_submissions_router, prefix="/file-submissions")
 
-    def override_get_db_session():
+    def override_get_db_session() -> Iterator[Session]:
         session = db_session_factory()
         try:
             yield session
@@ -100,18 +103,14 @@ def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> Fast
 
     from src.services import file_submissions
 
-    monkeypatch.setattr(
-        file_submissions, "_require_submit_access", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        file_submissions, "recalculate_course_progress", lambda *_a, **_kw: None
-    )
+    monkeypatch.setattr(file_submissions, "_require_submit_access", lambda *_a, **_kw: None)
+    monkeypatch.setattr(file_submissions, "recalculate_course_progress", lambda *_a, **_kw: None)
 
     return app
 
 
 def _seed_file_submission(
-    db_session_factory,
+    db_session_factory: Callable[[], Session],
     *,
     max_attempts: int | None = 1,
     lifecycle: FileSubmissionLifecycle = FileSubmissionLifecycle.PUBLISHED,
@@ -207,10 +206,9 @@ def _seed_file_submission(
 
 
 def test_start_draft_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """
-    Reproduce 409 Conflict when a student tries to start a draft
+    """Reproduce 409 Conflict when a student tries to start a draft
     after an attempt has been RETURNED and max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)
@@ -218,9 +216,7 @@ def test_start_draft_when_returned_and_max_attempts_reached(
     # Pre-seed a RETURNED attempt
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 
@@ -252,19 +248,16 @@ def test_start_draft_when_returned_and_max_attempts_reached(
 
 
 def test_save_draft_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """
-    Ensure student can save a draft (patch files) on a RETURNED attempt
+    """Ensure student can save a draft (patch files) on a RETURNED attempt
     even when max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)
 
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 
@@ -288,28 +281,23 @@ def test_save_draft_when_returned_and_max_attempts_reached(
     client = TestClient(app)
 
     # Patch with no files (just to check if it proceeds)
-    response = client.patch(
-        f"/file-submissions/{file_submission_uuid}/draft", json={"files": []}
-    )
+    response = client.patch(f"/file-submissions/{file_submission_uuid}/draft", json={"files": []})
 
     assert response.status_code == 200
     assert response.json()["status"] == "RETURNED"
 
 
 def test_submit_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
+    db_session_factory: Callable[[], Session], student_user: PublicUser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """
-    Ensure student can re-submit a RETURNED attempt
+    """Ensure student can re-submit a RETURNED attempt
     even when max_attempts=1.
     """
     file_submission_uuid = _seed_file_submission(db_session_factory, max_attempts=1)
 
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 
@@ -367,7 +355,7 @@ def test_submit_when_returned_and_max_attempts_reached(
     from src.services import events
 
     class MockBus:
-        async def emit(self, event) -> None:
+        async def emit(self, event: object) -> None:
             pass
 
     monkeypatch.setattr(events, "get_event_bus", MockBus)

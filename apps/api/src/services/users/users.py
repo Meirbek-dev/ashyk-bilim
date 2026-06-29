@@ -1,17 +1,16 @@
 import contextlib
 import logging
 from datetime import datetime
-from types import SimpleNamespace
+from typing import cast
 
 from fastapi import HTTPException, Request, UploadFile, status
-from pydantic import ValidationError
 from sqlmodel import Session, select
 
+from src.core.timezone import utcnow_iso
 from src.db.permission_enums import RoleSlug
-from src.db.permissions import Role, RoleRead, UserRole
+from src.db.permissions import Role, RoleRead
 from src.db.users import (
     AnonymousUser,
-    InternalUser,
     PublicUser,
     User,
     UserCreate,
@@ -25,8 +24,8 @@ from src.security.rbac import PermissionChecker, ResourceAccessDenied
 from src.security.security import security_hash_password, security_verify_password
 from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
-from src.services.users.emails import send_account_creation_email
-from src.services.users.usergroups import add_users_to_usergroup
+from src.services.users.emails import enqueue_account_creation_email
+from src.types.simple_namespace import SimpleNamespace
 
 _logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ async def create_user(
     current_user: PublicUser | AnonymousUser,
     user_object: UserCreate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # RBAC check
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -56,10 +55,9 @@ async def create_user(
 
     user_read = UserRead.model_validate(user)
 
-    # Send Account creation email
-    send_account_creation_email(
-        user=user_read,
-        email=user_read.email,
+    await enqueue_account_creation_email(
+        username=user_read.username,
+        email=str(user_read.email),
     )
 
     return user_read
@@ -71,7 +69,7 @@ async def create_user_without_platform(
     current_user: PublicUser | AnonymousUser,
     user_object: UserCreate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Public self-registration: anonymous users may always create their own
     # account.  Authenticated callers (e.g. admins creating users on behalf of
     # others) still need the `user:create` permission so that privilege
@@ -90,10 +88,9 @@ async def create_user_without_platform(
 
     user_read = UserRead.model_validate(user)
 
-    # Send Account creation email
-    send_account_creation_email(
-        user=user_read,
-        email=user_read.email,
+    await enqueue_account_creation_email(
+        username=user_read.username,
+        email=str(user_read.email),
     )
 
     return user_read
@@ -106,7 +103,7 @@ def update_user(
     current_user: PublicUser | AnonymousUser,
     user_object: UserUpdate,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead | User:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
@@ -135,14 +132,10 @@ def update_user(
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
     if user_object.username:
-        _validate_unique_username(
-            db_session, user_object.username, exclude_user_id=current_user.id
-        )
+        _validate_unique_username(db_session, user_object.username, exclude_user_id=current_user.id)
 
     if user_object.email:
-        _validate_unique_email(
-            db_session, user_object.email, exclude_user_id=current_user.id
-        )
+        _validate_unique_email(db_session, user_object.email, exclude_user_id=current_user.id)
 
     # Update user
     for key, value in user_data.items():
@@ -175,9 +168,9 @@ def update_user_preferences(
     *,
     theme: str | None = None,
     locale: str | None = None,
-):
+) -> UserRead:
     if user_id != current_user.id:
-        raise ResourceAccessDenied(reason="You can only update your own preferences")
+        raise ResourceAccessDenied(reason="Вы можете изменять только свои настройки")
 
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
     user_data = {
@@ -214,7 +207,7 @@ async def update_user_avatar(
     current_user: PublicUser | AnonymousUser,
     avatar_file: UploadFile | None = None,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", current_user.id, use_cache=False)
 
@@ -231,7 +224,7 @@ async def update_user_avatar(
         except Exception as e:
             raise HTTPException(
                 status_code=400,
-                detail=f"Avatar upload failed: {e!s}",
+                detail=f"Не удалось загрузить аватар: {e!s}",
             )
 
     # Update user in database
@@ -258,7 +251,7 @@ def update_user_password(
     user_id: int,
     form: UserUpdatePassword,
     checker: PermissionChecker | None = None,
-):
+) -> UserRead:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
@@ -268,9 +261,7 @@ def update_user_password(
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
     if not security_verify_password(form.old_password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный пароль")
 
     # Update user
     user.hashed_password = security_hash_password(form.new_password)
@@ -278,7 +269,7 @@ def update_user_password(
     # Add password_changed_at field for session invalidation tracking
     if user.profile is None:
         user.profile = {}
-    user.profile["password_changed_at"] = datetime.now().isoformat()
+    user.profile["password_changed_at"] = utcnow_iso()
 
     # Update user in database
     db_session.add(user)
@@ -293,7 +284,7 @@ def read_user_by_id(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_id: int,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "id", user_id)
     return UserRead.model_validate(user)
 
@@ -303,7 +294,7 @@ def read_user_by_uuid(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_uuid: str,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "user_uuid", user_uuid)
     return UserRead.model_validate(user)
 
@@ -313,7 +304,7 @@ def read_user_by_username(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     username: str,
-):
+) -> UserRead:
     user = _get_user_by_field(db_session, "username", username)
     return UserRead.model_validate(user)
 
@@ -323,7 +314,7 @@ def get_user_session(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
 ) -> UserSession:
-    from datetime import UTC, datetime
+    from datetime import UTC
 
     from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 
@@ -332,6 +323,7 @@ def get_user_session(
 
     checker = PermissionChecker(db_session)
 
+    assert user.id is not None
     roles = [
         UserSessionRole(role=RoleRead.model_validate(role_dict))
         for role_dict in checker.get_user_roles(user_id=user.id)
@@ -345,7 +337,7 @@ def get_user_session(
         permissions = sorted(effective)
         permissions_timestamp = int(now.timestamp())
     except Exception:
-        _logger.exception(f"Error loading permissions for user {current_user.id}")
+        _logger.exception(f"Ошибка загрузки разрешений для пользователя {current_user.id}")
 
     expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
     session_version = int(now.timestamp())
@@ -388,7 +380,7 @@ def delete_user_by_id(
     except Exception:
         pass
 
-    return "User deleted"
+    return "Пользователь удален"
 
 
 # Utils & Security functions
@@ -405,9 +397,7 @@ def security_get_user(request: Request, db_session: Session, email: str) -> User
 # Helper functions for user operations
 
 
-def _validate_unique_username(
-    db_session: Session, username: str, exclude_user_id: int | None = None
-) -> None:
+def _validate_unique_username(db_session: Session, username: str, exclude_user_id: int | None = None) -> None:
     """Validate that username is unique."""
     statement = select(User).where(User.username == username)
     if exclude_user_id:
@@ -420,9 +410,7 @@ def _validate_unique_username(
         )
 
 
-def _validate_unique_email(
-    db_session: Session, email: str, exclude_user_id: int | None = None
-) -> None:
+def _validate_unique_email(db_session: Session, email: str, exclude_user_id: int | None = None) -> None:
     """Validate that email is unique."""
     statement = select(User).where(User.email == email)
     if exclude_user_id:
@@ -431,13 +419,11 @@ def _validate_unique_email(
     if db_session.exec(statement).first():
         raise HTTPException(
             status_code=400,
-            detail="Email already exists",
+            detail="Электронная почта уже существует",
         )
 
 
-async def _create_and_validate_user(
-    db_session: Session, user_object: UserCreate
-) -> User:
+async def _create_and_validate_user(db_session: Session, user_object: UserCreate) -> User:
     """Create user with validation and proper initialization."""
     # Validate unique constraints
     _validate_unique_username(db_session, user_object.username)
@@ -447,14 +433,12 @@ async def _create_and_validate_user(
     if user_object.password and len(user_object.password) < MIN_PASSWORD_LENGTH:
         raise HTTPException(
             status_code=400,
-            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters",
+            detail=f"Пароль должен содержать не менее {MIN_PASSWORD_LENGTH} символов",
         )
 
     # Create user with completed fields
     user = User.model_validate(user_object)
-    user.hashed_password = (
-        security_hash_password(user_object.password) if user_object.password else None
-    )
+    user.hashed_password = security_hash_password(user_object.password) if user_object.password else ""
     user.auth_provider = "local"
 
     # Add user to database
@@ -465,48 +449,24 @@ async def _create_and_validate_user(
     return user
 
 
-def _safe_role_read(role: Role) -> RoleRead:
-    """Convert Role to RoleRead."""
-    try:
-        return RoleRead.model_validate(role)
-    except ValidationError as exc:  # pragma: no cover - defensive path
-        _logger.warning(
-            "Role validation failed for role_id=%s. Using fallback. Error: %s",
-            getattr(role, "id", None),
-            exc,
-        )
-        return RoleRead.model_construct(
-            name=role.name,
-            slug=role.slug,
-            description=role.description,
-            is_system=role.is_system,
-            priority=role.priority,
-            created_at=role.created_at,
-            updated_at=role.updated_at,
-            id=role.id,
-        )
-
-
 def _assign_default_role(db_session: Session, user_id: int | None) -> None:
     """Assign default 'user' role to a newly registered user."""
-    from src.db.permissions import Role
     from src.security.rbac import PermissionChecker
 
     # Get user role ID
     user_role = db_session.exec(select(Role).where(Role.slug == RoleSlug.USER)).first()
     if not user_role:
-        raise HTTPException(500, detail="User role not found")
+        raise HTTPException(500, detail="Роль пользователя не найдена")
 
     checker = PermissionChecker(db_session)
+    assert user_role.id is not None
     checker.assign_role(
         user_id=user_id or 0,
         role_id=user_role.id,
     )
 
 
-def _get_user_by_field(
-    db_session: Session, field: str, value: str | int, use_cache: bool = True
-) -> User:
+def _get_user_by_field(db_session: Session, field: str, value: str | int, use_cache: bool = True) -> User:
     """Generic function to get user by any field.
 
     Optimizations:
@@ -531,9 +491,7 @@ def _get_user_by_field(
                 return User.model_validate(cached)
             except Exception:
                 # Cached payload may be partial (e.g., only id/username); return a simple object
-                if isinstance(cached, dict):
-                    return SimpleNamespace(**cached)
-                return None
+                return cast("User", SimpleNamespace(**cached))
         except Exception:
             return None
 
@@ -543,9 +501,7 @@ def _get_user_by_field(
             id_key = f"user:id:{getattr(user_obj, 'id', '')}"
             redis_client.set_json(id_key, data, USER_CACHE_TTL)
             if user_obj.username:
-                redis_client.set_json(
-                    f"user:username:{user_obj.username.lower()}", data, USER_CACHE_TTL
-                )
+                redis_client.set_json(f"user:username:{user_obj.username.lower()}", data, USER_CACHE_TTL)
         except Exception:
             pass
 
@@ -571,14 +527,14 @@ def _get_user_by_field(
     elif field == "email":
         statement = select(User).where(User.email == value)
     else:
-        msg = f"Invalid field: {field}"
+        msg = f"Недопустимое поле: {field}"
         raise ValueError(msg)
 
     user = db_session.exec(statement).first()
     if not user:
         raise HTTPException(
             status_code=400,
-            detail="User does not exist",
+            detail="Пользователь не существует",
         )
 
     # Populate cache asynchronously (best-effort)

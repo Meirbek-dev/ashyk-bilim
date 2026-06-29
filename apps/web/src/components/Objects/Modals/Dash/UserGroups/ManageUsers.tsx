@@ -1,75 +1,80 @@
-'use client';
+'use client'
 
-import { useQueryClient } from '@tanstack/react-query';
-import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups';
-import { useAllMembers, useUserGroupUsers } from '@/features/users/hooks/useUsers';
-import type { ColumnDef } from '@tanstack/react-table';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import DataTable from '@components/ui/data-table';
-import { Check, Plus, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query'
+import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups'
+import { useAllMembers, useUserGroupUsers } from '@/features/users/hooks/useUsers'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import DataTable from '@components/ui/data-table'
+import type { DataTableColumnDef } from '@components/ui/data-table'
+import { Check, Plus, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
 
 interface ManageUsersProps {
-  usergroup_id: number;
+  usergroup_id: number
 }
 
 interface UserRow {
   user: {
-    id: number;
-    username: string;
-    first_name?: string;
-    middle_name?: string;
-    last_name?: string;
-  };
+    id: number
+    username: string
+    first_name?: string
+    middle_name?: string
+    last_name?: string
+  }
 }
 
 const ManageUsers = (props: ManageUsersProps) => {
-  const t = useTranslations('Components.ManageUsers');
-  const queryClient = useQueryClient();
-  const { data: Users } = useAllMembers();
-  const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id);
-  const { data: UGusers } = useUserGroupUsers(props.usergroup_id);
+  const t = useTranslations('Components.ManageUsers')
+  const queryClient = useQueryClient()
+  const { data: Users } = useAllMembers()
+  const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id)
+  const { data: UGusers } = useUserGroupUsers(props.usergroup_id) as { data?: AppUserSummary[] }
 
   // Normalize Users response which may be either an array or a paginated object { users: [], total, ... }
-  const platformUsersList = (data: any) => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data.users)) return data.users;
-    return [];
-  };
+  const platformUsersList = (data: unknown) => {
+    if (!data) return []
+    const payload = data as AppPayload
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload.users)) return payload.users
+    return []
+  }
 
   const isUserPartOfGroup = (user_id: number) => {
     if (UGusers) {
-      return UGusers.some((user: any) => user.id === user_id);
+      return UGusers.some((user: AppUserSummary) => user.id === user_id)
     }
-    return false;
-  };
+    return false
+  }
 
   const handleLinkUser = async (user_id: number) => {
-    const res = await linkUserToUserGroup(props.usergroup_id, user_id);
+    const res = await linkUserToUserGroup(props.usergroup_id, user_id)
     if (res.status === 200) {
-      toast.success(t('linkSuccess'));
-      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey });
+      toast.success(t('linkSuccess'))
+      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
     } else {
-      toast.error(t('linkError', { error: res.data?.detail || t('unknownError') }));
+      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+      toast.error(t('linkError', { error: errorDetail }))
     }
-  };
+  }
 
   const handleUnlinkUser = async (user_id: number) => {
-    const res = await unLinkUserToUserGroup(props.usergroup_id, user_id);
+    const res = await unLinkUserToUserGroup(props.usergroup_id, user_id)
     if (res.status === 200) {
-      toast.success(t('unlinkSuccess'));
-      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey });
+      toast.success(t('unlinkSuccess'))
+      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey })
     } else {
-      toast.error(t('unlinkError', { error: res.data?.detail || t('unknownError') }));
+      const errorDetail = (res.data as AppPayload | undefined)?.detail || t('unknownError')
+      toast.error(t('unlinkError', { error: errorDetail }))
     }
-  };
+  }
 
-  const rows = platformUsersList(Users) as UserRow[];
-  const columns: ColumnDef<UserRow>[] = [
+  const rows = platformUsersList(Users) as UserRow[]
+  const columns: DataTableColumnDef<UserRow>[] = [
     {
-      accessorFn: (row) =>
+      accessorFn: row =>
         [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username].filter(Boolean).join(' '),
       id: 'user',
       header: t('userHeader'),
@@ -87,7 +92,7 @@ const ManageUsers = (props: ManageUsersProps) => {
       ),
     },
     {
-      accessorFn: (row) => (isUserPartOfGroup(row.user.id) ? t('linkedStatus') : t('notLinkedStatus')),
+      accessorFn: row => (isUserPartOfGroup(row.user.id) ? t('linkedStatus') : t('notLinkedStatus')),
       id: 'linked',
       header: t('linkedHeader'),
       cell: ({ row }) =>
@@ -109,35 +114,34 @@ const ManageUsers = (props: ManageUsersProps) => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-end space-x-2">
-          <button
+          <Button
+            type="button"
             onClick={() => handleLinkUser(row.original.user.id)}
-            className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer"
+            variant="ghost"
+            className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer hover:bg-cyan-800"
           >
             <Plus className="h-4 w-4" />
             <span>{t('linkButton')}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={() => handleUnlinkUser(row.original.user.id)}
-            className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer"
+            variant="ghost"
+            className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
             <span>{t('unlinkButton')}</span>
-          </button>
+          </Button>
         </div>
       ),
     },
-  ];
+  ]
 
   return (
     <div className="py-3">
-      <DataTable
-        columns={columns}
-        data={rows}
-        pageSize={8}
-        storageKey={`usergroup-${props.usergroup_id}-users`}
-      />
+      <DataTable columns={columns} data={rows} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
     </div>
-  );
-};
+  )
+}
 
-export default ManageUsers;
+export default ManageUsers

@@ -1,9 +1,9 @@
 import uuid
 
 import pytest
-from fastapi import HTTPException
 from fastapi_users.jwt import generate_jwt
 
+from src.app.exceptions import AppError
 from src.security.keys import get_jwt_secret, reload_key_cache
 from src.services.auth.google_oauth import (
     _GOOGLE_STATE_AUDIENCE,
@@ -35,8 +35,9 @@ def test_google_state_rejects_invalid_signature() -> None:
     state, _state_jti = _encode_state("/auth/finish")
     tampered_state = f"{state}broken"
 
-    with pytest.raises(HTTPException, match="Invalid OAuth state"):
+    with pytest.raises(AppError) as exc_info:
         _decode_state(tampered_state)
+    assert exc_info.value.code == "GOOGLE_OAUTH_STATE_INVALID"
 
 
 def test_google_state_rejects_expired_token() -> None:
@@ -51,5 +52,6 @@ def test_google_state_rejects_expired_token() -> None:
         lifetime_seconds=-PKCE_TTL,
     )
 
-    with pytest.raises(HTTPException, match="OAuth state expired"):
+    with pytest.raises(AppError) as exc_info:
         _decode_state(expired_state)
+    assert exc_info.value.code == "GOOGLE_OAUTH_STATE_EXPIRED"

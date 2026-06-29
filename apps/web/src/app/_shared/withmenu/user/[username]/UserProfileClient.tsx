@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   Award,
@@ -15,45 +15,119 @@ import {
   MapPin,
   Users,
   X,
-} from 'lucide-react';
-import { useUserCourses } from '@/features/users/hooks/useUsers';
-import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail';
-import { getUserAvatarMediaDirectory } from '@services/media/media';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import type { FC } from 'react';
-import Image from 'next/image';
+} from 'lucide-react'
+import { useUserCourses } from '@/features/users/hooks/useUsers'
+import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
+import UserAvatar from '@components/Objects/UserAvatar'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import type { FC } from 'react'
+import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
+import Image from 'next/image'
 
 interface UserProfileClientProps {
-  userData: any;
-  profile: any;
+  userData: UserProfileData
+  profile: UserProfileView
+}
+
+interface UserProfileData {
+  avatar_image?: string | null
+  bio?: string | null
+  details?: Record<string, ProfileDetail>
+  first_name?: string
+  id: number
+  last_name?: string
+  middle_name?: string | null
+  user_uuid: string
+}
+
+interface ProfileDetail {
+  icon: string
+  id?: number | string
+  text: string
+}
+
+interface ProfileImage {
+  caption?: string
+  url: string
+}
+
+interface ProfileLink {
+  title: string
+  url: string
+}
+
+interface ProfileSkill {
+  level?: string
+  name: string
+}
+
+interface ProfileExperience {
+  current?: boolean
+  description?: string
+  endDate?: string
+  organization?: string
+  startDate?: string
+  title?: string
+}
+
+interface ProfileEducation {
+  current?: boolean
+  degree?: string
+  description?: string
+  endDate?: string
+  field?: string
+  institution?: string
+  startDate?: string
+}
+
+interface ProfileAffiliation {
+  description?: string
+  logoUrl?: string
+  name: string
+}
+
+interface ProfileSectionView {
+  affiliations?: ProfileAffiliation[]
+  content?: string
+  education?: ProfileEducation[]
+  experiences?: ProfileExperience[]
+  images?: ProfileImage[]
+  links?: ProfileLink[]
+  skills?: ProfileSkill[]
+  title?: string
+  type: string
+}
+
+interface UserProfileView {
+  sections?: ProfileSectionView[]
 }
 
 const ICON_MAP = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
+  speciality: Lightbulb,
+  globe: Globe,
   'laptop-2': Laptop2,
-  'award': Award,
+  award: Award,
   'book-open': BookOpen,
-  'link': LinkIcon,
-  'users': Users,
-  'calendar': Calendar,
-} as const;
+  link: LinkIcon,
+  users: Users,
+  calendar: Calendar,
+} as const
 
 const IconComponent = ({ iconName }: { iconName: string }) => {
-  const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP];
-  if (!IconElement) return null;
-  return <IconElement className="text-muted-foreground h-4 w-4" />;
-};
+  const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP]
+  if (!IconElement) return null
+  return <IconElement className="text-muted-foreground h-4 w-4" />
+}
 
 const ImageModal: FC<{
-  image: { url: string; caption?: string };
-  onClose: () => void;
+  image: { url: string; caption?: string }
+  onClose: () => void
 }> = ({ image, onClose }) => {
   return (
     <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -64,29 +138,33 @@ const ImageModal: FC<{
         >
           <X className="h-6 w-6" />
         </button>
-        <Image
-          src={image.url}
-          alt={image.caption || ''}
-          width={800}
-          height={600}
-          className="h-auto w-full rounded-lg"
-        />
+        {image.url ? (
+          <Image
+            src={image.url}
+            alt={image.caption || ''}
+            width={800}
+            height={600}
+            className="h-auto w-full rounded-lg"
+          />
+        ) : null}
         {image.caption ? <p className="text-foreground mt-4 text-center text-lg">{image.caption}</p> : null}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
-  const t = useTranslations('UserProfilePage');
+  const t = useTranslations('UserProfilePage')
   const [selectedImage, setSelectedImage] = useState<{
-    url: string;
-    caption?: string;
-  } | null>(null);
-  const userCoursesQuery = useUserCourses(userData.id, { enabled: Boolean(userData.id) });
-  const userCourses = userCoursesQuery.data ?? [];
-  const isLoadingCourses = userCoursesQuery.isPending;
-  const error = userCoursesQuery.isError;
+    url: string
+    caption?: string
+  } | null>(null)
+  const userCoursesQuery = useUserCourses(userData.id, {
+    enabled: Boolean(userData.id),
+  })
+  const userCourses = userCoursesQuery.data ?? []
+  const isLoadingCourses = userCoursesQuery.isPending
+  const error = userCoursesQuery.isError
 
   return (
     <div className="text-foreground container mx-auto py-8">
@@ -114,15 +192,13 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
         {/* Affiliation Logos */}
         <div className="absolute -top-12 right-8 flex items-center gap-4">
           {profile.sections?.map(
-            (section: any) =>
+            (section: ProfileSectionView) =>
               section.type === 'affiliation' &&
               section.affiliations?.map(
-                (affiliation: any, index: number) =>
-                  affiliation.logoUrl && (
-                    <div
-                      key={index}
-                      className="border-background bg-card rounded-lg border-2 p-2 shadow-lg"
-                    >
+                (affiliation: ProfileAffiliation, index: number) =>
+                  typeof affiliation.logoUrl === 'string' &&
+                  affiliation.logoUrl.trim() !== '' && (
+                    <div key={index} className="border-background bg-card rounded-lg border-2 p-2 shadow-lg">
                       <Image
                         src={affiliation.logoUrl}
                         alt={affiliation.name}
@@ -150,11 +226,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
               {/* Details */}
               <div className="flex flex-col space-y-3">
                 {userData.details
-                  ? Object.values(userData.details).map((detail: any) => (
-                      <div
-                        key={detail.id}
-                        className="flex items-center gap-4"
-                      >
+                  ? Object.values(userData.details).map((detail: ProfileDetail) => (
+                      <div key={detail.id} className="flex items-center gap-4">
                         <div className="shrink-0">
                           <IconComponent iconName={detail.icon} />
                         </div>
@@ -179,38 +252,38 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
               {/* Profile sections from profile builder */}
               {profile.sections && profile.sections.length > 0 ? (
                 <div>
-                  {profile.sections.map((section: any, index: number) => (
-                    <div
-                      key={index}
-                      className="mb-8"
-                    >
+                  {profile.sections.map((section: ProfileSectionView, index: number) => (
+                    <div key={index} className="mb-8">
                       <h2 className="mb-4 text-xl font-semibold">{section.title}</h2>
 
                       {/* Add Image Gallery section */}
                       {section.type === 'image-gallery' && (
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                          {section.images.map((image: any, imageIndex: number) => (
-                            <div
-                              key={imageIndex}
-                              className="group relative cursor-pointer"
-                              onClick={() => {
-                                setSelectedImage(image);
-                              }}
-                            >
-                              <Image
-                                src={image.url}
-                                alt={image.caption || ''}
-                                width={300}
-                                height={192}
-                                className="h-48 w-full rounded-lg object-cover"
-                              />
-                              {image.caption ? (
-                                <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-                                  <p className="text-foreground text-center text-sm">{image.caption}</p>
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
+                          {(section.images ?? []).map((image: ProfileImage, imageIndex: number) => {
+                            if (typeof image.url !== 'string' || !image.url.trim()) return null
+                            return (
+                              <div
+                                key={imageIndex}
+                                className="group relative cursor-pointer"
+                                onClick={() => {
+                                  setSelectedImage(image)
+                                }}
+                              >
+                                <Image
+                                  src={image.url}
+                                  alt={image.caption || ''}
+                                  width={300}
+                                  height={192}
+                                  className="h-48 w-full rounded-lg object-cover"
+                                />
+                                {image.caption ? (
+                                  <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                                    <p className="text-foreground text-center text-sm">{image.caption}</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            )
+                          })}
                         </div>
                       )}
 
@@ -218,7 +291,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'links' && (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          {section.links.map((link: any, linkIndex: number) => (
+                          {(section.links ?? []).map((link: ProfileLink, linkIndex: number) => (
                             <a
                               key={linkIndex}
                               href={link.url}
@@ -235,7 +308,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'skills' && (
                         <div className="flex flex-wrap gap-2">
-                          {section.skills.map((skill: any, skillIndex: number) => (
+                          {(section.skills ?? []).map((skill: ProfileSkill, skillIndex: number) => (
                             <span
                               key={skillIndex}
                               className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm"
@@ -249,11 +322,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'experience' && (
                         <div className="space-y-4">
-                          {section.experiences.map((exp: any, expIndex: number) => (
-                            <div
-                              key={expIndex}
-                              className="border-border border-l-2 pl-4"
-                            >
+                          {(section.experiences ?? []).map((exp: ProfileExperience, expIndex: number) => (
+                            <div key={expIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{exp.title}</h3>
                               <p className="text-muted-foreground">{exp.organization}</p>
                               <p className="text-muted-foreground text-sm">
@@ -267,11 +337,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'education' && (
                         <div className="space-y-4">
-                          {section.education.map((edu: any, eduIndex: number) => (
-                            <div
-                              key={eduIndex}
-                              className="border-border border-l-2 pl-4"
-                            >
+                          {(section.education ?? []).map((edu: ProfileEducation, eduIndex: number) => (
+                            <div key={eduIndex} className="border-border border-l-2 pl-4">
                               <h3 className="font-medium">{edu.institution}</h3>
                               <p className="text-muted-foreground">
                                 {edu.degree} {t('in')} {edu.field}
@@ -287,13 +354,10 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'affiliation' && (
                         <div className="space-y-4">
-                          {section.affiliations.map((affiliation: any, affIndex: number) => (
-                            <div
-                              key={affIndex}
-                              className="border-border border-l-2 pl-4"
-                            >
+                          {(section.affiliations ?? []).map((affiliation: ProfileAffiliation, affIndex: number) => (
+                            <div key={affIndex} className="border-border border-l-2 pl-4">
                               <div className="flex items-start gap-4">
-                                {affiliation.logoUrl ? (
+                                {typeof affiliation.logoUrl === 'string' && affiliation.logoUrl.trim() !== '' ? (
                                   <Image
                                     src={affiliation.logoUrl}
                                     alt={affiliation.name}
@@ -322,33 +386,37 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                             </div>
                           ) : userCourses.length > 0 ? (
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
-                              {userCourses.map((course) => (
-                                <div
-                                  key={course.id}
-                                  className="mx-auto w-full max-w-[300px]"
-                                >
-                                  <CourseThumbnail
-                                    course={{
-                                      ...course,
-                                      authors: course.authors?.map((author) => ({
-                                        authorship: author.authorship,
-                                        authorship_status: author.authorship_status,
-                                        user: {
-                                          id: author.user.id,
-                                          user_uuid: author.user.user_uuid,
-                                          avatar_image: author.user.avatar_image ?? '',
-                                          first_name: author.user.first_name,
-                                          middle_name: author.user.middle_name ?? undefined,
-                                          last_name: author.user.last_name,
-                                          username: author.user.username,
-                                        },
-                                      })),
-                                      description: course.description ?? '',
-                                      thumbnail_image: course.thumbnail_image ?? '',
-                                    }}
-                                  />
-                                </div>
-                              ))}
+                              {userCourses.map(course => {
+                                const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
+                                const mappedAuthors: NonNullable<CourseThumbnailData['authors']> | undefined =
+                                  authors?.map(author => ({
+                                    authorship: author.authorship,
+                                    authorship_status: author.authorship_status,
+                                    user: {
+                                      id: author.user.id,
+                                      user_uuid: author.user.user_uuid,
+                                      avatar_image: author.user.avatar_image ?? '',
+                                      first_name: author.user.first_name,
+                                      ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
+                                      last_name: author.user.last_name,
+                                      username: author.user.username,
+                                    },
+                                  }))
+                                const courseThumbnailData: CourseThumbnailData = {
+                                  course_uuid: courseWithoutAuthors.course_uuid,
+                                  name: courseWithoutAuthors.name,
+                                  update_date: courseWithoutAuthors.update_date,
+                                  description: description ?? '',
+                                  thumbnail_image: thumbnail_image ?? '',
+                                  ...(mappedAuthors ? { authors: mappedAuthors } : {}),
+                                }
+
+                                return (
+                                  <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                                    <CourseThumbnail course={courseThumbnailData} />
+                                  </div>
+                                )
+                              })}
                             </div>
                           ) : (
                             <div className="text-muted-foreground py-8 text-center">
@@ -372,12 +440,12 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
         <ImageModal
           image={selectedImage}
           onClose={() => {
-            setSelectedImage(null);
+            setSelectedImage(null)
           }}
         />
       ) : null}
     </div>
-  );
-};
+  )
+}
 
-export default UserProfileClient;
+export default UserProfileClient

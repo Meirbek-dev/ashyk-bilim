@@ -1,13 +1,22 @@
-"""
-Secure file validation utilities.
+"""Secure file validation utilities.
 Blocks SVG files entirely to prevent XSS attacks (CWE-79).
 Validates file types and content to prevent unrestricted uploads (CWE-434).
 """
 
 import re
-from typing import Optional
+from collections.abc import Callable
+from typing import TypedDict
 
 from fastapi import HTTPException, UploadFile
+
+type ContentValidator = Callable[[bytes], bool]
+
+
+class FileTypeConfig(TypedDict):
+    extensions: list[str]
+    mime_types: list[str]
+    max_size: int
+    validator: ContentValidator
 
 
 def validate_image_content(content: bytes) -> bool:
@@ -120,7 +129,7 @@ def validate_document_content(content: bytes) -> bool:
 
 
 # File type configurations
-FILE_TYPES = {
+FILE_TYPES: dict[str, FileTypeConfig] = {
     "image": {
         "extensions": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"],
         "mime_types": [
@@ -178,11 +187,8 @@ FILE_TYPES = {
 }
 
 
-def validate_upload(
-    file: UploadFile, allowed_types: list[str], max_size: int | None = None
-) -> tuple[str, bytes]:
-    """
-    Validate uploaded file for security and type compliance.
+def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | None = None) -> tuple[str, bytes]:
+    """Validate uploaded file for security and type compliance.
 
     Args:
         file: The uploaded file
@@ -194,9 +200,10 @@ def validate_upload(
 
     Raises:
         HTTPException: If validation fails
+
     """
-    if not file or not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Файл не предоставлен")
 
     # Read file content once
     content = file.file.read()
@@ -205,42 +212,36 @@ def validate_upload(
     # Get file extension and block SVG explicitly
     ext = "." + file.filename.split(".")[-1].lower()
     if ext == ".svg":
-        raise HTTPException(
-            status_code=415, detail="SVG files are not allowed for security reasons"
-        )
+        raise HTTPException(status_code=415, detail="SVG-файлы запрещены по соображениям безопасности")
 
     # Find matching file type configuration
-    config = None
+    config: FileTypeConfig | None = None
     for file_type in allowed_types:
         if file_type in FILE_TYPES and ext in FILE_TYPES[file_type]["extensions"]:
             config = FILE_TYPES[file_type]
             break
 
     if not config:
-        allowed_exts = [
-            ext
-            for t in allowed_types
-            for ext in FILE_TYPES.get(t, {}).get("extensions", [])
-        ]
-        raise HTTPException(
-            status_code=415, detail=f"File type not allowed. Allowed: {allowed_exts}"
-        )
+        allowed_exts: list[str] = []
+        for t in allowed_types:
+            cfg = FILE_TYPES.get(t)
+            if cfg and isinstance(cfg.get("extensions"), list):
+                allowed_exts.extend(cfg["extensions"])
+        raise HTTPException(status_code=415, detail=f"Тип файла не разрешен. Разрешены: {allowed_exts}")
 
     # Check file size
     size_limit = max_size or config["max_size"]
     if len(content) > size_limit:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large ({len(content) / 1024 / 1024:.1f}MB > {size_limit / 1024 / 1024:.1f}MB)",
+            detail=f"Файл слишком большой ({len(content) / 1024 / 1024:.1f}МБ > {size_limit / 1024 / 1024:.1f}МБ)",
         )
 
     # Validate file content
     if not config["validator"](content):
-        raise HTTPException(
-            status_code=415, detail="File appears to be corrupted or invalid"
-        )
+        raise HTTPException(status_code=415, detail="Файл выглядит поврежденным или недействительным")
 
-    return file.content_type, content
+    return file.content_type or "application/octet-stream", content
 
 
 def get_safe_filename(original_filename: str, prefix: str = "") -> str:

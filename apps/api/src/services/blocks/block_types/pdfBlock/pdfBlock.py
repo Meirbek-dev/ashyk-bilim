@@ -1,16 +1,11 @@
-from datetime import datetime
-
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
 from ulid import ULID
 
-from src.db.courses.activities import Activity
+from src.core.timezone import utcnow
 from src.db.courses.blocks import Block, BlockRead, BlockTypeEnum
-from src.db.courses.courses import Course
+from src.db.users import AnonymousUser, PublicUser
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
-from src.services.users.users import PublicUser
-
-
 from src.services.courses._utils import (
     _get_activity_by_uuid_or_404,
     _get_course_for_activity_or_404,
@@ -19,7 +14,7 @@ from src.services.courses._utils import (
 
 async def create_pdf_block(
     request: Request, pdf_file: UploadFile, activity_uuid: str, db_session: Session
-):
+) -> BlockRead:
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
     course = _get_course_for_activity_or_404(activity, db_session)
 
@@ -32,19 +27,20 @@ async def create_pdf_block(
         activity_uuid,
         block_uuid,
         ["pdf"],
-        block_type,
+        "pdfBlock",
         str(course.course_uuid),
     )
 
     # create block
+    current_time = utcnow()
     block = Block(
         activity_id=activity.id or 0,
         block_type=BlockTypeEnum.BLOCK_DOCUMENT_PDF,
         content=block_data.model_dump(),
         course_id=course.id or 0,
         block_uuid=block_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=current_time,
+        update_date=current_time,
     )
 
     # insert block
@@ -56,14 +52,12 @@ async def create_pdf_block(
 
 
 async def get_pdf_block(
-    request: Request, block_uuid: str, current_user: PublicUser, db_session: Session
-):
+    request: Request, block_uuid: str, current_user: PublicUser | AnonymousUser, db_session: Session
+) -> BlockRead:
     statement = select(Block).where(Block.block_uuid == block_uuid)
     block = db_session.exec(statement).first()
 
     if not block:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="PDF file does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF-файл не существует")
 
     return BlockRead.model_validate(block)

@@ -1,6 +1,4 @@
-"""
-Teacher grading service.
-"""
+"""Teacher grading service."""
 
 import csv
 import io
@@ -9,10 +7,11 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy import asc, desc, func, or_
-from sqlmodel import Session, select
+from sqlalchemy import ColumnElement, asc, desc, func, or_
+from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.db.assessments import Assessment, AssessmentItem
 from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
 from src.db.grading.entries import GradingEntry
@@ -27,7 +26,6 @@ from src.db.grading.submissions import (
     AssessmentType,
     GradedItem,
     GradingBreakdown,
-    ItemFeedback,
     Submission,
     SubmissionListResponse,
     SubmissionRead,
@@ -38,14 +36,41 @@ from src.db.grading.submissions import (
 )
 from src.db.users import PublicUser, User
 from src.security.rbac import PermissionChecker
-from src.services.gamification.service import award_xp as _gamification_award_xp
-from src.services.grading.events import publish_grading_event
 from src.services.progress.submissions import (
     _attach_policy,
     recalculate_activity_progress,
 )
+from src.types import JsonObject, require_persisted_id
 
 logger = logging.getLogger(__name__)
+
+
+async def publish_grading_event(
+    event_type: str,
+    submission_uuid: str,
+    payload: JsonObject | None = None,
+) -> None:
+    """Надёжно поставить публикацию события оценки в очередь."""
+    from src.worker.tasks.sse import publish_grading_event_task
+
+    await publish_grading_event_task.kiq(event_type, submission_uuid, payload)
+
+
+async def _award_xp_on_publish(
+    *,
+    submission_uuid: str,
+    user_id: int,
+    assessment_type: str,
+) -> None:
+    """Надёжно поставить в очередь побочные эффекты начисления XP для опубликованной отправки."""
+    from src.worker.tasks.xp_award import award_xp_for_submission
+
+    await award_xp_for_submission.kiq(
+        submission_uuid=submission_uuid,
+        user_id=user_id,
+        assessment_type=assessment_type,
+    )
+
 
 # Valid status transitions a teacher may request.
 # DRAFT is intentionally absent — teachers should never be able to revert
@@ -67,8 +92,9 @@ _ALLOWED_TEACHER_TRANSITIONS: dict[SubmissionStatus, frozenset[SubmissionStatus]
         SubmissionStatus.PUBLISHED,
     }),
     SubmissionStatus.PUBLISHED: frozenset({
-        SubmissionStatus.PUBLISHED,  # Idempotent publish should be allowed
-        SubmissionStatus.RETURNED,  # allow recalling a published grade for correction
+        # Published grades are student-visible records. Corrections stay
+        # published and write a new GradingEntry audit revision.
+        SubmissionStatus.PUBLISHED,
     }),
 }
 
@@ -80,10 +106,10 @@ _XP_SOURCE_ON_PUBLISH: dict[AssessmentType, XPSource] = {
 }
 
 _SORT_MAP = {
-    "submitted_at": Submission.submitted_at,
-    "final_score": Submission.final_score,
-    "created_at": Submission.created_at,
-    "attempt_number": Submission.attempt_number,
+    "submitted_at": col(Submission.submitted_at),
+    "final_score": col(Submission.final_score),
+    "created_at": col(Submission.created_at),
+    "attempt_number": col(Submission.attempt_number),
 }
 
 
@@ -100,19 +126,16 @@ async def get_submissions_for_activity(
     page: int = 1,
     page_size: int = 25,
 ) -> SubmissionListResponse:
-    """
-    Return paginated, filterable, searchable submissions for an activity (teacher view).
+    """Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
 
-    Uses SQL LIMIT/OFFSET — no in-memory loading.
+    Использует SQL LIMIT/OFFSET — без загрузки в память.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
 
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
 
     checker = PermissionChecker(db_session)
@@ -124,24 +147,20 @@ async def get_submissions_for_activity(
 
     # Base query — join User for search support
     query = (
-        select(Submission)
-        .join(User, User.id == Submission.user_id)
-        .where(Submission.activity_id == activity_id)
+        select(Submission).join(User, col(User.id) == Submission.user_id).where(Submission.activity_id == activity_id)
     )
 
     if status_filter:
-        # "NEEDS_GRADING" is a virtual filter mapping to PENDING
+        # "NEEDS_GRADING" — виртуальный фильтр, соответствующий PENDING
         if status_filter == "NEEDS_GRADING":
             query = query.where(Submission.status == SubmissionStatus.PENDING)
         else:
             try:
-                query = query.where(
-                    Submission.status == SubmissionStatus(status_filter)
-                )
+                query = query.where(Submission.status == SubmissionStatus(status_filter))
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status '{status_filter}'",
+                    detail=f"Некорректный статус '{status_filter}'",
                 )
 
     if late_only:
@@ -151,17 +170,17 @@ async def get_submissions_for_activity(
         term = f"%{search}%"
         query = query.where(
             or_(
-                User.first_name.ilike(term),
-                User.last_name.ilike(term),
-                User.username.ilike(term),
-                User.email.ilike(term),
+                col(User.first_name).ilike(term),
+                col(User.last_name).ilike(term),
+                col(User.username).ilike(term),
+                col(User.email).ilike(term),
             )
         )
 
     count_query = select(func.count()).select_from(query.subquery())
     total: int = db_session.exec(count_query).one()
 
-    sort_col = _SORT_MAP.get(sort_by, Submission.submitted_at)
+    sort_col = _SORT_MAP.get(sort_by, col(Submission.submitted_at))
     order_fn = desc if sort_dir == "desc" else asc
     query = query.order_by(order_fn(sort_col))
 
@@ -185,25 +204,18 @@ async def get_submission_stats(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionStats:
-    """
-    Return aggregate statistics for the teacher dashboard.
+    """Return aggregate statistics for the teacher dashboard.
 
     Uses two SQL queries instead of five:
       1. Status counts (GROUP BY status)
       2. Scores for graded submissions (for avg/pass-rate)
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:read", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:read", resource_owner_id=activity.creator_id)
 
     # Query 1: status counts (excludes DRAFTs)
     status_rows = db_session.exec(
@@ -215,12 +227,10 @@ async def get_submission_stats(
         .group_by(Submission.status)
     ).all()
 
-    status_counts: dict[str, int] = {row.status: row.cnt for row in status_rows}
+    status_counts: dict[SubmissionStatus, int] = {SubmissionStatus(row[0]): row[1] for row in status_rows}
     total = sum(status_counts.values())
     pending_count = status_counts.get(SubmissionStatus.PENDING, 0)
-    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(
-        SubmissionStatus.PUBLISHED, 0
-    )
+    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(SubmissionStatus.PUBLISHED, 0)
 
     # Query 2: late count — all submitted (non-DRAFT) late submissions, regardless
     # of current status (graded/published late submissions still count as late).
@@ -233,24 +243,22 @@ async def get_submission_stats(
     ).one()
 
     # Query 3 (small): scores for graded/published (for avg + pass rate)
-    graded_scores: list[float] = db_session.exec(
+    graded_scores_raw = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity_id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),
-            Submission.final_score.is_not(None),
+            col(Submission.final_score).is_not(None),
         )
     ).all()
+    graded_scores = [float(s) for s in graded_scores_raw if s is not None]
 
-    avg_score = (
-        round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
-    )
-    passing = [s for s in graded_scores if s >= 50.0]
-    pass_rate = (
-        round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
-    )
+    avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
+    passing_score = _policy_passing_score_for_activity(activity_id, db_session)
+    passing = [s for s in graded_scores if s >= passing_score]
+    pass_rate = round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
 
     return SubmissionStats(
         total=total,
@@ -267,27 +275,18 @@ async def get_submission_for_teacher(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionRead:
-    """
-    Fetch a single submission with full answers and grading breakdown.
+    """Получить одну отправку с полными ответами и детализацией оценивания.
 
-    Requires assessment:read permission scoped to the activity's creator,
-    preventing cross-activity and cross-course data leakage.
+    Требует права assessment:read, ограниченного создателем активности,
+    чтобы исключить утечку данных между активностями и курсами.
     """
-    submission = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if not submission:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
 
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == submission.activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == submission.activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
     checker.require(
@@ -313,61 +312,41 @@ def export_grades_csv(
     submitted_after: datetime | None = None,
     submitted_before: datetime | None = None,
 ) -> Generator[str]:
-    """
-    Stream CSV rows of all non-draft submissions one batch at a time.
+    """Потоково отдавать CSV-строки всех отправок, кроме черновиков, по одному батчу за раз.
 
-    Yields the header line first, then rows in batches of 200 so the
-    response starts immediately and memory usage stays bounded regardless
-    of class size.  Uses Python's csv module for safe escaping.
+    Сначала возвращает строку заголовков, затем строки батчами по 200,
+    чтобы ответ начинался сразу и использование памяти оставалось
+    ограниченным независимо от размера группы. Использует модуль csv
+    для безопасного экранирования.
 
-    Optional filters:
-    - ``assessment_type_filter``: restrict to a specific ``AssessmentType`` value.
-    - ``submitted_after``: only include submissions submitted after this datetime.
-    - ``submitted_before``: only include submissions submitted before this datetime.
+    Необязательные фильтры:
+    - ``assessment_type_filter``: ограничить конкретным значением ``AssessmentType``.
+    - ``submitted_after``: включать только отправки после этой даты и времени.
+    - ``submitted_before``: включать только отправки до этой даты и времени.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:read", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:read", resource_owner_id=activity.creator_id)
 
     buf = io.StringIO()
     writer = csv.writer(buf)
 
-    # Discover item columns from the first graded submission's breakdown
-    item_headers: list[str] = []
-    sample_submission = db_session.exec(
-        select(Submission).where(
-            Submission.activity_id == activity_id,
-            Submission.status != SubmissionStatus.DRAFT,
-            Submission.grading_json.is_not(None),
-        )
-    ).first()
-    if sample_submission and isinstance(sample_submission.grading_json, dict):
-        items = sample_submission.grading_json.get("items", [])
-        for item in items:
-            if isinstance(item, dict):
-                item_id = item.get("item_id", "")
-                item_text = item.get("item_text", item_id)
-                item_headers.append(item_text or item_id)
+    item_columns = _csv_item_columns(activity_id, db_session)
+    item_headers = [label for _item_id, label in item_columns]
 
     header = [
-        "Student Name",
-        "Email",
-        "Attempt",
-        "Status",
-        "Late",
-        "Submitted At",
-        "Auto Score",
-        "Final Score",
-    ] + [f"Item: {h}" for h in item_headers]
+        "Имя студента",
+        "Электронная почта",
+        "Попытка",
+        "Статус",
+        "Опоздание",
+        "Отправлено",
+        "Автоматический балл",
+        "Итоговый балл",
+    ] + [f"Элемент: {h}" for h in item_headers]
 
     writer.writerow(header)
     yield buf.getvalue()
@@ -375,40 +354,28 @@ def export_grades_csv(
     buf.seek(0)
 
     # Build dynamic WHERE conditions for optional filters.
-    base_conditions = [
+    base_conditions: list[ColumnElement[bool] | bool] = [
         Submission.activity_id == activity_id,
         Submission.status != SubmissionStatus.DRAFT,
     ]
     if assessment_type_filter is not None:
         base_conditions.append(Submission.assessment_type == assessment_type_filter)
     if submitted_after is not None:
-        base_conditions.append(Submission.submitted_at >= submitted_after)
+        base_conditions.append(col(Submission.submitted_at) >= submitted_after)
     if submitted_before is not None:
-        base_conditions.append(Submission.submitted_at <= submitted_before)
+        base_conditions.append(col(Submission.submitted_at) <= submitted_before)
 
     query = (
-        select(Submission)
-        .join(User, User.id == Submission.user_id)
+        select(Submission, User)
+        .join(User, col(User.id) == Submission.user_id)
         .where(*base_conditions)
-        .order_by(asc(Submission.submitted_at))
+        .order_by(asc(col(Submission.submitted_at)))
     )
 
-    # Pre-fetch all involved users in a single query (user records are small).
-    # Submission rows are streamed below so memory scales with batch size, not
-    # with the total number of submissions.
-    all_user_ids_query = select(Submission.user_id).where(*base_conditions).distinct()
-    all_user_ids = set(db_session.exec(all_user_ids_query).all())
-    users_by_id = _batch_fetch_users(all_user_ids, db_session)
-
-    for s in db_session.exec(query).yield_per(200):
-        u = users_by_id.get(s.user_id)
-        if u:
-            parts = [p for p in [u.first_name, u.middle_name, u.last_name] if p]
-            name = " ".join(parts) if parts else u.username
-            email = str(u.email)
-        else:
-            name = f"User #{s.user_id}"
-            email = ""
+    for s, u in db_session.exec(query).yield_per(200):
+        parts = [p for p in [u.first_name, u.middle_name, u.last_name] if p]
+        name = " ".join(parts) if parts else u.username
+        email = str(u.email)
 
         submitted = s.submitted_at.isoformat() if s.submitted_at else ""
 
@@ -416,17 +383,12 @@ def export_grades_csv(
         item_scores: list[str] = []
         if item_headers and isinstance(s.grading_json, dict):
             items = s.grading_json.get("items", [])
-            scores_by_id = {
-                item.get("item_id", ""): item.get("score", "")
-                for item in items
-                if isinstance(item, dict)
-            }
-            # Match order from header discovery
-            if sample_submission and isinstance(sample_submission.grading_json, dict):
-                for item in sample_submission.grading_json.get("items", []):
-                    if isinstance(item, dict):
-                        item_id = item.get("item_id", "")
-                        item_scores.append(str(scores_by_id.get(item_id, "")))
+            scores_by_id: dict[str, str] = {}
+            if isinstance(items, list):
+                scores_by_id = {
+                    str(item.get("item_id", "")): str(item.get("score", "")) for item in items if isinstance(item, dict)
+                }
+            item_scores = [str(scores_by_id.get(item_id, "")) for item_id, _label in item_columns]
         elif item_headers:
             item_scores = [""] * len(item_headers)
 
@@ -435,7 +397,7 @@ def export_grades_csv(
             email,
             s.attempt_number,
             s.status,
-            "yes" if s.is_late else "no",
+            "да" if s.is_late else "нет",
             submitted,
             s.auto_score if s.auto_score is not None else "",
             s.final_score if s.final_score is not None else "",
@@ -454,11 +416,11 @@ async def save_grade(
     *,
     expected_version: int | None = None,
 ) -> SubmissionRead:
-    """Apply a teacher-entered final score and optional per-item feedback.
+    """Сохранить оценку, введённую преподавателем, после проверки доступа.
 
-    Pass ``expected_version`` (from the ``If-Match`` request header) to enable
-    optimistic concurrency control.  If the submission has been modified since
-    the teacher loaded it, a 412 Precondition Failed is returned.
+    Передайте ``expected_version`` (из заголовка ``If-Match``), чтобы включить
+    оптимистичный контроль конкурентного доступа. Если отправка была изменена
+    после того, как преподаватель её открыл, возвращается 412 Precondition Failed.
     """
     submission, activity = _get_submission_with_activity(submission_uuid, db_session)
 
@@ -469,7 +431,7 @@ async def save_grade(
         resource_owner_id=activity.creator_id,
     )
 
-    return _save_teacher_grade(
+    return await _save_teacher_grade(
         submission=submission,
         grade_input=grade_input,
         submission_uuid=submission_uuid,
@@ -484,14 +446,14 @@ async def batch_grade_submissions(
     current_user: PublicUser,
     db_session: Session,
 ) -> BatchGradeResponse:
-    """Apply teacher grades to multiple submissions in one atomic request.
+    """Применить оценки преподавателя к нескольким отправкам одним атомарным запросом.
 
-    All-or-Nothing semantics: every submission is validated first.  If *any*
-    validation fails, **no** grade is written and the error is reported for the
-    offending item.  Only after all validations pass do we apply all changes in
-    a single commit.
+    Семантика all-or-nothing: сначала проверяется каждая отправка. Если хотя бы
+    одна проверка не проходит, **ни одна** оценка не записывается, а ошибка
+    возвращается для проблемного элемента. Только после прохождения всех
+    проверок изменения применяются одним коммитом.
 
-    Batch size is capped at 50 submissions per request.
+    Размер пакета ограничен 50 отправками за запрос.
     """
     BATCH_CAP = 50
     if len(batch_request.grades) > BATCH_CAP:
@@ -499,7 +461,7 @@ async def batch_grade_submissions(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "BATCH_SIZE_EXCEEDED",
-                "message": f"Batch grading supports at most {BATCH_CAP} submissions per request.",
+                "message": f"Пакетное оценивание поддерживает не более {BATCH_CAP} отправок за один запрос.",
                 "limit": BATCH_CAP,
                 "provided": len(batch_request.grades),
             },
@@ -508,14 +470,11 @@ async def batch_grade_submissions(
     requested_uuids = [grade.submission_uuid for grade in batch_request.grades]
     rows = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
-        .where(Submission.submission_uuid.in_(requested_uuids))
+        .join(Activity, col(Activity.id) == Submission.activity_id)
+        .where(col(Submission.submission_uuid).in_(requested_uuids))
     ).all()
 
-    submissions_by_uuid = {
-        submission.submission_uuid: (submission, activity)
-        for submission, activity in rows
-    }
+    submissions_by_uuid = {submission.submission_uuid: (submission, activity) for submission, activity in rows}
     checker = PermissionChecker(db_session)
 
     # ── Phase 1: Pre-validate ALL items ──────────────────────────────────────
@@ -528,7 +487,7 @@ async def batch_grade_submissions(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
-                    error="Submission not found",
+                    error="Отправка не найдена",
                 )
             )
             continue
@@ -543,7 +502,7 @@ async def batch_grade_submissions(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
-                    error="Not authorized to grade this submission",
+                    error="Нет прав на оценивание этой отправки",
                 )
             )
 
@@ -553,19 +512,13 @@ async def batch_grade_submissions(
         error_uuids = {e.submission_uuid for e in validation_errors}
         for grade in batch_request.grades:
             if grade.submission_uuid in error_uuids:
-                all_results.append(
-                    next(
-                        e
-                        for e in validation_errors
-                        if e.submission_uuid == grade.submission_uuid
-                    )
-                )
+                all_results.append(next(e for e in validation_errors if e.submission_uuid == grade.submission_uuid))
             else:
                 all_results.append(
                     BatchGradeResultItem(
                         submission_uuid=grade.submission_uuid,
                         success=False,
-                        error="Aborted — batch contains invalid entries",
+                        error="Отменено — пакет содержит некорректные элементы",
                     )
                 )
         return BatchGradeResponse(
@@ -576,6 +529,9 @@ async def batch_grade_submissions(
 
     # ── Phase 2: Apply all changes (no more validation errors) ───────────────
     results: list[BatchGradeResultItem] = []
+    previous_status_by_uuid = {
+        submission_uuid: submission.status for submission_uuid, (submission, _activity) in submissions_by_uuid.items()
+    }
     succeeded = 0
     failed = 0
 
@@ -588,12 +544,14 @@ async def batch_grade_submissions(
                 feedback=grade.feedback or "",
                 item_feedback=grade.item_feedback or [],
             )
-            _save_teacher_grade(
+            await _save_teacher_grade(
                 submission=submission,
                 grade_input=grade_input,
                 submission_uuid=grade.submission_uuid,
                 current_user=current_user,
                 db_session=db_session,
+                commit=False,
+                emit_side_effects=False,
             )
             results.append(
                 BatchGradeResultItem(
@@ -605,29 +563,33 @@ async def batch_grade_submissions(
         except Exception as exc:
             # Unexpected error — roll back everything and return.
             db_session.rollback()
-            error_msg = (
-                _stringify_http_exception_detail(exc.detail)
-                if isinstance(exc, HTTPException)
-                else str(exc)
-            )
+            error_msg = _stringify_http_exception_detail(exc.detail) if isinstance(exc, HTTPException) else str(exc)
             logger.exception(
-                "Unexpected batch grading failure for submission %s",
+                "Непредвиденный сбой пакетного оценивания для отправки %s",
                 grade.submission_uuid,
             )
-            abort_results = list(results)
+            abort_results = [
+                BatchGradeResultItem(
+                    submission_uuid=applied.submission_uuid,
+                    success=False,
+                    error="Отменено из-за отката пакетного оценивания",
+                )
+                for applied in batch_request.grades[: len(results)]
+            ]
+            abort_results.append(
+                BatchGradeResultItem(
+                    submission_uuid=grade.submission_uuid,
+                    success=False,
+                    error=error_msg,
+                )
+            )
             abort_results.extend(
                 BatchGradeResultItem(
                     submission_uuid=pending.submission_uuid,
                     success=False,
-                    error="Aborted due to earlier failure",
+                    error="Отменено из-за предыдущей ошибки",
                 )
-                for pending in batch_request.grades[len(results) :]
-            )
-            # Mark the failing item
-            abort_results[len(results) - 1] = BatchGradeResultItem(
-                submission_uuid=grade.submission_uuid,
-                success=False,
-                error=error_msg,
+                for pending in batch_request.grades[len(results) + 1 :]
             )
             return BatchGradeResponse(
                 results=abort_results,
@@ -635,10 +597,29 @@ async def batch_grade_submissions(
                 failed=len(abort_results),
             )
 
+    try:
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
+        raise
+
+    for grade in batch_request.grades:
+        submission, _ = submissions_by_uuid[grade.submission_uuid]
+        await _emit_teacher_grade_side_effects(
+            submission=submission,
+            submission_uuid=grade.submission_uuid,
+            previous_status=previous_status_by_uuid[grade.submission_uuid],
+            requested_status=SubmissionStatus(grade.status),
+            final_score=float(submission.final_score or 0),
+            published_at=datetime.now(UTC),
+            feedback=grade.feedback or "",
+            db_session=db_session,
+        )
+
     return BatchGradeResponse(results=results, succeeded=succeeded, failed=failed)
 
 
-def _save_teacher_grade(
+async def _save_teacher_grade(
     *,
     submission: Submission,
     grade_input: TeacherGradeInput,
@@ -646,25 +627,26 @@ def _save_teacher_grade(
     current_user: PublicUser,
     db_session: Session,
     expected_version: int | None = None,
+    commit: bool = True,
+    emit_side_effects: bool = True,
 ) -> SubmissionRead:
-    """Persist a teacher-entered grade after the caller has validated access.
+    """Сохранить оценку, введённую преподавателем, после проверки доступа.
 
-    Atomicity guarantee: the submission update, ActivityProgress, and
-    CourseProgress are all flushed inside a single ``db_session.commit()``.
-    If any step raises, the whole operation rolls back.
+    Гарантия атомарности: обновление отправки, ActivityProgress и CourseProgress
+    фиксируются внутри одного ``db_session.commit()``. Если любой шаг падает,
+    вся операция откатывается.
 
-    Optimistic locking: if ``expected_version`` is supplied and does not match
-    ``submission.version``, raises 412 Precondition Failed so the caller knows
-    a concurrent edit already landed.
+    Оптимистичная блокировка: если ``expected_version`` задан и не совпадает с
+    ``submission.version``, вызывается 412 Precondition Failed, чтобы показать
+    наличие параллельного изменения.
     """
-
     # ── Optimistic lock check ─────────────────────────────────────────────────
     if expected_version is not None and submission.version != expected_version:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail=(
-                f"Submission was modified concurrently (version {submission.version}). "
-                "Refresh and retry."
+                f"Отправка была изменена одновременно (версия {submission.version}). "
+                "Обновите страницу и повторите попытку."
             ),
         )
 
@@ -676,7 +658,7 @@ def _save_teacher_grade(
         allowed = _ALLOWED_TEACHER_TRANSITIONS.get(current_status, frozenset())
         if requested_status not in allowed:
             logger.warning(
-                "Invalid teacher grade transition from %s to %s for submission %s",
+                "Некорректный переход статуса оценки от %s к %s для отправки %s",
                 current_status,
                 requested_status,
                 submission_uuid,
@@ -684,8 +666,8 @@ def _save_teacher_grade(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    f"Cannot transition from {current_status} to {requested_status}. "
-                    f"Allowed transitions: {[s.value for s in allowed]}"
+                    f"Нельзя перейти из {current_status} в {requested_status}. "
+                    f"Разрешённые переходы: {[s.value for s in allowed]}"
                 ),
             )
 
@@ -693,29 +675,25 @@ def _save_teacher_grade(
     existing = GradingBreakdown.model_validate(submission.grading_json or {})
     item_map = {item.item_id: item for item in existing.items}
 
-    for fb in grade_input.item_feedback:
-        if not isinstance(fb, ItemFeedback):
-            fb = ItemFeedback(**fb) if isinstance(fb, dict) else fb
-        if fb.item_id in item_map:
-            update: dict = {}
-            if fb.score is not None:
-                update["score"] = fb.score
+    for item_fb in grade_input.item_feedback:
+        if item_fb.item_id in item_map:
+            update: dict[str, object] = {}
+            if item_fb.score is not None:
+                update["score"] = item_fb.score
                 update["needs_manual_review"] = False
-            if fb.feedback:
-                update["feedback"] = fb.feedback
+            if item_fb.feedback:
+                update["feedback"] = item_fb.feedback
             if update:
-                item_map[fb.item_id] = item_map[fb.item_id].model_copy(update=update)
+                item_map[item_fb.item_id] = item_map[item_fb.item_id].model_copy(update=update)
         else:
-            item_map[fb.item_id] = GradedItem(
-                item_id=fb.item_id,
-                score=fb.score or 0.0,
+            item_map[item_fb.item_id] = GradedItem(
+                item_id=item_fb.item_id,
+                score=item_fb.score or 0.0,
                 max_score=0.0,
-                feedback=fb.feedback,
+                feedback=item_fb.feedback,
             )
 
-    still_needs_review = any(
-        item.needs_manual_review and not item.feedback for item in item_map.values()
-    )
+    still_needs_review = any(item.needs_manual_review and not item.feedback for item in item_map.values())
     updated_grading = GradingBreakdown(
         items=list(item_map.values()),
         needs_manual_review=still_needs_review,
@@ -729,11 +707,11 @@ def _save_teacher_grade(
     penalty_pct = float(submission.late_penalty_pct or 0)
     final_score = round(raw_score * (1 - min(100.0, max(0.0, penalty_pct)) / 100), 2)
 
-    raw_breakdown = (
+    raw_breakdown: JsonObject = (
         submission.raw_grading_json
-        if isinstance(submission.raw_grading_json, dict)
+        if getattr(submission, "raw_grading_json", None) is not None
         else submission.grading_json
-        if isinstance(submission.grading_json, dict)
+        if getattr(submission, "grading_json", None) is not None
         else {}
     )
     effective_breakdown = updated_grading.model_dump()
@@ -757,15 +735,12 @@ def _save_teacher_grade(
                 raw_score=raw_score,
                 penalty_pct=penalty_pct,
                 final_score=final_score,
-                breakdown=effective_breakdown,
                 raw_breakdown=raw_breakdown,
                 effective_breakdown=effective_breakdown,
                 overall_feedback=grade_input.feedback,
                 grading_version=submission.grading_version,
                 created_at=now,
-                published_at=(
-                    now if requested_status == SubmissionStatus.PUBLISHED else None
-                ),
+                published_at=(now if requested_status == SubmissionStatus.PUBLISHED else None),
             )
         )
 
@@ -777,43 +752,23 @@ def _save_teacher_grade(
         commit=False,  # we commit below — all three tables in one transaction
     )
 
-    db_session.commit()
-    db_session.refresh(submission)
+    if commit:
+        db_session.commit()
+        db_session.refresh(submission)
 
-    # ── Post-commit side-effects (non-critical, separate transactions) ────────
-    # XP is awarded after the main commit so a gamification failure never rolls
-    # back a grade. The idempotency key prevents double-awarding on re-publish.
-    if (
-        current_status != SubmissionStatus.PUBLISHED
-        and requested_status == SubmissionStatus.PUBLISHED
-        and final_score >= _policy_passing_score_for_submission(submission, db_session)
-    ):
-        _award_xp_on_publish(
-            user_id=submission.user_id,
-            assessment_type=submission.assessment_type,
+    # ── Post-commit side-effects (durable, via taskiq) ────────────────────────
+    # Enqueued AFTER the DB commit so a queue failure never rolls back a grade.
+    # Each task is idempotent — replaying is always safe.
+    if emit_side_effects:
+        await _emit_teacher_grade_side_effects(
+            submission=submission,
             submission_uuid=submission_uuid,
+            previous_status=current_status,
+            requested_status=requested_status,
+            final_score=final_score,
+            published_at=now,
+            feedback=grade_input.feedback,
             db_session=db_session,
-        )
-
-    if requested_status == SubmissionStatus.PUBLISHED:
-        publish_grading_event(
-            "grade.published",
-            submission_uuid,
-            {
-                "submission_uuid": submission_uuid,
-                "final_score": final_score,
-                "published_at": now.isoformat(),
-            },
-        )
-    elif requested_status == SubmissionStatus.RETURNED:
-        publish_grading_event(
-            "submission.returned",
-            submission_uuid,
-            {
-                "submission_uuid": submission_uuid,
-                "feedback": grade_input.feedback,
-                "returned_at": now.isoformat(),
-            },
         )
 
     return SubmissionRead.model_validate(submission)
@@ -824,36 +779,31 @@ async def bulk_publish_grades(
     current_user: PublicUser,
     db_session: Session,
 ) -> BulkPublishGradesResponse:
-    """Publish all graded submissions for an activity at once (BATCH release mode).
+    """Опубликовать все оценённые отправки для активности сразу (режим BATCH).
 
-    For each PUBLISHED submission that does not yet have a GradingEntry row with
-    published_at set, a new immutable GradingEntry is inserted with published_at
-    stamped to now.  This makes the grade visible on the student-facing endpoint.
+    Для каждой отправки в статусе PUBLISHED, у которой ещё нет строки GradingEntry
+    с заполненным published_at, вставляется новая неизменяемая запись GradingEntry
+    с published_at, равным текущему времени. Это делает оценку видимой на
+    студенческом endpoint.
 
-    Returns counts of how many grades were published vs already visible.
+    Возвращает количество опубликованных оценок и уже видимых.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:grade", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:grade", resource_owner_id=activity.creator_id)
 
     # All graded submissions for this activity
     submissions = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity_id,
-            Submission.status.in_([
+            col(Submission.status).in_([
                 SubmissionStatus.GRADED,
                 SubmissionStatus.PUBLISHED,
             ]),
-            Submission.id.is_not(None),
+            col(Submission.id).is_not(None),
         )
     ).all()
 
@@ -869,8 +819,8 @@ async def bulk_publish_grades(
     already_published_ids: set[int] = set(
         db_session.exec(
             select(GradingEntry.submission_id).where(
-                GradingEntry.submission_id.in_(submission_ids),
-                GradingEntry.published_at.is_not(None),
+                col(GradingEntry.submission_id).in_(submission_ids),
+                col(GradingEntry.published_at).is_not(None),
             )
         ).all()
     )
@@ -879,11 +829,7 @@ async def bulk_publish_grades(
 
     # Batch-fetch the latest GradingEntry per unpublished submission in one query
     # instead of issuing N separate queries (N+1 pattern).
-    unpublished_ids = [
-        s.id
-        for s in submissions
-        if s.id not in already_published_ids and s.id is not None
-    ]
+    unpublished_ids = [s.id for s in submissions if s.id not in already_published_ids and s.id is not None]
     latest_entries_by_submission: dict[int, GradingEntry] = {}
     if unpublished_ids:
         from sqlalchemy import func as sql_func
@@ -891,36 +837,32 @@ async def bulk_publish_grades(
         # Subquery: max id per submission (proxy for most-recent entry)
         subq = (
             select(sql_func.max(GradingEntry.id).label("max_id"))
-            .where(GradingEntry.submission_id.in_(unpublished_ids))
-            .group_by(GradingEntry.submission_id)
+            .where(col(GradingEntry.submission_id).in_(unpublished_ids))
+            .group_by(col(GradingEntry.submission_id))
             .subquery()
         )
-        latest_rows = db_session.exec(
-            select(GradingEntry).where(GradingEntry.id.in_(select(subq.c.max_id)))
-        ).all()
+        latest_rows = db_session.exec(select(GradingEntry).where(col(GradingEntry.id).in_(select(subq.c.max_id)))).all()
         for row in latest_rows:
-            if row.submission_id is not None:
-                latest_entries_by_submission[row.submission_id] = row
+            latest_entries_by_submission[row.submission_id] = row
 
     published_count = 0
     for submission in submissions:
-        if submission.id in already_published_ids:
+        if submission.id is None or submission.id in already_published_ids:
             continue
 
         latest_entry = latest_entries_by_submission.get(submission.id)
-        raw_breakdown = (
+        raw_breakdown: JsonObject = (
             latest_entry.raw_breakdown
-            if latest_entry is not None and isinstance(latest_entry.raw_breakdown, dict)
+            if latest_entry is not None and getattr(latest_entry, "raw_breakdown", None) is not None
             else submission.raw_grading_json
-            if isinstance(submission.raw_grading_json, dict)
+            if getattr(submission, "raw_grading_json", None) is not None
             else {}
         )
-        effective_breakdown = (
+        effective_breakdown: JsonObject = (
             latest_entry.effective_breakdown
-            if latest_entry is not None
-            and isinstance(latest_entry.effective_breakdown, dict)
+            if latest_entry is not None and getattr(latest_entry, "effective_breakdown", None) is not None
             else submission.grading_json
-            if isinstance(submission.grading_json, dict)
+            if getattr(submission, "grading_json", None) is not None
             else {}
         )
 
@@ -934,24 +876,19 @@ async def bulk_publish_grades(
                 else submission.final_score or submission.auto_score or 0
             ),
             penalty_pct=float(
-                latest_entry.penalty_pct
-                if latest_entry is not None
-                else submission.late_penalty_pct or 0
+                latest_entry.penalty_pct if latest_entry is not None else submission.late_penalty_pct or 0
             ),
             final_score=float(
                 latest_entry.final_score
                 if latest_entry is not None
                 else submission.final_score or submission.auto_score or 0
             ),
-            breakdown=effective_breakdown,
             raw_breakdown=raw_breakdown,
             effective_breakdown=effective_breakdown,
             overall_feedback=(
                 latest_entry.overall_feedback
                 if latest_entry is not None
-                else effective_breakdown.get("feedback", "")
-                if isinstance(effective_breakdown, dict)
-                else ""
+                else str(effective_breakdown.get("feedback") or "")
             ),
             grading_version=submission.grading_version,
             created_at=now,
@@ -972,10 +909,12 @@ async def bulk_publish_grades(
 
     if published_count:
         db_session.commit()
+        from src.worker.tasks.sse import publish_grading_event_task
+
         for submission in submissions:
             if submission.id in already_published_ids:
                 continue
-            publish_grading_event(
+            await publish_grading_event_task.kiq(
                 "grade.published",
                 submission.submission_uuid,
                 {
@@ -998,13 +937,13 @@ def _get_submission_with_activity(
 ) -> tuple[Submission, Activity]:
     row = db_session.exec(
         select(Submission, Activity)
-        .join(Activity, Activity.id == Submission.activity_id)
-        .where(Submission.submission_uuid == submission_uuid)
+        .join(Activity, col(Activity.id) == Submission.activity_id)
+        .where(col(Submission.submission_uuid) == submission_uuid)
     ).first()
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return row
 
@@ -1026,13 +965,13 @@ def _stringify_http_exception_detail(detail: object) -> str:
 def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, User]:
     if not user_ids:
         return {}
-    rows = db_session.exec(select(User).where(User.id.in_(user_ids))).all()
-    return {u.id: u for u in rows}
+    rows = db_session.exec(select(User).where(col(User.id).in_(user_ids))).all()
+    return {u.id: u for u in rows if u.id is not None}
 
 
 def _make_submission_user(u: User) -> SubmissionUser:
     return SubmissionUser(
-        id=u.id,
+        id=require_persisted_id(u.id, model_name="User"),
         username=u.username,
         first_name=u.first_name or None,
         last_name=u.last_name or None,
@@ -1060,37 +999,97 @@ def _policy_passing_score_for_submission(
         policy = db_session.get(AssessmentPolicy, submission.assessment_policy_id)
     if policy is None:
         policy = db_session.exec(
-            select(AssessmentPolicy).where(
-                AssessmentPolicy.activity_id == submission.activity_id
-            )
+            select(AssessmentPolicy).where(AssessmentPolicy.activity_id == submission.activity_id)
         ).first()
     return float(policy.passing_score) if policy is not None else 60.0
 
 
-def _award_xp_on_publish(
-    user_id: int,
-    assessment_type: AssessmentType,
+def _policy_passing_score_for_activity(
+    activity_id: int,
+    db_session: Session,
+) -> float:
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
+    return float(policy.passing_score) if policy is not None else 60.0
+
+
+def _csv_item_columns(activity_id: int, db_session: Session) -> list[tuple[str, str]]:
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity_id)).first()
+    if assessment is not None and assessment.id is not None:
+        items = db_session.exec(
+            select(AssessmentItem)
+            .where(AssessmentItem.assessment_id == assessment.id)
+            .order_by(col(AssessmentItem.order).asc())
+        ).all()
+        if items:
+            return [(item.item_uuid, item.title or item.item_uuid) for item in items]
+
+    snapshot_submission = db_session.exec(
+        select(Submission).where(
+            Submission.activity_id == activity_id,
+            Submission.status != SubmissionStatus.DRAFT,
+            col(Submission.items_snapshot).is_not(None),
+        )
+    ).first()
+    if snapshot_submission and isinstance(snapshot_submission.items_snapshot, dict):
+        snapshot_items = snapshot_submission.items_snapshot.get("items", [])
+        if isinstance(snapshot_items, list):
+            return [
+                (
+                    str(item.get("item_uuid", "")),
+                    str(item.get("title") or item.get("item_uuid", "")),
+                )
+                for item in snapshot_items
+                if isinstance(item, dict) and item.get("item_uuid")
+            ]
+
+    return []
+
+
+async def _emit_teacher_grade_side_effects(
+    *,
+    submission: Submission,
     submission_uuid: str,
+    previous_status: SubmissionStatus,
+    requested_status: SubmissionStatus,
+    final_score: float,
+    published_at: datetime,
+    feedback: str,
     db_session: Session,
 ) -> None:
-    """Award XP when a grade is published and the student passed.
+    if (
+        previous_status != SubmissionStatus.PUBLISHED
+        and requested_status == SubmissionStatus.PUBLISHED
+        and final_score >= _policy_passing_score_for_submission(submission, db_session)
+    ):
+        from src.worker.tasks.xp_award import award_xp_for_submission
 
-    Errors are logged and swallowed so a gamification failure never prevents
-    a grade from being published.  The idempotency key prevents double-awarding
-    if a grade is recalled and re-published.
-    """
-    xp_source = _XP_SOURCE_ON_PUBLISH.get(assessment_type)
-    if not xp_source:
-        return
-    try:
-        _gamification_award_xp(
-            db=db_session,
-            user_id=user_id,
-            source=xp_source.value,
-            source_id=submission_uuid,
-            idempotency_key=f"submission_{submission_uuid}",
+        await award_xp_for_submission.kiq(
+            submission_uuid=submission_uuid,
+            user_id=submission.user_id,
+            assessment_type=str(submission.assessment_type),
         )
-        db_session.commit()
-    except Exception as e:
-        logger.warning("Failed to award XP for submission %s: %s", submission_uuid, e)
-        db_session.rollback()
+
+    if requested_status == SubmissionStatus.PUBLISHED:
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
+            "grade.published",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "final_score": final_score,
+                "published_at": published_at.isoformat(),
+            },
+        )
+    elif requested_status == SubmissionStatus.RETURNED:
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
+            "submission.returned",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "feedback": feedback,
+                "returned_at": published_at.isoformat(),
+            },
+        )

@@ -1,9 +1,9 @@
-import { Loader2Icon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
+import { Loader2Icon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
-  const t = useTranslations('Components.Spinner');
+  const t = useTranslations('Components.Spinner')
 
   return (
     <Loader2Icon
@@ -12,7 +12,7 @@ function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
       className={cn('size-4 animate-spin text-primary', className)}
       {...props}
     />
-  );
+  )
 }
 
-export { Spinner };
+export { Spinner }

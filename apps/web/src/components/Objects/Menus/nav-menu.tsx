@@ -1,134 +1,135 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import { BookCopy, Menu, Signpost, SquareLibrary } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { useTheme } from '@/components/providers/theme-provider';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { usePathname } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
+import { BookCopy, Menu, Signpost, SquareLibrary } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { useTheme } from '@/components/providers/theme-provider'
 
 // Components & UI
-import Link from '@components/ui/AppLink';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
-import { ThemeModeToggle } from '@/components/theme-mode-toggle';
-import { SearchBar } from '@/components/Objects/Search/SearchBar';
-import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher';
-import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
+import Link from '@components/ui/AppLink'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from '@/components/ui/navigation-menu'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Separator } from '@/components/ui/separator'
+import { ThemeModeToggle } from '@/components/theme-mode-toggle'
+import { SearchBar } from '@/components/Objects/Search/SearchBar'
+import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher'
+import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox'
 
 // Hooks & Config
-import { useSession } from '@/hooks/useSession';
-import { getAbsoluteUrl } from '@/services/config/config';
-import {
-  NAVBAR_HEIGHT,
-} from '@/lib/constants';
-import { cn } from '@/lib/utils';
+import { useSession } from '@/hooks/useSession'
+import { getAbsoluteUrl } from '@/services/config/config'
+import { NAVBAR_HEIGHT } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 // Assets
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import appLogoFull from '@public/app_logo_full.svg'
+import appLogoLightFull from '@public/app_logo_light_full.svg'
 
 // ----------------------------------------------------------------------
 // Types & Config
 // ----------------------------------------------------------------------
-type NavLinkType = 'courses' | 'collections' | 'trail';
+type NavLinkType = 'courses' | 'collections' | 'trail'
 
 interface NavLinkDef {
-  type: NavLinkType;
-  href: string;
-  icon: LucideIcon;
-  authRequired?: boolean;
+  type: NavLinkType
+  href: string
+  icon: LucideIcon
+  authRequired?: boolean
 }
 
 const NAV_LINKS: NavLinkDef[] = [
   { type: 'courses', href: '/courses', icon: BookCopy },
   { type: 'collections', href: '/collections', icon: SquareLibrary },
   { type: 'trail', href: '/trail', icon: Signpost, authRequired: true },
-];
+]
 
-const SCROLL_THRESHOLD = 8;
+const SCROLL_THRESHOLD = 8
 
 // ----------------------------------------------------------------------
 // Active path matcher — handles root + nested routes correctly
 // ----------------------------------------------------------------------
 function useIsActive(href: string): boolean {
-  const pathname = usePathname();
+  const pathname = usePathname()
   return useMemo(() => {
-    if (!pathname) return false;
-    if (href === '/') return pathname === '/';
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }, [pathname, href]);
+    if (!pathname) return false
+    if (href === '/') return pathname === '/'
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }, [pathname, href])
 }
 
 // ----------------------------------------------------------------------
 // Layout-mode awareness — hides nav when data-layout-mode="active-attempt"
 // Uses MutationObserver so there is no localStorage or CustomEvent coupling.
 // ----------------------------------------------------------------------
-function useLayoutModeHidden(): boolean {
-  const [hidden, setHidden] = useState(false);
+const getChromeHiddenSnapshot = () => {
+  if (typeof document === 'undefined') return false
+  return (
+    document.documentElement.dataset.layoutMode === 'active-attempt' ||
+    document.documentElement.dataset.activityFocus === 'true'
+  )
+}
 
-  useEffect(() => {
-    const read = () => document.documentElement.dataset.layoutMode === 'active-attempt';
-    setHidden(read());
+const subscribeChromeHidden = (onStoreChange: () => void) => {
+  const observer = new MutationObserver(onStoreChange)
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-layout-mode', 'data-activity-focus'],
+  })
+  return () => observer.disconnect()
+}
 
-    const observer = new MutationObserver(() => setHidden(read()));
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-layout-mode'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  return hidden;
+function useActivityChromeHidden(): boolean {
+  return useSyncExternalStore(subscribeChromeHidden, getChromeHiddenSnapshot, () => false)
 }
 
 // ----------------------------------------------------------------------
 // Scroll elevation — RAF-throttled, threshold-based
 // ----------------------------------------------------------------------
 function useScrollElevation(threshold = SCROLL_THRESHOLD): boolean {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
-    let rafId = 0;
+    let rafId = 0
 
     const update = () => {
-      rafId = 0;
-      const next = window.scrollY > threshold;
-      setIsScrolled((prev) => (prev === next ? prev : next));
-    };
+      rafId = 0
+      const next = window.scrollY > threshold
+      setIsScrolled(prev => (prev === next ? prev : next))
+    }
 
     const onScroll = () => {
-      if (rafId !== 0) return;
-      rafId = requestAnimationFrame(update);
-    };
+      if (rafId !== 0) return
+      rafId = requestAnimationFrame(update)
+    }
 
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafId !== 0) cancelAnimationFrame(rafId);
-    };
-  }, [threshold]);
+      window.removeEventListener('scroll', onScroll)
+      if (rafId !== 0) cancelAnimationFrame(rafId)
+    }
+  }, [threshold])
 
-  return isScrolled;
+  return isScrolled
 }
 
 // ----------------------------------------------------------------------
 // Desktop link — pill with primary-tinted active state
 // ----------------------------------------------------------------------
 interface NavLinkProps {
-  def: NavLinkDef;
-  label: string;
-  onNavigate?: () => void;
+  def: NavLinkDef
+  label: string
+  onNavigate?: () => void
 }
 
 const DesktopNavLink = ({ def, label }: NavLinkProps) => {
-  const { icon: Icon, href } = def;
-  const isActive = useIsActive(href);
+  const { icon: Icon, href } = def
+  const isActive = useIsActive(href)
 
   return (
     <NavigationMenuItem className="list-none">
@@ -153,15 +154,15 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
         <span className="tracking-tight">{label}</span>
       </Link>
     </NavigationMenuItem>
-  );
-};
+  )
+}
 
 // ----------------------------------------------------------------------
 // Mobile link — roomier tap target, primary accent dot on active
 // ----------------------------------------------------------------------
 const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
-  const { icon: Icon, href } = def;
-  const isActive = useIsActive(href);
+  const { icon: Icon, href } = def
+  const isActive = useIsActive(href)
 
   return (
     <Link
@@ -184,41 +185,39 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
         )}
       />
       <span className="flex-1">{label}</span>
-      {isActive && (
-        <span
-          className="bg-primary h-1.5 w-1.5 rounded-full"
-          aria-hidden="true"
-        />
-      )}
+      {isActive && <span className="bg-primary h-1.5 w-1.5 rounded-full" aria-hidden="true" />}
     </Link>
-  );
-};
+  )
+}
 
 // ----------------------------------------------------------------------
 // NavBar
 // ----------------------------------------------------------------------
 export default function NavBar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const t = useTranslations('Components.NavMenu');
-  const tLinks = useTranslations('Components.NavMenuLinks');
-  const { isAuthenticated } = useSession();
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const t = useTranslations('Components.NavMenu')
+  const tLinks = useTranslations('Components.NavMenuLinks')
+  const { isAuthenticated } = useSession()
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLightFull : appLogoFull
 
-  const isLayoutModeHidden = useLayoutModeHidden();
-  const isScrolled = useScrollElevation();
+  const isActivityChromeHidden = useActivityChromeHidden()
+  const isScrolled = useScrollElevation()
 
-  const visibleLinks = useMemo(() => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated), [isAuthenticated]);
+  const visibleLinks = useMemo(() => NAV_LINKS.filter(l => !l.authRequired || isAuthenticated), [isAuthenticated])
 
-  // Auto-close the mobile sheet on route change
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [pathname]);
+  const [prevPathname, setPrevPathname] = useState(pathname)
 
-  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
+  // Auto-close the mobile sheet on route change (render-phase sync)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    setIsMenuOpen(false)
+  }
 
-  if (isLayoutModeHidden) return null;
+  const closeMenu = useCallback(() => setIsMenuOpen(false), [])
+
+  if (isActivityChromeHidden) return null
 
   return (
     <header
@@ -242,7 +241,7 @@ export default function NavBar() {
             <Image
               src={logoSrc}
               alt={t('logoAlt')}
-              width={120}
+              width={99}
               height={36}
               className="h-9 w-auto object-contain"
               style={{ width: 'auto' }}
@@ -250,18 +249,11 @@ export default function NavBar() {
             />
           </Link>
 
-          <nav
-            aria-label={t('navigation')}
-            className="hidden md:flex"
-          >
+          <nav aria-label={t('navigation')} className="hidden md:flex">
             <NavigationMenu>
               <NavigationMenuList className="gap-0.5">
-                {visibleLinks.map((def) => (
-                  <DesktopNavLink
-                    key={def.type}
-                    def={def}
-                    label={tLinks(def.type)}
-                  />
+                {visibleLinks.map(def => (
+                  <DesktopNavLink key={def.type} def={def} label={tLinks(def.type)} />
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
@@ -288,12 +280,9 @@ export default function NavBar() {
             <HeaderProfileBox />
           </div>
 
-          <Sheet
-            open={isMenuOpen}
-            onOpenChange={setIsMenuOpen}
-          >
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger
-              render={(triggerProps) => (
+              render={triggerProps => (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -306,17 +295,14 @@ export default function NavBar() {
               )}
             />
 
-            <SheetContent
-              side="right"
-              className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
-            >
+            <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-sm">
               <SheetHeader className="border-border/60 border-b px-6 py-4">
                 <SheetTitle className="sr-only">{t('navigation')}</SheetTitle>
                 <Image
                   src={logoSrc}
                   alt={t('logoAlt')}
-                  width={163}
-                  height={60}
+                  width={88}
+                  height={32}
                   className="h-8 w-auto object-contain"
                   style={{ width: 'auto' }}
                 />
@@ -327,10 +313,7 @@ export default function NavBar() {
                   <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                     {t('search')}
                   </Label>
-                  <SearchBar
-                    isMobile
-                    className="w-full"
-                  />
+                  <SearchBar isMobile className="w-full" />
                 </section>
 
                 <Separator />
@@ -339,17 +322,9 @@ export default function NavBar() {
                   <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                     {t('navigation')}
                   </Label>
-                  <nav
-                    aria-label={t('navigation')}
-                    className="flex flex-col gap-1"
-                  >
-                    {visibleLinks.map((def) => (
-                      <MobileNavLink
-                        key={def.type}
-                        def={def}
-                        label={tLinks(def.type)}
-                        onNavigate={closeMenu}
-                      />
+                  <nav aria-label={t('navigation')} className="flex flex-col gap-1">
+                    {visibleLinks.map(def => (
+                      <MobileNavLink key={def.type} def={def} label={tLinks(def.type)} onNavigate={closeMenu} />
                     ))}
                   </nav>
                 </section>
@@ -360,10 +335,7 @@ export default function NavBar() {
                     {t('language')}
                   </Label>
                   <div className="flex items-center gap-2">
-                    <LocaleSwitcher
-                      className="flex-1"
-                      isMobile
-                    />
+                    <LocaleSwitcher className="flex-1" isMobile />
                     <ThemeModeToggle className="shrink-0" />
                   </div>
                 </section>
@@ -382,5 +354,5 @@ export default function NavBar() {
         </div>
       </div>
     </header>
-  );
+  )
 }

@@ -1,56 +1,70 @@
-'use client';
+'use client'
 
-import { mutationOptions } from '@tanstack/react-query';
-import type { QueryClient } from '@tanstack/react-query';
+import { mutationOptions } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import {
   createActivity,
   createExternalVideoActivity,
   deleteActivity,
   updateActivity,
-} from '@services/courses/activities';
-import { createFileActivity } from '@services/courses/activity-uploads';
-import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activitySchemas';
-import { courseKeys } from '@/hooks/courses/courseKeys';
-import { assertSuccess } from '@/lib/api/assertSuccess';
+} from '@services/courses/activities'
+import { createFileActivity } from '@services/courses/activity-uploads'
+import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activitySchemas'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { assertSuccess } from '@/lib/api/assertSuccess'
 
 export function updateActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async ({ activityUuid, payload }: { activityUuid: string; payload: Partial<ActivityUpdateValues> }) =>
       assertSuccess(await updateActivity(payload, activityUuid)),
     onMutate: async ({ activityUuid, payload }) => {
-      const activityKey = courseKeys.activity(activityUuid);
+      const activityKey = courseKeys.activity(activityUuid)
 
       await Promise.all([
         queryClient.cancelQueries({ queryKey: structureKey }),
         queryClient.cancelQueries({ queryKey: activityKey }),
-      ]);
+      ])
 
-      const previousStructure = queryClient.getQueryData(structureKey);
-      const previousActivity = queryClient.getQueryData(activityKey);
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
+      const previousActivity = queryClient.getQueryData<AppActivity>(activityKey)
 
-      queryClient.setQueryData(structureKey, (current: any) =>
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: any) =>
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
                 Object.assign(chapter, {
-                  activities: (chapter.activities ?? []).map((activity: any) =>
+                  activities: (chapter.activities ?? []).map((activity: AppActivity) =>
                     activity.activity_uuid === activityUuid ? Object.assign(activity, payload) : activity,
                   ),
                 }),
               ),
             }
           : current,
-      );
+      )
 
-      queryClient.setQueryData(activityKey, (current: any) => (current ? { ...current, ...payload } : current));
+      queryClient.setQueryData(activityKey, (current: AppActivity | undefined) =>
+        current ? { ...current, ...payload } : current,
+      )
 
-      return { activityKey, previousActivity, previousStructure };
+      return { activityKey, previousActivity, previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
-      if (!context) return;
-      queryClient.setQueryData(structureKey, context.previousStructure);
-      queryClient.setQueryData(context.activityKey, context.previousActivity);
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context:
+        | {
+            activityKey?: readonly unknown[]
+            previousActivity: AppActivity | undefined
+            previousStructure: AppCourse | undefined
+          }
+        | undefined,
+    ) => {
+      if (!context) return
+      queryClient.setQueryData(structureKey, context.previousStructure)
+      if (context.activityKey) {
+        queryClient.setQueryData(context.activityKey, context.previousActivity)
+      }
     },
     onSettled: async (
       _data: unknown,
@@ -59,53 +73,64 @@ export function updateActivityMutationOptions(queryClient: QueryClient, structur
     ) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
-        queryClient.invalidateQueries({ queryKey: courseKeys.activity(variables.activityUuid) }),
-      ]);
+        queryClient.invalidateQueries({
+          queryKey: courseKeys.activity(variables.activityUuid),
+        }),
+      ])
     },
-  });
+  })
 }
 
 export function deleteActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async (activityUuid: string) => assertSuccess(await deleteActivity(activityUuid)),
     onMutate: async (activityUuid: string) => {
-      await queryClient.cancelQueries({ queryKey: structureKey });
-      const previousStructure = queryClient.getQueryData(structureKey);
+      await queryClient.cancelQueries({ queryKey: structureKey })
+      const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
 
-      queryClient.setQueryData(structureKey, (current: any) =>
+      queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).map((chapter: any) =>
+              chapters: (current.chapters ?? []).map((chapter: AppChapter) =>
                 Object.assign(chapter, {
                   activities: (chapter.activities ?? []).filter(
-                    (activity: any) => activity.activity_uuid !== activityUuid,
+                    (activity: AppActivity) => activity.activity_uuid !== activityUuid,
                   ),
                 }),
               ),
             }
           : current,
-      );
+      )
 
-      return { previousStructure };
+      return { previousStructure }
     },
-    onError: (_error: unknown, _variables: any, context: any) => {
-      queryClient.setQueryData(structureKey, context?.previousStructure);
+    onError: (
+      _error: unknown,
+      _variables: unknown,
+      context: { previousStructure: AppCourse | undefined } | undefined,
+    ) => {
+      queryClient.setQueryData(structureKey, context?.previousStructure)
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: structureKey });
+      await queryClient.invalidateQueries({ queryKey: structureKey })
     },
-  });
+  })
 }
 
 export function createActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({ chapterId, payload }: { chapterId: number; payload: ActivityCreateValues }) =>
-      assertSuccess(await createActivity(payload, chapterId)),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: structureKey });
+    mutationFn: async ({ chapterId, payload }: { chapterId: number; payload: ActivityCreateValues }) => {
+      const data: AppPayload = {
+        ...payload,
+        details: payload.details as AppPayload['details'],
+      }
+      return assertSuccess(await createActivity(data, chapterId))
     },
-  });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: structureKey })
+    },
+  })
 }
 
 export function createFileActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
@@ -117,16 +142,22 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
       payload,
       type,
     }: {
-      chapterId: number;
-      file: File;
-      onProgress?: (progress: { percentage: number }) => void;
-      payload: Partial<ActivityCreateValues>;
-      type: string;
-    }) => createFileActivity(file, type, payload, chapterId, undefined, onProgress),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: structureKey });
+      chapterId: number
+      file: File
+      onProgress?: (progress: { percentage: number }) => void
+      payload: Partial<ActivityCreateValues>
+      type: string
+    }) => {
+      const data: AppPayload = {
+        ...payload,
+        details: payload.details as AppPayload['details'],
+      }
+      return createFileActivity(file, type, data, chapterId, undefined, onProgress)
     },
-  });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: structureKey })
+    },
+  })
 }
 
 export function createExternalVideoMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
@@ -136,12 +167,12 @@ export function createExternalVideoMutationOptions(queryClient: QueryClient, str
       chapterId,
       externalVideoData,
     }: {
-      activityPayload: Partial<ActivityCreateValues>;
-      chapterId: number;
-      externalVideoData: Record<string, unknown>;
+      activityPayload: Partial<ActivityCreateValues>
+      chapterId: number
+      externalVideoData: Record<string, unknown>
     }) => assertSuccess(await createExternalVideoActivity(externalVideoData, activityPayload, chapterId)),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: structureKey });
+      await queryClient.invalidateQueries({ queryKey: structureKey })
     },
-  });
+  })
 }

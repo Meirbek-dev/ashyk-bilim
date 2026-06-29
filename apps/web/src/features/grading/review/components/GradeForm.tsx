@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   AlertTriangle,
@@ -11,34 +11,39 @@ import {
   MessageSquareText,
   RotateCcw,
   Send,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 
-import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain';
-import type { GradedItem, Submission, TeacherGradeInput } from '@/features/grading/domain';
-import { StaleGradeError } from '@/services/grading/errors';
-import { saveGradingDraft } from '@/services/assessments/assessment-actions';
-import type { ItemGradeEntry } from '@/services/assessments/assessment-actions';
-import { useGradingPanel } from '@/hooks/useGradingPanel';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import type { ReviewNavigationState } from '../types';
+import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
+import type { GradedItem, Submission, TeacherGradeInput } from '@/features/grading/domain'
+import { StaleGradeError } from '@/services/grading/errors'
+import { saveGradingDraft } from '@/services/assessments/assessment-actions'
+import type { ItemGradeEntry } from '@/services/assessments/assessment-actions'
+import { useGradingPanel } from '@/hooks/useGradingPanel'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { formatAnnotationsAsFeedback, useAnnotations } from '../AnnotationContext'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { MarkdownEditor } from '@/features/content-markdown'
+import { SubmissionAIEntry } from '@/features/submission-analysis'
+import type { ReviewNavigationState } from '../types'
+import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage'
 
 interface GradeDraft {
-  score: string;
-  feedback: string;
+  score: string
+  feedback: string
 }
 
 interface ItemDraftEntry {
-  score: string;
-  feedback: string;
+  score: string
+  feedback: string
 }
 
 export default function GradeForm({
@@ -47,65 +52,77 @@ export default function GradeForm({
   onSaved,
   navigation,
 }: {
-  submissionUuid: string | null;
-  assessmentUuid?: string;
-  onSaved: () => Promise<void>;
-  navigation: ReviewNavigationState;
+  submissionUuid: string | null
+  assessmentUuid?: string
+  onSaved: () => Promise<void>
+  navigation: ReviewNavigationState
 }) {
-  const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid);
-  const t = useTranslations('Grading.Panel');
-  const tItemGrading = useTranslations('ItemGrading');
-  const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' });
-  const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraftEntry>>({});
-  const [overrideScore, setOverrideScore] = useState(false);
-  const [overrideReason, setOverrideReason] = useState('');
-  const [isSaving, startSaving] = useTransition();
-  const [staleDraft, setStaleDraft] = useState<{ server: Submission; local: GradeDraft } | null>(null);
+  const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid)
+  const queryClient = useQueryClient()
+  const { annotationsByItem, clearAll: clearAnnotations } = useAnnotations()
+  const t = useTranslations('Grading.Panel')
+  const tItemGrading = useTranslations('ItemGrading')
+  const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' })
+  const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraftEntry>>({})
+  const [overrideScore, setOverrideScore] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
+  const [isSaving, startSaving] = useTransition()
+  const [staleDraft, setStaleDraft] = useState<{
+    server: Submission
+    local: GradeDraft
+  } | null>(null)
 
   // Items from grading breakdown — may be empty for manual-only assessments
   const gradedItems: GradedItem[] = useMemo(() => {
-    return submission?.grading_json?.items ?? [];
-  }, [submission?.grading_json?.items]);
+    return submission?.grading_json?.items ?? []
+  }, [submission?.grading_json?.items])
 
-  const hasItemGrading = gradedItems.length > 0 && Boolean(assessmentUuid);
+  const hasItemGrading = gradedItems.length > 0 && Boolean(assessmentUuid)
 
   // Calculated total from item drafts (0 to sum of max_scores)
   const calculatedTotal = useMemo(() => {
-    if (!hasItemGrading) return null;
+    if (!hasItemGrading) return null
     return gradedItems.reduce((acc, item) => {
-      const raw = itemDrafts[item.item_id]?.score ?? String(item.score);
-      const val = Number.parseFloat(raw);
-      return acc + (Number.isNaN(val) ? 0 : Math.min(val, item.max_score));
-    }, 0);
-  }, [hasItemGrading, gradedItems, itemDrafts]);
+      const raw = itemDrafts[item.item_id]?.score ?? String(item.score)
+      const val = Number.parseFloat(raw)
+      return acc + (Number.isNaN(val) ? 0 : Math.min(val, item.max_score))
+    }, 0)
+  }, [hasItemGrading, gradedItems, itemDrafts])
 
-  const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems]);
+  const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems])
 
-  useEffect(() => {
-    // Sync overall draft from server
+  const editable = submission ? canTeacherEditGrade(submission.status) : false
+
+  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.final_score ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
+  const [prevSyncTrigger, setPrevSyncTrigger] = useState<string>('')
+
+  if (syncTrigger !== prevSyncTrigger) {
+    setPrevSyncTrigger(syncTrigger)
     setDraft({
       score:
         submission?.final_score !== null && submission?.final_score !== undefined ? String(submission.final_score) : '',
       feedback: submission?.grading_json?.feedback ?? '',
-    });
-    setStaleDraft(null);
-    setOverrideScore(false);
-    setOverrideReason('');
+    })
+    setStaleDraft(null)
+    setOverrideScore(false)
+    setOverrideReason('')
 
-    // Sync per-item drafts from grading_json.items
     if (submission?.grading_json?.items) {
-      const next: Record<string, ItemDraftEntry> = {};
+      const next: Record<string, ItemDraftEntry> = {}
       for (const item of submission.grading_json.items) {
-        next[item.item_id] = { score: String(item.score), feedback: item.feedback ?? '' };
+        next[item.item_id] = {
+          score: String(item.score),
+          feedback: item.feedback ?? '',
+        }
       }
-      setItemDrafts(next);
+      setItemDrafts(next)
     } else {
-      setItemDrafts({});
+      setItemDrafts({})
     }
-  }, [submission?.final_score, submission?.grading_json, submission?.submission_uuid]);
+  }
 
   const patchItemDraft = (itemId: string, field: keyof ItemDraftEntry, value: string) => {
-    setItemDrafts((prev) => ({
+    setItemDrafts(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
@@ -113,75 +130,142 @@ export default function GradeForm({
         feedback: prev[itemId]?.feedback ?? '',
         [field]: value,
       },
-    }));
-  };
+    }))
+  }
 
   // New item-level save (via unified assessment API)
-  const saveWithItemGrading = (status: 'save' | 'publish' | 'return') => {
-    if (!submission || !assessmentUuid) return;
+  const saveWithItemGrading = useCallback(
+    (status: 'save' | 'publish' | 'return') => {
+      if (!submission || !assessmentUuid) return
 
-    const itemGrades: ItemGradeEntry[] = gradedItems.map((item) => {
-      const entry = itemDrafts[item.item_id];
-      const rawScore = entry?.score ?? String(item.score);
-      const parsed = Number.parseFloat(rawScore);
-      return {
-        item_uuid: item.item_id,
-        score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
-        feedback: entry?.feedback ?? item.feedback ?? '',
-        is_manual: true,
-      };
-    });
-
-    const finalScore = overrideScore ? Number.parseFloat(draft.score) : undefined;
-    if (overrideScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
-      toast.error(t('invalidScore'));
-      return;
-    }
-
-    startSaving(async () => {
-      try {
-        await saveGradingDraft(
-          assessmentUuid,
-          submission.submission_uuid,
-          {
-            item_grades: itemGrades,
-            overall_feedback: draft.feedback,
-            status,
-            override_score: overrideScore ? true : undefined,
-            final_score: overrideScore ? finalScore : undefined,
-            override_reason: overrideScore ? overrideReason : undefined,
-          },
-          submission.version,
-        );
-        toast.success(
-          status === 'publish'
-            ? tItemGrading('toasts.published')
-            : status === 'return'
-              ? tItemGrading('toasts.returned')
-              : tItemGrading('toasts.saved'),
-        );
-        setStaleDraft(null);
-        await Promise.all([mutate(), onSaved()]);
-      } catch (error) {
-        if (error instanceof StaleGradeError) {
-          setStaleDraft({ server: error.serverSubmission, local: draft });
-          await mutate();
-        } else {
-          toast.error(tItemGrading('toasts.failed'));
+      const itemGrades: ItemGradeEntry[] = gradedItems.map(item => {
+        const entry = itemDrafts[item.item_id]
+        const rawScore = entry?.score ?? String(item.score)
+        const parsed = Number.parseFloat(rawScore)
+        const baseFeedback = entry?.feedback ?? item.feedback ?? ''
+        const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
+        return {
+          item_uuid: item.item_id,
+          score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
+          feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
+          is_manual: true,
         }
+      })
+
+      const finalScore = overrideScore ? Number.parseFloat(draft.score) : undefined
+      if (overrideScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
+        toast.error(t('invalidScore'))
+        return
       }
-    });
-  };
+
+      const detailQueryKey = queryKeys.grading.detail(submission.submission_uuid, assessmentUuid)
+      const previousSubmission = queryClient.getQueryData<Submission>(detailQueryKey)
+      const optimisticSubmission = buildOptimisticSubmission(submission, {
+        assessmentUuid,
+        calculatedTotal,
+        draft,
+        gradedItems,
+        itemDrafts,
+        overrideScore,
+        overrideReason,
+        status,
+        itemGrades,
+        finalScore: overrideScore ? (finalScore ?? null) : null,
+      })
+
+      queryClient.setQueryData(detailQueryKey, optimisticSubmission)
+
+      startSaving(async () => {
+        try {
+          await saveGradingDraft(
+            assessmentUuid,
+            submission.submission_uuid,
+            {
+              item_grades: itemGrades,
+              overall_feedback: draft.feedback,
+              status,
+              ...(overrideScore ? { override_score: true } : {}),
+              ...(overrideScore && finalScore !== undefined ? { final_score: finalScore } : {}),
+              ...(overrideScore && overrideReason ? { override_reason: overrideReason } : {}),
+            },
+            submission.version,
+          )
+          toast.success(
+            status === 'publish'
+              ? tItemGrading('toasts.published')
+              : status === 'return'
+                ? tItemGrading('toasts.returned')
+                : tItemGrading('toasts.saved'),
+          )
+          setStaleDraft(null)
+          clearAnnotations()
+          await Promise.all([mutate(), onSaved()])
+        } catch (error) {
+          if (previousSubmission) {
+            queryClient.setQueryData(detailQueryKey, previousSubmission)
+          }
+          if (error instanceof StaleGradeError) {
+            setStaleDraft({ server: error.serverSubmission, local: draft })
+            await mutate()
+          } else {
+            toast.error(tItemGrading('toasts.failed'))
+          }
+        }
+      })
+    },
+    [
+      submission,
+      assessmentUuid,
+      gradedItems,
+      itemDrafts,
+      overrideScore,
+      draft,
+      t,
+      startSaving,
+      overrideReason,
+      tItemGrading,
+      onSaved,
+      mutate,
+      annotationsByItem,
+      clearAnnotations,
+      calculatedTotal,
+      queryClient,
+    ],
+  )
 
   // All grading now goes through the item-level GradingDraftSave endpoint.
   // The legacy overall-score-only path has been removed.
-  const saveOverallScore = (status: TeacherGradeInput['status']) => {
-    // Redirect to item-level grading with a single "overall" item
-    saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save');
-  };
+  const saveOverallScore = useCallback(
+    (status: TeacherGradeInput['status']) => {
+      // Redirect to item-level grading with a single "overall" item
+      saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save')
+    },
+    [saveWithItemGrading],
+  )
+
+  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
+  const handleCtrlEnter = useCallback(
+    (event: KeyboardEvent) => {
+      if (!editable || isSaving) return
+      const isCtrl = event.ctrlKey || event.metaKey
+      if (!isCtrl || event.key !== 'Enter') return
+      event.preventDefault()
+      if (hasItemGrading) {
+        saveWithItemGrading(event.shiftKey ? 'publish' : 'save')
+      } else {
+        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED')
+      }
+    },
+    [editable, isSaving, hasItemGrading, saveWithItemGrading, saveOverallScore],
+  )
+
+  useEffect(() => {
+    globalThis.addEventListener('keydown', handleCtrlEnter)
+    return () => globalThis.removeEventListener('keydown', handleCtrlEnter)
+  }, [handleCtrlEnter])
 
   if (!submissionUuid) {
-    return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>;
+    return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>
   }
 
   if (isLoading && !submission) {
@@ -190,42 +274,19 @@ export default function GradeForm({
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         {t('loadingSubmission')}
       </aside>
-    );
+    )
   }
 
   if (!submission) {
-    return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>;
+    return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>
   }
 
-  const editable = canTeacherEditGrade(submission.status);
-  const canPublishNow = canPublishGrade(submission.status);
-  const canReturnNow = canReturnSubmission(submission.status);
+  const canPublishNow = canPublishGrade(submission.status)
+  const canReturnNow = canReturnSubmission(submission.status)
   const releaseState =
     'release_state' in submission && submission.release_state
       ? submission.release_state
-      : getReleaseState(submission.status);
-
-  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
-  const handleCtrlEnter = useCallback(
-    (event: KeyboardEvent) => {
-      if (!editable || isSaving) return;
-      const isCtrl = event.ctrlKey || event.metaKey;
-      if (!isCtrl || event.key !== 'Enter') return;
-      event.preventDefault();
-      if (hasItemGrading) {
-        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
-      } else {
-        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editable, isSaving, hasItemGrading],
-  );
-
-  useEffect(() => {
-    globalThis.addEventListener('keydown', handleCtrlEnter);
-    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
-  }, [handleCtrlEnter]);
+      : getReleaseState(submission.status)
 
   return (
     <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
@@ -266,22 +327,17 @@ export default function GradeForm({
                 variant="outline"
                 className="h-6 text-xs"
                 onClick={() => {
-                  const s = staleDraft.server;
+                  const s = staleDraft.server
                   setDraft({
                     score: s.final_score !== null && s.final_score !== undefined ? String(s.final_score) : '',
                     feedback: s.grading_json?.feedback ?? '',
-                  });
-                  setStaleDraft(null);
+                  })
+                  setStaleDraft(null)
                 }}
               >
                 {t('useServerValues')}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs"
-                onClick={() => setStaleDraft(null)}
-              >
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setStaleDraft(null)}>
                 {t('keepMyDraft')}
               </Button>
             </div>
@@ -290,21 +346,11 @@ export default function GradeForm({
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!navigation.hasPrevious}
-          onClick={navigation.goPrevious}
-        >
+        <Button variant="outline" size="sm" disabled={!navigation.hasPrevious} onClick={navigation.goPrevious}>
           <ChevronLeft className="size-4" />
           {t('previous')}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!navigation.hasNext}
-          onClick={navigation.goNext}
-        >
+        <Button variant="outline" size="sm" disabled={!navigation.hasNext} onClick={navigation.goNext}>
           {t('next')}
           <ChevronRight className="size-4" />
         </Button>
@@ -328,12 +374,9 @@ export default function GradeForm({
 
           <div className="space-y-4">
             {gradedItems.map((item, idx) => {
-              const entry = itemDrafts[item.item_id];
+              const entry = itemDrafts[item.item_id]
               return (
-                <div
-                  key={item.item_id}
-                  className="bg-muted/30 space-y-2 rounded-md border p-3"
-                >
+                <div key={item.item_id} className="bg-muted/30 space-y-2 rounded-md border p-3">
                   <p className="text-sm font-medium">
                     {idx + 1}. {item.item_text || item.item_id}
                   </p>
@@ -346,22 +389,23 @@ export default function GradeForm({
                       value={entry?.score ?? String(item.score)}
                       disabled={!editable || isSaving}
                       className="w-20"
-                      onChange={(e) => patchItemDraft(item.item_id, 'score', e.target.value)}
+                      onChange={e => patchItemDraft(item.item_id, 'score', e.target.value)}
                     />
                     <span className="text-muted-foreground text-xs">/ {item.max_score}</span>
                     {item.needs_manual_review && (
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
                     )}
                   </div>
-                  <Textarea
+                  <MarkdownEditor
                     placeholder={tItemGrading('itemFeedback')}
                     value={entry?.feedback ?? item.feedback ?? ''}
                     disabled={!editable || isSaving}
-                    className="min-h-16 text-sm"
-                    onChange={(e) => patchItemDraft(item.item_id, 'feedback', e.target.value)}
+                    preset="explanation"
+                    minHeight={96}
+                    onChange={markdown => patchItemDraft(item.item_id, 'feedback', markdown)}
                   />
                 </div>
-              );
+              )
             })}
           </div>
 
@@ -374,10 +418,7 @@ export default function GradeForm({
                 onCheckedChange={setOverrideScore}
                 disabled={!editable}
               />
-              <Label
-                htmlFor="override-score-switch"
-                className="text-sm"
-              >
+              <Label htmlFor="override-score-switch" className="text-sm">
                 {tItemGrading('overrideScore')}
               </Label>
             </div>
@@ -391,16 +432,16 @@ export default function GradeForm({
                     step={0.5}
                     value={draft.score}
                     disabled={!editable || isSaving}
-                    onChange={(e) => setDraft((cur) => ({ ...cur, score: e.target.value }))}
+                    onChange={e => setDraft(cur => ({ ...cur, score: e.target.value }))}
                     className="w-24"
                   />
-                  <span className="text-muted-foreground text-sm">/100</span>
+                  <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
                 </div>
                 <Input
                   placeholder={tItemGrading('overrideReason')}
                   value={overrideReason}
                   disabled={!editable || isSaving}
-                  onChange={(e) => setOverrideReason(e.target.value)}
+                  onChange={e => setOverrideReason(e.target.value)}
                 />
               </div>
             )}
@@ -408,19 +449,16 @@ export default function GradeForm({
 
           {/* Overall feedback */}
           <div className="space-y-2">
-            <Label
-              htmlFor="item-grade-overall-feedback"
-              className="flex items-center gap-1.5"
-            >
+            <Label htmlFor="item-grade-overall-feedback" className="flex items-center gap-1.5">
               <MessageSquareText className="size-4" />
               {tItemGrading('overallFeedback')}
             </Label>
-            <Textarea
-              id="item-grade-overall-feedback"
+            <MarkdownEditor
               value={draft.feedback}
               disabled={!editable || isSaving}
-              className="min-h-24"
-              onChange={(e) => setDraft((cur) => ({ ...cur, feedback: e.target.value }))}
+              preset="explanation"
+              minHeight={140}
+              onChange={markdown => setDraft(cur => ({ ...cur, feedback: markdown }))}
             />
           </div>
 
@@ -469,9 +507,14 @@ export default function GradeForm({
                 step={0.5}
                 value={draft.score}
                 disabled={!editable || isSaving}
-                onChange={(event) => setDraft((current) => ({ ...current, score: event.target.value }))}
+                onChange={event =>
+                  setDraft(current => ({
+                    ...current,
+                    score: event.target.value,
+                  }))
+                }
               />
-              <span className="text-muted-foreground text-sm">/100</span>
+              <span className="text-muted-foreground text-sm">{t('scoreOutOf100')}</span>
             </div>
             {submission.auto_score !== null && submission.auto_score !== undefined ? (
               <Button
@@ -479,7 +522,12 @@ export default function GradeForm({
                 variant="link"
                 className="h-auto p-0 text-xs"
                 disabled={!editable || isSaving || Number.parseFloat(draft.score) === submission.auto_score}
-                onClick={() => setDraft((current) => ({ ...current, score: String(submission.auto_score) }))}
+                onClick={() =>
+                  setDraft(current => ({
+                    ...current,
+                    score: String(submission.auto_score),
+                  }))
+                }
               >
                 {t('useAutoScore')} {submission.auto_score}
               </Button>
@@ -487,19 +535,16 @@ export default function GradeForm({
           </div>
 
           <div className="space-y-2">
-            <Label
-              htmlFor="review-feedback"
-              className="flex items-center gap-1.5"
-            >
+            <Label htmlFor="review-feedback" className="flex items-center gap-1.5">
               <MessageSquareText className="size-4" />
               {t('feedback')}
             </Label>
-            <Textarea
-              id="review-feedback"
+            <MarkdownEditor
               value={draft.feedback}
               disabled={!editable || isSaving}
-              className="min-h-36"
-              onChange={(event) => setDraft((current) => ({ ...current, feedback: event.target.value }))}
+              preset="explanation"
+              minHeight={160}
+              onChange={markdown => setDraft(current => ({ ...current, feedback: markdown }))}
             />
           </div>
 
@@ -535,6 +580,10 @@ export default function GradeForm({
         </>
       )}
 
+      <div className="border-t pt-4">
+        <SubmissionAIEntry submissionUuid={submissionUuid} />
+      </div>
+
       {/* ── Keyboard legend ────────────────────────────────────────────── */}
       <div className="border-t pt-3">
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -543,50 +592,81 @@ export default function GradeForm({
           {t('keyboardHintForward')}
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">G</kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutFocusGrade')}</kbd>{' '}
           {t('keyboardHintFocusGrade')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl↵</kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutSave')}</kbd>{' '}
           {t('keyboardHintSave')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl⇧↵</kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutPublish')}</kbd>{' '}
           {t('keyboardHintPublish')}
         </div>
       </div>
     </aside>
-  );
+  )
 }
 
 function KeyboardHint() {
-  const t = useTranslations('Grading.Panel');
-  const [open, setOpen] = useState(false);
+  const t = useTranslations('Grading.Panel')
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    if (globalThis.localStorage.getItem('grading-review-keyboard-hint-seen') === '1') return;
-    setOpen(true);
-    globalThis.localStorage.setItem('grading-review-keyboard-hint-seen', '1');
-    const timeout = globalThis.setTimeout(() => setOpen(false), 4500);
-    return () => globalThis.clearTimeout(timeout);
-  }, []);
+    if (readLocalStorageString('grading-review-keyboard-hint-seen') === '1') return
+    writeLocalStorageString('grading-review-keyboard-hint-seen', '1')
+    const openTimeout = globalThis.setTimeout(() => setOpen(true), 0)
+    const timeout = globalThis.setTimeout(() => setOpen(false), 4500)
+    return () => {
+      globalThis.clearTimeout(openTimeout)
+      globalThis.clearTimeout(timeout)
+    }
+  }, [])
 
   return (
     <TooltipProvider>
-      <Tooltip
-        open={open}
-        onOpenChange={setOpen}
-      >
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-7"
-            />
-          }
-        >
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger render={<Button type="button" variant="ghost" size="icon" className="size-7" />}>
           <Info className="size-4" />
         </TooltipTrigger>
         <TooltipContent side="bottom">{t('keyboardHint')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  );
+  )
+}
+
+function buildOptimisticSubmission(
+  submission: Submission,
+  args: {
+    assessmentUuid: string
+    calculatedTotal: number | null
+    draft: { score: string; feedback: string }
+    gradedItems: GradedItem[]
+    itemDrafts: Record<string, { score: string; feedback: string }>
+    overrideScore: boolean
+    overrideReason: string
+    status: 'save' | 'publish' | 'return'
+    itemGrades: ItemGradeEntry[]
+    finalScore: number | null
+  },
+): Submission {
+  const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED'
+  const gradingJson = {
+    ...submission.grading_json,
+    feedback: args.draft.feedback,
+    items: args.gradedItems.map(item => {
+      const entry = args.itemDrafts[item.item_id]
+      const rawScore = entry?.score ?? String(item.score)
+      const parsed = Number.parseFloat(rawScore)
+      return {
+        ...item,
+        score: Number.isNaN(parsed) ? item.score : Math.min(parsed, item.max_score),
+        feedback: entry?.feedback ?? item.feedback ?? '',
+      }
+    }),
+  }
+
+  return {
+    ...submission,
+    status: nextStatus,
+    final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
+    grading_json: gradingJson,
+    version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
+  } as Submission
 }

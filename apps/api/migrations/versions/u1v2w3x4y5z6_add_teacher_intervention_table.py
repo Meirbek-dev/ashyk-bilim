@@ -30,9 +30,7 @@ def upgrade() -> None:
         sa.Column("notes", sa.String(), nullable=True),
         sa.Column("risk_score_before", sa.Numeric(6, 2), nullable=True),
         sa.Column("risk_score_after", sa.Numeric(6, 2), nullable=True),
-        sa.Column(
-            "payload", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")
-        ),
+        sa.Column("payload", sa.JSON(), nullable=False, server_default=sa.text("'{}'::json")),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -53,12 +51,8 @@ def upgrade() -> None:
         "teacher_intervention",
         ["teacher_user_id"],
     )
-    op.create_index(
-        "ix_teacher_intervention_user_id", "teacher_intervention", ["user_id"]
-    )
-    op.create_index(
-        "ix_teacher_intervention_course_id", "teacher_intervention", ["course_id"]
-    )
+    op.create_index("ix_teacher_intervention_user_id", "teacher_intervention", ["user_id"])
+    op.create_index("ix_teacher_intervention_course_id", "teacher_intervention", ["course_id"])
     op.create_index(
         "ix_teacher_intervention_lookup",
         "teacher_intervention",
@@ -68,11 +62,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_teacher_intervention_lookup", table_name="teacher_intervention")
-    op.drop_index(
-        "ix_teacher_intervention_course_id", table_name="teacher_intervention"
-    )
+    op.drop_index("ix_teacher_intervention_course_id", table_name="teacher_intervention")
     op.drop_index("ix_teacher_intervention_user_id", table_name="teacher_intervention")
-    op.drop_index(
-        "ix_teacher_intervention_teacher_user_id", table_name="teacher_intervention"
-    )
+    op.drop_index("ix_teacher_intervention_teacher_user_id", table_name="teacher_intervention")
     op.drop_table("teacher_intervention")

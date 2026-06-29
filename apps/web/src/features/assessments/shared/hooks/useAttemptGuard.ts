@@ -1,86 +1,154 @@
-'use client';
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { useTestGuard } from '@/hooks/useTestGuard';
-import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
-import type { PolicyView } from '@/features/assessments/domain/policy';
+import { useTestGuard } from '@/hooks/useTestGuard'
+import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
+import type { PolicyView } from '@/features/assessments/domain/policy'
 
 type FullscreenElement = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void;
-};
+  webkitRequestFullscreen?: () => Promise<void> | void
+}
 
 type FullscreenDocument = Document & {
-  webkitFullscreenElement?: Element | null;
-  webkitFullscreenEnabled?: boolean;
-  webkitExitFullscreen?: () => Promise<void> | void;
-};
+  webkitFullscreenElement?: Element | null
+  webkitFullscreenEnabled?: boolean
+  webkitExitFullscreen?: () => Promise<void> | void
+}
 
 export interface AttemptTimerConfig {
-  startedAt: string | null;
-  timeLimitMinutes?: number | null;
+  startedAt: string | null
+  timeLimitMinutes?: number | null
   /** ISO datetime when the timer expires (server-authoritative). Takes precedence over startedAt + timeLimitMinutes. */
-  expiresAt?: string | null;
-  onExpire?: () => void;
+  expiresAt?: string | null
+  onExpire?: () => void
 }
 
 export interface AttemptGuardOptions {
-  enabled?: boolean;
-  timer?: AttemptTimerConfig | null;
-  initialViolationCount?: number;
-  onViolation?: (type: string, count: number) => void | Promise<void>;
-  onThresholdReached?: (type: string, count: number) => void;
+  enabled?: boolean
+  timer?: AttemptTimerConfig | null
+  initialViolationCount?: number
+  onViolation?: (type: string, count: number) => void | Promise<void>
+  onThresholdReached?: (type: string, count: number) => void
 }
 
 export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions = {}) {
-  const { antiCheat } = policy;
-  const enabled = options.enabled ?? isAntiCheatEnabled(antiCheat);
-  const [violationCount, setViolationCount] = useState(options.initialViolationCount ?? 0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenRequestFailed, setFullscreenRequestFailed] = useState(false);
-  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
-  const fullscreenEnteredRef = useRef(false);
-  const violationCountRef = useRef(violationCount);
-  const onViolationRef = useRef(options.onViolation);
-  const onThresholdReachedRef = useRef(options.onThresholdReached);
-  const onExpireRef = useRef(options.timer?.onExpire);
-  const expiredRef = useRef(false);
+  const t = useTranslations('Features.ActivityWorkspace')
+  const { antiCheat } = policy
+  const enabled = options.enabled ?? isAntiCheatEnabled(antiCheat)
+  const [violationCount, setViolationCount] = useState(options.initialViolationCount ?? 0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [fullscreenRequestFailed, setFullscreenRequestFailed] = useState(false)
+  const [fullscreenError, setFullscreenError] = useState<string | null>(null)
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  const [securityCountdown, setSecurityCountdown] = useState<number | null>(null)
+
+  const fullscreenEnteredRef = useRef(false)
+  const violationCountRef = useRef(violationCount)
+  const onViolationRef = useRef(options.onViolation)
+  const onThresholdReachedRef = useRef(options.onThresholdReached)
+  const onExpireRef = useRef(options.timer?.onExpire)
+  const expiredRef = useRef(false)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const [prevInitialViolationCount, setPrevInitialViolationCount] = useState(options.initialViolationCount)
+  if (options.initialViolationCount !== prevInitialViolationCount) {
+    setPrevInitialViolationCount(options.initialViolationCount)
+    setViolationCount(options.initialViolationCount ?? 0)
+  }
 
   useEffect(() => {
-    setViolationCount(options.initialViolationCount ?? 0);
-  }, [options.initialViolationCount]);
+    violationCountRef.current = violationCount
+  }, [violationCount])
 
   useEffect(() => {
-    violationCountRef.current = violationCount;
-  }, [violationCount]);
-
-  useEffect(() => {
-    onViolationRef.current = options.onViolation;
-    onThresholdReachedRef.current = options.onThresholdReached;
-    onExpireRef.current = options.timer?.onExpire;
-  }, [options.onViolation, options.onThresholdReached, options.timer?.onExpire]);
+    onViolationRef.current = options.onViolation
+    onThresholdReachedRef.current = options.onThresholdReached
+    onExpireRef.current = options.timer?.onExpire
+  }, [options.onViolation, options.onThresholdReached, options.timer?.onExpire])
 
   const getFullscreenElement = useCallback(() => {
-    const fullscreenDocument = document as FullscreenDocument;
-    return document.fullscreenElement ?? fullscreenDocument.webkitFullscreenElement ?? null;
-  }, []);
+    const fullscreenDocument = document as FullscreenDocument
+    return document.fullscreenElement ?? fullscreenDocument.webkitFullscreenElement ?? null
+  }, [])
 
   const reportViolation = useCallback(
     (type: string, rawCount?: number) => {
-      const nextCount = rawCount ?? violationCountRef.current + 1;
-      violationCountRef.current = nextCount;
-      setViolationCount(nextCount);
-      void onViolationRef.current?.(type, nextCount);
+      const nextCount = rawCount ?? violationCountRef.current + 1
+      violationCountRef.current = nextCount
+      setViolationCount(nextCount)
+      void onViolationRef.current?.(type, nextCount)
 
-      const threshold = antiCheat.violationThreshold;
+      const threshold = antiCheat.violationThreshold
       if (threshold && nextCount >= threshold) {
-        onThresholdReachedRef.current?.(type, nextCount);
+        // Trigger countdown warning instead of immediate auto-submit
+        setSecurityCountdown(10)
       }
     },
     [antiCheat.violationThreshold],
-  );
+  )
+
+  // Monitor security countdown and trigger auto-submit on completion
+  useEffect(() => {
+    if (securityCountdown === null) {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+        countdownIntervalRef.current = null
+      }
+      return
+    }
+
+    if (securityCountdown <= 0) {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+        countdownIntervalRef.current = null
+      }
+      onThresholdReachedRef.current?.('SECURITY_LIMIT_EXCEEDED', violationCountRef.current)
+      queueMicrotask(() => {
+        setSecurityCountdown(null)
+      })
+      return
+    }
+
+    if (!countdownIntervalRef.current) {
+      countdownIntervalRef.current = setInterval(() => {
+        setSecurityCountdown(prev => (prev !== null ? prev - 1 : null))
+      }, 1000)
+    }
+
+    return undefined
+  }, [securityCountdown])
+
+  // Forgiving: cancel countdown when focus and fullscreen are restored
+  useEffect(() => {
+    if (securityCountdown === null) return
+
+    const checkCompliance = () => {
+      const isFocused = document.hasFocus()
+      const inFullscreen = Boolean(getFullscreenElement())
+      const needsFullscreen = antiCheat.fullscreenEnforced
+
+      if (isFocused && (!needsFullscreen || inFullscreen)) {
+        setSecurityCountdown(null)
+        toast.success(t('focusRestoredResume'))
+      }
+    }
+
+    window.addEventListener('focus', checkCompliance)
+    document.addEventListener('fullscreenchange', checkCompliance)
+    document.addEventListener('webkitfullscreenchange', checkCompliance)
+
+    // Initial check
+    checkCompliance()
+
+    return () => {
+      window.removeEventListener('focus', checkCompliance)
+      document.removeEventListener('fullscreenchange', checkCompliance)
+      document.removeEventListener('webkitfullscreenchange', checkCompliance)
+    }
+  }, [securityCountdown, antiCheat.fullscreenEnforced, getFullscreenElement, t])
 
   useTestGuard({
     enabled,
@@ -93,137 +161,139 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
     blurDebounceMs: 500,
     devToolsThreshold: 180,
     devToolsCheckIntervalMs: 2000,
-  });
+  })
 
   const requestFullscreen = useCallback(async () => {
-    if (!antiCheat.fullscreenEnforced || typeof document === 'undefined') return;
+    if (!antiCheat.fullscreenEnforced || typeof document === 'undefined') return
 
-    const fullscreenDocument = document as FullscreenDocument;
-    const target = document.documentElement as FullscreenElement;
-    const canUseStandardFullscreen = document.fullscreenEnabled && typeof target.requestFullscreen === 'function';
+    const fullscreenDocument = document as FullscreenDocument
+    const target = document.documentElement as FullscreenElement
+    const canUseStandardFullscreen = document.fullscreenEnabled && typeof target.requestFullscreen === 'function'
     const canUseWebkitFullscreen = Boolean(
       fullscreenDocument.webkitFullscreenEnabled && typeof target.webkitRequestFullscreen === 'function',
-    );
+    )
 
     if (!canUseStandardFullscreen && !canUseWebkitFullscreen) {
-      setFullscreenRequestFailed(true);
-      setFullscreenError('Fullscreen is not supported in this browser.');
-      toast.warning('Fullscreen is not supported in this browser.');
-      return;
+      setFullscreenRequestFailed(true)
+      setFullscreenError(t('fullscreenUnsupported'))
+      toast.warning(t('fullscreenUnsupported'))
+      return
     }
 
     try {
-      setFullscreenError(null);
-      setFullscreenRequestFailed(false);
+      setFullscreenError(null)
+      setFullscreenRequestFailed(false)
 
       if (target.requestFullscreen) {
-        await target.requestFullscreen({ navigationUI: 'hide' });
+        await target.requestFullscreen({ navigationUI: 'hide' })
       } else {
-        await target.webkitRequestFullscreen?.();
+        await target.webkitRequestFullscreen?.()
       }
 
       if (!getFullscreenElement()) {
-        throw new Error('Fullscreen request resolved without an active fullscreen element.');
+        throw new Error('Fullscreen request resolved without an active fullscreen element.')
       }
 
-      fullscreenEnteredRef.current = true;
-      setIsFullscreen(true);
+      fullscreenEnteredRef.current = true
+      setIsFullscreen(true)
     } catch (error) {
-      setFullscreenError(error instanceof Error ? error.message : 'Fullscreen is recommended for this attempt.');
-      toast.info('Fullscreen is recommended for this attempt.');
+      setFullscreenError(error instanceof Error ? error.message : t('fullscreenRecommended'))
+      toast.info(t('fullscreenRecommended'))
     }
-  }, [antiCheat.fullscreenEnforced, getFullscreenElement]);
+  }, [antiCheat.fullscreenEnforced, getFullscreenElement, t])
 
   useEffect(() => {
-    if (!enabled || !antiCheat.fullscreenEnforced) return;
+    if (!enabled || !antiCheat.fullscreenEnforced) return
 
-    let fullscreenExitTimeout: ReturnType<typeof setTimeout> | null = null;
+    let fullscreenExitTimeout: ReturnType<typeof setTimeout> | null = null
 
     const handleFullscreenChange = () => {
-      const inFullscreen = Boolean(getFullscreenElement());
-      setIsFullscreen(inFullscreen);
+      const inFullscreen = Boolean(getFullscreenElement())
+      setIsFullscreen(inFullscreen)
 
       if (inFullscreen) {
-        fullscreenEnteredRef.current = true;
-        setFullscreenError(null);
+        fullscreenEnteredRef.current = true
+        setFullscreenError(null)
       }
 
       if (!inFullscreen && fullscreenEnteredRef.current) {
-        if (fullscreenExitTimeout) clearTimeout(fullscreenExitTimeout);
+        if (fullscreenExitTimeout) clearTimeout(fullscreenExitTimeout)
         fullscreenExitTimeout = setTimeout(() => {
           if (!getFullscreenElement()) {
-            toast.warning('Fullscreen was exited.');
-            reportViolation('FULLSCREEN_EXIT');
+            toast.warning(t('fullscreenExited'))
+            reportViolation('FULLSCREEN_EXIT')
           }
-        }, 3000);
+        }, 3000)
       } else if (inFullscreen && fullscreenExitTimeout) {
-        clearTimeout(fullscreenExitTimeout);
-        fullscreenExitTimeout = null;
+        clearTimeout(fullscreenExitTimeout)
+        fullscreenExitTimeout = null
       }
-    };
+    }
 
-    handleFullscreenChange();
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    handleFullscreenChange()
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
 
     return () => {
-      if (fullscreenExitTimeout) clearTimeout(fullscreenExitTimeout);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-    };
-  }, [antiCheat.fullscreenEnforced, enabled, getFullscreenElement, reportViolation]);
+      if (fullscreenExitTimeout) clearTimeout(fullscreenExitTimeout)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+    }
+  }, [antiCheat.fullscreenEnforced, enabled, getFullscreenElement, reportViolation, t])
 
   useEffect(() => {
     return () => {
-      if (!getFullscreenElement()) return;
+      if (!getFullscreenElement()) return
 
-      const fullscreenDocument = document as FullscreenDocument;
+      const fullscreenDocument = document as FullscreenDocument
       if (document.exitFullscreen) {
-        void document.exitFullscreen().catch(() => undefined);
+        void document.exitFullscreen().catch(() => undefined)
       } else {
-        void fullscreenDocument.webkitExitFullscreen?.();
+        void fullscreenDocument.webkitExitFullscreen?.()
       }
-    };
-  }, [getFullscreenElement]);
+    }
+  }, [getFullscreenElement])
 
   useEffect(() => {
-    const expiresAt = options.timer?.expiresAt;
-    const startedAt = options.timer?.startedAt;
-    const timeLimitMinutes = options.timer?.timeLimitMinutes;
+    const expiresAt = options.timer?.expiresAt
+    const startedAt = options.timer?.startedAt
+    const timeLimitMinutes = options.timer?.timeLimitMinutes
 
     // Prefer server-authoritative expiresAt if available
     const endTs = expiresAt
       ? new Date(expiresAt).getTime()
       : startedAt && timeLimitMinutes
         ? new Date(startedAt).getTime() + timeLimitMinutes * 60 * 1000
-        : null;
+        : null
 
     if (!endTs) {
-      setRemainingSeconds(null);
-      expiredRef.current = false;
-      return;
+      queueMicrotask(() => {
+        setRemainingSeconds(null)
+      })
+      expiredRef.current = false
+      return
     }
 
-    expiredRef.current = false;
+    expiredRef.current = false
     const update = () => {
-      const remainingMs = Math.max(0, endTs - Date.now());
-      setRemainingSeconds(Math.floor(remainingMs / 1000));
+      const remainingMs = Math.max(0, endTs - Date.now())
+      setRemainingSeconds(Math.floor(remainingMs / 1000))
 
       if (remainingMs <= 0 && !expiredRef.current) {
-        expiredRef.current = true;
-        onExpireRef.current?.();
+        expiredRef.current = true
+        onExpireRef.current?.()
       }
-    };
+    }
 
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [options.timer?.startedAt, options.timer?.timeLimitMinutes, options.timer?.expiresAt]);
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [options.timer?.startedAt, options.timer?.timeLimitMinutes, options.timer?.expiresAt])
 
   const fullscreenGateOpen = useMemo(
     () => enabled && antiCheat.fullscreenEnforced && !isFullscreen && !fullscreenRequestFailed,
     [antiCheat.fullscreenEnforced, enabled, fullscreenRequestFailed, isFullscreen],
-  );
+  )
 
   return {
     enabled,
@@ -232,6 +302,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
     fullscreenGateOpen,
     fullscreenError,
     remainingSeconds,
+    securityCountdown,
     requestFullscreen,
-  };
+  }
 }

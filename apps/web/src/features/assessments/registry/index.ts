@@ -13,25 +13,28 @@
  *   const { Author, Attempt, Review } = getKindModule('TYPE_EXAM');
  */
 
-import type { ComponentType, ReactNode } from 'react';
-import type { AssessmentKind, AttemptViewModel } from '../domain';
-import type { Submission } from '@/features/grading/domain/types';
+import type { ComponentType, ReactNode } from 'react'
+import type { AssessmentKind, AttemptViewModel } from '../domain'
+import type { Submission } from '@/features/grading/domain/types'
+import { examModuleFactory } from './exam'
+import { codeChallengeModuleFactory } from './code-challenge'
+import { customModuleFactory } from './custom'
 
 export interface KindAuthorProps {
-  activityUuid: string;
-  courseUuid: string;
+  activityUuid: string
+  courseUuid: string
 }
 
 export interface KindAttemptProps {
-  activityUuid: string;
-  courseUuid: string;
-  vm?: AttemptViewModel;
+  activityUuid: string
+  courseUuid: string
+  vm?: AttemptViewModel
 }
 
 export interface KindReviewProps {
-  activityId: number;
-  submissionUuid?: string | null;
-  title?: string;
+  activityId: number
+  submissionUuid?: string | null
+  title?: string
 }
 
 /**
@@ -41,86 +44,91 @@ export interface KindReviewProps {
  */
 export interface KindReviewDetailProps {
   /** The selected submission being reviewed. */
-  submission: Submission;
+  submission: Submission
   /** Activity UUID — required by some kinds (e.g. exam) to load question data. */
-  activityUuid?: string;
+  activityUuid?: string
 }
 
 export interface KindModule {
   /** Label shown in the topbar and breadcrumbs. */
-  label: string;
+  label: string
   /** Icon import key — maps to Lucide icon name. */
-  iconName: string;
+  iconName: string
   /**
    * Optional context provider that wraps Outline + Author + Inspector together.
    * Use when the three slots need shared state.
    * AssessmentStudioWorkspace renders this as the outermost wrapper.
    */
-  Provider?: ComponentType<KindAuthorProps & { children: ReactNode }>;
+  Provider?: ComponentType<KindAuthorProps & { children: ReactNode }>
   /**
    * Optional left rail rendered in column 1 of the studio 3-column grid.
    * Examples: question list (exam), task outline (code challenge).
    */
-  Outline?: ComponentType<KindAuthorProps>;
+  Outline?: ComponentType<KindAuthorProps>
   /** Teacher authoring panel — center column of the studio grid. */
-  Author: ComponentType<KindAuthorProps>;
+  Author: ComponentType<KindAuthorProps>
   /**
    * Optional right rail rendered in column 3 of the studio 3-column grid.
    * Examples: policy inspector or exam settings summary.
    */
-  Inspector?: ComponentType<KindAuthorProps>;
+  Inspector?: ComponentType<KindAuthorProps>
   /** Student attempt panel. */
-  Attempt: ComponentType<KindAttemptProps>;
+  Attempt: ComponentType<KindAttemptProps>
   /** Submission detail panel for the review surface. */
-  Review: ComponentType<KindReviewProps>;
+  Review: ComponentType<KindReviewProps>
   /**
    * Optional kind-specific "submitted work" panel for GradingReviewWorkspace's
    * center pane. When provided, replaces the generic SubmittedAnswers fallback.
    * Phase 2+: exam provides question-level answer rendering here.
    */
-  ReviewDetail?: ComponentType<KindReviewDetailProps>;
+  ReviewDetail?: ComponentType<KindReviewDetailProps>
 }
 
+const registryMap = new Map<AssessmentKind, () => Promise<KindModule>>()
+let registryInitialized = false
+
 function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
-  const f = getRegistry as any;
-  if (!f._map) f._map = new Map();
-  return f._map;
+  if (!registryInitialized) {
+    registryMap.set('TYPE_EXAM', examModuleFactory)
+    registryMap.set('TYPE_CODE_CHALLENGE', codeChallengeModuleFactory)
+    registryMap.set('TYPE_CUSTOM', customModuleFactory)
+    registryInitialized = true
+  }
+  return registryMap
 }
 
 /** Register a kind module factory. Call once per kind (e.g., in kind's own file). */
 export function registerKind(kind: AssessmentKind, factory: () => Promise<KindModule>): void {
-  getRegistry().set(kind, factory);
+  getRegistry().set(kind, factory)
 }
 
 /** Resolve a kind module. Throws if the kind is not registered. */
 async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
-  const factory = getRegistry().get(kind);
+  const factory = getRegistry().get(kind)
   if (!factory) {
-    throw new Error(`AssessmentKindRegistry: no module registered for kind "${kind}"`);
+    throw new Error(`AssessmentKindRegistry: no module registered for kind "${kind}"`)
   }
-  return factory();
+  return factory()
 }
+
+const loadedModulesMap = new Map<AssessmentKind, KindModule>()
 
 /**
  * Synchronous access for contexts where async loading is managed externally.
  * Returns undefined if the kind module has not been loaded yet.
  */
 function getLoadedModules(): Map<AssessmentKind, KindModule> {
-  const f = getLoadedModules as any;
-  if (!f._map) f._map = new Map();
-  return f._map;
+  return loadedModulesMap
 }
 
 export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> {
-  const existing = getLoadedModules().get(kind);
-  if (existing) return existing;
-  const module_ = await resolveKindModule(kind);
-  getLoadedModules().set(kind, module_);
-  return module_;
+  const existing = getLoadedModules().get(kind)
+  if (existing) return existing
+  const module_ = await resolveKindModule(kind)
+  getLoadedModules().set(kind, module_)
+  return module_
 }
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-import './exam';
-import './code-challenge';
-import './custom';
+// (Imports are hoisted; this comment documents the registration intent.)

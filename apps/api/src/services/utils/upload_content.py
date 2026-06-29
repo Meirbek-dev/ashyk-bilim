@@ -1,4 +1,3 @@
-import os
 import pathlib
 from typing import Literal
 
@@ -22,8 +21,7 @@ async def upload_file(
     filename_prefix: str,
     max_size: int | None = None,
 ) -> str:
-    """
-    Secure file upload with validation.
+    """Secure file upload with validation.
 
     Args:
         file: The uploaded file
@@ -36,6 +34,7 @@ async def upload_file(
 
     Returns:
         The saved filename
+
     """
     from ulid import ULID
 
@@ -45,7 +44,8 @@ async def upload_file(
     _, content = validate_upload(file, allowed_types, max_size)
 
     # Generate safe filename
-    filename = get_safe_filename(file.filename, f"{ULID()}_{filename_prefix}")
+    original_filename = file.filename or "uploaded_file"
+    filename = get_safe_filename(original_filename, f"{ULID()}_{filename_prefix}")
 
     # Save the file
     await upload_content(
@@ -74,12 +74,12 @@ async def upload_content(
     if allowed_formats and file_format not in allowed_formats:
         raise HTTPException(
             status_code=400,
-            detail=f"File format {file_format} not allowed",
+            detail=f"Формат файла {file_format} не разрешен",
         )
 
     if type_of_dir == "users":
         if not uuid:
-            raise HTTPException(status_code=400, detail="user uuid is required")
+            raise HTTPException(status_code=400, detail="Параметр user uuid обязателен")
         storage_root = f"content/users/{uuid}"
     else:
         storage_root = "content/platform"

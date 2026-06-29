@@ -1,1 +1,1 @@
-export { ThemeSelector } from '@components/ui/custom/theme-selector';
+export { ThemeSelector } from '@components/ui/custom/theme-selector'

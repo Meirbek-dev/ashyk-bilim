@@ -1,11 +1,11 @@
-'use client';
+'use client'
 
-import { useQuery } from '@tanstack/react-query';
-import type { CourseListKeyOptions } from './courseKeys';
-import { courseListQueryOptions, editableCourseListQueryOptions } from '@/features/courses/queries/course.query';
+import { useQuery } from '@tanstack/react-query'
+import type { CourseListKeyOptions } from './courseKeys'
+import { courseListQueryOptions, editableCourseListQueryOptions } from '@/features/courses/queries/course.query'
 
-export function useCourseList<TCourse = any>(options: CourseListKeyOptions = {}) {
-  const query = useQuery(courseListQueryOptions<TCourse>(options));
+export function useCourseList<TCourse = AppCourse>(options: CourseListKeyOptions = {}) {
+  const query = useQuery(courseListQueryOptions<TCourse>(options))
 
   return {
     courses: query.data?.courses ?? [],
@@ -21,11 +21,11 @@ export function useCourseList<TCourse = any>(options: CourseListKeyOptions = {})
     refetch: query.refetch,
     status: query.status,
     total: query.data?.total ?? 0,
-  };
+  }
 }
 
-export function useEditableCourseList<TCourse = any>(options: CourseListKeyOptions = {}) {
-  const query = useQuery(editableCourseListQueryOptions<TCourse>(options));
+export function useEditableCourseList<TCourse = AppCourse>(options: CourseListKeyOptions = {}) {
+  const query = useQuery(editableCourseListQueryOptions<TCourse>(options))
 
   return {
     courses: query.data?.courses ?? [],
@@ -42,5 +42,5 @@ export function useEditableCourseList<TCourse = any>(options: CourseListKeyOptio
     summary: query.data?.summary,
     status: query.status,
     total: query.data?.total ?? 0,
-  };
+  }
 }

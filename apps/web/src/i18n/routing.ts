@@ -1,5 +1,5 @@
-import { defineRouting } from 'next-intl/routing';
-import { defaultLocale, localePrefixes, locales } from './config';
+import { defineRouting } from 'next-intl/routing'
+import { defaultLocale, localePrefixes, locales } from './config'
 
 export const routing = defineRouting({
   locales,
@@ -8,4 +8,4 @@ export const routing = defineRouting({
     mode: 'always',
     prefixes: localePrefixes,
   },
-});
+})

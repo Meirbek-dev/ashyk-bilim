@@ -1,12 +1,11 @@
 import asyncio
 import contextlib
 import logging
-from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, Callable
+from contextlib import AbstractAsyncContextManager as AsyncContextManager, asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from sqlmodel import Session
 
 from src.app.observability import configure_observability
 from src.infra import redis as redis_infra
@@ -18,10 +17,8 @@ from src.infra.db.engine import (
 )
 from src.infra.logging import configure_logging
 from src.infra.settings import AppSettings
-from src.tasks.assessment_scheduler import assessment_scheduler_loop
-from src.tasks.assessment_timer import assessment_timer_loop
-from src.tasks.plagiarism_checker import plagiarism_checker_loop
-from src.tasks.upload_reaper import reap_orphan_uploads
+from src.routers.uploads.chunked_upload import cleanup_stale_assessment_uploads
+from src.services.utils.chunked_upload import cleanup_stale_sessions
 
 logger = logging.getLogger(__name__)
 
@@ -31,37 +28,9 @@ def ensure_runtime_directories() -> None:
     Path("logs").mkdir(parents=True, exist_ok=True)
 
 
-async def _ttl_sweep_loop(retention_seconds: int) -> None:
-    while True:
-        await asyncio.sleep(3600)
-        try:
-            from src.services.ai.retrieval import delete_expired_chunks
-
-            removed = await asyncio.to_thread(delete_expired_chunks, retention_seconds)
-            if removed == -1:
-                logger.warning(
-                    "Vector TTL sweep skipped: document_chunks table not found"
-                )
-            elif removed:
-                logger.info("Vector TTL sweep removed %d expired chunk(s)", removed)
-        except Exception:
-            logger.exception("Vector TTL sweep failed")
-
-
-async def _upload_reaper_loop(session_factory: Callable[[], Session]) -> None:
-    while True:
-        await asyncio.sleep(3600 * 6)  # run every 6 hours
-        try:
-            with session_factory() as db_session:
-                result = await asyncio.to_thread(reap_orphan_uploads, db_session)
-                logger.info("upload_reaper done: %s", result)
-        except Exception:
-            logger.exception("Upload reaper failed")
-
-
-def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[None]]:
+def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncContextManager[None]]:
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         configure_logging(settings)
         ensure_runtime_directories()
 
@@ -77,48 +46,54 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
         app.state.engine = engine
         app.state.session_factory = session_factory
 
+        from src.services.setup.setup import ensure_bootstrap_state
+
+        with session_factory() as session:
+            ensure_bootstrap_state(settings, session)
+
+        with contextlib.suppress(Exception):
+            removed_chunked = cleanup_stale_sessions()
+            removed_assessment = cleanup_stale_assessment_uploads()
+            if removed_chunked or removed_assessment:
+                logger.info(
+                    "Startup upload cleanup removed %d resumable sessions and %d staged assessment uploads",
+                    removed_chunked,
+                    removed_assessment,
+                )
+
+        # Patch Judge0 compiler command flags dynamically on startup.
+        from src.app.judge0_patch import start_judge0_patcher
+
+        start_judge0_patcher(session_factory)
+
         configure_observability(app, settings, engine)
 
-        # Register event bus subscribers
+        # Register in-process event bus subscribers (analytics only).
+        # Durable subscribers (XP award, plagiarism) are now taskiq tasks.
         from src.services.events.startup import register_all_subscribers
 
         register_all_subscribers()
 
-        ttl_sweep_task = asyncio.create_task(
-            _ttl_sweep_loop(settings.ai_config.collection_retention),
-            name="vector_ttl_sweep",
-        )
-        scheduler_task = asyncio.create_task(
-            assessment_scheduler_loop(settings),
-            name="assessment_scheduler",
-        )
-        timer_task = asyncio.create_task(
-            assessment_timer_loop(settings),
-            name="assessment_timer",
-        )
-        upload_reaper_task = asyncio.create_task(
-            _upload_reaper_loop(session_factory),
-            name="upload_reaper",
-        )
-        plagiarism_task = asyncio.create_task(
-            plagiarism_checker_loop(),
-            name="plagiarism_checker",
-        )
+        # ── Taskiq broker startup (client side — sends tasks, does not run them) ──
+        # The worker process (``taskiq worker worker:broker``) executes the tasks.
+        # In test mode (InMemoryBroker) tasks run inline; no worker needed.
+        from src.worker.broker import broker
+
+        if not broker.is_worker_process:
+            await broker.startup()
 
         try:
             yield
         finally:
-            for bg_task in (
-                ttl_sweep_task,
-                scheduler_task,
-                timer_task,
-                upload_reaper_task,
-                plagiarism_task,
-            ):
-                if not bg_task.done():
-                    bg_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError):
-                        await bg_task
+            logger.info("Lifespan shutdown: initiating 5-second graceful connection drain...")
+            await asyncio.sleep(5.0)
+            logger.info("Lifespan shutdown: connection drain complete. Cleaning up resources.")
+
+            # ── Taskiq broker shutdown ────────────────────────────────────────
+            if not broker.is_worker_process:
+                with contextlib.suppress(Exception):
+                    await broker.shutdown()
+
             with contextlib.suppress(Exception):
                 from src.services.utils.link_preview import close_link_preview_client
 

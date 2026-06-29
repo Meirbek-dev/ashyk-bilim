@@ -7,11 +7,11 @@ Request-scoped sessions are never moved across threads.
 """
 
 import asyncio
-from typing import Annotated, Any
+from typing import Annotated, override
 
 from fastapi import Depends
 from fastapi_users.db import BaseUserDatabase
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from src.db.users import User
 from src.infra.db.session import SessionFactory, get_session_factory
@@ -21,6 +21,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
     def __init__(self, session_factory: SessionFactory) -> None:
         self.session_factory = session_factory
 
+    @override
     async def get(self, id: int) -> User | None:
         def _get() -> User | None:
             with self.session_factory() as session:
@@ -28,19 +29,19 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
 
         return await asyncio.to_thread(_get)
 
+    @override
     async def get_by_email(self, email: str) -> User | None:
         def _get_by_email() -> User | None:
             with self.session_factory() as session:
-                return session.exec(
-                    select(User).where(User.email == email.lower())
-                ).first()
+                return session.exec(select(User).where(User.email == email.lower())).first()
 
         return await asyncio.to_thread(_get_by_email)
 
-    async def create(self, create_dict: dict[str, Any]) -> User:
+    @override
+    async def create(self, create_dict: dict[str, object]) -> User:
         def _create() -> User:
             with self.session_factory() as session:
-                user = User(**create_dict)
+                user = User.model_validate(create_dict)
                 session.add(user)
                 session.commit()
                 session.refresh(user)
@@ -48,7 +49,8 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
 
         return await asyncio.to_thread(_create)
 
-    async def update(self, user: User, update_dict: dict[str, Any]) -> User:
+    @override
+    async def update(self, user: User, update_dict: dict[str, object]) -> User:
         def _update() -> User:
             with self.session_factory() as session:
                 db_user = session.get(User, user.id)
@@ -63,6 +65,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
 
         return await asyncio.to_thread(_update)
 
+    @override
     async def delete(self, user: User) -> None:
         def _delete() -> None:
             with self.session_factory() as session:
@@ -76,7 +79,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
 
 
 def get_user_db(
-    session_factory: Annotated[SessionFactory, Depends(get_session_factory)] = None,
+    session_factory: Annotated[SessionFactory | None, Depends(get_session_factory)] = None,
 ) -> SQLModelUserDatabase:
     assert session_factory is not None
     return SQLModelUserDatabase(session_factory)

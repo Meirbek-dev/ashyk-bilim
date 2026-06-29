@@ -7,61 +7,64 @@
  * Reduced data: Skip particle effects, use lighter animations.
  */
 
-'use client';
+'use client'
 
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { useReducedData } from '@/hooks/use-reduced-data';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useTranslations } from 'next-intl';
-import { useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion'
+import { useReducedData } from '@/hooks/use-reduced-data'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import { Award } from 'lucide-react'
+import { motion } from 'motion/react'
 
 interface LevelUpCelebrationProps {
-  newLevel: number;
-  onDismiss: () => void;
-  compact?: boolean;
+  newLevel: number
+  onDismiss: () => void
+  compact?: boolean
+}
+
+interface Particle {
+  xOffset: number
+  yOffset: number
+  delay: number
 }
 
 export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: LevelUpCelebrationProps) {
-  const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const isMobile = useIsMobile();
-  const prefersReducedMotion = useReducedMotion();
-  const prefersReducedData = useReducedData();
+  const t = useTranslations('DashPage.UserAccountSettings.Gamification')
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const prefersReducedData = useReducedData()
 
   // Force compact mode on mobile or reduced data
-  const shouldUseCompact = compact || isMobile || prefersReducedData;
+  const shouldUseCompact = compact || isMobile || prefersReducedData
 
-  const compactParticlesRef = useRef(
+  const [compactParticles] = useState<Particle[]>(() =>
     Array.from({ length: 8 }, () => ({
       xOffset: (Math.random() - 0.5) * 100,
       yOffset: (Math.random() - 0.5) * 100,
       delay: Math.random() * 0.5,
     })),
-  );
+  )
 
-  const fullscreenParticlesRef = useRef(
+  const [fullscreenParticles] = useState<Particle[]>(() =>
     Array.from({ length: 30 }, () => ({
       xOffset: (Math.random() - 0.5) * 600,
       yOffset: (Math.random() - 0.5) * 600,
       delay: Math.random() * 0.8,
     })),
-  );
-
-  const compactParticles = compactParticlesRef.current;
-  const fullscreenParticles = fullscreenParticlesRef.current;
+  )
 
   useEffect(() => {
     // Auto-dismiss after 4 seconds (3s on mobile for faster flow)
     const timer = setTimeout(
       () => {
-        onDismiss();
+        onDismiss()
       },
       isMobile ? 3000 : 4000,
-    );
+    )
 
-    return () => clearTimeout(timer);
-  }, [onDismiss, isMobile]);
+    return () => clearTimeout(timer)
+  }, [onDismiss, isMobile])
 
   if (shouldUseCompact) {
     // Compact corner notification (less intrusive, mobile-friendly)
@@ -106,7 +109,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
             className="shrink-0"
           >
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3">
-              <Sparkles className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
+              <Award className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
             </div>
           </motion.div>
 
@@ -138,7 +141,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           </div>
         </div>
       </motion.div>
-    );
+    )
   }
 
   // Full-screen celebration (default)
@@ -156,9 +159,9 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         exit={{ scale: 0.5, rotate: 15, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="bg-background relative mx-4 max-w-lg rounded-3xl border border-amber-300 p-12 text-center shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Sparkles animation */}
+        {/* Award particle animation */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
           {fullscreenParticles.map((particle, i) => (
             <motion.div
@@ -193,7 +196,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           className="relative"
         >
           <div className="mb-4 inline-flex rounded-full border border-amber-300 bg-amber-50 p-4">
-            <Sparkles className="h-20 w-20 text-amber-600" />
+            <Award className="h-20 w-20 text-amber-600" />
           </div>
         </motion.div>
 
@@ -237,5 +240,5 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         </motion.p>
       </motion.div>
     </motion.div>
-  );
+  )
 }

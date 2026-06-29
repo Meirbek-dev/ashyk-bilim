@@ -1,7 +1,7 @@
-import Heading from '@tiptap/extension-heading';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import Heading from '@tiptap/extension-heading'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 
-import { collectHeadingIdUpdates } from './heading-ids';
+import { collectHeadingIdUpdates } from './heading-ids'
 
 export const HeadingWithIds = Heading.extend({
   addAttributes() {
@@ -9,16 +9,16 @@ export const HeadingWithIds = Heading.extend({
       ...this.parent?.(),
       id: {
         default: null,
-        parseHTML: (element) => element.getAttribute('id'),
-        renderHTML: (attributes) => {
+        parseHTML: element => element.getAttribute('id'),
+        renderHTML: attributes => {
           if (!attributes.id) {
-            return {};
+            return {}
           }
 
-          return { id: attributes.id };
+          return { id: attributes.id }
         },
       },
-    };
+    }
   },
 
   addProseMirrorPlugins() {
@@ -26,30 +26,30 @@ export const HeadingWithIds = Heading.extend({
       new Plugin({
         key: new PluginKey('heading-with-ids'),
         appendTransaction: (_transactions, _oldState, newState) => {
-          const updates = collectHeadingIdUpdates(newState.doc);
+          const updates = collectHeadingIdUpdates(newState.doc)
 
           if (updates.length === 0) {
-            return null;
+            return null
           }
 
-          const { tr } = newState;
+          const { tr } = newState
 
           for (const update of updates) {
-            const node = newState.doc.nodeAt(update.pos);
+            const node = newState.doc.nodeAt(update.pos)
             if (!node) {
-              continue;
+              continue
             }
 
             tr.setNodeMarkup(update.pos, undefined, {
               ...node.attrs,
               id: update.id,
-            });
+            })
           }
 
-          tr.setMeta('heading-with-ids', true);
-          return tr;
+          tr.setMeta('heading-with-ids', true)
+          return tr
         },
       }),
-    ];
+    ]
   },
-});
+})

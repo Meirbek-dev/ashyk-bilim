@@ -1,21 +1,21 @@
-'use client';
+'use client'
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { ContentBottleneckRow } from '@/types/analytics';
-import { RouteOff } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { ContentBottleneckRow } from '@/types/analytics'
+import { RouteOff } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface ContentBottlenecksTableProps {
-  rows: ContentBottleneckRow[];
+  rows: ContentBottleneckRow[]
 }
 
 export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTableProps) {
-  const locale = useLocale();
-  const t = useTranslations('Components.DashboardAnalytics');
-  const numberFormatter = new Intl.NumberFormat(locale);
-  const signalLabel = (signal: ContentBottleneckRow['signal']) => t(`contentBottlenecksTable.signals.${signal}`);
+  const locale = useLocale()
+  const t = useTranslations('Components.DashboardAnalytics')
+  const numberFormatter = new Intl.NumberFormat(locale)
+  const signalLabel = (signal: ContentBottleneckRow['signal']) => t(`contentBottlenecksTable.signals.${signal}`)
 
   return (
     <Card className="shadow-sm">
@@ -38,7 +38,7 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.slice(0, 8).map((row) => (
+            {rows.slice(0, 8).map(row => (
               <TableRow key={`${row.signal}-${row.activity_id}`}>
                 <TableCell className="max-w-[260px] whitespace-normal">
                   <div className="font-medium">{row.activity_name}</div>
@@ -66,10 +66,7 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
             ))}
             {!rows.length ? (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-muted-foreground"
-                >
+                <TableCell colSpan={5} className="text-muted-foreground">
                   {t('contentBottlenecksTable.noBottlenecks')}
                 </TableCell>
               </TableRow>
@@ -78,5 +75,5 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
         </Table>
       </CardContent>
     </Card>
-  );
+  )
 }

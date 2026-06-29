@@ -4,9 +4,10 @@ from collections import defaultdict
 from datetime import UTC, datetime
 
 from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
+from src.infra.db.execute import sa_execute
 from src.services.analytics.queries import to_iso
 from src.services.analytics.schemas import (
     InterventionSummary,
@@ -15,6 +16,7 @@ from src.services.analytics.schemas import (
     TeacherInterventionRow,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope, ensure_course_in_scope
+from src.types import as_json_object
 
 
 def _row_from_model(item: TeacherIntervention) -> TeacherInterventionRow:
@@ -27,30 +29,29 @@ def _row_from_model(item: TeacherIntervention) -> TeacherInterventionRow:
         status=item.status,
         outcome=item.outcome,
         notes=item.notes,
-        risk_score_before=float(item.risk_score_before)
-        if item.risk_score_before is not None
-        else None,
-        risk_score_after=float(item.risk_score_after)
-        if item.risk_score_after is not None
-        else None,
-        created_at=to_iso(item.created_at) or "",
-        updated_at=to_iso(item.updated_at) or "",
-        resolved_at=to_iso(item.resolved_at),
+        risk_score_before=float(item.risk_score_before) if item.risk_score_before is not None else None,
+        risk_score_after=float(item.risk_score_after) if item.risk_score_after is not None else None,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+        resolved_at=item.resolved_at,
     )
 
 
-def _latest_risk_score(
-    db_session: Session, *, user_id: int, course_id: int
-) -> float | None:
-    snapshot = db_session.exec(
-        select(LearnerRiskSnapshot)
-        .where(
-            LearnerRiskSnapshot.user_id == user_id,
-            LearnerRiskSnapshot.course_id == course_id,
+def _latest_risk_score(db_session: Session, *, user_id: int, course_id: int) -> float | None:
+    snapshot = (
+        sa_execute(
+            db_session,
+            select(LearnerRiskSnapshot)
+            .where(
+                col(LearnerRiskSnapshot.user_id) == user_id,
+                col(LearnerRiskSnapshot.course_id) == course_id,
+            )
+            .order_by(col(LearnerRiskSnapshot.snapshot_date).desc())
+            .limit(1),
         )
-        .order_by(LearnerRiskSnapshot.snapshot_date.desc())
-        .limit(1)
-    ).first()
+        .scalars()
+        .first()
+    )
     return float(snapshot.risk_score) if snapshot is not None else None
 
 
@@ -61,9 +62,7 @@ def create_teacher_intervention(
 ) -> TeacherInterventionRow:
     ensure_course_in_scope(scope, payload.course_id)
     now = datetime.now(tz=UTC)
-    current_risk = _latest_risk_score(
-        db_session, user_id=payload.user_id, course_id=payload.course_id
-    )
+    current_risk = _latest_risk_score(db_session, user_id=payload.user_id, course_id=payload.course_id)
     resolved_at = now if payload.status == "resolved" else None
     intervention = TeacherIntervention(
         teacher_user_id=scope.teacher_user_id,
@@ -75,7 +74,7 @@ def create_teacher_intervention(
         notes=payload.notes,
         risk_score_before=current_risk,
         risk_score_after=current_risk if payload.status == "resolved" else None,
-        payload=payload.payload,
+        payload=as_json_object(payload.payload, field="intervention.payload"),
         created_at=now,
         updated_at=now,
         resolved_at=resolved_at,
@@ -97,17 +96,17 @@ def list_teacher_interventions(
     if course_id is not None:
         ensure_course_in_scope(scope, course_id)
     statement = select(TeacherIntervention).where(
-        TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-        TeacherIntervention.course_id.in_(scope.course_ids),
+        col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+        col(TeacherIntervention.course_id).in_(scope.course_ids),
     )
     if user_id is not None:
-        statement = statement.where(TeacherIntervention.user_id == user_id)
+        statement = statement.where(col(TeacherIntervention.user_id) == user_id)
     if course_id is not None:
-        statement = statement.where(TeacherIntervention.course_id == course_id)
+        statement = statement.where(col(TeacherIntervention.course_id) == course_id)
     rows = list(
-        db_session.exec(
-            statement.order_by(TeacherIntervention.created_at.desc()).limit(limit)
-        ).all()
+        sa_execute(db_session, statement.order_by(col(TeacherIntervention.created_at).desc()).limit(limit))
+        .scalars()
+        .all()
     )
     return TeacherInterventionListResponse(
         generated_at=to_iso(datetime.now(tz=UTC)) or "",
@@ -122,14 +121,17 @@ def intervention_rows_by_learner(
     if not scope.course_ids:
         return {}
     rows = list(
-        db_session.exec(
+        sa_execute(
+            db_session,
             select(TeacherIntervention)
             .where(
-                TeacherIntervention.teacher_user_id == scope.teacher_user_id,
-                TeacherIntervention.course_id.in_(scope.course_ids),
+                col(TeacherIntervention.teacher_user_id) == scope.teacher_user_id,
+                col(TeacherIntervention.course_id).in_(scope.course_ids),
             )
-            .order_by(TeacherIntervention.created_at.desc())
-        ).all()
+            .order_by(col(TeacherIntervention.created_at).desc()),
+        )
+        .scalars()
+        .all()
     )
     grouped: dict[tuple[int, int], list[TeacherIntervention]] = defaultdict(list)
     for row in rows:
@@ -137,9 +139,7 @@ def intervention_rows_by_learner(
     return dict(grouped)
 
 
-def summarize_interventions(
-    db_session: Session, scope: TeacherAnalyticsScope
-) -> InterventionSummary:
+def summarize_interventions(db_session: Session, scope: TeacherAnalyticsScope) -> InterventionSummary:
     grouped = intervention_rows_by_learner(db_session, scope)
     rows = [row for items in grouped.values() for row in items]
     deltas = [
@@ -151,10 +151,6 @@ def summarize_interventions(
         total=len(rows),
         open=sum(1 for row in rows if row.status in {"planned", "completed"}),
         resolved=sum(1 for row in rows if row.status == "resolved"),
-        recovered_learners=sum(
-            1 for row in rows if row.intervention_type == "learner_recovered"
-        ),
-        avg_risk_delta_after_intervention=round(sum(deltas) / len(deltas), 1)
-        if deltas
-        else None,
+        recovered_learners=sum(1 for row in rows if row.intervention_type == "learner_recovered"),
+        avg_risk_delta_after_intervention=round(sum(deltas) / len(deltas), 1) if deltas else None,
     )

@@ -7,29 +7,30 @@
  * will read from process.env which has already been populated.
  */
 
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { getEnvOr } from '../env'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export const USERS = {
   admin: {
-    email: process.env.E2E_ADMIN_EMAIL ?? 'admin@test.local',
-    password: process.env.E2E_ADMIN_PASSWORD ?? 'Admin1234!',
+    email: getEnvOr('E2E_ADMIN_EMAIL', 'admin@test.local'),
+    password: getEnvOr('E2E_ADMIN_PASSWORD', 'Admin1234!'),
   },
   teacher: {
-    email: process.env.E2E_TEACHER_EMAIL ?? 'teacher@test.local',
-    password: process.env.E2E_TEACHER_PASSWORD ?? 'Teacher1234!',
-    firstName: process.env.E2E_TEACHER_FIRST_NAME ?? 'Eve',
-    lastName: process.env.E2E_TEACHER_LAST_NAME ?? 'Teach',
+    email: getEnvOr('E2E_TEACHER_EMAIL', 'teacher@test.local'),
+    password: getEnvOr('E2E_TEACHER_PASSWORD', 'Teacher1234!'),
+    firstName: getEnvOr('E2E_TEACHER_FIRST_NAME', 'Eve'),
+    lastName: getEnvOr('E2E_TEACHER_LAST_NAME', 'Teach'),
   },
   student: {
-    email: process.env.E2E_STUDENT_EMAIL ?? 'student@test.local',
-    password: process.env.E2E_STUDENT_PASSWORD ?? 'Student1234!',
-    firstName: process.env.E2E_STUDENT_FIRST_NAME ?? 'Sam',
-    lastName: process.env.E2E_STUDENT_LAST_NAME ?? 'Learn',
+    email: getEnvOr('E2E_STUDENT_EMAIL', 'student@test.local'),
+    password: getEnvOr('E2E_STUDENT_PASSWORD', 'Student1234!'),
+    firstName: getEnvOr('E2E_STUDENT_FIRST_NAME', 'Sam'),
+    lastName: getEnvOr('E2E_STUDENT_LAST_NAME', 'Learn'),
   },
-} as const;
+} as const
 
 /** Course metadata used in the "ultimate course" fixture. */
 export const COURSE = {
@@ -47,18 +48,18 @@ export const COURSE = {
     exam: 'Final Exam',
     codeChallenge: 'Coding Challenge',
   },
-} as const;
+} as const
 
 /** Sample file paths for upload tests (created in test setup) */
-export const FIXTURES_DIR = path.join(__dirname, '../fixtures/files');
-export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf');
+export const FIXTURES_DIR = path.join(__dirname, '../fixtures/files')
+export const SAMPLE_PDF = path.join(FIXTURES_DIR, 'sample.pdf')
 
 /** A simple Python function used in the coding challenge test */
-export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`;
+export const CORRECT_PYTHON_SOLUTION = `def add(a, b):\n    return a + b\n`
 
 /** Passing exam: answer indices that should yield a passing score */
 export const EXAM_ANSWERS = {
   question0ChoiceIndex: 0, // First question, first choice (set as correct)
   question1IsTrue: true, // True/False — True
   question2MultiSelectIndices: [0, 2], // Multi-select: choices 0 and 2
-};
+}

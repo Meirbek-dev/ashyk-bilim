@@ -1,5 +1,4 @@
-"""
-RBAC - Permission Checker, Dependencies & Exceptions
+"""RBAC - Permission Checker, Dependencies & Exceptions.
 
 This is the ONE file for all authorization logic.
 
@@ -10,16 +9,80 @@ The checker determines which scope applies.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, TypedDict
 
-from fastapi import Depends, HTTPException, Request, status
-from sqlmodel import Session, select
+from fastapi import Depends, HTTPException, status
+from sqlmodel import Session, col, select
 
 from src.infra.db.session import get_db_session
+from src.services.cache.redis_client import get_redis_client
 
-logger = logging.getLogger(__name__)
+
+class UserRoleDict(TypedDict):
+    id: int | None
+    slug: str
+    name: str
+    description: str | None
+    is_system: bool
+    priority: int
+    created_at: datetime
+    updated_at: datetime
+
+
+_logger = logging.getLogger(__name__)
+
+_PERM_CACHE_TTL = 300  # seconds
+
+
+def _redis_perms_key(user_id: int) -> str:
+    return f"perms:{user_id}"
+
+
+def _redis_load_permissions(user_id: int) -> set[str] | None:
+    """Try to load user permissions from Redis. Returns None on miss or error."""
+    redis = get_redis_client()
+    if redis is None:
+        return None
+    try:
+        raw = redis.get(_redis_perms_key(user_id))
+        if isinstance(raw, (str, bytes, bytearray)):
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return set(parsed)
+    except Exception:
+        _logger.debug("Redis permission cache miss for user %s", user_id)
+    return None
+
+
+def _redis_store_permissions(user_id: int, perms: set[str]) -> None:
+    """Store user permissions in Redis with TTL."""
+    redis = get_redis_client()
+    if redis is None:
+        return
+    try:
+        redis.setex(
+            _redis_perms_key(user_id),
+            _PERM_CACHE_TTL,
+            json.dumps(list(perms)),
+        )
+    except Exception:
+        _logger.debug("Failed to cache permissions for user %s", user_id)
+
+
+def _redis_invalidate_permissions(user_id: int) -> None:
+    """Remove cached permissions for a user (call on role assign/revoke)."""
+    redis = get_redis_client()
+    if redis is None:
+        return
+    try:
+        redis.delete(_redis_perms_key(user_id))
+    except Exception:
+        _logger.debug("Failed to invalidate permission cache for user %s", user_id)
+
 
 # ============================================================================
 # Assessment Permission Constants
@@ -38,12 +101,6 @@ ASSESSMENT_PERMISSIONS = frozenset({
     "assessment:read",
 })
 
-# Deprecated permission keys and their modern equivalents.
-# Controlled by the DEPRECATED_PERMISSIONS_ENABLED setting.
-DEPRECATED_PERMISSION_MAP: dict[str, str] = {
-    "grade_assignments": "assessment:grade",
-}
-
 # ============================================================================
 # Exceptions
 # ============================================================================
@@ -58,9 +115,7 @@ class PermissionDenied(HTTPException):
         *,
         reason: str | None = None,
     ) -> None:
-        message = (
-            f"Permission denied: {permission}" if permission else "Permission denied"
-        )
+        message = f"Доступ запрещен: {permission}" if permission else "Доступ запрещен"
         detail = {
             "error_code": "PERMISSION_DENIED",
             "message": message,
@@ -76,7 +131,7 @@ class AuthenticationRequired(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "AUTHENTICATION_REQUIRED",
-            "message": reason or "Not authenticated",
+            "message": reason or "Не авторизован",
         }
         super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
 
@@ -87,7 +142,7 @@ class FeatureDisabled(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "FEATURE_DISABLED",
-            "message": reason or "Feature is disabled",
+            "message": reason or "Функция отключена",
         }
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
@@ -98,7 +153,7 @@ class ResourceAccessDenied(HTTPException):
     def __init__(self, reason: str | None = None) -> None:
         detail = {
             "error_code": "ACCESS_DENIED",
-            "message": reason or "Access denied",
+            "message": reason or "Доступ запрещен",
         }
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
@@ -109,8 +164,7 @@ class ResourceAccessDenied(HTTPException):
 
 
 class PermissionChecker:
-    """
-    Loads user's granted permission strings once per user within a request,
+    """Loads user's granted permission strings once per user within a request,
     then resolves scope from context.
 
     Permission format in DB: "resource:action:scope" (3-part).
@@ -124,53 +178,6 @@ class PermissionChecker:
     def __init__(self, db: Session) -> None:
         self.db = db
         self._cache: dict[int, set[str]] = {}
-
-    # ------------------------------------------------------------------
-    # Deprecated permission resolution
-    # ------------------------------------------------------------------
-
-    def _resolve_permission(self, key: str) -> str:
-        """Map deprecated permission keys to their modern equivalents.
-
-        Behaviour is controlled by the DEPRECATED_PERMISSIONS_ENABLED setting:
-        - True  (default): silently map the old key → new key with a warning.
-        - False:           raise HTTP 403 PERMISSION_DEPRECATED.
-        """
-        if key not in DEPRECATED_PERMISSION_MAP:
-            return key
-
-        try:
-            from src.infra.settings import get_settings
-
-            enabled = get_settings().general_config.deprecated_permissions_enabled
-        except Exception:
-            enabled = True  # safe default when settings unavailable
-
-        modern_key = DEPRECATED_PERMISSION_MAP[key]
-        if not enabled:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "error_code": "PERMISSION_DEPRECATED",
-                    "message": (
-                        f"Permission key '{key}' is deprecated. "
-                        f"Use '{modern_key}' instead."
-                    ),
-                    "deprecated_key": key,
-                    "modern_key": modern_key,
-                },
-            )
-        logger.warning(
-            "Deprecated permission key '%s' used; mapping to '%s'. "
-            "Update callers before disabling DEPRECATED_PERMISSIONS_ENABLED.",
-            key,
-            modern_key,
-        )
-        return modern_key
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def check(
         self,
@@ -193,10 +200,10 @@ class PermissionChecker:
                 example, a course with multiple active authors (CREATOR/MAINTAINER/
                 CONTRIBUTOR). When ``True``, the ``own`` scope is satisfied.
             is_assigned: Set to True when the service layer has verified that this
-                resource is assigned to the user (enrollment, explicit assignment,
-                etc.). Unlocks ``assigned``-scope permissions.
+                resource is available to the user through enrollment or another
+                explicit access grant. Unlocks ``assigned``-scope permissions.
+
         """
-        permission = self._resolve_permission(permission)
         granted = self._get_or_load(user_id)
         return self._resolve(
             permission,
@@ -241,8 +248,7 @@ class PermissionChecker:
                 continue
             resource, action = parts
             results[p] = any(
-                self._has_perm(granted, resource, action, scope)
-                for scope in ("all", "platform", "assigned", "own")
+                self.has_perm(granted, resource, action, scope) for scope in ("all", "platform", "assigned", "own")
             )
         return results
 
@@ -299,34 +305,33 @@ class PermissionChecker:
             if len(parts) == 3:
                 res, act, scp = parts
                 hierarchy_expanded.update(
-                    f"{res}:{act}:{implied_scope}"
-                    for implied_scope in scope_implies.get(scp, [])
+                    f"{res}:{act}:{implied_scope}" for implied_scope in scope_implies.get(scp, [])
                 )
 
         return hierarchy_expanded
 
-    def get_user_roles(self, user_id: int) -> list[dict]:
+    def get_user_roles(self, user_id: int) -> list[UserRoleDict]:
         """Return role dicts for user."""
         from src.db.permissions import Role, UserRole
 
         query = (
             select(Role, UserRole)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == user_id)
+            .join(UserRole, col(UserRole.role_id) == col(Role.id))
+            .where(col(UserRole.user_id) == user_id)
         )
         results = self.db.exec(query).all()
         return [
-            {
-                "id": role.id,
-                "slug": role.slug,
-                "name": role.name,
-                "description": role.description,
-                "is_system": role.is_system,
-                "priority": role.priority,
-                "created_at": role.created_at,
-                "updated_at": role.updated_at,
-            }
-            for role, user_role in results
+            UserRoleDict(
+                id=role.id,
+                slug=role.slug,
+                name=role.name,
+                description=role.description,
+                is_system=role.is_system,
+                priority=role.priority,
+                created_at=role.created_at,
+                updated_at=role.updated_at,
+            )
+            for role, _ in results
         ]
 
     # ------------------------------------------------------------------
@@ -340,38 +345,35 @@ class PermissionChecker:
         *,
         assigned_by: int | None = None,
     ) -> None:
-        """
-        Assign a role to a user.
+        """Assign a role to a user.
 
         Args:
             user_id: Target user ID
             role_id: Numeric role ID
             assigned_by: User ID who is assigning the role
+
         """
         from src.db.permissions import Role, UserRole
 
         role = self.db.get(Role, role_id)
 
         if not role:
-            raise HTTPException(404, detail=f"Role not found: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не найдена: ID {role_id}")
 
         # Escalation prevention: assigner cannot grant a role with higher
         # priority than their own highest role.
         if assigned_by is not None:
             assigner_roles = self.get_user_roles(assigned_by)
-            assigner_max_priority = max(
-                (r["priority"] for r in assigner_roles), default=0
-            )
+            assigner_max_priority = max((r["priority"] for r in assigner_roles), default=0)
             if role.priority > assigner_max_priority:
                 raise PermissionDenied(
                     permission="role:create",
-                    reason="Cannot assign a role with higher priority than your own",
+                    reason="Нельзя назначить роль с более высоким приоритетом, чем у вашей собственной роли",
                 )
 
+        assert role.id is not None
         existing = self.db.exec(
-            select(UserRole)
-            .where(UserRole.user_id == user_id)
-            .where(UserRole.role_id == role.id)
+            select(UserRole).where(col(UserRole.user_id) == user_id).where(col(UserRole.role_id) == role.id)
         ).first()
         if existing:
             return  # idempotent
@@ -385,37 +387,38 @@ class PermissionChecker:
         )
         self.db.flush()
         self._cache.pop(user_id, None)
+        _redis_invalidate_permissions(user_id)
 
     def revoke_role(
         self,
         user_id: int,
         role_id: int,
     ) -> None:
-        """
-        Revoke a role from a user.
+        """Revoke a role from a user.
 
         Args:
             user_id: Target user ID
             role_id: Numeric role ID
+
         """
         from src.db.permissions import Role, UserRole
 
         role = self.db.get(Role, role_id)
 
         if not role:
-            raise HTTPException(404, detail=f"Role not found: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не найдена: ID {role_id}")
 
+        assert role.id is not None
         user_role = self.db.exec(
-            select(UserRole)
-            .where(UserRole.user_id == user_id)
-            .where(UserRole.role_id == role.id)
+            select(UserRole).where(col(UserRole.user_id) == user_id).where(col(UserRole.role_id) == role.id)
         ).first()
         if not user_role:
-            raise HTTPException(404, detail=f"Role not assigned: ID {role_id}")
+            raise HTTPException(404, detail=f"Роль не назначена: ID {role_id}")
 
         self.db.delete(user_role)
         self.db.flush()
         self._cache.pop(user_id, None)
+        _redis_invalidate_permissions(user_id)
 
     # ------------------------------------------------------------------
     # Internal
@@ -429,7 +432,14 @@ class PermissionChecker:
                 # correctly through the normal RBAC path.
                 self._cache[user_id] = self._load_guest_permissions()
             else:
-                self._cache[user_id] = self._load_permissions(user_id)
+                # Try Redis cross-request cache first to skip the DB query.
+                cached = _redis_load_permissions(user_id)
+                if cached is not None:
+                    self._cache[user_id] = cached
+                else:
+                    perms = self._load_permissions(user_id)
+                    self._cache[user_id] = perms
+                    _redis_store_permissions(user_id, perms)
         return self._cache[user_id]
 
     def _load_guest_permissions(self) -> set[str]:
@@ -444,21 +454,21 @@ class PermissionChecker:
         from src.db.permission_enums import SYSTEM_ROLES, RoleSlug
         from src.db.permissions import Permission, Role, RolePermission
 
-        guest_role = self.db.exec(
-            select(Role).where(Role.slug == RoleSlug.GUEST.value)
-        ).first()
+        guest_role = self.db.exec(select(Role).where(col(Role.slug) == RoleSlug.GUEST.value)).first()
         if guest_role is not None:
             perms = self.db.exec(
                 select(Permission.name)
-                .join(RolePermission, RolePermission.permission_id == Permission.id)
-                .where(RolePermission.role_id == guest_role.id)
+                .join(RolePermission, col(RolePermission.permission_id) == col(Permission.id))
+                .where(col(RolePermission.role_id) == guest_role.id)
                 .distinct()
             ).all()
             return set(perms)
 
         # Fallback: role not seeded yet — use the in-memory definition so
         # anonymous browsing of public content keeps working.
-        guest_def = SYSTEM_ROLES.get(RoleSlug.GUEST, {})
+        guest_def = SYSTEM_ROLES.get(RoleSlug.GUEST)
+        if guest_def is None:
+            return set()
         return set(guest_def.get("permissions", []))
 
     def _load_permissions(self, user_id: int) -> set[str]:
@@ -467,17 +477,17 @@ class PermissionChecker:
 
         query = (
             select(Permission.name)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .join(Role, Role.id == RolePermission.role_id)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == user_id)
+            .join(RolePermission, col(RolePermission.permission_id) == col(Permission.id))
+            .join(Role, col(Role.id) == col(RolePermission.role_id))
+            .join(UserRole, col(UserRole.role_id) == col(Role.id))
+            .where(col(UserRole.user_id) == user_id)
             .distinct()
         )
 
         return set(self.db.exec(query).all())
 
     @staticmethod
-    def _has_perm(granted: set[str], resource: str, action: str, scope: str) -> bool:
+    def has_perm(granted: set[str], resource: str, action: str, scope: str) -> bool:
         """Check if granted set contains a permission matching resource:action:scope.
 
         Handles wildcard patterns: resource:*:scope, *:action:scope, *:*:*, etc.
@@ -518,24 +528,20 @@ class PermissionChecker:
 
         resource, action = parts
 
-        if PermissionChecker._has_perm(granted, resource, action, "all"):
+        if PermissionChecker.has_perm(granted, resource, action, "all"):
             return True
 
-        if PermissionChecker._has_perm(granted, resource, action, "platform"):
+        if PermissionChecker.has_perm(granted, resource, action, "platform"):
             return True
 
-        if is_assigned and PermissionChecker._has_perm(
-            granted, resource, action, "assigned"
-        ):
+        if is_assigned and PermissionChecker.has_perm(granted, resource, action, "assigned"):
             return True
 
         if user_id != 0:
             owns = (
-                is_owner
-                if is_owner is not None
-                else (resource_owner_id is not None and resource_owner_id == user_id)
+                is_owner if is_owner is not None else (resource_owner_id is not None and resource_owner_id == user_id)
             )
-            if owns and PermissionChecker._has_perm(granted, resource, action, "own"):
+            if owns and PermissionChecker.has_perm(granted, resource, action, "own"):
                 return True
 
         return False

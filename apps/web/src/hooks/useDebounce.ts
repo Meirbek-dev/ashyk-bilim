@@ -1,47 +1,45 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-type AnyFunction = (...args: any[]) => unknown;
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setDebouncedValue(value), delay);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => setDebouncedValue(value), delay)
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [value, delay]);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [value, delay])
 
-  return debouncedValue;
+  return debouncedValue
 }
 
-export function useDebouncedCallback<T extends AnyFunction>(
-  callback: T,
+export function useDebouncedCallback<Args extends unknown[]>(
+  callback: (...args: Args) => unknown,
   delay: number,
-): (...args: Parameters<T>) => void {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbackRef = useRef(callback);
+): (...args: Args) => void {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const callbackRef = useRef(callback)
 
   useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
+    callbackRef.current = callback
+  }, [callback])
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   return useCallback(
-    (...args: Parameters<T>) => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    (...args: Args) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
       timeoutRef.current = setTimeout(() => {
-        callbackRef.current(...args);
-      }, delay);
+        callbackRef.current(...args)
+      }, delay)
     },
     [delay],
-  );
+  )
 }

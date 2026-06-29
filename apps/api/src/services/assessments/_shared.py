@@ -4,53 +4,51 @@ All private helpers used across multiple assessment service modules live here.
 """
 
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from typing import Literal, TypedDict, assert_never, cast
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-from sqlalchemy import asc, desc, func, or_
-from sqlmodel import Session, select
+from sqlalchemy import desc, func, inspect as sqlalchemy_inspect
+from sqlmodel import Session, col, select
 from ulid import ULID
 
+from src.app.exceptions import ConflictAppError, ValidationAppError
+from src.db.assessment_access import (
+    AssessmentAccessMode,
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
+from src.db.assessment_contracts import (
+    AssessmentCanonicalPolicy,
+    AssessmentDeliveryPolicy,
+    AssessmentIntegrityPolicy,
+    AssessmentReviewVisibility,
+)
 from src.db.assessments import (
     ITEM_ANSWER_ADAPTER,
     ITEM_BODY_ADAPTER,
     Assessment,
     AssessmentAttemptProjection,
-    AssessmentCreate,
     AssessmentDraftPatch,
-    AssessmentDraftRead,
     AssessmentEffectivePolicy,
-    AssessmentGradingType,
     AssessmentItem,
-    AssessmentItemCreate,
-    AssessmentItemReorder,
-    AssessmentItemUpdate,
+    AssessmentItemMetadata,
     AssessmentLifecycle,
-    AssessmentLifecycleTransition,
     AssessmentPolicyPatch,
-    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentReviewProjection,
     AssessmentScoreProjection,
-    AssessmentUpdate,
-    CodeRunRequest,
-    CodeRunResponse,
-    GradingDraftSave,
-    ItemGradeEntry,
     ItemKind,
     ReadinessIssue,
-    ReviewQueueRead,
-    RubricCriterion,
-    StudentPolicyOverrideCreate,
     StudentPolicyOverrideRead,
-    StudentPolicyOverrideUpdate,
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
-from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import (
     Activity,
     ActivityAssessmentPolicyRead,
@@ -62,38 +60,30 @@ from src.db.courses.courses import Course
 from src.db.grading.entries import GradingEntry
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
-    AssessmentCompletionRule,
-    AssessmentGradingMode,
     AssessmentPolicy,
     GradeReleaseMode,
+    LatePolicy,
     LatePolicyNone,
 )
-from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    GradedItem,
     GradingBreakdown,
     Submission,
     SubmissionRead,
-    SubmissionStats,
     SubmissionStatus,
-    TeacherGradeInput,
+    SubmissionUser,
 )
+from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
+from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
+from src.services.assessments.policy_defaults import default_anti_cheat, get_policy_preset
 from src.services.assessments.settings import validate_settings
-from src.services.code_execution import get_code_execution_service
-from src.services.courses._utils import (
-    _get_activity_by_uuid_or_404,
-    _next_activity_order,
-)
 from src.services.courses.access import user_has_course_access
-from src.services.grading.pipeline.orchestrator import (
-    submit_assessment as submit_assessment_pipeline,
-)
-from src.services.grading.settings_loader import load_activity_settings
 from src.services.grading.submission import start_submission_v2
-from src.services.grading.teacher import _save_teacher_grade, bulk_publish_grades
-from src.services.progress import submissions as progress_submissions
+from src.types import JsonObject, JsonValue
+from src.types.narrowing import as_json_object, require_persisted_id
 
 ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_EXAM,
@@ -101,9 +91,7 @@ ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_CODE_CHALLENGE,
 }
 
-_KIND_TO_ACTIVITY: dict[
-    AssessmentType, tuple[ActivityTypeEnum, ActivitySubTypeEnum]
-] = {
+_KIND_TO_ACTIVITY: dict[AssessmentType, tuple[ActivityTypeEnum, ActivitySubTypeEnum]] = {
     AssessmentType.EXAM: (
         ActivityTypeEnum.TYPE_EXAM,
         ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
@@ -123,9 +111,7 @@ _ACTIVITY_TO_KIND: dict[ActivityTypeEnum, AssessmentType] = {
     ActivityTypeEnum.TYPE_CODE_CHALLENGE: AssessmentType.CODE_CHALLENGE,
 }
 
-_ALLOWED_LIFECYCLE_TRANSITIONS: dict[
-    AssessmentLifecycle, frozenset[AssessmentLifecycle]
-] = {
+_ALLOWED_LIFECYCLE_TRANSITIONS: dict[AssessmentLifecycle, frozenset[AssessmentLifecycle]] = {
     AssessmentLifecycle.DRAFT: frozenset({
         AssessmentLifecycle.SCHEDULED,
         AssessmentLifecycle.PUBLISHED,
@@ -165,9 +151,7 @@ def _get_or_project_assessment_for_activity(
     AssessmentPolicy rows. Activities without a canonical assessment row
     should have been migrated by the Phase 0 Alembic migration.
     """
-    existing = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity.id)
-    ).first()
+    existing = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
     if existing is not None:
         return existing
 
@@ -214,9 +198,7 @@ def _build_assessment_read(
         weight=assessment.weight,
         grading_type=assessment.grading_type,
         policy_id=assessment.policy_id,
-        assessment_policy=_build_policy_read(
-            _get_policy_for_assessment(assessment, db_session)
-        ),
+        assessment_policy=_build_policy_read(_get_policy_for_assessment(assessment, db_session)),
         items=[_build_item_read(item) for item in _get_items(assessment, db_session)],
         attempt_projection=_build_attempt_projection(
             assessment,
@@ -227,12 +209,35 @@ def _build_assessment_read(
         ),
         review_projection=_build_review_projection(assessment, activity),
         content_version=_content_version(assessment),
-        policy_version=_policy_version(
-            _get_policy_for_assessment(assessment, db_session)
-        ),
+        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
     )
+
+
+class AssessmentAttemptState(TypedDict):
+    active_submission: Submission | None
+    can_edit: bool
+    can_save_draft: bool
+    can_submit: bool
+    can_start: bool
+    can_continue: bool
+    can_view_result: bool
+    can_start_revision: bool
+    recommended_action: Literal[
+        "START", "CONTINUE_DRAFT", "SUBMIT", "WAIT_FOR_RELEASE", "VIEW_RESULT", "START_REVISION", "NO_ACTION"
+    ]
+    primary_button_label_key: str
+    disabled_action_reasons: list[str]
+    effective_policy: AssessmentEffectivePolicy
+    server_now: datetime
+    started_at: datetime | None
+    timer_started_at: datetime | None
+    timer_expires_at: datetime | None
+    available_at: datetime | None
+    closes_at: datetime | None
+    due_at: datetime | None
+    time_remaining_seconds: int | None
 
 
 def _build_attempt_projection(
@@ -248,18 +253,12 @@ def _build_attempt_projection(
     assert isinstance(current_user, PublicUser)
     state = _build_attempt_state(assessment, activity, current_user, db_session)
     active_submission = state["active_submission"]
-    submission_status = (
-        SubmissionStatus(active_submission.status)
-        if active_submission is not None
-        else None
-    )
+    submission_status = SubmissionStatus(active_submission.status) if active_submission is not None else None
     can_edit = bool(state["can_edit"])
 
     return AssessmentAttemptProjection(
         assessment_uuid=assessment.assessment_uuid,
-        submission_uuid=active_submission.submission_uuid
-        if active_submission
-        else None,
+        submission_uuid=active_submission.submission_uuid if active_submission else None,
         submission_status=submission_status.value if submission_status else None,
         release_state=_release_state_for_submission(active_submission, db_session),
         can_edit=can_edit,
@@ -269,12 +268,12 @@ def _build_attempt_projection(
         can_continue=bool(state["can_continue"]),
         can_view_result=bool(state["can_view_result"]),
         can_start_revision=bool(state["can_start_revision"]),
-        recommended_action=str(state["recommended_action"]),
+        recommended_action=state["recommended_action"],
         primary_button_label_key=str(state["primary_button_label_key"]),
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
-        disabled_action_reasons=list(state["disabled_action_reasons"]),
+        disabled_action_reasons=state["disabled_action_reasons"],
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
         started_at=state["started_at"],
@@ -285,9 +284,7 @@ def _build_attempt_projection(
         due_at=state["due_at"],
         time_remaining_seconds=state["time_remaining_seconds"],
         content_version=_content_version(assessment),
-        policy_version=_policy_version(
-            _get_policy_for_assessment(assessment, db_session)
-        ),
+        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
     )
 
 
@@ -297,7 +294,7 @@ def _build_review_projection(
 ) -> AssessmentReviewProjection:
     return AssessmentReviewProjection(
         assessment_uuid=assessment.assessment_uuid,
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         activity_uuid=activity.activity_uuid,
         title=assessment.title,
         kind=assessment.kind,
@@ -310,34 +307,32 @@ def _build_attempt_state(
     activity: Activity,
     current_user: PublicUser,
     db_session: Session,
-) -> dict[str, object]:
+) -> AssessmentAttemptState:
     now = datetime.now(UTC)
+    course = _get_course_for_activity_or_404(activity, db_session)
+    is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
     policy = _get_policy_for_assessment(assessment, db_session)
-    override = _active_policy_override(policy, current_user.id, db_session)
+    override = None if is_teacher_preview else _active_policy_override(policy, current_user.id, db_session)
     submissions = db_session.exec(
         select(Submission)
         .where(
             Submission.activity_id == activity.id,
             Submission.user_id == current_user.id,
         )
-        .order_by(desc(Submission.created_at))
+        .order_by(desc(col(Submission.created_at)))
     ).all()
     draft = next(
-        (
-            submission
-            for submission in submissions
-            if submission.status == SubmissionStatus.DRAFT
-        ),
+        (submission for submission in submissions if submission.status == SubmissionStatus.DRAFT),
         None,
     )
     latest = submissions[0] if submissions else None
-    active_submission = draft or latest
-    completed_count = len([
-        submission
-        for submission in submissions
-        if submission.status != SubmissionStatus.DRAFT
-    ])
-    max_attempts = policy.max_attempts if policy is not None else None
+    active_submission = draft or (None if is_teacher_preview else latest)
+    completed_count = (
+        0
+        if is_teacher_preview
+        else len([submission for submission in submissions if submission.status != SubmissionStatus.DRAFT])
+    )
+    max_attempts = None if is_teacher_preview else (policy.max_attempts if policy is not None else None)
     if override is not None and override.max_attempts_override is not None:
         max_attempts = override.max_attempts_override
     due_at = _effective_due_at(policy, override)
@@ -346,61 +341,51 @@ def _build_attempt_state(
 
     reasons: list[str] = []
     available_at: datetime | None = None
-    if lifecycle == AssessmentLifecycle.DRAFT:
-        reasons.append("NOT_PUBLISHED")
-    elif lifecycle == AssessmentLifecycle.SCHEDULED:
-        available_at = _coerce_datetime(assessment.scheduled_at)
-        if available_at is None or available_at > now:
-            reasons.append("SCHEDULED_NOT_OPEN")
-    elif lifecycle == AssessmentLifecycle.ARCHIVED:
-        reasons.append("ARCHIVED")
+    if not is_teacher_preview:
+        if lifecycle == AssessmentLifecycle.DRAFT:
+            reasons.append("NOT_PUBLISHED")
+        elif lifecycle == AssessmentLifecycle.SCHEDULED:
+            available_at = _coerce_datetime(assessment.scheduled_at)
+            if available_at is None or available_at > now:
+                reasons.append("SCHEDULED_NOT_OPEN")
+        elif lifecycle == AssessmentLifecycle.ARCHIVED:
+            reasons.append("ARCHIVED")
 
     allow_late = policy.allow_late if policy is not None else True
-    if due_at is not None and now > due_at and not allow_late:
+    if not is_teacher_preview and due_at is not None and now > due_at and not allow_late:
         reasons.append("PAST_DUE")
 
     has_editable_existing = draft is not None
-    attempts_remaining = (
-        None if max_attempts is None else max(0, int(max_attempts) - completed_count)
-    )
-    if (
-        max_attempts is not None
-        and completed_count >= int(max_attempts)
-        and not has_editable_existing
-    ):
+    attempts_remaining = None if max_attempts is None else max(0, int(max_attempts) - completed_count)
+    if max_attempts is not None and completed_count >= int(max_attempts) and not has_editable_existing:
         reasons.append("MAX_ATTEMPTS_REACHED")
 
     time_remaining_seconds: int | None = None
     timed_close_at: datetime | None = None
     if draft is not None and time_limit_seconds and draft.started_at:
-        started_at = (
-            draft.started_at
-            if draft.started_at.tzinfo
-            else draft.started_at.replace(tzinfo=UTC)
-        )
-        timed_close_at = started_at + timedelta(seconds=int(time_limit_seconds))
+        started_at_local = draft.started_at if draft.started_at.tzinfo else draft.started_at.replace(tzinfo=UTC)
+        timed_close_at = started_at_local + timedelta(seconds=int(time_limit_seconds))
         time_remaining_seconds = max(0, int((timed_close_at - now).total_seconds()))
-        if time_remaining_seconds <= 0:
+        if not is_teacher_preview and time_remaining_seconds <= 0:
             reasons.append("TIME_LIMIT_EXPIRED")
 
     closes_at = _earliest_datetime([due_at, timed_close_at])
     editable_statuses = {None, SubmissionStatus.DRAFT, SubmissionStatus.RETURNED}
-    active_status = (
-        SubmissionStatus(active_submission.status)
-        if active_submission is not None
-        else None
-    )
+    active_status = SubmissionStatus(active_submission.status) if active_submission is not None else None
     can_edit = active_status in editable_statuses and not reasons
 
     # Fine-grained action flags
     has_draft = draft is not None
-    has_submitted = latest is not None and active_status != SubmissionStatus.DRAFT
+    has_submitted = False if is_teacher_preview else latest is not None and active_status != SubmissionStatus.DRAFT
     can_start = not has_draft and not has_submitted and not reasons
     can_continue = has_draft and not reasons
     can_view_result = _is_result_visible(active_submission, db_session)
     can_start_revision = active_status == SubmissionStatus.RETURNED and not reasons
 
     # Recommended action and label key for the primary button
+    recommended_action: Literal[
+        "START", "CONTINUE_DRAFT", "SUBMIT", "WAIT_FOR_RELEASE", "VIEW_RESULT", "START_REVISION", "NO_ACTION"
+    ]
     if reasons:
         recommended_action = "NO_ACTION"
         primary_button_label_key = "blocked"
@@ -424,22 +409,18 @@ def _build_attempt_state(
         primary_button_label_key = "noAction"
 
     # Server timestamps for the active draft/submission
-    started_at: datetime | None = None
+    ret_started_at: datetime | None = None
     timer_started_at: datetime | None = None
     timer_expires_at: datetime | None = None
     if draft is not None and draft.started_at:
         raw_started = draft.started_at
-        started_at = (
-            raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
-        )
+        ret_started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
         if time_limit_seconds:
-            timer_started_at = started_at
-            timer_expires_at = started_at + timedelta(seconds=int(time_limit_seconds))
+            timer_started_at = ret_started_at
+            timer_expires_at = ret_started_at + timedelta(seconds=int(time_limit_seconds))
     elif latest is not None and latest.started_at:
         raw_started = latest.started_at
-        started_at = (
-            raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
-        )
+        ret_started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
 
     return {
         "active_submission": active_submission,
@@ -460,17 +441,20 @@ def _build_attempt_state(
             time_limit_seconds=time_limit_seconds,
             due_at=due_at,
             allow_late=allow_late,
-            late_policy=policy.late_policy_json if policy is not None else {},
-            grade_release_mode=(
-                policy.grade_release_mode
-                if policy is not None
-                else GradeReleaseMode.IMMEDIATE
+            late_policy=dict(policy.late_policy_json) if policy is not None else {},
+            grade_release_mode=(policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE),
+            anti_cheat_json=dict(policy.anti_cheat_json) if policy is not None else {},
+            settings_json=dict(policy.settings_json) if policy is not None else {},
+            canonical_policy=_build_canonical_policy(
+                policy,
+                max_attempts=max_attempts,
+                time_limit_seconds=time_limit_seconds,
+                due_at=due_at,
+                allow_late=allow_late,
             ),
-            anti_cheat_json=policy.anti_cheat_json if policy is not None else {},
-            settings_json=policy.settings_json if policy is not None else {},
         ),
         "server_now": now,
-        "started_at": started_at,
+        "started_at": ret_started_at,
         "timer_started_at": timer_started_at,
         "timer_expires_at": timer_expires_at,
         "available_at": available_at,
@@ -482,22 +466,28 @@ def _build_attempt_state(
 
 def _assert_attempt_action_allowed(
     *,
-    action: str,
+    action: Literal["start", "save_draft", "submit"],
     assessment: Assessment,
     activity: Activity,
     course: Course,
     current_user: PublicUser,
     db_session: Session,
-) -> dict[str, object]:
+) -> AssessmentAttemptState:
     _require_submit_access(current_user, activity, course, db_session)
     state = _build_attempt_state(assessment, activity, current_user, db_session)
-    allowed_key = {
-        "start": "can_edit",
-        "save_draft": "can_save_draft",
-        "submit": "can_submit",
-    }[action]
-    if not state[allowed_key]:
-        reasons = list(state["disabled_action_reasons"])
+
+    allowed = False
+    if action == "start":
+        allowed = state["can_edit"]
+    elif action == "save_draft":
+        allowed = state["can_save_draft"]
+    elif action == "submit":
+        allowed = state["can_submit"]
+    else:
+        assert_never(action)
+
+    if not allowed:
+        reasons = state["disabled_action_reasons"]
         reason = reasons[0] if reasons else "ACTION_NOT_ALLOWED"
         logger.warning(
             "ASSESSMENT_ATTEMPT_BLOCKED action=%s reason=%s assessment_uuid=%s activity_uuid=%s user_id=%s",
@@ -521,7 +511,7 @@ def _assert_attempt_action_allowed(
 def _release_state_for_submission(
     submission: Submission | None,
     db_session: Session,
-) -> str:
+) -> Literal["HIDDEN", "AWAITING_RELEASE", "VISIBLE", "RETURNED_FOR_REVISION"]:
     if submission is None:
         return "HIDDEN"
     submission_status = SubmissionStatus(submission.status)
@@ -561,6 +551,7 @@ def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
         kind=item.kind,
         title=item.title,
         body=ITEM_BODY_ADAPTER.validate_python(item.body_json),
+        metadata=AssessmentItemMetadata.model_validate(item.metadata_json or {}),
         max_score=item.max_score,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -568,15 +559,48 @@ def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
 
 
 def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
-    return _get_items_raw(assessment, db_session)
+    items = _get_items_raw(assessment, db_session)
+    if not items and assessment.kind == AssessmentType.CODE_CHALLENGE and assessment.id is not None:
+        now = datetime.now(UTC)
+        default_body: dict[str, object] = {
+            "kind": "CODE",
+            "prompt": assessment.description or "",
+            "input_spec": "",
+            "output_spec": "",
+            "constraints": list[str](),
+            "languages": list[int](),
+            "starter_code": dict[str, str](),
+            "reference_solutions": dict[str, str](),
+            "tests": list[dict[str, object]](),
+            "time_limit_seconds": 5,
+            "memory_limit_mb": 256,
+        }
+        item = AssessmentItem(
+            item_uuid=f"item_{ULID()}",
+            assessment_id=assessment.id,
+            order=1,
+            kind=ItemKind.CODE,
+            title=assessment.title,
+            body_json=default_body,
+            metadata_json={},
+            max_score=100.0,
+            created_at=now,
+            updated_at=now,
+        )
+        db_session.add(item)
+        db_session.flush()
+        items = [item]
+    return items
 
 
 def _get_items_raw(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
-    return db_session.exec(
-        select(AssessmentItem)
-        .where(AssessmentItem.assessment_id == assessment.id)
-        .order_by(AssessmentItem.order, AssessmentItem.id)
-    ).all()
+    return list(
+        db_session.exec(
+            select(AssessmentItem)
+            .where(col(AssessmentItem.assessment_id) == assessment.id)
+            .order_by(col(AssessmentItem.order), col(AssessmentItem.id))
+        ).all()
+    )
 
 
 def _get_item_or_404(
@@ -599,9 +623,7 @@ def _get_assessment_by_uuid_or_404(
     assessment_uuid: str,
     db_session: Session,
 ) -> Assessment:
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)
-    ).first()
+    assessment = db_session.exec(select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)).first()
     if assessment is None:
         raise HTTPException(status_code=404, detail="Оценивание не найдено")
     return assessment
@@ -632,7 +654,7 @@ def _get_assessment_submission_or_404(
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return submission
 
@@ -664,30 +686,28 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     return chapter
 
 
-def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_author_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:author", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
 
-def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_publish_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
-    if checker.check(
-        user.id, "assessment:publish", resource_owner_id=course.creator_id
-    ):
+    if checker.check(user.id, "assessment:publish", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
 
-def _require_grade(user: PublicUser, course: Course, db_session: Session) -> None:
+def _require_grade_impl(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:grade", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "assessment:grade", resource_owner_id=course.creator_id)
 
 
-def _require_read(
+def _require_read_impl(
     user: PublicUser | AnonymousUser,
     activity: Activity,
     course: Course,
@@ -711,16 +731,23 @@ def _require_read(
     )
 
 
-def _require_submit_access(
+def _require_submit_access_impl(
     user: PublicUser,
     activity: Activity,
     course: Course,
     db_session: Session,
 ) -> None:
+    if _is_teacher_preview_user(user, activity, course, db_session):
+        return
     if not user_has_course_access(user.id, course, db_session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Вы должны быть зачислены на этот курс, чтобы отправлять работы",
+        )
+    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Это оценивание доступно только выбранным учащимся курса.",
         )
     checker = PermissionChecker(db_session)
     if checker.check(
@@ -738,7 +765,7 @@ def _require_submit_access(
     )
 
 
-def _has_submit_access(
+def _has_submit_access_impl(
     user: PublicUser | AnonymousUser | None,
     activity: Activity,
     course: Course,
@@ -746,7 +773,11 @@ def _has_submit_access(
 ) -> bool:
     if not isinstance(user, PublicUser):
         return False
+    if _is_teacher_preview_user(user, activity, course, db_session):
+        return True
     if not user_has_course_access(user.id, course, db_session):
+        return False
+    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
         return False
     checker = PermissionChecker(db_session)
     return checker.check(
@@ -755,6 +786,126 @@ def _has_submit_access(
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
+
+
+def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_author(user, course, db_session)
+
+
+def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_publish(user, course, db_session)
+
+
+def _require_grade(user: PublicUser, course: Course, db_session: Session) -> None:
+    from src.services.assessments import core
+
+    return core._require_grade(user, course, db_session)
+
+
+def _require_read(
+    user: PublicUser | AnonymousUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> None:
+    from src.services.assessments import core
+
+    return core._require_read(user, activity, course, db_session)
+
+
+def _require_submit_access(
+    user: PublicUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> None:
+    from src.services.assessments import core
+
+    return core._require_submit_access(user, activity, course, db_session)
+
+
+def _has_submit_access(
+    user: PublicUser | AnonymousUser | None,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> bool:
+    from src.services.assessments import core
+
+    return core._has_submit_access(user, activity, course, db_session)
+
+
+def _is_teacher_preview_user(
+    user: PublicUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> bool:
+    """Course authors can exercise assessment runtime without learner limits."""
+    if user.id in {course.creator_id, activity.creator_id}:
+        return True
+
+    bind = db_session.get_bind()
+    tablename = ResourceAuthor.__tablename__
+    if callable(tablename):
+        tablename = tablename()
+    if not sqlalchemy_inspect(bind).has_table(tablename):
+        return False
+
+    return (
+        db_session.exec(
+            select(ResourceAuthor.id).where(
+                ResourceAuthor.resource_uuid == course.course_uuid,
+                ResourceAuthor.user_id == user.id,
+                ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            )
+        ).first()
+        is not None
+    )
+
+
+def _assessment_access_allows_user(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+) -> bool:
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity_id)).first()
+    if assessment is None or assessment.id is None:
+        return True
+
+    access_policy = db_session.exec(
+        select(AssessmentAccessPolicy).where(AssessmentAccessPolicy.assessment_id == assessment.id)
+    ).first()
+    if access_policy is None or access_policy.mode == AssessmentAccessMode.ALL_COURSE_LEARNERS:
+        return True
+    if access_policy.id is None:
+        return False
+
+    direct = db_session.exec(
+        select(AssessmentAccessUser.id).where(
+            AssessmentAccessUser.policy_id == access_policy.id,
+            AssessmentAccessUser.user_id == user_id,
+        )
+    ).first()
+    if direct is not None:
+        return True
+
+    group_match = db_session.exec(
+        select(AssessmentAccessUserGroup.id)
+        .join(
+            UserGroupUser,
+            col(UserGroupUser.usergroup_id) == AssessmentAccessUserGroup.usergroup_id,
+        )
+        .where(
+            AssessmentAccessUserGroup.policy_id == access_policy.id,
+            UserGroupUser.user_id == user_id,
+        )
+    ).first()
+    return group_match is not None
 
 
 def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:
@@ -788,23 +939,23 @@ def _get_or_create_policy(
     db_session: Session,
     now: datetime,
 ) -> AssessmentPolicy:
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
     if policy is None:
+        preset = get_policy_preset(kind)
         policy = AssessmentPolicy(
             policy_uuid=f"policy_{ULID()}",
             activity_id=activity_id,
             assessment_type=kind,
-            grading_mode=_default_grading_mode(kind),
-            completion_rule=_default_completion_rule(kind),
-            passing_score=60,
-            max_attempts=1 if kind == AssessmentType.EXAM else None,
-            time_limit_seconds=3600 if kind == AssessmentType.EXAM else None,
-            allow_late=kind != AssessmentType.EXAM,
+            grading_mode=preset.grading_mode,
+            completion_rule=preset.completion_rule,
+            grade_release_mode=preset.grade_release_mode,
+            passing_score=preset.passing_score,
+            max_attempts=preset.max_attempts,
+            time_limit_seconds=preset.time_limit_seconds,
+            allow_late=preset.allow_late,
             late_policy_json=LatePolicyNone().model_dump(mode="json"),
-            anti_cheat_json=_default_anti_cheat(kind),
-            settings_json={},
+            anti_cheat_json=default_anti_cheat(kind),
+            settings_json={"review_visibility": preset.review_visibility},
             created_at=now,
             updated_at=now,
         )
@@ -813,7 +964,17 @@ def _get_or_create_policy(
     if patch is not None:
         for field, value in _normalized_policy_patch(kind, patch).items():
             if field == "late_policy_json":
-                policy.late_policy_json = value
+                policy.late_policy_json = as_json_object(value, field=field) if isinstance(value, dict) else {}
+                continue
+            if field == "anti_cheat_json":
+                current = dict(policy.anti_cheat_json or {})
+                current.update(as_json_object(value, field=field) if isinstance(value, dict) else {})
+                policy.anti_cheat_json = current
+                continue
+            if field == "settings_json":
+                current = dict(policy.settings_json or {})
+                current.update(as_json_object(value, field=field) if isinstance(value, dict) else {})
+                policy.settings_json = current
                 continue
             if hasattr(policy, field):
                 setattr(policy, field, value)
@@ -834,59 +995,64 @@ def _normalized_policy_patch(
         lp = payload.pop("late_policy")
         payload["late_policy_json"] = lp
 
-    # Map policy fields that live in settings_json
+    # Project named policy fields into the persisted policy JSON columns.
     settings_overrides: dict[str, object] = {}
     if "required" in payload:
         settings_overrides["required"] = payload.pop("required")
     if "review_visibility" in payload:
         settings_overrides["review_visibility"] = payload.pop("review_visibility")
+    for field in (
+        "randomize_questions",
+        "randomize_options",
+        "partial_credit",
+        "negative_marking_percent",
+        "grace_period_minutes",
+    ):
+        if field in payload:
+            settings_overrides[field] = payload.pop(field)
+
+    anti_cheat_overrides: dict[str, object] = {}
+    for patch_field, stored_field in (
+        ("copy_paste_protection", "copy_paste_protection"),
+        ("tab_switch_detection", "tab_switch_detection"),
+        ("devtools_detection", "devtools_detection"),
+        ("right_click_disabled", "right_click_disable"),
+        ("fullscreen_required", "fullscreen_enforcement"),
+        ("violation_threshold", "violation_threshold"),
+    ):
+        if patch_field in payload:
+            anti_cheat_overrides[stored_field] = payload.pop(patch_field)
 
     settings_json = _normalize_policy_settings_json(
         kind,
-        patch.settings_json if "settings_json" in patch.model_fields_set else None,
         due_at=patch.due_at if "due_at" in patch.model_fields_set else _UNSET,
-        max_attempts=(
-            patch.max_attempts if "max_attempts" in patch.model_fields_set else _UNSET
-        ),
-        time_limit_seconds=(
-            patch.time_limit_seconds
-            if "time_limit_seconds" in patch.model_fields_set
-            else _UNSET
-        ),
+        max_attempts=(patch.max_attempts if "max_attempts" in patch.model_fields_set else _UNSET),
+        time_limit_seconds=(patch.time_limit_seconds if "time_limit_seconds" in patch.model_fields_set else _UNSET),
     )
     if settings_json is not None or settings_overrides:
         merged = dict(settings_json or {})
         merged.update(settings_overrides)
         payload["settings_json"] = merged
-    elif "settings_json" in payload:
-        existing = dict(payload["settings_json"] or {})
-        existing.update(settings_overrides)
-        payload["settings_json"] = existing
+
+    if anti_cheat_overrides:
+        payload["anti_cheat_json"] = anti_cheat_overrides
 
     return payload
 
 
 def _normalize_policy_settings_json(
     kind: AssessmentType,
-    settings_json: dict[str, object] | None,
     *,
     due_at: datetime | object | None = _UNSET,
     max_attempts: int | object | None = _UNSET,
     time_limit_seconds: int | object | None = _UNSET,
 ) -> dict[str, object] | None:
-    if (
-        settings_json is None
-        and due_at is _UNSET
-        and max_attempts is _UNSET
-        and time_limit_seconds is _UNSET
-    ):
+    if due_at is _UNSET and max_attempts is _UNSET and time_limit_seconds is _UNSET:
         return None
 
-    normalized = dict(settings_json or {})
+    normalized: dict[str, object] = {}
 
-    normalized_due_at = _first_string_setting(
-        normalized, "due_at", "due_date_iso", "due_date"
-    )
+    normalized_due_at: str | None = None
     if due_at is not _UNSET:
         normalized_due_at = due_at.isoformat() if isinstance(due_at, datetime) else None
     if due_at is not _UNSET or normalized_due_at is not None:
@@ -896,33 +1062,22 @@ def _normalize_policy_settings_json(
         if kind == AssessmentType.CODE_CHALLENGE:
             normalized["due_date"] = normalized_due_at
 
-    normalized_max_attempts = _first_int_setting(
-        normalized, "max_attempts", "attempt_limit"
-    )
+    normalized_max_attempts: int | None = None
     if max_attempts is not _UNSET:
-        normalized_max_attempts = (
-            max_attempts if isinstance(max_attempts, int) else None
-        )
+        normalized_max_attempts = max_attempts if isinstance(max_attempts, int) else None
     if max_attempts is not _UNSET or normalized_max_attempts is not None:
         normalized["max_attempts"] = normalized_max_attempts
         if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
             normalized["attempt_limit"] = normalized_max_attempts
 
     if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
-        normalized_time_limit_seconds = _time_limit_seconds_from_settings(normalized)
+        normalized_time_limit_seconds: int | None = None
         if time_limit_seconds is not _UNSET:
-            normalized_time_limit_seconds = (
-                time_limit_seconds if isinstance(time_limit_seconds, int) else None
-            )
-        if (
-            time_limit_seconds is not _UNSET
-            or normalized_time_limit_seconds is not None
-        ):
+            normalized_time_limit_seconds = time_limit_seconds if isinstance(time_limit_seconds, int) else None
+        if time_limit_seconds is not _UNSET or normalized_time_limit_seconds is not None:
             normalized["time_limit_seconds"] = normalized_time_limit_seconds
             normalized["time_limit"] = (
-                None
-                if normalized_time_limit_seconds is None
-                else max(1, (normalized_time_limit_seconds + 59) // 60)
+                None if normalized_time_limit_seconds is None else max(1, (normalized_time_limit_seconds + 59) // 60)
             )
 
     return normalized
@@ -952,29 +1107,6 @@ def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
     return _first_int_setting(payload, "time_limit_seconds")
 
 
-def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
-    if kind == AssessmentType.EXAM:
-        return AssessmentGradingMode.AUTO_THEN_MANUAL
-    return AssessmentGradingMode.AUTO
-
-
-def _default_completion_rule(kind: AssessmentType) -> AssessmentCompletionRule:
-    return AssessmentCompletionRule.PASSED
-
-
-def _default_anti_cheat(kind: AssessmentType) -> dict[str, object]:
-    if kind != AssessmentType.EXAM:
-        return {}
-    return {
-        "copy_paste_protection": True,
-        "tab_switch_detection": True,
-        "devtools_detection": True,
-        "right_click_disable": True,
-        "fullscreen_enforcement": True,
-        "violation_threshold": 3,
-    }
-
-
 def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
     if kind == AssessmentType.EXAM:
         return validate_settings({"kind": "EXAM"}).model_dump(mode="json")
@@ -982,22 +1114,22 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
         return validate_settings({"kind": "CODE_CHALLENGE"}).model_dump(mode="json")
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
-    raise ValueError(f"Unsupported assessment kind: {kind}")
+    assert_never(kind)
 
 
-def _sync_activity_lifecycle(
+def sync_activity_lifecycle(
     assessment: Assessment,
     activity: Activity,
 ) -> None:
     lifecycle = AssessmentLifecycle(assessment.lifecycle)
-    details = activity.details if isinstance(activity.details, dict) else {}
+    details: dict[str, object] = activity.details if isinstance(activity.details, dict) else {}
     details["lifecycle_status"] = lifecycle.value
     details["scheduled_at"] = _dt_iso(assessment.scheduled_at)
     details["published_at"] = _dt_iso(assessment.published_at)
     details["archived_at"] = _dt_iso(assessment.archived_at)
     activity.details = details
 
-    settings = activity.settings if isinstance(activity.settings, dict) else {}
+    settings = activity.settings
     settings.update({
         "lifecycle_status": lifecycle.value,
         "scheduled_at": _dt_iso(assessment.scheduled_at),
@@ -1023,9 +1155,7 @@ def _normalize_answer_patch(
         if item is None:
             invalid.append(entry.item_uuid)
             continue
-        answer = ITEM_ANSWER_ADAPTER.validate_python(
-            entry.answer.model_dump(mode="json")
-        )
+        answer = ITEM_ANSWER_ADAPTER.validate_python(entry.answer.model_dump(mode="json"))
         if str(answer.kind) != str(item.kind):
             mismatched.append(entry.item_uuid)
             continue
@@ -1061,15 +1191,17 @@ def _get_or_create_submission_draft(
     if draft is not None:
         return draft
 
+    course = _get_course_for_activity_or_404(activity, db_session)
+    is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
     read = start_submission_v2(
-        activity_id=activity.id,
+        activity_id=require_persisted_id(activity.id, model_name="Activity"),
         assessment_type=AssessmentType(assessment.kind),
         current_user=current_user,
         db_session=db_session,
+        skip_permission=is_teacher_preview,
+        skip_attempt_limit=is_teacher_preview,
     )
-    draft = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == read.submission_uuid)
-    ).first()
+    draft = db_session.exec(select(Submission).where(Submission.submission_uuid == read.submission_uuid)).first()
     if draft is None:
         raise HTTPException(status_code=500, detail="Черновик отправки не был создан")
     return draft
@@ -1082,15 +1214,19 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     try:
         expected = int(raw)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
+        raise ValidationAppError(
+            code="INVALID_IF_MATCH_VERSION",
+            message="If-Match должен содержать текущую числовую версию решения",
+            details={"if_match": raw},
+            cause=exc,
         ) from exc
-    if draft.version != expected:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "message": "Конфликт версий черновика",
+    if draft.draft_version != expected:
+        raise ConflictAppError(
+            code="VERSION_CONFLICT",
+            message="Конфликт версий черновика",
+            details={
+                "expected": expected,
+                "actual": draft.draft_version,
                 "latest": SubmissionRead.model_validate(draft).model_dump(mode="json"),
             },
         )
@@ -1103,9 +1239,11 @@ def _parse_if_match_version(if_match: str | None) -> int | None:
     try:
         return int(raw)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
+        raise ValidationAppError(
+            code="INVALID_IF_MATCH_VERSION",
+            message="If-Match должен содержать текущую числовую версию решения",
+            details={"if_match": raw},
+            cause=exc,
         ) from exc
 
 
@@ -1164,11 +1302,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-        option_texts = [
-            option.text.strip().lower()
-            for option in body.options
-            if option.text.strip()
-        ]
+        option_texts = [option.text.strip().lower() for option in body.options if option.text.strip()]
         if len(set(option_texts)) != len(option_texts):
             issues.append(
                 ReadinessIssue(
@@ -1236,9 +1370,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-        field_ids = [
-            field.id.strip().lower() for field in body.fields if field.id.strip()
-        ]
+        field_ids = [field.id.strip().lower() for field in body.fields if field.id.strip()]
         if len(set(field_ids)) != len(field_ids):
             issues.append(
                 ReadinessIssue(
@@ -1277,10 +1409,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-        if any(
-            not test.input.strip() or not test.expected_output.strip()
-            for test in body.tests
-        ):
+        if any(not test.input.strip() or not test.expected_output.strip() for test in body.tests):
             issues.append(
                 ReadinessIssue(
                     code="code.test_io_missing",
@@ -1321,12 +1450,8 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-        left_values = [
-            pair.left.strip().lower() for pair in body.pairs if pair.left.strip()
-        ]
-        right_values = [
-            pair.right.strip().lower() for pair in body.pairs if pair.right.strip()
-        ]
+        left_values = [pair.left.strip().lower() for pair in body.pairs if pair.left.strip()]
+        right_values = [pair.right.strip().lower() for pair in body.pairs if pair.right.strip()]
         if len(set(left_values)) != len(left_values):
             issues.append(
                 ReadinessIssue(
@@ -1348,9 +1473,9 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
 
 def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
     if kind == AssessmentType.EXAM:
-        return {ItemKind.CHOICE, ItemKind.MATCHING}
+        return {ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}
     if kind == AssessmentType.QUIZ:
-        return {ItemKind.CHOICE, ItemKind.MATCHING}
+        return {ItemKind.CHOICE, ItemKind.MATCHING, ItemKind.OPEN_TEXT, ItemKind.FORM}
     return None
 
 
@@ -1358,15 +1483,112 @@ def _get_policy_for_assessment(
     assessment: Assessment,
     db_session: Session,
 ) -> AssessmentPolicy | None:
+    policy = None
     if assessment.policy_id is not None:
         policy = db_session.get(AssessmentPolicy, assessment.policy_id)
+
+    activity_id = assessment.activity_id
+    if policy is None and activity_id:
+        policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
         if policy is not None:
-            return policy
-    return db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
+            assessment.policy_id = policy.id
+            db_session.add(assessment)
+            db_session.flush()
+
+    if policy is None and activity_id:
+        now = datetime.now(UTC)
+        policy = _get_or_create_policy(
+            activity_id=activity_id,
+            kind=assessment.kind,
+            patch=None,
+            db_session=db_session,
+            now=now,
         )
-    ).first()
+        db_session.flush()
+        assessment.policy_id = policy.id
+        db_session.add(assessment)
+        db_session.flush()
+
+    return policy
+
+
+def _build_canonical_policy(
+    policy: AssessmentPolicy | None,
+    *,
+    max_attempts: int | object | None = _UNSET,
+    time_limit_seconds: int | object | None = _UNSET,
+    due_at: datetime | object | None = _UNSET,
+    allow_late: bool | object = _UNSET,
+) -> AssessmentCanonicalPolicy:
+    if policy is None:
+        return AssessmentCanonicalPolicy()
+
+    settings = dict(policy.settings_json or {})
+    anti_cheat = dict(policy.anti_cheat_json or {})
+    return AssessmentCanonicalPolicy(
+        max_attempts=policy.max_attempts if max_attempts is _UNSET else cast("int | None", max_attempts),
+        time_limit_seconds=(
+            policy.time_limit_seconds if time_limit_seconds is _UNSET else cast("int | None", time_limit_seconds)
+        ),
+        due_at=policy.due_at if due_at is _UNSET else cast("datetime | None", due_at),
+        allow_late=policy.allow_late if allow_late is _UNSET else bool(allow_late),
+        late_policy=cast("LatePolicy", policy.late_policy_json),
+        grade_release_mode=policy.grade_release_mode,
+        grading_mode=policy.grading_mode,
+        completion_rule=policy.completion_rule,
+        passing_score=policy.passing_score,
+        required=settings.get("required") is True,
+        review_visibility=_review_visibility(settings),
+        integrity=AssessmentIntegrityPolicy(
+            copy_paste_protection=_bool_setting(anti_cheat, "copy_paste_protection"),
+            tab_switch_detection=_bool_setting(anti_cheat, "tab_switch_detection"),
+            devtools_detection=_bool_setting(anti_cheat, "devtools_detection"),
+            right_click_disabled=_bool_setting(anti_cheat, "right_click_disabled", "right_click_disable"),
+            fullscreen_required=_bool_setting(anti_cheat, "fullscreen_required", "fullscreen_enforcement"),
+            violation_threshold=_int_setting(anti_cheat, "violation_threshold"),
+        ),
+        delivery=AssessmentDeliveryPolicy(
+            randomize_questions=_bool_setting(settings, "randomize_questions", "shuffle_questions"),
+            randomize_options=_bool_setting(settings, "randomize_options", "shuffle_answers"),
+            partial_credit=_bool_setting(settings, "partial_credit"),
+            negative_marking_percent=_float_setting(settings, "negative_marking_percent") or 0.0,
+        ),
+    )
+
+
+def _review_visibility(settings: Mapping[str, object]) -> AssessmentReviewVisibility:
+    value = settings.get("review_visibility")
+    if value in {"NONE", "SCORE_ONLY", "FULL"}:
+        return cast("AssessmentReviewVisibility", value)
+    if settings.get("allow_result_review") is False:
+        return "NONE"
+    if settings.get("show_correct_answers") is False:
+        return "SCORE_ONLY"
+    return "FULL"
+
+
+def _bool_setting(payload: Mapping[str, object], *keys: str) -> bool:
+    return any(payload.get(key) is True for key in keys)
+
+
+def _int_setting(payload: Mapping[str, object], key: str) -> int | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return None
+
+
+def _float_setting(payload: Mapping[str, object], key: str) -> float | None:
+    value = payload.get(key)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None
 
 
 def _build_policy_read(
@@ -1382,16 +1604,15 @@ def _build_policy_read(
         time_limit_seconds=policy.time_limit_seconds,
         due_at=policy.due_at,
         allow_late=policy.allow_late,
-        late_policy=policy.late_policy_json,
+        late_policy=cast("LatePolicy", policy.late_policy_json),
         grade_release_mode=str(policy.grade_release_mode),
         grading_mode=str(policy.grading_mode),
         completion_rule=str(policy.completion_rule),
         passing_score=policy.passing_score,
-        review_visibility=str(
-            (policy.settings_json or {}).get("review_visibility", "FULL")
-        ),
-        anti_cheat_json=policy.anti_cheat_json,
-        settings_json=policy.settings_json,
+        review_visibility=str((policy.settings_json or {}).get("review_visibility", "FULL")),
+        anti_cheat_json=dict(policy.anti_cheat_json),
+        settings_json=dict(policy.settings_json),
+        canonical_policy=_build_canonical_policy(policy),
     )
 
 
@@ -1412,11 +1633,7 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = (
-            override.expires_at
-            if override.expires_at.tzinfo
-            else override.expires_at.replace(tzinfo=UTC)
-        )
+        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
         if expires_at <= now:
             return None
     return override
@@ -1452,7 +1669,7 @@ def _has_published_grade(submission: Submission | None, db_session: Session) -> 
     published_entry = db_session.exec(
         select(GradingEntry.id).where(
             GradingEntry.submission_id == submission.id,
-            GradingEntry.published_at.is_not(None),
+            col(GradingEntry.published_at).is_not(None),
         )
     ).first()
     return published_entry is not None
@@ -1490,10 +1707,84 @@ def _build_teacher_submission_read(
         "RETURNED_FOR_REVISION",
     }
     result.content_version = _content_version(assessment)
-    result.policy_version = _policy_version(
-        _get_policy_for_assessment(assessment, db_session)
-    )
+    result.policy_version = _policy_version(_get_policy_for_assessment(assessment, db_session))
+    _hydrate_submission_grading_json(result, submission, assessment, db_session)
     return result
+
+
+def _hydrate_submission_grading_json(
+    result: TeacherSubmissionRead,
+    submission: Submission,
+    assessment: Assessment,
+    db_session: Session,
+) -> None:
+    items = _get_items(assessment, db_session)
+
+    existing_grading = cast("dict[str, object]", submission.grading_json)
+
+    raw_existing_items = existing_grading.get("items")
+    existing_items: list[object] = raw_existing_items if isinstance(raw_existing_items, list) else []
+
+    existing_map: dict[str, dict[str, object]] = {}
+    for it in existing_items:
+        if isinstance(it, dict):
+            item_id = it.get("item_id")
+            if isinstance(item_id, str):
+                existing_map[item_id] = {k: v for k, v in it.items() if isinstance(k, str)}
+
+    answers = submission.answers_json or {}
+    raw_answers_map = answers.get("answers")
+    answers_map: dict[str, object] = (
+        cast("dict[str, object]", raw_answers_map) if isinstance(raw_answers_map, dict) else {}
+    )
+
+    hydrated_items: list[GradedItem] = []
+    for item in items:
+        existing = existing_map.get(item.item_uuid) or {}
+        user_ans = answers_map.get(item.item_uuid)
+
+        needs_review = existing.get("needs_manual_review")
+        if not isinstance(needs_review, bool):
+            needs_review = item.kind == "OPEN_TEXT"
+
+        score_val = existing.get("score")
+        score = float(score_val) if isinstance(score_val, (int, float)) else 0.0
+
+        correct_val = existing.get("correct")
+        correct = bool(correct_val) if isinstance(correct_val, bool) else None
+
+        feedback_val = existing.get("feedback")
+        feedback = str(feedback_val) if isinstance(feedback_val, str) else ""
+
+        correct_answer_val = existing.get("correct_answer")
+        correct_answer = str(correct_answer_val) if isinstance(correct_answer_val, str) else None
+
+        hydrated_items.append(
+            GradedItem(
+                item_id=item.item_uuid,
+                item_text=item.title or "",
+                score=score,
+                max_score=item.max_score if item.max_score > 0 else 1.0,
+                correct=correct,
+                feedback=feedback,
+                needs_manual_review=needs_review,
+                user_answer=cast("JsonValue", user_ans),
+                correct_answer=correct_answer,
+            )
+        )
+
+    auto_graded_val = existing_grading.get("auto_graded")
+    auto_graded = bool(auto_graded_val) if isinstance(auto_graded_val, bool) else False
+
+    global_feedback_val = existing_grading.get("feedback")
+    global_feedback = str(global_feedback_val) if isinstance(global_feedback_val, str) else ""
+
+    result.grading_json = GradingBreakdown(
+        items=hydrated_items,
+        needs_manual_review=any(i.needs_manual_review for i in hydrated_items),
+        auto_graded=auto_graded,
+        feedback=global_feedback,
+    )
 
 
 def _content_version(assessment: Assessment) -> int:
@@ -1517,17 +1808,20 @@ def _snapshot_submission(
 
     changed = False
     if getattr(submission, "items_snapshot", None) is None:
-        submission.items_snapshot = [
-            {
-                "item_uuid": item.item_uuid,
-                "kind": str(item.kind),
-                "title": item.title,
-                "body_json": item.body_json,
-                "max_score": item.max_score,
-                "order": item.order,
-            }
-            for item in items
-        ]
+        submission.items_snapshot = {
+            "items": [
+                {
+                    "item_uuid": item.item_uuid,
+                    "kind": str(item.kind),
+                    "title": item.title,
+                    "body_json": cast("JsonObject", item.body_json),
+                    "metadata_json": cast("JsonObject", item.metadata_json),
+                    "max_score": item.max_score,
+                    "order": item.order,
+                }
+                for item in items
+            ]
+        }
         submission.content_version = _content_version(assessment)
         changed = True
 
@@ -1573,15 +1867,13 @@ def _dt_iso(value: datetime | None) -> str | None:
 def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, User]:
     if not user_ids:
         return {}
-    rows = db_session.exec(select(User).where(User.id.in_(list(user_ids)))).all()
+    rows = db_session.exec(select(User).where(col(User.id).in_(list(user_ids)))).all()
     return {user.id: user for user in rows if user.id is not None}
 
 
-def _submission_user(user: User):
-    from src.db.grading.submissions import SubmissionUser
-
+def _submission_user(user: User) -> SubmissionUser:
     return SubmissionUser(
-        id=user.id,
+        id=require_persisted_id(user.id, model_name="User"),
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
@@ -1617,11 +1909,7 @@ def build_readiness(
     issues: list[ReadinessIssue] = []
     allowed_item_kinds = _allowed_item_kinds_for_assessment(assessment.kind)
     if not assessment.title.strip():
-        issues.append(
-            ReadinessIssue(
-                code="assessment.title_missing", message="Название обязательно"
-            )
-        )
+        issues.append(ReadinessIssue(code="assessment.title_missing", message="Название обязательно"))
 
     items = _get_items(assessment, db_session)
     if not items:
@@ -1655,13 +1943,9 @@ def build_readiness(
                     message="Ограничение по времени должно быть больше нуля.",
                 )
             )
-        anti_cheat = (
-            policy.anti_cheat_json if isinstance(policy.anti_cheat_json, dict) else {}
-        )
-        if (
-            isinstance(anti_cheat.get("violation_threshold"), int)
-            and anti_cheat["violation_threshold"] < 1
-        ):
+        anti_cheat = cast("dict[str, object]", policy.anti_cheat_json)
+        violation_threshold = anti_cheat.get("violation_threshold")
+        if isinstance(violation_threshold, int) and violation_threshold < 1:
             issues.append(
                 ReadinessIssue(
                     code="policy.violation_threshold_invalid",
@@ -1691,4 +1975,75 @@ def build_readiness(
             )
         issues.extend(_item_readiness_issues(item))
 
-    return AssessmentReadiness(ok=not issues, issues=issues)
+    normalized_issues = [_normalize_readiness_issue(issue) for issue in issues]
+    return AssessmentReadiness(
+        ok=not any(issue.severity == "blocker" for issue in normalized_issues),
+        issues=normalized_issues,
+        blocker_count=sum(1 for issue in normalized_issues if issue.severity == "blocker"),
+        warning_count=sum(1 for issue in normalized_issues if issue.severity == "warning"),
+    )
+
+
+def _normalize_readiness_issue(issue: ReadinessIssue) -> ReadinessIssue:
+    code = issue.code
+    area: Literal["details", "questions", "policy", "audience", "results", "publish", "system"] = issue.area
+    view: Literal["settings", "questions", "audience", "results", "publish"] = issue.view
+    field = issue.field
+    action_label = issue.action_label
+
+    if code.startswith("assessment.title"):
+        area = "details"
+        view = "settings"
+        field = field or "title"
+    elif code.startswith("assessment.empty"):
+        area = "questions"
+        view = "questions"
+        field = field or "items"
+        action_label = action_label or "Добавить элемент"
+    elif code.startswith(("policy.", "schedule.")):
+        area = "policy"
+        view = "settings"
+    elif code.startswith(("item.", "choice.", "matching.", "code.", "form.", "open_text.")):
+        area = "questions"
+        view = "questions"
+
+    if field is None:
+        if code.endswith(".prompt_missing"):
+            field = "prompt"
+        elif code in {"choice.options_missing", "choice.option_text_missing", "choice.option_duplicate"}:
+            field = "options"
+        elif code in {"choice.correct_missing", "choice.too_many_correct"}:
+            field = "correct_options"
+        elif code in {"matching.pairs_missing", "matching.pair_value_missing"}:
+            field = "pairs"
+        elif code.endswith(".title_missing"):
+            field = "title"
+        elif code.endswith(".max_score_invalid"):
+            field = "max_score"
+
+    if action_label is None:
+        if field == "prompt":
+            action_label = "Заполнить вопрос"
+        elif field == "options":
+            action_label = "Заполнить варианты"
+        elif field == "correct_options":
+            action_label = "Отметить ответ"
+        elif field == "pairs":
+            action_label = "Заполнить пары"
+        elif field == "title":
+            action_label = "Заполнить название"
+        elif field == "max_score":
+            action_label = "Исправить баллы"
+
+    return ReadinessIssue(
+        code=issue.code,
+        message=issue.message,
+        item_uuid=issue.item_uuid,
+        severity=issue.severity,
+        area=area,
+        why=issue.why or issue.message,
+        field=field,
+        view=view,
+        action_label=action_label,
+        auto_fix=issue.auto_fix,
+    )

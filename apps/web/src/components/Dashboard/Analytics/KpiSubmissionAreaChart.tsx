@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import {
   ChartContainer,
@@ -6,17 +6,17 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts';
-import { useTranslations } from 'next-intl';
+} from '@/components/ui/chart'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts'
+import { useTranslations } from 'next-intl'
 
 interface KpiSubmissionAreaChartProps {
-  data: { bucket: string; submissions: number; grading: number }[];
+  data: { bucket: string; submissions: number; grading: number }[]
 }
 
 export default function KpiSubmissionAreaChart({ data }: KpiSubmissionAreaChartProps) {
-  const t = useTranslations('TeacherAnalytics');
+  const t = useTranslations('TeacherAnalytics')
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -31,30 +31,19 @@ export default function KpiSubmissionAreaChart({ data }: KpiSubmissionAreaChartP
               submissions: {
                 label: t('kpiCharts.submissions'),
                 color: 'var(--chart-1)',
-                valueFormatter: (value) => `${value ?? 0} ${t('scoreChart.learners')}`,
+                valueFormatter: value => `${value ?? 0} ${t('scoreChart.learners')}`,
               },
               grading: {
                 label: t('kpiCharts.gradingCompleted'),
                 color: 'var(--chart-2)',
-                valueFormatter: (value) => `${value ?? 0} ${t('scoreChart.learners')}`,
+                valueFormatter: value => `${value ?? 0} ${t('scoreChart.learners')}`,
               },
             }}
           >
             <AreaChart data={data}>
-              <CartesianGrid
-                vertical={false}
-                strokeDasharray="3 3"
-              />
-              <XAxis
-                dataKey="bucket"
-                tickLine={false}
-                axisLine={false}
-                minTickGap={20}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-              />
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis dataKey="bucket" tickLine={false} axisLine={false} minTickGap={20} />
+              <YAxis tickLine={false} axisLine={false} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend content={<ChartLegendContent />} />
               <Area
@@ -80,5 +69,5 @@ export default function KpiSubmissionAreaChart({ data }: KpiSubmissionAreaChartP
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

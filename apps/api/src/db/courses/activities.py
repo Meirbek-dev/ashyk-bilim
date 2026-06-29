@@ -1,7 +1,8 @@
-from datetime import UTC, datetime, timezone
-from enum import Enum, StrEnum
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import ClassVar, Self
 
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import field_validator, model_validator
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -13,7 +14,9 @@ from sqlalchemy import (
     func,
 )
 from sqlmodel import Field
+from sqlmodel._compat import SQLModelConfig
 
+from src.db.assessment_contracts import AssessmentCanonicalPolicy
 from src.db.grading.progress import LatePolicy, LatePolicyNone
 from src.db.strict_base_model import SQLModelStrictBaseModel
 
@@ -66,30 +69,28 @@ class ActivityBase(SQLModelStrictBaseModel):
 
     @field_validator("activity_type", mode="before")
     @classmethod
-    def validate_activity_type(cls, v):
+    def validate_activity_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ActivityTypeEnum(v)
         return v
 
     @field_validator("activity_sub_type", mode="before")
     @classmethod
-    def validate_activity_sub_type(cls, v):
+    def validate_activity_sub_type(cls, v: object) -> object:
         if isinstance(v, str):
             return ActivitySubTypeEnum(v)
         return v
 
 
 class Activity(ActivityBase, table=True):
-    model_config = ConfigDict(from_attributes=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(from_attributes=True)  # type: ignore[mutable-override]
 
     id: int | None = Field(default=None, primary_key=True)
     # Override name with a length-constrained column at the DB level.
     name: str = Field(sa_column=Column(String(500), nullable=False))
     # Primary FK: activities belong to a chapter (cascades on chapter delete)
     chapter_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False
-        ),
+        sa_column=Column(Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False),
     )
     # Denormalised FK kept for query performance; synced on create/move.
     # The canonical source of truth is chapter_id → Chapter.course_id.
@@ -110,9 +111,7 @@ class Activity(ActivityBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -131,9 +130,7 @@ _VALID_SUBTYPES: dict[ActivityTypeEnum, set[ActivitySubTypeEnum]] = {
         ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
         ActivitySubTypeEnum.SUBTYPE_CODE_COMPETITIVE,
     },
-    ActivityTypeEnum.TYPE_FILE_SUBMISSION: {
-        ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
-    },
+    ActivityTypeEnum.TYPE_FILE_SUBMISSION: {ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD},
     ActivityTypeEnum.TYPE_CUSTOM: {ActivitySubTypeEnum.SUBTYPE_CUSTOM},
 }
 
@@ -142,11 +139,11 @@ class ActivityCreate(ActivityBase):
     chapter_id: int
     activity_type: ActivityTypeEnum = ActivityTypeEnum.TYPE_CUSTOM
     activity_sub_type: ActivitySubTypeEnum = ActivitySubTypeEnum.SUBTYPE_CUSTOM
-    details: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
+    details: dict[str, object] | None = Field(default_factory=dict, sa_column=Column(JSON))  # pyright: ignore[reportIncompatibleVariableOverride]
     settings: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     @model_validator(mode="after")
-    def subtype_matches_type(self):
+    def subtype_matches_type(self) -> Self:
         allowed = _VALID_SUBTYPES.get(self.activity_type, set())
         if allowed and self.activity_sub_type not in allowed:
             msg = (
@@ -159,16 +156,16 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(ActivityBase):
-    name: str | None = None
-    activity_type: ActivityTypeEnum | None = None
-    activity_sub_type: ActivitySubTypeEnum | None = None
-    content: dict[str, object] | None = None
-    details: dict[str, object] | None = None
-    settings: dict[str, object] | None = None
-    published: bool | None = None
+    name: str | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_type: ActivityTypeEnum | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    activity_sub_type: ActivitySubTypeEnum | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    content: dict[str, object] | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    details: dict[str, object] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    settings: dict[str, object] | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    published: bool | None = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @model_validator(mode="after")
-    def subtype_matches_type(self):
+    def subtype_matches_type(self) -> Self:
         if self.activity_type is not None and self.activity_sub_type is not None:
             allowed = _VALID_SUBTYPES.get(self.activity_type, set())
             if allowed and self.activity_sub_type not in allowed:
@@ -182,7 +179,7 @@ class ActivityUpdate(ActivityBase):
 
 
 class ActivityRead(ActivityBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config: ClassVar[SQLModelConfig] = SQLModelConfig(from_attributes=True)  # type: ignore[mutable-override]
 
     id: int
     creator_id: int | None = None
@@ -195,7 +192,7 @@ class ActivityRead(ActivityBase):
 
     @field_validator("creation_date", "update_date", mode="before")
     @classmethod
-    def validate_datetimes(cls, v):
+    def validate_datetimes(cls, v: object) -> object:
         if isinstance(v, datetime):
             return v
         if isinstance(v, str):
@@ -222,6 +219,7 @@ class ActivityAssessmentPolicyRead(SQLModelStrictBaseModel):
     review_visibility: str = "FULL"
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
+    canonical_policy: AssessmentCanonicalPolicy = Field(default_factory=AssessmentCanonicalPolicy)
 
     @field_validator("late_policy", mode="before")
     @classmethod

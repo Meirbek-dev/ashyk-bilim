@@ -41,24 +41,12 @@ def upgrade() -> None:
             )
         )
     else:
-        existing_columns = {
-            column["name"]: column for column in inspector.get_columns("auth_audit_log")
-        }
+        existing_columns = {column["name"]: column for column in inspector.get_columns("auth_audit_log")}
 
         if "created_at" not in existing_columns:
-            op.execute(
-                sa.text(
-                    "ALTER TABLE auth_audit_log "
-                    "ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW()"
-                )
-            )
+            op.execute(sa.text("ALTER TABLE auth_audit_log ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW()"))
         else:
-            op.execute(
-                sa.text(
-                    "ALTER TABLE auth_audit_log "
-                    "ALTER COLUMN created_at SET DEFAULT NOW()"
-                )
-            )
+            op.execute(sa.text("ALTER TABLE auth_audit_log ALTER COLUMN created_at SET DEFAULT NOW()"))
 
         missing_columns = {
             "user_id": "TEXT NULL",
@@ -72,9 +60,7 @@ def upgrade() -> None:
         for column_name, column_type in missing_columns.items():
             if column_name not in existing_columns:
                 default_clause = " DEFAULT 'info'" if column_name == "severity" else ""
-                nullable_clause = (
-                    " NOT NULL" if column_name in {"event_type", "severity"} else ""
-                )
+                nullable_clause = " NOT NULL" if column_name in {"event_type", "severity"} else ""
                 op.execute(
                     sa.text(
                         "ALTER TABLE auth_audit_log "
@@ -82,32 +68,12 @@ def upgrade() -> None:
                     )
                 )
 
-        op.execute(
-            sa.text(
-                "UPDATE auth_audit_log SET severity = 'info' WHERE severity IS NULL"
-            )
-        )
-        op.execute(
-            sa.text(
-                "ALTER TABLE auth_audit_log ALTER COLUMN severity SET DEFAULT 'info'"
-            )
-        )
-        op.execute(
-            sa.text("ALTER TABLE auth_audit_log ALTER COLUMN severity SET NOT NULL")
-        )
+        op.execute(sa.text("UPDATE auth_audit_log SET severity = 'info' WHERE severity IS NULL"))
+        op.execute(sa.text("ALTER TABLE auth_audit_log ALTER COLUMN severity SET DEFAULT 'info'"))
+        op.execute(sa.text("ALTER TABLE auth_audit_log ALTER COLUMN severity SET NOT NULL"))
 
-    op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_auth_audit_log_user_id "
-            "ON auth_audit_log (user_id)"
-        )
-    )
-    op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_auth_audit_log_event_type "
-            "ON auth_audit_log (event_type)"
-        )
-    )
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_auth_audit_log_user_id ON auth_audit_log (user_id)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_auth_audit_log_event_type ON auth_audit_log (event_type)"))
 
 
 def downgrade() -> None:
