@@ -1,5 +1,4 @@
 import { BarChart2, BookCopy, ChevronRight, Settings, ShieldCheck, Users } from 'lucide-react'
-import ServerLink from '@/components/ui/ServerLink'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
@@ -11,6 +10,7 @@ import type { Action, Resource, Scope } from '@/types/permissions'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
+import AppLink from '@/components/ui/AppLink'
 
 export default async function PlatformDashHomePage() {
   const t = await getTranslations('DashPage.Card')
@@ -112,7 +112,7 @@ const DashboardCard = ({
   badge?: string
 }) => {
   return (
-    <ServerLink href={href} className="group block h-full">
+    <AppLink href={href} className="group block h-full">
       <Card className="border-border/50 bg-card hover:bg-muted/30 hover:border-border/80 flex h-full flex-col justify-between p-6 transition-all duration-200 select-none">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -140,6 +140,6 @@ const DashboardCard = ({
           </div>
         </div>
       </Card>
-    </ServerLink>
+    </AppLink>
   )
 }

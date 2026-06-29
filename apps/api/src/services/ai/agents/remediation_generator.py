@@ -30,30 +30,30 @@ async def generate_remediation(
 
 def _draft_remediation(language: str) -> RemediationBundle:
     return RemediationBundle(
-        title="Teacher review remediation draft",
+        title="Черновик восполнения пробелов для проверки преподавателем",
         learning_objectives=[
-            "Confirm the main misconception",
-            "Practice one corrected example",
-            "Explain the correction in your own words",
+            "Подтвердить основное заблуждение",
+            "Потренироваться на одном исправленном примере",
+            "Объяснить исправление своими словами",
         ],
         micro_lecture_markdown=(
-            "AI remediation is not enabled yet. A teacher should replace this draft with a focused micro-lecture "
-            "based on the confirmed knowledge gap."
+            "Восполнение пробелов с использованием ИИ еще не включено. Преподавателю следует заменить этот черновик "
+            "целевой микролекцией на основе подтвержденного пробела в знаниях."
         ),
         practice_questions=[
             RemediationQuestion(
-                prompt="What is the main concept you need to review before continuing?",
+                prompt="Какой основной концепт вам нужно повторить перед продолжением?",
                 choices=[],
-                answer="The concept confirmed by the teacher.",
-                explanation="This placeholder question prevents silent gate releases before AI is configured.",
+                answer="Концепт, подтвержденный преподавателем.",
+                explanation="Этот вопрос-заглушка предотвращает автоматический пропуск до настройки ИИ.",
             )
         ],
         citations=[
             AICitation(
                 citation_id="remediation-draft",
-                label="Submission analysis",
+                label="Анализ решения",
                 source_type="submission_analysis",
-                excerpt="Draft remediation generated without model access.",
+                excerpt="Черновик восполнения пробелов создан без доступа к модели.",
                 confidence=0.4,
             )
         ],

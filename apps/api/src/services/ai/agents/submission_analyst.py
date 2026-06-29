@@ -26,22 +26,22 @@ async def analyze_submission(
 
 def _draft_submission_report(language: str) -> SubmissionAnalysisReport:
     return SubmissionAnalysisReport(
-        summary="AI is not enabled yet, so this draft highlights the need for teacher review before remediation gates are enforced.",
+        summary="ИИ еще не включен, поэтому данный черновик подчеркивает необходимость проверки преподавателем перед применением ограничений на восполнение пробелов.",
         knowledge_gaps=[
             AIKnowledgeGap(
-                concept="Submission reasoning",
+                concept="Ход решения",
                 severity="medium",
-                evidence="No provider-backed analysis has been run.",
-                remediation_goal="Review the submitted work and identify the first misconception manually.",
+                evidence="Анализ с использованием провайдера не запускался.",
+                remediation_goal="Проверьте отправленную работу и вручную выявите первое заблуждение.",
             )
         ],
-        next_action="Enable AI analysis or ask a teacher to confirm the remediation focus.",
+        next_action="Включите анализ ИИ или попросите преподавателя подтвердить тему восполнения пробелов.",
         citations=[
             AICitation(
                 citation_id="submission-draft",
-                label="Submission context",
+                label="Контекст решения",
                 source_type="submission",
-                excerpt="Draft submission analysis generated without model access.",
+                excerpt="Черновик анализа решения создан без доступа к модели.",
                 confidence=0.4,
             )
         ],

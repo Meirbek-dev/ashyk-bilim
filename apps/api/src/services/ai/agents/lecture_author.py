@@ -28,13 +28,13 @@ async def critique_lecture(
 
 def _draft_lecture_review(language: str) -> LectureReviewReport:
     return LectureReviewReport(
-        summary="AI lecture critique is not enabled yet. This draft keeps the review UI active without applying edits.",
+        summary="Критика лекции с использованием ИИ еще не включена. Этот черновик поддерживает интерфейс рецензирования активным без применения изменений.",
         suggestions=[
             LectureSuggestion(
                 suggestion_id=f"sug_{uuid4().hex}",
-                location="Lecture body",
-                title="Run provider-backed critique",
-                rationale="Persistent suggestions should be generated from the real lecture context before a teacher applies changes.",
+                location="Текст лекции",
+                title="Запустить критику с использованием провайдера",
+                rationale="Постоянные предложения должны генерироваться на основе реального контекста лекции перед тем, как преподаватель применит изменения.",
                 replacement_markdown=None,
                 priority="high",
             )
@@ -42,9 +42,9 @@ def _draft_lecture_review(language: str) -> LectureReviewReport:
         citations=[
             AICitation(
                 citation_id="lecture-draft",
-                label="Lecture context",
+                label="Контекст лекции",
                 source_type="activity",
-                excerpt="Draft lecture review generated without model access.",
+                excerpt="Черновик обзора лекции создан без доступа к модели.",
                 confidence=0.4,
             )
         ],

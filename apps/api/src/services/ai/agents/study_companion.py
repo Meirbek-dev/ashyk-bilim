@@ -33,14 +33,14 @@ async def answer_study_prompt(
 def _draft_study_answer(mode: StudyMode) -> StudyCompanionAnswer:
     return StudyCompanionAnswer(
         mode=mode,
-        answer_markdown="AI study help is not enabled yet. Use the cited course material and ask your teacher for guidance.",
-        follow_up_suggestions=["Which lecture section should I review first?", "Can I try one practice question?"],
+        answer_markdown="Помощь в обучении с использованием ИИ еще не включена. Используйте цитируемые материалы курса и обратитесь к преподавателю за руководством.",
+        follow_up_suggestions=["Какой раздел лекции мне следует изучить в первую очередь?", "Могу ли я попробовать один практический вопрос?"],
         citations=[
             AICitation(
                 citation_id="study-draft",
-                label="Course context",
+                label="Контекст курса",
                 source_type="course",
-                excerpt="Draft study answer generated without model access.",
+                excerpt="Черновик ответа помощника создан без доступа к модели.",
                 confidence=0.4,
             )
         ],

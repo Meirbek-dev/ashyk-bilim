@@ -28,7 +28,7 @@ def test_token_budget_rejects_oversized_prompt() -> None:
     config = AIConfig(max_tokens_per_request=2)
     service = TokenBudgetService(config)
 
-    with pytest.raises(TokenBudgetExceeded, match="too large"):
+    with pytest.raises(TokenBudgetExceeded, match="слишком велик"):
         service.assert_request_budget(user_id=1, prompt="this prompt is intentionally too long", db_session=_Session())
 
 
@@ -43,7 +43,7 @@ def test_token_budget_enforces_hourly_user_limit() -> None:
         started_at=datetime.now(UTC),
     )
 
-    with pytest.raises(TokenBudgetExceeded, match="hourly"):
+    with pytest.raises(TokenBudgetExceeded, match="лимит"):
         service.assert_request_budget(user_id=7, prompt="short", db_session=_Session([run]))
 
 

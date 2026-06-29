@@ -43,7 +43,7 @@ class ModelProvider:
         output_type: type[OutputT],
     ) -> AIModelResult[OutputT]:
         if not self.enabled():
-            msg = "AI provider is disabled or PLATFORM_OPENAI_API_KEY is not set"
+            msg = "Провайдер ИИ отключен или не задан PLATFORM_OPENAI_API_KEY"
             raise AIProviderUnavailable(msg)
 
         from pydantic_ai import Agent

@@ -71,7 +71,7 @@ async def update_app_logo(
     db_session.commit()
     db_session.refresh(platform_record)
 
-    return {"detail": "Logo updated"}
+    return {"detail": "Логотип обновлен"}
 
 
 async def update_platform_thumbnail(
@@ -90,4 +90,4 @@ async def update_platform_thumbnail(
     db_session.commit()
     db_session.refresh(platform_record)
 
-    return {"detail": "Thumbnail updated"}
+    return {"detail": "Миниатюра обновлена"}

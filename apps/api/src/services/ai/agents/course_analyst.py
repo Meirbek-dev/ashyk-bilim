@@ -23,23 +23,23 @@ async def analyze_course(
 def _draft_course_report(language: str) -> CourseQualityReport:
     return CourseQualityReport(
         public_score=72,
-        summary="AI is not enabled yet, so this draft report marks the course ready for human review only.",
-        strengths=["Course material is present and can be inspected by the analysis pipeline."],
-        risks=["Provider keys or AI feature flags are not enabled. Run a full analysis before publishing an AI score."],
+        summary="Анализ ИИ еще не включен, поэтому этот черновик отчета отмечает, что курс готов только для проверки человеком.",
+        strengths=["Материалы курса присутствуют и могут быть проверены конвейером анализа."],
+        risks=["Ключи провайдера или флаги функций ИИ не включены. Запустите полный анализ перед публикацией оценки ИИ."],
         recommendations=[
             AIRecommendation(
-                title="Enable provider-backed analysis",
-                rationale="The current result is deterministic draft output.",
+                title="Включить анализ с использованием провайдера",
+                rationale="Текущий результат является детерминированным черновиком.",
                 priority="high",
-                action="Set AI feature flags and provider keys, then re-run course analysis.",
+                action="Настройте флаги функций ИИ и ключи провайдера, затем запустите анализ курса повторно.",
             )
         ],
         citations=[
             AICitation(
                 citation_id="course-draft",
-                label="Course context",
+                label="Контекст курса",
                 source_type="course",
-                excerpt="Draft analysis generated without model access.",
+                excerpt="Черновик анализа создан без доступа к модели.",
                 confidence=0.4,
             )
         ],

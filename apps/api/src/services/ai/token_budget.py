@@ -35,7 +35,7 @@ class TokenBudgetService:
     ) -> int:
         estimated = self.estimate_tokens(prompt)
         if estimated > self.config.max_tokens_per_request:
-            msg = "AI request is too large for the configured token budget"
+            msg = "Запрос к ИИ слишком велик для настроенного бюджета токенов"
             raise TokenBudgetExceeded(msg)
 
         limit = (
@@ -47,6 +47,6 @@ class TokenBudgetService:
         recent_runs = db_session.exec(select(AIRun).where(AIRun.started_at >= one_hour_ago)).all()
         user_run_count = sum(1 for run in recent_runs if run.run_metadata.get("triggered_by_user_id") == str(user_id))
         if user_run_count >= limit:
-            msg = "AI hourly request limit reached"
+            msg = "Достигнут часовой лимит запросов к ИИ"
             raise TokenBudgetExceeded(msg)
         return estimated

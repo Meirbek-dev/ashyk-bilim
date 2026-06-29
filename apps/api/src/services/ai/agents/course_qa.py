@@ -28,17 +28,17 @@ async def answer_course_question(
 
 def _draft_course_answer() -> CourseQAAnswer:
     return CourseQAAnswer(
-        answer_markdown="AI course Q&A is not enabled yet. The question was recorded, but no provider-backed answer was generated.",
+        answer_markdown="Вопросы и ответы по курсу с использованием ИИ еще не включены. Вопрос был записан, но ответ от провайдера не был сгенерирован.",
         citations=[
             AICitation(
                 citation_id="qa-draft",
-                label="Course context",
+                label="Контекст курса",
                 source_type="course",
-                excerpt="Draft Q&A response generated without model access.",
+                excerpt="Черновик ответа на вопрос создан без доступа к модели.",
                 confidence=0.4,
             )
         ],
         confidence="low",
         out_of_scope=False,
-        follow_up_suggestions=["Ask a teacher to answer this question", "Review the current lecture notes"],
+        follow_up_suggestions=["Попросить преподавателя ответить на этот вопрос", "Просмотреть текущие конспекты лекций"],
     )

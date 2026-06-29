@@ -31,9 +31,9 @@ def load_prompt(name: str, locale: str | None = None) -> str:
     if default_path.is_file():
         return default_path.read_text(encoding="utf-8")
 
-    err_msg = f"Prompt file '{name}' not found under '{PROMPT_DIR}' for locale '{locale}' or fallbacks."
+    err_msg = f"Файл подсказки '{name}' не найден в директории '{PROMPT_DIR}' для локали '{locale}' или резервных вариантов."
     raise FileNotFoundError(err_msg)
 
 
 def clipped(text: str, *, limit: int = 12_000) -> str:
-    return text if len(text) <= limit else f"{text[:limit]}\n\n[Context clipped to {limit} characters]"
+    return text if len(text) <= limit else f"{text[:limit]}\n\n[Контекст обрезан до {limit} символов]"
