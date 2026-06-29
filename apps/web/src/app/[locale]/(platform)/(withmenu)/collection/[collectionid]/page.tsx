@@ -4,7 +4,7 @@ import { getCollectionById } from '@services/courses/collections'
 import { getAbsoluteUrl } from '@services/config/config'
 import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
-import Link from '@/components/ui/ServerLink'
+import AppLink from '@/components/ui/AppLink'
 import { Layers } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
@@ -72,7 +72,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {courses.map((course: AppCourse) => (
-          <Link
+          <AppLink
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}
             key={course.course_uuid}
             className="group border-border bg-card text-card-foreground hover:border-foreground/20 flex flex-col overflow-hidden rounded-lg border shadow-xs transition-colors"
@@ -93,7 +93,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
                 {course.name}
               </h3>
             </div>
-          </Link>
+          </AppLink>
         ))}
       </div>
 

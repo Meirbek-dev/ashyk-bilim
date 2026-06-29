@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react'
 // Gamification imports
 import { LevelProgress } from '@/lib/gamification'
 import NextImage from '@components/ui/NextImage'
-import Link from '@components/ui/ServerLink'
+import AppLink from '@components/ui/AppLink'
 import confetti from 'canvas-confetti'
 import type { FC } from 'react'
 
@@ -394,7 +394,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                   <Download className="h-5 w-5" />
                   <span>{t('downloadCertificate')}</span>
                 </button>
-                <Link
+                <AppLink
                   href={getAbsoluteUrl(
                     `/certificates/${userCertificate.certificate_user.user_certification_uuid}/verify`,
                   )}
@@ -404,7 +404,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                 >
                   <Shield className="h-5 w-5" />
                   <span>{t('verifyCertificate')}</span>
-                </Link>
+                </AppLink>
               </div>
             </div>
           ) : (
@@ -414,13 +414,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           )}
 
           <div className="pt-6">
-            <Link
+            <AppLink
               href={getAbsoluteUrl(`/course/${courseUuid.replace('course_', '')}`)}
               className="inline-flex items-center space-x-2 rounded-full bg-gray-800 px-6 py-3 text-white transition duration-200 hover:bg-gray-700"
             >
               <ArrowLeft className="h-5 w-5" />
               <span>{t('backToCourse')}</span>
-            </Link>
+            </AppLink>
           </div>
         </div>
       </div>
@@ -492,13 +492,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         <p className="text-gray-500">{t('encouragementMessage')}</p>
 
         <div className="pt-6">
-          <Link
+          <AppLink
             href={getAbsoluteUrl(`/course/${courseUuid.replace('course_', '')}`)}
             className="inline-flex items-center space-x-2 rounded-full bg-blue-600 px-6 py-3 text-white transition duration-200 hover:bg-blue-700"
           >
             <ArrowLeft className="h-5 w-5" />
             <span>{t('continueActivity')}</span>
-          </Link>
+          </AppLink>
         </div>
       </div>
     </div>

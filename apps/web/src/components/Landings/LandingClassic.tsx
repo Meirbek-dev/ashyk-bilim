@@ -13,7 +13,7 @@ import CreateCourseTrigger from './CreateCourseTrigger'
 import { BookOpen, FolderKanban } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import CourseGridClient from './CourseGridClient'
-import Link from '@/components/ui/ServerLink'
+import AppLink from '@/components/ui/AppLink'
 import { cn } from '@/lib/utils'
 
 // Types
@@ -142,12 +142,12 @@ const LandingClassic = async ({
                 type="col"
                 action={
                   <PermissionGuard action={Actions.CREATE} resource={Resources.COLLECTION} scope={Scopes.APP}>
-                    <Link
+                    <AppLink
                       href={getAbsoluteUrl('/collections/new')}
                       className="focus:ring-primary inline-block rounded focus:ring-2 focus:ring-offset-2 focus:outline-none"
                     >
                       <NewCollectionButton />
-                    </Link>
+                    </AppLink>
                   </PermissionGuard>
                 }
               />

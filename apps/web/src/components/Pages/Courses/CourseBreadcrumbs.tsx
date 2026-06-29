@@ -9,7 +9,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { getAbsoluteUrl } from '@services/config/config'
-import Link from '@components/ui/ServerLink'
+import AppLink from '@components/ui/AppLink'
 import { useTranslations } from 'next-intl'
 import { Book } from 'lucide-react'
 
@@ -25,7 +25,7 @@ export default function CourseBreadcrumbs({ course }: CourseBreadcrumbsProps) {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink
-              render={<Link href={`${getAbsoluteUrl('')}/courses`} />}
+              render={<AppLink href={`${getAbsoluteUrl('')}/courses`} />}
               className="flex items-center space-x-2"
             >
               <Book className="text-gray" size={14} />

@@ -2,7 +2,7 @@ import appLogoFull from '@public/app_logo_full.svg'
 import appLogoLightFull from '@public/app_logo_light_full.svg'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { Button } from '@components/ui/button'
-import Link from '@components/ui/ServerLink'
+import AppLink from '@components/ui/AppLink'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { NextIntlClientProvider } from 'next-intl'
@@ -45,7 +45,7 @@ export default async function NotFound() {
         <div className="flex flex-col items-center pt-8">
           <Button
             nativeButton={false}
-            render={<Link href="/" className="flex items-center gap-2" />}
+            render={<AppLink href="/" className="flex items-center gap-2" />}
             className="group flex h-[50px] items-center rounded-lg px-6 py-2 text-xl font-bold shadow-md"
           >
             {t('button')}
