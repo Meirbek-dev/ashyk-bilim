@@ -99,12 +99,12 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   }, [codeAnswer, codeItem, initialCode, primaryLanguageId, submissionState])
 
   useEffect(() => {
-    if (submissionStatus !== 'DRAFT' || saveState !== 'dirty') return
+    if (!vm?.canSaveDraft || submissionStatus !== 'DRAFT' || saveState !== 'dirty') return
     const timeout = setTimeout(() => {
       saveDraft()
     }, 1000)
     return () => clearTimeout(timeout)
-  }, [saveDraft, saveState, submissionStatus])
+  }, [saveDraft, saveState, submissionStatus, vm?.canSaveDraft])
 
   const handleCanonicalSubmit = useCallback(async () => {
     await submitAssessment()

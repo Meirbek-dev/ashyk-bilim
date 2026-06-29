@@ -36,6 +36,7 @@ def _build_broker() -> AsyncBroker:
     _redis_kwargs = {
         "socket_keepalive": True,
         "health_check_interval": 30,
+        "socket_timeout": None,
     }
     result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(
         broker_url, **_redis_kwargs

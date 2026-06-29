@@ -504,12 +504,12 @@ function ExamTakingContent({
   }, [])
 
   useEffect(() => {
-    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return
+    if (!canSaveDraft || submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return
     const timeout = setTimeout(() => {
       submissionState.save()
     }, 1000)
     return () => clearTimeout(timeout)
-  }, [submissionState])
+  }, [submissionState, canSaveDraft])
 
   const shellControls = useMemo<AttemptShellRegistration>(
     () => ({

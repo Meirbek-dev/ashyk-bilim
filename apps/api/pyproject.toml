@@ -6,7 +6,7 @@ requires-python = ">=3.14.5,<3.15.0"
 
 dependencies = [
   # Framework
-  "fastapi>=0.138.1",
+  "fastapi>=0.138.2",
   "granian[reload,uvloop]>=2.7.7",
 
   # Database
@@ -27,7 +27,7 @@ dependencies = [
 
   # AI
   "openai>=2.44.0",
-  "pydantic-ai-slim[logfire,openai]>=2.0.0",
+  "pydantic-ai-slim[logfire,openai]>=2.1.0",
   "tiktoken>=0.13.0",
 
   # Async / Jobs
@@ -130,7 +130,7 @@ ignore = [
   "EM101", # raw-string-in-exception: Exception must not use a string literal directly
   "TRY300", # try-consider-else: Move code to else block (noisy)
   "TRY301", # raise-within-try: Disallow raising within try block (noisy)
-  "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
+  # "PLW0717", # too-many-statements-in-try-clause: try block with too many statements
 
   # --- Docstrings (pydocstyle) ---
   "D", # docstring-rules: Disables all docstring-related rules
@@ -198,10 +198,20 @@ ignore = [
   "S106",
   "SLF001",
   "PT003",
-  "RUF076",
+  # "RUF076",
 ]
 
-"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003", "RUF076"]
+"**/conftest.py" = [
+  "ARG001",
+  "ARG002",
+  "F401",
+  "F811",
+  "S101",
+  "S105",
+  "S106",
+  "PT003",
+  # "RUF076"
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -211,6 +221,7 @@ split-on-trailing-comma = true
 max-complexity = 12
 
 [tool.ruff.lint.pylint]
+
 max-args = 8
 max-positional-args = 6
 max-branches = 12
@@ -219,7 +230,6 @@ max-statements = 60
 max-locals = 20
 max-bool-expr = 5
 max-nested-blocks = 5
-max-statements-in-try = 10
 
 [tool.ruff.format]
 quote-style = "double"
