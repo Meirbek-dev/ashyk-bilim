@@ -37,7 +37,7 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl --fail --silent --show-error --http2-prior-knowledge "http://127.0.0.1:${PLATFORM_PORT:-8000}/api/v1/health" >/dev/null || exit 1
+  CMD curl --fail --silent --show-error "http://127.0.0.1:${PLATFORM_PORT:-8000}/api/v1/health" >/dev/null || exit 1
 
 # dumb-init ensures proper PID 1 behaviour: signal forwarding and zombie reaping
 CMD ["dumb-init", "python", "app.py"]
