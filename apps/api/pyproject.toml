@@ -6,13 +6,13 @@ requires-python = ">=3.14.5,<3.15.0"
 
 dependencies = [
   # Framework
-  "fastapi>=0.138.0",
+  "fastapi>=0.138.1",
   "granian[reload,uvloop]>=2.7.7",
 
   # Database
   "sqlalchemy>=2.0.51",
-  "sqlmodel>=0.0.38",
-  "alembic>=1.18.4",
+  "sqlmodel>=0.0.39",
+  "alembic>=1.18.5",
   "psycopg[binary]>=3.3.4",
   "pgvector>=0.4.2",
   "redis>=8.0.1",
@@ -26,7 +26,7 @@ dependencies = [
   "pyjwt>=2.13.0",
 
   # AI
-  "openai>=2.43.0",
+  "openai>=2.44.0",
   "pydantic-ai-slim[logfire,openai]>=2.0.0",
   "tiktoken>=0.13.0",
 
@@ -48,7 +48,7 @@ dependencies = [
   "python-ulid>=3.1.0",
   "resend>=2.32.2",
   "selectolax>=0.4.10",
-  "typer>=0.26.7",
+  "typer>=0.26.8",
 
   # Sandbox / Execution
   "judge0>=0.0.8",
@@ -59,7 +59,7 @@ dev = [
   # Lint / Format
   "ruff==0.15.19",
   # Type Checking
-  "basedpyright>=1.39.8",
+  "basedpyright>=1.39.9",
   "mypy>=2.1.0",
   "pyrefly>=1.1.1",
   # Testing
@@ -70,7 +70,7 @@ dev = [
   "uvicorn[standard]>=0.49.0",
   # Fixtures
   "faker>=40.23.0",
-  "ty>=0.0.53",
+  "ty>=0.0.55",
 ]
 
 [tool.ruff]

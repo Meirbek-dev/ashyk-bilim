@@ -82,7 +82,7 @@ function isWellKnownPath(pathname: string): boolean {
   return pathname === '/.well-known' || pathname.startsWith('/.well-known/')
 }
 
-export default function proxy(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl
   const requestId = generateUUID()
 
