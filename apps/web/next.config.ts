@@ -56,6 +56,7 @@ const nextConfig: NextConfig = {
 
   allowedDevOrigins: ['https://cs-mooc.tou.edu.kz', 'http://192.168.12.35', 'http://192.168.1.46'],
   experimental: {
+    turbopackRustReactCompiler: true,
     turbopackFileSystemCacheForDev: false,
     serverActions: {
       allowedOrigins: ['cs-mooc.tou.edu.kz', 'localhost:3000'],

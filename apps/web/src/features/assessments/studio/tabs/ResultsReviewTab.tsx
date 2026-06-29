@@ -96,7 +96,7 @@ const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
   queryOptions({
     queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
     queryFn: () => apiFetcher<ReviewQueueRead>(queuePath),
-    staleTime: 5_000,
+    staleTime: 5000,
   })
 
 interface ResultsReviewTabProps {
