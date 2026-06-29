@@ -4,13 +4,13 @@ import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
 interface MetadataProps {
-  params: Promise<{ courseid: string; activityid: string }>
+  params: Promise<{ locale: string; courseid: string; activityid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
-  const t = await getTranslations('DashPage.Editor')
+  const t = await getTranslations({ locale: params.locale, namespace: 'DashPage.Editor' })
 
   const course_meta = await getCourseMetadata(params.courseid, undefined, true)
 

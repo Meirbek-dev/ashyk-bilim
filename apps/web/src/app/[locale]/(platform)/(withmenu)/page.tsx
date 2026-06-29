@@ -40,11 +40,13 @@ function CourseGridSkeleton() {
 }
 
 interface MetadataProps {
+  params: Promise<{ locale: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
-  const t = await getTranslations('General')
+export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
+  const { locale } = await props.params
+  const t = await getTranslations({ locale, namespace: 'General' })
 
   return {
     title: `${t('home')} - ${APP_NAME}`,
@@ -79,16 +81,24 @@ interface PlatformHomePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function PlatformHomePage({ searchParams }: PlatformHomePageProps) {
+export default function PlatformHomePage({ searchParams }: PlatformHomePageProps) {
+  return (
+    <div className="w-full">
+      <PageSuspense fallback={<CourseGridSkeleton />}>
+        <LandingContentWrapper searchParams={searchParams} />
+      </PageSuspense>
+    </div>
+  )
+}
+
+async function LandingContentWrapper({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const resolvedParams = await searchParams
   const pageParam = resolvedParams?.page
   const page = typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) || 1 : 1
 
-  return (
-    <div className="w-full">
-      <PageSuspense fallback={<CourseGridSkeleton />}>
-        <LandingContent page={page} />
-      </PageSuspense>
-    </div>
-  )
+  return <LandingContent page={page} />
 }

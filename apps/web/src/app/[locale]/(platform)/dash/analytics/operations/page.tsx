@@ -3,14 +3,38 @@ import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyS
 import AnalyticsShell from '@components/Dashboard/Analytics/AnalyticsShell'
 import OperationsTab from '@components/Dashboard/Analytics/OperationsTab'
 import { getTranslations } from 'next-intl/server'
+import { Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface PageProps {
+  params: Promise<{ locale: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function PlatformAnalyticsOperationsPage(props: PageProps) {
-  const query = normalizeAnalyticsQuery(await props.searchParams)
-  const t = await getTranslations('TeacherAnalytics')
+export default function PlatformAnalyticsOperationsPage(props: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[200px] w-full items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+        </div>
+      }
+    >
+      <OperationsContent params={props.params} searchParams={props.searchParams} />
+    </Suspense>
+  )
+}
+
+async function OperationsContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams])
+  const query = normalizeAnalyticsQuery(resolvedSearchParams)
+  const t = await getTranslations({ locale: resolvedParams.locale, namespace: 'TeacherAnalytics' })
 
   let overview: Awaited<ReturnType<typeof getTeacherOverview>>
   let adminData: Awaited<ReturnType<typeof getAdminAnalyticsOverview>> | null

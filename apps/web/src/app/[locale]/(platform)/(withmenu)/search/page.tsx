@@ -8,12 +8,13 @@ import type { Metadata } from 'next'
 import SearchPage from '@/app/_shared/withmenu/search/search'
 
 interface MetadataProps {
+  params: Promise<{ locale: string }>
   searchParams: Promise<PageSearchParams>
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const searchParams = await props.searchParams
-  const t = await getTranslations('General')
+  const [params, searchParams] = await Promise.all([props.params, props.searchParams])
+  const t = await getTranslations({ locale: params.locale, namespace: 'General' })
   const searchQuery = getSearchParam(searchParams, 'q') ?? ''
   const searchType = getSearchParam(searchParams, 'type') ?? 'all'
 

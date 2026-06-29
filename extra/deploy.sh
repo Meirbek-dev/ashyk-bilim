@@ -7,8 +7,14 @@ git fetch --all
 echo "[DEPLOY] Resetting to origin/main..."
 git reset --hard origin/main
 
-echo "[DEPLOY] Rebuilding containers..."
-docker compose up -d --build --remove-orphans
+echo "[DEPLOY] Building containers..."
+docker compose build
+
+echo "[DEPLOY] Running database migrations..."
+docker compose run --rm migrate
+
+echo "[DEPLOY] Rebuilding and starting containers..."
+docker compose up -d --remove-orphans
 
 echo "[DEPLOY] Cleaning unused images..."
 docker image prune -f

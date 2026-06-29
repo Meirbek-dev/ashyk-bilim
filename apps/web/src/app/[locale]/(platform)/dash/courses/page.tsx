@@ -30,8 +30,9 @@ function parsePreset(value: string | string[] | undefined): string {
   return valid.includes(raw ?? '') ? (raw ?? 'all') : 'all'
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('General')
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'General' })
 
   return {
     title: `${t('courses')} - ${APP_NAME}`,

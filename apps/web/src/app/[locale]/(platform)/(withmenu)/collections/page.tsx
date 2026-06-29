@@ -12,13 +12,16 @@ import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import Link from '@components/ui/AppLink'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 interface MetadataProps {
+  params: Promise<{ locale: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
-  const t = await getTranslations('HomePage.Collections')
+export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
+  const { locale } = await props.params
+  const t = await getTranslations({ locale, namespace: 'HomePage.Collections' })
 
   return {
     title: `${t('title')} - ${APP_NAME}`,
@@ -49,8 +52,27 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
   }
 }
 
-export default async function PlatformCollectionsPage() {
-  const t = await getTranslations('HomePage.Collections')
+interface PageProps {
+  params: Promise<{ locale: string }>
+}
+
+export default function PlatformCollectionsPage(props: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-muted-foreground flex h-[200px] w-full items-center justify-center text-sm">
+          Loading...
+        </div>
+      }
+    >
+      <CollectionsContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function CollectionsContent({ params }: PageProps) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'HomePage.Collections' })
   const collections = await getCollections()
 
   return (

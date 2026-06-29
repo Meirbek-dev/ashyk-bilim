@@ -201,17 +201,7 @@ ignore = [
   "RUF076",
 ]
 
-"**/conftest.py" = [
-  "ARG001",
-  "ARG002",
-  "F401",
-  "F811",
-  "S101",
-  "S105",
-  "S106",
-  "PT003",
-  "RUF076",
-]
+"**/conftest.py" = ["ARG001", "ARG002", "F401", "F811", "S101", "S105", "S106", "PT003", "RUF076"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

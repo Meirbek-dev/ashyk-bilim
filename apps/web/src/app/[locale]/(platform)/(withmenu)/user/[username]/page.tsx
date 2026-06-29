@@ -5,15 +5,15 @@ import type { Metadata } from 'next'
 import UserProfileClient from '@/app/_shared/withmenu/user/[username]/UserProfileClient'
 
 interface UserPageProps {
-  params: Promise<{ username: string }>
+  params: Promise<{ locale: string; username: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export async function generateMetadata({ params }: UserPageProps): Promise<Metadata> {
-  const t = await getTranslations('UserProfilePage')
+  const resolvedParams = await params
+  const t = await getTranslations({ locale: resolvedParams.locale, namespace: 'UserProfilePage' })
 
   try {
-    const resolvedParams = await params
     const userData = await getUserByUsername(resolvedParams.username)
 
     return {

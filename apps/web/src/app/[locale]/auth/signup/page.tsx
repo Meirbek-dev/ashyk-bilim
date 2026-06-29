@@ -6,8 +6,9 @@ import { Suspense } from 'react'
 import { APP_NAME } from '@/lib/constants'
 import SignUpClient from './signup'
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('Auth.Signup')
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'Auth.Signup' })
 
   return {
     title: t('title', { platformName: APP_NAME }),

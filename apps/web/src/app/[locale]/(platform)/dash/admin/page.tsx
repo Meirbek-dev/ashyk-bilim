@@ -6,8 +6,9 @@ import { Link } from '@/i18n/navigation'
 import DashHeader from '@/components/Dashboard/Misc/DashHeader'
 import { AIAdminPanel } from '@/features/ai-admin'
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('DashPage.Admin.Index')
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'DashPage.Admin.Index' })
   return {
     title: t('title'),
     description: t('description'),

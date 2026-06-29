@@ -4,11 +4,13 @@ import { getSession } from '@/lib/auth/session'
 import { APP_NAME } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import Trail from '@/app/_shared/withmenu/trail/trail'
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('TrailPage')
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'TrailPage' })
 
   return {
     title: `${t('title')} - ${APP_NAME}`,
@@ -16,7 +18,26 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function PlatformTrailPage() {
+interface PageProps {
+  params: Promise<{ locale: string }>
+}
+
+export default function PlatformTrailPage(props: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-muted-foreground flex h-[200px] w-full items-center justify-center text-sm">
+          Loading...
+        </div>
+      }
+    >
+      <TrailContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function TrailContent({ params }: PageProps) {
+  await params
   const content = (
     <div>
       <Trail />

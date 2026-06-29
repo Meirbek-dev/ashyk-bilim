@@ -10,12 +10,12 @@ import type { Metadata } from 'next'
 import { Badge } from '@/components/ui/badge'
 
 interface MetadataProps {
-  params: Promise<{ collectionid: string }>
+  params: Promise<{ locale: string; collectionid: string }>
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
-  const t = await getTranslations('General')
+  const t = await getTranslations({ locale: params.locale, namespace: 'General' })
   const col = await getCollectionById(params.collectionid)
 
   return {

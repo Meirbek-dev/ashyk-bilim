@@ -15,11 +15,13 @@ import Courses from '@/app/_shared/withmenu/courses/courses'
 import CoursesLoading from './loading'
 
 interface MetadataProps {
+  params: Promise<{ locale: string }>
   searchParams: Promise<PageSearchParams>
 }
 
-export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
-  const t = await getTranslations('General')
+export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
+  const { locale } = await props.params
+  const t = await getTranslations({ locale, namespace: 'General' })
 
   return {
     title: `${t('courses')} - ${APP_NAME}`,

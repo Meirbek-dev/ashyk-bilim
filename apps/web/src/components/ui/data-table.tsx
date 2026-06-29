@@ -31,14 +31,7 @@ import {
   Settings2,
   X,
 } from 'lucide-react'
-import type {
-  ColumnDef,
-  PaginationState,
-  RowData,
-  SortingState,
-  ColumnVisibilityState,
-  Updater,
-} from '@tanstack/react-table'
+import type { ColumnDef, PaginationState, RowData, SortingState, ColumnVisibilityState } from '@tanstack/react-table'
 
 import {
   DropdownMenu,
@@ -131,8 +124,6 @@ const escapeCsv = (value: unknown) => {
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
-const EMPTY_SORTING: SortingState = []
-const EMPTY_COLUMN_VISIBILITY: ColumnVisibilityState = {}
 const EMPTY_DATA: RowData[] = []
 
 const features = tableFeatures({
@@ -219,10 +210,6 @@ export default function DataTable<TData extends RowData>({
     }
   })
 
-  const [sorting, setSorting] = React.useState<SortingState>(initialState.sorting)
-  const [globalFilter, setGlobalFilter] = React.useState(initialState.globalFilter)
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>(initialState.columnVisibility)
-  const [pagination, setPagination] = React.useState<PaginationState>(initialState.pagination)
   const didNotifySortingMountRef = React.useRef(false)
   const didNotifyGlobalFilterMountRef = React.useRef(false)
   const didNotifyPaginationMountRef = React.useRef(false)
@@ -244,38 +231,6 @@ export default function DataTable<TData extends RowData>({
     exportStarted: labels?.exportStarted ?? t('exportStarted'),
   }
 
-  const resolveUpdater = React.useCallback(<TValue,>(updater: Updater<TValue>, previous: TValue) => {
-    return typeof updater === 'function' ? (updater as (old: TValue) => TValue)(previous) : updater
-  }, [])
-
-  const handleSortingChange = React.useCallback(
-    (updater: Updater<SortingState>) => {
-      setSorting(previous => resolveUpdater(updater, previous))
-    },
-    [resolveUpdater],
-  )
-
-  const handleGlobalFilterChange = React.useCallback(
-    (updater: Updater<string>) => {
-      setGlobalFilter(previous => resolveUpdater(updater, previous))
-    },
-    [resolveUpdater],
-  )
-
-  const handlePaginationChange = React.useCallback(
-    (updater: Updater<PaginationState>) => {
-      setPagination(previous => resolveUpdater(updater, previous))
-    },
-    [resolveUpdater],
-  )
-
-  const handleColumnVisibilityChange = React.useCallback(
-    (updater: Updater<ColumnVisibilityState>) => {
-      setColumnVisibility(previous => resolveUpdater(updater, previous))
-    },
-    [resolveUpdater],
-  )
-
   const globalFilterFn = React.useCallback(
     (row: { getVisibleCells: () => { getValue: () => unknown }[] }, _columnId: string, filterValue: unknown) => {
       const normalizedFilter = String(filterValue).toLowerCase()
@@ -288,7 +243,8 @@ export default function DataTable<TData extends RowData>({
     [],
   )
 
-  const resolvedPageCount = controlledPageCount ?? Math.max(1, Math.ceil(data.length / pagination.pageSize))
+  const resolvedPageCount =
+    controlledPageCount ?? Math.max(1, Math.ceil(data.length / (initialState.pagination?.pageSize ?? pageSize)))
   const tableData = data ?? (EMPTY_DATA as TData[])
   const tableColumns = columns as unknown as ColumnDef<typeof features, TData>[]
   const tableConfig = React.useMemo(
@@ -297,16 +253,12 @@ export default function DataTable<TData extends RowData>({
         features,
         data: tableData,
         columns: tableColumns,
-        state: {
-          sorting,
-          globalFilter,
-          columnVisibility,
-          pagination,
+        initialState: {
+          sorting: initialState.sorting,
+          globalFilter: initialState.globalFilter,
+          columnVisibility: initialState.columnVisibility,
+          pagination: initialState.pagination,
         },
-        onSortingChange: handleSortingChange,
-        onGlobalFilterChange: handleGlobalFilterChange,
-        onColumnVisibilityChange: handleColumnVisibilityChange,
-        onPaginationChange: handlePaginationChange,
         manualPagination: isServerPaginated,
         manualSorting: isServerSorted,
         manualFiltering: isServerFiltered,
@@ -316,32 +268,24 @@ export default function DataTable<TData extends RowData>({
     [
       tableData,
       tableColumns,
-      sorting,
-      globalFilter,
-      columnVisibility,
-      pagination,
-      handleSortingChange,
-      handleGlobalFilterChange,
-      handleColumnVisibilityChange,
-      handlePaginationChange,
       isServerPaginated,
       isServerSorted,
       isServerFiltered,
       resolvedPageCount,
       globalFilterFn,
+      initialState.sorting,
+      initialState.globalFilter,
+      initialState.columnVisibility,
+      initialState.pagination,
     ],
   )
 
-  const table = useTable(tableConfig, state => ({
-    sorting: state.sorting ?? EMPTY_SORTING,
-    globalFilter: state.globalFilter ?? '',
-    columnVisibility: state.columnVisibility ?? EMPTY_COLUMN_VISIBILITY,
-    pagination: state.pagination,
-  }))
+  const table = useTable(tableConfig)
 
   React.useEffect(() => {
     if (!storageKey || typeof globalThis.window === 'undefined') return
 
+    const { sorting, globalFilter, columnVisibility, pagination } = table.state
     globalThis.sessionStorage.setItem(
       `data-table:${storageKey}`,
       JSON.stringify(
@@ -350,7 +294,14 @@ export default function DataTable<TData extends RowData>({
           : { sorting, globalFilter, columnVisibility, pagination },
       ),
     )
-  }, [columnVisibility, globalFilter, pagination, sorting, storageKey, isServerPaginated])
+  }, [
+    table.state.columnVisibility,
+    table.state.globalFilter,
+    table.state.pagination,
+    table.state.sorting,
+    storageKey,
+    isServerPaginated,
+  ])
 
   React.useEffect(() => {
     onSortingChangeRef.current = onSortingChangeProp
@@ -370,8 +321,8 @@ export default function DataTable<TData extends RowData>({
       return
     }
 
-    onSortingChangeRef.current?.(sorting)
-  }, [sorting])
+    onSortingChangeRef.current?.(table.state.sorting)
+  }, [table.state.sorting])
 
   React.useEffect(() => {
     if (!didNotifyGlobalFilterMountRef.current) {
@@ -379,8 +330,8 @@ export default function DataTable<TData extends RowData>({
       return
     }
 
-    onGlobalFilterChangeRef.current?.(globalFilter)
-  }, [globalFilter])
+    onGlobalFilterChangeRef.current?.(table.state.globalFilter)
+  }, [table.state.globalFilter])
 
   React.useEffect(() => {
     if (!didNotifyPaginationMountRef.current) {
@@ -388,8 +339,8 @@ export default function DataTable<TData extends RowData>({
       return
     }
 
-    onPaginationChangeRef.current?.(pagination)
-  }, [pagination])
+    onPaginationChangeRef.current?.(table.state.pagination)
+  }, [table.state.pagination])
 
   const { rows } = table.getRowModel()
   const totalFiltered = isServerPaginated ? (totalRows ?? data.length) : table.getFilteredRowModel().rows.length
@@ -397,7 +348,7 @@ export default function DataTable<TData extends RowData>({
   const tablePageCount = table.getPageCount()
   const from = totalFiltered > 0 ? pageIndex * currentPageSize + 1 : 0
   const to = totalFiltered > 0 ? Math.min(from + rows.length - 1, totalFiltered) : 0
-  const canResetSearch = globalFilter.length > 0
+  const canResetSearch = (table.state.globalFilter ?? '').length > 0
 
   const exportableColumns = table.getAllLeafColumns().filter(column => {
     const hasAccessor = 'accessorKey' in column.columnDef || 'accessorFn' in column.columnDef
@@ -446,7 +397,7 @@ export default function DataTable<TData extends RowData>({
           <div className="relative w-full max-w-md">
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              value={globalFilter}
+              value={table.state.globalFilter ?? ''}
               onChange={event => {
                 table.setGlobalFilter(event.target.value)
                 table.setPageIndex(0)
