@@ -300,6 +300,7 @@ def _backfill_assessments() -> None:
                 title,
                 description,
                 lifecycle,
+                published_at,
                 weight,
                 grading_type,
                 policy_id,
@@ -315,8 +316,13 @@ def _backfill_assessments() -> None:
                 CASE
                     WHEN exam.settings ->> 'lifecycle_status' IN ('DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED')
                         THEN exam.settings ->> 'lifecycle_status'
-                    WHEN exam.published THEN 'PUBLISHED'
+                    WHEN exam.published OR activity.published THEN 'PUBLISHED'
                     ELSE 'DRAFT'
+                END,
+                CASE
+                    WHEN exam.published OR activity.published
+                        THEN COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, NULLIF(exam.creation_date::text, '')::timestamptz, now())
+                    ELSE NULL
                 END,
                 1.0,
                 'PERCENTAGE',
@@ -324,6 +330,7 @@ def _backfill_assessments() -> None:
                 COALESCE(NULLIF(exam.creation_date::text, '')::timestamptz, now()),
                 COALESCE(NULLIF(exam.update_date::text, '')::timestamptz, now())
             FROM exam
+            JOIN activity ON activity.id = exam.activity_id
             LEFT JOIN assessment_policy
               ON assessment_policy.activity_id = exam.activity_id
             WHERE NOT EXISTS (

@@ -436,17 +436,32 @@ def upgrade() -> None:
             if assessment is None:
                 msg = f"Missing canonical assessment for exam activity {row.activity_id}"
                 raise RuntimeError(msg)
-            if row.question_uuid in existing_item_uuids:
-                continue
             created_at = _coerce_datetime(row.creation_date) or now
             updated_at = _coerce_datetime(row.update_date) or created_at
+            item_body = _question_item_body(row)
+            if row.question_uuid in existing_item_uuids:
+                bind.execute(
+                    sa.update(assessment_item_table)
+                    .where(assessment_item_table.c.item_uuid == row.question_uuid)
+                    .values(
+                        assessment_id=assessment["id"],
+                        order=int(row.order_index or 0),
+                        kind=_question_item_kind(row.question_type),
+                        title=row.question_text or "",
+                        body_json=item_body,
+                        max_score=float(row.points or 0),
+                        updated_at=updated_at,
+                    )
+                )
+                touched_assessment_ids.add(int(assessment["id"]))
+                continue
             items_to_insert.append({
                 "item_uuid": row.question_uuid,
                 "assessment_id": assessment["id"],
                 "order": int(row.order_index or 0),
                 "kind": _question_item_kind(row.question_type),
                 "title": row.question_text or "",
-                "body_json": _question_item_body(row),
+                "body_json": item_body,
                 "max_score": float(row.points or 0),
                 "created_at": created_at,
                 "updated_at": updated_at,

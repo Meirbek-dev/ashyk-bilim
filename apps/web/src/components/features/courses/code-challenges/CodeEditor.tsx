@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { OnChange, OnMount } from '@monaco-editor/react'
 
@@ -45,11 +45,15 @@ export function CodeEditor({
   readOnlyMessage,
 }: CodeEditorProps) {
   const { resolvedTheme } = useTheme()
+  const [editorKey, setEditorKey] = useState(0)
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
 
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
       editorRef.current = editor
+      editor.onDidDispose(() => {
+        setEditorKey(prev => prev + 1)
+      })
       onMount?.(editor, monaco)
     },
     [onMount],
@@ -95,6 +99,7 @@ export function CodeEditor({
         </div>
       ) : null}
       <Editor
+        key={editorKey}
         height={height}
         language={monacoLanguage ?? getMonacoLanguage(languageId)}
         value={value}
