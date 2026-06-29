@@ -1206,6 +1206,10 @@
     "unsavedChanges": "Сақталмаған өзгерістер"
   },
   "Components": {
+    "MessageScroller": {
+      "scrollToEnd": "Соңына дейін айналдыру",
+      "scrollToStart": "Басына дейін айналдыру"
+    },
     "Calendar": {
       "set": "Орнату"
     },
@@ -6800,7 +6804,13 @@
     "courseNotFound": "Курс табылмады",
     "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
     "backToCourse": "Курсқа оралу",
-    "backToDashboard": "Басқару тақтасына"
+    "backToDashboard": "Басқару тақтасына",
+    "courseLoadErrorTitle": "Курс жүктелмеді",
+    "courseLoadErrorDescription": "Бұл курсты жүктеу мүмкін болмады. Сұранысты қайталаңыз немесе қате қайталана берсе, қолдау қызметіне хабарласыңыз.",
+    "coursesLoadErrorTitle": "Курстар жүктелмеді",
+    "coursesLoadErrorDescription": "Курстарды жүктеу мүмкін болмады. Сұранысты қайталаңыз немесе қате қайталана берсе, қолдау қызметіне хабарласыңыз.",
+    "activityLoadErrorTitle": "Белсенділік жүктелмеді",
+    "activityLoadErrorDescription": "Бұл белсенділікті жүктеу мүмкін болмады. Сұранысты қайталаңыз немесе қате қайталана берсе, қолдау қызметіне хабарласыңыз."
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -10259,7 +10269,16 @@
     "fixInstructionsBeforeSaving": "Сақтамас бұрын нұсқаулықты түзетіңіз",
     "fixInstructionsBeforePublishing": "Жарияламас бұрын нұсқаулықты түзетіңіз"
   },
+  "AIConfidenceMeter": {
+    "high": "Жоғары сенімділік",
+    "medium": "Орташа сенімділік",
+    "low": "Төмен сенімділік"
+  },
   "AiExperience": {
+    "qaMessage": {
+      "you": "Сіз",
+      "aiAnswer": "ЖИ жауабы"
+    },
     "languageControl": {
       "label": "Жауап тілі",
       "auto": "Авто",

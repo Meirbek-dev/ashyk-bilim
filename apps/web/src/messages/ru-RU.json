@@ -1206,6 +1206,10 @@
     "unsavedChanges": "Несохраненные изменения"
   },
   "Components": {
+    "MessageScroller": {
+      "scrollToEnd": "Прокрутить в конец",
+      "scrollToStart": "Прокрутить в начало"
+    },
     "Calendar": {
       "set": "Установить"
     },
@@ -6784,7 +6788,13 @@
     "courseNotFound": "Курс не найден",
     "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
     "backToCourse": "Вернуться к курсу",
-    "backToDashboard": "В панель управления"
+    "backToDashboard": "В панель управления",
+    "courseLoadErrorTitle": "Не удалось загрузить курс",
+    "courseLoadErrorDescription": "Не удалось загрузить этот курс. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется.",
+    "coursesLoadErrorTitle": "Не удалось загрузить курсы",
+    "coursesLoadErrorDescription": "Не удалось загрузить курсы. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется.",
+    "activityLoadErrorTitle": "Не удалось загрузить активность",
+    "activityLoadErrorDescription": "Не удалось загрузить эту активность. Повторите запрос или используйте обращение в поддержку, если ошибка повторяется."
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -10088,7 +10098,16 @@
     "fixInstructionsBeforeSaving": "Исправьте инструкции перед сохранением",
     "fixInstructionsBeforePublishing": "Исправьте инструкции перед публикацией"
   },
+  "AIConfidenceMeter": {
+    "high": "Высокая уверенность",
+    "medium": "Средняя уверенность",
+    "low": "Низкая уверенность"
+  },
   "AiExperience": {
+    "qaMessage": {
+      "you": "Вы",
+      "aiAnswer": "Ответ ИИ"
+    },
     "languageControl": {
       "label": "Язык ответа",
       "auto": "Авто",

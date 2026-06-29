@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
@@ -18,12 +18,16 @@ export interface CourseAnalysis {
   }
 }
 
-export function useLatestCourseAnalysis(courseUuid: string) {
-  return useQuery({
+export function latestCourseAnalysisQueryOptions(courseUuid: string) {
+  return queryOptions({
     queryKey: ['course-analysis', courseUuid],
     queryFn: () => apiFetcher<CourseAnalysis | null>(`ai/course-analysis/${courseUuid}/latest`),
     enabled: Boolean(courseUuid),
   })
+}
+
+export function useLatestCourseAnalysis(courseUuid: string) {
+  return useQuery(latestCourseAnalysisQueryOptions(courseUuid))
 }
 
 export function useRunCourseAnalysis(courseUuid: string) {
@@ -35,7 +39,10 @@ export function useRunCourseAnalysis(courseUuid: string) {
         body: JSON.stringify({ language }),
         headers: { 'content-type': 'application/json' },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-analysis', courseUuid] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: latestCourseAnalysisQueryOptions(courseUuid).queryKey,
+      }),
   })
 }
 
@@ -46,6 +53,9 @@ export function usePublishCourseAnalysis(courseUuid: string) {
       apiJson<CourseAnalysis>(`ai/course-analysis/${analysisUuid}/publish`, {
         method: 'POST',
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course-analysis', courseUuid] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: latestCourseAnalysisQueryOptions(courseUuid).queryKey,
+      }),
   })
 }

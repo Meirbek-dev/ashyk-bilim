@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
@@ -18,12 +18,16 @@ export interface RemediationSession {
   test_json: { questions?: unknown[] }
 }
 
-export function useRemediationSession(sessionUuid: string) {
-  return useQuery({
+export function remediationSessionQueryOptions(sessionUuid: string) {
+  return queryOptions({
     queryKey: ['remediation-session', sessionUuid],
     queryFn: () => apiFetcher<RemediationSession>(`ai/remediation/sessions/${sessionUuid}`),
     enabled: Boolean(sessionUuid),
   })
+}
+
+export function useRemediationSession(sessionUuid: string) {
+  return useQuery(remediationSessionQueryOptions(sessionUuid))
 }
 
 export function useGenerateRemediation(submissionUuid: string) {

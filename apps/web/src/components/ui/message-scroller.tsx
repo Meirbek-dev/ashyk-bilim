@@ -8,9 +8,10 @@ import {
   useMessageScrollerVisibility,
 } from '@shadcn/react/message-scroller'
 
+import { useTranslations } from 'next-intl'
+import { ArrowDownIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ArrowDownIcon } from 'lucide-react'
 
 function MessageScrollerProvider(props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>) {
   return <MessageScrollerPrimitive.Provider {...props} />
@@ -80,6 +81,7 @@ function MessageScrollerButton({
   ...props
 }: React.ComponentProps<typeof MessageScrollerPrimitive.Button> &
   Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
+  const t = useTranslations('Components.MessageScroller')
   return (
     <MessageScrollerPrimitive.Button
       data-slot="message-scroller-button"
@@ -97,7 +99,7 @@ function MessageScrollerButton({
       {children ?? (
         <>
           <ArrowDownIcon />
-          <span className="sr-only">{direction === 'end' ? 'Scroll to end' : 'Scroll to start'}</span>
+          <span className="sr-only">{direction === 'end' ? t('scrollToEnd') : t('scrollToStart')}</span>
         </>
       )}
     </MessageScrollerPrimitive.Button>

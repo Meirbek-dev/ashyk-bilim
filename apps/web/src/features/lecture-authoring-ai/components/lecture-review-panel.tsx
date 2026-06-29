@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
-import type { AICitation, AIWorkState } from '@/features/ai-experience'
+import type { AICitation } from '@/features/ai-experience'
 
 import type { LectureReview } from '../api/use-lecture-authoring-ai'
 
@@ -20,7 +20,7 @@ export function LectureReviewPanel({ review }: { review: LectureReview }) {
     () => ({
       title: t('title'),
       description: review.suggestions_json.summary ?? t('defaultDescription'),
-      state: (suggestions.length > 0 ? 'needs_human_review' : 'complete') as AIWorkState,
+      state: (suggestions.length > 0 ? 'needs_human_review' : 'complete'),
       citations,
     }),
     [review.suggestions_json.summary, suggestions.length, citations, t],

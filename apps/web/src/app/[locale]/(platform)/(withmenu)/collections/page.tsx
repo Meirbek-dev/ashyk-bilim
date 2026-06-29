@@ -56,12 +56,15 @@ interface PageProps {
   params: Promise<{ locale: string }>
 }
 
-export default function PlatformCollectionsPage(props: PageProps) {
+export default async function PlatformCollectionsPage(props: PageProps) {
+  const { locale } = await props.params
+  const t = await getTranslations({ locale, namespace: 'PageLoading' })
+
   return (
     <Suspense
       fallback={
         <div className="text-muted-foreground flex h-[200px] w-full items-center justify-center text-sm">
-          Loading...
+          {t('loading')}
         </div>
       }
     >

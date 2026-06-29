@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher } from '@/lib/api-client'
 
@@ -12,9 +12,13 @@ export interface AIUsageSummary {
   remaining_budget: number
 }
 
-export function useAIUsage() {
-  return useQuery({
+export function aiUsageQueryOptions() {
+  return queryOptions({
     queryKey: ['ai-usage'],
     queryFn: () => apiFetcher<AIUsageSummary>('ai/usage'),
   })
+}
+
+export function useAIUsage() {
+  return useQuery(aiUsageQueryOptions())
 }

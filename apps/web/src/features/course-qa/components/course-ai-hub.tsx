@@ -26,6 +26,7 @@ export function CourseAIHub({ courseUuid }: { courseUuid: string }) {
           <StudyCompanionPanel courseUuid={courseUuid} />
         </TabsContent>
         <TabsContent value="questions" className="mt-4">
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           <QAPanel courseUuid={courseUuid} userRole="student" />
         </TabsContent>
         <TabsContent value="review" className="mt-4">

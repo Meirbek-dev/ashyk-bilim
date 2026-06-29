@@ -176,7 +176,7 @@ export default function DataTable<TData extends RowData>({
       return {
         sorting: [] as SortingState,
         globalFilter: '',
-        columnVisibility: {} as ColumnVisibilityState,
+        columnVisibility: {},
         pagination: fallbackPagination,
       }
     }
@@ -187,7 +187,7 @@ export default function DataTable<TData extends RowData>({
         return {
           sorting: [] as SortingState,
           globalFilter: '',
-          columnVisibility: {} as ColumnVisibilityState,
+          columnVisibility: {},
           pagination: fallbackPagination,
         }
       }
@@ -204,7 +204,7 @@ export default function DataTable<TData extends RowData>({
       return {
         sorting: [] as SortingState,
         globalFilter: '',
-        columnVisibility: {} as ColumnVisibilityState,
+        columnVisibility: {},
         pagination: fallbackPagination,
       }
     }
@@ -281,11 +281,11 @@ export default function DataTable<TData extends RowData>({
   )
 
   const table = useTable(tableConfig)
+  const { sorting, globalFilter, columnVisibility, pagination } = table.state
 
   React.useEffect(() => {
     if (!storageKey || typeof globalThis.window === 'undefined') return
 
-    const { sorting, globalFilter, columnVisibility, pagination } = table.state
     globalThis.sessionStorage.setItem(
       `data-table:${storageKey}`,
       JSON.stringify(
@@ -295,10 +295,10 @@ export default function DataTable<TData extends RowData>({
       ),
     )
   }, [
-    table.state.columnVisibility,
-    table.state.globalFilter,
-    table.state.pagination,
-    table.state.sorting,
+    columnVisibility,
+    globalFilter,
+    pagination,
+    sorting,
     storageKey,
     isServerPaginated,
   ])

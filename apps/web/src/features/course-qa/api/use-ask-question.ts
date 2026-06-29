@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
@@ -17,10 +17,14 @@ export function useAskCourseQuestion(courseUuid: string) {
   })
 }
 
-export function useQAThread(courseUuid: string, threadUuid: string) {
-  return useQuery({
+export function qaThreadQueryOptions(courseUuid: string, threadUuid: string) {
+  return queryOptions({
     queryKey: ['course-qa-thread', courseUuid, threadUuid],
     queryFn: () => apiFetcher<QAMessage[]>(`ai/qa/${courseUuid}/threads/${threadUuid}`),
     enabled: Boolean(courseUuid && threadUuid),
   })
+}
+
+export function useQAThread(courseUuid: string, threadUuid: string) {
+  return useQuery(qaThreadQueryOptions(courseUuid, threadUuid))
 }

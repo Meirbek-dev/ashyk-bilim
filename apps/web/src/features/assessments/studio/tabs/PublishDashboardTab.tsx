@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, queryOptions } from '@tanstack/react-query'
 
 import type { AssessmentItem, UnifiedItemKind } from '@/features/assessments/domain/items'
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness'
@@ -76,6 +76,13 @@ interface AccessRead {
   effective_user_count: number
 }
 
+const assessmentAccessQueryOptions = (assessmentUuid: string) =>
+  queryOptions({
+    queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
+    queryFn: () => apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
+    staleTime: 30_000,
+  })
+
 export default function PublishDashboardTab({
   assessmentUuid,
   lifecycle,
@@ -101,11 +108,7 @@ export default function PublishDashboardTab({
   const [previewedScenarios, setPreviewedScenarios] = useState<Set<PreviewScenarioId>>(new Set())
   const [specificLearner, setSpecificLearner] = useState('')
   const [isPending, startTransition] = useTransition()
-  const accessQuery = useQuery({
-    queryKey: ['assessments', assessmentUuid, 'access', 'publish-gate'],
-    queryFn: () => apiFetcher<AccessRead>(`assessments/${assessmentUuid}/access`),
-    staleTime: 30_000,
-  })
+  const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
 
   // Compute all validation issues (assessment-level + item-level)
   const classifiedIssues = dedupeIssues(validationIssues).map(classifyValidationIssue)

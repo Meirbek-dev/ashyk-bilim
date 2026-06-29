@@ -13,6 +13,7 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
       description={t('gradebookLoadErrorDescription')}
       error={error}
       reset={reset}
+      // eslint-disable-next-line i18next/no-literal-string
       scope="gradebook"
       title={t('gradebookLoadError')}
     />

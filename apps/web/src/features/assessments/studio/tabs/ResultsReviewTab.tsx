@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, queryOptions } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { toast } from 'sonner'
 
@@ -78,6 +78,27 @@ interface ReviewQueueRead {
   contract_version?: number
 }
 
+const statsQueryOptions = (assessmentUuid: string) =>
+  queryOptions({
+    queryKey: queryKeys.assessments.stats(assessmentUuid),
+    queryFn: () => apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
+    staleTime: 30_000,
+  })
+
+const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
+  queryOptions({
+    queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
+    queryFn: () => apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
+    staleTime: 30_000,
+  })
+
+const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
+  queryOptions({
+    queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
+    queryFn: () => apiFetcher<ReviewQueueRead>(queuePath),
+    staleTime: 5_000,
+  })
+
 interface ResultsReviewTabProps {
   assessmentUuid: string
   courseUuid?: string | null
@@ -110,21 +131,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
     lateOnly,
   })
 
-  const statsQuery = useQuery({
-    queryKey: queryKeys.assessments.stats(assessmentUuid),
-    queryFn: () => apiFetcher<SubmissionStats>(`assessments/${assessmentUuid}/submissions/stats`),
-    staleTime: 30_000,
-  })
-  const itemAnalyticsQuery = useQuery({
-    queryKey: queryKeys.assessments.itemAnalytics(assessmentUuid),
-    queryFn: () => apiFetcher<ItemAnalytics[]>(`assessments/${assessmentUuid}/item-analytics`),
-    staleTime: 30_000,
-  })
-  const queueQuery = useQuery({
-    queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
-    queryFn: () => apiFetcher<ReviewQueueRead>(queuePath),
-    staleTime: 5000,
-  })
+  const statsQuery = useQuery(statsQueryOptions(assessmentUuid))
+  const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
+  const queueQuery = useQuery(queueQueryOptions(assessmentUuid, queuePath))
 
   const stats = statsQuery.data ?? null
   const itemAnalytics = itemAnalyticsQuery.data ?? []
@@ -585,7 +594,7 @@ function OperateInsight({
 
 function readReleaseState(submission: Submission): ReleaseState {
   return 'release_state' in submission && submission.release_state
-    ? (submission.release_state as ReleaseState)
+    ? (submission.release_state)
     : getReleaseState(submission.status)
 }
 

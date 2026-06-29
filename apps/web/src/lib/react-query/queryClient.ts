@@ -37,7 +37,7 @@ export function mutationErrorMeta(meta: ErrorMeta): ErrorMeta {
 }
 
 function readErrorMeta(meta: unknown): ErrorMeta {
-  return meta && typeof meta === 'object' ? (meta as ErrorMeta) : {}
+  return meta && typeof meta === 'object' ? (meta) : {}
 }
 
 function shouldReportError(error: unknown, meta: ErrorMeta): boolean {

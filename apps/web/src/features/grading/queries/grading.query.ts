@@ -62,7 +62,7 @@ function buildCourseGradebookSearchParams(params?: CourseGradebookQueryParams) {
 export function courseGradebookQueryOptions(courseUuid: string, params?: CourseGradebookQueryParams) {
   const query = buildCourseGradebookSearchParams(params)
   return queryOptions({
-    queryKey: [...queryKeys.grading.gradebook(courseUuid), params ?? {}] as const,
+    queryKey: [...queryKeys.grading.gradebook(courseUuid), query] as const,
     queryFn: () =>
       apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
     staleTime: 5000,

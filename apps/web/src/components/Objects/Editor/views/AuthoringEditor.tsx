@@ -15,7 +15,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useEffectEvent, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
 
@@ -142,12 +142,13 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
     latestContentRef.current = props.content
   }, [props.content])
 
-  const onContentChange = useEffectEvent(props.onContentChange)
+  const onContentChangeRef = useRef(props.onContentChange)
+  onContentChangeRef.current = props.onContentChange
 
-  const handleContentChange = (content: unknown) => {
+  const handleContentChange = useCallback((content: unknown) => {
     latestContentRef.current = content
-    onContentChange(content)
-  }
+    onContentChangeRef.current(content)
+  }, [])
 
   function handleContentSave() {
     props.setContent(latestContentRef.current)

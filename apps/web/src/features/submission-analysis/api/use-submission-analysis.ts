@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
@@ -18,12 +18,16 @@ export interface SubmissionAnalysis {
   }
 }
 
-export function useLatestSubmissionAnalysis(submissionUuid: string) {
-  return useQuery({
+export function latestSubmissionAnalysisQueryOptions(submissionUuid: string) {
+  return queryOptions({
     queryKey: ['submission-analysis', submissionUuid],
     queryFn: () => apiFetcher<SubmissionAnalysis | null>(`ai/submission-analysis/${submissionUuid}/latest`),
     enabled: Boolean(submissionUuid),
   })
+}
+
+export function useLatestSubmissionAnalysis(submissionUuid: string) {
+  return useQuery(latestSubmissionAnalysisQueryOptions(submissionUuid))
 }
 
 export function useRunSubmissionAnalysis(submissionUuid: string) {
@@ -35,6 +39,9 @@ export function useRunSubmissionAnalysis(submissionUuid: string) {
         body: JSON.stringify({ language }),
         headers: { 'content-type': 'application/json' },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['submission-analysis', submissionUuid] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: latestSubmissionAnalysisQueryOptions(submissionUuid).queryKey,
+      }),
   })
 }

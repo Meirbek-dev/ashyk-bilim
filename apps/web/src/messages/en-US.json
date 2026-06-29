@@ -1203,6 +1203,10 @@
     "unsavedChanges": "Unsaved changes"
   },
   "Components": {
+    "MessageScroller": {
+      "scrollToEnd": "Scroll to end",
+      "scrollToStart": "Scroll to start"
+    },
     "Calendar": {
       "set": "Set"
     },
@@ -6782,7 +6786,13 @@
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
     "backToCourse": "Back to Course",
-    "backToDashboard": "Back to Dashboard"
+    "backToDashboard": "Back to Dashboard",
+    "courseLoadErrorTitle": "Course failed to load",
+    "courseLoadErrorDescription": "This course could not be loaded. Retry the request or use the support reference if it keeps failing.",
+    "coursesLoadErrorTitle": "Courses failed to load",
+    "coursesLoadErrorDescription": "Courses could not be loaded. Retry the request or use the support reference if it keeps failing.",
+    "activityLoadErrorTitle": "Activity failed to load",
+    "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing."
   },
   "FixedActivitySecondaryBar": {
     "CourseInfo": {
@@ -10071,7 +10081,16 @@
     "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
     "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
   },
+  "AIConfidenceMeter": {
+    "high": "High confidence",
+    "medium": "Medium confidence",
+    "low": "Low confidence"
+  },
   "AiExperience": {
+    "qaMessage": {
+      "you": "You",
+      "aiAnswer": "AI answer"
+    },
     "languageControl": {
       "label": "Response language",
       "auto": "Auto",

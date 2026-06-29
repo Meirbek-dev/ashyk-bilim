@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
 
@@ -16,12 +16,16 @@ export interface LectureReview {
   dismissed_json?: Record<string, boolean>
 }
 
-export function useLectureReviews(courseId: number) {
-  return useQuery({
+export function lectureReviewsQueryOptions(courseId: number) {
+  return queryOptions({
     queryKey: ['lecture-ai-reviews', courseId],
     queryFn: () => apiFetcher<LectureReview[]>(`ai/lecture-authoring/${courseId}/reviews`),
     enabled: Number.isFinite(courseId),
   })
+}
+
+export function useLectureReviews(courseId: number) {
+  return useQuery(lectureReviewsQueryOptions(courseId))
 }
 
 export function useRunLectureCritique(courseUuid: string) {

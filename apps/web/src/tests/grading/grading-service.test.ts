@@ -20,7 +20,9 @@ vi.mock('@/lib/api-client', () => ({
         if (body && body.detail) {
           err.message = body.detail
         }
-      } catch {}
+      } catch {
+        // ignore parse error if res.json() fails
+      }
       throw err
     }
     return res.json()
