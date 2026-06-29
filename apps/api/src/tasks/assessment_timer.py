@@ -16,6 +16,8 @@ import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
+import sqlalchemy.exc
+
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
 
@@ -31,6 +33,14 @@ async def assessment_timer_loop(settings: AppSettings) -> None:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             await auto_submit_expired_drafts()
+        except sqlalchemy.exc.ProgrammingError as exc:
+            # Expected during rolling deploys: the API can start before migrations
+            # complete, so referenced tables (e.g. assessment_policy) may not exist
+            # yet.  Log at WARNING — not ERROR — to avoid alert fatigue.
+            logger.warning(
+                "Assessment timer skipped tick; schema not ready yet: %s",
+                exc.orig,
+            )
         except Exception:
             logger.exception("Assessment timer tick failed; will retry next cycle")
 

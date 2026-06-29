@@ -367,6 +367,20 @@ def _ensure_assignment_activities(conn: Connection) -> None:
 
 
 def _backfill_due_at(conn: Connection) -> None:
+    # Re-check via information_schema so we are not relying on the SQLAlchemy
+    # inspector cache, which may not reflect DDL added earlier in the same
+    # transaction (e.g. when _ensure_assignment_contract_columns just ran
+    # op.add_column on a DB where w3x4y5z6a7b8 returned its early-exit guard).
+    exists = _fetch_one(
+        conn,
+        """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'assignment' AND column_name = 'due_at'
+        """,
+    )
+    if exists is None:
+        return  # column not yet present; nothing to backfill
+
     assignments = _fetch_all(
         conn,
         "SELECT id, due_date, due_at FROM assignment WHERE due_at IS NULL",
