@@ -1,9 +1,9 @@
 import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
 import { getPlatformThumbnailImage } from '@services/media/media'
-import { PageSuspense } from '@components/Utils/PageSuspense'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 function CourseGridSkeleton() {
   return (
@@ -84,9 +84,9 @@ interface PlatformHomePageProps {
 export default function PlatformHomePage({ searchParams }: PlatformHomePageProps) {
   return (
     <div className="w-full">
-      <PageSuspense fallback={<CourseGridSkeleton />}>
+      <Suspense fallback={<CourseGridSkeleton />}>
         <LandingContentWrapper searchParams={searchParams} />
-      </PageSuspense>
+      </Suspense>
     </div>
   )
 }

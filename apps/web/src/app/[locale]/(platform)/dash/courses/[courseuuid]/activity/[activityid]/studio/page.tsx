@@ -10,12 +10,27 @@ import { getSession } from '@/lib/auth/session'
 import { redirect } from '@/i18n/navigation'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
+import { Suspense } from 'react'
 
-export default async function PlatformAssessmentStudioPage(props: {
+interface PlatformAssessmentStudioPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
-}) {
+}
+
+function StudioPageFallback() {
+  return <div className="bg-background min-h-screen" />
+}
+
+export default function PlatformAssessmentStudioPage(props: PlatformAssessmentStudioPageProps) {
+  return (
+    <Suspense fallback={<StudioPageFallback />}>
+      <PlatformAssessmentStudioContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformAssessmentStudioContent({ params }: PlatformAssessmentStudioPageProps) {
   const t = await getTranslations('Features.Assessments.Studio')
-  const { courseuuid, activityid } = await props.params
+  const { courseuuid, activityid } = await params
 
   let activity
   let course
