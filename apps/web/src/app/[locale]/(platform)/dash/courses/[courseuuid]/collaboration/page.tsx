@@ -1,6 +1,19 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default async function PlatformCourseCollaborationPage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params
+interface PlatformCourseCollaborationPageProps {
+  params: Promise<{ courseuuid: string }>
+}
+
+export default function PlatformCourseCollaborationPage(props: PlatformCourseCollaborationPageProps) {
+  return (
+    <Suspense fallback={<div className="bg-background min-h-screen" />}>
+      <PlatformCourseCollaborationContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformCourseCollaborationContent({ params }: PlatformCourseCollaborationPageProps) {
+  const { courseuuid } = await params
   redirect(`/dash/courses/${courseuuid}/access`)
 }

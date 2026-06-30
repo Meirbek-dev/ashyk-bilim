@@ -23,7 +23,7 @@ export function CourseAnalysisResultShell({ analysis, onPublish, publishing }: C
     () => ({
       title: t('title', { score: analysis.public_score }),
       description: analysis.report_json.summary ?? t('defaultDescription'),
-      state: (analysis.status === 'published' ? 'complete' : 'needs_human_review'),
+      state: analysis.status === 'published' ? 'complete' : 'needs_human_review',
       confidence: analysis.report_json.confidence,
       modelName: analysis.model_name,
       citations,

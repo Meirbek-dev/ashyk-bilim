@@ -4,6 +4,8 @@ from collections.abc import Callable, Generator
 from typing import cast
 
 from fastapi import HTTPException, Request
+
+from src.app.exceptions import AppError
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
 
@@ -37,7 +39,7 @@ def get_db_session(request: Request) -> Generator[Session]:
     session: Session = request.app.state.session_factory()
     try:
         yield session
-    except HTTPException:
+    except (HTTPException, AppError):
         session.rollback()
         raise
     except Exception:

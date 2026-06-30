@@ -594,7 +594,7 @@ function OperateInsight({
 
 function readReleaseState(submission: Submission): ReleaseState {
   return 'release_state' in submission && submission.release_state
-    ? (submission.release_state)
+    ? submission.release_state
     : getReleaseState(submission.status)
 }
 

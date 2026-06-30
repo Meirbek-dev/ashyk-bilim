@@ -2,7 +2,8 @@ import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-serve
 import type { CourseWorkspaceStage } from '@/lib/course-management'
 import CourseWorkspacePageShell from './CourseWorkspacePageShell'
 import { getCourseMetadata } from '@services/courses/courses'
-import { Suspense, type ReactNode } from 'react'
+import { Suspense } from 'react';
+import type { ReactNode } from 'react';
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import { getSession } from '@/lib/auth/session'

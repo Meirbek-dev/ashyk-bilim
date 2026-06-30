@@ -17,7 +17,7 @@ export function RemediationResultShell({ session }: { session: RemediationSessio
     () => ({
       title: session.lecture_json.title ?? t('title'),
       description: session.gate_mode ? t('activeGate') : t('assigned'),
-      state: (session.status === 'passed' ? 'complete' : 'needs_human_review'),
+      state: session.status === 'passed' ? 'complete' : 'needs_human_review',
       citations,
     }),
     [session.lecture_json.title, session.gate_mode, session.status, citations, t],

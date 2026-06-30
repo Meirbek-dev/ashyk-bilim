@@ -1,8 +1,21 @@
 import CourseOverview from '@components/Dashboard/Courses/CourseOverview'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
+import { Suspense } from 'react'
 
-export default async function PlatformCourseWorkspacePage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params
+interface PlatformCourseWorkspacePageProps {
+  params: Promise<{ courseuuid: string }>
+}
+
+export default function PlatformCourseWorkspacePage(props: PlatformCourseWorkspacePageProps) {
+  return (
+    <Suspense fallback={<div className="bg-background min-h-screen" />}>
+      <PlatformCourseWorkspaceContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformCourseWorkspaceContent({ params }: PlatformCourseWorkspacePageProps) {
+  const { courseuuid } = await params
 
   return renderCourseWorkspacePage({
     courseuuid,

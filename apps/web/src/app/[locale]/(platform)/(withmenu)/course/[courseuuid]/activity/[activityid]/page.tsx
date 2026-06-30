@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session'
 import { jetBrainsMono } from '@/lib/fonts'
 import type { Metadata } from 'next'
 import { cache } from 'react'
+import { Suspense } from 'react'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { redirect } from '@/i18n/navigation'
 import { getLocale, setRequestLocale } from 'next-intl/server'
@@ -64,10 +65,24 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformActivityPage(props: {
+interface PlatformActivityPageProps {
   params: Promise<{ locale: string; courseuuid: string; activityid: string }>
-}) {
-  const { locale, courseuuid, activityid } = await props.params
+}
+
+function ActivityPageFallback() {
+  return <div className="bg-background min-h-screen" />
+}
+
+export default function PlatformActivityPage(props: PlatformActivityPageProps) {
+  return (
+    <Suspense fallback={<ActivityPageFallback />}>
+      <PlatformActivityContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
+  const { locale, courseuuid, activityid } = await params
   setRequestLocale(locale)
   const isCourseEnd = activityid === 'end'
 

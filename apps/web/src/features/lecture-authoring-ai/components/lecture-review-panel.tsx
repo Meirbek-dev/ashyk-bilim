@@ -20,7 +20,7 @@ export function LectureReviewPanel({ review }: { review: LectureReview }) {
     () => ({
       title: t('title'),
       description: review.suggestions_json.summary ?? t('defaultDescription'),
-      state: (suggestions.length > 0 ? 'needs_human_review' : 'complete'),
+      state: suggestions.length > 0 ? 'needs_human_review' : 'complete',
       citations,
     }),
     [review.suggestions_json.summary, suggestions.length, citations, t],

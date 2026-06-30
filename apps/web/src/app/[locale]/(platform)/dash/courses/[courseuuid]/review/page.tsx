@@ -1,9 +1,22 @@
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import CourseReviewPublish from '@components/Dashboard/Courses/CourseReviewPublish'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
+import { Suspense } from 'react'
 
-export default async function PlatformCourseReviewPage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params
+interface PlatformCourseReviewPageProps {
+  params: Promise<{ courseuuid: string }>
+}
+
+export default function PlatformCourseReviewPage(props: PlatformCourseReviewPageProps) {
+  return (
+    <Suspense fallback={<div className="bg-background min-h-screen" />}>
+      <PlatformCourseReviewContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformCourseReviewContent({ params }: PlatformCourseReviewPageProps) {
+  const { courseuuid } = await params
   const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'review')
 
   return renderCourseWorkspacePage({

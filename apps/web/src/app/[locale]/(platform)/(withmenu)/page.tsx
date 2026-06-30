@@ -1,7 +1,6 @@
 import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
 import { getPlatformThumbnailImage } from '@services/media/media'
-import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
@@ -39,42 +38,32 @@ function CourseGridSkeleton() {
   )
 }
 
-interface MetadataProps {
-  params: Promise<{ locale: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const { locale } = await props.params
-  const t = await getTranslations({ locale, namespace: 'General' })
-
-  return {
-    title: `${t('home')} - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
-    robots: {
+export const metadata: Metadata = {
+  title: `Главная - ${APP_NAME}`,
+  description: APP_DESCRIPTION,
+  robots: {
+    index: true,
+    follow: true,
+    nocache: true,
+    googleBot: {
       index: true,
       follow: true,
-      nocache: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-image-preview': 'large',
+      'max-image-preview': 'large',
+    },
+  },
+  openGraph: {
+    title: `Главная - ${APP_NAME}`,
+    description: APP_DESCRIPTION,
+    type: 'website',
+    images: [
+      {
+        url: getPlatformThumbnailImage(),
+        width: 800,
+        height: 600,
+        alt: APP_NAME,
       },
-    },
-    openGraph: {
-      title: `${t('home')} - ${APP_NAME}`,
-      description: APP_DESCRIPTION,
-      type: 'website',
-      images: [
-        {
-          url: getPlatformThumbnailImage(),
-          width: 800,
-          height: 600,
-          alt: APP_NAME,
-        },
-      ],
-    },
-  }
+    ],
+  },
 }
 
 interface PlatformHomePageProps {
