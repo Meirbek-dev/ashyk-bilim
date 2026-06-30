@@ -15,6 +15,10 @@ interface LocaleLayoutProps {
   params: Promise<{ locale: string }>
 }
 
+export function generateStaticParams() {
+  return routing.locales.map(locale => ({ locale }))
+}
+
 function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
   return rawMode === 'dark' ? 'dark' : DEFAULT_THEME_MODE
 }
@@ -25,12 +29,19 @@ async function ThemeProvider({ children }: { children: React.ReactNode }) {
   return <RootProviders initialThemeMode={initialThemeMode}>{children}</RootProviders>
 }
 
-/**
- * All dynamic API access in this layout (params, cookies) is
- * covered by the <Suspense> in the root layout (app/layout.tsx), which is
- * the fully-static ancestor that owns the boundary for cacheComponents mode.
- */
-export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+function LocaleLayoutFallback() {
+  return <main className="bg-background min-h-svh" />
+}
+
+export default function LocaleLayout({ children, params }: LocaleLayoutProps) {
+  return (
+    <Suspense fallback={<LocaleLayoutFallback />}>
+      <LocaleLayoutContent params={params}>{children}</LocaleLayoutContent>
+    </Suspense>
+  )
+}
+
+async function LocaleLayoutContent({ children, params }: LocaleLayoutProps) {
   const { locale } = await params
 
   if (!hasLocale(routing.locales, locale)) {

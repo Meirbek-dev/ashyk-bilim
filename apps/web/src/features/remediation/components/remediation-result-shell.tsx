@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { AIResultShell, AIEvidencePanel, AIStreamingText } from '@/features/ai-experience'
-import type { AICitation } from '@/features/ai-experience'
+import type { AICitation, AIResultShellContextValue } from '@/features/ai-experience'
 
 import type { RemediationSession } from '../api/use-remediation'
 
@@ -13,11 +13,11 @@ export function RemediationResultShell({ session }: { session: RemediationSessio
     [session.lecture_json.citations],
   )
 
-  const contextValue = useMemo(
+  const contextValue: AIResultShellContextValue = useMemo(
     () => ({
       title: session.lecture_json.title ?? t('title'),
       description: session.gate_mode ? t('activeGate') : t('assigned'),
-      state: (session.status === 'passed' ? 'complete' : 'needs_human_review'),
+      state: session.status === 'passed' ? 'complete' : 'needs_human_review',
       citations,
     }),
     [session.lecture_json.title, session.gate_mode, session.status, citations, t],

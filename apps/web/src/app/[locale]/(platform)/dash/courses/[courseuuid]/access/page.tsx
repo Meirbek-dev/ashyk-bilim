@@ -2,9 +2,22 @@ import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCours
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
+import { Suspense } from 'react'
 
-export default async function PlatformCourseAccessPage(props: { params: Promise<{ courseuuid: string }> }) {
-  const { courseuuid } = await props.params
+interface PlatformCourseAccessPageProps {
+  params: Promise<{ courseuuid: string }>
+}
+
+export default function PlatformCourseAccessPage(props: PlatformCourseAccessPageProps) {
+  return (
+    <Suspense fallback={<div className="bg-background min-h-screen" />}>
+      <PlatformCourseAccessContent params={props.params} />
+    </Suspense>
+  )
+}
+
+async function PlatformCourseAccessContent({ params }: PlatformCourseAccessPageProps) {
+  const { courseuuid } = await params
   const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'access')
 
   return renderCourseWorkspacePage({

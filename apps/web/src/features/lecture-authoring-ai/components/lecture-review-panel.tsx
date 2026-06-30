@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { AIResultShell, AIEvidencePanel } from '@/features/ai-experience'
-import type { AICitation } from '@/features/ai-experience'
+import type { AICitation, AIResultShellContextValue } from '@/features/ai-experience'
 
 import type { LectureReview } from '../api/use-lecture-authoring-ai'
 
@@ -16,11 +16,11 @@ export function LectureReviewPanel({ review }: { review: LectureReview }) {
   const dismissed = review.dismissed_json ?? {}
   const suggestions = (review.suggestions_json.suggestions ?? []).filter(item => !dismissed[item.suggestion_id])
 
-  const contextValue = useMemo(
+  const contextValue: AIResultShellContextValue = useMemo(
     () => ({
       title: t('title'),
       description: review.suggestions_json.summary ?? t('defaultDescription'),
-      state: (suggestions.length > 0 ? 'needs_human_review' : 'complete'),
+      state: suggestions.length > 0 ? 'needs_human_review' : 'complete',
       citations,
     }),
     [review.suggestions_json.summary, suggestions.length, citations, t],

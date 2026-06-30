@@ -1,9 +1,9 @@
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getPlatformThumbnailImage } from '@services/media/media'
-import { PageSuspense } from '@components/Utils/PageSuspense'
-import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 function CourseGridSkeleton() {
   return (
@@ -41,15 +41,16 @@ function CourseGridSkeleton() {
 
 interface MetadataProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const { locale } = await props.params
-  const t = await getTranslations({ locale, namespace: 'General' })
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
+  'use cache'
+
+  const { locale } = await params
+  const { General } = getStaticMetadataMessages(locale)
 
   return {
-    title: `${t('home')} - ${APP_NAME}`,
+    title: `${General.home} - ${APP_NAME}`,
     description: APP_DESCRIPTION,
     robots: {
       index: true,
@@ -62,7 +63,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
-      title: `${t('home')} - ${APP_NAME}`,
+      title: `${General.home} - ${APP_NAME}`,
       description: APP_DESCRIPTION,
       type: 'website',
       images: [
@@ -84,9 +85,9 @@ interface PlatformHomePageProps {
 export default function PlatformHomePage({ searchParams }: PlatformHomePageProps) {
   return (
     <div className="w-full">
-      <PageSuspense fallback={<CourseGridSkeleton />}>
+      <Suspense fallback={<CourseGridSkeleton />}>
         <LandingContentWrapper searchParams={searchParams} />
-      </PageSuspense>
+      </Suspense>
     </div>
   )
 }

@@ -8,12 +8,23 @@ import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import { getSession } from '@/lib/auth/session'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
+import { Suspense } from 'react'
 
-export default async function PlatformAssessmentReviewPage(props: {
+interface PlatformAssessmentReviewPageProps {
   params: Promise<{ courseuuid: string; activityid: string }>
   searchParams: Promise<{ submission?: string }>
-}) {
-  const [{ courseuuid, activityid }, { submission }] = await Promise.all([props.params, props.searchParams])
+}
+
+export default function PlatformAssessmentReviewPage(props: PlatformAssessmentReviewPageProps) {
+  return (
+    <Suspense fallback={<div className="bg-background min-h-screen" />}>
+      <PlatformAssessmentReviewContent params={props.params} searchParams={props.searchParams} />
+    </Suspense>
+  )
+}
+
+async function PlatformAssessmentReviewContent({ params, searchParams }: PlatformAssessmentReviewPageProps) {
+  const [{ courseuuid, activityid }, { submission }] = await Promise.all([params, searchParams])
 
   let activity
   let assessment: Awaited<ReturnType<typeof getAssessmentByActivityUuid>> | null

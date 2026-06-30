@@ -423,7 +423,7 @@ async def google_callback(
     try:
         if state:
             frontend_callback = get_frontend_callback_from_state(state) or "/"
-    except HTTPException, AppError:
+    except (HTTPException, AppError):
         pass
 
     if error:

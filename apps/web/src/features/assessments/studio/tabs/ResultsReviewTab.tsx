@@ -96,7 +96,7 @@ const queueQueryOptions = (assessmentUuid: string, queuePath: string) =>
   queryOptions({
     queryKey: ['assessments', assessmentUuid, 'operate-queue', queuePath],
     queryFn: () => apiFetcher<ReviewQueueRead>(queuePath),
-    staleTime: 5_000,
+    staleTime: 5000,
   })
 
 interface ResultsReviewTabProps {
@@ -594,7 +594,7 @@ function OperateInsight({
 
 function readReleaseState(submission: Submission): ReleaseState {
   return 'release_state' in submission && submission.release_state
-    ? (submission.release_state)
+    ? submission.release_state
     : getReleaseState(submission.status)
 }
 

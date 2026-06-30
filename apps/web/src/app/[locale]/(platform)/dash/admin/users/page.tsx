@@ -1,20 +1,35 @@
 import UserRolesClient from '@/app/_shared/dash/admin/users/client'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { requirePermission } from '@/lib/auth/permissions'
-import { getTranslations } from 'next-intl/server'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  'use cache'
+
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'Components.Roles' })
+  const { Components } = getStaticMetadataMessages(locale)
 
   return {
-    title: t('userRolesTitle'),
-    description: t('userRolesDescription'),
+    title: Components.Roles.userRolesTitle,
+    description: Components.Roles.userRolesDescription,
   }
 }
 
-export default async function PlatformAdminUsersPage() {
+function AdminUsersFallback() {
+  return <div className="bg-background min-h-screen" />
+}
+
+export default function PlatformAdminUsersPage() {
+  return (
+    <Suspense fallback={<AdminUsersFallback />}>
+      <PlatformAdminUsersContent />
+    </Suspense>
+  )
+}
+
+async function PlatformAdminUsersContent() {
   await requirePermission(Actions.MANAGE, Resources.ROLE, Scopes.APP)
   return <UserRolesClient />
 }
