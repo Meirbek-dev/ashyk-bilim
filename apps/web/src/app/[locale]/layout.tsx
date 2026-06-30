@@ -15,6 +15,10 @@ interface LocaleLayoutProps {
   params: Promise<{ locale: string }>
 }
 
+export function generateStaticParams() {
+  return routing.locales.map(locale => ({ locale }))
+}
+
 function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
   return rawMode === 'dark' ? 'dark' : DEFAULT_THEME_MODE
 }

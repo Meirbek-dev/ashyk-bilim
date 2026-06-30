@@ -15,5 +15,5 @@ export default function PlatformCourseCollaborationPage(props: PlatformCourseCol
 
 async function PlatformCourseCollaborationContent({ params }: PlatformCourseCollaborationPageProps) {
   const { courseuuid } = await params
-  redirect(`/dash/courses/${courseuuid}/access`)
+  return redirect(`/dash/courses/${courseuuid}/access`)
 }

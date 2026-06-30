@@ -1,10 +1,14 @@
 import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getEditableCourses } from '@services/courses/courses'
 import type { PageSearchParams } from '@/lib/search-params'
-import { getTranslations } from 'next-intl/server'
+import { Actions, Resources, Scopes } from '@/types/permissions'
+import { requireAnyPermission } from '@/lib/auth/permissions'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import CoursesHome from '@/app/_shared/dash/courses/client'
+import CoursesLoading from './loading'
 
 const COURSES_PER_PAGE = 24
 
@@ -31,13 +35,15 @@ function parsePreset(value: string | string[] | undefined): string {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  'use cache'
+
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'General' })
+  const { General } = getStaticMetadataMessages(locale)
 
   return {
-    title: `${t('courses')} - ${APP_NAME}`,
+    title: `${General.courses} - ${APP_NAME}`,
     description: APP_DESCRIPTION,
-    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${t('courses')}, learning, education, online learning, edu, online courses, ${APP_NAME} ${t('courses')}`,
+    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${General.courses}, ${General.learning}, ${General.education}, ${General.onlineLearning}, edu, ${General.onlineCourses}, ${APP_NAME} ${General.courses}`,
     robots: {
       index: true,
       follow: true,
@@ -49,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       },
     },
     openGraph: {
-      title: `${t('courses')} - ${APP_NAME}`,
+      title: `${General.courses} - ${APP_NAME}`,
       description: APP_DESCRIPTION,
       type: 'website',
     },
@@ -57,10 +63,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default function PlatformDashCoursesPage(props: { searchParams: Promise<PageSearchParams> }) {
-  return <PlatformDashCoursesPageInner searchParams={props.searchParams} />
+  return (
+    <Suspense fallback={<CoursesLoading />}>
+      <PlatformDashCoursesPageInner searchParams={props.searchParams} />
+    </Suspense>
+  )
 }
 
 async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageSearchParams> }) {
+  await requireAnyPermission([
+    { action: Actions.CREATE, resource: Resources.COURSE, scope: Scopes.APP },
+    { action: Actions.UPDATE, resource: Resources.COURSE, scope: Scopes.APP },
+    { action: Actions.UPDATE, resource: Resources.COURSE, scope: Scopes.OWN },
+    { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.APP },
+    { action: Actions.MANAGE, resource: Resources.COURSE, scope: Scopes.OWN },
+  ])
+
   const searchParams = await props.searchParams
   const currentPage = parsePage(searchParams.page)
   const query = parseQuery(searchParams.q)

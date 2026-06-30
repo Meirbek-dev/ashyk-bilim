@@ -1,5 +1,6 @@
-import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent'
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getPlatformThumbnailImage } from '@services/media/media'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
@@ -38,32 +39,43 @@ function CourseGridSkeleton() {
   )
 }
 
-export const metadata: Metadata = {
-  title: `Главная - ${APP_NAME}`,
-  description: APP_DESCRIPTION,
-  robots: {
-    index: true,
-    follow: true,
-    nocache: true,
-    googleBot: {
+interface MetadataProps {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
+  'use cache'
+
+  const { locale } = await params
+  const { General } = getStaticMetadataMessages(locale)
+
+  return {
+    title: `${General.home} - ${APP_NAME}`,
+    description: APP_DESCRIPTION,
+    robots: {
       index: true,
       follow: true,
-      'max-image-preview': 'large',
-    },
-  },
-  openGraph: {
-    title: `Главная - ${APP_NAME}`,
-    description: APP_DESCRIPTION,
-    type: 'website',
-    images: [
-      {
-        url: getPlatformThumbnailImage(),
-        width: 800,
-        height: 600,
-        alt: APP_NAME,
+      nocache: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
       },
-    ],
-  },
+    },
+    openGraph: {
+      title: `${General.home} - ${APP_NAME}`,
+      description: APP_DESCRIPTION,
+      type: 'website',
+      images: [
+        {
+          url: getPlatformThumbnailImage(),
+          width: 800,
+          height: 600,
+          alt: APP_NAME,
+        },
+      ],
+    },
+  }
 }
 
 interface PlatformHomePageProps {
