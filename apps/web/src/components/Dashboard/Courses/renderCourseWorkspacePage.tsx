@@ -49,39 +49,51 @@ async function CourseWorkspacePageContent({
   children,
   capabilities,
 }: RenderCourseWorkspacePageOptions) {
-  try {
-    const [initialCourse, resolvedCapabilities] = await Promise.all([
-      getCourseMetadata(courseuuid, undefined, true),
-      capabilities ? Promise.resolve(capabilities) : requireCourseWorkspaceStageAccess(courseuuid, activeStage),
-    ])
+  const data = await (async () => {
+    try {
+      const [initialCourse, resolvedCapabilities] = await Promise.all([
+        getCourseMetadata(courseuuid, undefined, true),
+        capabilities ? Promise.resolve(capabilities) : requireCourseWorkspaceStageAccess(courseuuid, activeStage),
+      ])
+      return { initialCourse, resolvedCapabilities }
+    } catch (error: unknown) {
+      const apiError = error as AppApiError
+      if (apiError.status === 401 || apiError.status === 403 || apiError.status === 404) {
+        return { errorStatus: apiError.status }
+      }
+      throw error
+    }
+  })()
 
-    return (
-      <CourseWorkspacePageShell
-        courseuuid={courseuuid}
-        activeStage={activeStage}
-        initialCourse={initialCourse}
-        capabilities={resolvedCapabilities}
-      >
-        {children}
-      </CourseWorkspacePageShell>
-    )
-  } catch (error: unknown) {
-    const apiError = error as AppApiError
-    if (apiError.status === 401) {
+  if ('errorStatus' in data) {
+    if (data.errorStatus === 401) {
       const locale = await getLocale()
       redirect({
         href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/${activeStage}`)}`,
         locale,
       })
     }
-    if (apiError.status === 403) {
+    if (data.errorStatus === 403) {
       const activeSession = await getSession()
       return <AccessDenied courseuuid={courseuuid} session={activeSession} />
     }
-    if (apiError.status === 404) {
+    if (data.errorStatus === 404) {
       const activeSession = await getSession()
       return <ResourceNotFound type="course" session={activeSession} />
     }
-    throw error
+    return null
   }
+
+  const { initialCourse, resolvedCapabilities } = data
+
+  return (
+    <CourseWorkspacePageShell
+      courseuuid={courseuuid}
+      activeStage={activeStage}
+      initialCourse={initialCourse}
+      capabilities={resolvedCapabilities}
+    >
+      {children}
+    </CourseWorkspacePageShell>
+  )
 }

@@ -8308,6 +8308,7 @@
           "fullscreenNotSupported": "Fullscreen mode not supported by your browser",
           "fullscreenRecommended": "Fullscreen mode is recommended for this exam",
           "dueLabel": "Due",
+          "save": "Save",
           "grade": "Grade {grade}",
           "incorrect": "Incorrect",
           "instruction1": "Read each question carefully before answering",

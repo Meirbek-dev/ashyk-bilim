@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { AIResultShell, AIEvidencePanel, AIActionButton } from '@/features/ai-experience'
-import type { AICitation } from '@/features/ai-experience'
+import type { AICitation, AIResultShellContextValue } from '@/features/ai-experience'
 
 import type { CourseAnalysis } from '../api/use-course-analysis'
 
@@ -19,7 +19,7 @@ export function CourseAnalysisResultShell({ analysis, onPublish, publishing }: C
     [analysis.report_json.citations],
   )
 
-  const contextValue = useMemo(
+  const contextValue: AIResultShellContextValue = useMemo(
     () => ({
       title: t('title', { score: analysis.public_score }),
       description: analysis.report_json.summary ?? t('defaultDescription'),

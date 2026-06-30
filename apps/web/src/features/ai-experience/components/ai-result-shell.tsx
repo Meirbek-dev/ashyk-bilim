@@ -13,7 +13,7 @@ import { AIRunTimeline } from './ai-run-timeline'
 import type { AICitation } from '../lib/ai-citations'
 import type { AIWorkState } from '../lib/ai-run-state'
 
-interface AIResultShellContextValue {
+export interface AIResultShellContextValue {
   title: string
   description?: string
   state: AIWorkState
