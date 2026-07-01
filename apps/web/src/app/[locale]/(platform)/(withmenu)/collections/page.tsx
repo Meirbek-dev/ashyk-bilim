@@ -82,7 +82,7 @@ async function CollectionsContent({ params }: PageProps) {
     <GeneralWrapper>
       <div className="mb-8 flex flex-col space-y-4">
         <div className="flex items-center justify-between">
-          <TypeOfContentTitle title={t('title')} type="col" />
+          <TypeOfContentTitle title={t('title')} type="col" as="h1" />
           <PermissionGuard action={Actions.CREATE} resource={Resources.COLLECTION} scope={Scopes.APP} fallback={null}>
             <Link href={getAbsoluteUrl('/collections/new')}>
               <NewCollectionButton />
@@ -98,7 +98,7 @@ async function CollectionsContent({ params }: PageProps) {
           {collections.length === 0 && (
             <div className="col-span-full flex items-center justify-center py-8">
               <div className="text-center">
-                <h1 className="mb-2 text-xl font-bold text-gray-600">{t('noContent')}</h1>
+                <h2 className="mb-2 text-xl font-bold text-gray-600">{t('noContent')}</h2>
                 <p className="text-base text-gray-400">
                   <ProtectedText
                     text={t('noContentUserAdmin')}

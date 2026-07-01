@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cs-mooc.tou.edu.kz/sitemap.xml

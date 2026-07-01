@@ -58,7 +58,7 @@ const Courses = (props: CourseProps) => {
       <GeneralWrapper>
         <div className="mb-2 flex flex-col space-y-2">
           <div className="flex items-center justify-between">
-            <TypeOfContentTitle title={t('title')} type="cou" />
+            <TypeOfContentTitle title={t('title')} type="cou" as="h1" />
             {createCourseTrigger}
           </div>
 

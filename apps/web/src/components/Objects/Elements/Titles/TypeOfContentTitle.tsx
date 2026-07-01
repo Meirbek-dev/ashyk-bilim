@@ -3,7 +3,13 @@
 import { BookOpen, Layers, Map } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-const TypeOfContentTitle = ({ title, type }: { title: string; type: string }) => {
+interface TypeOfContentTitleProps {
+  title: string
+  type: string
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+}
+
+const TypeOfContentTitle = ({ title, type, as: Component = 'h2' }: TypeOfContentTitleProps) => {
   const t = useTranslations('Components.TypeOfContentTitle')
 
   let logoAltType = 'unknown'
@@ -24,7 +30,7 @@ const TypeOfContentTitle = ({ title, type }: { title: string; type: string }) =>
       <div className="my-auto mr-4 ml-2 rounded-full p-2 shadow-inner ring-1 ring-slate-900/5">
         <Icon size={20} aria-label={logoAlt} role="img" className="text-slate-900" />
       </div>
-      <h1 className="text-2xl font-bold">{title}</h1>
+      <Component className="text-2xl font-bold">{title}</Component>
     </div>
   )
 }
