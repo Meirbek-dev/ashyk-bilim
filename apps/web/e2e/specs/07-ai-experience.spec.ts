@@ -87,7 +87,7 @@ async function mockAI(page: import('@playwright/test').Page) {
     }),
   )
   await page.route('**/api/v1/ai/course-analysis/*/publish', route => route.fulfill({ json: { ok: true } }))
-  await page.route('**/api/v1/ai/course-qa/*/ask', route =>
+  await page.route('**/api/v1/ai/qa/*/ask', route =>
     route.fulfill({
       json: {
         thread_uuid: 'thread_e2e',

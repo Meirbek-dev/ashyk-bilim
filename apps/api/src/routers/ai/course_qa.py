@@ -10,6 +10,7 @@ from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.ai.operations import ask_course_question
+from src.services.ai.policy import require_ai_course_read
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
 router = APIRouter(prefix="/qa")
@@ -18,7 +19,6 @@ router = APIRouter(prefix="/qa")
 class CourseQARequest(PydanticStrictBaseModel):
     question: str
     thread_uuid: str | None = None
-    role: str = "student"
     language: str = "auto"
 
 
@@ -41,7 +41,6 @@ async def api_ask_course_question(
         current_user,
         question=payload.question,
         thread_uuid=payload.thread_uuid,
-        role=payload.role,
         language=payload.language,
     )
     return CourseQAResponse(
@@ -60,6 +59,7 @@ async def api_list_course_qa_threads(
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
         return []
+    require_ai_course_read(db_session, course, current_user)
     return list(
         db_session.exec(
             select(AIQAMessage)
@@ -81,6 +81,10 @@ async def api_get_course_qa_thread(
     ).first()
     if thread is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
+    course = _get_course_by_uuid(db_session, course_uuid)
+    if course is None or course.id is None or thread.course_id != course.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
+    require_ai_course_read(db_session, course, current_user)
     return list(
         db_session.exec(
             select(AIQAMessage).where(AIQAMessage.thread_id == thread.id).order_by(col(AIQAMessage.created_at))
@@ -100,5 +104,9 @@ async def api_delete_course_qa_thread(
     ).first()
     if thread is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
+    course = _get_course_by_uuid(db_session, course_uuid)
+    if course is None or course.id is None or thread.course_id != course.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тема Q&A не найдена")
+    require_ai_course_read(db_session, course, current_user)
     db_session.delete(thread)
     db_session.commit()

@@ -37,7 +37,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@monaco-editor/react": "^4.7.0",
-    "@next/third-parties": "^16.2.9",
+    "@next/third-parties": "^16.2.10",
     "@pdfme/common": "^6.1.11",
     "@pdfme/generator": "^6.1.11",
     "@pdfme/schemas": "^6.1.11",
@@ -80,7 +80,7 @@
     "next": "^16.3.0-preview.5",
     "next-intl": "^4.13.1",
     "nextjs-toploader": "^3.9.17",
-    "prosemirror-view": "^1.41.9",
+    "prosemirror-view": "^1.42.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -104,7 +104,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@next/eslint-plugin-next": "^16.2.9",
+    "@next/eslint-plugin-next": "^16.2.10",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.2",
     "@tanstack/eslint-plugin-query": "^5.101.2",
@@ -131,7 +131,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "fast-check": "4.8.0",
     "jsdom": "^29.1.1",
-    "knip": "^6.23.0",
+    "knip": "^6.24.0",
     "openapi-typescript": "^7.13.0",
     "playwright": "^1.61.1",
     "postcss": "^8.5.16",
@@ -140,7 +140,7 @@
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
-    "vite-plus": "^0.2.1",
+    "vite-plus": "^0.2.2",
     "vitest": "catalog:"
   }
 }

@@ -7540,11 +7540,6 @@ export interface components {
       language: string
       /** Question */
       question: string
-      /**
-       * Role
-       * @default student
-       */
-      role: string
       /** Thread Uuid */
       thread_uuid?: string | null
     }

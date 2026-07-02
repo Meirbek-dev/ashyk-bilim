@@ -23,7 +23,9 @@ async def answer_course_question(
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
-        return _draft_course_answer(), "draft-mode"
+        if provider.config.ai_draft_mode_enabled:
+            return _draft_course_answer(), "draft-mode"
+        raise
 
 
 def _draft_course_answer() -> CourseQAAnswer:

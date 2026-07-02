@@ -8,7 +8,7 @@ import type { CourseQAResponse, QAMessage } from '../lib/types'
 
 export function useAskCourseQuestion(courseUuid: string) {
   return useMutation({
-    mutationFn: (payload: { question: string; thread_uuid?: string | null; role: string; language: string }) =>
+    mutationFn: (payload: { question: string; thread_uuid?: string | null; language: string }) =>
       apiJson<CourseQAResponse>(`ai/qa/${courseUuid}/ask`, {
         method: 'POST',
         body: JSON.stringify(payload),

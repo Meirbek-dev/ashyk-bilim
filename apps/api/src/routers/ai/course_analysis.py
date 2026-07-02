@@ -9,6 +9,7 @@ from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.ai.operations import publish_course_analysis, run_course_analysis
+from src.services.ai.policy import can_update_course, require_ai_course_read
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
 router = APIRouter(prefix="/course-analysis")
@@ -31,15 +32,19 @@ async def api_analyze_course(
 @router.get("/{course_uuid}/latest", response_model=AICourseAnalysisRead | None)
 async def api_latest_course_analysis(
     course_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AICourseAnalysis | None:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
         return None
+    require_ai_course_read(db_session, course, current_user)
+    statuses = ["published"] if not can_update_course(db_session, course, current_user) else None
+    statement = select(AICourseAnalysis).where(AICourseAnalysis.course_id == course.id)
+    if statuses is not None:
+        statement = statement.where(col(AICourseAnalysis.status).in_(statuses))
     return db_session.exec(
-        select(AICourseAnalysis)
-        .where(AICourseAnalysis.course_id == course.id)
-        .order_by(col(AICourseAnalysis.created_at).desc())
+        statement.order_by(col(AICourseAnalysis.created_at).desc())
     ).first()
 
 

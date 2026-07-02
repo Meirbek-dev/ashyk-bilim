@@ -23,7 +23,9 @@ async def critique_lecture(
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
-        return _draft_lecture_review(language), "draft-mode"
+        if provider.config.ai_draft_mode_enabled:
+            return _draft_lecture_review(language), "draft-mode"
+        raise
 
 
 def _draft_lecture_review(language: str) -> LectureReviewReport:

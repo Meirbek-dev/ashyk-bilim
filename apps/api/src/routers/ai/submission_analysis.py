@@ -10,6 +10,7 @@ from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.ai.operations import run_submission_analysis
+from src.services.ai.policy import require_ai_submission_access
 
 router = APIRouter(prefix="/submission-analysis")
 
@@ -31,11 +32,13 @@ async def api_analyze_submission(
 @router.get("/{submission_uuid}/latest", response_model=AISubmissionAnalysisRead | None)
 async def api_latest_submission_analysis(
     submission_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AISubmissionAnalysis | None:
     submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if submission is None or submission.id is None:
         return None
+    require_ai_submission_access(db_session, submission, current_user)
     return db_session.exec(
         select(AISubmissionAnalysis)
         .where(AISubmissionAnalysis.submission_id == submission.id)

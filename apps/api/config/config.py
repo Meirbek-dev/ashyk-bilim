@@ -459,6 +459,10 @@ class AIConfig(PlatformSectionSettings):
     course_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_COURSE_ANALYSIS_ENABLED")
     submission_analysis_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SUBMISSION_ANALYSIS_ENABLED")
     remediation_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_REMEDIATION_ENABLED")
+    course_qa_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_COURSE_QA_ENABLED")
+    study_companion_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_STUDY_COMPANION_ENABLED")
+    lecture_authoring_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_LECTURE_AUTHORING_ENABLED")
+    ai_draft_mode_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_DRAFT_MODE_ENABLED")
     semantic_memory_enabled: bool = Field(default=False, validation_alias="PLATFORM_AI_SEMANTIC_MEMORY_ENABLED")
     analysis_requests_per_hour_per_user: int = Field(
         default=10,

@@ -27,7 +27,9 @@ async def answer_study_prompt(
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
-        return _draft_study_answer(mode), "draft-mode"
+        if provider.config.ai_draft_mode_enabled:
+            return _draft_study_answer(mode), "draft-mode"
+        raise
 
 
 def _draft_study_answer(mode: StudyMode) -> StudyCompanionAnswer:

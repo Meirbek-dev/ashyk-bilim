@@ -10151,6 +10151,7 @@
     "qaInput": {
       "label": "Question",
       "ask": "Ask",
+      "placeholder": "Ask about this course...",
       "description": "Answers are grounded in course material.",
       "emptyTitle": "No questions yet",
       "emptyDesc": "Ask about this course and the answer will cite course material."

@@ -17,7 +17,9 @@ async def analyze_course(
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
-        return _draft_course_report(language), "draft-mode"
+        if provider.config.ai_draft_mode_enabled:
+            return _draft_course_report(language), "draft-mode"
+        raise
 
 
 def _draft_course_report(language: str) -> CourseQualityReport:

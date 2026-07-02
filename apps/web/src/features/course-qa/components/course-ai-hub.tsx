@@ -11,7 +11,7 @@ import { QAPanel } from './qa-panel'
 export function CourseAIHub({ courseUuid }: { courseUuid: string }) {
   const t = useTranslations('AiExperience.courseAIHub')
   return (
-    <section className="space-y-4">
+    <section className="flex flex-col gap-4">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">{t('title')}</h2>
         <p className="text-muted-foreground text-sm">{t('description')}</p>
@@ -26,8 +26,7 @@ export function CourseAIHub({ courseUuid }: { courseUuid: string }) {
           <StudyCompanionPanel courseUuid={courseUuid} />
         </TabsContent>
         <TabsContent value="questions" className="mt-4">
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <QAPanel courseUuid={courseUuid} userRole="student" />
+          <QAPanel courseUuid={courseUuid} />
         </TabsContent>
         <TabsContent value="review" className="mt-4">
           <CourseAnalysisEntry courseUuid={courseUuid} />

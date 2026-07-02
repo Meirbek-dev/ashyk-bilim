@@ -5,9 +5,12 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from config.config import get_settings
+from src.auth.users import get_public_user
 from src.db.ai_runtime import AIRun
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
+from src.services.ai.policy import require_ai_admin
 
 router = APIRouter(prefix="/usage")
 
@@ -21,7 +24,11 @@ class AIUsageSummary(PydanticStrictBaseModel):
 
 
 @router.get("", response_model=AIUsageSummary)
-async def api_ai_usage(db_session: Annotated[Session, Depends(get_db_session)]) -> AIUsageSummary:
+async def api_ai_usage(
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIUsageSummary:
+    require_ai_admin(current_user, db_session)
     row = db_session.exec(
         select(
             func.count(AIRun.id),
@@ -44,5 +51,8 @@ async def api_ai_usage(db_session: Annotated[Session, Depends(get_db_session)]) 
 
 
 @router.get("/budget", response_model=AIUsageSummary)
-async def api_ai_budget(db_session: Annotated[Session, Depends(get_db_session)]) -> AIUsageSummary:
-    return await api_ai_usage(db_session)
+async def api_ai_budget(
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIUsageSummary:
+    return await api_ai_usage(current_user, db_session)

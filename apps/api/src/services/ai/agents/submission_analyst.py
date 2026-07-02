@@ -21,7 +21,9 @@ async def analyze_submission(
         )
         return result.output, result.model_name
     except AIProviderUnavailable:
-        return _draft_submission_report(language), "draft-mode"
+        if provider.config.ai_draft_mode_enabled:
+            return _draft_submission_report(language), "draft-mode"
+        raise
 
 
 def _draft_submission_report(language: str) -> SubmissionAnalysisReport:

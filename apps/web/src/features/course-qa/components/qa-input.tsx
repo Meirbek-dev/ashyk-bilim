@@ -21,6 +21,7 @@ export function QAInput({ pending, onSubmit }: QAInputProps) {
       <InputGroup>
         <InputGroupTextarea
           id="course-qa-question"
+          placeholder={t('placeholder')}
           value={question}
           onChange={event => setQuestion(event.target.value)}
         />

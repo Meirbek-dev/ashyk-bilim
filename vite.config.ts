@@ -260,6 +260,7 @@ export default defineConfig({
       'react/no-react-children': 'off',
       'react/only-export-components': 'off',
       'react/forbid-component-props': 'off',
+      'unicorn/max-nested-calls': 'off',
       'react/no-unstable-nested-components': [
         'error',
         {

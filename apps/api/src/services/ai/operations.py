@@ -4,6 +4,7 @@ import re
 from uuid import uuid4
 
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlmodel import Session, col, select
 
 from config.config import get_settings
@@ -11,13 +12,12 @@ from src.db.ai_course_analysis import AICourseAnalysis
 from src.db.ai_lecture_review import AILectureReview
 from src.db.ai_qa_thread import AIQAMessage
 from src.db.ai_remediation import AIRemediationSession
-from src.db.ai_runtime import AIArtifactRecord, AIEvidence, AIRun, AIRunStatus, AIThread, AIThreadRole, utc_now
+from src.db.ai_runtime import AIArtifactRecord, AIEvent, AIEvidence, AIRun, AIRunStatus, AIThread, AIThreadRole, utc_now
 from src.db.ai_submission_analysis import AISubmissionAnalysis
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.grading.submissions import Submission
 from src.db.users import PublicUser
-from src.security.rbac import PermissionChecker
 from src.services.ai.agents.course_analyst import analyze_course
 from src.services.ai.agents.course_qa import answer_course_question
 from src.services.ai.agents.lecture_author import critique_lecture
@@ -25,6 +25,7 @@ from src.services.ai.agents.remediation_generator import generate_remediation
 from src.services.ai.agents.study_companion import StudyMode, answer_study_prompt
 from src.services.ai.agents.submission_analyst import analyze_submission
 from src.services.ai.context.course_context import assemble_course_context, assemble_submission_context
+from src.services.ai.policy import derive_course_ai_role, require_ai_course_read, require_ai_course_update, require_ai_submission_access
 from src.services.ai.providers import ModelProvider
 from src.services.ai.schemas import CourseQAAnswer, SubmissionAnalysisReport
 from src.services.ai.token_budget import TokenBudgetExceeded, TokenBudgetService
@@ -74,7 +75,10 @@ def _settings_provider() -> tuple[ModelProvider, TokenBudgetService]:
 def _require_enabled(feature_flag: str) -> None:
     config = get_settings().integrations.ai
     if not config.ai_enabled:
-        return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Функция ИИ отключена",
+        )
     if not bool(getattr(config, feature_flag)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -101,10 +105,7 @@ def _activity_for_submission(db_session: Session, submission: Submission) -> Act
 
 
 def _require_course_update(db_session: Session, course: Course, user: PublicUser) -> None:
-    checker = PermissionChecker(db_session)
-    if course.creator_id is not None and checker.check(user.id, "course:update", resource_owner_id=course.creator_id):
-        return
-    checker.require(user.id, "course:update", resource_owner_id=course.creator_id)
+    require_ai_course_update(db_session, course, user)
 
 
 def _create_run(
@@ -140,7 +141,24 @@ def _create_run(
     )
     db_session.add(run)
     db_session.flush()
+    _emit_run_event(db_session, run, "running", {"message": "AI run started", "state": "running"})
     return run
+
+
+def _emit_run_event(db_session: Session, run: AIRun, event_type: str, payload: JsonObject | None = None) -> None:
+    assert run.id is not None
+    sequence = db_session.exec(
+        select(func.coalesce(func.max(AIEvent.sequence), 0)).where(AIEvent.run_id == run.id)
+    ).one()
+    db_session.add(
+        AIEvent(
+            run_id=run.id,
+            event_id=_new_uuid("event"),
+            event_type=event_type,
+            sequence=int(sequence or 0) + 1,
+            payload_json=payload or {},
+        )
+    )
 
 
 def _finish_run(
@@ -159,6 +177,8 @@ def _finish_run(
     run.model_name = model_name
     run.input_tokens = input_tokens
     run.completed_at = utc_now()
+    if run.started_at and run.completed_at:
+        run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
     db_session.add(run)
     db_session.flush()
     assert run.id is not None
@@ -184,13 +204,27 @@ def _finish_run(
                 evidence_metadata={"source_uuid": citation.get("source_uuid")},
             )
         )
+    _emit_run_event(
+        db_session,
+        run,
+        "finished",
+        {
+            "message": "AI run completed",
+            "state": "complete",
+            "model_name": model_name,
+            "input_tokens": input_tokens,
+        },
+    )
 
 
 def _fail_run(db_session: Session, run: AIRun, error_code: str) -> None:
     run.status = AIRunStatus.ERROR.value
     run.error_code = error_code
     run.completed_at = utc_now()
+    if run.started_at and run.completed_at:
+        run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
     db_session.add(run)
+    _emit_run_event(db_session, run, "failed", {"message": error_code, "state": "failed", "error_code": error_code})
 
 
 def _assert_budget(token_budget: TokenBudgetService, db_session: Session, user: PublicUser, prompt: str) -> int:
@@ -256,6 +290,7 @@ async def run_submission_analysis(
 ) -> AISubmissionAnalysis:
     _require_enabled("submission_analysis_enabled")
     submission = _submission_or_404(db_session, submission_uuid)
+    require_ai_submission_access(db_session, submission, user)
     provider, token_budget = _settings_provider()
     context, metadata = assemble_submission_context(db_session, submission)
     input_tokens = _assert_budget(token_budget, db_session, user, context)
@@ -314,6 +349,7 @@ async def run_remediation_generation(
 ) -> AIRemediationSession:
     _require_enabled("remediation_enabled")
     submission = _submission_or_404(db_session, submission_uuid)
+    require_ai_submission_access(db_session, submission, user)
     context, metadata = assemble_submission_context(db_session, submission)
     provider, token_budget = _settings_provider()
     input_tokens = _assert_budget(token_budget, db_session, user, context)
@@ -382,7 +418,9 @@ async def run_study_companion(
     mode: StudyMode,
     language: str,
 ) -> CourseQAAnswer | JsonObject:
+    _require_enabled("study_companion_enabled")
     course = _course_or_404(db_session, course_uuid)
+    require_ai_course_read(db_session, course, user)
     provider, token_budget = _settings_provider()
     context = assemble_course_context(db_session, course, include_unpublished=False)
     input_tokens = _assert_budget(token_budget, db_session, user, f"{question}\n{context}")
@@ -420,6 +458,7 @@ async def run_lecture_review(
     activity_uuid: str | None,
     language: str,
 ) -> AILectureReview:
+    _require_enabled("lecture_authoring_enabled")
     course = _course_or_404(db_session, course_uuid)
     _require_course_update(db_session, course, user)
     provider, token_budget = _settings_provider()
@@ -480,11 +519,12 @@ async def ask_course_question(
     *,
     question: str,
     thread_uuid: str | None,
-    role: str,
     language: str,
 ) -> tuple[AIThread, AIQAMessage, AIQAMessage]:
+    _require_enabled("course_qa_enabled")
     course = _course_or_404(db_session, course_uuid)
     provider, token_budget = _settings_provider()
+    role = derive_course_ai_role(db_session, course, user)
     include_unpublished = role in {AIThreadRole.TEACHER.value, AIThreadRole.AUTHOR.value, AIThreadRole.ADMIN.value}
     context = assemble_course_context(db_session, course, include_unpublished=include_unpublished)
     input_tokens = _assert_budget(token_budget, db_session, user, f"{question}\n{context}")

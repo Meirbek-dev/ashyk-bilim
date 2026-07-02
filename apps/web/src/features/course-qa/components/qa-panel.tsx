@@ -11,7 +11,7 @@ import { QAInput } from './qa-input'
 import { QAMessageView } from './qa-message'
 import type { QAMessage } from '../lib/types'
 
-export function QAPanel({ courseUuid, userRole = 'student' }: { courseUuid: string; userRole?: string }) {
+export function QAPanel({ courseUuid }: { courseUuid: string }) {
   const t = useTranslations('AiExperience.qaInput')
   const [threadUuid, setThreadUuid] = useState<string | null>(null)
   const [messages, setMessages] = useState<QAMessage[]>([])
@@ -34,7 +34,7 @@ export function QAPanel({ courseUuid, userRole = 'student' }: { courseUuid: stri
         pending={ask.isPending}
         onSubmit={question =>
           ask.mutate(
-            { question, thread_uuid: threadUuid, role: userRole, language: 'auto' },
+            { question, thread_uuid: threadUuid, language: 'auto' },
             {
               onSuccess: response => {
                 setThreadUuid(response.thread_uuid)

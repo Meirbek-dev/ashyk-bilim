@@ -17,8 +17,8 @@ export function aiRunStatusQueryOptions(runUuid: string, enabled = true) {
     queryFn: () => apiFetcher<AIRunStatusPayload>(`ai/runs/${runUuid}`),
     enabled: enabled && Boolean(runUuid),
     refetchInterval: query => {
-      const status = query.state.data?.status
-      return status === 'FINISHED' || status === 'ERROR' || status === 'ABORTED' ? false : 2000
+      const status = query.state.data?.status?.toLowerCase()
+      return status === 'finished' || status === 'error' || status === 'aborted' ? false : 2000
     },
   })
 }
