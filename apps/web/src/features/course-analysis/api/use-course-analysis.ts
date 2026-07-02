@@ -38,6 +38,7 @@ export function useRunCourseAnalysis(courseUuid: string) {
         method: 'POST',
         body: JSON.stringify({ language }),
         headers: { 'content-type': 'application/json' },
+        timeoutMs: 120_000,
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({

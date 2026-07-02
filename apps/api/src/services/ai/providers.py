@@ -50,21 +50,33 @@ class ModelProvider:
         from pydantic_ai.models.fallback import FallbackModel
         from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.providers.openai import OpenAIProvider
+        from openai import AsyncOpenAI
 
+        # Use an explicit client with max_retries=1 and a 5.0-second timeout to fail fast
+        # and prevent rate-limited/invalid OpenAI keys from exhausting the 30-second request budget.
+        primary_client = AsyncOpenAI(
+            api_key=secret_value(self.config.openai_api_key),
+            max_retries=1,
+            timeout=5.0,
+        )
         primary = OpenAIChatModel(
             self.config.openai_model,
-            provider=OpenAIProvider(api_key=secret_value(self.config.openai_api_key)),
+            provider=OpenAIProvider(openai_client=primary_client),
         )
         openrouter_key = secret_value(self.config.openrouter_api_key)
         model: object = primary
         selected_name = self.primary_model_name()
         if openrouter_key:
+            # Fallback client uses a larger timeout to allow final completion
+            fallback_client = AsyncOpenAI(
+                base_url=self.config.openrouter_base_url,
+                api_key=openrouter_key,
+                max_retries=2,
+                timeout=25.0,
+            )
             fallback = OpenAIChatModel(
                 self.config.openrouter_model,
-                provider=OpenAIProvider(
-                    base_url=self.config.openrouter_base_url,
-                    api_key=openrouter_key,
-                ),
+                provider=OpenAIProvider(openai_client=fallback_client),
             )
             model = FallbackModel(primary, fallback)
             selected_name = f"{self.primary_model_name()} with {self.fallback_model_name()} fallback"
