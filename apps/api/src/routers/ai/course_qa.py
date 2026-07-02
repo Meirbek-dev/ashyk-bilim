@@ -5,11 +5,12 @@ from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
 from src.db.ai_qa_thread import AIQAMessage, AIQAMessageRead
-from src.db.ai_runtime import AIThread
+from src.db.ai_runtime import AIRun, AIThread
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.services.ai.operations import ask_course_question
+from src.routers.ai.runs import AIRunStatusRead
+from src.services.ai.operations import ask_course_question, queue_course_question
 from src.services.ai.policy import require_ai_course_read
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
@@ -47,6 +48,23 @@ async def api_ask_course_question(
         thread_uuid=thread.thread_uuid,
         user_message=AIQAMessageRead.model_validate(user_message),
         assistant_message=AIQAMessageRead.model_validate(assistant_message),
+    )
+
+
+@router.post("/{course_uuid}/ask/queue", response_model=AIRunStatusRead)
+async def api_queue_course_question(
+    course_uuid: str,
+    payload: CourseQARequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIRun:
+    return await queue_course_question(
+        db_session,
+        course_uuid,
+        current_user,
+        question=payload.question,
+        thread_uuid=payload.thread_uuid,
+        language=payload.language,
     )
 
 

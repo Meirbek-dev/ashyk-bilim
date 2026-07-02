@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.routers.ai import (
+    admin,
     course_analysis,
     course_qa,
     lecture_authoring,
@@ -12,6 +13,7 @@ from src.routers.ai import (
 )
 
 router = APIRouter()
+router.include_router(admin.router)
 router.include_router(course_analysis.router)
 router.include_router(submission_analysis.router)
 router.include_router(remediation.router)

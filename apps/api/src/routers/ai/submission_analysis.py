@@ -4,12 +4,14 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
+from src.db.ai_runtime import AIRun
 from src.db.ai_submission_analysis import AISubmissionAnalysis, AISubmissionAnalysisRead
 from src.db.grading.submissions import Submission
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.services.ai.operations import run_submission_analysis
+from src.routers.ai.runs import AIRunStatusRead
+from src.services.ai.operations import queue_submission_analysis, run_submission_analysis
 from src.services.ai.policy import require_ai_submission_access
 
 router = APIRouter(prefix="/submission-analysis")
@@ -27,6 +29,16 @@ async def api_analyze_submission(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AISubmissionAnalysis:
     return await run_submission_analysis(db_session, submission_uuid, current_user, payload.language)
+
+
+@router.post("/{submission_uuid}/analyze/queue", response_model=AIRunStatusRead)
+async def api_queue_submission_analysis(
+    submission_uuid: str,
+    payload: SubmissionAnalysisRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIRun:
+    return await queue_submission_analysis(db_session, submission_uuid, current_user, payload.language)
 
 
 @router.get("/{submission_uuid}/latest", response_model=AISubmissionAnalysisRead | None)

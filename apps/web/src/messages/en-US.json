@@ -10159,6 +10159,8 @@
     "courseAIHub": {
       "title": "AI learning support",
       "description": "Course-grounded help for learners and teacher-reviewed quality checks.",
+      "groundedBadge": "Source grounded",
+      "reviewBadge": "Teacher reviewed",
       "tabStudy": "Study",
       "tabQA": "Q&A",
       "tabReview": "Review"
@@ -10207,6 +10209,17 @@
     },
     "aiAdminPanel": {
       "title": "AI operations",
+      "description": "Runtime health, budgets, feature gates, and evaluation quality for AI workflows.",
+      "settingsTitle": "Runtime settings",
+      "settingsDescription": "Effective backend configuration for AI execution.",
+      "aiEnabled": "AI enabled",
+      "aiDisabled": "AI disabled",
+      "providerReady": "Provider ready",
+      "providerMissing": "Provider missing",
+      "draftMode": "Draft mode",
+      "modelLabel": "Model",
+      "requestLimitLabel": "Request token limit",
+      "outputLimitLabel": "Output token limit",
       "featureFlags": "Feature flags",
       "flagsDescription": "Read-only runtime view. Change flags in backend environment.",
       "loading": "Loading AI usage."
@@ -10220,11 +10233,46 @@
     },
     "featureToggles": {
       "description": "Managed by backend feature flags.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "source": "Source: {source}",
+      "empty": "No AI feature flags found",
       "course-analysis": "Course analysis",
       "submission-analysis": "Submission analysis",
       "remediation": "Adaptive remediation",
       "study-companion": "Study companion",
-      "course-qa": "Course Q&A"
+      "course-qa": "Course Q&A",
+      "lecture-authoring": "Lecture authoring",
+      "semantic-memory": "Semantic memory"
+    },
+    "evalDashboard": {
+      "title": "Evaluation dashboard",
+      "description": "Run states and latest quality checks from stored AI evals.",
+      "notAvailable": "N/A",
+      "pending": "Pending",
+      "passed": "Passed",
+      "failed": "Failed",
+      "recentTitle": "Recent evals",
+      "recentCount": "{count} stored",
+      "empty": "No eval results have been recorded yet.",
+      "runs": {
+        "queued": "Queued",
+        "running": "Running",
+        "finished": "Finished",
+        "error": "Failed",
+        "aborted": "Cancelled"
+      },
+      "evals": {
+        "total": "Eval runs",
+        "passRate": "Pass rate",
+        "averageScore": "Average score"
+      },
+      "table": {
+        "dataset": "Dataset",
+        "evaluator": "Evaluator",
+        "score": "Score",
+        "status": "Status"
+      }
     }
   }
 }

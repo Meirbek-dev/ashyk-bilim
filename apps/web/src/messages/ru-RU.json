@@ -10177,7 +10177,9 @@
       "description": "Помощь на основе курса для учащихся и проверки качества преподавателями.",
       "tabStudy": "Обучение",
       "tabQA": "Вопросы и ответы",
-      "tabReview": "Обзор"
+      "tabReview": "Обзор",
+      "groundedBadge": "Source grounded",
+      "reviewBadge": "Teacher reviewed"
     },
     "courseAnalysisEntry": {
       "title": "ИИ-анализ курса",
@@ -10225,7 +10227,18 @@
       "title": "Операции ИИ",
       "featureFlags": "Флаги функций",
       "flagsDescription": "Просмотр в режиме только для чтения. Измените флаги в серверной среде.",
-      "loading": "Загрузка использования ИИ."
+      "loading": "Загрузка использования ИИ.",
+      "description": "Runtime health, budgets, feature gates, and evaluation quality for AI workflows.",
+      "settingsTitle": "Runtime settings",
+      "settingsDescription": "Effective backend configuration for AI execution.",
+      "aiEnabled": "AI enabled",
+      "aiDisabled": "AI disabled",
+      "providerReady": "Provider ready",
+      "providerMissing": "Provider missing",
+      "draftMode": "Draft mode",
+      "modelLabel": "Model",
+      "requestLimitLabel": "Request token limit",
+      "outputLimitLabel": "Output token limit"
     },
     "tokenUsageChart": {
       "title": "ИИ-использование",
@@ -10240,7 +10253,42 @@
       "submission-analysis": "Анализ отправки",
       "remediation": "Адаптивное исправление",
       "study-companion": "Помощник в обучении",
-      "course-qa": "Вопросы и ответы по курсу"
+      "course-qa": "Вопросы и ответы по курсу",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "source": "Source: {source}",
+      "empty": "No AI feature flags found",
+      "lecture-authoring": "Lecture authoring",
+      "semantic-memory": "Semantic memory"
+    },
+    "evalDashboard": {
+      "title": "Evaluation dashboard",
+      "description": "Run states and latest quality checks from stored AI evals.",
+      "notAvailable": "N/A",
+      "pending": "Pending",
+      "passed": "Passed",
+      "failed": "Failed",
+      "recentTitle": "Recent evals",
+      "recentCount": "{count} stored",
+      "empty": "No eval results have been recorded yet.",
+      "runs": {
+        "queued": "Queued",
+        "running": "Running",
+        "finished": "Finished",
+        "error": "Failed",
+        "aborted": "Cancelled"
+      },
+      "evals": {
+        "total": "Eval runs",
+        "passRate": "Pass rate",
+        "averageScore": "Average score"
+      },
+      "table": {
+        "dataset": "Dataset",
+        "evaluator": "Evaluator",
+        "score": "Score",
+        "status": "Status"
+      }
     }
   }
 }

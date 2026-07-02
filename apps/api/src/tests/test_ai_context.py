@@ -17,7 +17,8 @@ from src.db.grading.submissions import Submission
 from src.db.users import User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.settings import get_settings
-from src.services.ai.context.course_context import assemble_course_context
+from src.services.ai.context.course_context import assemble_course_context, assemble_course_context_bundle
+from src.services.ai.context.sources import validate_citations
 
 
 @pytest.fixture(name="db_session_factory")
@@ -189,3 +190,59 @@ def test_assemble_course_context_without_policy(db_session_factory: Callable[[],
         # Verify
         assert "Course: Test Course" in context
         assert "Assessment settings: {}" in context
+
+
+def test_course_context_bundle_provides_validatable_sources(db_session_factory: Callable[[], Session]) -> None:
+    with db_session_factory() as session:
+        course = Course(
+            id=1,
+            course_uuid="course_1",
+            name="Test Course",
+            description="Test Description",
+            published=True,
+            public=True,
+        )
+        chapter = Chapter(id=1, chapter_uuid="chapter_1", course_id=1, name="Chapter 1", order=1)
+        activity = Activity(
+            id=1,
+            activity_uuid="activity_1",
+            course_id=1,
+            chapter_id=1,
+            name="Activity 1",
+            activity_type=ActivityTypeEnum.TYPE_DOCUMENT,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_DOCUMENT_DOC,
+            published=True,
+            order=1,
+            content={"body": "Grounded course material"},
+            details={},
+        )
+        session.add(course)
+        session.add(chapter)
+        session.add(activity)
+        session.commit()
+
+        bundle = assemble_course_context_bundle(session, course, include_unpublished=True)
+        validation = validate_citations(
+            [
+                {
+                    "citation_id": "activity:activity_1",
+                    "label": "Activity 1",
+                    "source_type": "activity",
+                    "source_uuid": "activity_1",
+                    "excerpt": "Grounded course material",
+                },
+                {
+                    "citation_id": "activity:missing",
+                    "label": "Missing",
+                    "source_type": "activity",
+                    "source_uuid": "missing",
+                    "excerpt": "Not in context",
+                },
+            ],
+            bundle.sources,
+        )
+
+        assert "Citation sources:" in assemble_course_context(session, course, include_unpublished=True)
+        assert len(validation.valid_citations) == 1
+        assert len(validation.invalid_citations) == 1
+        assert validation.metadata["invalid_citation_ids"] == ["activity:missing"]

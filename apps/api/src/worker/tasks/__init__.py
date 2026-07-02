@@ -6,6 +6,7 @@ import importlib
 from collections.abc import Iterable
 
 TASK_MODULES: tuple[str, ...] = (
+    "src.worker.tasks.ai",
     "src.worker.tasks.audit",
     "src.worker.tasks.auth_sessions",
     "src.worker.tasks.bulk_grading",

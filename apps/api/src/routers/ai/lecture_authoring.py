@@ -5,11 +5,13 @@ from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
 from src.db.ai_lecture_review import AILectureReview, AILectureReviewRead
+from src.db.ai_runtime import AIRun
 from src.db.courses.courses import Course
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.services.ai.operations import run_lecture_review
+from src.routers.ai.runs import AIRunStatusRead
+from src.services.ai.operations import queue_lecture_review, run_lecture_review
 from src.services.ai.policy import require_ai_course_update
 from src.types import JsonObject
 
@@ -33,6 +35,22 @@ async def api_critique_lecture(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AILectureReview:
     return await run_lecture_review(
+        db_session,
+        course_uuid,
+        current_user,
+        activity_uuid=payload.activity_uuid,
+        language=payload.language,
+    )
+
+
+@router.post("/{course_uuid}/critique/queue", response_model=AIRunStatusRead)
+async def api_queue_lecture_review(
+    course_uuid: str,
+    payload: LectureReviewRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIRun:
+    return await queue_lecture_review(
         db_session,
         course_uuid,
         current_user,

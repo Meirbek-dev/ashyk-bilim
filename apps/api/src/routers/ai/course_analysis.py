@@ -8,7 +8,9 @@ from src.db.ai_course_analysis import AICourseAnalysis, AICourseAnalysisRead
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.services.ai.operations import publish_course_analysis, run_course_analysis
+from src.db.ai_runtime import AIRun
+from src.routers.ai.runs import AIRunStatusRead
+from src.services.ai.operations import publish_course_analysis, queue_course_analysis, run_course_analysis
 from src.services.ai.policy import can_update_course, require_ai_course_read
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
 
@@ -27,6 +29,16 @@ async def api_analyze_course(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AICourseAnalysis:
     return await run_course_analysis(db_session, course_uuid, current_user, payload.language)
+
+
+@router.post("/{course_uuid}/analyze/queue", response_model=AIRunStatusRead)
+async def api_queue_course_analysis(
+    course_uuid: str,
+    payload: CourseAnalysisRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIRun:
+    return await queue_course_analysis(db_session, course_uuid, current_user, payload.language)
 
 
 @router.get("/{course_uuid}/latest", response_model=AICourseAnalysisRead | None)

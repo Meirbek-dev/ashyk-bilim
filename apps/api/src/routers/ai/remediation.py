@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
+from src.db.ai_runtime import AIRun
 from src.db.ai_remediation import AIRemediationSession, AIRemediationSessionRead
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
-from src.services.ai.operations import run_remediation_generation
+from src.routers.ai.runs import AIRunStatusRead
+from src.services.ai.operations import queue_remediation_generation, run_remediation_generation
 from src.services.ai.policy import require_ai_remediation_access
 
 router = APIRouter(prefix="/remediation")
@@ -31,6 +33,22 @@ async def api_generate_remediation(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AIRemediationSession:
     return await run_remediation_generation(
+        db_session,
+        submission_uuid,
+        current_user,
+        gate_mode=payload.gate_mode,
+        language=payload.language,
+    )
+
+
+@router.post("/{submission_uuid}/generate/queue", response_model=AIRunStatusRead)
+async def api_queue_remediation(
+    submission_uuid: str,
+    payload: RemediationRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AIRun:
+    return await queue_remediation_generation(
         db_session,
         submission_uuid,
         current_user,

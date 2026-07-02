@@ -19,22 +19,22 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
 
   return (
     <Card>
-      <CardHeader className="space-y-1">
+      <CardHeader className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <BrainCircuit className="size-4" />
+              <BrainCircuit data-icon="inline-start" aria-hidden="true" />
               {t('title')}
             </CardTitle>
             <CardDescription>{t('description')}</CardDescription>
           </div>
           <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate('auto')}>
-            <RefreshCw className="size-4" />
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
             {latest.data ? t('rerun') : t('analyze')}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         <AIPrivacyNotice aiRole="teacher" />
         {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => run.mutate('auto')} /> : null}
         {analysis ? (
