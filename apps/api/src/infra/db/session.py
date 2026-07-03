@@ -4,10 +4,10 @@ from collections.abc import Callable, Generator
 from typing import cast
 
 from fastapi import HTTPException, Request
-
-from src.app.exceptions import AppError
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
+
+from src.app.exceptions import AppError
 
 logger = logging.getLogger(__name__)
 SessionFactory = Callable[[], contextlib.AbstractContextManager[Session]]

@@ -46,11 +46,11 @@ class ModelProvider:
             msg = "Провайдер ИИ отключен или не задан PLATFORM_OPENAI_API_KEY"
             raise AIProviderUnavailable(msg)
 
+        from openai import AsyncOpenAI
         from pydantic_ai import Agent
         from pydantic_ai.models.fallback import FallbackModel
         from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.providers.openai import OpenAIProvider
-        from openai import AsyncOpenAI
 
         # Use an explicit client with max_retries=1 and a 5.0-second timeout to fail fast
         # and prevent rate-limited/invalid OpenAI keys from exhausting the 30-second request budget.

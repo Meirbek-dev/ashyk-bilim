@@ -19,6 +19,9 @@ class _ExecResult:
     def all(self) -> list[AIRun]:
         return self._runs
 
+    def one(self) -> int:
+        return len(self._runs)
+
 
 class _Session:
     def __init__(self, runs: list[AIRun] | None = None) -> None:
@@ -32,7 +35,7 @@ def test_token_budget_rejects_oversized_prompt() -> None:
     config = AIConfig(max_tokens_per_request=2)
     service = TokenBudgetService(config)
 
-    with pytest.raises(TokenBudgetExceeded, match="слишком велик"):
+    with pytest.raises(TokenBudgetExceeded, match="too large"):
         service.assert_request_budget(user_id=1, prompt="this prompt is intentionally too long", db_session=_Session())
 
 
@@ -47,7 +50,7 @@ def test_token_budget_enforces_hourly_user_limit() -> None:
         started_at=datetime.now(UTC),
     )
 
-    with pytest.raises(TokenBudgetExceeded, match="лимит"):
+    with pytest.raises(TokenBudgetExceeded, match="Hourly"):
         service.assert_request_budget(user_id=7, prompt="short", db_session=_Session([run]))
 
 

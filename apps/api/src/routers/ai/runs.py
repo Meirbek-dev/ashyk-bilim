@@ -1,7 +1,7 @@
-from collections.abc import Iterable
-from typing import Annotated
-
+import asyncio
 import json
+from collections.abc import AsyncIterator
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -45,12 +45,16 @@ def _run_events(db_session: Session, run: AIRun) -> list[AIEvent]:
     )
 
 
+TERMINAL_STATUSES = {AIRunStatus.FINISHED.value, AIRunStatus.ERROR.value, AIRunStatus.ABORTED.value}
+
+
 def _stream_payload(event: AIEvent) -> dict[str, object]:
     payload: dict[str, object] = dict(event.payload_json or {})
     state = payload.get("state")
     if not isinstance(state, str):
         state = {
             "running": "running",
+            "queued": "queued",
             "finished": "complete",
             "failed": "failed",
             "aborted": "cancelled",
@@ -93,9 +97,22 @@ async def api_stream_ai_run_events(
     run = _run_or_404(db_session, run_uuid)
     require_ai_run_access(db_session, run, current_user)
 
-    def iter_events() -> Iterable[str]:
-        for event in _run_events(db_session, run):
-            yield f"data: {json.dumps(_stream_payload(event), ensure_ascii=False)}\n\n"
+    async def iter_events() -> AsyncIterator[str]:
+        last_sequence = 0
+        while True:
+            db_session.expire_all()
+            fresh_run = _run_or_404(db_session, run_uuid)
+            events = db_session.exec(
+                select(AIEvent)
+                .where(AIEvent.run_id == fresh_run.id, AIEvent.sequence > last_sequence)
+                .order_by(col(AIEvent.sequence))
+            ).all()
+            for event in events:
+                last_sequence = max(last_sequence, event.sequence)
+                yield f"data: {json.dumps(_stream_payload(event), ensure_ascii=False)}\n\n"
+            if fresh_run.status in TERMINAL_STATUSES:
+                break
+            await asyncio.sleep(1)
 
     return StreamingResponse(iter_events(), media_type="text/event-stream")
 

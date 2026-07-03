@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import cast
 from uuid import uuid4
@@ -27,7 +28,12 @@ from src.services.ai.agents.study_companion import StudyMode, answer_study_promp
 from src.services.ai.agents.submission_analyst import analyze_submission
 from src.services.ai.context.course_context import assemble_course_context_bundle, assemble_submission_context_bundle
 from src.services.ai.context.sources import AIContextSource, render_context_bundle, validate_citations
-from src.services.ai.policy import derive_course_ai_role, require_ai_course_read, require_ai_course_update, require_ai_submission_access
+from src.services.ai.policy import (
+    derive_course_ai_role,
+    require_ai_course_read,
+    require_ai_course_update,
+    require_ai_submission_access,
+)
 from src.services.ai.providers import ModelProvider
 from src.services.ai.schemas import CourseQAAnswer, SubmissionAnalysisReport
 from src.services.ai.token_budget import TokenBudgetExceeded, TokenBudgetService
@@ -38,6 +44,10 @@ SECRET_PATTERNS = (
     re.compile(r"\bsk-(?:proj-|or-v1-)?[A-Za-z0-9_-]{16,}\b"),
     re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b", re.IGNORECASE),
 )
+
+
+class AIRunCancelled(RuntimeError):
+    pass
 
 
 def _new_uuid(prefix: str) -> str:
@@ -153,6 +163,7 @@ def _create_run(
 
 
 def _mark_run_running(db_session: Session, run: AIRun) -> None:
+    _ensure_run_not_cancelled(db_session, run)
     if run.status == AIRunStatus.RUNNING.value:
         return
     run.status = AIRunStatus.RUNNING.value
@@ -161,6 +172,12 @@ def _mark_run_running(db_session: Session, run: AIRun) -> None:
     run.error_code = None
     db_session.add(run)
     _emit_run_event(db_session, run, "running", {"message": "AI run started", "state": "running"})
+
+
+def _ensure_run_not_cancelled(db_session: Session, run: AIRun) -> None:
+    db_session.refresh(run)
+    if run.status == AIRunStatus.ABORTED.value:
+        raise AIRunCancelled("AI run was cancelled")
 
 
 def _emit_run_event(db_session: Session, run: AIRun, event_type: str, payload: JsonObject | None = None) -> None:
@@ -192,8 +209,15 @@ def _finish_run(
 ) -> list[JsonObject]:
     artifact = _safe_artifact(artifact)
     citations = _safe_citations(citations)
+    _ensure_run_not_cancelled(db_session, run)
     validation = validate_citations(citations, context_sources or [])
     trusted_citations = validation.valid_citations if context_sources is not None else citations
+    _emit_run_event(
+        db_session,
+        run,
+        "saving_artifact",
+        {"message": "Saving AI artifact", "state": "checking_evidence"},
+    )
     run.run_metadata = {
         **dict(run.run_metadata or {}),
         "citation_validation": validation.metadata if context_sources is not None else {"validation": "not_applicable"},
@@ -201,6 +225,10 @@ def _finish_run(
     run.status = AIRunStatus.FINISHED.value
     run.model_name = model_name
     run.input_tokens = input_tokens
+    run.output_tokens = TokenBudgetService(get_settings().integrations.ai).estimate_tokens(
+        json.dumps(artifact, ensure_ascii=False),
+        model_name,
+    )
     run.completed_at = utc_now()
     if run.started_at and run.completed_at:
         run.duration_ms = int((run.completed_at - run.started_at).total_seconds() * 1000)
@@ -245,7 +273,40 @@ def _finish_run(
     return trusted_citations
 
 
+def _emit_execution_events(db_session: Session, run: AIRun, *, source_count: int, input_tokens: int) -> None:
+    _emit_run_event(
+        db_session,
+        run,
+        "collecting_context",
+        {"message": "Context collected", "state": "collecting_context", "source_count": source_count},
+    )
+    _emit_run_event(
+        db_session,
+        run,
+        "budget_checked",
+        {"message": "Token budget checked", "state": "running", "input_tokens": input_tokens},
+    )
+    _emit_run_event(
+        db_session,
+        run,
+        "model_started",
+        {"message": "Model request started", "state": "running"},
+    )
+
+
+def _emit_validation_event(db_session: Session, run: AIRun) -> None:
+    _emit_run_event(
+        db_session,
+        run,
+        "validating_output",
+        {"message": "Validating AI output and citations", "state": "checking_evidence"},
+    )
+
+
 def _fail_run(db_session: Session, run: AIRun, error_code: str) -> None:
+    db_session.refresh(run)
+    if run.status == AIRunStatus.ABORTED.value:
+        return
     run.status = AIRunStatus.ERROR.value
     run.error_code = error_code
     run.completed_at = utc_now()
@@ -255,9 +316,21 @@ def _fail_run(db_session: Session, run: AIRun, error_code: str) -> None:
     _emit_run_event(db_session, run, "failed", {"message": error_code, "state": "failed", "error_code": error_code})
 
 
-def _assert_budget(token_budget: TokenBudgetService, db_session: Session, user: PublicUser, prompt: str) -> int:
+def _assert_budget(
+    token_budget: TokenBudgetService,
+    db_session: Session,
+    user: PublicUser,
+    prompt: str,
+    *,
+    remediation: bool = False,
+) -> int:
     try:
-        return token_budget.assert_request_budget(user_id=user.id, prompt=prompt, db_session=db_session)
+        return token_budget.assert_request_budget(
+            user_id=user.id,
+            prompt=prompt,
+            db_session=db_session,
+            remediation=remediation,
+        )
     except TokenBudgetExceeded as exc:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
 
@@ -347,6 +420,9 @@ async def execute_queued_ai_run(db_session: Session, run_uuid: str) -> None:
             db_session.commit()
             msg = f"Unsupported AI run kind: {kind}"
             raise RuntimeError(msg)
+    except AIRunCancelled:
+        db_session.commit()
+        return
     except Exception:
         if run.status != AIRunStatus.ERROR.value:
             _fail_run(db_session, run, f"{kind.upper() or 'AI'}_WORKER_FAILED")
@@ -538,7 +614,9 @@ async def run_course_analysis(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         report, model_name = await analyze_course(provider, context, language=language, locale=user.locale)
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         trusted_citations = _finish_run(
@@ -607,7 +685,9 @@ async def run_submission_analysis(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         report, model_name = await analyze_submission(provider, context, language=language, locale=user.locale)
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         trusted_citations = _finish_run(
@@ -658,7 +738,7 @@ async def run_remediation_generation(
     context_bundle, metadata = assemble_submission_context_bundle(db_session, submission)
     context = render_context_bundle(context_bundle)
     provider, token_budget = _settings_provider()
-    input_tokens = _assert_budget(token_budget, db_session, user, context)
+    input_tokens = _assert_budget(token_budget, db_session, user, context, remediation=True)
     latest_analysis = db_session.exec(
         select(AISubmissionAnalysis)
         .where(AISubmissionAnalysis.submission_id == submission.id)
@@ -685,9 +765,11 @@ async def run_remediation_generation(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         bundle, model_name = await generate_remediation(
             provider, context, analysis_report, language=language, locale=user.locale
         )
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(bundle.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in bundle.citations])
         questions = _redact_json([question.model_dump(mode="json") for question in bundle.practice_questions])
@@ -760,9 +842,11 @@ async def run_study_companion(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         answer, model_name = await answer_study_prompt(
             provider, context, question, mode=mode, language=language, locale=user.locale
         )
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(answer.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         _finish_run(
@@ -824,7 +908,9 @@ async def run_lecture_review(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         report, model_name = await critique_lecture(provider, context, language=language, locale=user.locale)
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(report.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in report.citations])
         _finish_run(
@@ -921,9 +1007,11 @@ async def ask_course_question(
     else:
         _mark_run_running(db_session, run)
     try:
+        _emit_execution_events(db_session, run, source_count=len(context_bundle.sources), input_tokens=input_tokens)
         answer, model_name = await answer_course_question(
             provider, context, question, role=role, language=language, locale=user.locale
         )
+        _emit_validation_event(db_session, run)
         artifact = _safe_artifact(answer.model_dump(mode="json"))
         citations = _safe_citations([citation.model_dump(mode="json") for citation in answer.citations])
         trusted_citations = _finish_run(

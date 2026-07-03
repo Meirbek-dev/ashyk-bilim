@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from config.config import AIConfig
@@ -35,7 +36,7 @@ class TokenBudgetService:
     ) -> int:
         estimated = self.estimate_tokens(prompt)
         if estimated > self.config.max_tokens_per_request:
-            msg = "Запрос к ИИ слишком велик для настроенного бюджета токенов"
+            msg = "AI request is too large for the configured token budget"
             raise TokenBudgetExceeded(msg)
 
         limit = (
@@ -44,9 +45,23 @@ class TokenBudgetService:
             else self.config.analysis_requests_per_hour_per_user
         )
         one_hour_ago = datetime.now(UTC) - timedelta(hours=1)
-        recent_runs = db_session.exec(select(AIRun).where(AIRun.started_at >= one_hour_ago)).all()
-        user_run_count = sum(1 for run in recent_runs if run.run_metadata.get("triggered_by_user_id") == str(user_id))
+        user_run_count = db_session.exec(
+            select(func.count(AIRun.id)).where(
+                AIRun.started_at >= one_hour_ago,
+                AIRun.run_metadata["triggered_by_user_id"].as_string() == str(user_id),
+            )
+        ).one()
         if user_run_count >= limit:
-            msg = "Достигнут часовой лимит запросов к ИИ"
+            msg = "Hourly AI request limit reached"
+            raise TokenBudgetExceeded(msg)
+
+        month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        used_tokens = db_session.exec(
+            select(
+                func.coalesce(func.sum(func.coalesce(AIRun.input_tokens, 0) + func.coalesce(AIRun.output_tokens, 0)), 0)
+            ).where(AIRun.started_at >= month_start)
+        ).one()
+        if int(used_tokens or 0) + estimated > self.config.monthly_token_budget:
+            msg = "Monthly AI token budget reached"
             raise TokenBudgetExceeded(msg)
         return estimated

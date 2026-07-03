@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
-from src.db.ai_runtime import AIRun
 from src.db.ai_remediation import AIRemediationSession, AIRemediationSessionRead
+from src.db.ai_runtime import AIRun
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
