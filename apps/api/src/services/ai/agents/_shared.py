@@ -31,7 +31,9 @@ def load_prompt(name: str, locale: str | None = None) -> str:
     if default_path.is_file():
         return default_path.read_text(encoding="utf-8")
 
-    err_msg = f"Файл подсказки '{name}' не найден в директории '{PROMPT_DIR}' для локали '{locale}' или резервных вариантов."
+    err_msg = (
+        f"Файл подсказки '{name}' не найден в директории '{PROMPT_DIR}' для локали '{locale}' или резервных вариантов."
+    )
     raise FileNotFoundError(err_msg)
 
 

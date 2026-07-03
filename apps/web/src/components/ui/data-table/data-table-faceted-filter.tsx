@@ -3,6 +3,7 @@
 import type { Column, RowData } from '@tanstack/react-table'
 import { Check, PlusCircle } from 'lucide-react'
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,8 +35,9 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
   options,
   multiple = true,
 }: DataTableFacetedFilterProps<TData, TValue>) {
+  const t = useTranslations('Common.DataTable')
   const [open, setOpen] = React.useState(false)
-  const noResultsText = 'No results found.'
+  const noResultsText = t('noResults')
 
   const columnFilterValue = column?.getFilterValue()
   const selectedValues = new Set(
@@ -47,7 +49,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
   )
 
   const onItemSelect = React.useCallback(
-    (optionValue: string, isSelected: boolean) => {
+    (value: string, isSelected: boolean) => {
       if (!column) return
 
       if (multiple) {
@@ -59,28 +61,24 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
               ? [currentFilterValue]
               : [],
         )
+        const nextValues = new Set(currentSelectedValues)
         if (isSelected) {
-          currentSelectedValues.delete(optionValue)
+          nextValues.delete(value)
         } else {
-          currentSelectedValues.add(optionValue)
+          nextValues.add(value)
         }
-        const filterValues = [...currentSelectedValues]
-        column.setFilterValue(filterValues.length ? filterValues : undefined)
+        column.setFilterValue(nextValues.size > 0 ? [...nextValues] : undefined)
       } else {
-        column.setFilterValue(isSelected ? undefined : optionValue)
+        column.setFilterValue(isSelected ? undefined : value)
         setOpen(false)
       }
     },
     [column, multiple],
   )
 
-  const onReset = React.useCallback(
-    (event?: React.MouseEvent) => {
-      event?.stopPropagation()
-      column?.setFilterValue(undefined)
-    },
-    [column],
-  )
+  const onReset = React.useCallback(() => {
+    column?.setFilterValue(undefined)
+  }, [column])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -98,7 +96,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                 <div className="hidden space-x-1 lg:flex">
                   {selectedValues.size > 2 ? (
                     <Badge variant="secondary" className="rounded-sm px-1 font-normal">
-                      {selectedValues.size} selected
+                      {t('selectedCount', { count: selectedValues.size })}
                     </Badge>
                   ) : (
                     options
@@ -152,7 +150,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem onSelect={() => onReset()} className="justify-center text-center">
-                    Clear filters
+                    {t('clearFilters')}
                   </CommandItem>
                 </CommandGroup>
               </>

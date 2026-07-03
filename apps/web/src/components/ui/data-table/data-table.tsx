@@ -41,7 +41,7 @@ export function DataTable<TData extends RowData, TSelected = unknown>({
                     key={header.id}
                     colSpan={header.colSpan}
                     style={{
-                      ...getColumnPinningStyle({ column: header.column }),
+                      ...getColumnPinningStyle({ column: header.column as any }),
                     }}
                     className={cn(
                       'bg-secondary/40 dark:bg-secondary/20',
@@ -73,7 +73,7 @@ export function DataTable<TData extends RowData, TSelected = unknown>({
                     <TableCell
                       key={cell.id}
                       style={{
-                        ...getColumnPinningStyle({ column: cell.column }),
+                        ...getColumnPinningStyle({ column: cell.column as any }),
                       }}
                       className={cn('align-top whitespace-normal', cell.column.getIsPinned() && 'bg-background')}
                     >

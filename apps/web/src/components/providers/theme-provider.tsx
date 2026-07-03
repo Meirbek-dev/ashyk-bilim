@@ -13,7 +13,7 @@ import {
 } from '@/lib/themes'
 import type { Theme, ThemeMode } from '@/lib/themes'
 import { useSession } from '@/hooks/useSession'
-import { useThemeSync } from '@/hooks/useThemeSync'
+import { useThemeSynchronizer } from '@/hooks/useThemeSync'
 import type { ReactNode } from 'react'
 
 interface ThemeContextValue {
@@ -96,7 +96,7 @@ export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME,
     [mode, setMode],
   )
 
-  useThemeSync(themeName)
+  useThemeSynchronizer(themeName)
 
   const contextValue: ThemeContextValue = useMemo(
     () => ({

@@ -3,6 +3,7 @@
 import type { Column, RowData } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown, EyeOff, X } from 'lucide-react'
 import type * as React from 'react'
+import { useTranslations } from 'next-intl'
 
 import {
   DropdownMenu,
@@ -27,6 +28,8 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
   className,
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
+  const t = useTranslations('Common.DataTable')
+
   if (!column.getCanSort() && !column.getCanHide()) {
     return (
       <div className={cn('text-sm font-medium', className)} {...props}>
@@ -65,21 +68,21 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
                 onClick={() => column.toggleSorting(false)}
               >
                 <ArrowUp className="text-muted-foreground mr-2 h-3.5 w-3.5" />
-                Asc
+                {t('asc')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={column.getIsSorted() === 'desc'}
                 onClick={() => column.toggleSorting(true)}
               >
                 <ArrowDown className="text-muted-foreground mr-2 h-3.5 w-3.5" />
-                Desc
+                {t('desc')}
               </DropdownMenuCheckboxItem>
               {column.getIsSorted() && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => column.clearSorting()}>
                     <X className="text-muted-foreground mr-2 h-3.5 w-3.5" />
-                    Reset
+                    {t('resetSorting')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -89,7 +92,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
           {column.getCanHide() && (
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
               <EyeOff className="text-muted-foreground mr-2 h-3.5 w-3.5" />
-              Hide
+              {t('hide')}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

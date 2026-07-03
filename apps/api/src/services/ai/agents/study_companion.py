@@ -36,7 +36,10 @@ def _draft_study_answer(mode: StudyMode) -> StudyCompanionAnswer:
     return StudyCompanionAnswer(
         mode=mode,
         answer_markdown="Помощь в обучении с использованием ИИ еще не включена. Используйте цитируемые материалы курса и обратитесь к преподавателю за руководством.",
-        follow_up_suggestions=["Какой раздел лекции мне следует изучить в первую очередь?", "Могу ли я попробовать один практический вопрос?"],
+        follow_up_suggestions=[
+            "Какой раздел лекции мне следует изучить в первую очередь?",
+            "Могу ли я попробовать один практический вопрос?",
+        ],
         citations=[
             AICitation(
                 citation_id="study-draft",

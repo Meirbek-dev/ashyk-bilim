@@ -41,7 +41,9 @@ def _source(
     )
 
 
-def assemble_course_context_bundle(db_session: Session, course: Course, *, include_unpublished: bool) -> AIContextBundle:
+def assemble_course_context_bundle(
+    db_session: Session, course: Course, *, include_unpublished: bool
+) -> AIContextBundle:
     if course.id is None:
         return AIContextBundle(text="", sources=[])
     chapters = db_session.exec(
@@ -150,7 +152,9 @@ def assemble_course_context(db_session: Session, course: Course, *, include_unpu
     )
 
 
-def assemble_submission_context_bundle(db_session: Session, submission: Submission) -> tuple[AIContextBundle, JsonObject]:
+def assemble_submission_context_bundle(
+    db_session: Session, submission: Submission
+) -> tuple[AIContextBundle, JsonObject]:
     activity = db_session.get(Activity, submission.activity_id)
     assessment = (
         db_session.exec(select(Assessment).where(Assessment.activity_id == submission.activity_id)).first()

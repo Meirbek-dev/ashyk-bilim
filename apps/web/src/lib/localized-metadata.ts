@@ -32,9 +32,9 @@ interface StaticMetadataMessages {
 }
 
 const messagesByLocale: Record<Locale, StaticMetadataMessages> = {
-  'en-US': enUSMessages as StaticMetadataMessages,
-  'kk-KZ': kkKZMessages as StaticMetadataMessages,
-  'ru-RU': ruRUMessages as StaticMetadataMessages,
+  'en-US': enUSMessages,
+  'kk-KZ': kkKZMessages,
+  'ru-RU': ruRUMessages,
 }
 
 export function getStaticMetadataMessages(locale: string): StaticMetadataMessages {

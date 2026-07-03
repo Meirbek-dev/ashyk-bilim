@@ -30,7 +30,7 @@ export function getRoleColumns({
       accessorFn: role => [role.name, role.slug, role.description].filter(Boolean).join(' '),
       id: 'role',
       header: t('tableHead.role'),
-      meta: { label: t('tableHead.role'), exportValue: role => role.name },
+      meta: { label: t('tableHead.role'), exportValue: (role: RoleWithPermissions) => role.name },
       cell: ({ row }) => (
         <div>
           <div className="font-medium">{row.original.name}</div>

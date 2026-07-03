@@ -1,3 +1,5 @@
+import type * as React from 'react'
+
 export const dataTableConfig = {
   textOperators: [
     { label: 'Contains', value: 'iLike' as const },
@@ -69,7 +71,7 @@ export interface Option {
   icon?: React.ComponentType<React.ComponentProps<'svg'>>
 }
 
-export interface DataTableColumnMeta {
+export interface DataTableColumnMeta<TData = any> {
   label?: string
   placeholder?: string
   variant?: FilterVariant
@@ -78,23 +80,13 @@ export interface DataTableColumnMeta {
   unit?: string
   icon?: React.ComponentType<React.ComponentProps<'svg'>>
   exportable?: boolean
-  exportValue?: (row: Record<string, unknown>) => unknown
-}
-
-export interface PinnedColumn {
-  getIsPinned: () => false | 'left' | 'right'
-  getIsLastColumn: (position: 'left' | 'right') => boolean
-  getIsFirstColumn: (position: 'left' | 'right') => boolean
-  getStart: (position: 'left' | 'right') => number
-  getAfter: (position: 'left' | 'right') => number
-  getSize: () => number
+  exportValue?: (row: TData) => unknown
 }
 
 export function getColumnPinningStyle({
   column,
   withBorder = false,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   column: any
   withBorder?: boolean
 }): React.CSSProperties {

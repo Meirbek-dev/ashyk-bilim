@@ -55,9 +55,7 @@ async def api_latest_course_analysis(
     statement = select(AICourseAnalysis).where(AICourseAnalysis.course_id == course.id)
     if statuses is not None:
         statement = statement.where(col(AICourseAnalysis.status).in_(statuses))
-    return db_session.exec(
-        statement.order_by(col(AICourseAnalysis.created_at).desc())
-    ).first()
+    return db_session.exec(statement.order_by(col(AICourseAnalysis.created_at).desc())).first()
 
 
 @router.post("/{analysis_uuid}/publish", response_model=AICourseAnalysisRead)

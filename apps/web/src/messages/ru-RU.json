@@ -1185,7 +1185,20 @@
       "rowsPerPage": "Строк на страницу",
       "columns": "Колонки",
       "exportCsv": "Экспорт CSV",
-      "exportStarted": "Загрузка начата"
+      "exportStarted": "Загрузка начата",
+      "asc": "По возрастанию",
+      "desc": "По убыванию",
+      "resetSorting": "Сбросить сортировку",
+      "hide": "Скрыть",
+      "selectedCount": "Выбрано: {count}",
+      "clearFilters": "Очистить фильтры",
+      "noResults": "Результатов не найдено.",
+      "rowsSelected": "Выбрано строк: {selected} из {total}.",
+      "resetFilters": "Сбросить фильтры",
+      "reset": "Сбросить",
+      "toggleColumns": "Переключить колонки",
+      "searchColumns": "Поиск колонок...",
+      "noColumns": "Колонки не найдены."
     },
     "DragAndDrop": {
       "liftItem": "Элемент {index} из {count} поднят",

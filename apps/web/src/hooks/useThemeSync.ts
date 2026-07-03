@@ -11,7 +11,7 @@ import { useSession } from '@/hooks/useSession'
  * Must be called inside a component that has access to the shared session/query providers
  * (for useSession) and the current theme name as a parameter.
  */
-export function useThemeSync(themeName: string): void {
+export function useThemeSynchronizer(themeName: string): void {
   const { user, isAuthenticated } = useSession()
   const userId = user?.id
   const { mutateAsync: syncTheme } = useSyncUserTheme(userId)

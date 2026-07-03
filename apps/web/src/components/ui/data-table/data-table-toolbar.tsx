@@ -3,6 +3,7 @@
 import type { Column, ReactTable, RowData } from '@tanstack/react-table'
 import { X } from 'lucide-react'
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 
 import '@/lib/data-table'
 import type { DataTableFeatures } from '../data-table'
@@ -27,6 +28,7 @@ export function DataTableToolbar<TData extends RowData>({
   className,
   ...props
 }: DataTableToolbarProps<TData>) {
+  const t = useTranslations('Common.DataTable')
   const isFiltered = table.state.columnFilters.length > 0
 
   const columns = React.useMemo(() => table.getAllColumns().filter(column => column.getCanFilter()), [table])
@@ -48,14 +50,14 @@ export function DataTableToolbar<TData extends RowData>({
         ))}
         {isFiltered && (
           <Button
-            aria-label="Reset filters"
+            aria-label={t('resetFilters')}
             variant="outline"
             size="sm"
             className="h-8 border-dashed"
             onClick={onReset}
           >
             <X className="mr-2 h-4 w-4" />
-            Reset
+            {t('reset')}
           </Button>
         )}
       </div>

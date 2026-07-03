@@ -40,9 +40,7 @@ def _run_or_404(db_session: Session, run_uuid: str) -> AIRun:
 
 def _run_events(db_session: Session, run: AIRun) -> list[AIEvent]:
     assert run.id is not None
-    return list(
-        db_session.exec(select(AIEvent).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence))).all()
-    )
+    return list(db_session.exec(select(AIEvent).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence))).all())
 
 
 TERMINAL_STATUSES = {AIRunStatus.FINISHED.value, AIRunStatus.ERROR.value, AIRunStatus.ABORTED.value}
@@ -134,7 +132,9 @@ async def api_cancel_ai_run(
     db_session.add(run)
     assert run.id is not None
     next_sequence = (
-        db_session.exec(select(col(AIEvent.sequence)).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence).desc())).first()
+        db_session.exec(
+            select(col(AIEvent.sequence)).where(AIEvent.run_id == run.id).order_by(col(AIEvent.sequence).desc())
+        ).first()
         or 0
     ) + 1
     db_session.add(

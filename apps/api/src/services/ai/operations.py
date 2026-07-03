@@ -449,7 +449,9 @@ async def queue_course_analysis(db_session: Session, course_uuid: str, user: Pub
     return run
 
 
-async def queue_submission_analysis(db_session: Session, submission_uuid: str, user: PublicUser, language: str) -> AIRun:
+async def queue_submission_analysis(
+    db_session: Session, submission_uuid: str, user: PublicUser, language: str
+) -> AIRun:
     _require_enabled("submission_analysis_enabled")
     submission = _submission_or_404(db_session, submission_uuid)
     require_ai_submission_access(db_session, submission, user)

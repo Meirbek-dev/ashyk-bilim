@@ -39,7 +39,7 @@ def get_db_session(request: Request) -> Generator[Session]:
     session: Session = request.app.state.session_factory()
     try:
         yield session
-    except (HTTPException, AppError):
+    except HTTPException, AppError:
         session.rollback()
         raise
     except Exception:

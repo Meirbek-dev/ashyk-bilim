@@ -27,7 +27,7 @@ export function DataTableViewOptions<TData extends RowData>({
   const t = useTranslations('Common.DataTable')
 
   const columnsLabel = label ?? t('columns')
-  const noColumnsText = 'No columns found.'
+  const noColumnsText = t('noColumns')
 
   const columns = React.useMemo(
     () =>
@@ -44,7 +44,7 @@ export function DataTableViewOptions<TData extends RowData>({
     <Popover>
       <PopoverTrigger
         render={
-          <Button aria-label="Toggle columns" variant="outline" className="h-8 font-normal" disabled={disabled}>
+          <Button aria-label={t('toggleColumns')} variant="outline" className="h-8 font-normal" disabled={disabled}>
             <Settings2 className="text-muted-foreground mr-2 h-4 w-4" />
             {columnsLabel}
           </Button>
@@ -52,7 +52,7 @@ export function DataTableViewOptions<TData extends RowData>({
       />
       <PopoverContent className={cn('w-48 p-0', className)} align="end" {...props}>
         <Command>
-          <CommandInput placeholder="Search columns..." />
+          <CommandInput placeholder={t('searchColumns')} />
           <CommandList className="max-h-60 overflow-y-auto">
             <CommandEmpty>{noColumnsText}</CommandEmpty>
             <CommandGroup>

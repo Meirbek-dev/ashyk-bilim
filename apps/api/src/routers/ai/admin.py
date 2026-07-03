@@ -125,9 +125,7 @@ async def api_ai_eval_dashboard(
             func.avg(AIEvalResult.score),
         )
     ).one()
-    recent = db_session.exec(
-        select(AIEvalResult).order_by(col(AIEvalResult.created_at).desc()).limit(20)
-    ).all()
+    recent = db_session.exec(select(AIEvalResult).order_by(col(AIEvalResult.created_at).desc()).limit(20)).all()
     return AIEvalDashboardRead(
         runs=AIRunAggregate(
             total=int(run_row[0] or 0),

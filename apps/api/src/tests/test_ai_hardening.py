@@ -65,7 +65,9 @@ def test_ai_artifact_redaction_removes_provider_secrets() -> None:
 
 
 def test_require_enabled_fails_closed_when_global_ai_is_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = SimpleNamespace(integrations=SimpleNamespace(ai=AIConfig(ai_enabled=False, course_analysis_enabled=True)))
+    settings = SimpleNamespace(
+        integrations=SimpleNamespace(ai=AIConfig(ai_enabled=False, course_analysis_enabled=True))
+    )
     monkeypatch.setattr("src.services.ai.operations.get_settings", lambda: settings)
 
     with pytest.raises(HTTPException) as exc_info:

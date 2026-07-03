@@ -36,9 +36,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { DataTableColumnMeta } from '@/lib/data-table'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import type { DataTableColumnMeta } from '@/lib/data-table'
 
 // Import the new modular subcomponents
 import { DataTable as DataTableView } from './data-table/data-table'
@@ -120,6 +120,8 @@ const isSamePagination = (left: PaginationState, right: PaginationState) =>
 const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
 const EMPTY_DATA: RowData[] = []
 
+const columnMeta: DataTableColumnMeta = {}
+
 const features = tableFeatures({
   columnVisibilityFeature,
   columnFilteringFeature,
@@ -135,7 +137,7 @@ const features = tableFeatures({
   paginatedRowModel: createPaginatedRowModel(),
   filterFns,
   sortFns,
-  columnMeta: {} as DataTableColumnMeta,
+  columnMeta,
 })
 
 export type DataTableFeatures = typeof features

@@ -72,9 +72,7 @@ export function DataTablePagination<TData extends RowData, TSelected = unknown>(
     >
       <div className="text-muted-foreground flex-1 text-sm whitespace-nowrap">
         {selectedCount > 0 ? (
-          <>
-            {selectedCount} of {totalCount} row(s) selected.
-          </>
+          <>{t('rowsSelected', { selected: selectedCount, total: totalCount })}</>
         ) : (
           <span className="opacity-0">-</span>
         )}

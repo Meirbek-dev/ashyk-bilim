@@ -45,16 +45,16 @@ def render_context_bundle(bundle: AIContextBundle) -> str:
         return bundle.text
     source_lines = ["", "Citation sources:"]
     for source in bundle.sources:
-        source_lines.extend(
-            [
-                f"[{source.citation_id}] {source.source_type} | {source.source_uuid or 'untracked'} | {source.label}",
-                f"Excerpt: {source.excerpt}",
-            ]
-        )
+        source_lines.extend([
+            f"[{source.citation_id}] {source.source_type} | {source.source_uuid or 'untracked'} | {source.label}",
+            f"Excerpt: {source.excerpt}",
+        ])
     return f"{bundle.text}\n" + "\n".join(source_lines)
 
 
-def validate_citations(citations: Iterable[JsonObject], sources: Iterable[AIContextSource]) -> AICitationValidationResult:
+def validate_citations(
+    citations: Iterable[JsonObject], sources: Iterable[AIContextSource]
+) -> AICitationValidationResult:
     source_list = list(sources)
     valid_ids = {source.citation_id for source in source_list}
     valid_uuids = {source.source_uuid for source in source_list if source.source_uuid}

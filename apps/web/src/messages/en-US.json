@@ -1182,7 +1182,20 @@
       "rowsPerPage": "Rows per page",
       "columns": "Columns",
       "exportCsv": "Export CSV",
-      "exportStarted": "Download started"
+      "exportStarted": "Download started",
+      "asc": "Asc",
+      "desc": "Desc",
+      "resetSorting": "Reset sorting",
+      "hide": "Hide",
+      "selectedCount": "{count} selected",
+      "clearFilters": "Clear filters",
+      "noResults": "No results found.",
+      "rowsSelected": "{selected} of {total} row(s) selected.",
+      "resetFilters": "Reset filters",
+      "reset": "Reset",
+      "toggleColumns": "Toggle columns",
+      "searchColumns": "Search columns...",
+      "noColumns": "No columns found."
     },
     "DragAndDrop": {
       "liftItem": "Picked up item {index} of {count}",

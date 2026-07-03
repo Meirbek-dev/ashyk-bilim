@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
@@ -19,22 +19,25 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
   const searchParams = useSearchParams()
   const selectedThreadUuid = searchParams.get('thread')
   const threadQuery = useQAThread(courseUuid, selectedThreadUuid ?? '')
-  const [threadUuid, setThreadUuid] = useState<string | null>(selectedThreadUuid)
-  const [messages, setMessages] = useState<QAMessage[]>([])
+  const [localMessages, setLocalMessages] = useState<QAMessage[]>([])
+  const [prevThread, setPrevThread] = useState<string | null>(selectedThreadUuid)
   const ask = useAskCourseQuestion(courseUuid)
   const nextParams = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams])
 
-  useEffect(() => {
-    setThreadUuid(selectedThreadUuid)
-  }, [selectedThreadUuid])
-
-  useEffect(() => {
-    if (threadQuery.data) {
-      setMessages(threadQuery.data)
-    } else if (!selectedThreadUuid) {
-      setMessages([])
+  if (selectedThreadUuid !== prevThread) {
+    setPrevThread(selectedThreadUuid)
+    if (!selectedThreadUuid || prevThread) {
+      setLocalMessages([])
     }
-  }, [selectedThreadUuid, threadQuery.data])
+  }
+
+  const messages = useMemo(() => {
+    if (!selectedThreadUuid) return []
+    const base = threadQuery.data ?? []
+    const baseUuids = new Set(base.map(m => m.message_uuid))
+    const uniqueLocal = localMessages.filter(m => !baseUuids.has(m.message_uuid))
+    return [...base, ...uniqueLocal]
+  }, [threadQuery.data, localMessages, selectedThreadUuid])
 
   function selectThread(nextThreadUuid: string) {
     nextParams.set('thread', nextThreadUuid)
@@ -58,11 +61,10 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
         pending={ask.isPending}
         onSubmit={question =>
           ask.mutate(
-            { question, thread_uuid: threadUuid, language: 'auto' },
+            { question, thread_uuid: selectedThreadUuid, language: 'auto' },
             {
               onSuccess: response => {
-                setThreadUuid(response.thread_uuid)
-                setMessages(current => [...current, response.user_message, response.assistant_message])
+                setLocalMessages(current => [...current, response.user_message, response.assistant_message])
                 selectThread(response.thread_uuid)
               },
             },

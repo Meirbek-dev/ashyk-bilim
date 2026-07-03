@@ -119,7 +119,9 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
     pendingNavigationRef.current = null
     // Flush the dialog closed synchronously before navigating so there is no
     // window in which a spurious popstate/click can reopen it.
+    /* oxlint-disable node/no-sync */
     flushSync(() => setPendingNavigation(null))
+    /* oxlint-enable node/no-sync */
 
     if (currentPending.kind === 'history-back') {
       ignoreNextPopRef.current = true

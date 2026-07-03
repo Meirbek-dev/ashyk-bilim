@@ -1185,7 +1185,20 @@
       "rowsPerPage": "Бетке жолдар",
       "columns": "Бағандар",
       "exportCsv": "CSV экспорттау",
-      "exportStarted": "Жүктеу басталды"
+      "exportStarted": "Жүктеу басталды",
+      "asc": "Өсу ретімен",
+      "desc": "Кему ретімен",
+      "resetSorting": "Сұрыптауды ысыру",
+      "hide": "Жасыру",
+      "selectedCount": "{count} таңдалды",
+      "clearFilters": "Сүзгілерді тазарту",
+      "noResults": "Нәтижелер табылмады.",
+      "rowsSelected": "{total} жолдың {selected} таңдалды.",
+      "resetFilters": "Сүзгілерді ысыру",
+      "reset": "Ысыру",
+      "toggleColumns": "Бағандарды ауыстыру",
+      "searchColumns": "Бағандарды іздеу...",
+      "noColumns": "Бағандар табылдмады."
     },
     "DragAndDrop": {
       "liftItem": "{count} элементтің {index}-і алынды",

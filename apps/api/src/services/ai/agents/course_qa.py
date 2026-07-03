@@ -42,5 +42,8 @@ def _draft_course_answer() -> CourseQAAnswer:
         ],
         confidence="low",
         out_of_scope=False,
-        follow_up_suggestions=["Попросить преподавателя ответить на этот вопрос", "Просмотреть текущие конспекты лекций"],
+        follow_up_suggestions=[
+            "Попросить преподавателя ответить на этот вопрос",
+            "Просмотреть текущие конспекты лекций",
+        ],
     )
