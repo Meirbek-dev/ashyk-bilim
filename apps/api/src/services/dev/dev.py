@@ -11,4 +11,4 @@ def is_dev_mode_enabled_or_raise() -> bool:
     config = get_settings()
     if config.general_config.development_mode:
         return True
-    raise FeatureDisabled(reason="Development mode is disabled")
+    raise FeatureDisabled(reason="Режим разработки отключен")

@@ -156,9 +156,9 @@ def _create_run(
     db_session.add(run)
     db_session.flush()
     if queued:
-        _emit_run_event(db_session, run, "queued", {"message": "AI run queued", "state": "queued"})
+        _emit_run_event(db_session, run, "queued", {"message": "Запуск ИИ поставлен в очередь", "state": "queued"})
     else:
-        _emit_run_event(db_session, run, "running", {"message": "AI run started", "state": "running"})
+        _emit_run_event(db_session, run, "running", {"message": "Запуск ИИ начат", "state": "running"})
     return run
 
 
@@ -171,13 +171,13 @@ def _mark_run_running(db_session: Session, run: AIRun) -> None:
     run.completed_at = None
     run.error_code = None
     db_session.add(run)
-    _emit_run_event(db_session, run, "running", {"message": "AI run started", "state": "running"})
+    _emit_run_event(db_session, run, "running", {"message": "Запуск ИИ начат", "state": "running"})
 
 
 def _ensure_run_not_cancelled(db_session: Session, run: AIRun) -> None:
     db_session.refresh(run)
     if run.status == AIRunStatus.ABORTED.value:
-        raise AIRunCancelled("AI run was cancelled")
+        raise AIRunCancelled("Запуск ИИ был отменен")
 
 
 def _emit_run_event(db_session: Session, run: AIRun, event_type: str, payload: JsonObject | None = None) -> None:
@@ -216,7 +216,7 @@ def _finish_run(
         db_session,
         run,
         "saving_artifact",
-        {"message": "Saving AI artifact", "state": "checking_evidence"},
+        {"message": "Сохранение артефакта ИИ", "state": "checking_evidence"},
     )
     run.run_metadata = {
         **dict(run.run_metadata or {}),
@@ -262,7 +262,7 @@ def _finish_run(
         run,
         "finished",
         {
-            "message": "AI run completed",
+            "message": "Запуск ИИ успешно завершен",
             "state": "complete",
             "model_name": model_name,
             "input_tokens": input_tokens,
@@ -278,19 +278,19 @@ def _emit_execution_events(db_session: Session, run: AIRun, *, source_count: int
         db_session,
         run,
         "collecting_context",
-        {"message": "Context collected", "state": "collecting_context", "source_count": source_count},
+        {"message": "Контекст собран", "state": "collecting_context", "source_count": source_count},
     )
     _emit_run_event(
         db_session,
         run,
         "budget_checked",
-        {"message": "Token budget checked", "state": "running", "input_tokens": input_tokens},
+        {"message": "Лимит токенов проверен", "state": "running", "input_tokens": input_tokens},
     )
     _emit_run_event(
         db_session,
         run,
         "model_started",
-        {"message": "Model request started", "state": "running"},
+        {"message": "Запрос к модели отправлен", "state": "running"},
     )
 
 
@@ -299,7 +299,7 @@ def _emit_validation_event(db_session: Session, run: AIRun) -> None:
         db_session,
         run,
         "validating_output",
-        {"message": "Validating AI output and citations", "state": "checking_evidence"},
+        {"message": "Проверка ответов ИИ и источников", "state": "checking_evidence"},
     )
 
 

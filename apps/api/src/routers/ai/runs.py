@@ -143,7 +143,7 @@ async def api_cancel_ai_run(
             event_id=f"event_cancel_{run.run_uuid}",
             event_type="aborted",
             sequence=next_sequence,
-            payload_json={"message": "AI run cancelled", "state": "cancelled"},
+            payload_json={"message": "Запуск ИИ отменен", "state": "cancelled"},
         )
     )
     db_session.commit()

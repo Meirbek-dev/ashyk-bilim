@@ -336,7 +336,7 @@ async def delete_discussion(
     db_session.delete(discussion)
     db_session.commit()
 
-    return {"message": "Discussion deleted successfully"}
+    return {"message": "Обсуждение успешно удалено"}
 
 
 async def like_discussion(
@@ -436,7 +436,7 @@ async def unlike_discussion(
 
     db_session.commit()
 
-    return {"message": "Discussion unliked successfully"}
+    return {"message": "Лайк с обсуждения успешно снят"}
 
 
 async def toggle_discussion_like(

@@ -22,7 +22,7 @@ async def upload_video(video_file: UploadFile, activity_uuid: str, course_uuid: 
 
     except Exception:
         logger.exception("Failed to upload video for activity %s", activity_uuid)
-        return {"message": "There was an error uploading the file"}
+        return {"message": "Произошла ошибка при загрузке файла"}
     return None
 
 
@@ -49,4 +49,4 @@ async def upload_subtitle(
 
     except Exception as e:
         logger.warning("Error uploading subtitle for activity %s: %s", activity_uuid, e)
-        return {"success": False, "message": f"Error uploading subtitle: {e!s}"}
+        return {"success": False, "message": f"Ошибка при загрузке субтитров: {e!s}"}

@@ -1361,7 +1361,7 @@ async def delete_course(
     db_session.delete(course)
     db_session.commit()
 
-    return {"detail": "Course deleted"}
+    return {"detail": "Курс удален"}
 
 
 async def get_user_courses(

@@ -290,7 +290,7 @@ async def delete_activity(
     db_session.delete(activity)
     db_session.commit()
 
-    return {"detail": "Activity deleted"}
+    return {"detail": "Активность удалена"}
 
 
 ####################################################

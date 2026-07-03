@@ -109,7 +109,7 @@ async def delete_update(
     db_session.delete(update)
     db_session.commit()
 
-    return {"message": "Update deleted successfully"}
+    return {"message": "Обновление успешно удалено"}
 
 
 # Get Course Updates by Course ID

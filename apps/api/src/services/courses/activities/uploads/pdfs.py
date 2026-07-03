@@ -22,5 +22,5 @@ async def upload_pdf(pdf_file: UploadFile, activity_uuid: str, course_uuid: str)
 
     except Exception:
         logger.exception("Failed to upload PDF for activity %s", activity_uuid)
-        return {"message": "There was an error uploading the file"}
+        return {"message": "Произошла ошибка при загрузке файла"}
     return None

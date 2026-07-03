@@ -157,7 +157,7 @@ async def delete_chapter(
     db_session.delete(chapter)
     db_session.commit()
 
-    return {"detail": "chapter deleted"}
+    return {"detail": "Глава удалена"}
 
 
 async def move_chapter_to_order(
