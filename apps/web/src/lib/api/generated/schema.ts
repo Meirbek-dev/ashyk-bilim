@@ -4768,6 +4768,22 @@ export interface components {
       /** User Id */
       user_id?: number | null
     }
+    /** AIQAThreadSummaryRead */
+    AIQAThreadSummaryRead: {
+      /** Last Message Preview */
+      last_message_preview: string
+      /** Message Count */
+      message_count: number
+      /** Thread Uuid */
+      thread_uuid: string
+      /** Title */
+      title?: string | null
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string
+    }
     /** AIRemediationSessionRead */
     AIRemediationSessionRead: {
       /** Activity Id */
@@ -12315,7 +12331,7 @@ export interface operations {
       200: {
         headers: Record<string, unknown>
         content: {
-          'application/json': components['schemas']['AIQAMessageRead'][]
+          'application/json': components['schemas']['AIQAThreadSummaryRead'][]
         }
       }
       /** @description Validation Error */

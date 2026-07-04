@@ -20,7 +20,9 @@ export function QAInput({ pending, onSubmit }: QAInputProps) {
       <FieldLabel htmlFor="course-qa-question">{t('label')}</FieldLabel>
       <InputGroup>
         <InputGroupTextarea
+          autoComplete="off"
           id="course-qa-question"
+          name="course-qa-question"
           placeholder={t('placeholder')}
           value={question}
           onChange={event => setQuestion(event.target.value)}

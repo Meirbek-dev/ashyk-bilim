@@ -20,6 +20,7 @@
       "sendMessage": "Send message",
       "stopGeneration": "Stop generation",
       "studentMode": "Student tutor",
+      "sourcesAvailable": "{count} modes available",
       "suggestions": {
         "dynamic": {
           "summarize": "Маған осы беттің қысқаша мазмұнын дайындап беріңіз",
@@ -10306,7 +10307,8 @@
       "noCitationsTitle": "Әзірге дәйексөздер жоқ",
       "noCitationsDesc": "Сенімді болу үшін бұл нәтижеге курстық айғақтар қажет.",
       "title": "Дереккөздер",
-      "description": "Жасанды интеллект осы нәтиже үшін пайдаланған дереккөздер."
+      "description": "Жасанды интеллект осы нәтиже үшін пайдаланған дереккөздер.",
+      "openSource": "Open source: {label}"
     },
     "errorRecovery": {
       "title": "ЖИ жұмысы сәтсіз аяқталды",
@@ -10356,7 +10358,20 @@
       "placeholder": "Осы курс туралы сұраңыз...",
       "description": "Жауаптар курс материалдарына негізделген.",
       "emptyTitle": "Әзірге сұрақтар жоқ",
-      "emptyDesc": "Осы курс туралы сұраңыз, сонда жауап курс материалдарына сілтеме жасайды."
+      "emptyDesc": "Осы курс туралы сұраңыз, сонда жауап курс материалдарына сілтеме жасайды.",
+      "activityContext": "Using current activity",
+      "threadContext": "Using this thread",
+      "notUsingPrivateContext": "Not using hidden teacher notes or answer keys.",
+      "starterExplain": "Explain current section",
+      "starterSummarize": "Summarize key points",
+      "starterQuiz": "Quiz me on this",
+      "starterBeforeContinuing": "What should I know next?",
+      "starterSources": "Show sources",
+      "threadsTitle": "Threads",
+      "newThread": "New thread",
+      "threadsLoading": "Loading threads…",
+      "threadsEmpty": "No saved threads yet.",
+      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
     },
     "courseAIHub": {
       "title": "ЖИ оқу қолдауы",
@@ -10377,7 +10392,27 @@
     "courseAnalysisResultShell": {
       "title": "Курстың сапа ұпайы {score}",
       "defaultDescription": "Курс талдауы шолуға дайын.",
-      "publishScore": "Ұпайды жариялау"
+      "publishScore": "Ұпайды жариялау",
+      "needsReview": "Needs teacher review",
+      "published": "Published",
+      "modelRecorded": "Model: {name}",
+      "modelNotRecorded": "Model: not recorded",
+      "citationsCount": "{count, plural, one {# source} other {# sources}}",
+      "criticalBlockers": "Critical blockers",
+      "contentStrengths": "Content strengths",
+      "findings": "Findings",
+      "priority": "Priority",
+      "finding": "Finding",
+      "recommendedFix": "Recommended fix",
+      "noRisks": "No critical blockers were returned.",
+      "noStrengths": "No strengths were returned.",
+      "noFindings": "No actionable findings were returned.",
+      "summaryFindingTitle": "Review generated summary",
+      "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "publishDialogTitle": "Publish reviewed score?",
+      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "cancelPublish": "Keep reviewing",
+      "confirmPublish": "Publish reviewed score"
     },
     "submissionAIEntry": {
       "title": "Тапсырманы ЖИ талдауы",

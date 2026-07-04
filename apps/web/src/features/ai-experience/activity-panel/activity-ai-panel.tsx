@@ -1,14 +1,16 @@
 'use client'
 
-import { BotIcon, ShieldCheckIcon, XIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { BotIcon, BookOpenCheckIcon, PanelRightCloseIcon, ShieldCheckIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Separator } from '@/components/ui/separator'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
@@ -34,14 +36,60 @@ const MODE_LABELS: Record<ActivityAIMode, string> = {
   remediation: 'Remediation',
 }
 
+type ActivityAILayout = 'compact' | 'wide'
+
+export function getAIModeLayout(mode: ActivityAIMode, surface: AIScope['surface']): ActivityAILayout {
+  if (surface === 'admin') return 'wide'
+  if (mode === 'review' || mode === 'analyze' || mode === 'draft-feedback' || mode === 'remediation') return 'wide'
+  return 'compact'
+}
+
+export function getActivityAIDockWidth(layout: ActivityAILayout) {
+  return layout === 'wide' ? 'min(48rem, 46vw)' : 'min(26rem, calc(100vw - 2rem))'
+}
+
+export function useActivityAIDockStyle({
+  defaultMode,
+  enabled = true,
+  surface,
+}: {
+  defaultMode: ActivityAIMode
+  enabled?: boolean | undefined
+  surface: AIScope['surface']
+}): CSSProperties | undefined {
+  const isMobile = useIsMobile()
+  const { mode, open } = useActivityAIUrlState(defaultMode)
+  const layout = getAIModeLayout(mode, surface)
+
+  return useMemo(() => {
+    if (!enabled || !open || isMobile) return undefined
+    return {
+      paddingInlineEnd: `calc(${getActivityAIDockWidth(layout)} + 1rem)`,
+    }
+  }, [enabled, isMobile, layout, open])
+}
+
 export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelProps) {
   const isMobile = useIsMobile()
   const t = useTranslations('Activities.AiAssistantPanel')
   const defaultMode: ActivityAIMode = scope.surface === 'student-activity' ? 'ask' : 'review'
-  const { open, setOpen } = useActivityAIUrlState(defaultMode)
+  const { mode, open, setOpen } = useActivityAIUrlState(defaultMode)
   const capabilities = useAIScopeCapabilities(scope)
   const visibility = capabilities.data?.context_visibility ?? 'student'
   const modes = useMemo(() => capabilities.data?.modes ?? [defaultMode], [capabilities.data?.modes, defaultMode])
+  const activeMode = modes.includes(mode) ? mode : (modes[0] ?? defaultMode)
+  const layout = getAIModeLayout(activeMode, scope.surface)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  }, [open])
+
+  function closePanel() {
+    setOpen(false)
+    globalThis.requestAnimationFrame(() => restoreFocusRef.current?.focus())
+  }
 
   if (isMobile) {
     return (
@@ -54,7 +102,7 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
             </DrawerTitle>
             <DrawerDescription>{t('contextDescription')}</DrawerDescription>
           </DrawerHeader>
-          <PanelBody className={className} modes={modes} visibility={visibility}>
+          <PanelBody className={className} layout="compact" modes={modes} scope={scope} visibility={visibility}>
             {children}
           </PanelBody>
         </DrawerContent>
@@ -62,85 +110,101 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
     )
   }
 
+  if (!open) return null
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent
-        side="right"
-        showCloseButton={false}
-        className={cn(
-          'top-14 h-[calc(100dvh-3.5rem)] w-[min(28rem,calc(100vw-2rem))] gap-0 p-0 sm:max-w-none',
-          className,
-        )}
-      >
-        <SheetHeader className="border-b pe-12">
-          <SheetTitle className="flex items-center gap-2">
-            <BotIcon data-icon="inline-start" aria-hidden="true" />
-            {t('title')}
-          </SheetTitle>
-          <SheetDescription>{t('contextDescription')}</SheetDescription>
-        </SheetHeader>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="absolute end-3 top-3"
-          aria-label={t('closePanel')}
-          onClick={() => setOpen(false)}
-        >
-          <XIcon aria-hidden="true" />
-        </Button>
-        <PanelBody modes={modes} visibility={visibility}>
+    <aside
+      aria-label={t('title')}
+      data-ai-layout={layout}
+      className={cn(
+        'bg-background text-foreground fixed end-0 top-14 bottom-0 z-40 flex min-h-0 border-s shadow-lg',
+        'w-[min(26rem,calc(100vw-2rem))] data-[ai-layout=wide]:w-[min(48rem,46vw)]',
+        className,
+      )}
+      onKeyDown={event => {
+        if (event.key === 'Escape') closePanel()
+      }}
+    >
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-3 border-b p-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 className="font-heading flex min-w-0 items-center gap-2 text-base font-medium">
+              <BotIcon data-icon="inline-start" aria-hidden="true" />
+              <span className="truncate">{t('title')}</span>
+            </h2>
+            <p className="text-muted-foreground text-sm leading-normal">{t('contextDescription')}</p>
+          </div>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label={t('closePanel')} onClick={closePanel}>
+            <PanelRightCloseIcon aria-hidden="true" />
+          </Button>
+        </div>
+        <PanelBody layout={layout} modes={modes} scope={scope} visibility={visibility}>
           {children}
         </PanelBody>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </aside>
   )
 }
 
 function PanelBody({
   children,
   className,
+  layout,
   modes,
+  scope,
   visibility,
 }: {
   children: React.ReactNode
   className?: string | undefined
+  layout: ActivityAILayout
   modes: ActivityAIMode[]
+  scope: AIScope
   visibility: 'student' | 'teacher' | 'admin'
 }) {
   const t = useTranslations('Activities.AiAssistantPanel')
-  const { mode, setMode } = useActivityAIUrlState()
+  const { mode, setMode } = useActivityAIUrlState(scope.surface === 'student-activity' ? 'ask' : 'review')
   const activeMode = modes.includes(mode) ? mode : (modes[0] ?? 'ask')
+  const sourceCount = modes.length
 
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+    <div className={cn('flex min-h-0 flex-1 flex-col', className)} data-ai-layout={layout}>
       <div className="flex flex-col gap-3 border-b p-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">
             <ShieldCheckIcon data-icon="inline-start" aria-hidden="true" />
             {visibility === 'student' ? t('studentMode') : visibility}
           </Badge>
-          <span className="text-muted-foreground text-xs">{t('approvalBoundary')}</span>
+          <Badge variant="outline">
+            <BookOpenCheckIcon data-icon="inline-start" aria-hidden="true" />
+            {t('sourcesAvailable', { count: sourceCount })}
+          </Badge>
         </div>
-        <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label={t('title')}>
-          {modes.map(item => (
-            <Button
-              key={item}
-              type="button"
-              size="sm"
-              variant={activeMode === item ? 'default' : 'ghost'}
-              role="tab"
-              aria-selected={activeMode === item}
-              tabIndex={0}
-              onClick={() => setMode(item)}
-            >
-              {MODE_LABELS[item]}
-            </Button>
-          ))}
-        </div>
+        <p className="text-muted-foreground text-xs leading-normal">{t('approvalBoundary')}</p>
+        <Separator />
+        <ScrollArea className="max-w-full">
+          <ToggleGroup
+            aria-label={t('title')}
+            className="w-max"
+            size="sm"
+            value={[activeMode]}
+            onValueChange={value => {
+              const nextMode = value[0] as ActivityAIMode | undefined
+              if (nextMode) setMode(nextMode)
+            }}
+          >
+            {modes.map(item => (
+              <ToggleGroupItem key={item} value={item}>
+                {MODE_LABELS[item]}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </ScrollArea>
       </div>
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="flex min-h-full flex-col gap-4 p-4" aria-live="polite">
+      <ScrollArea className="min-h-0 flex-1 overscroll-contain">
+        <div
+          className={cn('flex min-h-full flex-col gap-4 p-4', layout === 'wide' ? 'max-w-none' : 'max-w-[30rem]')}
+          aria-live="polite"
+        >
           {children}
         </div>
       </ScrollArea>

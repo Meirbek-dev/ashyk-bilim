@@ -24,7 +24,7 @@ import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 import { CustomCheckbox } from '@/components/ui/custom/custom-checkbox'
-import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -107,6 +107,15 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   const [maxFiles, setMaxFiles] = useState(1)
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | ''>('')
   const [allowedMimeTypes, setAllowedMimeTypes] = useState<string[]>([])
+  const aiScope: AIScope = {
+    courseUuid,
+    activityUuid,
+    surface: 'teacher-studio',
+  }
+  const aiDockStyle = useActivityAIDockStyle({
+    defaultMode: 'review',
+    surface: aiScope.surface,
+  })
 
   const { data, isLoading, error } = useQuery(
     queryOptions({
@@ -224,14 +233,8 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     )
   }
 
-  const aiScope: AIScope = {
-    courseUuid,
-    activityUuid,
-    surface: 'teacher-studio',
-  }
-
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-screen transition-[padding] duration-200 ease-out" style={aiDockStyle}>
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
         <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           <div className="min-w-0">

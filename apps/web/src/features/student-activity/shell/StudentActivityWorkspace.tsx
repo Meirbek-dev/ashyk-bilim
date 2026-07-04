@@ -13,7 +13,7 @@ import InlineStatusStrip from './InlineStatusStrip'
 import LockStateCard from './LockStateCard'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { CourseAIHub } from '@/features/course-qa'
-import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 
 const CONTENT_READ_TOLERANCE_PX = 24
@@ -142,6 +142,11 @@ export default function StudentActivityWorkspace({
     activityUuid: runtime.activity?.uuid ?? null,
     surface: 'student-activity',
   }
+  const aiDockStyle = useActivityAIDockStyle({
+    defaultMode: 'ask',
+    enabled: !isAttemptActive && !isLocked && !focusModeActive,
+    surface: aiScope.surface,
+  })
 
   return (
     <div
@@ -166,7 +171,7 @@ export default function StudentActivityWorkspace({
         />
       ) : null}
 
-      <div className="relative flex flex-1">
+      <div className="relative flex flex-1 transition-[padding] duration-200 ease-out" style={aiDockStyle}>
         <main
           id="activity-main-content"
           className={cn(

@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from '@components/ui/AppLink'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -42,6 +42,15 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const [isPending, startTransition] = useTransition()
   const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
+  const aiScope: AIScope = {
+    courseUuid,
+    activityUuid,
+    surface: 'teacher-studio',
+  }
+  const aiDockStyle = useActivityAIDockStyle({
+    defaultMode: 'review',
+    surface: aiScope.surface,
+  })
 
   if (vm?.kind !== prevKind) {
     setPrevKind(vm?.kind)
@@ -88,12 +97,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm
   const previewHref = `/assessments/${studio.assessmentUuid}`
-  const aiScope: AIScope = {
-    courseUuid,
-    activityUuid,
-    surface: 'teacher-studio',
-  }
-
   const archiveAssessment = () => {
     startTransition(async () => {
       try {
@@ -120,7 +123,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const slotProps = { activityUuid, courseUuid }
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-screen transition-[padding] duration-200 ease-out" style={aiDockStyle}>
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur" style={{ height: '61px' }}>
         <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">

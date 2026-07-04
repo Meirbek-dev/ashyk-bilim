@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -27,6 +28,14 @@ class CourseQAResponse(PydanticStrictBaseModel):
     thread_uuid: str
     user_message: AIQAMessageRead
     assistant_message: AIQAMessageRead
+
+
+class AIQAThreadSummaryRead(PydanticStrictBaseModel):
+    thread_uuid: str
+    title: str | None = None
+    last_message_preview: str
+    message_count: int
+    updated_at: datetime
 
 
 @router.post("/{course_uuid}/ask", response_model=CourseQAResponse)
@@ -68,23 +77,48 @@ async def api_queue_course_question(
     )
 
 
-@router.get("/{course_uuid}/threads", response_model=list[AIQAMessageRead])
+@router.get("/{course_uuid}/threads", response_model=list[AIQAThreadSummaryRead])
 async def api_list_course_qa_threads(
     course_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> list[AIQAMessage]:
+) -> list[AIQAThreadSummaryRead]:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
         return []
     require_ai_course_read(db_session, course, current_user)
-    return list(
+
+    threads = list(
         db_session.exec(
-            select(AIQAMessage)
-            .where(AIQAMessage.course_id == course.id, AIQAMessage.user_id == current_user.id)
-            .order_by(col(AIQAMessage.created_at).desc())
+            select(AIThread)
+            .where(AIThread.course_id == course.id, AIThread.user_id == current_user.id)
+            .order_by(col(AIThread.updated_at).desc())
         ).all()
     )
+    summaries: list[AIQAThreadSummaryRead] = []
+    for thread in threads:
+        if thread.id is None:
+            continue
+        messages = list(
+            db_session.exec(
+                select(AIQAMessage)
+                .where(AIQAMessage.thread_id == thread.id)
+                .order_by(col(AIQAMessage.created_at).desc())
+            ).all()
+        )
+        if not messages:
+            continue
+        last_message = messages[0]
+        summaries.append(
+            AIQAThreadSummaryRead(
+                thread_uuid=thread.thread_uuid,
+                title=thread.title,
+                last_message_preview=last_message.content[:140],
+                message_count=len(messages),
+                updated_at=thread.updated_at,
+            )
+        )
+    return summaries
 
 
 @router.get("/{course_uuid}/threads/{thread_uuid}", response_model=list[AIQAMessageRead])

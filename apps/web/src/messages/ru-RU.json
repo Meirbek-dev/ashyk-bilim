@@ -20,6 +20,7 @@
       "sendMessage": "Send message",
       "stopGeneration": "Stop generation",
       "studentMode": "Student tutor",
+      "sourcesAvailable": "{count} modes available",
       "suggestions": {
         "dynamic": {
           "summarize": "Кратко изложите эту страницу для меня",
@@ -10134,7 +10135,8 @@
       "noCitationsTitle": "Пока нет цитат",
       "noCitationsDesc": "Результату необходимо подтверждение из курса, прежде чем ему можно будет доверять.",
       "title": "Источники",
-      "description": "Источники, которые ИИ использовал для этого результата."
+      "description": "Источники, которые ИИ использовал для этого результата.",
+      "openSource": "Open source: {label}"
     },
     "errorRecovery": {
       "title": "Сбой работы ИИ",
@@ -10184,7 +10186,20 @@
       "placeholder": "Спросите об этом курсе...",
       "description": "Ответы основаны на материалах курса.",
       "emptyTitle": "Вопросов пока нет",
-      "emptyDesc": "Спросите об этом курсе, и ответ будет содержать ссылки на материалы курса."
+      "emptyDesc": "Спросите об этом курсе, и ответ будет содержать ссылки на материалы курса.",
+      "activityContext": "Using current activity",
+      "threadContext": "Using this thread",
+      "notUsingPrivateContext": "Not using hidden teacher notes or answer keys.",
+      "starterExplain": "Explain current section",
+      "starterSummarize": "Summarize key points",
+      "starterQuiz": "Quiz me on this",
+      "starterBeforeContinuing": "What should I know next?",
+      "starterSources": "Show sources",
+      "threadsTitle": "Threads",
+      "newThread": "New thread",
+      "threadsLoading": "Loading threads…",
+      "threadsEmpty": "No saved threads yet.",
+      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
     },
     "courseAIHub": {
       "title": "ИИ-поддержка обучения",
@@ -10205,7 +10220,27 @@
     "courseAnalysisResultShell": {
       "title": "Оценка качества курса {score}",
       "defaultDescription": "Анализ курса готов к проверке.",
-      "publishScore": "Опубликовать оценку"
+      "publishScore": "Опубликовать оценку",
+      "needsReview": "Needs teacher review",
+      "published": "Published",
+      "modelRecorded": "Model: {name}",
+      "modelNotRecorded": "Model: not recorded",
+      "citationsCount": "{count, plural, one {# source} other {# sources}}",
+      "criticalBlockers": "Critical blockers",
+      "contentStrengths": "Content strengths",
+      "findings": "Findings",
+      "priority": "Priority",
+      "finding": "Finding",
+      "recommendedFix": "Recommended fix",
+      "noRisks": "No critical blockers were returned.",
+      "noStrengths": "No strengths were returned.",
+      "noFindings": "No actionable findings were returned.",
+      "summaryFindingTitle": "Review generated summary",
+      "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "publishDialogTitle": "Publish reviewed score?",
+      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "cancelPublish": "Keep reviewing",
+      "confirmPublish": "Publish reviewed score"
     },
     "submissionAIEntry": {
       "title": "ИИ-анализ отправки",

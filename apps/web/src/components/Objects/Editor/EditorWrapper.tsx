@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { AuthoringEditor } from './views'
 
 import type { Platform } from '@/types/platform'
-import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -55,23 +55,29 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
     activityUuid: props.activity.activity_uuid,
     surface: 'teacher-studio',
   }
+  const aiDockStyle = useActivityAIDockStyle({
+    defaultMode: 'review',
+    surface: aiScope.surface,
+  })
 
   return (
     <PlatformContextProvider initialPlatform={props.platform}>
-      <AuthoringEditor
-        platform={props.platform}
-        course={props.course}
-        activity={props.activity}
-        content={props.content}
-        onContentChange={content => {
-          const plainContent = structuredClone(content)
-          const updatedActivity = { ...props.activity, content: plainContent }
-          activityAutosave.onChange(updatedActivity)
-        }}
-        saveState={activityAutosave.saveStatus}
-        setContent={setContent}
-        assistantSlot={<ActivityAITrigger scope={aiScope} />}
-      />
+      <div className="min-w-0 transition-[padding] duration-200 ease-out" style={aiDockStyle}>
+        <AuthoringEditor
+          platform={props.platform}
+          course={props.course}
+          activity={props.activity}
+          content={props.content}
+          onContentChange={content => {
+            const plainContent = structuredClone(content)
+            const updatedActivity = { ...props.activity, content: plainContent }
+            activityAutosave.onChange(updatedActivity)
+          }}
+          saveState={activityAutosave.saveStatus}
+          setContent={setContent}
+          assistantSlot={<ActivityAITrigger scope={aiScope} />}
+        />
+      </div>
       <ActivityAIPanel scope={aiScope}>
         <CourseAIHub courseUuid={props.course.course_uuid} variant="panel" />
       </ActivityAIPanel>

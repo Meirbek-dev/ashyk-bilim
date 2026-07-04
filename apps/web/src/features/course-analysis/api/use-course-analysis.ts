@@ -10,12 +10,15 @@ export interface CourseAnalysis {
   public_score: number
   status: string
   language: string
+  created_at?: string
   model_name?: string | null
   report_json: {
     summary?: string
     confidence?: string
     citations?: unknown[]
     recommendations?: unknown[]
+    strengths?: unknown[]
+    risks?: unknown[]
   }
 }
 

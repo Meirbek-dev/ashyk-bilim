@@ -466,6 +466,41 @@
         "title": "AIQAMessageRead",
         "type": "object"
       },
+      "AIQAThreadSummaryRead": {
+        "properties": {
+          "last_message_preview": {
+            "title": "Last Message Preview",
+            "type": "string"
+          },
+          "message_count": {
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "thread_uuid": {
+            "title": "Thread Uuid",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": ["thread_uuid", "last_message_preview", "message_count", "updated_at"],
+        "title": "AIQAThreadSummaryRead",
+        "type": "object"
+      },
       "AIRemediationSessionRead": {
         "properties": {
           "activity_id": {
@@ -18491,7 +18526,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/AIQAMessageRead"
+                    "$ref": "#/components/schemas/AIQAThreadSummaryRead"
                   },
                   "title": "Response Api List Course Qa Threads Api V1 Ai Qa  Course Uuid  Threads Get",
                   "type": "array"

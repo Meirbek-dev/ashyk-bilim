@@ -9,7 +9,7 @@
       "approvalBoundary": "AI suggestions stay separate until you choose an action.",
       "closePanel": "Close AI assistant",
       "composerHint": "Enter to send. Shift Enter for a new line.",
-      "contextDescription": "Ashyk Ai uses this activity as the main learning context.",
+      "contextDescription": "Ashyq AI uses this activity as the main learning context.",
       "emptyStateTitle": "Ask AI",
       "emptyStateDescription": "Use the current activity as context.",
       "errorStateTitle": "AI request failed",
@@ -19,7 +19,8 @@
       "dismiss": "Dismiss",
       "sendMessage": "Send message",
       "stopGeneration": "Stop generation",
-      "studentMode": "Student tutor",
+      "studentMode": "Student context",
+      "sourcesAvailable": "{count} modes available",
       "suggestions": {
         "dynamic": {
           "summarize": "Summarize this page for me",
@@ -10118,7 +10119,8 @@
       "noCitationsTitle": "No citations yet",
       "noCitationsDesc": "The result needs course evidence before it can be trusted.",
       "title": "Evidence",
-      "description": "Sources the AI used for this result."
+      "description": "Sources the AI used for this result.",
+      "openSource": "Open source: {label}"
     },
     "errorRecovery": {
       "title": "AI run failed",
@@ -10165,10 +10167,23 @@
     "qaInput": {
       "label": "Question",
       "ask": "Ask",
-      "placeholder": "Ask about this course...",
+      "placeholder": "Ask about this course…",
       "description": "Answers are grounded in course material.",
-      "emptyTitle": "No questions yet",
-      "emptyDesc": "Ask about this course and the answer will cite course material."
+      "emptyTitle": "Ask about this activity",
+      "emptyDesc": "Start with the current activity, then inspect the sources before you rely on the answer.",
+      "activityContext": "Using current activity",
+      "threadContext": "Using this thread",
+      "notUsingPrivateContext": "Not using hidden teacher notes or answer keys.",
+      "starterExplain": "Explain current section",
+      "starterSummarize": "Summarize key points",
+      "starterQuiz": "Quiz me on this",
+      "starterBeforeContinuing": "What should I know next?",
+      "starterSources": "Show sources",
+      "threadsTitle": "Threads",
+      "newThread": "New thread",
+      "threadsLoading": "Loading threads…",
+      "threadsEmpty": "No saved threads yet.",
+      "threadMessageCount": "{count, plural, one {# message} other {# messages}}"
     },
     "courseAIHub": {
       "title": "AI learning support",
@@ -10189,7 +10204,27 @@
     "courseAnalysisResultShell": {
       "title": "Course quality score {score}",
       "defaultDescription": "Course analysis is ready for review.",
-      "publishScore": "Publish score"
+      "publishScore": "Publish score",
+      "needsReview": "Needs teacher review",
+      "published": "Published",
+      "modelRecorded": "Model: {name}",
+      "modelNotRecorded": "Model: not recorded",
+      "citationsCount": "{count, plural, one {# source} other {# sources}}",
+      "criticalBlockers": "Critical blockers",
+      "contentStrengths": "Content strengths",
+      "findings": "Findings",
+      "priority": "Priority",
+      "finding": "Finding",
+      "recommendedFix": "Recommended fix",
+      "noRisks": "No critical blockers were returned.",
+      "noStrengths": "No strengths were returned.",
+      "noFindings": "No actionable findings were returned.",
+      "summaryFindingTitle": "Review generated summary",
+      "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "publishDialogTitle": "Publish reviewed score?",
+      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "cancelPublish": "Keep reviewing",
+      "confirmPublish": "Publish reviewed score"
     },
     "submissionAIEntry": {
       "title": "AI submission insight",
