@@ -1,6 +1,81 @@
 {
   "components": {
     "schemas": {
+      "AIAdminSettingsRead": {
+        "properties": {
+          "ai_enabled": {
+            "title": "Ai Enabled",
+            "type": "boolean"
+          },
+          "draft_mode_enabled": {
+            "title": "Draft Mode Enabled",
+            "type": "boolean"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/AIFeatureSetting"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "max_output_tokens": {
+            "title": "Max Output Tokens",
+            "type": "integer"
+          },
+          "max_tokens_per_request": {
+            "title": "Max Tokens Per Request",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "monthly_token_budget": {
+            "title": "Monthly Token Budget",
+            "type": "integer"
+          },
+          "provider_ready": {
+            "title": "Provider Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ai_enabled",
+          "provider_ready",
+          "model",
+          "monthly_token_budget",
+          "max_tokens_per_request",
+          "max_output_tokens",
+          "draft_mode_enabled",
+          "features"
+        ],
+        "title": "AIAdminSettingsRead",
+        "type": "object"
+      },
+      "AIArtifactRead": {
+        "properties": {
+          "artifact_uuid": {
+            "title": "Artifact Uuid",
+            "type": "string"
+          },
+          "content_json": {
+            "additionalProperties": true,
+            "title": "Content Json",
+            "type": "object"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": ["artifact_uuid", "kind", "content_json", "final"],
+        "title": "AIArtifactRead",
+        "type": "object"
+      },
       "AICourseAnalysisRead": {
         "properties": {
           "analysis_uuid": {
@@ -86,6 +161,162 @@
         },
         "required": ["id", "analysis_uuid", "course_id", "status", "language", "public_score", "created_at"],
         "title": "AICourseAnalysisRead",
+        "type": "object"
+      },
+      "AIEvalDashboardRead": {
+        "properties": {
+          "evals": {
+            "$ref": "#/components/schemas/AIEvalSummary"
+          },
+          "recent_evals": {
+            "items": {
+              "$ref": "#/components/schemas/AIEvalResultRead"
+            },
+            "title": "Recent Evals",
+            "type": "array"
+          },
+          "runs": {
+            "$ref": "#/components/schemas/AIRunAggregate"
+          }
+        },
+        "required": ["runs", "evals", "recent_evals"],
+        "title": "AIEvalDashboardRead",
+        "type": "object"
+      },
+      "AIEvalResultRead": {
+        "properties": {
+          "dataset": {
+            "title": "Dataset",
+            "type": "string"
+          },
+          "details_json": {
+            "$ref": "#/components/schemas/JsonObject"
+          },
+          "eval_uuid": {
+            "title": "Eval Uuid",
+            "type": "string"
+          },
+          "evaluator": {
+            "title": "Evaluator",
+            "type": "string"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": ["eval_uuid", "dataset", "evaluator", "details_json"],
+        "title": "AIEvalResultRead",
+        "type": "object"
+      },
+      "AIEvalSummary": {
+        "properties": {
+          "average_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Score"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": ["total", "passed", "failed"],
+        "title": "AIEvalSummary",
+        "type": "object"
+      },
+      "AIFeatureCapability": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": ["key", "enabled"],
+        "title": "AIFeatureCapability",
+        "type": "object"
+      },
+      "AIFeatureSetting": {
+        "properties": {
+          "editable": {
+            "default": false,
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "source": {
+            "default": "environment",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": ["key", "enabled"],
+        "title": "AIFeatureSetting",
         "type": "object"
       },
       "AILectureReviewRead": {
@@ -346,6 +577,61 @@
         "title": "AIRemediationSessionRead",
         "type": "object"
       },
+      "AIRunAggregate": {
+        "properties": {
+          "aborted": {
+            "title": "Aborted",
+            "type": "integer"
+          },
+          "error": {
+            "title": "Error",
+            "type": "integer"
+          },
+          "finished": {
+            "title": "Finished",
+            "type": "integer"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": ["total", "queued", "running", "finished", "error", "aborted"],
+        "title": "AIRunAggregate",
+        "type": "object"
+      },
+      "AIRunEventRead": {
+        "properties": {
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "payload_json": {
+            "additionalProperties": true,
+            "title": "Payload Json",
+            "type": "object"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          }
+        },
+        "required": ["event_id", "event_type", "sequence", "payload_json"],
+        "title": "AIRunEventRead",
+        "type": "object"
+      },
       "AIRunStatusRead": {
         "properties": {
           "error_code": {
@@ -370,6 +656,11 @@
             ],
             "title": "Model Name"
           },
+          "run_metadata": {
+            "additionalProperties": true,
+            "title": "Run Metadata",
+            "type": "object"
+          },
           "run_uuid": {
             "title": "Run Uuid",
             "type": "string"
@@ -381,6 +672,62 @@
         },
         "required": ["run_uuid", "status"],
         "title": "AIRunStatusRead",
+        "type": "object"
+      },
+      "AIScopeCapabilityRead": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "context_visibility": {
+            "enum": ["student", "teacher", "admin"],
+            "title": "Context Visibility",
+            "type": "string"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/AIFeatureCapability"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "modes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Modes",
+            "type": "array"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "restricted": {
+            "default": false,
+            "title": "Restricted",
+            "type": "boolean"
+          },
+          "role": {
+            "enum": ["student", "teacher", "author", "admin"],
+            "title": "Role",
+            "type": "string"
+          },
+          "surface": {
+            "enum": ["student-activity", "teacher-studio", "teacher-review", "course-page", "admin"],
+            "title": "Surface",
+            "type": "string"
+          }
+        },
+        "required": ["available", "role", "surface", "context_visibility", "modes", "features"],
+        "title": "AIScopeCapabilityRead",
         "type": "object"
       },
       "AISubmissionAnalysisRead": {
@@ -7861,11 +8208,6 @@
           },
           "question": {
             "title": "Question",
-            "type": "string"
-          },
-          "role": {
-            "default": "student",
-            "title": "Role",
             "type": "string"
           },
           "thread_uuid": {
@@ -17331,6 +17673,172 @@
         "tags": ["activities"]
       }
     },
+    "/api/v1/ai/admin/evals": {
+      "get": {
+        "operationId": "api_ai_eval_dashboard_api_v1_ai_admin_evals_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIEvalDashboardRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Ai Eval Dashboard",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/admin/settings": {
+      "get": {
+        "operationId": "api_ai_admin_settings_api_v1_ai_admin_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIAdminSettingsRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Ai Admin Settings",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/capabilities/scope/{course_uuid}": {
+      "get": {
+        "operationId": "api_ai_scope_capabilities_api_v1_ai_capabilities_scope__course_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "surface",
+            "required": false,
+            "schema": {
+              "default": "course-page",
+              "enum": ["student-activity", "teacher-studio", "teacher-review", "course-page", "admin"],
+              "title": "Surface",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "activity_uuid",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Activity Uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submission_uuid",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Submission Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIScopeCapabilityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Ai Scope Capabilities",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/course-analysis/{analysis_uuid}/publish": {
       "post": {
         "operationId": "api_publish_course_analysis_api_v1_ai_course_analysis__analysis_uuid__publish_post",
@@ -17451,6 +17959,71 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/course-analysis/{course_uuid}/analyze/queue": {
+      "post": {
+        "operationId": "api_queue_course_analysis_api_v1_ai_course_analysis__course_uuid__analyze_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Course Analysis",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/course-analysis/{course_uuid}/latest": {
       "get": {
         "operationId": "api_latest_course_analysis_api_v1_ai_course_analysis__course_uuid__latest_get",
@@ -17505,6 +18078,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Latest Course Analysis",
         "tags": ["ai"]
       }
@@ -17565,6 +18143,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Dismiss Lecture Suggestion",
         "tags": ["ai"]
       }
@@ -17619,6 +18202,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api List Lecture Reviews",
         "tags": ["ai"]
       }
@@ -17688,6 +18276,71 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/lecture-authoring/{course_uuid}/critique/queue": {
+      "post": {
+        "operationId": "api_queue_lecture_review_api_v1_ai_lecture_authoring__course_uuid__critique_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LectureReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Lecture Review",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/qa/{course_uuid}/ask": {
       "post": {
         "operationId": "api_ask_course_question_api_v1_ai_qa__course_uuid__ask_post",
@@ -17750,6 +18403,71 @@
           }
         ],
         "summary": "Api Ask Course Question",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/qa/{course_uuid}/ask/queue": {
+      "post": {
+        "operationId": "api_queue_course_question_api_v1_ai_qa__course_uuid__ask_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseQARequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Course Question",
         "tags": ["ai"]
       }
     },
@@ -17981,6 +18699,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Get Remediation Session",
         "tags": ["ai"]
       }
@@ -18100,6 +18823,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api List Student Remediation",
         "tags": ["ai"]
       }
@@ -18169,6 +18897,71 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/remediation/{submission_uuid}/generate/queue": {
+      "post": {
+        "operationId": "api_queue_remediation_api_v1_ai_remediation__submission_uuid__generate_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemediationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Remediation",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/runs/{run_uuid}": {
       "get": {
         "operationId": "api_get_ai_run_api_v1_ai_runs__run_uuid__get",
@@ -18215,7 +19008,71 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Get Ai Run",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/runs/{run_uuid}/artifacts": {
+      "get": {
+        "operationId": "api_get_ai_run_artifacts_api_v1_ai_runs__run_uuid__artifacts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_uuid",
+            "required": true,
+            "schema": {
+              "title": "Run Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AIArtifactRead"
+                  },
+                  "title": "Response Api Get Ai Run Artifacts Api V1 Ai Runs  Run Uuid  Artifacts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Ai Run Artifacts",
         "tags": ["ai"]
       }
     },
@@ -18265,7 +19122,119 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Cancel Ai Run",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/runs/{run_uuid}/events": {
+      "get": {
+        "operationId": "api_get_ai_run_events_api_v1_ai_runs__run_uuid__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_uuid",
+            "required": true,
+            "schema": {
+              "title": "Run Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AIRunEventRead"
+                  },
+                  "title": "Response Api Get Ai Run Events Api V1 Ai Runs  Run Uuid  Events Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Ai Run Events",
+        "tags": ["ai"]
+      }
+    },
+    "/api/v1/ai/runs/{run_uuid}/stream": {
+      "get": {
+        "operationId": "api_stream_ai_run_events_api_v1_ai_runs__run_uuid__stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_uuid",
+            "required": true,
+            "schema": {
+              "title": "Run Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Stream Ai Run Events",
         "tags": ["ai"]
       }
     },
@@ -18334,6 +19303,71 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/study/{course_uuid}/ask/queue": {
+      "post": {
+        "operationId": "api_queue_study_companion_api_v1_ai_study__course_uuid__ask_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyCompanionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Study Companion",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/submission-analysis/{submission_uuid}/analyze": {
       "post": {
         "operationId": "api_analyze_submission_api_v1_ai_submission_analysis__submission_uuid__analyze_post",
@@ -18399,6 +19433,71 @@
         "tags": ["ai"]
       }
     },
+    "/api/v1/ai/submission-analysis/{submission_uuid}/analyze/queue": {
+      "post": {
+        "operationId": "api_queue_submission_analysis_api_v1_ai_submission_analysis__submission_uuid__analyze_queue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIRunStatusRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Queue Submission Analysis",
+        "tags": ["ai"]
+      }
+    },
     "/api/v1/ai/submission-analysis/{submission_uuid}/latest": {
       "get": {
         "operationId": "api_latest_submission_analysis_api_v1_ai_submission_analysis__submission_uuid__latest_get",
@@ -18453,6 +19552,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Latest Submission Analysis",
         "tags": ["ai"]
       }
@@ -18482,6 +19586,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Ai Usage",
         "tags": ["ai"]
       }
@@ -18511,6 +19620,11 @@
             "description": "Внутренняя ошибка сервера"
           }
         },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
         "summary": "Api Ai Budget",
         "tags": ["ai"]
       }

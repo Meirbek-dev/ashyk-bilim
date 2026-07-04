@@ -9,6 +9,7 @@ export interface AIRunStatusPayload {
   status: string
   model_name?: string | null
   error_code?: string | null
+  run_metadata?: Record<string, unknown>
 }
 
 export function aiRunStatusQueryOptions(runUuid: string, enabled = true) {

@@ -3,6 +3,7 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
+import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 import type { CourseQAResponse, QAMessage } from '../lib/types'
 
@@ -10,6 +11,17 @@ export function useAskCourseQuestion(courseUuid: string) {
   return useMutation({
     mutationFn: (payload: { question: string; thread_uuid?: string | null; language: string }) =>
       apiJson<CourseQAResponse>(`ai/qa/${courseUuid}/ask`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'content-type': 'application/json' },
+      }),
+  })
+}
+
+export function useQueueCourseQuestion(courseUuid: string) {
+  return useMutation({
+    mutationFn: (payload: { question: string; thread_uuid?: string | null; language: string }) =>
+      apiJson<AIRunStatusPayload>(`ai/qa/${courseUuid}/ask/queue`, {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'content-type': 'application/json' },

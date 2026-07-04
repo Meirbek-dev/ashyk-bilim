@@ -11,7 +11,9 @@ import { toast } from 'sonner'
 import { AuthoringEditor } from './views'
 
 import type { Platform } from '@/types/platform'
-import { LectureAIEntry } from '@/features/lecture-authoring-ai'
+import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import type { AIScope } from '@/features/ai-experience'
+import { CourseAIHub } from '@/features/course-qa'
 
 interface EditorWrapperProps {
   content: unknown
@@ -48,6 +50,12 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
     })
   }
 
+  const aiScope: AIScope = {
+    courseUuid: props.course.course_uuid,
+    activityUuid: props.activity.activity_uuid,
+    surface: 'teacher-studio',
+  }
+
   return (
     <PlatformContextProvider initialPlatform={props.platform}>
       <AuthoringEditor
@@ -62,10 +70,11 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
         }}
         saveState={activityAutosave.saveStatus}
         setContent={setContent}
+        assistantSlot={<ActivityAITrigger scope={aiScope} />}
       />
-      <div className="mx-auto w-full max-w-[72rem] px-4 py-6">
-        <LectureAIEntry courseUuid={props.course.course_uuid} activityUuid={props.activity.activity_uuid} />
-      </div>
+      <ActivityAIPanel scope={aiScope}>
+        <CourseAIHub courseUuid={props.course.course_uuid} variant="panel" />
+      </ActivityAIPanel>
     </PlatformContextProvider>
   )
 }

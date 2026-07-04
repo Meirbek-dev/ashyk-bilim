@@ -13,6 +13,8 @@ import InlineStatusStrip from './InlineStatusStrip'
 import LockStateCard from './LockStateCard'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { CourseAIHub } from '@/features/course-qa'
+import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import type { AIScope } from '@/features/ai-experience'
 
 const CONTENT_READ_TOLERANCE_PX = 24
 
@@ -135,6 +137,11 @@ export default function StudentActivityWorkspace({
   }, [focusModeActive, isAttemptActive, toggleFocusMode])
 
   const isLocked = runtime.progress.state === 'locked' || runtime.progress.state === 'unavailable'
+  const aiScope: AIScope = {
+    courseUuid,
+    activityUuid: runtime.activity?.uuid ?? null,
+    surface: 'student-activity',
+  }
 
   return (
     <div
@@ -155,6 +162,7 @@ export default function StudentActivityWorkspace({
           onToggleFocusMode={toggleFocusMode}
           onToggleOutline={() => setOutlineOpen(value => !value)}
           outlineOpen={outlineOpen}
+          assistantSlot={!isLocked && !focusModeActive ? <ActivityAITrigger scope={aiScope} /> : null}
         />
       ) : null}
 
@@ -170,13 +178,14 @@ export default function StudentActivityWorkspace({
           {!isAttemptActive && !isLocked && !focusModeActive ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
-          {!isAttemptActive && !isLocked && !focusModeActive ? (
-            <div className="mt-8">
-              <CourseAIHub courseUuid={courseUuid} />
-            </div>
-          ) : null}
         </main>
       </div>
+
+      {!isAttemptActive && !isLocked && !focusModeActive ? (
+        <ActivityAIPanel scope={aiScope}>
+          <CourseAIHub courseUuid={courseUuid} variant="panel" />
+        </ActivityAIPanel>
+      ) : null}
 
       <BottomActionBar
         courseUuid={courseUuid}

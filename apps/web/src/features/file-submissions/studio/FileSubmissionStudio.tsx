@@ -24,6 +24,9 @@ import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 import { CustomCheckbox } from '@/components/ui/custom/custom-checkbox'
+import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import type { AIScope } from '@/features/ai-experience'
+import { CourseAIHub } from '@/features/course-qa'
 
 interface FileSubmissionStudioProps {
   courseUuid: string
@@ -221,6 +224,12 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     )
   }
 
+  const aiScope: AIScope = {
+    courseUuid,
+    activityUuid,
+    surface: 'teacher-studio',
+  }
+
   return (
     <div className="bg-background min-h-screen">
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
@@ -250,6 +259,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <ActivityAITrigger scope={aiScope} />
             <Button
               variant="ghost"
               size="sm"
@@ -411,6 +421,9 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </section>
         </aside>
       </main>
+      <ActivityAIPanel scope={aiScope}>
+        <CourseAIHub courseUuid={courseUuid} variant="panel" />
+      </ActivityAIPanel>
     </div>
   )
 }

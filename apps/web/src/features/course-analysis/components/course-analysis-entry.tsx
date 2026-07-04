@@ -5,15 +5,24 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AIErrorRecovery, AIPrivacyNotice } from '@/features/ai-experience'
+import { AIErrorRecovery, AIPrivacyNotice, AIRunProgress, useAIRunController } from '@/features/ai-experience'
 
-import { useLatestCourseAnalysis, usePublishCourseAnalysis, useRunCourseAnalysis } from '../api/use-course-analysis'
+import {
+  latestCourseAnalysisQueryOptions,
+  useLatestCourseAnalysis,
+  usePublishCourseAnalysis,
+  useQueueCourseAnalysis,
+} from '../api/use-course-analysis'
 import { CourseAnalysisResultShell } from './course-analysis-result-shell'
 
 export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
   const t = useTranslations('AiExperience.courseAnalysisEntry')
   const latest = useLatestCourseAnalysis(courseUuid)
-  const run = useRunCourseAnalysis(courseUuid)
+  const queue = useQueueCourseAnalysis(courseUuid)
+  const run = useAIRunController({
+    invalidateQueryKeys: [latestCourseAnalysisQueryOptions(courseUuid).queryKey],
+    queue,
+  })
   const publish = usePublishCourseAnalysis(courseUuid)
   const analysis = latest.data ?? null
 
@@ -28,7 +37,7 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
             </CardTitle>
             <CardDescription>{t('description')}</CardDescription>
           </div>
-          <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate('auto')}>
+          <Button size="sm" variant="outline" disabled={run.pending} onClick={() => void run.start('auto')}>
             <RefreshCw data-icon="inline-start" aria-hidden="true" />
             {latest.data ? t('rerun') : t('analyze')}
           </Button>
@@ -36,7 +45,8 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <AIPrivacyNotice aiRole="teacher" />
-        {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => run.mutate('auto')} /> : null}
+        <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
+        {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
         {analysis ? (
           <CourseAnalysisResultShell
             analysis={analysis}

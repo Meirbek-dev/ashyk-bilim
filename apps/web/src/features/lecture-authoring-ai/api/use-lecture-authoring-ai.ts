@@ -3,6 +3,7 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
+import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export interface LectureReview {
   review_uuid: string
@@ -32,6 +33,17 @@ export function useRunLectureCritique(courseUuid: string) {
   return useMutation({
     mutationFn: (payload: { activity_uuid?: string | null; language: string }) =>
       apiJson<LectureReview>(`ai/lecture-authoring/${courseUuid}/critique`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'content-type': 'application/json' },
+      }),
+  })
+}
+
+export function useQueueLectureCritique(courseUuid: string) {
+  return useMutation({
+    mutationFn: (payload: { activity_uuid?: string | null; language: string }) =>
+      apiJson<AIRunStatusPayload>(`ai/lecture-authoring/${courseUuid}/critique/queue`, {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'content-type': 'application/json' },

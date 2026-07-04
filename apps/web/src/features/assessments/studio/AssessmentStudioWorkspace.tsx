@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from '@components/ui/AppLink'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ActivityAIPanel, ActivityAITrigger } from '@/features/ai-experience'
+import type { AIScope } from '@/features/ai-experience'
+import { CourseAIHub } from '@/features/course-qa'
 
 interface AssessmentStudioWorkspaceProps {
   courseUuid: string
@@ -85,6 +88,11 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm
   const previewHref = `/assessments/${studio.assessmentUuid}`
+  const aiScope: AIScope = {
+    courseUuid,
+    activityUuid,
+    surface: 'teacher-studio',
+  }
 
   const archiveAssessment = () => {
     startTransition(async () => {
@@ -140,6 +148,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
           {/* Right: preview + overflow */}
           <div className="flex shrink-0 items-center gap-2">
+            <ActivityAITrigger scope={aiScope} />
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={previewHref} target="_blank" />}>
               <Eye className="size-4" />
               {t('preview')}
@@ -180,6 +189,9 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           {t('loadingEditor')}
         </div>
       )}
+      <ActivityAIPanel scope={aiScope}>
+        <CourseAIHub courseUuid={courseUuid} variant="panel" />
+      </ActivityAIPanel>
     </div>
   )
 }

@@ -130,17 +130,25 @@ def _create_run(
     activity_id: int | None = None,
     metadata: JsonObject | None = None,
     queued: bool = False,
+    thread: AIThread | None = None,
 ) -> AIRun:
-    thread = AIThread(
-        thread_uuid=_new_uuid("thread"),
-        user_id=user.id,
-        role=role,
-        course_id=course_id,
-        activity_id=activity_id,
-        title=kind.replace("_", " ").title(),
-    )
-    db_session.add(thread)
-    db_session.flush()
+    if thread is None:
+        thread = AIThread(
+            thread_uuid=_new_uuid("thread"),
+            user_id=user.id,
+            role=role,
+            course_id=course_id,
+            activity_id=activity_id,
+            title=kind.replace("_", " ").title(),
+        )
+        db_session.add(thread)
+        db_session.flush()
+    else:
+        thread.role = role
+        thread.course_id = course_id or thread.course_id
+        thread.activity_id = activity_id or thread.activity_id
+        db_session.add(thread)
+        db_session.flush()
     assert thread.id is not None
     run = AIRun(
         run_uuid=_new_uuid("run"),
@@ -570,6 +578,17 @@ async def queue_course_question(
     _require_enabled("course_qa_enabled")
     course = _course_or_404(db_session, course_uuid)
     role = derive_course_ai_role(db_session, course, user)
+    thread = (
+        db_session.exec(
+            select(AIThread).where(
+                AIThread.thread_uuid == thread_uuid,
+                AIThread.user_id == user.id,
+                AIThread.course_id == course.id,
+            )
+        ).first()
+        if thread_uuid
+        else None
+    )
     run = _create_run(
         db_session,
         user=user,
@@ -583,6 +602,7 @@ async def queue_course_question(
             "language": language,
         },
         queued=True,
+        thread=thread,
     )
     db_session.commit()
     db_session.refresh(run)
@@ -971,6 +991,13 @@ async def ask_course_question(
         if thread_uuid
         else None
     )
+    if thread is None and run is not None:
+        queued_thread = db_session.get(AIThread, run.thread_id)
+        if queued_thread is not None and queued_thread.user_id == user.id:
+            thread = queued_thread
+            thread.course_id = course.id
+            thread.role = role
+            thread.title = thread.title or question[:80]
     if thread is None:
         thread = AIThread(
             thread_uuid=_new_uuid("thread"),

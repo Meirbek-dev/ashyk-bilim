@@ -14,6 +14,7 @@
       "emptyStateDescription": "Ағымдағы әрекетті контекст ретінде пайдаланыңыз.",
       "errorStateTitle": "ЖИ сұрауы сәтсіз аяқталды",
       "defaultErrorMessage": "ЖИ сұрауы сәтсіз аяқталды. Қайталап көріңіз.",
+      "unavailable": "AI is unavailable for this activity.",
       "retry": "Қайталау",
       "dismiss": "Елемеу",
       "sendMessage": "Send message",

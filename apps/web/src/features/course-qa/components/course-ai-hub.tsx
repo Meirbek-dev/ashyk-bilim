@@ -6,12 +6,18 @@ import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CourseAnalysisEntry } from '@/features/course-analysis/components/course-analysis-entry'
+import { useActivityAIUrlState } from '@/features/ai-experience'
 import { StudyCompanionPanel } from '@/features/student-study'
 
 import { QAPanel } from './qa-panel'
 
-export function CourseAIHub({ courseUuid }: { courseUuid: string }) {
+export function CourseAIHub({ courseUuid, variant = 'inline' }: { courseUuid: string; variant?: 'inline' | 'panel' }) {
   const t = useTranslations('AiExperience.courseAIHub')
+
+  if (variant === 'panel') {
+    return <CourseAIHubPanel courseUuid={courseUuid} />
+  }
+
   return (
     <section className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -57,4 +63,19 @@ export function CourseAIHub({ courseUuid }: { courseUuid: string }) {
       </Tabs>
     </section>
   )
+}
+
+function CourseAIHubPanel({ courseUuid }: { courseUuid: string }) {
+  const { mode } = useActivityAIUrlState()
+
+  if (mode === 'ask' || mode === 'sources') {
+    return <QAPanel courseUuid={courseUuid} />
+  }
+
+  if (mode === 'review' || mode === 'analyze') {
+    return <CourseAnalysisEntry courseUuid={courseUuid} />
+  }
+
+  const studyMode = mode === 'practice' ? 'practice' : 'explain'
+  return <StudyCompanionPanel key={studyMode} courseUuid={courseUuid} initialMode={studyMode} />
 }

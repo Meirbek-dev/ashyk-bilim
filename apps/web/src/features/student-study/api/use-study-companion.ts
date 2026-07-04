@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 
 import { apiJson } from '@/lib/api-client'
+import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export type StudyCompanionMode = 'explain' | 'practice' | 'flashcards' | 'summarize' | 'deepen'
 
@@ -18,6 +19,17 @@ export function useStudyCompanion(courseUuid: string) {
   return useMutation({
     mutationFn: (payload: { question: string; mode: StudyCompanionMode; language: string }) =>
       apiJson<StudyCompanionAnswer>(`ai/study/${courseUuid}/ask`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'content-type': 'application/json' },
+      }),
+  })
+}
+
+export function useQueueStudyCompanion(courseUuid: string) {
+  return useMutation({
+    mutationFn: (payload: { question: string; mode: StudyCompanionMode; language: string }) =>
+      apiJson<AIRunStatusPayload>(`ai/study/${courseUuid}/ask/queue`, {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'content-type': 'application/json' },

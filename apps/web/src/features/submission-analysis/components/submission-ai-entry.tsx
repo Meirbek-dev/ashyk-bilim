@@ -5,17 +5,30 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AIErrorRecovery } from '@/features/ai-experience'
-import { RemediationResultShell, useGenerateRemediation } from '@/features/remediation'
+import { AIErrorRecovery, AIRunProgress, useAIRunController } from '@/features/ai-experience'
+import { RemediationResultShell, useQueueRemediation } from '@/features/remediation'
+import type { RemediationSession } from '@/features/remediation'
 
-import { useLatestSubmissionAnalysis, useRunSubmissionAnalysis } from '../api/use-submission-analysis'
+import {
+  latestSubmissionAnalysisQueryOptions,
+  useLatestSubmissionAnalysis,
+  useQueueSubmissionAnalysis,
+} from '../api/use-submission-analysis'
 import { SubmissionAnalysisResultShell } from './submission-analysis-result-shell'
 
 export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string | null }) {
   const t = useTranslations('AiExperience.submissionAIEntry')
   const latest = useLatestSubmissionAnalysis(submissionUuid ?? '')
-  const run = useRunSubmissionAnalysis(submissionUuid ?? '')
-  const remediation = useGenerateRemediation(submissionUuid ?? '')
+  const queueAnalysis = useQueueSubmissionAnalysis(submissionUuid ?? '')
+  const run = useAIRunController({
+    invalidateQueryKeys: [latestSubmissionAnalysisQueryOptions(submissionUuid ?? '').queryKey],
+    queue: queueAnalysis,
+  })
+  const queueRemediation = useQueueRemediation(submissionUuid ?? '')
+  const remediation = useAIRunController<{ gate_mode: boolean; language: string }, RemediationSession['lecture_json']>({
+    queue: queueRemediation,
+  })
+  const remediationArtifact = remediation.latestArtifact?.content_json
 
   if (!submissionUuid) {
     return null
@@ -32,25 +45,37 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
             </CardTitle>
             <CardDescription>{t('description')}</CardDescription>
           </div>
-          <Button size="sm" variant="outline" disabled={run.isPending} onClick={() => run.mutate('auto')}>
-            <RefreshCw className="size-4" />
+          <Button size="sm" variant="outline" disabled={run.pending} onClick={() => void run.start('auto')}>
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
             {t('analyze')}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => run.mutate('auto')} /> : null}
+      <CardContent className="flex flex-col gap-4">
+        <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
+        {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
         {latest.data ? <SubmissionAnalysisResultShell analysis={latest.data} /> : null}
         <Button
           className="w-full"
           variant="secondary"
-          disabled={remediation.isPending || !latest.data}
-          onClick={() => remediation.mutate({ gate_mode: true, language: 'auto' })}
+          disabled={remediation.pending || !latest.data}
+          onClick={() => void remediation.start({ gate_mode: true, language: 'auto' })}
         >
-          <Route className="size-4" />
+          <Route data-icon="inline-start" aria-hidden="true" />
           {t('generateGate')}
         </Button>
-        {remediation.data ? <RemediationResultShell session={remediation.data} /> : null}
+        <AIRunProgress state={remediation.state} onCancel={remediation.pending ? remediation.cancel : undefined} />
+        {remediationArtifact ? (
+          <RemediationResultShell
+            session={{
+              session_uuid: remediation.latestArtifact?.artifact_uuid ?? 'remediation_artifact',
+              status: 'active',
+              gate_mode: true,
+              lecture_json: remediationArtifact,
+              test_json: { questions: [] },
+            }}
+          />
+        ) : null}
         {remediation.error ? <AIErrorRecovery message={remediation.error.message} /> : null}
       </CardContent>
     </Card>

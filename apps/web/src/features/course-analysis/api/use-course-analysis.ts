@@ -3,6 +3,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
+import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export interface CourseAnalysis {
   analysis_uuid: string
@@ -43,6 +44,17 @@ export function useRunCourseAnalysis(courseUuid: string) {
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: latestCourseAnalysisQueryOptions(courseUuid).queryKey,
+      }),
+  })
+}
+
+export function useQueueCourseAnalysis(courseUuid: string) {
+  return useMutation({
+    mutationFn: (language: string) =>
+      apiJson<AIRunStatusPayload>(`ai/course-analysis/${courseUuid}/analyze/queue`, {
+        method: 'POST',
+        body: JSON.stringify({ language }),
+        headers: { 'content-type': 'application/json' },
       }),
   })
 }

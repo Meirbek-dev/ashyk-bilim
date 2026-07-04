@@ -7,16 +7,29 @@ import { useTranslations } from 'next-intl'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { AIStreamingText } from '@/features/ai-experience'
+import { AIErrorRecovery, AIRunProgress, AIStreamingText, useAIRunController } from '@/features/ai-experience'
 
-import { useStudyCompanion } from '../api/use-study-companion'
-import type { StudyCompanionMode } from '../api/use-study-companion'
+import { useQueueStudyCompanion } from '../api/use-study-companion'
+import type { StudyCompanionAnswer, StudyCompanionMode } from '../api/use-study-companion'
 
-export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
+export function StudyCompanionPanel({
+  courseUuid,
+  initialMode = 'explain',
+}: {
+  courseUuid: string
+  initialMode?: StudyCompanionMode
+}) {
   const t = useTranslations('AiExperience.studyCompanion')
   const [question, setQuestion] = useState('')
-  const [mode, setMode] = useState<StudyCompanionMode>('explain')
-  const mutation = useStudyCompanion(courseUuid)
+  const [mode, setMode] = useState<StudyCompanionMode>(initialMode)
+  const queue = useQueueStudyCompanion(courseUuid)
+  const run = useAIRunController<
+    { question: string; mode: StudyCompanionMode; language: string },
+    StudyCompanionAnswer
+  >({
+    queue,
+  })
+  const answer = run.latestArtifact?.content_json
 
   return (
     <section className="flex flex-col gap-4">
@@ -29,11 +42,14 @@ export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
               value={question}
               onChange={event => setQuestion(event.target.value)}
               placeholder={t('placeholder')}
+              disabled={run.pending}
             />
             <InputGroupAddon align="block-end">
               <InputGroupButton
-                onClick={() => mutation.mutate({ question, mode, language: 'auto' })}
-                disabled={!question.trim() || mutation.isPending}
+                onClick={() => {
+                  void run.start({ question, mode, language: 'auto' }).then(() => setQuestion(''))
+                }}
+                disabled={!question.trim() || run.pending}
               >
                 <SendIcon data-icon="inline-start" />
                 {t('send')}
@@ -50,8 +66,9 @@ export function StudyCompanionPanel({ courseUuid }: { courseUuid: string }) {
         <ToggleGroupItem value="summarize">{t('summarize')}</ToggleGroupItem>
         <ToggleGroupItem value="deepen">{t('deepen')}</ToggleGroupItem>
       </ToggleGroup>
-      {mutation.data ? <AIStreamingText text={mutation.data.answer_markdown} /> : null}
-      {mutation.error ? <p className="text-destructive text-sm">{mutation.error.message}</p> : null}
+      <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
+      {answer ? <AIStreamingText text={answer.answer_markdown} /> : null}
+      {run.error ? <AIErrorRecovery message={run.error.message} /> : null}
     </section>
   )
 }

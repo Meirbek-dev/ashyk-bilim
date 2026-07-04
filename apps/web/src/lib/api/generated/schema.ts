@@ -108,6 +108,57 @@ export interface paths {
     patch: operations['api_update_activity_api_v1_activities__activity_uuid__patch']
     trace?: never
   }
+  '/api/v1/ai/admin/evals': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Ai Eval Dashboard */
+    get: operations['api_ai_eval_dashboard_api_v1_ai_admin_evals_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/admin/settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Ai Admin Settings */
+    get: operations['api_ai_admin_settings_api_v1_ai_admin_settings_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/capabilities/scope/{course_uuid}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Ai Scope Capabilities */
+    get: operations['api_ai_scope_capabilities_api_v1_ai_capabilities_scope__course_uuid__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/ai/course-analysis/{analysis_uuid}/publish': {
     parameters: {
       query?: never
@@ -136,6 +187,23 @@ export interface paths {
     put?: never
     /** Api Analyze Course */
     post: operations['api_analyze_course_api_v1_ai_course_analysis__course_uuid__analyze_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/course-analysis/{course_uuid}/analyze/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Course Analysis */
+    post: operations['api_queue_course_analysis_api_v1_ai_course_analysis__course_uuid__analyze_queue_post']
     delete?: never
     options?: never
     head?: never
@@ -210,6 +278,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/ai/lecture-authoring/{course_uuid}/critique/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Lecture Review */
+    post: operations['api_queue_lecture_review_api_v1_ai_lecture_authoring__course_uuid__critique_queue_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/ai/qa/{course_uuid}/ask': {
     parameters: {
       query?: never
@@ -221,6 +306,23 @@ export interface paths {
     put?: never
     /** Api Ask Course Question */
     post: operations['api_ask_course_question_api_v1_ai_qa__course_uuid__ask_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/qa/{course_uuid}/ask/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Course Question */
+    post: operations['api_queue_course_question_api_v1_ai_qa__course_uuid__ask_queue_post']
     delete?: never
     options?: never
     head?: never
@@ -330,6 +432,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/ai/remediation/{submission_uuid}/generate/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Remediation */
+    post: operations['api_queue_remediation_api_v1_ai_remediation__submission_uuid__generate_queue_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/ai/runs/{run_uuid}': {
     parameters: {
       query?: never
@@ -339,6 +458,23 @@ export interface paths {
     }
     /** Api Get Ai Run */
     get: operations['api_get_ai_run_api_v1_ai_runs__run_uuid__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/runs/{run_uuid}/artifacts': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Get Ai Run Artifacts */
+    get: operations['api_get_ai_run_artifacts_api_v1_ai_runs__run_uuid__artifacts_get']
     put?: never
     post?: never
     delete?: never
@@ -364,6 +500,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/ai/runs/{run_uuid}/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Get Ai Run Events */
+    get: operations['api_get_ai_run_events_api_v1_ai_runs__run_uuid__events_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/runs/{run_uuid}/stream': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Api Stream Ai Run Events */
+    get: operations['api_stream_ai_run_events_api_v1_ai_runs__run_uuid__stream_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/ai/study/{course_uuid}/ask': {
     parameters: {
       query?: never
@@ -381,6 +551,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/ai/study/{course_uuid}/ask/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Study Companion */
+    post: operations['api_queue_study_companion_api_v1_ai_study__course_uuid__ask_queue_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/ai/submission-analysis/{submission_uuid}/analyze': {
     parameters: {
       query?: never
@@ -392,6 +579,23 @@ export interface paths {
     put?: never
     /** Api Analyze Submission */
     post: operations['api_analyze_submission_api_v1_ai_submission_analysis__submission_uuid__analyze_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/ai/submission-analysis/{submission_uuid}/analyze/queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Api Queue Submission Analysis */
+    post: operations['api_queue_submission_analysis_api_v1_ai_submission_analysis__submission_uuid__analyze_queue_post']
     delete?: never
     options?: never
     head?: never
@@ -4390,6 +4594,36 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** AIAdminSettingsRead */
+    AIAdminSettingsRead: {
+      /** Ai Enabled */
+      ai_enabled: boolean
+      /** Draft Mode Enabled */
+      draft_mode_enabled: boolean
+      /** Features */
+      features: components['schemas']['AIFeatureSetting'][]
+      /** Max Output Tokens */
+      max_output_tokens: number
+      /** Max Tokens Per Request */
+      max_tokens_per_request: number
+      /** Model */
+      model: string
+      /** Monthly Token Budget */
+      monthly_token_budget: number
+      /** Provider Ready */
+      provider_ready: boolean
+    }
+    /** AIArtifactRead */
+    AIArtifactRead: {
+      /** Artifact Uuid */
+      artifact_uuid: string
+      /** Content Json */
+      content_json: Record<string, unknown>
+      /** Final */
+      final: boolean
+      /** Kind */
+      kind: string
+    }
     /** AICourseAnalysisRead */
     AICourseAnalysisRead: {
       /** Analysis Uuid */
@@ -4419,6 +4653,66 @@ export interface components {
       status: string
       /** Triggered By User Id */
       triggered_by_user_id?: number | null
+    }
+    /** AIEvalDashboardRead */
+    AIEvalDashboardRead: {
+      evals: components['schemas']['AIEvalSummary']
+      /** Recent Evals */
+      recent_evals: components['schemas']['AIEvalResultRead'][]
+      runs: components['schemas']['AIRunAggregate']
+    }
+    /** AIEvalResultRead */
+    AIEvalResultRead: {
+      /** Dataset */
+      dataset: string
+      details_json: components['schemas']['JsonObject']
+      /** Eval Uuid */
+      eval_uuid: string
+      /** Evaluator */
+      evaluator: string
+      /** Passed */
+      passed?: boolean | null
+      /** Run Id */
+      run_id?: number | null
+      /** Score */
+      score?: number | null
+    }
+    /** AIEvalSummary */
+    AIEvalSummary: {
+      /** Average Score */
+      average_score?: number | null
+      /** Failed */
+      failed: number
+      /** Passed */
+      passed: number
+      /** Total */
+      total: number
+    }
+    /** AIFeatureCapability */
+    AIFeatureCapability: {
+      /** Enabled */
+      enabled: boolean
+      /** Key */
+      key: string
+      /** Reason */
+      reason?: string | null
+    }
+    /** AIFeatureSetting */
+    AIFeatureSetting: {
+      /**
+       * Editable
+       * @default false
+       */
+      editable: boolean
+      /** Enabled */
+      enabled: boolean
+      /** Key */
+      key: string
+      /**
+       * Source
+       * @default environment
+       */
+      source: string
     }
     /** AILectureReviewRead */
     AILectureReviewRead: {
@@ -4513,16 +4807,75 @@ export interface components {
        */
       updated_at: string
     }
+    /** AIRunAggregate */
+    AIRunAggregate: {
+      /** Aborted */
+      aborted: number
+      /** Error */
+      error: number
+      /** Finished */
+      finished: number
+      /** Queued */
+      queued: number
+      /** Running */
+      running: number
+      /** Total */
+      total: number
+    }
+    /** AIRunEventRead */
+    AIRunEventRead: {
+      /** Event Id */
+      event_id: string
+      /** Event Type */
+      event_type: string
+      /** Payload Json */
+      payload_json: Record<string, unknown>
+      /** Sequence */
+      sequence: number
+    }
     /** AIRunStatusRead */
     AIRunStatusRead: {
       /** Error Code */
       error_code?: string | null
       /** Model Name */
       model_name?: string | null
+      /** Run Metadata */
+      run_metadata?: Record<string, unknown>
       /** Run Uuid */
       run_uuid: string
       /** Status */
       status: string
+    }
+    /** AIScopeCapabilityRead */
+    AIScopeCapabilityRead: {
+      /** Available */
+      available: boolean
+      /**
+       * Context Visibility
+       * @enum {string}
+       */
+      context_visibility: 'student' | 'teacher' | 'admin'
+      /** Features */
+      features: components['schemas']['AIFeatureCapability'][]
+      /** Modes */
+      modes: string[]
+      /** Reason */
+      reason?: string | null
+      /**
+       * Restricted
+       * @default false
+       */
+      restricted: boolean
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'student' | 'teacher' | 'author' | 'admin'
+      /**
+       * Surface
+       * @enum {string}
+       */
+      surface: 'student-activity' | 'teacher-studio' | 'teacher-review' | 'course-page' | 'admin'
     }
     /** AISubmissionAnalysisRead */
     AISubmissionAnalysisRead: {
@@ -11491,6 +11844,94 @@ export interface operations {
       }
     }
   }
+  api_ai_eval_dashboard_api_v1_ai_admin_evals_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIEvalDashboardRead']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_ai_admin_settings_api_v1_ai_admin_settings_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIAdminSettingsRead']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_ai_scope_capabilities_api_v1_ai_capabilities_scope__course_uuid__get: {
+    parameters: {
+      query?: {
+        surface?: 'student-activity' | 'teacher-studio' | 'teacher-review' | 'course-page' | 'admin'
+        activity_uuid?: string | null
+        submission_uuid?: string | null
+      }
+      header?: never
+      path: {
+        course_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIScopeCapabilityRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
   api_publish_course_analysis_api_v1_ai_course_analysis__analysis_uuid__publish_post: {
     parameters: {
       query?: never
@@ -11545,6 +11986,44 @@ export interface operations {
         headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AICourseAnalysisRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_queue_course_analysis_api_v1_ai_course_analysis__course_uuid__analyze_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseAnalysisRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
         }
       }
       /** @description Validation Error */
@@ -11707,6 +12186,44 @@ export interface operations {
       }
     }
   }
+  api_queue_lecture_review_api_v1_ai_lecture_authoring__course_uuid__critique_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LectureReviewRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
   api_ask_course_question_api_v1_ai_qa__course_uuid__ask_post: {
     parameters: {
       query?: never
@@ -11727,6 +12244,44 @@ export interface operations {
         headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['CourseQAResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_queue_course_question_api_v1_ai_qa__course_uuid__ask_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CourseQARequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
         }
       }
       /** @description Validation Error */
@@ -11991,6 +12546,44 @@ export interface operations {
       }
     }
   }
+  api_queue_remediation_api_v1_ai_remediation__submission_uuid__generate_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        submission_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RemediationRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
   api_get_ai_run_api_v1_ai_runs__run_uuid__get: {
     parameters: {
       query?: never
@@ -12007,6 +12600,40 @@ export interface operations {
         headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AIRunStatusRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_get_ai_run_artifacts_api_v1_ai_runs__run_uuid__artifacts_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        run_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIArtifactRead'][]
         }
       }
       /** @description Validation Error */
@@ -12042,6 +12669,72 @@ export interface operations {
         content: {
           'application/json': components['schemas']['AIRunStatusRead']
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_get_ai_run_events_api_v1_ai_runs__run_uuid__events_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        run_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunEventRead'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_stream_ai_run_events_api_v1_ai_runs__run_uuid__stream_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        run_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -12097,6 +12790,44 @@ export interface operations {
       }
     }
   }
+  api_queue_study_companion_api_v1_ai_study__course_uuid__ask_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        course_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StudyCompanionRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
   api_analyze_submission_api_v1_ai_submission_analysis__submission_uuid__analyze_post: {
     parameters: {
       query?: never
@@ -12117,6 +12848,44 @@ export interface operations {
         headers: Record<string, unknown>
         content: {
           'application/json': components['schemas']['AISubmissionAnalysisRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+      /** @description Внутренняя ошибка сервера */
+      500: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['ApiErrorEnvelope']
+        }
+      }
+    }
+  }
+  api_queue_submission_analysis_api_v1_ai_submission_analysis__submission_uuid__analyze_queue_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        submission_uuid: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmissionAnalysisRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: Record<string, unknown>
+        content: {
+          'application/json': components['schemas']['AIRunStatusRead']
         }
       }
       /** @description Validation Error */

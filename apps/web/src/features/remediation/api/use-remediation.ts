@@ -3,6 +3,7 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiFetcher, apiJson } from '@/lib/api-client'
+import type { AIRunStatusPayload } from '@/features/ai-experience'
 
 export interface RemediationSession {
   session_uuid: string
@@ -34,6 +35,17 @@ export function useGenerateRemediation(submissionUuid: string) {
   return useMutation({
     mutationFn: (payload: { gate_mode: boolean; language: string }) =>
       apiJson<RemediationSession>(`ai/remediation/${submissionUuid}/generate`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'content-type': 'application/json' },
+      }),
+  })
+}
+
+export function useQueueRemediation(submissionUuid: string) {
+  return useMutation({
+    mutationFn: (payload: { gate_mode: boolean; language: string }) =>
+      apiJson<AIRunStatusPayload>(`ai/remediation/${submissionUuid}/generate/queue`, {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'content-type': 'application/json' },

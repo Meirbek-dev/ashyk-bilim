@@ -5,10 +5,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from pydantic import Field
 from sqlmodel import Session, col, select
 
 from src.auth.users import get_public_user
-from src.db.ai_runtime import AIEvent, AIRun, AIRunStatus
+from src.db.ai_runtime import AIArtifactRecord, AIEvent, AIRun, AIRunStatus
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
@@ -22,6 +23,7 @@ class AIRunStatusRead(PydanticStrictBaseModel):
     status: str
     model_name: str | None = None
     error_code: str | None = None
+    run_metadata: dict[str, object] = Field(default_factory=dict)
 
 
 class AIRunEventRead(PydanticStrictBaseModel):
@@ -29,6 +31,13 @@ class AIRunEventRead(PydanticStrictBaseModel):
     event_type: str
     sequence: int
     payload_json: dict[str, object]
+
+
+class AIArtifactRead(PydanticStrictBaseModel):
+    artifact_uuid: str
+    kind: str
+    content_json: dict[str, object]
+    final: bool
 
 
 def _run_or_404(db_session: Session, run_uuid: str) -> AIRun:
@@ -84,6 +93,24 @@ async def api_get_ai_run_events(
     run = _run_or_404(db_session, run_uuid)
     require_ai_run_access(db_session, run, current_user)
     return _run_events(db_session, run)
+
+
+@router.get("/{run_uuid}/artifacts", response_model=list[AIArtifactRead])
+async def api_get_ai_run_artifacts(
+    run_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> list[AIArtifactRecord]:
+    run = _run_or_404(db_session, run_uuid)
+    require_ai_run_access(db_session, run, current_user)
+    assert run.id is not None
+    return list(
+        db_session.exec(
+            select(AIArtifactRecord)
+            .where(AIArtifactRecord.run_id == run.id)
+            .order_by(col(AIArtifactRecord.created_at).desc())
+        ).all()
+    )
 
 
 @router.get("/{run_uuid}/stream", response_class=StreamingResponse)

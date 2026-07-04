@@ -10,6 +10,7 @@ import appLogoLight from '@public/app_logo_light.svg'
 import UserAvatar from '../../UserAvatar'
 import { Separator } from '@/components/ui/separator'
 import { EditorSaveIndicator } from './EditorSaveIndicator'
+import type { ReactNode } from 'react'
 
 interface EditorHeaderProps {
   courseName: string
@@ -18,6 +19,7 @@ interface EditorHeaderProps {
   activityUuid: string
   saveState: 'idle' | 'saving' | 'saved' | 'error'
   onSave: () => void
+  assistantSlot?: ReactNode
 }
 
 export function EditorHeader({
@@ -27,6 +29,7 @@ export function EditorHeader({
   activityUuid,
   saveState,
   onSave,
+  assistantSlot,
 }: EditorHeaderProps) {
   const t = useTranslations('DashPage.Editor.Editor')
   const tCommon = useTranslations('Common')
@@ -64,6 +67,7 @@ export function EditorHeader({
       {/* Right: actions */}
       <div className="flex items-center gap-2">
         <EditorSaveIndicator saveState={saveState} />
+        {assistantSlot}
 
         <button
           type="button"

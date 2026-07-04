@@ -16,6 +16,7 @@ import { useEmbedPanelStore } from '../Toolbar/EmbedPanel/EmbedPanelStore'
 import { EmbedPanel } from '../Toolbar/EmbedPanel/EmbedPanel'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 
 import '@components/Objects/Editor/styles/prosemirror.css'
 
@@ -129,6 +130,7 @@ interface AuthoringEditorProps {
   onContentChange: (content: unknown) => void
   saveState: 'idle' | 'saving' | 'saved' | 'error'
   setContent: (content: unknown) => void
+  assistantSlot?: ReactNode
 }
 
 export function AuthoringEditor(props: AuthoringEditorProps) {
@@ -169,6 +171,7 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
               activityUuid={activityUuid}
               saveState={props.saveState}
               onSave={handleContentSave}
+              assistantSlot={props.assistantSlot}
             />
 
             {/* EditorCore owns the editor instance and <Tiptap> tree. */}
