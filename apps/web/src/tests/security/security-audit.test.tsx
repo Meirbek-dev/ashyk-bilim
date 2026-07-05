@@ -33,7 +33,11 @@ const mockUser = {
 }
 
 const mockSession: Session = {
-  user: mockUser,
+  user: {
+    ...mockUser,
+    details: {},
+    profile: {},
+  },
   roles: [
     {
       role: {

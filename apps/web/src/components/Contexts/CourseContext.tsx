@@ -12,51 +12,17 @@ import { useCourseEditorStore } from '@/stores/courses'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
-export interface Activity {
-  id?: number | string
-  activity_uuid: string
-  name?: string
-  activity_type?: string
-  public?: boolean
-  open_to_contributors?: boolean
-  published?: boolean
-  // Backend permission metadata (returned by /courses/{uuid}/meta)
-  can_update?: boolean
-  can_delete?: boolean
-  is_owner?: boolean
-  is_creator?: boolean
-  available_actions?: string[]
-  [key: string]: unknown
-}
+export interface Activity extends AppActivity {}
 
-export interface Chapter {
-  id?: number
-  chapter_uuid?: string
-  name?: string
+export interface Chapter extends AppChapter {
   activities?: Activity[]
-  [key: string]: unknown
 }
 
-type Learnings = string | string[] | AppPayload | null
 export type CourseSectionKey = 'general' | 'access' | 'contributors' | 'certification' | 'content'
 
 // Course structure interface with improved typing
-export interface CourseStructure {
-  id?: number
-  course_uuid: string
-  name?: string
-  description?: string
-  about?: string
-  learnings?: Learnings
-  tags?: string[] | string | null
-  public?: boolean
-  thumbnail_image?: string | null
-  thumbnail_type?: 'image' | 'video' | 'both' | string | null
+export interface CourseStructure extends AppCourse {
   chapters: Chapter[]
-  authors?: AppCourseAuthor[]
-  _certificationData?: unknown
-  update_date?: string
-  [key: string]: unknown
 }
 
 // Course state interface

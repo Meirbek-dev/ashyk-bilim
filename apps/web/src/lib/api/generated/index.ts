@@ -30,9 +30,9 @@ export * from './api.schemas'
 
 import type * as schemas from './api.schemas'
 
-type Compat<T> = T extends never ? never : any
+type Compat<T> = T extends never ? never : T
 
-export type components = {
+export interface components {
   schemas: {
     ActivityDetailResponse: Compat<schemas.ActivityDetailResponse>
     ActivityDropoffRow: Compat<schemas.ActivityDropoffRow>
@@ -122,7 +122,7 @@ export type components = {
   }
 }
 
-export type operations = {
+export interface operations {
   teacher_overview_platform_api_v1_analytics_teacher_overview_get: {
     parameters: {
       query: Compat<schemas.TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams>

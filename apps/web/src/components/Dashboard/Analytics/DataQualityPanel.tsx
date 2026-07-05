@@ -13,12 +13,13 @@ interface DataQualityPanelProps {
 export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
   const locale = useLocale()
   const t = useTranslations('Components.DashboardAnalytics')
+  const freshnessSeconds = quality.freshness_seconds ?? 0
   const freshness =
-    quality.freshness_seconds < 60
-      ? `${quality.freshness_seconds}s`
-      : quality.freshness_seconds < 3600
-        ? `${Math.round(quality.freshness_seconds / 60)}m`
-        : `${Math.round(quality.freshness_seconds / 3600)}h`
+    freshnessSeconds < 60
+      ? `${freshnessSeconds}s`
+      : freshnessSeconds < 3600
+        ? `${Math.round(freshnessSeconds / 60)}m`
+        : `${Math.round(freshnessSeconds / 3600)}h`
 
   return (
     <Card className="shadow-sm">

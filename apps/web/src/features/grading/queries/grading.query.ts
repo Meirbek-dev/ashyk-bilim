@@ -8,6 +8,11 @@ import type {
   SubmissionStatus,
   SubmissionsPage,
 } from '@/features/grading/domain'
+import {
+  normalizeCourseGradebookResponse,
+  normalizeSubmission,
+  normalizeSubmissionsPage,
+} from '@/features/grading/domain'
 import { queryOptions } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getAPIUrl } from '@services/config/config'
@@ -44,7 +49,8 @@ function buildSubmissionsSearchParams(params: SubmissionListQueryParams) {
 export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid: string) {
   return queryOptions({
     queryKey: queryKeys.grading.detail(submissionUuid, assessmentUuid),
-    queryFn: () => apiFetcher<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`),
+    queryFn: async () =>
+      normalizeSubmission(await apiFetcher<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`)),
     staleTime: 2000,
   })
 }
@@ -63,8 +69,10 @@ export function courseGradebookQueryOptions(courseUuid: string, params?: CourseG
   const query = buildCourseGradebookSearchParams(params)
   return queryOptions({
     queryKey: [...queryKeys.grading.gradebook(courseUuid), query] as const,
-    queryFn: () =>
-      apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
+    queryFn: async () =>
+      normalizeCourseGradebookResponse(
+        await apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook${query ? `?${query}` : ''}`),
+      ),
     staleTime: 5000,
   })
 }
@@ -84,9 +92,9 @@ export function submissionStatsQueryOptions(assessmentUuid: string) {
 export function submissionsQueryOptions(params: SubmissionListQueryParams) {
   return queryOptions({
     queryKey: queryKeys.grading.submissions(params),
-    queryFn: () => {
+    queryFn: async () => {
       const path = `assessments/${params.assessmentUuid}/submissions`
-      return apiFetcher<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`)
+      return normalizeSubmissionsPage(await apiFetcher<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`))
     },
   })
 }

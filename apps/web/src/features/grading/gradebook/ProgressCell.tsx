@@ -104,5 +104,8 @@ function mapProgressStateToLmsStatus(state: ActivityProgressCell['state']) {
     case 'NOT_STARTED': {
       return LmsStatuses.DRAFT
     }
+    default: {
+      return LmsStatuses.DRAFT
+    }
   }
 }

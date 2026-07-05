@@ -1,7 +1,7 @@
 /**
  * Grading system type definitions — v4.
  *
- * Interface definitions are re-exported from the auto-generated OpenAPI schemas.
+ * Interface definitions are re-exported from the normalized grading domain.
  * Only utility constants and helpers live here.
  *
  * Status model (5 states):
@@ -14,36 +14,51 @@
  * Late submissions use is_late: boolean on the Submission object itself.
  */
 
-import type { components } from '@/lib/api/generated'
+import type {
+  ActivityProgressCell,
+  ActivityProgressState,
+  AssessmentType,
+  BatchGradeItem,
+  BatchGradeRequest,
+  BatchGradeResponse,
+  CourseGradebookResponse,
+  GradebookActivity,
+  GradebookStudent,
+  GradebookSummary,
+  GradedItem,
+  GradingBreakdown,
+  ItemFeedback,
+  Submission,
+  SubmissionStats,
+  SubmissionStatus,
+  SubmissionUser,
+  SubmissionsPage,
+  TeacherAction,
+  TeacherGradeInput,
+} from '@/features/grading/domain/types'
 
-// ── Re-exported generated types ───────────────────────────────────────────────
-
-export type SubmissionStatus = components['schemas']['SubmissionStatus']
-export type AssessmentType = components['schemas']['AssessmentType']
-
-export type GradedItem = components['schemas']['GradedItem']
-export type GradingBreakdown = components['schemas']['GradingBreakdown']
-export type Submission = components['schemas']['SubmissionRead'] | components['schemas']['TeacherSubmissionRead']
-export type SubmissionUser = components['schemas']['SubmissionUser']
-
-/** Typed paginated response for the teacher submissions list. */
-export type SubmissionsPage = components['schemas']['SubmissionListResponse']
-export type SubmissionStats = components['schemas']['SubmissionStats']
-
-export type ItemFeedback = components['schemas']['ItemFeedback']
-export type TeacherGradeInput = components['schemas']['TeacherGradeInput']
-export type BatchGradeItem = components['schemas']['BatchGradeItem']
-export type BatchGradeRequest = components['schemas']['BatchGradeRequest']
-export type BatchGradeResultItem = components['schemas']['BatchGradeResultItem']
-export type BatchGradeResponse = components['schemas']['BatchGradeResponse']
-
-export type ActivityProgressState = components['schemas']['ActivityProgressState']
-export type ActivityProgressCell = components['schemas']['ActivityProgressCell']
-export type CourseGradebookResponse = components['schemas']['CourseGradebookResponse']
-export type GradebookActivity = components['schemas']['GradebookActivity']
-export type GradebookStudent = components['schemas']['GradebookStudent']
-export type GradebookSummary = components['schemas']['GradebookSummary']
-export type TeacherAction = components['schemas']['TeacherAction']
+export type {
+  ActivityProgressCell,
+  ActivityProgressState,
+  AssessmentType,
+  BatchGradeItem,
+  BatchGradeRequest,
+  BatchGradeResponse,
+  CourseGradebookResponse,
+  GradebookActivity,
+  GradebookStudent,
+  GradebookSummary,
+  GradedItem,
+  GradingBreakdown,
+  ItemFeedback,
+  Submission,
+  SubmissionStats,
+  SubmissionStatus,
+  SubmissionUser,
+  SubmissionsPage,
+  TeacherAction,
+  TeacherGradeInput,
+}
 
 export interface InlineItemFeedback {
   id: number

@@ -37,8 +37,9 @@ export function useCreateCourseMutation() {
         )
 
         const created = result.data
+        const createdCourseUuid = typeof created?.course_uuid === 'string' ? created.course_uuid : null
 
-        if (!result.success || !created || !('course_uuid' in (created as Record<string, unknown>))) {
+        if (!result.success || !created || !createdCourseUuid) {
           const detail =
             created && typeof created === 'object' && 'detail' in (created as Record<string, unknown>)
               ? (created as Record<string, unknown>).detail
@@ -49,7 +50,7 @@ export function useCreateCourseMutation() {
           }
         }
 
-        const courseUuid = cleanCourseUuid((created as { course_uuid: string }).course_uuid)
+        const courseUuid = cleanCourseUuid(createdCourseUuid)
         const destinationPath =
           destination === 'curriculum'
             ? buildCourseWorkspacePath(courseUuid, 'curriculum')
@@ -65,8 +66,8 @@ export function useCreateCourseMutation() {
               true,
             )
             sourceChapters = Array.isArray(sourceMetadata?.chapters)
-              ? sourceMetadata.chapters.map((ch: { name: string; description: string | null }) => ({
-                  name: ch.name,
+              ? sourceMetadata.chapters.map(ch => ({
+                  name: ch.name ?? '',
                   description: ch.description ?? '',
                 }))
               : []
@@ -87,7 +88,7 @@ export function useCreateCourseMutation() {
                 name: chapter.name || 'Imported chapter',
                 description: chapter.description || '',
                 thumbnail_image: '',
-                course_uuid: (created as { course_uuid: string }).course_uuid,
+                course_uuid: createdCourseUuid,
               }),
             ),
           )
