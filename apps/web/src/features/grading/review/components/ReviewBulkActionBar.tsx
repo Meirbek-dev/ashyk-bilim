@@ -30,6 +30,13 @@ interface BulkActionSummary {
   tone: 'default' | 'success' | 'warning'
 }
 
+const auditCopy = {
+  label: 'Audit Note',
+  placeholder: 'Reason for this bulk action',
+  help: 'Required for publish, return, and release actions.',
+  tooShort: 'Enter at least 8 characters.',
+}
+
 export default function ReviewBulkActionBar({
   activityId: _activityId,
   assessmentUuid,
@@ -47,6 +54,7 @@ export default function ReviewBulkActionBar({
   const [isPending, startTransition] = useTransition()
   const [deadlineLocal, setDeadlineLocal] = useState('')
   const [reason, setReason] = useState('')
+  const [auditNote, setAuditNote] = useState('')
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null)
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
@@ -69,6 +77,9 @@ export default function ReviewBulkActionBar({
     }
     return { visible, hidden }
   }, [submissions])
+  const actionNeedsAuditNote =
+    pendingAction === 'publish-selected' || pendingAction === 'return-selected' || pendingAction === 'release-hidden'
+  const auditNoteValid = !actionNeedsAuditNote || auditNote.trim().length >= 8
 
   const bulkUpdate = (status: 'PUBLISHED' | 'RETURNED') => {
     if (gradeable.length === 0) {
@@ -81,7 +92,7 @@ export default function ReviewBulkActionBar({
     }
     startTransition(async () => {
       try {
-        const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status)
+        const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status, auditNote.trim())
         setFailedSubmissions(result.failures)
         if (result.failures.length > 0) {
           toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }))
@@ -97,6 +108,7 @@ export default function ReviewBulkActionBar({
           tone: result.failed > 0 ? 'warning' : 'success',
         })
         setPendingAction(null)
+        setAuditNote('')
         await onRefresh()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('toasts.bulkActionFailed'))
@@ -128,6 +140,7 @@ export default function ReviewBulkActionBar({
         })
         setDeadlineLocal('')
         setReason('')
+        setAuditNote('')
         setPendingAction(null)
         await onRefresh()
       } catch (error) {
@@ -154,6 +167,7 @@ export default function ReviewBulkActionBar({
           tone: 'success',
         })
         setPendingAction(null)
+        setAuditNote('')
         await onRefresh()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('toasts.releaseFailed'))
@@ -273,6 +287,20 @@ export default function ReviewBulkActionBar({
                 <PreviewRow label={t('preview.reason')} value={reason || t('preview.noReason')} />
               </>
             ) : null}
+            {actionNeedsAuditNote ? (
+              <div className="space-y-2 rounded-md border p-3">
+                <label htmlFor="bulk-audit-note" className="text-sm font-medium">
+                  {auditCopy.label}
+                </label>
+                <Input
+                  id="bulk-audit-note"
+                  value={auditNote}
+                  placeholder={auditCopy.placeholder}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAuditNote(event.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">{auditNoteValid ? auditCopy.help : auditCopy.tooShort}</p>
+              </div>
+            ) : null}
             {pendingAction === 'release-hidden' ? (
               <>
                 <PreviewRow label={t('preview.selectedHiddenSubmissions')} value={String(releaseSummary.hidden)} />
@@ -307,16 +335,22 @@ export default function ReviewBulkActionBar({
               {t('cancel')}
             </Button>
             {pendingAction === 'publish-selected' ? (
-              <Button onClick={() => bulkUpdate('PUBLISHED')}>{t('confirmPublish')}</Button>
+              <Button disabled={!auditNoteValid} onClick={() => bulkUpdate('PUBLISHED')}>
+                {t('confirmPublish')}
+              </Button>
             ) : null}
             {pendingAction === 'return-selected' ? (
-              <Button onClick={() => bulkUpdate('RETURNED')}>{t('confirmReturn')}</Button>
+              <Button disabled={!auditNoteValid} onClick={() => bulkUpdate('RETURNED')}>
+                {t('confirmReturn')}
+              </Button>
             ) : null}
             {pendingAction === 'extend-deadline' ? (
               <Button onClick={applyDeadline}>{t('queueExtension')}</Button>
             ) : null}
             {pendingAction === 'release-hidden' ? (
-              <Button onClick={releaseHiddenGrades}>{t('releaseGrades')}</Button>
+              <Button disabled={!auditNoteValid} onClick={releaseHiddenGrades}>
+                {t('releaseGrades')}
+              </Button>
             ) : null}
           </DialogFooter>
         </DialogContent>
@@ -338,6 +372,7 @@ async function saveGradesWithinAssessment(
   assessmentUuid: string,
   submissions: Submission[],
   status: 'PUBLISHED' | 'RETURNED',
+  auditNote: string,
 ) {
   const results = await Promise.allSettled(
     submissions.map(submission =>
@@ -346,7 +381,7 @@ async function saveGradesWithinAssessment(
         {
           final_score: submission.final_score ?? 0,
           status,
-          feedback: submission.grading_json?.feedback ?? '',
+          feedback: appendAuditNote(submission.grading_json?.feedback ?? '', auditNote),
           item_feedback: [],
         },
         submission.version,
@@ -381,6 +416,12 @@ async function saveGradesWithinAssessment(
     failed: results.length - succeeded,
     failures,
   }
+}
+
+function appendAuditNote(feedback: string, auditNote: string): string {
+  const note = auditNote.trim()
+  if (!note) return feedback
+  return feedback ? `${feedback}\n\nAudit note: ${note}` : `Audit note: ${note}`
 }
 
 function getDialogTitle(

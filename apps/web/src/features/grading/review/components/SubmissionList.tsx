@@ -18,6 +18,10 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { StatusFilter, SubmissionListProps } from '../types'
 
+const submissionListCopy = {
+  awaitingRelease: 'Awaiting Release',
+}
+
 export default function SubmissionList({
   submissions,
   total,
@@ -61,6 +65,7 @@ export default function SubmissionList({
           >
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
+            <NativeSelectOption value="AWAITING_RELEASE">{submissionListCopy.awaitingRelease}</NativeSelectOption>
             <NativeSelectOption value="PENDING">{tTable(SUBMISSION_STATUS_LABELS.PENDING)}</NativeSelectOption>
             <NativeSelectOption value="GRADED">{tTable(SUBMISSION_STATUS_LABELS.GRADED)}</NativeSelectOption>
             <NativeSelectOption value="PUBLISHED">{tTable(SUBMISSION_STATUS_LABELS.PUBLISHED)}</NativeSelectOption>

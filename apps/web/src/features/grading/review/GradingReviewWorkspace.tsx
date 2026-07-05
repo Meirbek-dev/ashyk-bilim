@@ -12,6 +12,9 @@ import SubmissionList from './components/SubmissionList'
 import SubmissionInspector from './components/SubmissionInspector'
 import GradeForm from './components/GradeForm'
 import type { StatusFilter } from './types'
+import { getReleaseState } from '../domain'
+
+const GRADING_SLA_HOURS = 48
 
 interface GradingReviewWorkspaceProps {
   activityId: number
@@ -43,9 +46,15 @@ export default function GradingReviewWorkspace({
   const [activeFilter, setActiveFilter] = useState<StatusFilter>(filterFromUrl)
   const [search, setSearch] = useState(searchFromUrl)
   const [sortBy, setSortBy] = useState(sortFromUrl)
+  const [nowMs, setNowMs] = useState<number | null>(null)
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => setNowMs(Date.now()), 0)
+    return () => globalThis.clearTimeout(timer)
+  }, [])
 
   const updateUrl = useCallback(
-    (updates: Partial<{ filter: StatusFilter; sort: string; q: string }>) => {
+    (updates: Partial<{ filter: StatusFilter; sort: string; q: string; submission: string | null }>) => {
       const next = new URLSearchParams(searchParams.toString())
       if (updates.filter !== undefined) {
         if (updates.filter === 'NEEDS_GRADING') next.delete('filter')
@@ -58,6 +67,10 @@ export default function GradingReviewWorkspace({
       if (updates.q !== undefined) {
         if (updates.q === '') next.delete('q')
         else next.set('q', updates.q)
+      }
+      if (updates.submission !== undefined) {
+        if (updates.submission === null) next.delete('submission')
+        else next.set('submission', updates.submission)
       }
       router.replace(`?${next.toString()}`, { scroll: false })
     },
@@ -95,17 +108,50 @@ export default function GradingReviewWorkspace({
   const selectedIndex = effectiveSelectedUuid
     ? submissions.findIndex(submission => submission.submission_uuid === effectiveSelectedUuid)
     : -1
+  const reviewQueueSummary = useMemo(() => {
+    return submissions.reduce(
+      (summary, submission) => {
+        const releaseState =
+          'release_state' in submission && submission.release_state
+            ? submission.release_state
+            : getReleaseState(submission.status)
+        if (releaseState === 'AWAITING_RELEASE') summary.awaitingRelease += 1
+
+        const submittedAt = submission.submitted_at ? new Date(submission.submitted_at).getTime() : null
+        if (
+          submission.status === 'PENDING' &&
+          submittedAt !== null &&
+          Number.isFinite(submittedAt) &&
+          nowMs !== null &&
+          nowMs - submittedAt > GRADING_SLA_HOURS * 60 * 60 * 1000
+        ) {
+          summary.slaBreaches += 1
+        }
+
+        return summary
+      },
+      { awaitingRelease: 0, slaBreaches: 0, slaHours: GRADING_SLA_HOURS },
+    )
+  }, [nowMs, submissions])
 
   const refresh = useCallback(async () => {
     await Promise.all([mutate(), mutateStats()])
   }, [mutate, mutateStats])
 
+  const selectSubmission = useCallback(
+    (uuid: string | null) => {
+      setSelectedUuid(uuid)
+      updateUrl({ submission: uuid })
+    },
+    [updateUrl],
+  )
+
   const selectByOffset = useCallback(
     (offset: number) => {
       const next = submissions[Math.min(submissions.length - 1, Math.max(0, selectedIndex + offset))]
-      if (next) setSelectedUuid(next.submission_uuid)
+      if (next) selectSubmission(next.submission_uuid)
     },
-    [selectedIndex, submissions],
+    [selectSubmission, selectedIndex, submissions],
   )
 
   useEffect(() => {
@@ -154,6 +200,7 @@ export default function GradingReviewWorkspace({
         {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
         {...(title !== undefined ? { title } : {})}
         {...(stats !== undefined ? { stats } : {})}
+        reviewQueueSummary={reviewQueueSummary}
       >
         <SubmissionList
           submissions={submissions}
@@ -182,7 +229,7 @@ export default function GradingReviewWorkspace({
             updateUrl({ sort: value })
           }}
           onPageChange={setPage}
-          onSelectSubmission={setSelectedUuid}
+          onSelectSubmission={selectSubmission}
           onToggleSelected={(uuid, checked) =>
             setSelectedUuids(current => {
               const next = new Set(current)

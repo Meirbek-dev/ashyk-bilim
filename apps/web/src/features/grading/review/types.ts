@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { Submission, SubmissionStatus } from '@/features/grading/domain'
 
-export type StatusFilter = SubmissionStatus | 'ALL' | 'NEEDS_GRADING'
+export type StatusFilter = SubmissionStatus | 'ALL' | 'NEEDS_GRADING' | 'AWAITING_RELEASE'
 
 export interface ReviewNavigationState {
   selectedIndex: number

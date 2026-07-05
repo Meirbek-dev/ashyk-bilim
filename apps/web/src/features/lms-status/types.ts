@@ -6,6 +6,10 @@ export const LmsStatuses = {
   NO_WORK: 'no_work',
   LIMITED: 'limited',
   UNAVAILABLE: 'unavailable',
+  PUBLISHED: 'published',
+  PRIVATE: 'private',
+  DRAFT: 'draft',
+  UNSAVED: 'unsaved',
 } as const
 
 export type LmsStatus = (typeof LmsStatuses)[keyof typeof LmsStatuses]
@@ -69,6 +73,34 @@ export const LMS_STATUS_MODELS = {
     description: 'The source could not return dashboard work.',
     tone: 'destructive',
     sortOrder: 70,
+  },
+  [LmsStatuses.PUBLISHED]: {
+    status: LmsStatuses.PUBLISHED,
+    label: 'Published',
+    description: 'Learners can access this item.',
+    tone: 'success',
+    sortOrder: 80,
+  },
+  [LmsStatuses.PRIVATE]: {
+    status: LmsStatuses.PRIVATE,
+    label: 'Private',
+    description: 'Learners cannot access this item.',
+    tone: 'neutral',
+    sortOrder: 90,
+  },
+  [LmsStatuses.DRAFT]: {
+    status: LmsStatuses.DRAFT,
+    label: 'Draft',
+    description: 'The item is not ready for learners.',
+    tone: 'neutral',
+    sortOrder: 100,
+  },
+  [LmsStatuses.UNSAVED]: {
+    status: LmsStatuses.UNSAVED,
+    label: 'Unsaved',
+    description: 'Local changes have not been saved.',
+    tone: 'warning',
+    sortOrder: 110,
   },
 } satisfies Record<LmsStatus, LmsStatusModel>
 

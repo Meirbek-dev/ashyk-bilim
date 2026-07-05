@@ -9,15 +9,39 @@ import {
 import { buildCourseWorkspacePath, getCourseContentStats } from '@/lib/course-management'
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
-import { ExternalLink, FileStack, Loader2, Users } from 'lucide-react'
+import { ClipboardCheck, ExternalLink, Eye, FileStack, Loader2, Users } from 'lucide-react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Button } from '@/components/ui/button'
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import AppLink from '@/components/ui/AppLink'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+
+const courseReviewCopy = {
+  learnerPreview: {
+    title: 'Preview as learner',
+    description: 'Open the learner-facing course page and confirm the first learning path reads correctly.',
+    action: 'Preview as Learner',
+    done: 'Preview Complete',
+  },
+  impactSummary: 'Publish Impact',
+  impactRows: {
+    visibility: 'Learner visibility',
+    curriculum: 'Curriculum',
+    contributors: 'Contributors',
+    blockers: 'Open blockers',
+    preview: 'Learner preview',
+  },
+  curriculumImpact: '{chapters} chapters / {activities} activities',
+  visibilityLive: 'Course is visible to learners.',
+  visibilityPrivate: 'Course is private until you publish.',
+  blockerCount: '{count} blockers',
+  noBlockers: 'No blockers',
+  previewRequired: 'Required before publish',
+  previewCompleted: 'Completed',
+}
 
 export default function CourseReviewPublish({
   courseuuid,
@@ -48,10 +72,38 @@ export default function CourseReviewPublish({
     .filter(item => item.label)
   const [isPending, startTransition] = useTransition()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const previewStorageKey = `course:${course.courseStructure.course_uuid}:learner-previewed`
+  const [learnerPreviewComplete, setLearnerPreviewComplete] = useState(false)
 
-  const criticalReady = readiness.checklist
-    .filter(item => ['details', 'curriculum'].includes(item.id))
-    .every(item => item.complete)
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => {
+      setLearnerPreviewComplete(globalThis.localStorage.getItem(previewStorageKey) === '1')
+    }, 0)
+    return () => globalThis.clearTimeout(timer)
+  }, [previewStorageKey])
+
+  const markLearnerPreviewComplete = () => {
+    globalThis.localStorage.setItem(previewStorageKey, '1')
+    setLearnerPreviewComplete(true)
+  }
+
+  const learnerPreviewHref = `${getAbsoluteUrl(`/course/${courseuuid}`)}?preview=learner`
+  const expandedChecklist = [
+    ...readiness.checklist.map(item => ({
+      ...item,
+      title: tReadiness(`checklist.${item.id}.title`),
+      description: tReadiness(`checklist.${item.id}.description`),
+    })),
+    {
+      id: 'learner-preview',
+      complete: learnerPreviewComplete,
+      title: courseReviewCopy.learnerPreview.title,
+      description: courseReviewCopy.learnerPreview.description,
+      href: null,
+    },
+  ]
+  const openBlockers = expandedChecklist.filter(item => !item.complete).length
+  const canPublish = readiness.readyToPublish && learnerPreviewComplete
 
   const toggleVisibility = () => {
     if (!capabilities.canManageAccess) {
@@ -127,7 +179,10 @@ export default function CourseReviewPublish({
               {t('previewPublicPage')}
             </Button>
             {capabilities.canManageAccess ? (
-              <Button onClick={toggleVisibility} disabled={isPending || isRefreshing || !criticalReady}>
+              <Button
+                onClick={toggleVisibility}
+                disabled={isPending || isRefreshing || (!course.courseStructure.public && !canPublish)}
+              >
                 {isPending || isRefreshing ? <Loader2 className="size-4 animate-spin" /> : null}
                 {course.courseStructure.public ? t('movePrivate') : t('publishCourse')}
               </Button>
@@ -140,13 +195,11 @@ export default function CourseReviewPublish({
         <div className={`${courseWorkflowCardClass} p-5`}>
           <div className="text-foreground text-sm font-semibold">{t('readinessChecklist')}</div>
           <div className="mt-4 space-y-3">
-            {readiness.checklist.map(item => (
+            {expandedChecklist.map(item => (
               <div key={item.id} className="bg-muted/40 flex items-start justify-between gap-4 rounded-lg border p-4">
                 <div>
-                  <div className="text-foreground font-medium">{tReadiness(`checklist.${item.id}.title`)}</div>
-                  <div className="text-muted-foreground mt-1 text-sm">
-                    {tReadiness(`checklist.${item.id}.description`)}
-                  </div>
+                  <div className="text-foreground font-medium">{item.title}</div>
+                  <div className="text-muted-foreground mt-1 text-sm">{item.description}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <CourseStatusBadge status={item.complete ? 'ready' : 'needs-review'} />
@@ -158,6 +211,26 @@ export default function CourseReviewPublish({
                       render={<AppLink href={buildCourseWorkspacePath(courseuuid, item.href)} />}
                     >
                       {t('openAction')}
+                    </Button>
+                  ) : item.id === 'learner-preview' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <a
+                          href={learnerPreviewHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={courseReviewCopy.learnerPreview.action}
+                          onClick={markLearnerPreviewComplete}
+                        />
+                      }
+                    >
+                      <Eye data-icon="inline-start" aria-hidden="true" />
+                      {learnerPreviewComplete
+                        ? courseReviewCopy.learnerPreview.done
+                        : courseReviewCopy.learnerPreview.action}
                     </Button>
                   ) : null}
                 </div>
@@ -179,6 +252,40 @@ export default function CourseReviewPublish({
             </div>
             <div className="text-muted-foreground mt-2 text-sm">
               {course.courseStructure.public ? t('launchStateDescriptions.live') : t('launchStateDescriptions.private')}
+            </div>
+          </div>
+
+          <div className={courseWorkflowSummaryCardClass}>
+            <div className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
+              <ClipboardCheck className="size-4" aria-hidden="true" />
+              {courseReviewCopy.impactSummary}
+            </div>
+            <div className="mt-4 grid gap-2 text-sm">
+              <ImpactRow
+                label={courseReviewCopy.impactRows.visibility}
+                value={
+                  course.courseStructure.public ? courseReviewCopy.visibilityLive : courseReviewCopy.visibilityPrivate
+                }
+              />
+              <ImpactRow
+                label={courseReviewCopy.impactRows.curriculum}
+                value={courseReviewCopy.curriculumImpact
+                  .replace('{chapters}', String(stats.chapters))
+                  .replace('{activities}', String(stats.activities))}
+              />
+              <ImpactRow label={courseReviewCopy.impactRows.contributors} value={String(contributors.length)} />
+              <ImpactRow
+                label={courseReviewCopy.impactRows.blockers}
+                value={
+                  openBlockers === 0
+                    ? courseReviewCopy.noBlockers
+                    : courseReviewCopy.blockerCount.replace('{count}', String(openBlockers))
+                }
+              />
+              <ImpactRow
+                label={courseReviewCopy.impactRows.preview}
+                value={learnerPreviewComplete ? courseReviewCopy.previewCompleted : courseReviewCopy.previewRequired}
+              />
             </div>
           </div>
 
@@ -238,6 +345,15 @@ export default function CourseReviewPublish({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ImpactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-muted/40 flex items-start justify-between gap-3 rounded-lg border px-3 py-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-44 text-right font-medium text-pretty">{value}</span>
     </div>
   )
 }

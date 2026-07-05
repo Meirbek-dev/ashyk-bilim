@@ -1,6 +1,6 @@
 'use client'
 
-import type { SubmissionStatus } from '@/features/grading/domain/types'
+import type { StatusFilter } from '@/features/grading/review/types'
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { submissionsQueryOptions } from '@/features/grading/queries/grading.query'
 import { useState } from 'react'
@@ -8,7 +8,7 @@ import { useState } from 'react'
 export interface UseSubmissionsOptions {
   activityId: number | null
   assessmentUuid?: string | null
-  status?: SubmissionStatus | 'NEEDS_GRADING' | null
+  status?: StatusFilter | null
   search?: string
   sortBy?: string
   sortDir?: 'asc' | 'desc'
@@ -23,8 +23,10 @@ function submissionsHookOptions(
   search: string,
   sortBy: string,
   sortDir: 'asc' | 'desc',
-  status: SubmissionStatus | 'NEEDS_GRADING' | 'ALL',
+  status: StatusFilter,
 ) {
+  const queryStatus = status === 'AWAITING_RELEASE' ? 'GRADED' : status
+
   return queryOptions({
     ...submissionsQueryOptions({
       assessmentUuid: assessmentUuid ?? '',
@@ -33,7 +35,7 @@ function submissionsHookOptions(
       search,
       sortBy,
       sortDir,
-      status,
+      status: queryStatus,
     }),
     enabled: Boolean(activityId && assessmentUuid),
   })
@@ -56,6 +58,7 @@ export function useSubmissions({
     setPage(1)
   }
 
+  const queryStatus = status === 'AWAITING_RELEASE' ? 'GRADED' : (status ?? 'ALL')
   const queryParams = {
     assessmentUuid: assessmentUuid ?? '',
     page,
@@ -63,7 +66,7 @@ export function useSubmissions({
     search: search ?? '',
     sortBy,
     sortDir,
-    status: status ?? 'ALL',
+    status: queryStatus,
   } as const
   const { queryKey } = submissionsQueryOptions(queryParams)
   const queryClient = useQueryClient()

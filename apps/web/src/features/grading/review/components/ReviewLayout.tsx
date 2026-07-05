@@ -15,12 +15,25 @@ interface SubmissionStats {
   pass_rate: number | null
 }
 
+interface ReviewQueueSummary {
+  awaitingRelease: number
+  slaBreaches: number
+  slaHours: number
+}
+
+const reviewLayoutCopy = {
+  awaitingRelease: 'Awaiting release',
+  slaBreaches: 'SLA breaches',
+  slaWindow: '{hours}h target',
+}
+
 export default function ReviewLayout({
   activityId,
   assessmentUuid,
   title,
   total,
   stats,
+  reviewQueueSummary,
   selectedSubmissions,
   children,
   onBulkRefresh,
@@ -30,6 +43,7 @@ export default function ReviewLayout({
   title?: string
   total: number
   stats?: SubmissionStats | null
+  reviewQueueSummary: ReviewQueueSummary
   selectedSubmissions: Submission[]
   children: ReactNode
   onBulkRefresh: () => Promise<void>
@@ -59,7 +73,7 @@ export default function ReviewLayout({
               {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
             />
           </div>
-          <StatsGrid {...(stats === undefined ? {} : { stats })} />
+          <StatsGrid {...(stats === undefined ? {} : { stats })} reviewQueueSummary={reviewQueueSummary} />
         </div>
       </div>
 
@@ -70,14 +84,28 @@ export default function ReviewLayout({
   )
 }
 
-function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
+function StatsGrid({
+  stats,
+  reviewQueueSummary,
+}: {
+  stats?: SubmissionStats | null
+  reviewQueueSummary: ReviewQueueSummary
+}) {
   const t = useTranslations('Features.Grading.Review')
   if (!stats) return null
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
       <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
+      <StatTile label={reviewLayoutCopy.awaitingRelease} value={reviewQueueSummary.awaitingRelease} icon={Clock4} />
+      <StatTile
+        label={reviewLayoutCopy.slaBreaches}
+        value={reviewQueueSummary.slaBreaches}
+        icon={Clock4}
+        detail={reviewLayoutCopy.slaWindow.replace('{hours}', String(reviewQueueSummary.slaHours))}
+        accent="amber"
+      />
       <StatTile
         label={t('layout.stats.avgScore')}
         value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
@@ -98,11 +126,13 @@ function StatTile({
   label,
   value,
   icon: Icon,
+  detail,
   accent = 'default',
 }: {
   label: string
   value: string | number
   icon: React.ElementType
+  detail?: string
   accent?: 'amber' | 'lime' | 'blue' | 'default'
 }) {
   const colorMap = {
@@ -118,6 +148,7 @@ function StatTile({
       <div>
         <p className="text-muted-foreground text-xs">{label}</p>
         <p className="text-lg leading-tight font-semibold">{value}</p>
+        {detail ? <p className="text-muted-foreground text-[11px]">{detail}</p> : null}
       </div>
     </div>
   )

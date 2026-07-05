@@ -2,8 +2,9 @@
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
-import { ACTIVITY_PROGRESS_STATE_CLASSES, formatGradebookStateKey } from '@/features/grading/domain'
+import { formatGradebookStateKey } from '@/features/grading/domain'
 import type { ActivityProgressCell, SubmissionStatus } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
 
@@ -48,7 +49,7 @@ export default function ProgressCell({
       className={cn(
         'h-full w-full rounded-md border p-2 text-left transition-colors',
         canOpen ? 'cursor-pointer hover:bg-muted/60' : 'cursor-default',
-        ACTIVITY_PROGRESS_STATE_CLASSES[cell.state],
+        'bg-card text-card-foreground',
         selected && 'ring-ring ring-2',
       )}
     >
@@ -63,11 +64,11 @@ export default function ProgressCell({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {submissionStatus ? <SubmissionStatusBadge status={submissionStatus} /> : null}
-        <span className="truncate text-xs font-semibold">{stateLabel}</span>
+        <LmsStatusBadge status={mapProgressStateToLmsStatus(cell.state)} label={stateLabel} />
       </div>
       <div className="mt-1 flex items-center gap-2 text-xs">
         <span>{cell.score === null || cell.score === undefined ? '--' : `${Math.round(cell.score)}%`}</span>
-        {cell.is_late ? <span className="font-medium text-rose-700">{lateLabel}</span> : null}
+        {cell.is_late ? <Badge variant="destructive">{lateLabel}</Badge> : null}
       </div>
       <div className="mt-1 text-[11px] opacity-80">{attemptsLabel}</div>
     </div>
@@ -80,4 +81,28 @@ export function progressStateLabelKey(state: ActivityProgressCell['state']) {
 
 function isSubmissionStatus(value: string | null | undefined): value is SubmissionStatus {
   return Boolean(value && SUBMISSION_STATUSES.has(value))
+}
+
+function mapProgressStateToLmsStatus(state: ActivityProgressCell['state']) {
+  switch (state) {
+    case 'PASSED':
+    case 'COMPLETED':
+    case 'GRADED': {
+      return LmsStatuses.READY
+    }
+    case 'SUBMITTED':
+    case 'NEEDS_GRADING': {
+      return LmsStatuses.NEEDS_ATTENTION
+    }
+    case 'RETURNED':
+    case 'FAILED': {
+      return LmsStatuses.BLOCKED
+    }
+    case 'IN_PROGRESS': {
+      return LmsStatuses.IN_PROGRESS
+    }
+    case 'NOT_STARTED': {
+      return LmsStatuses.DRAFT
+    }
+  }
 }

@@ -66,6 +66,15 @@ export default async function PlatformDashHomePage() {
           atRiskTotal: teacherOverview.at_risk_total,
           gradingBacklogTotal: teacherOverview.workload.backlog_total,
           slaBreaches: teacherOverview.workload.sla_breaches,
+          forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d,
+          medianFeedbackLatencyHours: teacherOverview.workload.median_feedback_latency_hours ?? null,
+          backlogItems: teacherOverview.workload.backlog_by_manual_assessment.map(item => ({
+            assessmentId: item.assessment_id,
+            awaitingReview: item.awaiting_review,
+            courseName: item.course_name,
+            title: item.title,
+            slaBreaches: item.sla_breaches,
+          })),
           signalAvailable: true,
         }
       : access.hasAnalyticsAccess
@@ -73,6 +82,9 @@ export default async function PlatformDashHomePage() {
             atRiskTotal: 0,
             gradingBacklogTotal: 0,
             slaBreaches: 0,
+            forecastBacklog7d: 0,
+            medianFeedbackLatencyHours: null,
+            backlogItems: [],
             signalAvailable: false,
           }
         : null,

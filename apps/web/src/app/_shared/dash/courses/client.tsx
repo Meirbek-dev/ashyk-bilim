@@ -11,13 +11,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  buildCourseCreationPath,
-  buildCourseWorkspacePath,
-  courseNeedsAttention,
-  getCourseContentStats,
-  getCourseReadinessSummary,
-} from '@/lib/course-management'
+import { buildCourseCreationPath, getCourseContentStats, getCourseManagementContext } from '@/lib/course-management'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertTriangle,
@@ -35,7 +29,7 @@ import {
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
+import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
@@ -131,14 +125,6 @@ const CoursesHome = ({
       scroll: false,
     })
   }
-
-  const courseReadinessMap = useMemo(() => {
-    const map = new Map<string, boolean>()
-    for (const course of optimisticCourses) {
-      map.set(course.course_uuid, getCourseReadinessSummary(course as AppCourse, null).readyToPublish)
-    }
-    return map
-  }, [optimisticCourses])
 
   const summaryCards = useMemo(() => {
     return [
@@ -443,14 +429,12 @@ const CoursesHome = ({
         meta: { label: t('table.course') },
         cell: ({ row }) => {
           const course = row.original
+          const context = getCourseManagementContext(course as AppCourse, 'row')
           const stats = getCourseContentStats(course as AppCourse)
 
           return (
             <div className="space-y-1">
-              <AppLink
-                href={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
-                className="text-foreground hover:text-foreground/70 font-semibold"
-              >
+              <AppLink href={context.workspaceHref} className="text-foreground hover:text-foreground/70 font-semibold">
                 {course.name}
               </AppLink>
               <div className="text-muted-foreground line-clamp-2 text-sm">
@@ -474,13 +458,13 @@ const CoursesHome = ({
         meta: { label: t('table.status') },
         cell: ({ row }) => {
           const course = row.original
-          const ready = courseReadinessMap.get(course.course_uuid) ?? false
+          const context = getCourseManagementContext(course as AppCourse, 'row')
 
           return (
             <div className="flex flex-wrap gap-2">
-              <CourseStatusBadge status={course.public ? 'public' : 'private'} />
-              <CourseStatusBadge status={ready ? 'ready' : 'needs-review'} />
-              {courseNeedsAttention(course as AppCourse) ? <CourseStatusBadge status="attention" /> : null}
+              {context.statusBadges.map(status => (
+                <CourseStatusBadge key={status} status={status} />
+              ))}
             </div>
           )
         },
@@ -510,7 +494,6 @@ const CoursesHome = ({
       headerCheckboxState,
       canDeleteCourse,
       canManageCourse,
-      courseReadinessMap,
       removeOptimisticCourses,
       selectedCourseUuidSet,
       t,
@@ -686,8 +669,10 @@ const CoursesHome = ({
             {optimisticCourses.map(course => (
               <div key={course.course_uuid} className="w-full">
                 <CourseThumbnail
-                  customLink={buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid))}
-                  actionLink={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                  customLink={getCourseManagementContext(course as AppCourse, 'card').workspaceHref}
+                  actionLink={getAbsoluteUrl(
+                    getCourseManagementContext(course as AppCourse, 'card').learnerPreviewHref,
+                  )}
                   course={course}
                   trailData={trailData}
                   trailLoading={isTrailLoading}
@@ -797,6 +782,7 @@ function CourseRowActions({
   const canDeleteCourse =
     can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
     Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+  const context = getCourseManagementContext(course as AppCourse, 'row')
 
   const handleDelete = () => {
     if (!canDeleteCourse) return
@@ -845,19 +831,15 @@ function CourseRowActions({
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid)))}>
+        <DropdownMenuItem onClick={() => router.push(context.workspaceHref)}>
           <List className="size-4" />
           {t('rowActions.openWorkspace')}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'curriculum'))}
-        >
+        <DropdownMenuItem onClick={() => router.push(context.curriculumHref)}>
           <Workflow className="size-4" />
           {t('rowActions.openCurriculum')}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'review'))}
-        >
+        <DropdownMenuItem onClick={() => router.push(context.reviewHref)}>
           <ShieldCheck className="size-4" />
           {t('rowActions.reviewPublish')}
         </DropdownMenuItem>

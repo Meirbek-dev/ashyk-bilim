@@ -20,6 +20,15 @@ interface TeacherDashboardSignal {
   atRiskTotal: number
   gradingBacklogTotal: number
   slaBreaches: number
+  forecastBacklog7d: number
+  medianFeedbackLatencyHours: number | null
+  backlogItems: {
+    assessmentId: number
+    awaitingReview: number
+    courseName: string
+    title: string
+    slaBreaches: number
+  }[]
   signalAvailable: boolean
 }
 
@@ -129,6 +138,22 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
   }
 
   if (access.hasAnalyticsAccess && teacherSignal?.signalAvailable) {
+    if (teacherSignal.slaBreaches > 0) {
+      items.push({
+        id: 'grading-sla-breaches',
+        audience: 'teacher',
+        title: 'Fix grading SLA breaches',
+        description: formatFeedbackLatencyDescription(teacherSignal.medianFeedbackLatencyHours),
+        href: '/dash/analytics/assessments',
+        primaryActionLabel: 'Open SLA Queue',
+        source: 'teacher-analytics',
+        sourceLabel: 'Teacher Analytics',
+        status: LmsStatuses.NEEDS_ATTENTION,
+        priority: 'critical',
+        metric: countMetric(teacherSignal.slaBreaches, 'breaches'),
+      })
+    }
+
     if (teacherSignal.gradingBacklogTotal > 0) {
       items.push({
         id: 'grading-backlog',
@@ -142,6 +167,38 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
         status: teacherSignal.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
         priority: teacherSignal.slaBreaches > 0 ? 'critical' : 'high',
         metric: countMetric(teacherSignal.gradingBacklogTotal, 'submissions'),
+      })
+    }
+
+    teacherSignal.backlogItems.slice(0, 3).forEach(item => {
+      items.push({
+        id: `manual-assessment-${item.assessmentId}`,
+        audience: 'teacher',
+        title: item.title,
+        description: `${item.courseName} has manual submissions waiting for review.`,
+        href: `/dash/analytics/assessments/manual_assessment/${item.assessmentId}`,
+        primaryActionLabel: 'Open Assessment',
+        source: 'teacher-analytics',
+        sourceLabel: 'Cross-Course Queue',
+        status: item.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+        priority: item.slaBreaches > 0 ? 'critical' : 'high',
+        metric: countMetric(item.awaitingReview, 'awaiting review'),
+      })
+    })
+
+    if (teacherSignal.forecastBacklog7d > teacherSignal.gradingBacklogTotal) {
+      items.push({
+        id: 'forecast-grading-load',
+        audience: 'teacher',
+        title: 'Plan the 7-day grading load',
+        description: 'Forecasted submissions exceed the current backlog.',
+        href: '/dash/analytics/assessments',
+        primaryActionLabel: 'Open Forecast',
+        source: 'teacher-analytics',
+        sourceLabel: 'Teacher Analytics',
+        status: LmsStatuses.IN_PROGRESS,
+        priority: 'normal',
+        metric: countMetric(teacherSignal.forecastBacklog7d, 'forecast'),
       })
     }
 
@@ -185,6 +242,12 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
     emptyDescription: 'Courses, grading backlog, and learner risk checks will appear here when they need action.',
     items: sortWorkQueueItems(items),
   }
+}
+
+function formatFeedbackLatencyDescription(hours: number | null): string {
+  if (hours === null) return 'Feedback is missing the target response window.'
+  if (hours < 24) return `Median feedback latency is ${Math.round(hours)} hours.`
+  return `Median feedback latency is ${Math.round(hours / 24)} days.`
 }
 
 interface AdminSectionInput {

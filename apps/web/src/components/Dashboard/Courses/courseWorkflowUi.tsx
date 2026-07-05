@@ -1,8 +1,9 @@
 'use client'
 
-import { AlertTriangle, CheckCircle2, CircleDot, Globe, Lock } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { RadioGroupItem } from '@/components/ui/radio-group'
 import type { LucideIcon } from 'lucide-react'
+import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
@@ -52,32 +53,27 @@ export function CourseStatusBadge({
 }) {
   const t = useTranslations('DashPage.CourseManagement.Workflow.status')
   const config = {
-    public: { label: t('public'), tone: 'success' as const, icon: Globe },
-    private: { label: t('private'), tone: 'info' as const, icon: Lock },
-    ready: { label: t('ready'), tone: 'success' as const, icon: CheckCircle2 },
+    public: { label: t('public'), status: LmsStatuses.PUBLISHED },
+    private: { label: t('private'), status: LmsStatuses.PRIVATE },
+    ready: { label: t('ready'), status: LmsStatuses.READY },
     'needs-review': {
       label: t('needsReview'),
-      tone: 'warning' as const,
-      icon: AlertTriangle,
+      status: LmsStatuses.NEEDS_ATTENTION,
     },
     attention: {
       label: t('attention'),
-      tone: 'warning' as const,
-      icon: AlertTriangle,
+      status: LmsStatuses.NEEDS_ATTENTION,
     },
     unsaved: {
       label: t('unsavedChanges'),
-      tone: 'warning' as const,
-      icon: CircleDot,
+      status: LmsStatuses.UNSAVED,
     },
-    live: { label: t('live'), tone: 'success' as const, icon: Globe },
-    draft: { label: t('draft'), tone: 'info' as const, icon: CircleDot },
+    live: { label: t('live'), status: LmsStatuses.PUBLISHED },
+    draft: { label: t('draft'), status: LmsStatuses.DRAFT },
   }[status]
 
   return (
-    <CourseWorkflowBadge tone={config.tone} icon={config.icon} {...(className === undefined ? {} : { className })}>
-      {config.label}
-    </CourseWorkflowBadge>
+    <LmsStatusBadge status={config.status} label={config.label} {...(className === undefined ? {} : { className })} />
   )
 }
 

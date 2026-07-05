@@ -13,6 +13,7 @@ export type CourseWorkspaceStage =
 export type CourseReadinessItemId = 'details' | 'media' | 'curriculum' | 'collaboration' | 'access' | 'certificate'
 
 export type CourseManagementBadgeId = 'public' | 'private' | 'readyToPublish' | 'needsAttention' | 'noActivitiesYet'
+export type CourseManagementSurface = 'card' | 'row' | 'bulk'
 
 export interface CourseChecklistItem {
   id: CourseReadinessItemId
@@ -161,4 +162,26 @@ export function getCourseManagementBadges(
 export function courseNeedsAttention(course: AppCourse): boolean {
   const stats = getCourseContentStats(course)
   return !course.thumbnail_image || !course.description?.trim() || stats.activities === 0
+}
+
+export function getCourseManagementContext(course: AppCourse, surface: CourseManagementSurface) {
+  const cleanUuid = cleanCourseUuid(course.course_uuid ?? '')
+  const readiness = getCourseReadinessSummary(course, null)
+
+  return {
+    surface,
+    cleanUuid,
+    workspaceHref: buildCourseWorkspacePath(cleanUuid),
+    reviewHref: buildCourseWorkspacePath(cleanUuid, 'review'),
+    curriculumHref: buildCourseWorkspacePath(cleanUuid, 'curriculum'),
+    publicHref: `/course/${cleanUuid}`,
+    learnerPreviewHref: `/course/${cleanUuid}?preview=learner`,
+    readyToPublish: readiness.readyToPublish,
+    needsAttention: courseNeedsAttention(course),
+    statusBadges: [
+      course.public ? 'public' : 'private',
+      readiness.readyToPublish ? 'ready' : 'needs-review',
+      ...(courseNeedsAttention(course) ? ['attention' as const] : []),
+    ] as const,
+  }
 }
