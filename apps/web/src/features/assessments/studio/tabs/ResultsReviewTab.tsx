@@ -27,7 +27,7 @@ import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulk
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { getReleaseState, getSubmissionDisplayName } from '@/features/grading/domain'
 import { getSubmissionViolations } from '@/features/grading/domain/types'
-import type { ReleaseState, Submission, SubmissionStatus } from '@/features/grading/domain'
+import type { ReleaseState, Submission, SubmissionStatus, SubmissionUser } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
 import { apiFetch, apiFetcher } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -35,6 +35,7 @@ import Link from '@components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { InlineError } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -69,8 +70,18 @@ interface ItemAnalytics {
   discrimination_index: number | null
 }
 
+type ReviewQueueSubmission = Submission & {
+  submission_uuid: string
+  metadata_json: unknown
+  user: SubmissionUser | null
+  user_id: number | null
+  submitted_at?: string | null
+  updated_at?: string | null
+  release_state?: ReleaseState | string | null
+}
+
 interface ReviewQueueRead {
-  items: Submission[]
+  items: ReviewQueueSubmission[]
   total: number
   page: number
   page_size: number
@@ -135,9 +146,9 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
   const itemAnalyticsQuery = useQuery(itemAnalyticsQueryOptions(assessmentUuid))
   const queueQuery = useQuery(queueQueryOptions(assessmentUuid, queuePath))
 
-  const stats = statsQuery.data ?? null
-  const itemAnalytics = itemAnalyticsQuery.data ?? []
-  const queue = queueQuery.data ?? { items: [], total: 0, page, page_size: 10, pages: 1 }
+  const stats = statsQuery.isSuccess ? statsQuery.data : null
+  const itemAnalytics = itemAnalyticsQuery.isSuccess ? itemAnalyticsQuery.data : []
+  const queue = queueQuery.isSuccess ? queueQuery.data : { items: [], total: 0, page, page_size: 10, pages: 1 }
   const selectedSubmissions = queue.items.filter(submission => selectedUuids.has(submission.submission_uuid))
   const promptCounts = countItemActionPrompts(itemAnalytics)
   const integritySummary = summarizeIntegrityEvents(queue.items)
@@ -221,6 +232,10 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         />
       </div>
 
+      {statsQuery.isError ? (
+        <InlineError description={statsQuery.error.message} error={statsQuery.error} title={t('errorLoading')} />
+      ) : null}
+
       <section className="bg-card rounded-lg border">
         <div className="border-b p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -295,84 +310,92 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
           </div>
         ) : null}
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10" />
-                <TableHead>{t('colLearner')}</TableHead>
-                <TableHead>{t('colStatus')}</TableHead>
-                <TableHead>{t('colRelease')}</TableHead>
-                <TableHead className="text-right">{t('colScore')}</TableHead>
-                <TableHead>{t('colIntegrity')}</TableHead>
-                <TableHead>{t('colSubmitted')}</TableHead>
-                <TableHead className="text-right">{t('colAction')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {queue.items.length === 0 ? (
+        {queueQuery.isError ? (
+          <div className="p-4">
+            <InlineError description={queueQuery.error.message} error={queueQuery.error} title={t('errorLoading')} />
+          </div>
+        ) : null}
+
+        {!queueQuery.isError ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground h-32 text-center">
-                    {queueQuery.isLoading ? t('loadingQueue') : t('emptyQueue')}
-                  </TableCell>
+                  <TableHead className="w-10" />
+                  <TableHead>{t('colLearner')}</TableHead>
+                  <TableHead>{t('colStatus')}</TableHead>
+                  <TableHead>{t('colRelease')}</TableHead>
+                  <TableHead className="text-right">{t('colScore')}</TableHead>
+                  <TableHead>{t('colIntegrity')}</TableHead>
+                  <TableHead>{t('colSubmitted')}</TableHead>
+                  <TableHead className="text-right">{t('colAction')}</TableHead>
                 </TableRow>
-              ) : (
-                queue.items.map(submission => {
-                  const violations = getSubmissionViolations(submission)
-                  return (
-                    <TableRow key={submission.submission_uuid}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedUuids.has(submission.submission_uuid)}
-                          aria-label={t('selectSubmission', { name: getSubmissionDisplayName(submission) })}
-                          onCheckedChange={checked => toggleSelected(submission.submission_uuid, checked)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{getSubmissionDisplayName(submission)}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {submission.user?.email ?? `#${submission.user_id}`}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <SubmissionStatusBadge status={submission.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{releaseStateLabel(readReleaseState(submission), t)}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : '--'}
-                      </TableCell>
-                      <TableCell>
-                        {violations.length > 0 ? (
-                          <Badge variant="warning">
-                            <ShieldAlert className="size-3" />
-                            {t('integrityEventsValue', { count: violations.length })}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{t('noIntegrityEvents')}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {formatDate(submission.submitted_at ?? submission.updated_at, locale)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          nativeButton={false}
-                          variant="ghost"
-                          size="sm"
-                          render={<Link href={`${reviewHref}?submission=${submission.submission_uuid}`} />}
-                        >
-                          {t('reviewSubmission')}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {queue.items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-muted-foreground h-32 text-center">
+                      {queueQuery.isLoading ? t('loadingQueue') : t('emptyQueue')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  queue.items.map(submission => {
+                    const violations = getSubmissionViolations(submission)
+                    return (
+                      <TableRow key={submission.submission_uuid}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUuids.has(submission.submission_uuid)}
+                            aria-label={t('selectSubmission', { name: getSubmissionDisplayName(submission) })}
+                            onCheckedChange={checked => toggleSelected(submission.submission_uuid, checked)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{getSubmissionDisplayName(submission)}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {submission.user?.email ?? `#${submission.user_id}`}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <SubmissionStatusBadge status={submission.status} />
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{releaseStateLabel(readReleaseState(submission), t)}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : '--'}
+                        </TableCell>
+                        <TableCell>
+                          {violations.length > 0 ? (
+                            <Badge variant="warning">
+                              <ShieldAlert className="size-3" />
+                              {t('integrityEventsValue', { count: violations.length })}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">{t('noIntegrityEvents')}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {formatDate(submission.submitted_at ?? submission.updated_at, locale)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            nativeButton={false}
+                            variant="ghost"
+                            size="sm"
+                            render={<Link href={`${reviewHref}?submission=${submission.submission_uuid}`} />}
+                          >
+                            {t('reviewSubmission')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between border-t p-3">
           <Button
@@ -457,7 +480,15 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
         </Button>
         {analyticsExpanded ? (
           <div className="border-t">
-            {itemAnalytics.length === 0 ? (
+            {itemAnalyticsQuery.isError ? (
+              <div className="p-5">
+                <InlineError
+                  description={itemAnalyticsQuery.error.message}
+                  error={itemAnalyticsQuery.error}
+                  title={t('errorLoading')}
+                />
+              </div>
+            ) : itemAnalytics.length === 0 ? (
               <p className="text-muted-foreground px-5 py-4 text-sm">{t('noAnalyticsData')}</p>
             ) : (
               <div className="overflow-x-auto">

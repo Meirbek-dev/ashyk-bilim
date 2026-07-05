@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { InlineError } from '@/components/ui/error-state'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { AICommandList, AIRunProgress, useActivityAIUrlState, useAIRunController } from '@/features/ai-experience'
@@ -48,11 +49,11 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
   }, [selectedThreadUuid])
 
   const messages = useMemo(() => {
-    const base = selectedThreadUuid ? (threadQuery.data ?? []) : []
+    const base = selectedThreadUuid && threadQuery.isSuccess ? threadQuery.data : []
     const baseUuids = new Set(base.map(m => m.message_uuid))
     const uniqueLocal = localMessages.filter(m => !baseUuids.has(m.message_uuid))
     return [...base, ...uniqueLocal]
-  }, [threadQuery.data, localMessages, selectedThreadUuid])
+  }, [threadQuery.data, threadQuery.isSuccess, localMessages, selectedThreadUuid])
 
   function selectThread(nextThreadUuid: string) {
     setThread(nextThreadUuid)
@@ -84,7 +85,9 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
       <div className="flex min-h-0 flex-col gap-4">
         <AICommandList surface="course" disabled={run.pending} onCommand={command => submitQuestion(command.prompt)} />
         <ScrollArea className="min-h-72 rounded-lg border p-3">
-          {messages.length === 0 ? (
+          {threadQuery.isError ? (
+            <InlineError description={threadQuery.error.message} error={threadQuery.error} />
+          ) : messages.length === 0 ? (
             <QAStarterState
               contextLabel={selectedThreadUuid ? t('threadContext') : t('activityContext')}
               onPrompt={submitQuestion}
@@ -98,15 +101,16 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
           )}
         </ScrollArea>
         <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
-        {run.error ? <p className="text-destructive text-sm">{run.error.message}</p> : null}
+        {run.error ? <InlineError description={run.error.message} error={run.error} /> : null}
         <QAInput pending={run.pending} onSubmit={submitQuestion} />
       </div>
       <QAThreadList
+        error={threadsQuery.error}
         currentThreadUuid={selectedThreadUuid}
         loading={threadsQuery.isLoading}
         onNewThread={() => setThread(null)}
         onSelectThread={selectThread}
-        threads={threadsQuery.data ?? []}
+        threads={threadsQuery.isSuccess ? threadsQuery.data : []}
       />
     </section>
   )
@@ -154,12 +158,14 @@ function QAStarterState({ contextLabel, onPrompt }: { contextLabel: string; onPr
 
 function QAThreadList({
   currentThreadUuid,
+  error,
   loading,
   onNewThread,
   onSelectThread,
   threads,
 }: {
   currentThreadUuid: string | null
+  error: Error | null
   loading: boolean
   onNewThread: () => void
   onSelectThread: (threadUuid: string) => void
@@ -189,8 +195,9 @@ function QAThreadList({
       </div>
       <ScrollArea className="min-h-32 flex-1">
         <div className="flex flex-col gap-2">
+          {error ? <InlineError description={error.message} error={error} /> : null}
           {loading ? <p className="text-muted-foreground text-sm">{t('threadsLoading')}</p> : null}
-          {!loading && threads.length === 0 ? (
+          {!error && !loading && threads.length === 0 ? (
             <p className="text-muted-foreground text-sm">{t('threadsEmpty')}</p>
           ) : null}
           {threads.map(thread => {

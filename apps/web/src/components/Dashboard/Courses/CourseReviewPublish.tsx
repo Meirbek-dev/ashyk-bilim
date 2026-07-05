@@ -11,6 +11,7 @@ import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { ClipboardCheck, ExternalLink, Eye, FileStack, Loader2, Users } from 'lucide-react'
 import { useCourse } from '@components/Contexts/CourseContext'
+import { InlineError } from '@/components/ui/error-state'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useCourseEditorStore } from '@/stores/courses'
 import { Button } from '@/components/ui/button'
@@ -58,7 +59,8 @@ export default function CourseReviewPublish({
   const setConflict = useCourseEditorStore(state => state.setConflict)
   const { readiness } = course
   const stats = getCourseContentStats(course.courseStructure)
-  const contributors = course.editorData.contributors.data ?? []
+  const contributorsResource = course.editorData.contributors
+  const contributors = Array.isArray(contributorsResource.data) ? contributorsResource.data : []
   const contributorNameItems = contributors
     .slice(0, 3)
     .map((contributor: AppCourseAuthor, index: number) => {
@@ -313,6 +315,9 @@ export default function CourseReviewPublish({
                   <Users className="size-4" />
                   {tOverview('sections.collaboration')}
                 </div>
+                {contributorsResource.error ? (
+                  <InlineError className="mt-3" description={contributorsResource.error} />
+                ) : null}
                 <div className="text-foreground mt-2 text-2xl font-semibold">{contributors.length}</div>
                 <div className="text-muted-foreground mt-1 text-sm">
                   {tOverview('collaboration.loadedRecords', {

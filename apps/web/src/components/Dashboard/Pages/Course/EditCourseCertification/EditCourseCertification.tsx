@@ -25,6 +25,7 @@ import {
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { CourseEditorStagedSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
+import { InlineError } from '@/components/ui/error-state'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useCourse } from '@components/Contexts/CourseContext'
@@ -177,7 +178,9 @@ const EditCourseCertification = () => {
     [t],
   )
 
-  const certifications = (editorData.certifications.data ?? []) as CourseCertificationResource[]
+  const certifications = (
+    Array.isArray(editorData.certifications.data) ? editorData.certifications.data : []
+  ) as CourseCertificationResource[]
   const certificationsError = editorData.certifications.error
   const [existingCertification] = certifications
   const hasExistingCertification = Boolean(existingCertification)
@@ -363,10 +366,11 @@ const EditCourseCertification = () => {
 
   if (certificationsError) {
     return (
-      <Alert variant="destructive" className="mx-4 mt-8 sm:mx-10">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>{t('errorLoadingCertifications')}</AlertDescription>
-      </Alert>
+      <InlineError
+        className="mx-4 mt-8 sm:mx-10"
+        description={certificationsError}
+        title={t('errorLoadingCertifications')}
+      />
     )
   }
 

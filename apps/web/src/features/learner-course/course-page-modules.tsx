@@ -19,6 +19,7 @@ import AppLink from '@/components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InlineError } from '@/components/ui/error-state'
 import { Progress } from '@/components/ui/progress'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
 import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
@@ -327,7 +328,7 @@ function CertificateProgressModule({
   const certificateQuery = useUserCertificateByCourse(
     isEnrolled && progress.percent === 100 ? normalizedCourseUuid : null,
   )
-  const certificates = certificateQuery.data?.data ?? []
+  const certificates = certificateQuery.isSuccess ? certificateQuery.data.data : []
   const earnedCertificate = certificates[0]
   const verificationHref = earnedCertificate
     ? getAbsoluteUrl(`/certificates/${earnedCertificate.certificate_user.user_certification_uuid}/verify`)
@@ -362,6 +363,9 @@ function CertificateProgressModule({
             <div className="text-xl font-semibold tabular-nums">{Math.max(0, progress.total - progress.completed)}</div>
           </div>
         </div>
+        {certificateQuery.isError ? (
+          <InlineError description={LEARNER_COURSE_COPY.certificateCheckPending} error={certificateQuery.error} />
+        ) : null}
         {verificationHref ? (
           <Button
             variant="outline"

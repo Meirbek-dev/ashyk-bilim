@@ -22,6 +22,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table'
 import { CourseEditorNotice } from '@/features/courses/editor/components/CourseEditorNotice'
+import { InlineError } from '@/components/ui/error-state'
 import {
   CourseEditorSection,
   CourseEditorStagedSection,
@@ -46,7 +47,10 @@ const EditCourseAccess = () => {
   const { courseStructure, editorData } = course
   const t = useTranslations('DashPage.Courses.Access')
   const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
-  const usergroups = (editorData.linkedUserGroups.data ?? []) as AppUserGroup[]
+  const linkedUserGroupsResource = editorData.linkedUserGroups
+  const usergroups = (
+    Array.isArray(linkedUserGroupsResource.data) ? linkedUserGroupsResource.data : []
+  ) as AppUserGroup[]
   const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null
   const {
     draft: draftPublic,
@@ -131,6 +135,7 @@ const EditCourseAccess = () => {
       {draftPublic === false ? (
         <UserGroupsSection
           courseUuid={courseStructure.course_uuid}
+          error={linkedUserGroupsResource.error}
           usergroups={usergroups}
           isLoading={isUserGroupsLoading}
         />
@@ -141,10 +146,12 @@ const EditCourseAccess = () => {
 
 const UserGroupsSection = ({
   courseUuid,
+  error,
   usergroups,
   isLoading,
 }: {
   courseUuid: string
+  error: string | null
   usergroups: AppUserGroup[]
   isLoading: boolean
 }) => {
@@ -159,7 +166,9 @@ const UserGroupsSection = ({
         description={t('userGroupLinksImmediateDescription')}
       />
 
-      <UserGroupsTable courseUuid={courseUuid} usergroups={usergroups} isLoading={isLoading} />
+      {error ? <InlineError description={error} title={t('errorLoadingUserGroups')} /> : null}
+
+      {!error ? <UserGroupsTable courseUuid={courseUuid} usergroups={usergroups} isLoading={isLoading} /> : null}
 
       <div className="flex justify-end">
         <Dialog open={userGroupModal} onOpenChange={setUserGroupModal}>

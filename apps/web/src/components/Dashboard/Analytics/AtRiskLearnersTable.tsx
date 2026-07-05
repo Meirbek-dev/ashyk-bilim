@@ -7,6 +7,7 @@ import { createTeacherIntervention, getTeacherInterventions } from '@services/an
 import type { TeacherInterventionCreate, TeacherInterventionRow } from '@services/analytics/teacher'
 import AnalyticsDataTable from './AnalyticsDataTable'
 import type { DataTableColumnDef } from '@/components/ui/data-table'
+import { InlineError } from '@/components/ui/error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -164,10 +165,8 @@ export default function AtRiskLearnersTable({
       header: t('atRisk.colReasons'),
       cell: ({ row }) => (
         <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
-          {row.original.reason_codes.map(code => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
-          {(row.original).why_now && (
-            <div className="mt-1 text-[11px]">{(row.original).why_now}</div>
-          )}
+          {row.original.reason_codes.map((code: string) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
+          {row.original.why_now && <div className="mt-1 text-[11px]">{row.original.why_now}</div>}
         </div>
       ),
     },
@@ -386,19 +385,32 @@ function LearnerInterventionDialog({
               ))}
             </div>
           </div>
-          <InterventionAuditLog loading={audit.isLoading} rows={audit.data?.items ?? []} />
+          <InterventionAuditLog
+            error={audit.error}
+            loading={audit.isLoading}
+            rows={audit.isSuccess ? audit.data.items : []}
+          />
         </div>
       </DialogContent>
     </Dialog>
   )
 }
 
-function InterventionAuditLog({ loading, rows }: { loading: boolean; rows: TeacherInterventionRow[] }) {
+function InterventionAuditLog({
+  error,
+  loading,
+  rows,
+}: {
+  error: Error | null
+  loading: boolean
+  rows: TeacherInterventionRow[]
+}) {
   return (
     <aside className="rounded-lg border p-3">
       <div className="mb-3 text-sm font-medium">{INTERVENTION_COPY.auditLog}</div>
+      {error ? <InlineError description={error.message} error={error} /> : null}
       {loading ? <p className="text-muted-foreground text-sm">{INTERVENTION_COPY.loadingAudit}</p> : null}
-      {!loading && rows.length === 0 ? (
+      {!error && !loading && rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{INTERVENTION_COPY.emptyAudit}</p>
       ) : null}
       <div className="space-y-3">
@@ -420,7 +432,7 @@ function InterventionAuditLog({ loading, rows }: { loading: boolean; rows: Teach
 }
 
 function buildRemediationDraft(row: EnhancedAtRiskLearnerRow) {
-  const reasons = row.reason_codes.map(code => code.replaceAll('_', ' ')).join(', ')
+  const reasons = row.reason_codes.map((code: string) => code.replaceAll('_', ' ')).join(', ')
   return [
     `Goal: reduce ${row.user_display_name}'s risk in ${row.course_name}.`,
     `Risk drivers: ${reasons || row.top_contributing_factor || 'needs teacher review'}.`,

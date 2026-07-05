@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { useUserCourses } from '@/features/users/hooks/useUsers'
+import { InlineError } from '@/components/ui/error-state'
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import UserAvatar from '@components/Objects/UserAvatar'
@@ -46,6 +47,12 @@ interface ProfileDetail {
   icon: string
   id?: number | string
   text: string
+}
+
+interface UserCourseAuthor {
+  authorship: NonNullable<CourseThumbnailData['authors']>[number]['authorship']
+  authorship_status: NonNullable<CourseThumbnailData['authors']>[number]['authorship_status']
+  user?: NonNullable<CourseThumbnailData['authors']>[number]['user'] | null
 }
 
 interface ProfileImage {
@@ -162,9 +169,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
   const userCoursesQuery = useUserCourses(userData.id, {
     enabled: Boolean(userData.id),
   })
-  const userCourses = userCoursesQuery.data ?? []
+  const userCourses = userCoursesQuery.isSuccess ? userCoursesQuery.data : []
   const isLoadingCourses = userCoursesQuery.isPending
-  const error = userCoursesQuery.isError
 
   return (
     <div className="text-foreground container mx-auto py-8">
@@ -380,7 +386,12 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
 
                       {section.type === 'courses' && (
                         <div>
-                          {isLoadingCourses ? (
+                          {userCoursesQuery.isError ? (
+                            <InlineError
+                              description={t('courseSection.errorLoadingCourses')}
+                              error={userCoursesQuery.error}
+                            />
+                          ) : isLoadingCourses ? (
                             <div className="flex items-center justify-center py-8">
                               <Loader2 className="h-8 w-8 animate-spin" />
                             </div>
@@ -389,19 +400,24 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                               {userCourses.map(course => {
                                 const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
                                 const mappedAuthors: NonNullable<CourseThumbnailData['authors']> | undefined =
-                                  authors?.map(author => ({
-                                    authorship: author.authorship,
-                                    authorship_status: author.authorship_status,
-                                    user: {
-                                      id: author.user.id,
-                                      user_uuid: author.user.user_uuid,
-                                      avatar_image: author.user.avatar_image ?? '',
-                                      first_name: author.user.first_name,
-                                      ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
-                                      last_name: author.user.last_name,
-                                      username: author.user.username,
-                                    },
-                                  }))
+                                  authors?.flatMap((author: UserCourseAuthor) => {
+                                    if (!author.user) return []
+                                    return [
+                                      {
+                                        authorship: author.authorship,
+                                        authorship_status: author.authorship_status,
+                                        user: {
+                                          id: author.user.id,
+                                          user_uuid: author.user.user_uuid,
+                                          avatar_image: author.user.avatar_image ?? '',
+                                          first_name: author.user.first_name,
+                                          ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
+                                          last_name: author.user.last_name,
+                                          username: author.user.username,
+                                        },
+                                      },
+                                    ]
+                                  })
                                 const courseThumbnailData: CourseThumbnailData = {
                                   course_uuid: courseWithoutAuthors.course_uuid,
                                   name: courseWithoutAuthors.name,
@@ -429,8 +445,6 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                   ))}
                 </div>
               ) : null}
-
-              {error ? <div className="text-destructive">{t('courseSection.errorLoadingCourses')}</div> : null}
             </div>
           </div>
         </div>
