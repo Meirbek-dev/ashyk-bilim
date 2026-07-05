@@ -1,15 +1,25 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "tags": ["-lintignore"],
-  "entry": ["src/app/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}", "src/i18n/navigation.ts"],
+  "entry": [
+    "src/app/**/*.{ts,tsx}",
+    "src/i18n/navigation.ts",
+    "scripts/**/*.mjs"
+  ],
   "project": ["src/**/*.{ts,tsx,mjs}"],
   "ignore": [
     "e2e/**/*",
-    "scripts/**/*",
     "src/components/ui/**/*",
     "src/components/Objects/Activities/DynamicCanva/AI/AICanvaToolkit.tsx"
   ],
-  "ignoreDependencies": ["sharp", "shadcn", "tw-animate-css", "tailwindcss"],
+  "ignoreDependencies": [
+    "sharp",
+    "shadcn",
+    "tw-animate-css",
+    "tailwindcss",
+    "prosemirror-view",
+    "openapi-typescript"
+  ],
   "rules": {
     "files": "warn",
     "exports": "warn",

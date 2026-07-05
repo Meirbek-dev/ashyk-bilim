@@ -86,7 +86,6 @@ const nextConfig: NextConfig = {
       '@tiptap/extension-character-count',
       '@tiptap/extension-focus',
       '@tiptap/extension-youtube',
-      'tiptap-extension-code-block-shiki',
       'tiptap-markdown',
     ],
   },
