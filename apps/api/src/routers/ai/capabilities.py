@@ -63,9 +63,9 @@ async def api_ai_scope_capabilities(
     course_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-    surface: AISurface = Query(default="course-page"),
-    activity_uuid: str | None = Query(default=None),
-    submission_uuid: str | None = Query(default=None),
+    surface: Annotated[AISurface, Query()] = "course-page",
+    activity_uuid: Annotated[str | None, Query()] = None,
+    submission_uuid: Annotated[str | None, Query()] = None,
 ) -> AIScopeCapabilityRead:
     course = _get_course_by_uuid(db_session, course_uuid)
     config = get_settings().integrations.ai

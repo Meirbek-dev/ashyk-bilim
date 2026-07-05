@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetcher } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 
 type AssessmentDetail = components['schemas']['AssessmentRead']
 

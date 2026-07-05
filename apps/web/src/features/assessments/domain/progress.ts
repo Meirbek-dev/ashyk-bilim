@@ -7,7 +7,7 @@
  * Re-exports the generated type and provides display helpers.
  */
 
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 
 export type ActivityProgressState = components['schemas']['ActivityProgressState']
 export type ActivityProgressCell = components['schemas']['ActivityProgressCell']

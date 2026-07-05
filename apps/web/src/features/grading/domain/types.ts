@@ -1,4 +1,4 @@
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 
 export type SubmissionStatus = components['schemas']['SubmissionStatus']
 export type AssessmentType = components['schemas']['AssessmentType']

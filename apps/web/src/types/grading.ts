@@ -1,8 +1,8 @@
 /**
  * Grading system type definitions — v4.
  *
- * Interface definitions are re-exported from the auto-generated OpenAPI schema
- * (`lib/api/generated/schema.ts`). Only utility constants and helpers live here.
+ * Interface definitions are re-exported from the auto-generated OpenAPI schemas.
+ * Only utility constants and helpers live here.
  *
  * Status model (5 states):
  *   DRAFT      — student is working, not yet submitted
@@ -14,7 +14,7 @@
  * Late submissions use is_late: boolean on the Submission object itself.
  */
 
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 
 // ── Re-exported generated types ───────────────────────────────────────────────
 

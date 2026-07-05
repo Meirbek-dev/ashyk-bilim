@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 import { apiJson } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'

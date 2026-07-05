@@ -1,4 +1,4 @@
-import type { components } from '@/lib/api/generated/schema'
+import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/generated/api.schemas'
 
 /**
  * Unified API error handling for mutation hooks.
@@ -8,9 +8,6 @@ import type { components } from '@/lib/api/generated/schema'
  *  - toError                (useActivityMutations)
  *  - ensureSuccess          (useChapterMutations - was broken: only threw on 409)
  */
-
-export type ApiErrorEnvelope = components['schemas']['ApiErrorEnvelope']
-export type ApiFieldError = components['schemas']['ApiFieldError']
 
 export type ClientErrorCode =
   | 'CLIENT_TIMEOUT'

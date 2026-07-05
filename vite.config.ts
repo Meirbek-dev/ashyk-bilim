@@ -123,7 +123,7 @@ export default defineConfig({
       '**/gen/',
       '**/.turbo/',
       '**/.genenv/',
-      'lib/api/generated/schema.ts',
+      'lib/api/generated/',
       'e2e/',
       'scripts/',
       'playwright.config.ts',
@@ -136,7 +136,7 @@ export default defineConfig({
       'src/components/Security/HeaderProfileBox.tsx',
       'src/features/assessments/studio/NativeItemStudio.tsx',
       'src/services/gamification/server.ts',
-      'src/lib/api/generated/schema.ts',
+      'src/lib/api/generated/',
     ],
     plugins: [
       'import',

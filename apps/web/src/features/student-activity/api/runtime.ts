@@ -1,5 +1,5 @@
 import { apiFetch, apiFetcher, errorHandling } from '@/lib/api-client'
-import type { components } from '@/lib/api/generated/schema'
+import type { components } from '@/lib/api/generated'
 
 export type StudentActivityRuntime = components['schemas']['StudentActivityRuntime']
 export type StudentActivityActionRequest = components['schemas']['StudentActivityActionRequest']

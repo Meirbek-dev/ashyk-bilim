@@ -10,7 +10,7 @@
     "dev": "bun run services && turbo run dev",
     "dev:web": "cd apps/web && bun run dev",
     "dev:api": "cd apps/api && uv run app.py",
-    "check:contracts": "bun run generate:contracts && git diff --exit-code -- apps/api/openapi.json apps/web/src/lib/api/generated/schema.ts",
+    "check:contracts": "bun run generate:contracts && git diff --exit-code -- apps/api/openapi.json apps/web/src/lib/api/generated",
     "generate:contracts": "bun run --cwd apps/api generate:contracts && bun run --cwd apps/web generate:contracts",
     "services": "docker-compose up -d db redis",
     "services:judge0": "docker-compose up -d db redis && docker-compose up -d --force-recreate judge0-workers judge0-server",
