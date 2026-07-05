@@ -15,8 +15,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const course_meta = await getCourseMetadata(params.courseid, undefined, true)
 
   return {
-    title: t('metaTitleEdit', { activityName: course_meta.name }),
-    description: course_meta.mini_description,
+    title: t('metaTitleEdit', { activityName: course_meta.name ?? '' }),
+    description: course_meta.mini_description ?? '',
   }
 }
 

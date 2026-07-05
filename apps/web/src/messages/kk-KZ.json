@@ -10292,6 +10292,40 @@
     "low": "Төмен сенімділік"
   },
   "AiExperience": {
+    "commandList": {
+      "activity-explain": {
+        "label": "Осы тапсырманы түсіндіру",
+        "prompt": "Ағымдағы тапсырманы қарапайым тілмен түсіндіріп, келесі қадамды көрсет."
+      },
+      "activity-check": {
+        "label": "Түсінігімді тексеру",
+        "prompt": "Осы тапсырманы түсінгенімді тексеру үшін маған үш қысқа сұрақ қой."
+      },
+      "analytics-risk": {
+        "label": "Қолдау жоспарын жасау",
+        "prompt": "Ағымдағы тәуекел дәлелдері мен ұсынылған әрекет негізінде нақты қолдау жоспарын жаса."
+      },
+      "course-map": {
+        "label": "Курс картасы",
+        "prompt": "Бұл курсты алғышарттары, бақылау нүктелері және ықтимал қиындықтары бар оқу жолы ретінде сипатта."
+      },
+      "course-sources": {
+        "label": "Дереккөздерді табу",
+        "prompt": "Жауапты растайтын курс дереккөздерін тізіп, әр дереккөз қай тапсырмадан алынғанын түсіндір."
+      },
+      "course-practice": {
+        "label": "Жаттығу жасау",
+        "prompt": "Курстың орындалмаған келесі тапсырмалары негізінде қысқа жаттығу жоспарын жаса."
+      },
+      "submission-review": {
+        "label": "Кері байланысты талдау",
+        "prompt": "Осы жұмысқа берілген кері байланысты түсіндіріп, қайта өңдеуді қай қадамнан бастау керектігін көрсет."
+      },
+      "submission-remediate": {
+        "label": "Түзету жоспары",
+        "prompt": "Жұмыс дәлелдері негізінде түзету жоспарын жасап, әр кемшіліктің дереккөзін көрсет."
+      }
+    },
     "qaMessage": {
       "you": "Сіз",
       "aiAnswer": "ЖИ жауабы"
@@ -10410,8 +10444,10 @@
       "noFindings": "No actionable findings were returned.",
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "reviewGateLabel": "Мен төмендегі дәлелдер мен дәлелдемелерді ашып, жарияламас бұрын тексердім.",
+      "reviewGateHint": "Бұл белгі қойылмайынша, жариялау бұғатталған.",
       "publishDialogTitle": "Publish reviewed score?",
-      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "publishDialogDescription": "Бұл ұпай, табылған дәлелдер тізімі және дереккөздер осы курсқа жазылған студенттер мен қызметкерлерге көрінетін болады.",
       "cancelPublish": "Keep reviewing",
       "confirmPublish": "Publish reviewed score"
     },

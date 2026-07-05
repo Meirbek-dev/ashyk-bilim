@@ -79,8 +79,8 @@ async function PlatformAssessmentStudioContent({ params }: PlatformAssessmentStu
           content={activity.content}
           course={{
             course_uuid: course.course_uuid,
-            name: course.name,
-            thumbnail_image: course.thumbnail_image,
+            name: course.name ?? '',
+            thumbnail_image: course.thumbnail_image ?? null,
           }}
           platform={null}
         />

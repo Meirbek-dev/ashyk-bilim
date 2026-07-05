@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { jetBrainsMono } from '@/lib/fonts'
 import type { Metadata } from 'next'
 import { cache } from 'react'
+import type { CourseStructure } from '@components/Contexts/CourseContext'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -34,18 +35,23 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const activity = isCourseEnd ? null : await fetchActivity(activityid)
 
   // Localized page title
+  const courseName = course_meta?.name ?? ''
   const pageTitle = isCourseEnd
-    ? t('courseEndTitle', { course: course_meta.name })
+    ? t('courseEndTitle', { course: courseName })
     : t('activityTitle', {
         activity: activity?.name ?? '',
-        course: course_meta.name,
+        course: courseName,
       })
 
   // SEO
   return {
     title: pageTitle,
-    description: course_meta.description,
-    keywords: course_meta.learnings,
+    description: course_meta.description ?? '',
+    keywords: Array.isArray(course_meta.learnings)
+      ? course_meta.learnings.filter((value): value is string => typeof value === 'string')
+      : typeof course_meta.learnings === 'string'
+        ? [course_meta.learnings]
+        : [],
     robots: {
       index: true,
       follow: true,
@@ -58,9 +64,13 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     },
     openGraph: {
       title: pageTitle,
-      description: course_meta.description,
+      description: course_meta.description ?? '',
       publishedTime: course_meta.creation_date,
-      tags: course_meta.learnings,
+      tags: Array.isArray(course_meta.learnings)
+        ? course_meta.learnings.filter((value): value is string => typeof value === 'string')
+        : typeof course_meta.learnings === 'string'
+          ? [course_meta.learnings]
+          : [],
     },
   }
 }
@@ -77,6 +87,14 @@ const ActivityPage = async (params: { params: Promise<{ courseuuid: string; acti
     isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
   ])
 
+  const course: CourseStructure = {
+    ...course_meta,
+    chapters: (course_meta?.chapters ?? []).map(chapter => ({
+      ...chapter,
+      activities: chapter.activities ?? [],
+    })),
+  }
+
   const queryClient = new QueryClient()
   if (runtime) {
     queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime)
@@ -89,7 +107,7 @@ const ActivityPage = async (params: { params: Promise<{ courseuuid: string; acti
           activityid={activityid}
           courseuuid={courseuuid}
           activity={activity}
-          course={course_meta}
+          course={course}
           runtime={runtime}
         />
       </HydrationBoundary>

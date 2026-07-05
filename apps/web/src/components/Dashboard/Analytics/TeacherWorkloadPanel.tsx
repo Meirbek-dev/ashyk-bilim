@@ -35,7 +35,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               {t('teacherWorkloadPanel.backlog')}
             </div>
             <div className="text-foreground text-3xl font-bold tracking-tight">
-              {numberFormatter.format(workload.backlog_total)}
+              {numberFormatter.format(workload.backlog_total ?? 0)}
             </div>
           </div>
           <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
@@ -44,7 +44,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               {t('teacherWorkloadPanel.slaBreaches')}
             </div>
             <div className="text-foreground text-3xl font-bold tracking-tight">
-              {numberFormatter.format(workload.sla_breaches)}
+              {numberFormatter.format(workload.sla_breaches ?? 0)}
             </div>
           </div>
           <div className="border-border/40 flex flex-col gap-1.5 sm:border-l sm:px-4">
@@ -53,7 +53,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
               {t('teacherWorkloadPanel.forecast7d')}
             </div>
             <div className="text-foreground text-3xl font-bold tracking-tight">
-              {numberFormatter.format(workload.forecast_backlog_7d)}
+              {numberFormatter.format(workload.forecast_backlog_7d ?? 0)}
             </div>
           </div>
         </div>

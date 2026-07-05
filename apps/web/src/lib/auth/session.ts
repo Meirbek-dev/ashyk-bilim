@@ -52,10 +52,11 @@ export const getSession = cache(async (): Promise<Session | null> => {
       return null
     }
 
-    const sessionData = (await res.json()) as UserSessionResponse
+    const sessionData = await res.json()
     return {
       ...sessionData,
       expiresAt: sessionData.expires_at ?? 0,
+      permissions: sessionData.permissions ?? [],
       sessionVersion: sessionData.session_version ?? null,
     }
   } catch (error) {

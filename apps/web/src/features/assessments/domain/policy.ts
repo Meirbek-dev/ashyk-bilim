@@ -68,7 +68,7 @@ export interface AssessmentCanonicalPolicyDTO {
   due_at?: string | null
   passing_score?: number | null
   review_visibility?: 'NONE' | 'SCORE_ONLY' | 'FULL' | null
-  late_policy?: Record<string, unknown> | null
+  late_policy?: Record<string, unknown> | null | unknown
   integrity?: AssessmentIntegrityPolicyDTO | null
   delivery?: AssessmentDeliveryPolicyDTO | null
 }
@@ -112,7 +112,7 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
   const canonical = policy.canonical_policy
   if (!canonical) return DEFAULT_POLICY_VIEW
   const integrity = canonical.integrity ?? {}
-  const latePolicy = canonical.late_policy ?? {}
+  const latePolicy = (canonical.late_policy ?? {}) as Record<string, unknown>
   const reviewVisibility = normalizeReviewVisibility(canonical.review_visibility)
 
   return {

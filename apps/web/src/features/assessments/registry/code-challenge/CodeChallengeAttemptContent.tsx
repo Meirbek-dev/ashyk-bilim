@@ -75,7 +75,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
       conflict: submissionState.conflict
         ? {
             open: true,
-            latestVersion: submissionState.conflict.latestVersion,
+            latestVersion: submissionState.conflict.latestVersion ?? 0,
             latestSavedAt: submissionState.conflict.latestSavedAt,
             localAnswerCount: submissionState.conflict.localAnswerCount,
             serverAnswerCount: submissionState.conflict.serverAnswerCount,

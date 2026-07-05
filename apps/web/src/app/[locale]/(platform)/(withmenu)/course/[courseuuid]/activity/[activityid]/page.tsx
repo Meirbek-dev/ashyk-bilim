@@ -11,6 +11,7 @@ import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity'
+import type { CourseStructure } from '@components/Contexts/CourseContext'
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>
@@ -30,12 +31,19 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     const isCourseEnd = activityid === 'end'
     const activity = isCourseEnd ? null : await fetchActivity(activityid)
 
-    const pageTitle = isCourseEnd ? `Course End - ${course_meta.name}` : `${activity?.name ?? ''} - ${course_meta.name}`
+    const courseName = course_meta.name ?? ''
+    const courseDescription = course_meta.description ?? ''
+    const courseKeywords = Array.isArray(course_meta.learnings)
+      ? course_meta.learnings.filter((value): value is string => typeof value === 'string')
+      : typeof course_meta.learnings === 'string'
+        ? [course_meta.learnings]
+        : []
+    const pageTitle = isCourseEnd ? `Course End - ${courseName}` : `${activity?.name ?? ''} - ${courseName}`
 
     return {
       title: pageTitle,
-      description: course_meta.description,
-      keywords: course_meta.learnings,
+      description: courseDescription,
+      keywords: courseKeywords,
       robots: {
         index: true,
         follow: true,
@@ -48,9 +56,9 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
       openGraph: {
         title: pageTitle,
-        description: course_meta.description,
+        description: courseDescription,
         publishedTime: course_meta.creation_date,
-        tags: course_meta.learnings,
+        tags: courseKeywords,
       },
     }
   } catch (error: unknown) {
@@ -114,13 +122,21 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
     throw error
   }
 
+  const course: CourseStructure = {
+    ...course_meta,
+    chapters: (course_meta?.chapters ?? []).map(chapter => ({
+      ...chapter,
+      activities: chapter.activities ?? [],
+    })),
+  }
+
   return (
     <div className={jetBrainsMono.variable}>
       <ActivityClient
         activityid={activityid}
         courseuuid={courseuuid}
         activity={activity}
-        course={course_meta}
+        course={course}
         runtime={runtime}
       />
     </div>

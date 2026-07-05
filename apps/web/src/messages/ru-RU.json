@@ -10120,6 +10120,40 @@
     "low": "Низкая уверенность"
   },
   "AiExperience": {
+    "commandList": {
+      "activity-explain": {
+        "label": "Объяснить это задание",
+        "prompt": "Объясни текущее задание простым языком и укажи, что нужно сделать дальше."
+      },
+      "activity-check": {
+        "label": "Проверить понимание",
+        "prompt": "Задай мне три коротких вопроса, чтобы проверить, понял ли я это задание."
+      },
+      "analytics-risk": {
+        "label": "Составить план поддержки",
+        "prompt": "Составь конкретный план поддержки учащегося на основе текущих данных о риске и рекомендуемого действия."
+      },
+      "course-map": {
+        "label": "Карта курса",
+        "prompt": "Опиши этот курс как учебный путь с пререквизитами, контрольными точками и вероятными сложностями."
+      },
+      "course-sources": {
+        "label": "Найти источники",
+        "prompt": "Перечисли источники курса, подтверждающие ответ, и укажи, из какого задания взят каждый источник."
+      },
+      "course-practice": {
+        "label": "Создать практику",
+        "prompt": "Составь короткий план практики на основе незавершённых заданий курса."
+      },
+      "submission-review": {
+        "label": "Разбор отзыва",
+        "prompt": "Объясни отзыв на эту работу и укажи, с какого шага начать доработку."
+      },
+      "submission-remediate": {
+        "label": "План доработки",
+        "prompt": "Составь план доработки на основе данных решения и укажи источник каждого пробела."
+      }
+    },
     "qaMessage": {
       "you": "Вы",
       "aiAnswer": "Ответ ИИ"
@@ -10238,8 +10272,10 @@
       "noFindings": "No actionable findings were returned.",
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "reviewGateLabel": "Я открыл(а) и проверил(а) нижеприведенные выводы и доказательства перед публикацией.",
+      "reviewGateHint": "Публикация недоступна, пока это не отмечено.",
       "publishDialogTitle": "Publish reviewed score?",
-      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "publishDialogDescription": "Эта оценка, список выводов и цитируемые источники станут видны студентам и сотрудникам, записанным на этот курс.",
       "cancelPublish": "Keep reviewing",
       "confirmPublish": "Publish reviewed score"
     },

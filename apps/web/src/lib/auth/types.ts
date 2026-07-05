@@ -23,9 +23,10 @@ export type SessionUser = Pick<
 export type UserSessionResponse = components['schemas']['UserSession']
 
 /** Frontend session shape used by the app after mapping backend field names. */
-export interface Session extends Omit<UserSessionResponse, 'user'> {
+export interface Session extends Omit<UserSessionResponse, 'user' | 'permissions'> {
   user: SessionUser
   expiresAt: number
+  permissions: string[]
   sessionVersion: number | null
 }
 

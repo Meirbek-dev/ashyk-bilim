@@ -31,9 +31,9 @@ export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: 
   })
 
   const entries = [
-    createEntry('high', counts.high),
-    createEntry('medium', counts.medium),
-    createEntry('low', counts.low),
+    createEntry('high', counts.high ?? 0),
+    createEntry('medium', counts.medium ?? 0),
+    createEntry('low', counts.low ?? 0),
   ]
 
   const data = entries.filter(item => item.count > 0)

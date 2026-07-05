@@ -10104,6 +10104,40 @@
     "low": "Low confidence"
   },
   "AiExperience": {
+    "commandList": {
+      "activity-explain": {
+        "label": "Explain this activity",
+        "prompt": "Explain the current activity in plain language and list the next action I should take."
+      },
+      "activity-check": {
+        "label": "Check my understanding",
+        "prompt": "Ask me three short questions to check whether I understand this activity."
+      },
+      "analytics-risk": {
+        "label": "Draft intervention",
+        "prompt": "Draft a concrete learner intervention using the current risk evidence and recommended action."
+      },
+      "course-map": {
+        "label": "Map the course",
+        "prompt": "Summarize this course as a learning path with prerequisites, checkpoints, and likely blockers."
+      },
+      "course-sources": {
+        "label": "Find sources",
+        "prompt": "List the course sources that support the answer and explain which activity each source comes from."
+      },
+      "course-practice": {
+        "label": "Generate practice",
+        "prompt": "Create a short practice plan from the next unfinished course activities."
+      },
+      "submission-review": {
+        "label": "Review feedback",
+        "prompt": "Explain the feedback on this submission and identify the first revision step."
+      },
+      "submission-remediate": {
+        "label": "Draft remediation",
+        "prompt": "Create a remediation plan from the submission evidence and cite the source of each gap."
+      }
+    },
     "qaMessage": {
       "you": "You",
       "aiAnswer": "AI answer"
@@ -10222,8 +10256,10 @@
       "noFindings": "No actionable findings were returned.",
       "summaryFindingTitle": "Review generated summary",
       "inspectCitationsAction": "Inspect cited course material before publishing the score.",
+      "reviewGateLabel": "I opened the evidence and findings below and reviewed them before publishing.",
+      "reviewGateHint": "Publishing is disabled until this is checked.",
       "publishDialogTitle": "Publish reviewed score?",
-      "publishDialogDescription": "Students and staff may see this course quality score after publication. Confirm only after checking findings and evidence.",
+      "publishDialogDescription": "This score, the findings list, and cited sources will become visible to students and staff enrolled in this course. This cannot be un-published quietly — a revised score will show as an update, not a removal.",
       "cancelPublish": "Keep reviewing",
       "confirmPublish": "Publish reviewed score"
     },

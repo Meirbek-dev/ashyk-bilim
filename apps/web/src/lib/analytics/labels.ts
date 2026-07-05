@@ -2,19 +2,19 @@ import type { AssessmentType, Bucket, ComparePreset } from '@/types/analytics'
 
 type Translator = (key: string, values?: Record<string, string | number>) => string
 
-const assessmentTypeKeys: Record<AssessmentType, string> = {
+const assessmentTypeKeys: Record<string, string> = {
   manual_assessment: 'labels.assessmentType.manualAssessment',
   quiz: 'labels.assessmentType.quiz',
   exam: 'labels.assessmentType.exam',
   code_challenge: 'labels.assessmentType.codeChallenge',
 }
 
-const bucketKeys: Record<Bucket, string> = {
+const bucketKeys: Record<string, string> = {
   day: 'labels.bucket.day',
   week: 'labels.bucket.week',
 }
 
-const compareKeys: Record<ComparePreset, string> = {
+const compareKeys: Record<string, string> = {
   previous_period: 'labels.compare.previousPeriod',
   none: 'labels.compare.none',
 }
@@ -81,16 +81,25 @@ function resolveLabel(t: Translator, keyMap: Record<string, string>, value: stri
   return key ? t(key) : fallback
 }
 
-export function getAnalyticsAssessmentTypeLabel(t: Translator, assessmentType: AssessmentType): string {
-  return t(assessmentTypeKeys[assessmentType])
+export function getAnalyticsAssessmentTypeLabel(
+  t: Translator,
+  normalizedAssessmentType: AssessmentType | null | undefined = 'manual_assessment',
+): string {
+  const key = (assessmentTypeKeys[normalizedAssessmentType] ?? assessmentTypeKeys.manual_assessment) as string
+  return t(key)
 }
 
-export function getAnalyticsBucketLabel(t: Translator, bucket: Bucket): string {
-  return t(bucketKeys[bucket])
+export function getAnalyticsBucketLabel(t: Translator, normalizedBucket: Bucket | null | undefined = 'day'): string {
+  const key = (bucketKeys[normalizedBucket] ?? bucketKeys.day) as string
+  return t(key)
 }
 
-export function getAnalyticsCompareLabel(t: Translator, compare: ComparePreset): string {
-  return t(compareKeys[compare])
+export function getAnalyticsCompareLabel(
+  t: Translator,
+  normalizedCompare: ComparePreset | null | undefined = 'none',
+): string {
+  const key = (compareKeys[normalizedCompare] ?? compareKeys.none) as string
+  return t(key)
 }
 
 export function getAnalyticsSeverityLabel(t: Translator, severity: string): string {

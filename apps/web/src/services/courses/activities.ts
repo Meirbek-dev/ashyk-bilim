@@ -6,9 +6,9 @@ import type { CustomResponseTyping } from '@/lib/api-client'
 import type { components } from '@/lib/api/generated'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
+import type { Activity } from '@/components/Contexts/CourseContext'
 
 type ActivityRead = components['schemas']['ActivityRead']
-type ActivityReadWithPermissions = components['schemas']['ActivityReadWithPermissions']
 type ActivityDetailResponse = components['schemas']['ActivityDetailResponse']
 
 export interface UrlPreviewResponse {
@@ -110,7 +110,7 @@ export async function createExternalVideoActivity(
   return metadata
 }
 
-async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPermissions> {
+async function fetchActivity(activity_uuid: string): Promise<Activity> {
   const canonicalActivityUuid = activity_uuid.startsWith('activity_') ? activity_uuid : `activity_${activity_uuid}`
 
   const result = await apiFetch(`activities/${canonicalActivityUuid}`, {
@@ -119,10 +119,10 @@ async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPer
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return await errorHandling(result)
+  return (await errorHandling(result)) as Activity
 }
 
-export async function getActivity(activity_uuid: string, _next?: unknown) {
+export async function getActivity(activity_uuid: string, _next?: unknown): Promise<Activity> {
   return fetchActivity(activity_uuid)
 }
 

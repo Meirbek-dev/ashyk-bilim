@@ -58,31 +58,52 @@ export default async function PlatformDashHomePage() {
     hasAdminAccess: canSeeAdmin(can),
   } satisfies DashboardAccess
 
-  const [courseSummary, teacherOverview, adminOverview, aiUsage] = await Promise.all([
-    access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve(null),
-    access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve(null),
-    access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve(null),
-    access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve(null),
+  const [courseSummaryResult, teacherOverviewResult, adminOverviewResult, aiUsageResult] = await Promise.all([
+    access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve({ data: null, error: null }),
+    access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve({ data: null, error: null }),
+    access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve({ data: null, error: null }),
+    access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve({ data: null, error: null }),
   ])
+
+  const courseSummary = courseSummaryResult.data
+  const teacherOverview = teacherOverviewResult.data
+  const adminOverview = adminOverviewResult.data
+  const aiUsage = aiUsageResult.data
 
   const queue = buildDashboardWorkQueue({
     access,
-    courseSummary,
+    courseSummary: courseSummary
+      ? {
+          ...courseSummary,
+          signalAvailable: true,
+          errorMessage: null,
+        }
+      : access.hasCoursesAccess
+        ? {
+            total: 0,
+            ready: 0,
+            private: 0,
+            attention: 0,
+            signalAvailable: false,
+            errorMessage: courseSummaryResult.error,
+          }
+        : null,
     teacherSignal: teacherOverview
       ? {
-          atRiskTotal: teacherOverview.at_risk_total,
-          gradingBacklogTotal: teacherOverview.workload.backlog_total,
-          slaBreaches: teacherOverview.workload.sla_breaches,
-          forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d,
+          atRiskTotal: teacherOverview.at_risk_total ?? 0,
+          gradingBacklogTotal: teacherOverview.workload.backlog_total ?? 0,
+          slaBreaches: teacherOverview.workload.sla_breaches ?? 0,
+          forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d ?? 0,
           medianFeedbackLatencyHours: teacherOverview.workload.median_feedback_latency_hours ?? null,
           backlogItems: teacherOverview.workload.backlog_by_manual_assessment.map(item => ({
             assessmentId: item.assessment_id,
             awaitingReview: item.awaiting_review,
             courseName: item.course_name,
             title: item.title,
-            slaBreaches: item.sla_breaches,
+            slaBreaches: item.sla_breaches ?? 0,
           })),
           signalAvailable: true,
+          errorMessage: null,
         }
       : access.hasAnalyticsAccess
         ? {
@@ -93,6 +114,7 @@ export default async function PlatformDashHomePage() {
             medianFeedbackLatencyHours: null,
             backlogItems: [],
             signalAvailable: false,
+            errorMessage: teacherOverviewResult.error,
           }
         : null,
     adminSignal: adminOverview
@@ -108,6 +130,7 @@ export default async function PlatformDashHomePage() {
             0,
           ),
           signalAvailable: true,
+          errorMessage: adminOverviewResult.error || aiUsageResult.error,
         }
       : access.hasAdminAccess
         ? {
@@ -116,6 +139,7 @@ export default async function PlatformDashHomePage() {
             teacherBacklogTotal: 0,
             teacherSlaBreaches: 0,
             signalAvailable: Boolean(aiUsage),
+            errorMessage: adminOverviewResult.error || aiUsageResult.error,
           }
         : null,
   })
@@ -131,39 +155,45 @@ export default async function PlatformDashHomePage() {
   )
 }
 
-async function getSafeEditableCourseSummary() {
+async function getSafeEditableCourseSummary(): Promise<{
+  data: Awaited<ReturnType<typeof getEditableCourses>>['summary'] | null
+  error: string | null
+}> {
   try {
     const { summary } = await getEditableCourses(1, 1, '', 'updated', 'attention')
-    return summary
+    return { data: summary, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load editable course summary:', error)
-    return null
+    return { data: null, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-async function getSafeTeacherOverview(): Promise<TeacherOverviewResponse | null> {
+async function getSafeTeacherOverview(): Promise<{ data: TeacherOverviewResponse | null; error: string | null }> {
   try {
-    return await getTeacherOverview(analyticsQueueQuery)
+    const data = await getTeacherOverview(analyticsQueueQuery)
+    return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load teacher overview:', error)
-    return null
+    return { data: null, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-async function getSafeAdminOverview(): Promise<AdminAnalyticsResponse | null> {
+async function getSafeAdminOverview(): Promise<{ data: AdminAnalyticsResponse | null; error: string | null }> {
   try {
-    return await getAdminAnalyticsOverview(analyticsQueueQuery)
+    const data = await getAdminAnalyticsOverview(analyticsQueueQuery)
+    return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load admin overview:', error)
-    return null
+    return { data: null, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-async function getSafeAIUsageSummary(): Promise<AIUsageSummary | null> {
+async function getSafeAIUsageSummary(): Promise<{ data: AIUsageSummary | null; error: string | null }> {
   try {
-    return await apiFetcher<AIUsageSummary>('ai/usage')
+    const data = await apiFetcher<AIUsageSummary>('ai/usage')
+    return { data, error: null }
   } catch (error) {
     console.warn('[dashboard] Failed to load AI usage summary:', error)
-    return null
+    return { data: null, error: error instanceof Error ? error.message : String(error) }
   }
 }

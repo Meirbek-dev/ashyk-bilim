@@ -34,7 +34,9 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
 
   const courseOptions = risk.course_options ?? []
   const cohortOptions = risk.cohort_options ?? []
-  const totalPages = Math.max(1, Math.ceil(risk.total / risk.page_size))
+  const page = risk.page ?? 1
+  const pageSize = risk.page_size ?? 25
+  const totalPages = Math.max(1, Math.ceil((risk.total ?? 0) / pageSize))
   const params = new URLSearchParams()
   if (query.window) params.set('window', query.window)
   if (query.compare) params.set('compare', query.compare)
@@ -82,9 +84,9 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
         <div className="text-muted-foreground flex items-center justify-between px-1 text-sm">
           <span>
             {t('table.showingRows', {
-              from: (risk.page - 1) * risk.page_size + 1,
-              to: Math.min(risk.page * risk.page_size, risk.total),
-              total: risk.total,
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, risk.total ?? 0),
+              total: risk.total ?? 0,
             })}
           </span>
         </div>
@@ -103,27 +105,27 @@ async function PlatformAnalyticsAtRiskPageInner(props: {
             <Button
               variant="outline"
               size="sm"
-              disabled={risk.page <= 1}
+              disabled={page <= 1}
               nativeButton={false}
               render={
                 <Link
-                  href={`/dash/analytics/learners/at-risk?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, risk.page - 1)), page_size: String(risk.page_size) }).toString()}`}
+                  href={`/dash/analytics/learners/at-risk?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, page - 1)), page_size: String(pageSize) }).toString()}`}
                 />
               }
             >
               {t('table.prev')}
             </Button>
             <span className="text-muted-foreground text-sm font-medium">
-              {t('table.page', { current: risk.page, total: totalPages })}
+              {t('table.page', { current: page, total: totalPages })}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={risk.page >= totalPages}
+              disabled={page >= totalPages}
               nativeButton={false}
               render={
                 <Link
-                  href={`/dash/analytics/learners/at-risk?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, risk.page + 1)), page_size: String(risk.page_size) }).toString()}`}
+                  href={`/dash/analytics/learners/at-risk?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, page + 1)), page_size: String(pageSize) }).toString()}`}
                 />
               }
             >

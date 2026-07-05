@@ -1,6 +1,7 @@
 'use client'
 
 import { BookOpenCheck, FileQuestion, Lightbulb, ListChecks, Route, SearchCheck } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 
@@ -23,62 +24,27 @@ type AICommandId =
   | 'submission-remediate'
   | 'submission-review'
 
-const COMMANDS: Record<AICommandSurface, AICommand[]> = {
+interface AICommandDefinition {
+  id: AICommandId
+  surface: AICommandSurface
+}
+
+// Labels and prompts live in the `AiExperience.commandList` next-intl namespace, not here —
+// this registry only fixes which command ids exist per surface and which icon each one uses.
+const COMMANDS: Record<AICommandSurface, AICommandDefinition[]> = {
   activity: [
-    {
-      id: 'activity-explain',
-      label: 'Explain this activity',
-      prompt: 'Explain the current activity in plain language and list the next action I should take.',
-      surface: 'activity',
-    },
-    {
-      id: 'activity-check',
-      label: 'Check my understanding',
-      prompt: 'Ask me three short questions to check whether I understand this activity.',
-      surface: 'activity',
-    },
+    { id: 'activity-explain', surface: 'activity' },
+    { id: 'activity-check', surface: 'activity' },
   ],
-  analytics: [
-    {
-      id: 'analytics-risk',
-      label: 'Draft intervention',
-      prompt: 'Draft a concrete learner intervention using the current risk evidence and recommended action.',
-      surface: 'analytics',
-    },
-  ],
+  analytics: [{ id: 'analytics-risk', surface: 'analytics' }],
   course: [
-    {
-      id: 'course-map',
-      label: 'Map the course',
-      prompt: 'Summarize this course as a learning path with prerequisites, checkpoints, and likely blockers.',
-      surface: 'course',
-    },
-    {
-      id: 'course-sources',
-      label: 'Find sources',
-      prompt: 'List the course sources that support the answer and explain which activity each source comes from.',
-      surface: 'course',
-    },
-    {
-      id: 'course-practice',
-      label: 'Generate practice',
-      prompt: 'Create a short practice plan from the next unfinished course activities.',
-      surface: 'course',
-    },
+    { id: 'course-map', surface: 'course' },
+    { id: 'course-sources', surface: 'course' },
+    { id: 'course-practice', surface: 'course' },
   ],
   submission: [
-    {
-      id: 'submission-review',
-      label: 'Review feedback',
-      prompt: 'Explain the feedback on this submission and identify the first revision step.',
-      surface: 'submission',
-    },
-    {
-      id: 'submission-remediate',
-      label: 'Draft remediation',
-      prompt: 'Create a remediation plan from the submission evidence and cite the source of each gap.',
-      surface: 'submission',
-    },
+    { id: 'submission-review', surface: 'submission' },
+    { id: 'submission-remediate', surface: 'submission' },
   ],
 }
 
@@ -102,21 +68,25 @@ export function AICommandList({
   onCommand: (command: AICommand) => void
   surface: AICommandSurface
 }) {
+  const t = useTranslations('AiExperience.commandList')
+
   return (
     <div className="flex flex-wrap gap-2">
-      {COMMANDS[surface].map(command => {
-        const Icon = COMMAND_ICONS[command.id]
+      {COMMANDS[surface].map(definition => {
+        const Icon = COMMAND_ICONS[definition.id]
+        const label = t(`${definition.id}.label`)
+        const prompt = t(`${definition.id}.prompt`)
         return (
           <Button
-            key={command.id}
+            key={definition.id}
             type="button"
             variant="outline"
             size="sm"
             disabled={disabled}
-            onClick={() => onCommand(command)}
+            onClick={() => onCommand({ ...definition, label, prompt })}
           >
             <Icon data-icon="inline-start" aria-hidden="true" />
-            {command.label}
+            {label}
           </Button>
         )
       })}

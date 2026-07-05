@@ -58,7 +58,7 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
                     ? t('contentBottlenecksTable.na')
                     : `${numberFormatter.format(row.completion_rate)}%`}
                 </TableCell>
-                <TableCell>{numberFormatter.format(row.exit_count)}</TableCell>
+                <TableCell>{numberFormatter.format(row.exit_count ?? 0)}</TableCell>
                 <TableCell className="text-muted-foreground max-w-[360px] text-sm whitespace-normal">
                   {row.note}
                 </TableCell>

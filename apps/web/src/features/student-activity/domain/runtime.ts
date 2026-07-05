@@ -74,9 +74,9 @@ export function normalizeActivityProgress(cell?: ActivityProgressCell | null): S
   return {
     state,
     complete: state === 'complete' || state === 'passed' || Boolean(cell.completed_at),
-    isLate: cell.is_late,
-    teacherActionRequired: cell.teacher_action_required,
-    attemptCount: cell.attempt_count,
+    isLate: Boolean(cell.is_late),
+    teacherActionRequired: Boolean(cell.teacher_action_required),
+    attemptCount: cell.attempt_count ?? 0,
     ...(cell.score !== undefined ? { score: cell.score } : {}),
     ...(cell.passed !== undefined ? { passed: cell.passed } : {}),
     ...(cell.due_at !== undefined ? { dueAt: cell.due_at } : {}),

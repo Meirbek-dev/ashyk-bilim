@@ -47,5 +47,5 @@ export function isProgressOverdue(cell: ActivityProgressCell, now = Date.now()):
 }
 
 export function progressNeedsTeacherAction(cell: ActivityProgressCell): boolean {
-  return cell.teacher_action_required && Boolean(cell.latest_submission_uuid)
+  return Boolean(cell.teacher_action_required && cell.latest_submission_uuid)
 }

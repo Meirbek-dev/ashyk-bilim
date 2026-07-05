@@ -135,7 +135,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       id: submission.submission_uuid,
       label,
       submittedAt,
-      status: submission.status,
+      status: submission.status ?? 'PENDING',
       scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
       metaLabel: plagiarismText || null,
     }
@@ -599,7 +599,7 @@ function ExamTakingContent({
       conflict: submissionState.conflict
         ? {
             open: true,
-            latestVersion: submissionState.conflict.latestVersion,
+            latestVersion: submissionState.conflict.latestVersion ?? 0,
             latestSavedAt: submissionState.conflict.latestSavedAt,
             localAnswerCount: submissionState.conflict.localAnswerCount,
             serverAnswerCount: submissionState.conflict.serverAnswerCount,

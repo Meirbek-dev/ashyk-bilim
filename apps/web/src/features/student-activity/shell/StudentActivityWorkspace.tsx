@@ -13,7 +13,7 @@ import InlineStatusStrip from './InlineStatusStrip'
 import LockStateCard from './LockStateCard'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { CourseAIHub } from '@/features/course-qa'
-import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
+import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 
 const CONTENT_READ_TOLERANCE_PX = 24
@@ -142,11 +142,7 @@ export default function StudentActivityWorkspace({
     activityUuid: runtime.activity?.uuid ?? null,
     surface: 'student-activity',
   }
-  const aiDockStyle = useActivityAIDockStyle({
-    defaultMode: 'ask',
-    enabled: !isAttemptActive && !isLocked && !focusModeActive,
-    surface: aiScope.surface,
-  })
+  const aiEnabled = !isAttemptActive && !isLocked && !focusModeActive
 
   return (
     <div
@@ -167,11 +163,17 @@ export default function StudentActivityWorkspace({
           onToggleFocusMode={toggleFocusMode}
           onToggleOutline={() => setOutlineOpen(value => !value)}
           outlineOpen={outlineOpen}
-          assistantSlot={!isLocked && !focusModeActive ? <ActivityAITrigger scope={aiScope} /> : null}
+          assistantSlot={aiEnabled ? <ActivityAITrigger scope={aiScope} /> : null}
         />
       ) : null}
 
-      <div className="relative flex flex-1 transition-[padding] duration-200 ease-out" style={aiDockStyle}>
+      <ActivityAIDockLayout
+        scope={aiScope}
+        defaultMode="ask"
+        enabled={aiEnabled}
+        panel={aiEnabled ? <CourseAIHub courseUuid={courseUuid} variant="panel" /> : null}
+        className="relative flex flex-1"
+      >
         <main
           id="activity-main-content"
           className={cn(
@@ -184,13 +186,7 @@ export default function StudentActivityWorkspace({
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
         </main>
-      </div>
-
-      {!isAttemptActive && !isLocked && !focusModeActive ? (
-        <ActivityAIPanel scope={aiScope}>
-          <CourseAIHub courseUuid={courseUuid} variant="panel" />
-        </ActivityAIPanel>
-      ) : null}
+      </ActivityAIDockLayout>
 
       <BottomActionBar
         courseUuid={courseUuid}

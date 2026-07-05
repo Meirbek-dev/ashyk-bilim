@@ -17,9 +17,14 @@ export function getSubmissionDisplayName(submission: Pick<Submission, 'user' | '
 }
 
 export function buildSubmissionReviewViewModel(submission: Submission): SubmissionReviewViewModel {
-  const releaseState =
-    'release_state' in submission && submission.release_state
-      ? submission.release_state
+  const releaseStateValue =
+    'release_state' in submission && typeof submission.release_state === 'string' ? submission.release_state : null
+  const releaseState: SubmissionReviewViewModel['releaseState'] =
+    releaseStateValue === 'HIDDEN' ||
+    releaseStateValue === 'AWAITING_RELEASE' ||
+    releaseStateValue === 'VISIBLE' ||
+    releaseStateValue === 'RETURNED_FOR_REVISION'
+      ? releaseStateValue
       : getReleaseState(submission.status)
   return {
     surface: 'SUBMISSION_REVIEW',
@@ -27,7 +32,7 @@ export function buildSubmissionReviewViewModel(submission: Submission): Submissi
     displayName: getSubmissionDisplayName(submission),
     releaseState,
     scoreLabel: formatScoreFraction(submission.final_score, 100),
-    isLate: submission.is_late,
+    isLate: Boolean(submission.is_late),
     needsTeacherAction: needsTeacherAction(submission.status),
     canTeacherEdit: canTeacherEditGrade(submission.status),
     canPublish: canPublishGrade(submission.status),

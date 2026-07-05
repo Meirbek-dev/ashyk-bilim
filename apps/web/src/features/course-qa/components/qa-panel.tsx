@@ -80,7 +80,7 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
   }
 
   return (
-    <section className="grid min-h-0 gap-4 in-data-[ai-layout=wide]:lg:grid-cols-[minmax(0,1fr)_12rem]">
+    <section className="@container/qa-panel grid min-h-0 gap-4 @[28rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem]">
       <div className="flex min-h-0 flex-col gap-4">
         <AICommandList surface="course" disabled={run.pending} onCommand={command => submitQuestion(command.prompt)} />
         <ScrollArea className="min-h-72 rounded-lg border p-3">

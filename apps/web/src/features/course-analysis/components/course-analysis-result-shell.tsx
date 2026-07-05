@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangleIcon, CheckCircle2Icon, ClipboardCheckIcon, FileTextIcon, ShieldCheckIcon } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -47,6 +49,11 @@ export function CourseAnalysisResultShell({
   const t = useTranslations('AiExperience.courseAnalysisResultShell')
   const locale = useLocale()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [reviewedEvidence, setReviewedEvidence] = useState(false)
+  // A new analysis run is unreviewed evidence, even if the previous one was acknowledged.
+  useEffect(() => {
+    setReviewedEvidence(false)
+  }, [analysis.analysis_uuid])
   const citations = useMemo(() => normalizeCitations(analysis.report_json.citations), [analysis.report_json.citations])
   const findings = useMemo(
     () =>
@@ -99,7 +106,11 @@ export function CourseAnalysisResultShell({
           </div>
         </div>
         {onPublish ? (
-          <Button type="button" disabled={publishing || citations.length === 0} onClick={() => setConfirmOpen(true)}>
+          <Button
+            type="button"
+            disabled={publishing || citations.length === 0 || !reviewedEvidence}
+            onClick={() => setConfirmOpen(true)}
+          >
             {publishing ? <Spinner data-icon="inline-start" /> : <ClipboardCheckIcon data-icon="inline-start" />}
             {t('publishScore')}
           </Button>
@@ -116,6 +127,20 @@ export function CourseAnalysisResultShell({
           <AIEvidencePanel citations={citations} courseUuid={courseUuid} />
         </div>
       </div>
+
+      {onPublish ? (
+        <Label className="flex items-start gap-3 rounded-lg border p-3 text-sm leading-relaxed">
+          <Checkbox
+            checked={reviewedEvidence}
+            disabled={citations.length === 0}
+            onCheckedChange={checked => setReviewedEvidence(checked)}
+          />
+          <span className="flex flex-col gap-1">
+            <span>{t('reviewGateLabel')}</span>
+            {!reviewedEvidence ? <span className="text-muted-foreground text-xs">{t('reviewGateHint')}</span> : null}
+          </span>
+        </Label>
+      ) : null}
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>

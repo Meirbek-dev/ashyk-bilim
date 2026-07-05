@@ -21,12 +21,19 @@ const fetchCourseMetadata = cache(async (courseuuid: string) => {
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params
   const course_meta = await fetchCourseMetadata(params.courseuuid)
+  const courseName = course_meta?.name ?? ''
+  const courseDescription = course_meta?.description ?? ''
+  const courseKeywords = Array.isArray(course_meta?.learnings)
+    ? course_meta.learnings.filter((value): value is string => typeof value === 'string')
+    : typeof course_meta?.learnings === 'string'
+      ? [course_meta.learnings]
+      : []
 
   // SEO
   return {
-    title: `${course_meta.name} - ${APP_NAME}`,
-    description: course_meta.description,
-    keywords: course_meta.learnings,
+    title: `${courseName} - ${APP_NAME}`,
+    description: courseDescription,
+    keywords: courseKeywords,
     robots: {
       index: true,
       follow: true,
@@ -38,19 +45,19 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
-      title: `${course_meta.name} - ${APP_NAME}`,
-      description: course_meta.description || '',
+      title: `${courseName} - ${APP_NAME}`,
+      description: courseDescription,
       images: [
         {
           url: getCourseThumbnailMediaDirectory(course_meta?.course_uuid, course_meta?.thumbnail_image),
           width: 800,
           height: 600,
-          alt: course_meta.name,
+          alt: courseName,
         },
       ],
       type: 'article',
-      publishedTime: course_meta.creation_date || '',
-      tags: course_meta.learnings || [],
+      publishedTime: course_meta?.creation_date || '',
+      tags: courseKeywords,
     },
   }
 }

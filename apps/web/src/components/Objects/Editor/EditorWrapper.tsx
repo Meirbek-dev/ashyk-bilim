@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { AuthoringEditor } from './views'
 
 import type { Platform } from '@/types/platform'
-import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
+import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -55,14 +55,15 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
     activityUuid: props.activity.activity_uuid,
     surface: 'teacher-studio',
   }
-  const aiDockStyle = useActivityAIDockStyle({
-    defaultMode: 'review',
-    surface: aiScope.surface,
-  })
 
   return (
     <PlatformContextProvider initialPlatform={props.platform}>
-      <div className="min-w-0 transition-[padding] duration-200 ease-out" style={aiDockStyle}>
+      <ActivityAIDockLayout
+        scope={aiScope}
+        defaultMode="review"
+        panel={<CourseAIHub courseUuid={props.course.course_uuid} variant="panel" />}
+        className="min-w-0"
+      >
         <AuthoringEditor
           platform={props.platform}
           course={props.course}
@@ -77,10 +78,7 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
           setContent={setContent}
           assistantSlot={<ActivityAITrigger scope={aiScope} />}
         />
-      </div>
-      <ActivityAIPanel scope={aiScope}>
-        <CourseAIHub courseUuid={props.course.course_uuid} variant="panel" />
-      </ActivityAIPanel>
+      </ActivityAIDockLayout>
     </PlatformContextProvider>
   )
 }

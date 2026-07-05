@@ -38,6 +38,11 @@ import { Button } from '@/components/ui/button'
 
 const USERS_PER_PAGE = 20
 
+interface UserSessionRoleLike {
+  role?: { priority?: number } | null
+  priority?: number
+}
+
 const getRolePriority = (roleObj: { role?: unknown; priority?: number } | string | null | undefined) => {
   if (!roleObj) return 0
   if (typeof roleObj === 'string') return 0
@@ -126,7 +131,11 @@ const Users = () => {
     try {
       const userRoles = sessionData?.roles
       if (!userRoles || userRoles.length === 0) return 0
-      return Math.max(...userRoles.map((r: AppRoleSummary) => getRolePriority(r.role || r)))
+      return Math.max(
+        ...userRoles.map((r: AppRoleSummary | UserSessionRoleLike) =>
+          getRolePriority((r as AppRoleSummary).role ?? (r as UserSessionRoleLike).role ?? r),
+        ),
+      )
     } catch {
       return 0
     }

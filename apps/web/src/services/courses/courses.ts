@@ -37,7 +37,7 @@ type NormalizedCourse = Omit<
   mini_description: string
   tags: string[]
   thumbnail_image: string
-  thumbnail_type?: Exclude<CourseRead['thumbnail_type'], null>
+  thumbnail_type?: NonNullable<CourseRead['thumbnail_type']>
   thumbnail_video: string
 }
 type NormalizedCourseWithPermissions = Omit<
@@ -51,7 +51,7 @@ type NormalizedCourseWithPermissions = Omit<
   mini_description: string
   tags: string[]
   thumbnail_image: string
-  thumbnail_type?: Exclude<CourseReadWithPermissions['thumbnail_type'], null>
+  thumbnail_type?: NonNullable<CourseReadWithPermissions['thumbnail_type']>
   thumbnail_video: string
 }
 type NormalizedFullCourse = Omit<
@@ -79,7 +79,7 @@ type NormalizedFullCourse = Omit<
   mini_description: string
   tags: string[]
   thumbnail_image: string
-  thumbnail_type?: Exclude<FullCourseRead['thumbnail_type'], null>
+  thumbnail_type?: NonNullable<FullCourseRead['thumbnail_type']>
   thumbnail_video: string
   update_date?: string
 }
@@ -337,10 +337,7 @@ export async function searchCourses(query: string, page = 1, limit = 20) {
 /**
  * Cached fetch for course metadata
  */
-async function fetchCourseMetadata(
-  course_uuid: string,
-  withUnpublishedActivities = false,
-): Promise<NormalizedFullCourse> {
+async function fetchCourseMetadata(course_uuid: string, withUnpublishedActivities = false): Promise<AppCourse> {
   const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
   const result = await apiFetch(
     `courses/${normalizedCourseUuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`,
@@ -354,7 +351,11 @@ async function fetchCourseMetadata(
   return normalizeFullCourse(await errorHandling(result))
 }
 
-export async function getCourseMetadata(course_uuid: string, _next?: unknown, withUnpublishedActivities = false) {
+export async function getCourseMetadata(
+  course_uuid: string,
+  _next?: unknown,
+  withUnpublishedActivities = false,
+): Promise<AppCourse> {
   return fetchCourseMetadata(course_uuid, withUnpublishedActivities)
 }
 

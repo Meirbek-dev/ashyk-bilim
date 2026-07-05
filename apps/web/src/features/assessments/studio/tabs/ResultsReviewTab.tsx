@@ -593,8 +593,13 @@ function OperateInsight({
 }
 
 function readReleaseState(submission: Submission): ReleaseState {
-  return 'release_state' in submission && submission.release_state
-    ? submission.release_state
+  const releaseState =
+    'release_state' in submission && typeof submission.release_state === 'string' ? submission.release_state : null
+  return releaseState === 'HIDDEN' ||
+    releaseState === 'AWAITING_RELEASE' ||
+    releaseState === 'VISIBLE' ||
+    releaseState === 'RETURNED_FOR_REVISION'
+    ? releaseState
     : getReleaseState(submission.status)
 }
 

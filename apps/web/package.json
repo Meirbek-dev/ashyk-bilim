@@ -21,6 +21,7 @@
     "audit:errors": "node scripts/audit-error-handling.mjs",
     "lint:fix": "eslint --fix . --cache",
     "lint:empty-folders": "node scripts/check-empty-folders.mjs",
+    "lint:ai-dock-layout": "node scripts/check-ai-dock-layout.mjs",
     "format": "vp fmt --write",
     "start": "next start",
     "checktypes": "next typegen && tsgo --noEmit",

@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
-import { AI_STATE_LABELS, aiStateProgress, buildAIStages, isTerminalAIState } from '@/features/ai-experience'
+import { aiStateProgress, buildAIStages, isTerminalAIState } from '@/features/ai-experience'
+import type { AIWorkState } from '@/features/ai-experience'
+
+// Test-local labels. The app's single source of truth for these strings is the
+// `AiExperience.states.labels` next-intl namespace, not a parallel TS object.
+const TEST_LABELS: Record<AIWorkState, string> = {
+  idle: 'idle',
+  confirming: 'confirming',
+  queued: 'queued',
+  collecting_context: 'collecting_context',
+  running: 'running',
+  checking_evidence: 'checking_evidence',
+  complete: 'complete',
+  needs_human_review: 'needs_human_review',
+  failed: 'failed',
+  cancelled: 'cancelled',
+}
 
 describe('AI run state helpers', () => {
   it('marks terminal states', () => {
@@ -16,7 +32,7 @@ describe('AI run state helpers', () => {
   })
 
   it('builds ordered timeline stages', () => {
-    const stages = buildAIStages('running', AI_STATE_LABELS)
+    const stages = buildAIStages('running', TEST_LABELS)
 
     expect(stages.map(stage => stage.state)).toEqual([
       'queued',

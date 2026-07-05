@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from '@components/ui/AppLink'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
+import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -47,10 +47,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     activityUuid,
     surface: 'teacher-studio',
   }
-  const aiDockStyle = useActivityAIDockStyle({
-    defaultMode: 'review',
-    surface: aiScope.surface,
-  })
 
   if (vm?.kind !== prevKind) {
     setPrevKind(vm?.kind)
@@ -123,8 +119,13 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const slotProps = { activityUuid, courseUuid }
 
   return (
-    <div className="bg-background min-h-screen transition-[padding] duration-200 ease-out" style={aiDockStyle}>
-      {/* ── Topbar ──────────────────────────────────────────────────────── */}
+    <ActivityAIDockLayout
+      scope={aiScope}
+      defaultMode="review"
+      panel={<CourseAIHub courseUuid={courseUuid} variant="panel" />}
+      className="bg-background min-h-screen"
+    >
+      {/* ── Topbar ───────────────────────────────────────────────────────────────── */}
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur" style={{ height: '61px' }}>
         <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">
           {/* Left: breadcrumb + title + lifecycle badge */}
@@ -192,9 +193,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           {t('loadingEditor')}
         </div>
       )}
-      <ActivityAIPanel scope={aiScope}>
-        <CourseAIHub courseUuid={courseUuid} variant="panel" />
-      </ActivityAIPanel>
-    </div>
+    </ActivityAIDockLayout>
   )
 }

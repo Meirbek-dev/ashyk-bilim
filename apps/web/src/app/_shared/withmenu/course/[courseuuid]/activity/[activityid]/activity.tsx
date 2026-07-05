@@ -38,7 +38,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
 function buildCourseEndRuntime(course: CourseStructure): StudentActivityRuntime {
   const courseRecord = course as Record<string, unknown>
   const outline = (course.chapters ?? []).map((chapter, chapterIndex: number) => ({
-    id: chapter.id ?? chapterIndex,
+    id: Number(chapter.id ?? chapterIndex),
     title: chapter.name ?? `Chapter ${chapterIndex + 1}`,
     index: chapterIndex,
     activities: (chapter.activities ?? []).map(activity => ({

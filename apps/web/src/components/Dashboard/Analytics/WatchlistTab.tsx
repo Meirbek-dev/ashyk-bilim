@@ -25,17 +25,7 @@ interface WatchlistTabProps {
 export default function WatchlistTab({ query, data }: WatchlistTabProps) {
   const t = useTranslations('TeacherAnalytics')
 
-  const interventionSummary = (
-    data as TeacherOverviewResponse & {
-      intervention_summary?: {
-        total: number
-        open: number
-        resolved: number
-        recovered_learners: number
-        avg_risk_delta_after_intervention: number | null
-      }
-    }
-  ).intervention_summary
+  const interventionSummary = data.intervention_summary
 
   const buildScopedHref = (pathname: string, overrides: Partial<AnalyticsQuery> = {}) => {
     const params = new URLSearchParams()
@@ -117,7 +107,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
             <span className="text-muted-foreground text-xs">
               {t('riskDistribution.preview', {
                 shown: data.at_risk_preview.length,
-                total: data.at_risk_total,
+                total: data.at_risk_total ?? 0,
               })}
             </span>
           </div>
@@ -130,7 +120,7 @@ export default function WatchlistTab({ query, data }: WatchlistTabProps) {
               query={query}
             />
           </Suspense>
-          {data.at_risk_total > 0 && (
+          {(data.at_risk_total ?? 0) > 0 && (
             <p className="text-muted-foreground pl-1 text-sm">
               <Link
                 href={buildScopedHref('/dash/analytics/learners/at-risk')}

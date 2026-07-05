@@ -36,16 +36,21 @@ const MODE_LABELS: Record<ActivityAIMode, string> = {
   remediation: 'Remediation',
 }
 
-type ActivityAILayout = 'compact' | 'wide'
+type ActivityAILayout = 'chat' | 'compact' | 'wide'
 
 export function getAIModeLayout(mode: ActivityAIMode, surface: AIScope['surface']): ActivityAILayout {
   if (surface === 'admin') return 'wide'
   if (mode === 'review' || mode === 'analyze' || mode === 'draft-feedback' || mode === 'remediation') return 'wide'
+  // Conversational, turn-based modes get more room than a narrow "compact" report tab so a
+  // thread history rail has somewhere to live — see QAPanel's own container query.
+  if (mode === 'ask' || mode === 'explain' || mode === 'practice') return 'chat'
   return 'compact'
 }
 
 export function getActivityAIDockWidth(layout: ActivityAILayout) {
-  return layout === 'wide' ? 'min(48rem, 46vw)' : 'min(26rem, calc(100vw - 2rem))'
+  if (layout === 'wide') return 'min(48rem, 46vw)'
+  if (layout === 'chat') return 'min(34rem, 60vw)'
+  return 'min(26rem, calc(100vw - 2rem))'
 }
 
 export function useActivityAIDockStyle({
@@ -118,7 +123,7 @@ export function ActivityAIPanel({ children, className, scope }: ActivityAIPanelP
       data-ai-layout={layout}
       className={cn(
         'bg-background text-foreground fixed end-0 top-14 bottom-0 z-40 flex min-h-0 border-s shadow-lg',
-        'w-[min(26rem,calc(100vw-2rem))] data-[ai-layout=wide]:w-[min(48rem,46vw)]',
+        'w-[min(26rem,calc(100vw-2rem))] data-[ai-layout=chat]:w-[min(34rem,60vw)] data-[ai-layout=wide]:w-[min(48rem,46vw)]',
         className,
       )}
       onKeyDown={event => {
@@ -202,7 +207,10 @@ function PanelBody({
       </div>
       <ScrollArea className="min-h-0 flex-1 overscroll-contain">
         <div
-          className={cn('flex min-h-full flex-col gap-4 p-4', layout === 'wide' ? 'max-w-none' : 'max-w-[30rem]')}
+          className={cn(
+            'flex min-h-full flex-col gap-4 p-4',
+            layout === 'wide' || layout === 'chat' ? 'max-w-none' : 'max-w-[30rem]',
+          )}
           aria-live="polite"
         >
           {children}

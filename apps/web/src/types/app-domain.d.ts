@@ -147,7 +147,7 @@ declare global {
   }
 
   interface AppChapter {
-    id?: number
+    id?: number | string | null
     chapter_uuid?: string
     name?: string
     description?: string | null
@@ -163,11 +163,12 @@ declare global {
     withUnpublishedActivities?: boolean
     description?: string
     about?: string
+    mini_description?: string
     learnings?: string | string[] | AppPayload | null
     tags?: string[] | string | null
     public?: boolean
     thumbnail_image?: string | null
-    thumbnail_type?: 'image' | 'video' | 'both' | string | null
+    thumbnail_type?: string | null
     thumbnail_video?: string | null
     chapters?: AppChapter[]
     authors?: AppCourseAuthor[]

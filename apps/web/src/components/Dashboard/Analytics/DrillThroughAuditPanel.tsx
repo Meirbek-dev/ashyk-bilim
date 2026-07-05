@@ -103,7 +103,7 @@ export default function DrillThroughAuditPanel({ query, assessmentPreview }: Dri
         {result ? (
           <div className="space-y-2">
             <Badge variant="outline">
-              {metricLabel(result.metric)}: {t('drillThroughAuditPanel.rows', { count: result.total })}
+              {metricLabel(result.metric)}: {t('drillThroughAuditPanel.rows', { count: result.total ?? 0 })}
             </Badge>
             <Table>
               <TableHeader>

@@ -51,7 +51,7 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
             {t('overview.previewLabel')}
           </Badge>
           <span className="text-muted-foreground text-xs">
-            {t('overview.showingCourses', { total: data.course_total })}
+            {t('overview.showingCourses', { total: data.course_total ?? 0 })}
           </span>
         </div>
         <Suspense fallback={<SectionFallback height="h-[320px]" />}>
@@ -75,7 +75,7 @@ export default function PerformanceTab({ query, data }: PerformanceTabProps) {
               {t('overview.previewLabel')}
             </Badge>
             <span className="text-muted-foreground text-xs">
-              {t('overview.showingAssessments', { total: data.assessment_total })}
+              {t('overview.showingAssessments', { total: data.assessment_total ?? 0 })}
             </span>
           </div>
           <Suspense fallback={<SectionFallback height="h-[320px]" />}>

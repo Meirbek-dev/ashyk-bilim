@@ -24,7 +24,7 @@ import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 import { CustomCheckbox } from '@/components/ui/custom/custom-checkbox'
-import { ActivityAIPanel, ActivityAITrigger, useActivityAIDockStyle } from '@/features/ai-experience'
+import { ActivityAIDockLayout, ActivityAITrigger } from '@/features/ai-experience'
 import type { AIScope } from '@/features/ai-experience'
 import { CourseAIHub } from '@/features/course-qa'
 
@@ -112,10 +112,6 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     activityUuid,
     surface: 'teacher-studio',
   }
-  const aiDockStyle = useActivityAIDockStyle({
-    defaultMode: 'review',
-    surface: aiScope.surface,
-  })
 
   const { data, isLoading, error } = useQuery(
     queryOptions({
@@ -234,7 +230,12 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   }
 
   return (
-    <div className="bg-background min-h-screen transition-[padding] duration-200 ease-out" style={aiDockStyle}>
+    <ActivityAIDockLayout
+      scope={aiScope}
+      defaultMode="review"
+      panel={<CourseAIHub courseUuid={courseUuid} variant="panel" />}
+      className="bg-background min-h-screen"
+    >
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
         <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           <div className="min-w-0">
@@ -424,10 +425,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </section>
         </aside>
       </main>
-      <ActivityAIPanel scope={aiScope}>
-        <CourseAIHub courseUuid={courseUuid} variant="panel" />
-      </ActivityAIPanel>
-    </div>
+    </ActivityAIDockLayout>
   )
 }
 

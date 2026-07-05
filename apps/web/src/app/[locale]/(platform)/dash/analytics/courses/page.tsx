@@ -32,7 +32,9 @@ async function PlatformAnalyticsCoursesPageInner(props: {
     )
   }
 
-  const totalPages = Math.max(1, Math.ceil(courseList.total / courseList.page_size))
+  const page = courseList.page ?? 1
+  const pageSize = courseList.page_size ?? 25
+  const totalPages = Math.max(1, Math.ceil((courseList.total ?? 0) / pageSize))
   const params = new URLSearchParams()
   if (query.window) params.set('window', query.window)
   if (query.compare) params.set('compare', query.compare)
@@ -71,7 +73,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
             <TeacherFilterBar
               path="/dash/analytics/courses"
               query={query}
-              courseCount={courseList.total}
+              courseCount={courseList.total ?? 0}
               courseOptions={courseList.course_options ?? []}
               cohortOptions={courseList.cohort_options ?? []}
             />
@@ -80,9 +82,9 @@ async function PlatformAnalyticsCoursesPageInner(props: {
         <div className="text-muted-foreground flex items-center justify-between px-1 text-sm">
           <span>
             {t('table.showingRows', {
-              from: (courseList.page - 1) * courseList.page_size + 1,
-              to: Math.min(courseList.page * courseList.page_size, courseList.total),
-              total: courseList.total,
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, courseList.total ?? 0),
+              total: courseList.total ?? 0,
             })}
           </span>
         </div>
@@ -94,27 +96,27 @@ async function PlatformAnalyticsCoursesPageInner(props: {
             <Button
               variant="outline"
               size="sm"
-              disabled={courseList.page <= 1}
+              disabled={page <= 1}
               nativeButton={false}
               render={
                 <Link
-                  href={`/dash/analytics/courses?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, courseList.page - 1)), page_size: String(courseList.page_size) }).toString()}`}
+                  href={`/dash/analytics/courses?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.max(1, page - 1)), page_size: String(pageSize) }).toString()}`}
                 />
               }
             >
               {t('table.prev')}
             </Button>
             <span className="text-muted-foreground text-sm font-medium">
-              {t('table.page', { current: courseList.page, total: totalPages })}
+              {t('table.page', { current: page, total: totalPages })}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={courseList.page >= totalPages}
+              disabled={page >= totalPages}
               nativeButton={false}
               render={
                 <Link
-                  href={`/dash/analytics/courses?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, courseList.page + 1)), page_size: String(courseList.page_size) }).toString()}`}
+                  href={`/dash/analytics/courses?${new URLSearchParams({ ...Object.fromEntries(params.entries()), page: String(Math.min(totalPages, page + 1)), page_size: String(pageSize) }).toString()}`}
                 />
               }
             >
