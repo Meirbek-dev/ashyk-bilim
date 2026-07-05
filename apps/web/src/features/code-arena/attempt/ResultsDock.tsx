@@ -6,9 +6,11 @@ import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { InlineError } from '@/components/ui/error-state'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { useApiError } from '@/hooks/useApiError'
 import { cn } from '@/lib/utils'
 import type { CodeResultTab, CodeVerdict, TestCaseResult } from '../domain'
 import { firstFailingResult, verdictLabel, verdictTone } from '../domain'
@@ -20,6 +22,7 @@ interface ResultsDockProps {
   customInput: string
   onCustomInputChange: (value: string) => void
   consoleOutput: string
+  executionError?: unknown
   results: TestCaseResult[] | null
   verdict: CodeVerdict | null
 }
@@ -30,10 +33,12 @@ export function ResultsDock({
   customInput,
   onCustomInputChange,
   consoleOutput,
+  executionError,
   results,
   verdict,
 }: ResultsDockProps) {
   const t = useTranslations('Activities.CodeChallenges')
+  const { handleApiError } = useApiError()
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
   const [prevResults, setPrevResults] = useState(results)
 
@@ -119,6 +124,14 @@ export function ResultsDock({
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
             <VerdictBanner verdict={verdict} results={results} onFocusFailedCase={handleFocusFailedCase} />
+
+            {executionError ? (
+              <InlineError
+                description={handleApiError(executionError, { fallback: t('testRunFailed') }).message}
+                error={executionError}
+                title={t('testRunFailed')}
+              />
+            ) : null}
 
             {verdict === 'RUNNING' && <RunProgressTimeline />}
 

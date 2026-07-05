@@ -1,11 +1,11 @@
 'use client'
 
-import React, { Component } from 'react'
+import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
 
 import { ErrorState, InlineError } from '@/components/ui/error-state'
-import { reportClientError } from '@/services/telemetry/client'
+import { reportClientError, serializeClientError } from '@/services/telemetry/client'
 
 interface WidgetErrorBoundaryProps {
   children: ReactNode
@@ -35,12 +35,7 @@ class BaseWidgetErrorBoundary extends Component<
 
   public override componentDidCatch(error: Error, info: ErrorInfo) {
     void reportClientError({
-      error: {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        componentStack: info.componentStack,
-      },
+      error: { ...serializeClientError(error), componentStack: info.componentStack },
       phase: 'widget-error-boundary',
       scope: this.props.scope,
     }).catch(() => undefined)
@@ -58,13 +53,7 @@ class BaseWidgetErrorBoundary extends Component<
       const description = this.props.description ?? errorMsg
 
       if (this.props.variant === 'inline') {
-        return (
-          <InlineError
-            title={title as string}
-            description={description}
-            error={this.state.error}
-          />
-        )
+        return <InlineError title={title} description={description} error={this.state.error} />
       }
 
       return (
@@ -86,9 +75,7 @@ class BaseWidgetErrorBoundary extends Component<
 export function WidgetErrorBoundary(props: WidgetErrorBoundaryProps) {
   return (
     <QueryErrorResetBoundary>
-      {({ reset }) => (
-        <BaseWidgetErrorBoundary {...props} onQueryReset={reset} />
-      )}
+      {({ reset }) => <BaseWidgetErrorBoundary {...props} onQueryReset={reset} />}
     </QueryErrorResetBoundary>
   )
 }

@@ -8,9 +8,12 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import { MarkdownEditor } from '@/features/content-markdown'
+import { useApiError } from '@/hooks/useApiError'
 import {
   fileSubmissionExportUrl,
   getFileSubmissionByActivity,
@@ -69,8 +72,16 @@ export default function FileSubmissionReviewWorkspace({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState<string | null>(null)
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null) // attemptFileUuid
+  const t = useTranslations('FileSubmissionReview')
+  const { handleApiError, toastApiError } = useApiError()
 
-  const { data: config, isLoading: isConfigLoading } = useQuery(
+  const {
+    data: config,
+    error: configError,
+    isError: isConfigError,
+    isLoading: isConfigLoading,
+    refetch: refetchConfig,
+  } = useQuery(
     queryOptions({
       queryKey: activityQueryKey(cleanActivityUuid),
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
@@ -78,7 +89,13 @@ export default function FileSubmissionReviewWorkspace({
     }),
   )
 
-  const { data: queue, isLoading: isQueueLoading } = useQuery(
+  const {
+    data: queue,
+    error: queueError,
+    isError: isQueueError,
+    isLoading: isQueueLoading,
+    refetch: refetchQueue,
+  } = useQuery(
     queryOptions({
       queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
       queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
@@ -133,7 +150,7 @@ export default function FileSubmissionReviewWorkspace({
       toast.success(t('submissionUpdated'))
     },
     onError: gradeError => {
-      toast.error(gradeError instanceof Error ? gradeError.message : t('updateSubmissionFailed'))
+      toastApiError(gradeError, { fallback: t('updateSubmissionFailed') })
     },
   })
 
@@ -165,7 +182,7 @@ export default function FileSubmissionReviewWorkspace({
       const result = await getFileSubmissionFileUrl(attemptFileUuid)
       window.open(result.get_url, '_blank', 'noopener,noreferrer')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('openFileFailed'))
+      toastApiError(error, { fallback: t('openFileFailed') })
     }
   }
 
@@ -176,13 +193,11 @@ export default function FileSubmissionReviewWorkspace({
       setPreviewUrl(result.get_url)
       setPreviewFilename(filename)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('previewFileFailed'))
+      toastApiError(error, { fallback: t('previewFileFailed') })
     } finally {
       setIsFetchingPreview(null)
     }
   }
-
-  const t = useTranslations('FileSubmissionReview')
 
   if (isConfigLoading || isQueueLoading) {
     return (
@@ -190,6 +205,27 @@ export default function FileSubmissionReviewWorkspace({
         <Loader2 className="mr-2 size-4 animate-spin" />
         {t('loadingSubmissions')}
       </div>
+    )
+  }
+
+  if (isConfigError || isQueueError) {
+    const sourceError = configError ?? queueError
+    const processed = handleApiError(sourceError, { fallback: t('reviewUnavailable') })
+    return (
+      <ErrorState
+        actionLabel={processed.actionLabel}
+        description={processed.message}
+        error={sourceError}
+        {...(processed.showRetry
+          ? {
+              onAction: () => {
+                void (isConfigError ? refetchConfig() : refetchQueue())
+              },
+            }
+          : {})}
+        title={t('reviewUnavailable')}
+        variant="section"
+      />
     )
   }
 
@@ -350,23 +386,25 @@ export default function FileSubmissionReviewWorkspace({
 
               {/* ── Inline file preview ──────────────────────────────────── */}
               {previewUrl && (
-                <div className="rounded-md border">
-                  <div className="flex items-center justify-between border-b p-3">
-                    <p className="truncate text-sm font-medium">{previewFilename}</p>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-7 shrink-0"
-                      onClick={() => {
-                        setPreviewUrl(null)
-                        setPreviewFilename(null)
-                      }}
-                    >
-                      <X className="size-4" />
-                    </Button>
+                <WidgetErrorBoundary scope="file-submission-preview" variant="section" title={t('previewFileFailed')}>
+                  <div className="rounded-md border">
+                    <div className="flex items-center justify-between border-b p-3">
+                      <p className="truncate text-sm font-medium">{previewFilename}</p>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 shrink-0"
+                        onClick={() => {
+                          setPreviewUrl(null)
+                          setPreviewFilename(null)
+                        }}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                    <FilePreviewPane url={previewUrl} filename={previewFilename ?? ''} />
                   </div>
-                  <FilePreviewPane url={previewUrl} filename={previewFilename ?? ''} />
-                </div>
+                </WidgetErrorBoundary>
               )}
             </section>
 

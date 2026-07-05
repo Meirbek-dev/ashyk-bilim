@@ -14,6 +14,8 @@ import {
   CommandShortcut,
 } from '@/components/ui/command'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { ErrorState, InlineError } from '@/components/ui/error-state'
+import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 import {
   useCodeChallengeSubmissions,
   useJudge0Languages,
@@ -39,6 +41,7 @@ import { ProblemPane } from './ProblemPane'
 import { ResultsDock } from './ResultsDock'
 import { CodeArenaHeader } from './CodeArenaHeader'
 import { HintDrawer } from './HintDrawer'
+import { useApiError } from '@/hooks/useApiError'
 
 interface CodeArenaWorkspaceProps {
   problem: CodeChallengeProblem
@@ -77,10 +80,14 @@ export function CodeArenaWorkspace({
   const [consoleOutput, setConsoleOutput] = useState('')
   const [results, setResults] = useState<TestCaseResult[] | null>(null)
   const [verdict, setVerdict] = useState<CodeVerdict | null>(null)
+  const [runError, setRunError] = useState<unknown>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { preferences, setPreferences, monacoOptions } = useEditorPreferences()
-  const { data: judge0Languages = [] } = useJudge0Languages()
-  const { data: submissionsData } = useCodeChallengeSubmissions(problem.activityUuid)
+  const { handleApiError, toastApiError } = useApiError()
+  const languagesQuery = useJudge0Languages()
+  const submissionsQuery = useCodeChallengeSubmissions(problem.activityUuid)
+  const judge0Languages = languagesQuery.data ?? []
+  const submissionsData = submissionsQuery.data
   const runCustom = useRunCustomTest(problem.activityUuid)
   const runTests = useRunCodeChallengeTests(problem.activityUuid)
   const submissions = Array.isArray(submissionsData) ? submissionsData : []
@@ -162,6 +169,7 @@ export function CodeArenaWorkspace({
     }
     setResultTab('console')
     setConsoleOutput('')
+    setRunError(null)
     try {
       const result = await runCustom.mutateAsync({
         sourceCode: code,
@@ -172,12 +180,13 @@ export function CodeArenaWorkspace({
       setConsoleOutput(output)
       setVerdict(verdictFromRun(result.status_description, result.status === 3 ? 1 : 0, 1))
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('codeExecutionFailed')
+      const message = handleApiError(error, { fallback: t('codeExecutionFailed') }).message
       setConsoleOutput(message)
       setVerdict('DEGRADED')
-      toast.error(message)
+      setRunError(error)
+      toastApiError(error, { fallback: t('codeExecutionFailed') })
     }
-  }, [code, customInput, languageId, runCustom, t])
+  }, [code, customInput, handleApiError, languageId, runCustom, t, toastApiError])
 
   const handleRunTests = useCallback(async () => {
     if (!code.trim()) {
@@ -187,16 +196,17 @@ export function CodeArenaWorkspace({
     setResultTab('result')
     setResults(null)
     setVerdict('RUNNING')
+    setRunError(null)
     try {
       const result = await runTests.mutateAsync({ sourceCode: code, languageId })
       setResults(result.results)
       setVerdict(verdictFromResults(result.results))
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('testRunFailed')
       setVerdict('DEGRADED')
-      toast.error(message)
+      setRunError(error)
+      toastApiError(error, { fallback: t('testRunFailed') })
     }
-  }, [code, languageId, runTests, t])
+  }, [code, languageId, runTests, t, toastApiError])
 
   const handleSubmit = useCallback(async () => {
     if (!code.trim()) {
@@ -209,11 +219,11 @@ export function CodeArenaWorkspace({
       await onSubmit()
       toast.success(t('submissionQueued'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('submissionFailed'))
+      toastApiError(error, { fallback: t('submissionFailed') })
     } finally {
       setIsSubmitting(false)
     }
-  }, [code, languageId, onSubmit, t, updateAnswer])
+  }, [code, languageId, onSubmit, t, toastApiError, updateAnswer])
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
@@ -249,6 +259,30 @@ export function CodeArenaWorkspace({
     return () => globalThis.removeEventListener('keydown', onKeyDown)
   }, [handleRunTests, handleSubmit])
 
+  if (languagesQuery.isError) {
+    const processed = handleApiError(languagesQuery.error, { fallback: t('codeExecutionFailed') })
+    return (
+      <ErrorState
+        actionLabel={processed.actionLabel}
+        description={processed.message}
+        error={languagesQuery.error}
+        {...(processed.showRetry
+          ? {
+              onAction: () => {
+                void languagesQuery.refetch()
+              },
+            }
+          : {})}
+        title={t('codeExecutionFailed')}
+        variant="section"
+      />
+    )
+  }
+
+  const submissionsError = submissionsQuery.isError
+    ? handleApiError(submissionsQuery.error, { fallback: t('codeExecutionFailed') })
+    : null
+
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
       <CodeArenaHeader
@@ -260,6 +294,15 @@ export function CodeArenaWorkspace({
         onSubmit={handleSubmit}
         disabled={disabled}
       />
+
+      {submissionsError ? (
+        <InlineError
+          className="m-3"
+          description={submissionsError.message}
+          error={submissionsQuery.error}
+          title={t('codeExecutionFailed')}
+        />
+      ) : null}
 
       <ResizablePanelGroup id="code-arena-main-layout" orientation="horizontal" className="min-h-0 flex-1">
         <ResizablePanel defaultSize={34} minSize={24} className={cn('min-w-0')}>
@@ -301,15 +344,18 @@ export function CodeArenaWorkspace({
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={35} minSize={20}>
-              <ResultsDock
-                activeTab={resultTab}
-                onTabChange={setResultTab}
-                customInput={customInput}
-                onCustomInputChange={setCustomInput}
-                consoleOutput={consoleOutput}
-                results={results}
-                verdict={verdict}
-              />
+              <WidgetErrorBoundary scope="judge0-results-dock" variant="section" title={t('codeExecutionFailed')}>
+                <ResultsDock
+                  activeTab={resultTab}
+                  onTabChange={setResultTab}
+                  customInput={customInput}
+                  onCustomInputChange={setCustomInput}
+                  consoleOutput={consoleOutput}
+                  results={results}
+                  verdict={verdict}
+                  executionError={runError}
+                />
+              </WidgetErrorBoundary>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>

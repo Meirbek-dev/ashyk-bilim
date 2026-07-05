@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ErrorState } from '@/components/ui/error-state'
 import { cn } from '@/lib/utils'
 import {
   getFileSubmissionByActivity,
@@ -41,6 +42,7 @@ import type { PendingFileSlot } from './FileUploadSlot'
 import FileSubmissionReceipt from './FileSubmissionReceipt'
 import FileSubmissionResult from './FileSubmissionResult'
 import { MarkdownContent } from '@/features/content-markdown'
+import { useApiError } from '@/hooks/useApiError'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -240,10 +242,11 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   const inputRef = useRef<HTMLInputElement>(null)
   const [slots, setSlots] = useState<PendingFileSlot[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const { handleApiError, toastApiError } = useApiError()
 
   // ── Query ─────────────────────────────────────────────────────────────────
 
-  const { data, isLoading } = useQuery(fileSubmissionQueryOptions(activityUuid))
+  const { data, error, isError, isLoading, refetch } = useQuery(fileSubmissionQueryOptions(activityUuid))
 
   const activeAttempt = data?.current_attempt ?? null
   const status = activeAttempt?.status ?? null
@@ -321,7 +324,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           setSlots(prev => prev.map(s => (s.id === slot.id ? done : s)))
           uploaded.push(done)
         } catch (error) {
-          errorMsg = error instanceof Error ? error.message : t('uploadFailed')
+          errorMsg = handleApiError(error, { fallback: t('uploadFailed') }).message
           setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'failed' as const, error: errorMsg } : s)))
           throw error
         }
@@ -354,7 +357,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
     },
     onError: err => {
       setIsUploading(false)
-      toast.error(err instanceof Error ? err.message : t('saveFailed'))
+      toastApiError(err, { fallback: t('saveFailed') })
     },
   })
 
@@ -368,11 +371,31 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       inputRef.current?.click()
     },
     onError: err => {
-      toast.error(err instanceof Error ? err.message : t('startDraftFailed'))
+      toastApiError(err, { fallback: t('startDraftFailed') })
     },
   })
 
   // ── Loading ───────────────────────────────────────────────────────────────
+
+  if (isError) {
+    const processed = handleApiError(error, { fallback: t('notAvailable') })
+    return (
+      <ErrorState
+        actionLabel={processed.actionLabel}
+        description={processed.message}
+        error={error}
+        {...(processed.showRetry
+          ? {
+              onAction: () => {
+                void refetch()
+              },
+            }
+          : {})}
+        title={t('notAvailable')}
+        variant="section"
+      />
+    )
+  }
 
   if (isLoading || !data) {
     return (

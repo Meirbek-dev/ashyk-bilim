@@ -82,6 +82,14 @@ function inspectFile(path) {
     if (/console\.(error|warn)\s*\(/.test(line) && !isAllowed(rel, allowedConsole)) {
       add(rel, lineNumber, 'CONSOLE_ERROR', 'route through telemetry or a documented boundary logger')
     }
+    if (/\.(data)\b.*\?\?\s*(\[\]|\{\})/.test(line) && /\.(tsx|jsx)$/.test(rel) && !hasNearbyErrorCheck(lines, index)) {
+      add(
+        rel,
+        lineNumber,
+        'QUERY_FALLBACK_WITHOUT_ERROR_UI',
+        'check query.isError/query.error before rendering fallback data',
+      )
+    }
   })
 }
 
@@ -91,6 +99,13 @@ function add(path, line, code, message) {
 
 function isAllowed(path, prefixes) {
   return prefixes.some(prefix => path === prefix || path.startsWith(prefix))
+}
+
+function hasNearbyErrorCheck(lines, index) {
+  const start = Math.max(0, index - 40)
+  const end = Math.min(lines.length, index + 80)
+  const nearby = lines.slice(start, end).join('\n')
+  return /\b(isError|error)\b/.test(nearby) && /\b(ErrorState|InlineError|toastApiError|handleApiError)\b/.test(nearby)
 }
 
 function toPortablePath(path) {

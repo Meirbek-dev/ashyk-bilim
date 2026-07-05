@@ -12,9 +12,10 @@ import { useContributorStatus } from '@/hooks/useContributorStatus'
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout'
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard'
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard'
+import { ErrorState } from '@/components/ui/error-state'
 import { apiFetch } from '@/lib/api-client'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { toast } from 'sonner'
+import { useApiError } from '@/hooks/useApiError'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,13 +40,14 @@ interface InlineAssessmentWorkspaceProps {
  * ActivityLayoutContext so the parent shell can react without prop-drilling.
  */
 export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: InlineAssessmentWorkspaceProps) {
-  const { vm: assessmentData, isLoading } = useAssessmentAttempt(activityUuid)
+  const { vm: assessmentData, isLoading, error } = useAssessmentAttempt(activityUuid)
   const { contributorStatus } = useContributorStatus(courseUuid)
   const isTeacher = contributorStatus === 'ACTIVE'
   const { setMode, setBottomBarAction } = useActivityLayout()
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('Features.ActivityWorkspace')
+  const { handleApiError, toastApiError } = useApiError()
   const [isPending, setIsPending] = useState(false)
 
   const vm = assessmentData?.surface === 'ATTEMPT' ? assessmentData.vm : null
@@ -117,8 +119,8 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
         ])
         setMode('ACTIVE_ATTEMPT')
         router.refresh()
-      } catch {
-        toast.error(t('startActivityFailed'))
+      } catch (error) {
+        toastApiError(error, { fallback: t('startActivityFailed') })
       } finally {
         setIsPending(false)
       }
@@ -145,6 +147,20 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   ])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
+
+  if (error) {
+    const processed = handleApiError(error, { fallback: t('startActivityFailed') })
+    return (
+      <ErrorState
+        actionLabel={processed.actionLabel}
+        description={processed.message}
+        error={error}
+        {...(processed.showRetry ? { onAction: () => router.refresh() } : {})}
+        title={t('startActivityFailed')}
+        variant="section"
+      />
+    )
+  }
 
   if (isLoading || !vm) {
     return (

@@ -3,9 +3,9 @@
 import { useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import type { UseFormSetError } from 'react-hook-form'
+import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { isApiError, parseApiErrorEnvelope, getSupportReference } from '@/lib/api/assertSuccess'
-import type { ApiFieldError } from '@/lib/api/generated/api.schemas'
+import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/generated/api.schemas'
 
 export interface ProcessedError {
   message: string
@@ -15,20 +15,50 @@ export interface ProcessedError {
   fieldErrors: ApiFieldError[]
 }
 
-export function useApiError() {
+interface ApiErrorOptions<TFieldValues extends FieldValues> {
+  fallback?: string
+  retry?: () => void
+  setError?: UseFormSetError<TFieldValues>
+  toastId?: string | number
+}
+
+function readEnvelope(error: unknown): ApiErrorEnvelope | null {
+  if (isApiError(error)) {
+    return error.envelope ?? parseApiErrorEnvelope(error.data) ?? null
+  }
+  return parseApiErrorEnvelope(error)
+}
+
+function normalizeOptions<TFieldValues extends FieldValues>(
+  setErrorOrOptions?: UseFormSetError<TFieldValues> | ApiErrorOptions<TFieldValues>,
+  fallback?: string,
+): ApiErrorOptions<TFieldValues> {
+  if (typeof setErrorOrOptions === 'function') {
+    return fallback === undefined ? { setError: setErrorOrOptions } : { setError: setErrorOrOptions, fallback }
+  }
+  return setErrorOrOptions ?? {}
+}
+
+export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
   const t = useTranslations('Errors')
 
   const handleApiError = useCallback(
-    (error: unknown, setError?: UseFormSetError<any>): ProcessedError => {
-      const parsed = parseApiErrorEnvelope(error)
+    (
+      error: unknown,
+      setErrorOrOptions?: UseFormSetError<TFieldValues> | ApiErrorOptions<TFieldValues>,
+      fallback?: string,
+    ): ProcessedError => {
+      const options = normalizeOptions(setErrorOrOptions, fallback)
+      const parsed = readEnvelope(error)
       const isApi = isApiError(error)
       const supportReference = getSupportReference(error)
+      const fieldErrors = parsed?.field_errors ?? (isApi ? error.fieldErrors : [])
 
       // Bind validation errors to RHF if setError is provided
-      if (setError && parsed?.field_errors && parsed.field_errors.length > 0) {
-        parsed.field_errors.forEach(err => {
+      if (options.setError && fieldErrors.length > 0) {
+        fieldErrors.forEach(err => {
           if (err.field) {
-            setError(err.field, {
+            options.setError?.(err.field as Path<TFieldValues>, {
               type: 'server',
               message: err.message,
             })
@@ -40,7 +70,7 @@ export function useApiError() {
       const status = isApi ? error.status : undefined
       const code = parsed?.code || (isApi ? error.code : undefined)
 
-      let message = parsed?.message || (error instanceof Error ? error.message : '')
+      let message = options.fallback || parsed?.message || (error instanceof Error ? error.message : '')
       let actionLabel = t('tryAgain')
       let showRetry = true
 
@@ -70,6 +100,9 @@ export function useApiError() {
       } else if (status === 403) {
         message = getTranslation('permissionDenied', 'You do not have permission to perform this action.')
         showRetry = false
+      } else if (fieldErrors.length > 0) {
+        message = getTranslation('validationFailed', 'Please correct the highlighted fields and try again.')
+        showRetry = false
       } else if (status && status >= 500) {
         message = getTranslation('serverError', 'An internal server error occurred. Please try again later.')
       }
@@ -84,26 +117,36 @@ export function useApiError() {
         actionLabel,
         showRetry,
         supportReference,
-        fieldErrors: parsed?.field_errors || [],
+        fieldErrors,
       }
     },
-    [t]
+    [t],
   )
 
   const toastApiError = useCallback(
-    (error: unknown, setError?: UseFormSetError<any>, customFallback?: string): ProcessedError => {
-      const processed = handleApiError(error, setError)
-      let toastMessage = customFallback || processed.message
-      
+    (
+      error: unknown,
+      setErrorOrOptions?: UseFormSetError<TFieldValues> | ApiErrorOptions<TFieldValues>,
+      customFallback?: string,
+    ): ProcessedError => {
+      const options = normalizeOptions(setErrorOrOptions, customFallback)
+      const processed = handleApiError(error, options)
+      let toastMessage = processed.message
+
       if (processed.supportReference) {
         const refLabel = t('reference') || 'Reference'
         toastMessage += ` (${refLabel}: ${processed.supportReference})`
       }
 
-      toast.error(toastMessage)
+      toast.error(toastMessage, {
+        ...(options.toastId === undefined ? {} : { id: options.toastId }),
+        ...(processed.showRetry && options.retry
+          ? { action: { label: processed.actionLabel, onClick: options.retry } }
+          : {}),
+      })
       return processed
     },
-    [handleApiError, t]
+    [handleApiError, t],
   )
 
   return {

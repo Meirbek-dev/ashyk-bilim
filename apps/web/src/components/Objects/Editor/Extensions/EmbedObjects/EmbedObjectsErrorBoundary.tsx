@@ -2,6 +2,7 @@
 
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { InlineError } from '@/components/ui/error-state'
 import { reportClientError } from '@/services/telemetry/client'
 
 // ============================================================================
@@ -17,6 +18,7 @@ interface EmbedObjectsErrorBoundaryProps {
 }
 
 interface EmbedObjectsErrorBoundaryState {
+  error: Error | null
   hasError: boolean
 }
 
@@ -26,15 +28,14 @@ export class EmbedObjectsErrorBoundary extends Component<
 > {
   public constructor(props: EmbedObjectsErrorBoundaryProps) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { error: null, hasError: false }
   }
 
-  public static getDerivedStateFromError(): EmbedObjectsErrorBoundaryState {
-    return { hasError: true }
+  public static getDerivedStateFromError(error: Error): EmbedObjectsErrorBoundaryState {
+    return { error, hasError: true }
   }
 
   public override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[EmbedObjects] blockEmbed NodeView render error:', error, info)
     void reportClientError({
       error: {
         message: error.message,
@@ -50,15 +51,12 @@ export class EmbedObjectsErrorBoundary extends Component<
   public override render() {
     if (this.state.hasError) {
       return (
-        <div
-          className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-amber-200 bg-amber-50 p-6 text-center"
-          role="alert"
-        >
-          <div>
-            <p className="text-sm font-semibold text-amber-700">{this.props.title}</p>
-            <p className="mt-1 text-xs text-amber-600">{this.props.message}</p>
-          </div>
-        </div>
+        <InlineError
+          className="min-h-[120px]"
+          description={this.props.message ?? 'This embed could not be rendered.'}
+          error={this.state.error}
+          title={this.props.title ?? 'Embed failed to render'}
+        />
       )
     }
 
