@@ -1,0 +1,348 @@
+import { LmsStatuses } from '@/features/lms-status'
+
+import type { DashboardToolItem, WorkQueueItem, WorkQueueSection } from './types'
+
+interface DashboardAccess {
+  hasCoursesAccess: boolean
+  hasAnalyticsAccess: boolean
+  hasUsersAccess: boolean
+  hasAdminAccess: boolean
+}
+
+interface EditableCourseSummary {
+  total: number
+  ready: number
+  private: number
+  attention: number
+}
+
+interface TeacherDashboardSignal {
+  atRiskTotal: number
+  gradingBacklogTotal: number
+  slaBreaches: number
+  signalAvailable: boolean
+}
+
+interface AdminDashboardSignal {
+  teacherBacklogTotal: number
+  teacherSlaBreaches: number
+  signalAvailable: boolean
+}
+
+interface DashboardWorkQueueInput {
+  access: DashboardAccess
+  courseSummary: EditableCourseSummary | null
+  teacherSignal: TeacherDashboardSignal | null
+  adminSignal: AdminDashboardSignal | null
+}
+
+export interface DashboardWorkQueueModel {
+  sections: WorkQueueSection[]
+  tools: DashboardToolItem[]
+}
+
+const countMetric = (value: number, label: string) => ({
+  value,
+  label,
+})
+
+export function buildDashboardWorkQueue({
+  access,
+  courseSummary,
+  teacherSignal,
+  adminSignal,
+}: DashboardWorkQueueInput): DashboardWorkQueueModel {
+  const teacherSection = buildTeacherSection({ access, courseSummary, teacherSignal })
+  const adminSection = buildAdminSection({ access, adminSignal })
+  const sections: WorkQueueSection[] = []
+
+  if (access.hasCoursesAccess || access.hasAnalyticsAccess) {
+    sections.push(teacherSection)
+  }
+
+  if (access.hasUsersAccess || access.hasAdminAccess) {
+    sections.push(adminSection)
+  }
+
+  if (sections.length === 0) {
+    sections.push(buildLearnerSection())
+  }
+
+  return {
+    sections,
+    tools: buildDashboardTools(access),
+  }
+}
+
+function buildLearnerSection(): WorkQueueSection {
+  return {
+    audience: 'learner',
+    title: 'Learner Work',
+    description: 'Assignments and course actions that need the learner next.',
+    emptyTitle: 'No learner work is queued',
+    emptyDescription:
+      'Open a course from Browse or check your account settings while learner work feeds are connected.',
+    items: [],
+  }
+}
+
+interface TeacherSectionInput {
+  access: DashboardAccess
+  courseSummary: EditableCourseSummary | null
+  teacherSignal: TeacherDashboardSignal | null
+}
+
+function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSectionInput): WorkQueueSection {
+  const items: WorkQueueItem[] = []
+
+  if (access.hasCoursesAccess && courseSummary) {
+    if (courseSummary.attention > 0) {
+      items.push({
+        id: 'course-readiness',
+        audience: 'teacher',
+        title: 'Review course readiness',
+        description: 'Draft, private, or incomplete courses need teacher review before learners rely on them.',
+        href: '/dash/courses?preset=attention',
+        primaryActionLabel: 'Open Courses',
+        source: 'course-management',
+        sourceLabel: 'Course Management',
+        status: LmsStatuses.NEEDS_ATTENTION,
+        priority: 'high',
+        metric: countMetric(courseSummary.attention, 'courses'),
+      })
+    }
+
+    if (courseSummary.total === 0) {
+      items.push({
+        id: 'create-first-course',
+        audience: 'teacher',
+        title: 'Create the first course',
+        description: 'The teaching workspace has no editable courses yet.',
+        href: '/dash/courses/new',
+        primaryActionLabel: 'Create Course',
+        source: 'course-management',
+        sourceLabel: 'Course Management',
+        status: LmsStatuses.READY,
+        priority: 'normal',
+      })
+    }
+  }
+
+  if (access.hasAnalyticsAccess && teacherSignal?.signalAvailable) {
+    if (teacherSignal.gradingBacklogTotal > 0) {
+      items.push({
+        id: 'grading-backlog',
+        audience: 'teacher',
+        title: 'Grade pending submissions',
+        description: 'Manual assessment work is waiting for review and feedback.',
+        href: '/dash/analytics/assessments',
+        primaryActionLabel: 'Open Grading',
+        source: 'teacher-analytics',
+        sourceLabel: 'Teacher Analytics',
+        status: teacherSignal.slaBreaches > 0 ? LmsStatuses.NEEDS_ATTENTION : LmsStatuses.READY,
+        priority: teacherSignal.slaBreaches > 0 ? 'critical' : 'high',
+        metric: countMetric(teacherSignal.gradingBacklogTotal, 'submissions'),
+      })
+    }
+
+    if (teacherSignal.atRiskTotal > 0) {
+      items.push({
+        id: 'learner-risk',
+        audience: 'teacher',
+        title: 'Intervene with at-risk learners',
+        description: 'Learners with stalled progress or assessment blocks need action.',
+        href: '/dash/analytics/learners/at-risk',
+        primaryActionLabel: 'Open Watchlist',
+        source: 'teacher-analytics',
+        sourceLabel: 'Teacher Analytics',
+        status: LmsStatuses.NEEDS_ATTENTION,
+        priority: 'high',
+        metric: countMetric(teacherSignal.atRiskTotal, 'learners'),
+      })
+    }
+  }
+
+  if (access.hasAnalyticsAccess && teacherSignal && !teacherSignal.signalAvailable) {
+    items.push({
+      id: 'teacher-analytics-unavailable',
+      audience: 'teacher',
+      title: 'Check analytics feed',
+      description: 'Teacher analytics is permitted, but the dashboard could not load the queue signal.',
+      href: '/dash/analytics',
+      primaryActionLabel: 'Open Analytics',
+      source: 'teacher-analytics',
+      sourceLabel: 'Teacher Analytics',
+      status: LmsStatuses.UNAVAILABLE,
+      priority: 'normal',
+    })
+  }
+
+  return {
+    audience: 'teacher',
+    title: 'Teacher Work',
+    description: 'Course readiness, grading, and learner intervention work.',
+    emptyTitle: 'No teacher work is queued',
+    emptyDescription: 'Courses, grading backlog, and learner risk checks will appear here when they need action.',
+    items: sortWorkQueueItems(items),
+  }
+}
+
+interface AdminSectionInput {
+  access: DashboardAccess
+  adminSignal: AdminDashboardSignal | null
+}
+
+function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueueSection {
+  const items: WorkQueueItem[] = []
+
+  if (access.hasAdminAccess && adminSignal?.signalAvailable && adminSignal.teacherSlaBreaches > 0) {
+    items.push({
+      id: 'admin-workload-hotspots',
+      audience: 'admin',
+      title: 'Review teacher workload hotspots',
+      description: 'Teacher workload has SLA breaches that need operations review.',
+      href: '/dash/analytics/admin',
+      primaryActionLabel: 'Open Admin Analytics',
+      source: 'admin-analytics',
+      sourceLabel: 'Admin Analytics',
+      status: LmsStatuses.NEEDS_ATTENTION,
+      priority: 'critical',
+      metric: countMetric(adminSignal.teacherSlaBreaches, 'breaches'),
+    })
+  }
+
+  if (access.hasAdminAccess && adminSignal?.signalAvailable && adminSignal.teacherBacklogTotal > 0) {
+    items.push({
+      id: 'admin-teacher-backlog',
+      audience: 'admin',
+      title: 'Inspect teacher backlog',
+      description: 'Workload is accumulating across managed courses.',
+      href: '/dash/analytics/admin',
+      primaryActionLabel: 'Open Workload',
+      source: 'admin-analytics',
+      sourceLabel: 'Admin Analytics',
+      status: LmsStatuses.READY,
+      priority: 'high',
+      metric: countMetric(adminSignal.teacherBacklogTotal, 'submissions'),
+    })
+  }
+
+  if (access.hasUsersAccess) {
+    items.push({
+      id: 'user-access-audit',
+      audience: 'admin',
+      title: 'Audit user access',
+      description: 'Review users and groups before expanding course or analytics permissions.',
+      href: '/dash/users/settings/users',
+      primaryActionLabel: 'Open Users',
+      source: 'access-control',
+      sourceLabel: 'Access Control',
+      status: LmsStatuses.READY,
+      priority: 'normal',
+    })
+  }
+
+  if (access.hasAdminAccess) {
+    items.push({
+      id: 'role-policy-review',
+      audience: 'admin',
+      title: 'Review role policy',
+      description: 'Keep system roles aligned with the learner, teacher, and admin dashboard model.',
+      href: '/dash/admin/roles',
+      primaryActionLabel: 'Open Roles',
+      source: 'access-control',
+      sourceLabel: 'Access Control',
+      status: LmsStatuses.READY,
+      priority: 'normal',
+    })
+  }
+
+  if (access.hasAdminAccess && adminSignal && !adminSignal.signalAvailable) {
+    items.push({
+      id: 'admin-analytics-unavailable',
+      audience: 'admin',
+      title: 'Check admin analytics feed',
+      description: 'Admin analytics is permitted, but the dashboard could not load workload signals.',
+      href: '/dash/analytics/admin',
+      primaryActionLabel: 'Open Admin Analytics',
+      source: 'admin-analytics',
+      sourceLabel: 'Admin Analytics',
+      status: LmsStatuses.UNAVAILABLE,
+      priority: 'normal',
+    })
+  }
+
+  return {
+    audience: 'admin',
+    title: 'Admin Work',
+    description: 'Access, policy, and operational work for the platform.',
+    emptyTitle: 'No admin work is queued',
+    emptyDescription: 'Access reviews and operations signals will appear here when your role can act on them.',
+    items: sortWorkQueueItems(items),
+  }
+}
+
+function buildDashboardTools(access: DashboardAccess): DashboardToolItem[] {
+  const tools: DashboardToolItem[] = [
+    {
+      id: 'browse-courses',
+      title: 'Browse Courses',
+      description: 'Find published learning content.',
+      href: '/courses',
+      audience: 'learner',
+    },
+    {
+      id: 'courses',
+      title: 'Courses',
+      description: 'Create and manage courses, chapters, and assessment tasks.',
+      href: '/dash/courses',
+      audience: 'teacher',
+    },
+    {
+      id: 'analytics',
+      title: 'Analytics',
+      description: 'Open learner, course, and assessment analytics.',
+      href: '/dash/analytics',
+      audience: 'teacher',
+    },
+    {
+      id: 'users',
+      title: 'Users',
+      description: 'Manage organization users and groups.',
+      href: '/dash/users/settings/users',
+      audience: 'admin',
+    },
+    {
+      id: 'admin',
+      title: 'Admin',
+      description: 'Manage roles, AI operations, and platform policy.',
+      href: '/dash/admin',
+      audience: 'admin',
+      badge: 'System',
+    },
+    {
+      id: 'account',
+      title: 'Account Settings',
+      description: 'Update profile, security, and personal preferences.',
+      href: '/dash/user-account/settings/general',
+      audience: 'all',
+    },
+  ]
+
+  return tools.filter(tool => {
+    if (tool.audience === 'all' || tool.audience === 'learner') return true
+    if (tool.audience === 'teacher') return access.hasCoursesAccess || access.hasAnalyticsAccess
+    return access.hasUsersAccess || access.hasAdminAccess
+  })
+}
+
+function sortWorkQueueItems(items: WorkQueueItem[]): WorkQueueItem[] {
+  const priorityRank = {
+    critical: 0,
+    high: 1,
+    normal: 2,
+    low: 3,
+  } satisfies Record<WorkQueueItem['priority'], number>
+
+  return [...items].toSorted((left, right) => priorityRank[left.priority] - priorityRank[right.priority])
+}

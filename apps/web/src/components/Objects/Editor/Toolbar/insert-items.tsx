@@ -3,7 +3,6 @@ import type { Editor } from '@tiptap/react'
 import {
   AlertCircle,
   AlertTriangle,
-  BadgeHelp,
   Code,
   FileText,
   GitBranch,
@@ -168,15 +167,6 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       category: 'interactive',
       includeInToolbar: true,
       run: editor => editor.commands.insertMathEquation(),
-    },
-    {
-      id: 'quiz',
-      label: t('interactiveQuiz'),
-      description: t('slashInsertDescription', { label: t('interactiveQuiz') }),
-      icon: <BadgeHelp className="size-4" />,
-      category: 'interactive',
-      includeInToolbar: true,
-      run: editor => editor.commands.insertInlineQuiz(),
     },
     {
       id: 'flipcard',
