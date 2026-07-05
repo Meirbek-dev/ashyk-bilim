@@ -4,15 +4,23 @@ import { useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
-import { isApiError, parseApiErrorEnvelope, getSupportReference } from '@/lib/api/assertSuccess'
-import type { ApiErrorEnvelope, ApiFieldError } from '@/lib/api/generated/api.schemas'
+import { presentApiError } from '@/lib/api/error-presenter'
+import type { ErrorRetryPolicy, ErrorSeverity } from '@/lib/api/error-presenter'
+import type { ApiFieldError } from '@/lib/api/generated/api.schemas'
 
 export interface ProcessedError {
-  message: string
   actionLabel: string
+  code: string | null
+  description: string
   showRetry: boolean
+  severity: ErrorSeverity
+  retryPolicy: ErrorRetryPolicy
+  status: number | null
   supportReference: string | null
   fieldErrors: ApiFieldError[]
+  telemetryExpected: boolean
+  title: string
+  message: string
 }
 
 interface ApiErrorOptions<TFieldValues extends FieldValues> {
@@ -20,13 +28,6 @@ interface ApiErrorOptions<TFieldValues extends FieldValues> {
   retry?: () => void
   setError?: UseFormSetError<TFieldValues>
   toastId?: string | number
-}
-
-function readEnvelope(error: unknown): ApiErrorEnvelope | null {
-  if (isApiError(error)) {
-    return error.envelope ?? parseApiErrorEnvelope(error.data) ?? null
-  }
-  return parseApiErrorEnvelope(error)
 }
 
 function normalizeOptions<TFieldValues extends FieldValues>(
@@ -49,14 +50,26 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
       fallback?: string,
     ): ProcessedError => {
       const options = normalizeOptions(setErrorOrOptions, fallback)
-      const parsed = readEnvelope(error)
-      const isApi = isApiError(error)
-      const supportReference = getSupportReference(error)
-      const fieldErrors = parsed?.field_errors ?? (isApi ? error.fieldErrors : [])
+      const getTranslation = (key: string, fallbackValue: string): string => {
+        try {
+          const res = t(key)
+          if (res === `Errors.${key}` || res === key) return fallbackValue
+          return res
+        } catch {
+          return fallbackValue
+        }
+      }
+
+      const processed = presentApiError(error, {
+        copy: {
+          get: getTranslation,
+        },
+        ...(options.fallback === undefined ? {} : { fallback: options.fallback }),
+      })
 
       // Bind validation errors to RHF if setError is provided
-      if (options.setError && fieldErrors.length > 0) {
-        fieldErrors.forEach(err => {
+      if (options.setError && processed.fieldErrors.length > 0) {
+        processed.fieldErrors.forEach(err => {
           if (err.field) {
             options.setError?.(err.field as Path<TFieldValues>, {
               type: 'server',
@@ -66,58 +79,9 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
         })
       }
 
-      // Map error codes/statuses to localized strings
-      const status = isApi ? error.status : undefined
-      const code = parsed?.code || (isApi ? error.code : undefined)
-
-      let message = options.fallback || parsed?.message || (error instanceof Error ? error.message : '')
-      let actionLabel = t('tryAgain')
-      let showRetry = true
-
-      // Safe lookup with fallbacks if keys are missing from next-intl
-      const getTranslation = (key: string, fallback: string): string => {
-        try {
-          const res = t(key)
-          // If next-intl returns the key itself as a fallback (e.g. 'Errors.rateLimited' or 'Errors.tryAgain'), use fallback
-          if (res === `Errors.${key}` || res === key) {
-            return fallback
-          }
-          return res
-        } catch {
-          return fallback
-        }
-      }
-
-      if (code === 'RATE_LIMITED' || status === 429) {
-        message = getTranslation('rateLimited', 'Too many requests. Please try again shortly.')
-        showRetry = false
-      } else if (code === 'NETWORK_UNAVAILABLE' || code === 'CLIENT_TIMEOUT' || status === 408) {
-        message = getTranslation('networkUnavailable', 'Network unavailable. Please check your connection.')
-        actionLabel = getTranslation('tryAgain', 'Try again')
-      } else if (status === 401) {
-        message = getTranslation('sessionExpired', 'Your session has expired. Please log in again.')
-        showRetry = false
-      } else if (status === 403) {
-        message = getTranslation('permissionDenied', 'You do not have permission to perform this action.')
-        showRetry = false
-      } else if (fieldErrors.length > 0) {
-        message = getTranslation('validationFailed', 'Please correct the highlighted fields and try again.')
-        showRetry = false
-      } else if (status && status >= 500) {
-        message = getTranslation('serverError', 'An internal server error occurred. Please try again later.')
-      }
-
-      // If message is still empty, use defaultError fallback
-      if (!message) {
-        message = getTranslation('defaultError', 'Failed to correctly process the request. Please try again.')
-      }
-
       return {
-        message,
-        actionLabel,
-        showRetry,
-        supportReference,
-        fieldErrors,
+        ...processed,
+        message: processed.description,
       }
     },
     [t],
@@ -131,7 +95,7 @@ export function useApiError<TFieldValues extends FieldValues = FieldValues>() {
     ): ProcessedError => {
       const options = normalizeOptions(setErrorOrOptions, customFallback)
       const processed = handleApiError(error, options)
-      let toastMessage = processed.message
+      let toastMessage = processed.description
 
       if (processed.supportReference) {
         const refLabel = t('reference') || 'Reference'

@@ -48,9 +48,10 @@ class BaseWidgetErrorBoundary extends Component<
 
   public override render() {
     if (this.state.hasError) {
-      const errorMsg = this.state.error?.message || 'Component crashed'
       const title = this.props.title ?? 'Failed to render component'
-      const description = this.props.description ?? errorMsg
+      const description =
+        this.props.description ??
+        'This part of the page could not be displayed. Retry, or reload the page if it keeps failing.'
 
       if (this.props.variant === 'inline') {
         return <InlineError title={title} description={description} error={this.state.error} />

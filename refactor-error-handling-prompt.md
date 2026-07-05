@@ -1,76 +1,318 @@
-You are working in the **ashyk-bilim** monorepo, specifically `apps/web` (Next.js 16 + TanStack Query + react-hook-form). Your task is to make error handling consistent and user-legible across the app. **Do not build new infrastructure from scratch — the good primitives already exist and are underused. Your job is to audit, generalize, and enforce them, not reinvent them.**
+# Agent Prompt: Production Error Handling and Orval Type-Safety Refactor
 
-## What already exists and must be reused, not replaced
+You are working in the `ashyq-bilim` monorepo. Your goal is to refactor the whole app toward production-grade error handling, clear user recovery paths, and stricter frontend/backend type-safety through the generated OpenAPI/Orval contract.
 
-- `src/components/ui/error-state.tsx` — `ErrorState` (page/section variant, title/description/retry button), `InlineError` (for inline/alert-style failures), and `SupportReference` (shows a request-ID/reference code from `getSupportReference(error)`). This is the correct visual language for every error state in the app. Anywhere you add error UI, use these — don't invent a new error card design.
-- `src/lib/error-i18n.ts` — `ERROR_MESSAGES`/`detectLocale`, used by the route-level boundaries. Extend this vocabulary; don't create parallel one-off translation keys per feature.
-- `src/lib/api/assertSuccess.ts` — the typed error contract: `ApiErrorEnvelope` (`code`, `message`, `details`, `request_id`, `field_errors`), `parseApiErrorEnvelope`, `clientApiError`, `isApiError`, `getSupportReference`. This is the source of truth for _what actually went wrong_. Every user-facing error message should be derived from this, not from a hand-written string per call site.
-- `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/[locale]/error.tsx`, `src/app/not-found.tsx` — the route-level boundaries. These are well-built (retry via `reset()`, chunk-load-error → hard reload, digest shown via `SupportReference`, reported via `reportClientError`). Copy this exact pattern when adding missing route-level boundaries; don't design a new one.
-- `src/lib/react-query/queryClient.ts` — global `QueryCache`/`MutationCache` handlers that key off `isApiError(error)`, `error.status`, `error.code`, and per-query `meta.expectedCodes`/`meta.userFacing`. Any new shared error-handling hook must integrate with this `meta` convention, not bypass it.
-- `src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjectsErrorBoundary.tsx` — the one existing component-level error boundary. Its shape (class component, `getDerivedStateFromError`, amber alert box, `role="alert"`) is the pattern to generalize into a shared, reusable primitive — it's currently a one-off and doesn't even call `reportClientError`.
+Do this as a real engineering refactor, not a cosmetic pass. Users should never confuse a failed request with an empty result, a missing permission with a broken page, or a validation error with a generic crash.
 
-## The actual problems (verified, not assumed)
+## Operating Rules
 
-1. **Errors are fetched but not rendered.** Most components that call `useQuery`/`useMutation` never check `.error`/`isError` at all. They destructure `data` with a fallback (`data ?? []`, `role.permissions ?? []`, etc.) and render that. A failed request and an empty result are visually indistinguishable to the user.
-2. **No component-level error isolation.** `react-error-boundary` isn't installed. Outside of Next's route-segment `error.tsx` convention, nothing catches a render error in a specific widget. Monaco, the video player, chart panels, the AI chat stream, PDF export, and the judge0 result panel can each crash the entire route.
-3. **Generic, non-actionable, duplicated error copy.** Dozens of near-identical translation keys per feature area, each driving a bare `toast.error(t('xFailed'))` with no retry action, no distinction between "you did something wrong" (validation) vs. "we broke" (5xx) vs. "try again" (network/timeout), and no use of `field_errors` to point at the actual bad field.
-4. **Some real silent failures.** A handful of `catch { }` blocks with no user feedback and no telemetry call at all (as opposed to the intentional, commented `catch` blocks used for non-critical things like `localStorage` writes, which are fine as-is — don't "fix" those).
+- Read `AGENTS.md` first and follow the Vite+ workflow. Run `vp install` before starting after remote changes, then use `vp check` and `vp test` for final validation when practical.
+- Work by feature area, not as one unreviewable repo-wide diff. Prioritize auth, course viewing, submissions/grading, authoring, AI, analytics, uploads, and code execution.
+- Reuse existing primitives before adding new ones. Add abstractions only when they remove repeated error handling or make a broken pattern impossible to repeat.
+- Do not hide production bugs behind `?? []`, `?? {}`, `catch {}`, `as any`, loose casts, or handwritten transport interfaces.
+- Preserve user work on all recoverable failures: forms, assessment answers, course edits, uploads, code editor content, AI draft prompts, and grading actions.
 
-## Hard constraints
+## Existing Sources of Truth
 
-- Reuse `ErrorState` / `InlineError` / `SupportReference` / `ERROR_MESSAGES` / `ApiErrorEnvelope` / `isApiError` everywhere. No new error-card designs, no new ad hoc error-type unions.
-- Every new/updated error boundary must call `reportClientError` (from `src/services/telemetry/client.ts`), matching the existing route-level pattern — including fixing `EmbedObjectsErrorBoundary`, which currently only `console.error`s.
-- Don't touch the intentionally-silent `catch` blocks that already have an explanatory comment (e.g. the `localStorage` quota/incognito ones) — those are correct as written.
-- Roll this out **by feature area, not as one repo-wide PR.** Pick the highest-traffic areas first (auth, course viewing, submissions/grading), ship, verify, then continue. A single giant diff touching every component is not reviewable and not what's being asked for.
-- Distinguish severity. Not every failure deserves a full-page error state — a failed inline edit is a toast with retry, a failed page-critical fetch is a section-level `ErrorState`, a failed root layout fetch is `global-error.tsx`. Don't upgrade everything to the loudest treatment.
+Use these files and extend them when needed:
 
-## Steps
+- `apps/web/src/components/ui/error-state.tsx`
+  - `ErrorState`, `InlineError`, `SupportReference`
+  - Use these for route, section, widget, and inline failures.
+- `apps/web/src/lib/api/assertSuccess.ts`
+  - `APIError`, `ApiErrorEnvelope`, `parseApiErrorEnvelope`, `parseApiError`, `clientApiError`, `isApiError`, `isRetryableApiError`, `getSupportReference`
+  - This is the frontend error contract.
+- `apps/web/src/lib/api/orval-mutator.ts`
+  - Orval requests must flow through this mutator so generated hooks/functions throw `APIError`.
+- `apps/web/src/lib/api/generated/**`
+  - Generated API functions, React Query hooks, and schema types. Do not edit generated files manually.
+- `apps/web/src/lib/react-query/queryClient.ts`
+  - Global query/mutation error telemetry, retry rules, `queryErrorMeta`, `mutationErrorMeta`, and expected error handling.
+- `apps/web/src/lib/error-i18n.ts`
+  - Shared localized error vocabulary.
+- `apps/web/src/app/error.tsx`, `apps/web/src/app/global-error.tsx`, `apps/web/src/app/[locale]/error.tsx`, `apps/web/src/app/not-found.tsx`
+  - Route-boundary patterns to copy.
+- `apps/api/src/app/errors.py`, `apps/api/src/app/exceptions.py`, `apps/api/src/app/error_context.py`
+  - Backend error envelope and app error source.
+- `docs/error-catalog.md`, `docs/error-copy.md`, `docs/FULLSTACK_TYPESAFETY.md`
+  - Product rules for codes, messages, UI treatment, and generated contracts.
 
-### 1. Audit and inventory
+## Orval and Type-Safety Rules
 
-- Find every `useQuery`/`useSuspenseQuery`/`useMutation`/`useInfiniteQuery` call site in `src/`. For each, record whether it currently checks `.error`/`isError`/`isPending` and whether a failure is visibly distinguishable from an empty/loading state in the rendered output.
-- Grep for `?? []`, `?? {}`, `?? '-'`, `?? 'N/A'` and similar fallbacks used directly in JSX or in values passed to render. For each hit, classify it: (a) legitimate default for a genuinely-optional field, (b) masking an unchecked query error — flag these, they're the real bugs.
-- Grep for `toast.error(t(` across the codebase and list every distinct translation key used this way. Cluster them by underlying cause (validation / auth / network-timeout / rate-limit / permission / unknown-5xx / feature-specific-business-rule). Feature-specific business-rule messages should stay feature-specific; everything else is a candidate to collapse into the shared vocabulary from step 2.
-- Grep for `catch {` / `catch (` blocks with no `reportClientError`/`toast`/re-throw inside. For each, decide: intentional-and-commented (leave it) vs. genuinely silent failure (fix it).
-- List every route segment that has a `loading.tsx` but no matching `error.tsx` (there are currently far more `loading.tsx` files than `error.tsx` files — find the gaps).
+The backend OpenAPI schema is the transport contract. The frontend must consume that contract through Orval.
 
-### 2. Build the shared error-handling hook
+- Backend DTOs and FastAPI `response_model` declarations define request and response shapes.
+- Regenerate contracts after backend DTO/router changes:
 
-Create one hook (e.g. `useApiError()` or extend the existing `queryErrorMeta`/`mutationErrorMeta` helpers in `queryClient.ts`) that:
+```bash
+bun run generate:contracts
+```
 
-- Takes an `unknown` error, runs it through `isApiError`/`parseApiErrorEnvelope`.
-- Maps known error codes to a specific, localized, actionable message + suggested action: validation errors → return `field_errors` for the caller to apply via RHF's `setError` (see step 5); `RATE_LIMITED` → "try again shortly," no retry button (it'll just fail again immediately); `NETWORK_UNAVAILABLE`/`CLIENT_TIMEOUT` → "check your connection" + retry button; `401`/`403` → session/permission-specific copy, not a generic failure; unknown/5xx → generic apology text **plus** the `SupportReference` code, always.
-- Is the single place feature code calls instead of writing a new `toast.error(t('someFeatureError'))` each time. Feature-specific copy is still supported (pass an override message), but the fallback path, the support reference, and the retry affordance come from this hook every time.
+- Check contract drift:
 
-### 3. Generalize the component-level error boundary
+```bash
+bun run check:contracts
+```
 
-- Extract `EmbedObjectsErrorBoundary`'s pattern into a shared `WidgetErrorBoundary` (or adopt `react-error-boundary` properly as a real dependency, since the codebase's own internal docs already reference it as the intended pattern). It must: report via `reportClientError`, render via `ErrorState`/`InlineError` (not a bespoke box), and integrate with TanStack Query's `QueryErrorResetBoundary` so retrying actually resets the wedged query instead of just re-rendering the same cached error.
-- Wrap the following in it, in priority order: the AI chat/tutor streaming view, the Monaco code editor, the judge0 code-execution result panel, the video player, PDF export/preview, and dashboard chart panels. Each should degrade to a contained inline error, not take down the surrounding page.
+- Frontend API code should import generated functions/hooks/types from `apps/web/src/lib/api/generated`.
+- New API calls should not use handwritten `fetch`, `apiFetcher`, or duplicated service DTOs when an Orval function/hook exists or can be generated.
+- Keep generated transport types at the boundary. If UI state needs a different shape, create an explicit mapper in the feature/service layer.
+- Do not weaken generated types with `Partial<T>`, `Record<string, unknown>`, `unknown as T`, `as any`, or broad optional fields to silence errors.
+- If the backend can return `null`, model that in the backend DTO and OpenAPI schema. Normalize nullable values once at the frontend boundary.
+- If the UI expects a field that OpenAPI does not provide, fix the backend DTO or create a deliberate derived UI field. Do not fake it with fallback data.
+- Orval errors must keep the `APIError` path through `orvalMutator`; do not wrap generated calls in code that discards `status`, `code`, `fieldErrors`, `requestId`, or `headers`.
 
-### 4. Fix the silent-fallback sites from the audit
+## Error UX Taxonomy
 
-For every `?? []`/`?? {}` flagged in step 1(b): if the query `isError`, render `InlineError`/`ErrorState` (`variant="section"`) instead of silently falling through to the empty-array UI. Reserve the empty-state UI for `isSuccess && data.length === 0`, with its own "nothing here yet" copy that's visibly different from the error copy.
+Use the smallest UI treatment that gives the user a clear next step.
 
-### 5. Wire server-side validation errors into forms
+| Failure                   | UI treatment                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| Page-critical load failed | Route `error.tsx` or `ErrorState variant="page"` with retry and support reference          |
+| Section/widget failed     | `ErrorState variant="section"` or `InlineError` inside the affected area                   |
+| Form validation failed    | `react-hook-form` field errors from `APIError.fieldErrors`, plus a short summary if needed |
+| Inline mutation failed    | Toast or inline error with retry/undo where appropriate                                    |
+| Permission denied         | Access-denied state with navigation or request-access path                                 |
+| Not found                 | Not-found state with link back to parent list                                              |
+| Conflict                  | Conflict-resolution UI that keeps local work visible                                       |
+| Rate limited              | Disable the action until retry window; do not spam retries                                 |
+| Network/timeout           | Retry affordance, offline/pending state, preserve local work                               |
+| 5xx/dependency failure    | Generic public copy, support reference, telemetry                                          |
+| User code/test failure    | Domain result, not an app error                                                            |
 
-For `react-hook-form` mutations, when `parseApiErrorEnvelope(error).field_errors` is non-empty, call `setError(field, { message })` for each one instead of (or in addition to) a generic toast, so the user sees exactly which field is wrong, inline, next to the field.
+## Anti-Patterns to Remove
 
-### 6. Fill the route-level boundary gaps
+Audit and fix these patterns:
 
-For every route segment identified in step 1 with `loading.tsx` but no `error.tsx`, add one using the exact pattern from `src/app/[locale]/error.tsx` (same `ErrorState`, `ERROR_MESSAGES`, `reportClientError` call) — copy, don't redesign.
+- `data ?? []`, `data ?? {}`, `value ?? '-'`, `value ?? 'N/A'` used before checking query success.
+- Empty states that render during failed requests.
+- `catch {}` or `catch (error) { console.error(error) }` without user feedback, telemetry, or rethrow.
+- `toast.error('Failed')`, `toast.error(t('featureFailed'))`, or duplicated generic copy at each call site.
+- Throwing raw backend messages into the UI.
+- Swallowing Orval/React Query errors and returning fallback data.
+- Handwritten request/response types that duplicate generated schemas.
+- Feature-specific error unions that duplicate `APIError`.
+- Route segments with `loading.tsx` but no matching `error.tsx`.
+- Complex widgets that can crash the whole route.
 
-### 7. Prevent regression
+Some fallbacks are valid. Keep them only after you prove the data load succeeded and the field is truly optional. Add a short comment only when the distinction is easy to lose.
 
-- Add a lint rule (custom oxlint/eslint rule, or a small `knip`-style script like the existing `check-empty-folders.mjs`/`check-markdown-migration.mjs`) that flags a query-result fallback (`?? []`/`?? {}`) rendered in JSX without an `isError`/`.error` check anywhere in the same component. It doesn't need to be perfect — it needs to make the old pattern loud enough that it stops reappearing.
-- Add Playwright tests for the highest-traffic flows (login, course viewing, submission) that mock a 500/timeout/401 response and assert the user sees a specific, non-generic error affordance with a retry path — not a blank section or an infinite spinner.
+## Audit Checklist
 
-## Definition of done
+Create or update an audit note before changing a feature area.
 
-- No `useQuery`/`useMutation` in a user-facing component can fail silently — every failure renders `ErrorState`/`InlineError`/a toast produced by the shared hook, never a bare fallback that looks like "no data."
-- Every complex/third-party-heavy widget (editor, video, charts, AI chat, PDF, code execution) is wrapped in `WidgetErrorBoundary` and reports telemetry on catch.
-- Every user-visible error communicates, in plain language: what happened, whether the user needs to do anything, and — for anything that isn't a validation error — a support reference code.
-- Route segments with a `loading.tsx` have a matching `error.tsx`.
-- Form validation errors from the backend land on the specific field, not just in a toast.
-- The regression check from step 7 is in CI (or at least documented as a required manual check) so this doesn't quietly drift back to `?? []` over the next six months.
+- Find every `useQuery`, `useSuspenseQuery`, `useInfiniteQuery`, `useMutation`, generated Orval hook, and service call.
+- For each call site, record:
+  - query/mutation key
+  - generated API function or handwritten transport function
+  - loading state
+  - error state
+  - empty state
+  - retry/recovery path
+  - telemetry path
+  - whether user work is preserved
+- Search for fallback masking:
 
-### Don't stop until you have fully made error handling consistent and user-legible across the app
+```bash
+rg -n "\?\? \[\]|\?\? \{\}|\?\? '-'|\?\? \"N/A\"|\|\| \[\]|\|\| \{\}" apps/web/src
+```
+
+- Search for silent catches:
+
+```bash
+rg -n "catch\s*(\{|\()" apps/web/src apps/api/src
+```
+
+- Search for generic toasts:
+
+```bash
+rg -n "toast\.error|sonner" apps/web/src
+```
+
+- Search for handwritten transport drift:
+
+```bash
+rg -n "apiFetcher|apiJson|fetchResponseMetadata|fetch\(|interface .*Response|type .*Response" apps/web/src --glob '!**/generated/**'
+```
+
+- Find route boundary gaps:
+
+```bash
+rg --files apps/web/src/app | rg "loading\.tsx$|error\.tsx$"
+```
+
+## Implementation Plan
+
+### 1. Strengthen the API Contract Path
+
+- Ensure Orval generation is current with `bun run generate:contracts`.
+- Prefer generated Orval hooks/functions for API access.
+- Replace duplicated handwritten transport types with generated schema imports.
+- Keep service-layer mappers explicit and typed.
+- Add backend `response_model` declarations where OpenAPI output is missing or weak.
+- Make generated error types flow through `APIError` without losing envelope fields.
+
+### 2. Build One Shared Error Presenter
+
+Create or extend a single frontend helper/hook for user-facing errors. It should:
+
+- Accept `unknown`.
+- Normalize with `isApiError`, `parseApiErrorEnvelope`, and `APIError`.
+- Return:
+  - title
+  - description
+  - severity
+  - retry policy
+  - support reference
+  - field errors
+  - whether telemetry is expected
+- Map known codes from `docs/error-catalog.md`.
+- Use localized shared copy from `src/lib/error-i18n.ts`.
+- Allow feature-specific business messages without replacing the shared fallback logic.
+
+Feature code should call this helper instead of inventing new error copy.
+
+### 3. Fix Query and Mutation UI
+
+For every query-driven component:
+
+- Render loading only while loading.
+- Render error UI when `isError` or `error` is present.
+- Render empty UI only when the query succeeded and the returned collection is empty.
+- Use `queryErrorMeta` for feature, operation, expected codes, and user-facing behavior.
+
+For every mutation:
+
+- Use `mutationErrorMeta`.
+- Show validation errors at fields via `setError`.
+- Keep dirty form/editor state.
+- Use retry only when retry can help.
+- Show support references for unknown, timeout, network, dependency, and 5xx failures.
+
+### 4. Add Component-Level Error Isolation
+
+Create a shared `WidgetErrorBoundary` if one does not already exist.
+
+It must:
+
+- Call `reportClientError`.
+- Render `ErrorState` or `InlineError`.
+- Support retry/reset.
+- Integrate with TanStack Query reset behavior where needed.
+- Preserve the surrounding page.
+
+Wrap high-risk widgets first:
+
+- AI chat/tutor streaming UI
+- Monaco editor
+- code execution result panel
+- video player
+- PDF preview/export
+- analytics charts
+- rich text editor extensions
+- upload/dropzone flows
+
+Fix `EmbedObjectsErrorBoundary` so it uses the shared boundary or reports telemetry and renders the shared error UI.
+
+### 5. Fill Route Error Boundaries
+
+For each route segment with `loading.tsx`, add or verify `error.tsx`.
+
+Copy the existing route-boundary pattern:
+
+- `use client`
+- `useEffect` telemetry via `reportClientError`
+- localized copy
+- `ErrorState`
+- retry via `reset`
+- chunk-load handling where relevant
+- `SupportReference`
+
+### 6. Improve Backend Error Contracts
+
+Backend errors should produce stable envelopes.
+
+- Add or reuse `AppError` codes for known business failures.
+- Update `docs/error-catalog.md` when adding codes.
+- Return field-level errors for validation that the frontend can map to RHF fields.
+- Do not leak stack traces, SQL, dependency hostnames, secrets, or raw provider messages.
+- Include request/correlation IDs for internal and dependency failures.
+- Add tests for new error codes and envelope shapes.
+
+### 7. Add Regression Checks
+
+Use the existing audit scripts where possible:
+
+```bash
+bun run audit:errors
+```
+
+Add or extend scripts so CI catches:
+
+- query result fallbacks used without an error branch
+- silent catches without a comment, telemetry, toast, or rethrow
+- direct edits/imports from generated files where forbidden
+- handwritten DTOs that duplicate generated schemas
+- route `loading.tsx` without `error.tsx`
+
+The check can be conservative. It should make risky patterns visible during review.
+
+## Testing Requirements
+
+Add focused tests for each feature area you touch.
+
+- Unit/component tests for shared error presenter mappings.
+- React tests for query error vs empty state rendering.
+- RHF tests for backend `fieldErrors` mapping.
+- Playwright tests for high-traffic flows:
+  - login/session expiration
+  - course viewing 500/404/403
+  - submission save timeout/conflict
+  - grading mutation validation failure
+  - upload validation/dependency failure
+- Backend tests for new `AppError` codes and OpenAPI schema output.
+
+## Validation Commands
+
+Run the smallest relevant set while iterating, then run the broader checks before handoff.
+
+```bash
+vp check
+bun run audit:errors
+bun run --cwd apps/web checktypes
+bun run --cwd apps/web test
+```
+
+If setup or runtime behavior is wrong, run:
+
+```bash
+vp env doctor
+```
+
+## Definition of Done
+
+- Every user-facing query has distinct loading, error, empty, and success states.
+- Failed requests never render as empty lists, blank panels, zero counts, or placeholder dashes.
+- Every mutation has a visible failure path and preserves user work where possible.
+- Backend validation errors land on the specific form fields.
+- Unknown, timeout, network, dependency, and 5xx errors show a support reference.
+- Expected 4xx business errors are not reported as crashes.
+- Unexpected render errors in high-risk widgets stay contained and report telemetry.
+- Route segments with loading states have matching error boundaries.
+- Frontend transport types come from Orval-generated OpenAPI artifacts.
+- Handwritten API clients/types remain only where there is a documented reason.
+- Contract artifacts are regenerated and committed when the API shape changes.
+- Regression checks prevent the app from drifting back to silent fallbacks.
+
+## Final Handoff Format
+
+For each completed feature area, report:
+
+- Files changed
+- Error states added or improved
+- Orval/generated types adopted
+- Fallbacks removed
+- New or updated backend error codes
+- Tests added
+- Commands run and results
+- Remaining known gaps
