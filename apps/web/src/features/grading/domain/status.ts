@@ -1,6 +1,8 @@
 import type { ActivityProgressCell, ActivityProgressState, ReleaseState, SubmissionStatus } from './types'
 
-export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+export type KnownSubmissionStatus = 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
+
+export const SUBMISSION_STATUS_LABELS: Record<KnownSubmissionStatus, string> = {
   DRAFT: 'statusDraft',
   PENDING: 'statusPending',
   GRADED: 'statusGraded',
@@ -8,7 +10,22 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   RETURNED: 'statusReturned',
 }
 
-export const SUBMISSION_STATUS_COLORS: Record<SubmissionStatus, string> = {
+const UNKNOWN_SUBMISSION_STATUS_LABEL = 'statusUnknown'
+const KNOWN_SUBMISSION_STATUSES = new Set<KnownSubmissionStatus>([
+  'DRAFT',
+  'PENDING',
+  'GRADED',
+  'PUBLISHED',
+  'RETURNED',
+])
+
+export function isKnownSubmissionStatus(
+  status: SubmissionStatus | string | null | undefined,
+): status is KnownSubmissionStatus {
+  return typeof status === 'string' && KNOWN_SUBMISSION_STATUSES.has(status as KnownSubmissionStatus)
+}
+
+export const SUBMISSION_STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-muted text-muted-foreground',
   PENDING: 'bg-warning/10 text-warning',
   GRADED: 'bg-success/10 text-success',
@@ -16,7 +33,7 @@ export const SUBMISSION_STATUS_COLORS: Record<SubmissionStatus, string> = {
   RETURNED: 'bg-destructive/10 text-destructive',
 }
 
-export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, SubmissionStatus[]> = {
+export const SUBMISSION_ALLOWED_TRANSITIONS: Record<string, SubmissionStatus[]> = {
   DRAFT: ['PENDING'],
   PENDING: ['GRADED', 'RETURNED'],
   GRADED: ['PUBLISHED', 'RETURNED'],
@@ -24,14 +41,14 @@ export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, Submission
   RETURNED: ['PENDING'],
 }
 
-export const RELEASE_STATE_LABELS: Record<ReleaseState, string> = {
+export const RELEASE_STATE_LABELS: Record<string, string> = {
   HIDDEN: 'releaseStateHidden',
   AWAITING_RELEASE: 'releaseStateAwaitingRelease',
   VISIBLE: 'releaseStateVisible',
   RETURNED_FOR_REVISION: 'releaseStateReturned',
 }
 
-export const ACTIVITY_PROGRESS_STATE_LABELS: Record<ActivityProgressState, string> = {
+export const ACTIVITY_PROGRESS_STATE_LABELS: Record<string, string> = {
   NOT_STARTED: 'not_started',
   IN_PROGRESS: 'in_progress',
   SUBMITTED: 'submitted',
@@ -47,7 +64,14 @@ export const ACTIVITY_PROGRESS_STATE_LABELS: Record<ActivityProgressState, strin
  * Get localized label for a submission status.
  * Requires a translator function scoped to 'Grading.Table' namespace.
  */
-export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: string) => string): string {
+export function getSubmissionStatusLabel(
+  status: SubmissionStatus | null | undefined,
+  t: (key: string) => string,
+): string {
+  if (!isKnownSubmissionStatus(status)) {
+    return t(UNKNOWN_SUBMISSION_STATUS_LABEL)
+  }
+
   return t(SUBMISSION_STATUS_LABELS[status])
 }
 
@@ -55,19 +79,30 @@ export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: stri
  * Get localized label for a release state.
  * Requires a translator function scoped to 'Features.Grading.Review' or 'Grading.Panel' namespace.
  */
-export function getReleaseStateLabel(state: ReleaseState, t: (key: string) => string): string {
-  return t(RELEASE_STATE_LABELS[state])
+export function getReleaseStateLabel(
+  state: ReleaseState | string | null | undefined,
+  t: (key: string) => string,
+): string {
+  const normalizedState = state ?? 'HIDDEN'
+  const labelKey = (RELEASE_STATE_LABELS[normalizedState] ?? RELEASE_STATE_LABELS.HIDDEN) as string
+  return t(labelKey)
 }
 
 /**
  * Get localized label for an activity progress state.
  * Requires a translator function scoped to 'Grading.Gradebook.states' namespace.
  */
-export function getActivityProgressStateLabel(state: ActivityProgressState, t: (key: string) => string): string {
-  return t(ACTIVITY_PROGRESS_STATE_LABELS[state])
+export function getActivityProgressStateLabel(
+  state: ActivityProgressState | string | null | undefined,
+  t: (key: string) => string,
+): string {
+  const normalizedState = state ?? 'NOT_STARTED'
+  const labelKey = (ACTIVITY_PROGRESS_STATE_LABELS[normalizedState] ??
+    ACTIVITY_PROGRESS_STATE_LABELS.NOT_STARTED) as string
+  return t(labelKey)
 }
 
-export const ACTIVITY_PROGRESS_STATE_CLASSES: Record<ActivityProgressState, string> = {
+export const ACTIVITY_PROGRESS_STATE_CLASSES: Record<string, string> = {
   NOT_STARTED: 'border-border bg-muted text-muted-foreground',
   IN_PROGRESS: 'border-primary/20 bg-primary/10 text-primary',
   SUBMITTED: 'border-warning/20 bg-warning/10 text-warning',
@@ -79,39 +114,47 @@ export const ACTIVITY_PROGRESS_STATE_CLASSES: Record<ActivityProgressState, stri
   COMPLETED: 'border-success/20 bg-success/10 text-success',
 }
 
-export function canTransitionSubmission(from: SubmissionStatus, to: SubmissionStatus): boolean {
-  return SUBMISSION_ALLOWED_TRANSITIONS[from].includes(to)
+export function canTransitionSubmission(
+  from: SubmissionStatus | null | undefined,
+  to: SubmissionStatus | null | undefined,
+): boolean {
+  if (!isKnownSubmissionStatus(from) || !isKnownSubmissionStatus(to)) {
+    return false
+  }
+
+  const allowedTransitions = SUBMISSION_ALLOWED_TRANSITIONS[from]
+  return allowedTransitions?.includes(to) ?? false
 }
 
-export function getReleaseState(status: SubmissionStatus): ReleaseState {
+export function getReleaseState(status: SubmissionStatus | null | undefined): ReleaseState {
   if (status === 'GRADED') return 'AWAITING_RELEASE'
   if (status === 'PUBLISHED') return 'VISIBLE'
   if (status === 'RETURNED') return 'RETURNED_FOR_REVISION'
   return 'HIDDEN'
 }
 
-export function isPublishedToStudent(status: SubmissionStatus): boolean {
+export function isPublishedToStudent(status: SubmissionStatus | null | undefined): boolean {
   const releaseState = getReleaseState(status)
   return releaseState === 'VISIBLE' || releaseState === 'RETURNED_FOR_REVISION'
 }
 
-export function needsTeacherAction(status: SubmissionStatus): boolean {
+export function needsTeacherAction(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING'
 }
 
-export function canTeacherEditGrade(status: SubmissionStatus): boolean {
+export function canTeacherEditGrade(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING' || status === 'GRADED' || status === 'RETURNED'
 }
 
-export function canSelectForBatchGrading(status: SubmissionStatus): boolean {
+export function canSelectForBatchGrading(status: SubmissionStatus | null | undefined): boolean {
   return canTeacherEditGrade(status)
 }
 
-export function canPublishGrade(status: SubmissionStatus): boolean {
+export function canPublishGrade(status: SubmissionStatus | null | undefined): boolean {
   return status === 'GRADED'
 }
 
-export function canReturnSubmission(status: SubmissionStatus): boolean {
+export function canReturnSubmission(status: SubmissionStatus | null | undefined): boolean {
   return status === 'PENDING' || status === 'GRADED' || status === 'PUBLISHED'
 }
 

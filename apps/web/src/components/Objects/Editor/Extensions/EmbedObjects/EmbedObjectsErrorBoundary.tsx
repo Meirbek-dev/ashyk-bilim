@@ -2,6 +2,7 @@
 
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { reportClientError } from '@/services/telemetry/client'
 
 // ============================================================================
 // Error Boundary for EmbedObjectsComponent (legacy blockEmbed NodeView)
@@ -34,6 +35,16 @@ export class EmbedObjectsErrorBoundary extends Component<
 
   public override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[EmbedObjects] blockEmbed NodeView render error:', error, info)
+    void reportClientError({
+      error: {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        componentStack: info.componentStack,
+      },
+      phase: 'embed-objects-render',
+      scope: 'EmbedObjectsErrorBoundary',
+    }).catch(() => undefined)
   }
 
   public override render() {

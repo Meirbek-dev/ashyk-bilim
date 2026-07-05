@@ -126,16 +126,10 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
   for (const student of data.students) {
     const cohort =
       (
-        student as GradebookStudent & {
-          cohort_name?: string | null
-          cohort?: string | null
-        }
+        student
       ).cohort_name ??
       (
-        student as GradebookStudent & {
-          cohort_name?: string | null
-          cohort?: string | null
-        }
+        student
       ).cohort ??
       '__default_cohort__'
     cohorts.set(cohort, [...(cohorts.get(cohort) ?? []), ...(cellsByStudent.get(student.id) ?? [])])

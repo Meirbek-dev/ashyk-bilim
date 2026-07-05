@@ -197,7 +197,7 @@ export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryKey(params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleAuthorizeApiV1AuthGoogleAuthorizeGet>>> = ({ signal }) =>
+  const queryFn: QueryFunction = ({ signal }) =>
     googleAuthorizeApiV1AuthGoogleAuthorizeGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
@@ -309,7 +309,7 @@ export const getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetSuspenseQueryOptions =
 
   const queryKey = queryOptions?.queryKey ?? getGoogleAuthorizeApiV1AuthGoogleAuthorizeGetQueryKey(params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleAuthorizeApiV1AuthGoogleAuthorizeGet>>> = ({ signal }) =>
+  const queryFn: QueryFunction = ({ signal }) =>
     googleAuthorizeApiV1AuthGoogleAuthorizeGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
@@ -443,7 +443,7 @@ export const getGoogleCallbackApiV1AuthGoogleCallbackGetQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleCallbackApiV1AuthGoogleCallbackGetQueryKey(params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallbackApiV1AuthGoogleCallbackGet>>> = ({ signal }) =>
+  const queryFn: QueryFunction = ({ signal }) =>
     googleCallbackApiV1AuthGoogleCallbackGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
@@ -555,7 +555,7 @@ export const getGoogleCallbackApiV1AuthGoogleCallbackGetSuspenseQueryOptions = <
 
   const queryKey = queryOptions?.queryKey ?? getGoogleCallbackApiV1AuthGoogleCallbackGetQueryKey(params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof googleCallbackApiV1AuthGoogleCallbackGet>>> = ({ signal }) =>
+  const queryFn: QueryFunction = ({ signal }) =>
     googleCallbackApiV1AuthGoogleCallbackGet(params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<

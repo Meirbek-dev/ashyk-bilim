@@ -90,7 +90,7 @@ async function uploadFormData(
     throw await parseApiError(result, path)
   }
 
-  const json = (await result.json()) as ActivityRead
+  const json = (await result.json())
   if (onProgress) {
     try {
       onProgress({ percentage: 100 })
@@ -187,7 +187,7 @@ async function createVideoActivityChunked(
     throw await parseApiError(result, 'activities/video')
   }
 
-  return (await result.json()) as ActivityRead
+  return (await result.json())
 }
 
 async function createPdfActivityStandard(

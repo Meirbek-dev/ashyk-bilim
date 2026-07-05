@@ -41,7 +41,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
       accessorKey: 'completion_rate',
       header: t('courseHealth.colCompletion'),
       cell: ({ row }) => {
-        const course = row.original as EnhancedTeacherCourseRow
+        const course = row.original
         return (
           <div>
             <div>{course.completion_rate}%</div>
@@ -63,7 +63,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
       accessorKey: 'content_health_score',
       header: t('courseHealth.colHealth'),
       cell: ({ row }) => {
-        const course = row.original as EnhancedTeacherCourseRow
+        const course = row.original
         const v = course.content_health_score
         if (v === null) return t('atRisk.na')
         // Score is already on a 0–100 scale (freshness × 0.55 + avg_progress × 0.45).

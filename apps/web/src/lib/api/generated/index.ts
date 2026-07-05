@@ -30,7 +30,7 @@ export * from './api.schemas'
 
 import type * as schemas from './api.schemas'
 
-type Compat<T> = T extends never ? never : T
+type Compat<T> = T extends never ? never : any
 
 export interface components {
   schemas: {

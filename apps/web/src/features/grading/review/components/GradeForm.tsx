@@ -668,5 +668,5 @@ function buildOptimisticSubmission(
     final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
     grading_json: gradingJson,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
-  } as Submission
+  }
 }

@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
 import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -42,7 +43,12 @@ async function AdminContent({
   try {
     const [resOverview, resAdminData] = await Promise.all([
       getTeacherOverview(query),
-      getAdminAnalyticsOverview(query).catch(() => null),
+      getAdminAnalyticsOverview(query).catch((error: unknown) => {
+        if (isApiError(error) && (error.status === 403 || error.status === 401)) {
+          return null
+        }
+        throw error
+      }),
     ])
     overview = resOverview
     adminData = resAdminData
@@ -73,7 +79,7 @@ async function AdminContent({
 
   return (
     <AnalyticsShell query={query} overview={overview} adminData={adminData} activeTab="admin">
-      <AdminTab adminData={adminData!} />
+      <AdminTab adminData={adminData} />
     </AnalyticsShell>
   )
 }

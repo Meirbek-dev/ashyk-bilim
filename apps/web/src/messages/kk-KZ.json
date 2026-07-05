@@ -6984,6 +6984,7 @@
       "statusGraded": "Бағаланды",
       "statusPublished": "Жарияланды",
       "statusReturned": "Қайтарылған",
+      "statusUnknown": "Белгісіз мәртебе",
       "score": "Баға",
       "scorePlaceholder": "0–100",
       "scoreInputAria": "{student} үшін бағаны өзгерту",

@@ -65,7 +65,7 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
       accessorKey: 'difficulty_score',
       header: t('assessmentOutliers.colDifficulty'),
       cell: ({ row }) => {
-        const assessment = row.original as EnhancedAssessmentOutlierRow
+        const assessment = row.original
         const v = assessment.difficulty_score
         if (v === null) return t('atRisk.na')
         // difficulty_score = round(100 - pass_rate, 2) → already on a 0–100 scale.

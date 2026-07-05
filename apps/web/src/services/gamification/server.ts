@@ -126,7 +126,7 @@ async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
       console.error(`Failed to fetch gamification data: ${res.status}`)
       return null
     }
-    return (await res.json()) as ApiDashboardResponse
+    return (await res.json())
   } catch (error) {
     if (error instanceof Error && !error.message.includes('fetch')) {
       console.error('Error fetching gamification data:', error)
@@ -152,7 +152,7 @@ async function fetchLeaderboardData(limit: number): Promise<ApiLeaderboardRespon
       return null
     }
 
-    return (await res.json()) as ApiLeaderboardResponse
+    return (await res.json())
   } catch (error) {
     console.error('Error fetching leaderboard:', error)
     return null

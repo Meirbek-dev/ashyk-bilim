@@ -23,7 +23,7 @@ export interface AIAdminSettingsRead {
   provider_ready: boolean
 }
 
-export type AIArtifactReadContentJson = { [key: string]: unknown }
+export interface AIArtifactReadContentJson { [key: string]: unknown }
 
 export interface AIArtifactRead {
   artifact_uuid: string
@@ -34,9 +34,7 @@ export interface AIArtifactRead {
 
 export interface JsonValue {}
 
-export interface JsonObject {
-  [key: string]: JsonValue
-}
+export type JsonObject = Record<string, JsonValue>;
 
 export interface AICourseAnalysisRead {
   analysis_uuid: string
@@ -148,7 +146,7 @@ export interface AIRemediationSessionRead {
   updated_at: string
 }
 
-export type AIRunEventReadPayloadJson = { [key: string]: unknown }
+export interface AIRunEventReadPayloadJson { [key: string]: unknown }
 
 export interface AIRunEventRead {
   event_id: string
@@ -157,7 +155,7 @@ export interface AIRunEventRead {
   sequence: number
 }
 
-export type AIRunStatusReadRunMetadata = { [key: string]: unknown }
+export interface AIRunStatusReadRunMetadata { [key: string]: unknown }
 
 export interface AIRunStatusRead {
   error_code?: string | null
@@ -230,9 +228,9 @@ export interface AIUsageSummary {
   total_runs: number
 }
 
-export type ActivityAssessmentPolicyReadAntiCheatJson = { [key: string]: unknown }
+export interface ActivityAssessmentPolicyReadAntiCheatJson { [key: string]: unknown }
 
-export type ActivityAssessmentPolicyReadSettingsJson = { [key: string]: unknown }
+export interface ActivityAssessmentPolicyReadSettingsJson { [key: string]: unknown }
 
 export type AssessmentCompletionRule = (typeof AssessmentCompletionRule)[keyof typeof AssessmentCompletionRule]
 
@@ -378,11 +376,11 @@ export interface ActivityAssessmentPolicyRead {
   time_limit_seconds?: number | null
 }
 
-export type ActivityCreateContent = { [key: string]: unknown }
+export interface ActivityCreateContent { [key: string]: unknown }
 
-export type ActivityCreateDetails = { [key: string]: unknown } | null
+export type ActivityCreateDetails = Record<string, unknown> | null
 
-export type ActivityCreateSettings = { [key: string]: unknown }
+export interface ActivityCreateSettings { [key: string]: unknown }
 
 export type ActivitySubTypeEnum = (typeof ActivitySubTypeEnum)[keyof typeof ActivitySubTypeEnum]
 
@@ -476,11 +474,11 @@ export interface ActivityProgressCell {
   user_id: number
 }
 
-export type ActivityReadContent = { [key: string]: unknown }
+export interface ActivityReadContent { [key: string]: unknown }
 
-export type ActivityReadDetails = { [key: string]: unknown } | null
+export type ActivityReadDetails = Record<string, unknown> | null
 
-export type ActivityReadSettings = { [key: string]: unknown }
+export interface ActivityReadSettings { [key: string]: unknown }
 
 export interface ActivityRead {
   activity_sub_type: ActivitySubTypeEnum
@@ -500,11 +498,11 @@ export interface ActivityRead {
   update_date: string
 }
 
-export type ActivityReadWithPermissionsContent = { [key: string]: unknown }
+export interface ActivityReadWithPermissionsContent { [key: string]: unknown }
 
-export type ActivityReadWithPermissionsDetails = { [key: string]: unknown } | null
+export type ActivityReadWithPermissionsDetails = Record<string, unknown> | null
 
-export type ActivityReadWithPermissionsSettings = { [key: string]: unknown }
+export interface ActivityReadWithPermissionsSettings { [key: string]: unknown }
 
 /**
  * Activity response with permission metadata.
@@ -532,11 +530,11 @@ export interface ActivityReadWithPermissions {
   update_date: string
 }
 
-export type ActivityUpdateContent = { [key: string]: unknown } | null
+export type ActivityUpdateContent = Record<string, unknown> | null
 
-export type ActivityUpdateDetails = { [key: string]: unknown } | null
+export type ActivityUpdateDetails = Record<string, unknown> | null
 
-export type ActivityUpdateSettings = { [key: string]: unknown } | null
+export type ActivityUpdateSettings = Record<string, unknown> | null
 
 export interface ActivityUpdate {
   activity_sub_type?: ActivitySubTypeEnum | null
@@ -641,7 +639,7 @@ export const AnalyticsDataQualityConfidenceLevel = {
   high: 'high',
 } as const
 
-export type AnalyticsDataQualityCoursesWithoutEnoughDataItem = { [key: string]: unknown }
+export interface AnalyticsDataQualityCoursesWithoutEnoughDataItem { [key: string]: unknown }
 
 export type AnalyticsDataQualityMode = (typeof AnalyticsDataQualityMode)[keyof typeof AnalyticsDataQualityMode]
 
@@ -716,9 +714,9 @@ export interface AnomalyItem {
   type: AnomalyItemType
 }
 
-export type ApiErrorEnvelopeDetails = { [key: string]: unknown } | { [key: string]: unknown }[] | null
+export type ApiErrorEnvelopeDetails = Record<string, unknown> | Record<string, unknown>[] | null
 
-export type ApiFieldErrorDetails = { [key: string]: unknown } | null
+export type ApiFieldErrorDetails = Record<string, unknown> | null
 
 export interface ApiFieldError {
   code?: string
@@ -800,7 +798,7 @@ export const FormItemAnswerKind = {
   FORM: 'FORM',
 } as const
 
-export type FormItemAnswerValues = { [key: string]: string }
+export interface FormItemAnswerValues { [key: string]: string }
 
 export interface FormItemAnswer {
   kind: FormItemAnswerKind
@@ -813,7 +811,7 @@ export const CodeItemAnswerKind = {
   CODE: 'CODE',
 } as const
 
-export type CodeRunResultDetailsItem = { [key: string]: unknown }
+export interface CodeRunResultDetailsItem { [key: string]: unknown }
 
 export interface CodeRunResult {
   details?: CodeRunResultDetailsItem[]
@@ -875,11 +873,11 @@ export const AssessmentAttemptProjectionReleaseState = {
   RETURNED_FOR_REVISION: 'RETURNED_FOR_REVISION',
 } as const
 
-export type AssessmentEffectivePolicyAntiCheatJson = { [key: string]: unknown }
+export interface AssessmentEffectivePolicyAntiCheatJson { [key: string]: unknown }
 
-export type AssessmentEffectivePolicyLatePolicy = { [key: string]: unknown }
+export interface AssessmentEffectivePolicyLatePolicy { [key: string]: unknown }
 
-export type AssessmentEffectivePolicySettingsJson = { [key: string]: unknown }
+export interface AssessmentEffectivePolicySettingsJson { [key: string]: unknown }
 
 export interface AssessmentEffectivePolicy {
   allow_late?: boolean
@@ -1314,9 +1312,9 @@ export interface CodeTestCase {
   weight?: number
 }
 
-export type CodeItemBodyReferenceSolutions = { [key: string]: string }
+export interface CodeItemBodyReferenceSolutions { [key: string]: string }
 
-export type CodeItemBodyStarterCode = { [key: string]: string }
+export interface CodeItemBodyStarterCode { [key: string]: string }
 
 export interface CodeItemBody {
   constraints?: string[]
@@ -1691,7 +1689,7 @@ export const AtRiskLearnerRowConfidenceLevel = {
   high: 'high',
 } as const
 
-export type AtRiskLearnerRowRiskComponents = { [key: string]: number }
+export interface AtRiskLearnerRowRiskComponents { [key: string]: number }
 
 export type AtRiskLearnerRowRiskLevel = (typeof AtRiskLearnerRowRiskLevel)[keyof typeof AtRiskLearnerRowRiskLevel]
 
@@ -1889,13 +1887,13 @@ export interface BatchPermissionCheckRequest {
   checks: PermissionCheckRequest[]
 }
 
-export type BatchPermissionCheckResponseResults = { [key: string]: boolean }
+export interface BatchPermissionCheckResponseResults { [key: string]: boolean }
 
 export interface BatchPermissionCheckResponse {
   results: BatchPermissionCheckResponseResults
 }
 
-export type BlockReadContent = { [key: string]: unknown }
+export interface BlockReadContent { [key: string]: unknown }
 
 export type BlockTypeEnum = (typeof BlockTypeEnum)[keyof typeof BlockTypeEnum]
 
@@ -2096,7 +2094,7 @@ export interface CertificateUserSummary {
   username: string
 }
 
-export type CertificationCreateConfig = { [key: string]: unknown }
+export interface CertificationCreateConfig { [key: string]: unknown }
 
 export interface CertificationCreate {
   config?: CertificationCreateConfig
@@ -2108,7 +2106,7 @@ export interface CertificationDetailResponse {
   detail: string
 }
 
-export type CertificationReadConfig = { [key: string]: unknown }
+export interface CertificationReadConfig { [key: string]: unknown }
 
 export interface CertificationRead {
   certification_uuid: string
@@ -2119,7 +2117,7 @@ export interface CertificationRead {
   update_date: string
 }
 
-export type CertificationUpdateConfig = { [key: string]: unknown } | null
+export type CertificationUpdateConfig = Record<string, unknown> | null
 
 export interface CertificationUpdate {
   config?: CertificationUpdateConfig
@@ -2243,7 +2241,7 @@ export interface CodeChallengeValidationResult {
   total?: number | null
 }
 
-export type CodeChallengeValidationResponseResults = { [key: string]: CodeChallengeValidationResult }
+export interface CodeChallengeValidationResponseResults { [key: string]: CodeChallengeValidationResult }
 
 export interface CodeChallengeValidationResponse {
   results: CodeChallengeValidationResponseResults
@@ -2830,9 +2828,7 @@ export interface DeadlineExtensionRequest {
   user_uuids: string[]
 }
 
-export interface DevConfigResponse {
-  [key: string]: unknown
-}
+export type DevConfigResponse = Record<string, unknown>;
 
 export interface DiscussionLikeRead {
   creation_date: string
@@ -2857,7 +2853,7 @@ export interface DismissSuggestionRequest {
   suggestion_id: string
 }
 
-export type DrillThroughResponseItemsItem = { [key: string]: unknown }
+export interface DrillThroughResponseItemsItem { [key: string]: unknown }
 
 export type DrillThroughResponseMetric = (typeof DrillThroughResponseMetric)[keyof typeof DrillThroughResponseMetric]
 
@@ -2875,7 +2871,7 @@ export interface DrillThroughResponse {
   total?: number
 }
 
-export type ErrorModelDetail = string | { [key: string]: string }
+export type ErrorModelDetail = string | Record<string, string>
 
 export interface ErrorModel {
   detail: ErrorModelDetail
@@ -3199,7 +3195,7 @@ export interface GradingDraftSave {
   status?: string
 }
 
-export type ValidationErrorCtx = { [key: string]: unknown }
+export interface ValidationErrorCtx { [key: string]: unknown }
 
 export interface ValidationError {
   ctx?: ValidationErrorCtx
@@ -3213,7 +3209,7 @@ export interface HTTPValidationError {
   detail?: ValidationError[]
 }
 
-export type HealthStatusResponseChecks = { [key: string]: JsonObject }
+export interface HealthStatusResponseChecks { [key: string]: JsonObject }
 
 export interface HealthStatusResponse {
   checks: HealthStatusResponseChecks
@@ -3609,7 +3605,7 @@ export interface RootResponse {
   Message: string
 }
 
-export type SavedAnalyticsViewCreateQuery = { [key: string]: unknown }
+export interface SavedAnalyticsViewCreateQuery { [key: string]: unknown }
 
 export interface SavedAnalyticsViewCreate {
   name: string
@@ -3617,7 +3613,7 @@ export interface SavedAnalyticsViewCreate {
   view_type?: string
 }
 
-export type SavedAnalyticsViewRowQuery = { [key: string]: unknown }
+export interface SavedAnalyticsViewRowQuery { [key: string]: unknown }
 
 export interface SavedAnalyticsViewRow {
   created_at: string
@@ -4020,9 +4016,9 @@ export interface TeacherAssessmentListResponse {
   total?: number
 }
 
-export type TeacherCourseDetailResponseCourse = { [key: string]: number | string }
+export interface TeacherCourseDetailResponseCourse { [key: string]: number | string }
 
-export type TeacherCourseDetailResponseFunnels = { [key: string]: FunnelStep[] }
+export interface TeacherCourseDetailResponseFunnels { [key: string]: FunnelStep[] }
 
 export interface TimeSeriesPoint {
   bucket_start: string
@@ -4108,7 +4104,7 @@ export const TeacherInterventionCreateInterventionType = {
   learner_recovered: 'learner_recovered',
 } as const
 
-export type TeacherInterventionCreatePayload = { [key: string]: unknown }
+export interface TeacherInterventionCreatePayload { [key: string]: unknown }
 
 export type TeacherInterventionCreateStatus =
   (typeof TeacherInterventionCreateStatus)[keyof typeof TeacherInterventionCreateStatus]
@@ -4469,7 +4465,7 @@ export interface XPAwardResponse {
   transaction: TransactionRead
 }
 
-export type ApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetParams = {
+export interface ApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetParams {
   surface?: ApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetSurface
   activity_uuid?: string | null
   submission_uuid?: string | null
@@ -4486,7 +4482,7 @@ export const ApiAiScopeCapabilitiesApiV1AiCapabilitiesScopeCourseUuidGetSurface 
   admin: 'admin',
 } as const
 
-export type AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetParams = {
+export interface AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetParams {
   window?: AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetWindow
   compare?: AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetCompare
   bucket?: AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetBucket
@@ -4554,7 +4550,7 @@ export const AdminAnalyticsOverviewPlatformApiV1AnalyticsAdminOverviewGetSortOrd
   desc: 'desc',
 } as const
 
-export type TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetParams = {
+export interface TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetParams {
   window?: TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetWindow
   compare?: TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetCompare
   bucket?: TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetBucket
@@ -4622,7 +4618,7 @@ export const TeacherAssessmentsPlatformApiV1AnalyticsTeacherAssessmentsGetSortOr
   desc: 'desc',
 } as const
 
-export type TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAssessmentTypeAssessmentIdGetParams = {
+export interface TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAssessmentTypeAssessmentIdGetParams {
   window?: TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAssessmentTypeAssessmentIdGetWindow
   compare?: TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAssessmentTypeAssessmentIdGetCompare
   bucket?: TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAssessmentTypeAssessmentIdGetBucket
@@ -4690,7 +4686,7 @@ export const TeacherAssessmentDetailPlatformApiV1AnalyticsTeacherAssessmentsAsse
   desc: 'desc',
 } as const
 
-export type TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetParams = {
+export interface TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetParams {
   window?: TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetWindow
   compare?: TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetCompare
   bucket?: TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetBucket
@@ -4758,7 +4754,7 @@ export const TeacherCoursesPlatformApiV1AnalyticsTeacherCoursesGetSortOrder = {
   desc: 'desc',
 } as const
 
-export type TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuidCourseUuidGetParams = {
+export interface TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuidCourseUuidGetParams {
   window?: TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuidCourseUuidGetWindow
   compare?: TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuidCourseUuidGetCompare
   bucket?: TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuidCourseUuidGetBucket
@@ -4826,7 +4822,7 @@ export const TeacherCourseDetailByUuidPlatformApiV1AnalyticsTeacherCoursesByUuid
   desc: 'desc',
 } as const
 
-export type TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetParams = {
+export interface TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetParams {
   window?: TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetWindow
   compare?: TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetCompare
   bucket?: TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetBucket
@@ -4894,7 +4890,7 @@ export const TeacherCourseDetailPlatformApiV1AnalyticsTeacherCoursesCourseIdGetS
   desc: 'desc',
 } as const
 
-export type TeacherDrillthroughPlatformApiV1AnalyticsTeacherDrillThroughMetricGetParams = {
+export interface TeacherDrillthroughPlatformApiV1AnalyticsTeacherDrillThroughMetricGetParams {
   course_id?: number | null
   assessment_type?: string | null
   assessment_id?: number | null
@@ -4965,7 +4961,7 @@ export const TeacherDrillthroughPlatformApiV1AnalyticsTeacherDrillThroughMetricG
   desc: 'desc',
 } as const
 
-export type TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExportsAssessmentOutcomesCsvGetParams = {
+export interface TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExportsAssessmentOutcomesCsvGetParams {
   window?: TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExportsAssessmentOutcomesCsvGetWindow
   compare?: TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExportsAssessmentOutcomesCsvGetCompare
   bucket?: TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExportsAssessmentOutcomesCsvGetBucket
@@ -5033,7 +5029,7 @@ export const TeacherAssessmentOutcomesExportPlatformApiV1AnalyticsTeacherExports
   desc: 'desc',
 } as const
 
-export type TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetParams = {
+export interface TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetParams {
   window?: TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetWindow
   compare?: TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetCompare
   bucket?: TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGetBucket
@@ -5101,7 +5097,7 @@ export const TeacherAtRiskExportPlatformApiV1AnalyticsTeacherExportsAtRiskCsvGet
   desc: 'desc',
 } as const
 
-export type TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCourseProgressCsvGetParams = {
+export interface TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCourseProgressCsvGetParams {
   window?: TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCourseProgressCsvGetWindow
   compare?: TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCourseProgressCsvGetCompare
   bucket?: TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCourseProgressCsvGetBucket
@@ -5169,7 +5165,7 @@ export const TeacherCourseProgressExportPlatformApiV1AnalyticsTeacherExportsCour
   desc: 'desc',
 } as const
 
-export type TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGradingBacklogCsvGetParams = {
+export interface TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGradingBacklogCsvGetParams {
   window?: TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGradingBacklogCsvGetWindow
   compare?: TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGradingBacklogCsvGetCompare
   bucket?: TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGradingBacklogCsvGetBucket
@@ -5237,7 +5233,7 @@ export const TeacherGradingBacklogExportPlatformApiV1AnalyticsTeacherExportsGrad
   desc: 'desc',
 } as const
 
-export type TeacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGetParams = {
+export interface TeacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGetParams {
   user_id?: number | null
   course_id?: number | null
   window?: TeacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGetWindow
@@ -5307,7 +5303,7 @@ export const TeacherInterventionsPlatformApiV1AnalyticsTeacherInterventionsGetSo
   desc: 'desc',
 } as const
 
-export type CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventionsPostParams = {
+export interface CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventionsPostParams {
   window?: CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventionsPostWindow
   compare?: CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventionsPostCompare
   bucket?: CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventionsPostBucket
@@ -5375,7 +5371,7 @@ export const CreateTeacherInterventionPlatformApiV1AnalyticsTeacherInterventions
   desc: 'desc',
 } as const
 
-export type TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGetParams = {
+export interface TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGetParams {
   window?: TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGetWindow
   compare?: TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGetCompare
   bucket?: TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGetBucket
@@ -5443,7 +5439,7 @@ export const TeacherAtRiskLearnersPlatformApiV1AnalyticsTeacherLearnersAtRiskGet
   desc: 'desc',
 } as const
 
-export type TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams = {
+export interface TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetParams {
   window?: TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetWindow
   compare?: TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetCompare
   bucket?: TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetBucket
@@ -5511,7 +5507,7 @@ export const TeacherOverviewPlatformApiV1AnalyticsTeacherOverviewGetSortOrder = 
   desc: 'desc',
 } as const
 
-export type TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetParams = {
+export interface TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetParams {
   window?: TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetWindow
   compare?: TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetCompare
   bucket?: TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetBucket
@@ -5579,7 +5575,7 @@ export const TeacherSavedViewsPlatformApiV1AnalyticsTeacherSavedViewsGetSortOrde
   desc: 'desc',
 } as const
 
-export type SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostParams = {
+export interface SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostParams {
   window?: SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostWindow
   compare?: SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostCompare
   bucket?: SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostBucket
@@ -5647,7 +5643,7 @@ export const SaveTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsPostSort
   desc: 'desc',
 } as const
 
-export type DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewIdDeleteParams = {
+export interface DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewIdDeleteParams {
   window?: DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewIdDeleteWindow
   compare?: DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewIdDeleteCompare
   bucket?: DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewIdDeleteBucket
@@ -5715,7 +5711,7 @@ export const DeleteTeacherSavedViewPlatformApiV1AnalyticsTeacherSavedViewsViewId
   desc: 'desc',
 } as const
 
-export type ApiListAccessEligibleLearnersApiV1AssessmentsAssessmentUuidAccessEligibleLearnersGetParams = {
+export interface ApiListAccessEligibleLearnersApiV1AssessmentsAssessmentUuidAccessEligibleLearnersGetParams {
   q?: string | null
   /**
    * @minimum 1
@@ -5724,7 +5720,7 @@ export type ApiListAccessEligibleLearnersApiV1AssessmentsAssessmentUuidAccessEli
   limit?: number
 }
 
-export type ApiListAccessEligibleUsergroupsApiV1AssessmentsAssessmentUuidAccessEligibleUsergroupsGetParams = {
+export interface ApiListAccessEligibleUsergroupsApiV1AssessmentsAssessmentUuidAccessEligibleUsergroupsGetParams {
   q?: string | null
   /**
    * @minimum 1
@@ -5733,7 +5729,7 @@ export type ApiListAccessEligibleUsergroupsApiV1AssessmentsAssessmentUuidAccessE
   limit?: number
 }
 
-export type ApiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGetParams = {
+export interface ApiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGetParams {
   /**
    * @minimum 1
    */
@@ -5745,7 +5741,7 @@ export type ApiGetAuditTrailApiV1AssessmentsAssessmentUuidAuditGetParams = {
   page_size?: number
 }
 
-export type ApiGetSubmissionsApiV1AssessmentsAssessmentUuidSubmissionsGetParams = {
+export interface ApiGetSubmissionsApiV1AssessmentsAssessmentUuidSubmissionsGetParams {
   status?: string | null
   late_only?: boolean
   search?: string | null
@@ -5762,7 +5758,7 @@ export type ApiGetSubmissionsApiV1AssessmentsAssessmentUuidSubmissionsGetParams 
   page_size?: number
 }
 
-export type ApiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidSubmissionsExportGetParams = {
+export interface ApiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidSubmissionsExportGetParams {
   /**
    * Фильтр по типу оценивания (QUIZ, OPEN_TEXT, CODE_CHALLENGE и т. д.)
    */
@@ -5777,7 +5773,7 @@ export type ApiExportAssessmentSubmissionsCsvApiV1AssessmentsAssessmentUuidSubmi
   submitted_before?: string | null
 }
 
-export type ApiSubmitAssessmentApiV1AssessmentsAssessmentUuidSubmitPostParams = {
+export interface ApiSubmitAssessmentApiV1AssessmentsAssessmentUuidSubmitPostParams {
   /**
    * @minimum 0
    */
@@ -5785,50 +5781,50 @@ export type ApiSubmitAssessmentApiV1AssessmentsAssessmentUuidSubmitPostParams = 
   auto_submit?: boolean
 }
 
-export type GoogleAuthorizeApiV1AuthGoogleAuthorizeGetParams = {
+export interface GoogleAuthorizeApiV1AuthGoogleAuthorizeGetParams {
   callback: string
 }
 
-export type GoogleCallbackApiV1AuthGoogleCallbackGetParams = {
+export interface GoogleCallbackApiV1AuthGoogleCallbackGetParams {
   code?: string | null
   state?: string | null
   error?: string | null
 }
 
-export type ApiGetImageFileBlockApiV1BlocksImageGetParams = {
+export interface ApiGetImageFileBlockApiV1BlocksImageGetParams {
   block_uuid: string
 }
 
-export type ApiGetPdfFileBlockApiV1BlocksPdfGetParams = {
+export interface ApiGetPdfFileBlockApiV1BlocksPdfGetParams {
   block_uuid: string
 }
 
-export type ApiGetVideoFileBlockApiV1BlocksVideoGetParams = {
+export interface ApiGetVideoFileBlockApiV1BlocksVideoGetParams {
   block_uuid: string
 }
 
-export type ApiDeleteCertificationApiV1CertificationsCertificationUuidDeleteParams = {
+export interface ApiDeleteCertificationApiV1CertificationsCertificationUuidDeleteParams {
   last_known_update_date?: string | null
 }
 
-export type ApiGetPlatformEditableCoursesApiV1CoursesEditablePagePageLimitLimitGetParams = {
+export interface ApiGetPlatformEditableCoursesApiV1CoursesEditablePagePageLimitLimitGetParams {
   query?: string | null
   sort_by?: string | null
   preset?: string | null
 }
 
-export type ApiSearchPlatformCoursesApiV1CoursesSearchGetParams = {
+export interface ApiSearchPlatformCoursesApiV1CoursesSearchGetParams {
   query: string
   page?: number
   limit?: number
 }
 
-export type ApiUpdateCourseContributorApiV1CoursesCourseUuidContributorsContributorUserIdPutParams = {
+export interface ApiUpdateCourseContributorApiV1CoursesCourseUuidContributorsContributorUserIdPutParams {
   authorship: ResourceAuthorshipEnum
   authorship_status: ResourceAuthorshipStatusEnum
 }
 
-export type ApiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGetParams = {
+export interface ApiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGetParams {
   /**
    * Включать ответы в ответ
    */
@@ -5844,7 +5840,7 @@ export type ApiGetCourseDiscussionsApiV1CoursesCourseUuidDiscussionsGetParams = 
   offset?: number
 }
 
-export type ApiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussionUuidRepliesGetParams = {
+export interface ApiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussionUuidRepliesGetParams {
   /**
    * Количество ответов для возврата
    * @maximum 100
@@ -5856,11 +5852,11 @@ export type ApiGetDiscussionRepliesApiV1CoursesCourseUuidDiscussionsDiscussionUu
   offset?: number
 }
 
-export type ApiGetCourseMetaApiV1CoursesCourseUuidMetaGetParams = {
+export interface ApiGetCourseMetaApiV1CoursesCourseUuidMetaGetParams {
   with_unpublished_activities?: boolean
 }
 
-export type ApiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissionUuidSubmissionsGetParams = {
+export interface ApiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissionUuidSubmissionsGetParams {
   status?: string | null
   search?: string | null
   /**
@@ -5874,7 +5870,7 @@ export type ApiListFileSubmissionSubmissionsApiV1FileSubmissionsFileSubmissionUu
   page_size?: number
 }
 
-export type GetLeaderboardApiV1GamificationLeaderboardGetParams = {
+export interface GetLeaderboardApiV1GamificationLeaderboardGetParams {
   /**
    * @minimum 1
    * @maximum 100
@@ -5886,9 +5882,9 @@ export type GetLeaderboardApiV1GamificationLeaderboardGetParams = {
   offset?: number
 }
 
-export type UpdatePreferencesApiV1GamificationPreferencesPatchBody = { [key: string]: unknown }
+export interface UpdatePreferencesApiV1GamificationPreferencesPatchBody { [key: string]: unknown }
 
-export type ApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetParams = {
+export interface ApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetParams {
   page?: number | null
   page_size?: number | null
   search?: string | null
@@ -5896,7 +5892,7 @@ export type ApiGetCourseGradebookApiV1GradingCoursesCourseUuidGradebookGetParams
   saved_filter?: string | null
 }
 
-export type ApiGetCourseGradebookCursorApiV1GradingCoursesCourseUuidGradebookCursorGetParams = {
+export interface ApiGetCourseGradebookCursorApiV1GradingCoursesCourseUuidGradebookCursorGetParams {
   cursor?: string | null
   /**
    * @minimum 1
@@ -5905,7 +5901,7 @@ export type ApiGetCourseGradebookCursorApiV1GradingCoursesCourseUuidGradebookCur
   limit?: number
 }
 
-export type ApiListSubmissionsApiV1GradingSubmissionsGetParams = {
+export interface ApiListSubmissionsApiV1GradingSubmissionsGetParams {
   activity_id: number
   status?: string | null
   late_only?: boolean
@@ -5923,20 +5919,20 @@ export type ApiListSubmissionsApiV1GradingSubmissionsGetParams = {
   page_size?: number
 }
 
-export type ApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetParams = {
+export interface ApiExportSubmissionsCsvApiV1GradingSubmissionsExportGetParams {
   activity_id: number
 }
 
-export type ApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetParams = {
+export interface ApiGetSubmissionStatsApiV1GradingSubmissionsStatsGetParams {
   activity_id: number
 }
 
-export type ApiGetPlatformUsersApiV1MembersGetParams = {
+export interface ApiGetPlatformUsersApiV1MembersGetParams {
   page?: number
   per_page?: number
 }
 
-export type GetRoleAuditLogApiV1RolesAuditLogGetParams = {
+export interface GetRoleAuditLogApiV1RolesAuditLogGetParams {
   /**
    * @minimum 1
    */
@@ -5948,42 +5944,42 @@ export type GetRoleAuditLogApiV1RolesAuditLogGetParams = {
   page_size?: number
 }
 
-export type ApiSearchPlatformContentApiV1SearchGetParams = {
+export interface ApiSearchPlatformContentApiV1SearchGetParams {
   query: string
   page?: number
   limit?: number
 }
 
-export type ApiAddResourcesToUsergroupApiV1UsergroupsUsergroupIdAddResourcesPostParams = {
+export interface ApiAddResourcesToUsergroupApiV1UsergroupsUsergroupIdAddResourcesPostParams {
   resource_uuids: string
 }
 
-export type ApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostParams = {
+export interface ApiAddUsersToUsergroupApiV1UsergroupsUsergroupIdAddUsersPostParams {
   user_ids: string
 }
 
-export type ApiDeleteResourcesFromUsergroupApiV1UsergroupsUsergroupIdRemoveResourcesDeleteParams = {
+export interface ApiDeleteResourcesFromUsergroupApiV1UsergroupsUsergroupIdRemoveResourcesDeleteParams {
   resource_uuids: string
 }
 
-export type ApiDeleteUsersFromUsergroupApiV1UsergroupsUsergroupIdRemoveUsersDeleteParams = {
+export interface ApiDeleteUsersFromUsergroupApiV1UsergroupsUsergroupIdRemoveUsersDeleteParams {
   user_ids: string
 }
 
-export type ApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutParams = {
+export interface ApiUpdateUserLocaleApiV1UsersPreferencesLocaleUserIdPutParams {
   locale: string
 }
 
-export type ApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutParams = {
+export interface ApiUpdateUserThemeApiV1UsersPreferencesThemeUserIdPutParams {
   theme: string
 }
 
-export type ApiGetUserCoursesApiV1UsersUserIdCoursesGetParams = {
+export interface ApiGetUserCoursesApiV1UsersUserIdCoursesGetParams {
   page?: number
   limit?: number
 }
 
-export type LinkPreviewApiV1UtilsLinkPreviewGetParams = {
+export interface LinkPreviewApiV1UtilsLinkPreviewGetParams {
   /**
    * URL to preview
    */

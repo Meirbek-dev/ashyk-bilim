@@ -104,14 +104,8 @@ export async function LandingContent({ page = 1 }: { page?: number }) {
       : Promise.resolve(null)
 
     const [resCoursesData, resCollections, resGamificationData, resTrailData] = await Promise.all([
-      getCourses(undefined, page, 20).catch((error: unknown) => {
-        logLandingFetchError('Courses fetch failed', error)
-        return { courses: [], total: 0 }
-      }),
-      getCollections().catch((error: unknown) => {
-        logLandingFetchError('Collections fetch failed', error)
-        return []
-      }),
+      getCourses(undefined, page, 20),
+      getCollections(),
       gamificationPromise,
       session ? getCurrentTrail().catch(() => null) : Promise.resolve(null),
     ])

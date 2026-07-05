@@ -121,7 +121,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'risk_score',
       header: t('atRisk.colRisk'),
       cell: ({ row }) => {
-        const riskRow = row.original as EnhancedAtRiskLearnerRow
+        const riskRow = row.original
         const c = riskRow.risk_components ?? {
           inactivity: 0,
           progress: 0,
@@ -165,8 +165,8 @@ export default function AtRiskLearnersTable({
       cell: ({ row }) => (
         <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
           {row.original.reason_codes.map(code => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
-          {(row.original as EnhancedAtRiskLearnerRow).why_now && (
-            <div className="mt-1 text-[11px]">{(row.original as EnhancedAtRiskLearnerRow).why_now}</div>
+          {(row.original).why_now && (
+            <div className="mt-1 text-[11px]">{(row.original).why_now}</div>
           )}
         </div>
       ),
@@ -175,7 +175,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'recommended_action',
       header: t('atRisk.colAction'),
       cell: ({ row }) => {
-        const riskRow = row.original as EnhancedAtRiskLearnerRow
+        const riskRow = row.original
         const hasGradingBlock = riskRow.open_grading_blocks > 0
         const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses'
         return (

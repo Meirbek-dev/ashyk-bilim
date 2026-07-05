@@ -174,7 +174,7 @@ function useAssessment(
     title: assessment.title,
     description: assessment.description || null,
     dueAt: attemptProjection?.due_at ?? assessment.assessment_policy?.due_at ?? null,
-    submissionStatus: (attemptProjection?.submission_status ?? null) as SubmissionStatus | null,
+    submissionStatus: (attemptProjection?.submission_status ?? null),
     releaseState: attemptProjection?.release_state ?? 'HIDDEN',
     score: {
       percent: attemptProjection?.score?.percent ?? null,

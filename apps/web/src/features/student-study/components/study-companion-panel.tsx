@@ -8,6 +8,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { AIErrorRecovery, AIRunProgress, AIStreamingText, useAIRunController } from '@/features/ai-experience'
+import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 
 import { useQueueStudyCompanion } from '../api/use-study-companion'
 import type { StudyCompanionAnswer, StudyCompanionMode } from '../api/use-study-companion'
@@ -18,6 +19,25 @@ export function StudyCompanionPanel({
 }: {
   courseUuid: string
   initialMode?: StudyCompanionMode
+}) {
+  const t = useTranslations('AiExperience.studyCompanion')
+  return (
+    <WidgetErrorBoundary
+      scope="student-study-companion"
+      variant="section"
+      title={t('label') || 'Study Companion'}
+    >
+      <StudyCompanionPanelInner courseUuid={courseUuid} initialMode={initialMode} />
+    </WidgetErrorBoundary>
+  )
+}
+
+function StudyCompanionPanelInner({
+  courseUuid,
+  initialMode,
+}: {
+  courseUuid: string
+  initialMode: StudyCompanionMode
 }) {
   const t = useTranslations('AiExperience.studyCompanion')
   const [question, setQuestion] = useState('')
@@ -72,3 +92,4 @@ export function StudyCompanionPanel({
     </section>
   )
 }
+

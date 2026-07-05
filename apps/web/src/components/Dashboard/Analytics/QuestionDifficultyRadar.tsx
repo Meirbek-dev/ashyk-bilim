@@ -18,7 +18,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
   const radarData = data.slice(0, MAX).map(row => ({
     label: row.question_label,
     accuracy: row.accuracy_pct ?? 0,
-    discrimination: (row as QuestionDifficultyRow & { discrimination_index?: number | null }).discrimination_index ?? 0,
+    discrimination: (row).discrimination_index ?? 0,
   }))
 
   return (
@@ -68,11 +68,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
         </ChartContainer>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           {data.slice(0, MAX).map(row => {
-            const quality = row as QuestionDifficultyRow & {
-              strong_miss_pct?: number | null
-              weak_correct_pct?: number | null
-              distractor_issue_count?: number | null
-            }
+            const quality = row
             return (
               <div key={row.question_id} className="bg-muted rounded-md border p-3 text-xs">
                 <div className="font-medium">{row.question_label}</div>

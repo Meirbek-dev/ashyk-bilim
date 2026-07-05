@@ -9,22 +9,14 @@
  */
 
 import type { SubmissionStatus } from '@/features/grading/domain/types'
-import { SUBMISSION_STATUS_LABELS } from '@/features/grading/domain'
+import { getSubmissionStatusLabel } from '@/features/grading/domain'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 export interface SubmissionStatusBadgeProps {
-  status: SubmissionStatus
+  status: SubmissionStatus | null | undefined
   className?: string
-}
-
-const STATUS_VARIANTS: Record<SubmissionStatus, 'secondary' | 'warning' | 'success' | 'default' | 'destructive'> = {
-  DRAFT: 'secondary',
-  PENDING: 'warning',
-  GRADED: 'success',
-  PUBLISHED: 'default',
-  RETURNED: 'destructive',
 }
 
 export default function SubmissionStatusBadge({ status, className }: SubmissionStatusBadgeProps) {
@@ -32,10 +24,33 @@ export default function SubmissionStatusBadge({ status, className }: SubmissionS
 
   return (
     <Badge
-      variant={STATUS_VARIANTS[status] ?? 'default'}
+      variant={getStatusVariant(status)}
       className={cn('inline-flex items-center text-xs font-semibold', className)}
     >
-      {t(SUBMISSION_STATUS_LABELS[status] ?? status)}
+      {getSubmissionStatusLabel(status, key => t(key))}
     </Badge>
   )
+}
+
+function getStatusVariant(
+  status: SubmissionStatus | null | undefined,
+): 'secondary' | 'warning' | 'success' | 'default' | 'destructive' {
+  switch (status) {
+    case 'PENDING': {
+      return 'warning'
+    }
+    case 'GRADED': {
+      return 'success'
+    }
+    case 'PUBLISHED': {
+      return 'default'
+    }
+    case 'RETURNED': {
+      return 'destructive'
+    }
+    case 'DRAFT':
+    default: {
+      return 'secondary'
+    }
+  }
 }

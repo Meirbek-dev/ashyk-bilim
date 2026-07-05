@@ -94,7 +94,9 @@ export function submissionsQueryOptions(params: SubmissionListQueryParams) {
     queryKey: queryKeys.grading.submissions(params),
     queryFn: async () => {
       const path = `assessments/${params.assessmentUuid}/submissions`
-      return normalizeSubmissionsPage(await apiFetcher<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`))
+      return normalizeSubmissionsPage(
+        await apiFetcher<SubmissionsPage>(`${path}?${buildSubmissionsSearchParams(params)}`),
+      )
     },
   })
 }

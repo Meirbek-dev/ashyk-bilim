@@ -6968,6 +6968,7 @@
       "statusGraded": "Оценено",
       "statusPublished": "Опубликовано",
       "statusReturned": "Возвращено",
+      "statusUnknown": "Неизвестный статус",
       "score": "Оценка",
       "scorePlaceholder": "0–100",
       "scoreInputAria": "Изменить оценку для {student}",

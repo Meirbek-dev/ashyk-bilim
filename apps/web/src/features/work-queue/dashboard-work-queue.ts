@@ -14,6 +14,8 @@ interface EditableCourseSummary {
   ready: number
   private: number
   attention: number
+  signalAvailable: boolean
+  errorMessage?: string | null
 }
 
 interface TeacherDashboardSignal {
@@ -30,6 +32,7 @@ interface TeacherDashboardSignal {
     slaBreaches: number
   }[]
   signalAvailable: boolean
+  errorMessage?: string | null
 }
 
 interface AdminDashboardSignal {
@@ -38,6 +41,7 @@ interface AdminDashboardSignal {
   teacherBacklogTotal: number
   teacherSlaBreaches: number
   signalAvailable: boolean
+  errorMessage?: string | null
 }
 
 interface DashboardWorkQueueInput {
@@ -106,7 +110,7 @@ interface TeacherSectionInput {
 function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
 
-  if (access.hasCoursesAccess && courseSummary) {
+  if (access.hasCoursesAccess && courseSummary?.signalAvailable) {
     if (courseSummary.attention > 0) {
       items.push({
         id: 'course-readiness',
@@ -137,6 +141,23 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
         priority: 'normal',
       })
     }
+  }
+
+  if (access.hasCoursesAccess && (!courseSummary || !courseSummary.signalAvailable)) {
+    items.push({
+      id: 'courses-unavailable',
+      audience: 'teacher',
+      title: 'Check courses feed',
+      description: courseSummary?.errorMessage
+        ? `Course management is permitted, but the dashboard could not load course summary: ${courseSummary.errorMessage}`
+        : 'Course management is permitted, but the dashboard could not load course summary.',
+      href: '/dash/courses',
+      primaryActionLabel: 'Open Courses',
+      source: 'course-management',
+      sourceLabel: 'Course Management',
+      status: LmsStatuses.UNAVAILABLE,
+      priority: 'normal',
+    })
   }
 
   if (access.hasAnalyticsAccess && teacherSignal?.signalAvailable) {
@@ -226,7 +247,9 @@ function buildTeacherSection({ access, courseSummary, teacherSignal }: TeacherSe
       id: 'teacher-analytics-unavailable',
       audience: 'teacher',
       title: 'Check analytics feed',
-      description: 'Teacher analytics is permitted, but the dashboard could not load the queue signal.',
+      description: teacherSignal.errorMessage
+        ? `Teacher analytics is permitted, but the dashboard could not load the queue signal: ${teacherSignal.errorMessage}`
+        : 'Teacher analytics is permitted, but the dashboard could not load the queue signal.',
       href: '/dash/analytics',
       primaryActionLabel: 'Open Analytics',
       source: 'teacher-analytics',
@@ -360,7 +383,9 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
       id: 'admin-analytics-unavailable',
       audience: 'admin',
       title: 'Check admin analytics feed',
-      description: 'Admin analytics is permitted, but the dashboard could not load workload signals.',
+      description: adminSignal.errorMessage
+        ? `Admin analytics is permitted, but the dashboard could not load workload signals: ${adminSignal.errorMessage}`
+        : 'Admin analytics is permitted, but the dashboard could not load workload signals.',
       href: '/dash/analytics/admin',
       primaryActionLabel: 'Open Admin Analytics',
       source: 'admin-analytics',

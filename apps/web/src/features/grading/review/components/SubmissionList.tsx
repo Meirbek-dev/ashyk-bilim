@@ -3,12 +3,7 @@
 import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import {
-  SUBMISSION_STATUS_LABELS,
-  getReleaseState,
-  getSubmissionDisplayName,
-  needsTeacherAction,
-} from '@/features/grading/domain'
+import { getReleaseState, getSubmissionDisplayName, needsTeacherAction } from '@/features/grading/domain'
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -66,10 +61,10 @@ export default function SubmissionList({
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
             <NativeSelectOption value="AWAITING_RELEASE">{submissionListCopy.awaitingRelease}</NativeSelectOption>
-            <NativeSelectOption value="PENDING">{tTable(SUBMISSION_STATUS_LABELS.PENDING)}</NativeSelectOption>
-            <NativeSelectOption value="GRADED">{tTable(SUBMISSION_STATUS_LABELS.GRADED)}</NativeSelectOption>
-            <NativeSelectOption value="PUBLISHED">{tTable(SUBMISSION_STATUS_LABELS.PUBLISHED)}</NativeSelectOption>
-            <NativeSelectOption value="RETURNED">{tTable(SUBMISSION_STATUS_LABELS.RETURNED)}</NativeSelectOption>
+            <NativeSelectOption value="PENDING">{tTable('statusPending')}</NativeSelectOption>
+            <NativeSelectOption value="GRADED">{tTable('statusGraded')}</NativeSelectOption>
+            <NativeSelectOption value="PUBLISHED">{tTable('statusPublished')}</NativeSelectOption>
+            <NativeSelectOption value="RETURNED">{tTable('statusReturned')}</NativeSelectOption>
           </NativeSelect>
           <NativeSelect value={sortBy} onChange={event => onSortChange(event.target.value)} aria-label={t('sort')}>
             <NativeSelectOption value="submitted_at">{t('sorting.submitted')}</NativeSelectOption>

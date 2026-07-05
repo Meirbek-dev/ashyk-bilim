@@ -5,6 +5,7 @@ import OperationsTab from '@components/Dashboard/Analytics/OperationsTab'
 import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
+import { isApiError } from '@/lib/api/assertSuccess'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -41,7 +42,12 @@ async function OperationsContent({
   try {
     const [resOverview, resAdminData] = await Promise.all([
       getTeacherOverview(query),
-      getAdminAnalyticsOverview(query).catch(() => null),
+      getAdminAnalyticsOverview(query).catch((error: unknown) => {
+        if (isApiError(error) && (error.status === 403 || error.status === 401)) {
+          return null
+        }
+        throw error
+      }),
     ])
     overview = resOverview
     adminData = resAdminData

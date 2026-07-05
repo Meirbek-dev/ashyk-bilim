@@ -222,7 +222,7 @@ export default function CourseWorkspacePageShell({
     <CourseProvider
       courseuuid={prefixedCourseUuid(courseuuid)}
       withUnpublishedActivities
-      initialCourse={{ ...initialCourse, chapters: initialCourse.chapters ?? [] } as never}
+      initialCourse={{ ...initialCourse, chapters: initialCourse.chapters ?? [] }}
     >
       <CourseWorkspaceChrome courseuuid={courseuuid} activeStage={activeStage} capabilities={capabilities}>
         {children}

@@ -6,6 +6,7 @@ import type { OnChange, OnMount } from '@monaco-editor/react'
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { cn } from '@/lib/utils'
+import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
 
 export interface Language {
   id: number
@@ -98,26 +99,28 @@ export function CodeEditor({
           {readOnlyMessage}
         </div>
       ) : null}
-      <Editor
-        key={editorKey}
-        height={height}
-        language={monacoLanguage ?? getMonacoLanguage(languageId)}
-        value={value}
-        onChange={handleChange}
-        onMount={handleMount}
-        theme={(options.theme as string) || (resolvedTheme === 'dark' ? 'vs-dark' : 'light')}
-        options={editorOptions}
-        loading={
-          <div
-            className="bg-muted flex animate-pulse items-center justify-center rounded-lg"
-            style={{
-              height: typeof height === 'number' ? `${height}px` : height,
-            }}
-          >
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-          </div>
-        }
-      />
+      <WidgetErrorBoundary scope="monaco-code-editor" variant="section" title="Code Editor failed to load">
+        <Editor
+          key={editorKey}
+          height={height}
+          language={monacoLanguage ?? getMonacoLanguage(languageId)}
+          value={value}
+          onChange={handleChange}
+          onMount={handleMount}
+          theme={(options.theme as string) || (resolvedTheme === 'dark' ? 'vs-dark' : 'light')}
+          options={editorOptions}
+          loading={
+            <div
+              className="bg-muted flex animate-pulse items-center justify-center rounded-lg"
+              style={{
+                height: typeof height === 'number' ? `${height}px` : height,
+              }}
+            >
+              <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
+            </div>
+          }
+        />
+      </WidgetErrorBoundary>
     </div>
   )
 }

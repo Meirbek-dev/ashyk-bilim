@@ -19,8 +19,9 @@
 import type { components } from '@/lib/api/generated'
 
 export type SubmissionStatus = components['schemas']['SubmissionStatus']
+export type KnownSubmissionStatus = 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
 
-export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+export const SUBMISSION_STATUS_LABELS: Record<KnownSubmissionStatus, string> = {
   DRAFT: 'statusDraft',
   PENDING: 'statusPending',
   GRADED: 'statusGraded',
@@ -32,11 +33,33 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
  * Get localized label for a submission status.
  * Requires a translator function scoped to 'Grading.Table' namespace.
  */
-export function getSubmissionStatusLabel(status: SubmissionStatus, t: (key: string) => string): string {
+const UNKNOWN_SUBMISSION_STATUS_LABEL = 'statusUnknown'
+const KNOWN_SUBMISSION_STATUSES = new Set<KnownSubmissionStatus>([
+  'DRAFT',
+  'PENDING',
+  'GRADED',
+  'PUBLISHED',
+  'RETURNED',
+])
+
+function isKnownSubmissionStatus(
+  status: SubmissionStatus | string | null | undefined,
+): status is KnownSubmissionStatus {
+  return typeof status === 'string' && KNOWN_SUBMISSION_STATUSES.has(status as KnownSubmissionStatus)
+}
+
+export function getSubmissionStatusLabel(
+  status: SubmissionStatus | null | undefined,
+  t: (key: string) => string,
+): string {
+  if (!isKnownSubmissionStatus(status)) {
+    return t(UNKNOWN_SUBMISSION_STATUS_LABEL)
+  }
+
   return t(SUBMISSION_STATUS_LABELS[status])
 }
 
-export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, SubmissionStatus[]> = {
+export const SUBMISSION_ALLOWED_TRANSITIONS: Record<string, SubmissionStatus[]> = {
   DRAFT: ['PENDING'],
   PENDING: ['GRADED', 'RETURNED'],
   GRADED: ['PUBLISHED', 'RETURNED'],
@@ -44,8 +67,16 @@ export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, Submission
   RETURNED: ['PENDING'],
 }
 
-export function canTransitionSubmission(from: SubmissionStatus, to: SubmissionStatus): boolean {
-  return SUBMISSION_ALLOWED_TRANSITIONS[from].includes(to)
+export function canTransitionSubmission(
+  from: SubmissionStatus | null | undefined,
+  to: SubmissionStatus | null | undefined,
+): boolean {
+  if (!isKnownSubmissionStatus(from) || !isKnownSubmissionStatus(to)) {
+    return false
+  }
+
+  const allowedTransitions = SUBMISSION_ALLOWED_TRANSITIONS[from]
+  return allowedTransitions?.includes(to) ?? false
 }
 
 export function needsTeacherAction(status: SubmissionStatus): boolean {
