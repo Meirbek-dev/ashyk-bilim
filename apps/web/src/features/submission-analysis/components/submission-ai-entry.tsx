@@ -5,7 +5,13 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AIErrorRecovery, AIRunProgress, useAIRunController } from '@/features/ai-experience'
+import {
+  AIArtifactLifecycle,
+  AICommandList,
+  AIErrorRecovery,
+  AIRunProgress,
+  useAIRunController,
+} from '@/features/ai-experience'
 import { RemediationResultShell, useQueueRemediation } from '@/features/remediation'
 import type { RemediationSession } from '@/features/remediation'
 
@@ -52,6 +58,8 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <AICommandList surface="submission" disabled={run.pending} onCommand={() => void run.start('auto')} />
+        <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
         <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
         {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
         {latest.data ? <SubmissionAnalysisResultShell analysis={latest.data} /> : null}

@@ -7,6 +7,7 @@ import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeeUsers } from '@/lib/
 import { getEditableCourses } from '@services/courses/courses'
 import { getAdminAnalyticsOverview, getTeacherOverview } from '@services/analytics/teacher'
 import { buildDashboardWorkQueue, DashboardWorkQueue } from '@/features/work-queue'
+import { apiFetcher } from '@/lib/api-client'
 
 import type { Action, Resource, Scope } from '@/types/permissions'
 import type { AdminAnalyticsResponse, TeacherOverviewResponse } from '@/types/analytics'
@@ -16,6 +17,11 @@ interface DashboardAccess {
   hasAnalyticsAccess: boolean
   hasUsersAccess: boolean
   hasAdminAccess: boolean
+}
+
+interface AIUsageSummary {
+  monthly_budget: number
+  remaining_budget: number
 }
 
 const analyticsQueueQuery = {
@@ -52,10 +58,11 @@ export default async function PlatformDashHomePage() {
     hasAdminAccess: canSeeAdmin(can),
   } satisfies DashboardAccess
 
-  const [courseSummary, teacherOverview, adminOverview] = await Promise.all([
+  const [courseSummary, teacherOverview, adminOverview, aiUsage] = await Promise.all([
     access.hasCoursesAccess ? getSafeEditableCourseSummary() : Promise.resolve(null),
     access.hasAnalyticsAccess ? getSafeTeacherOverview() : Promise.resolve(null),
     access.hasAdminAccess ? getSafeAdminOverview() : Promise.resolve(null),
+    access.hasAdminAccess ? getSafeAIUsageSummary() : Promise.resolve(null),
   ])
 
   const queue = buildDashboardWorkQueue({
@@ -90,6 +97,8 @@ export default async function PlatformDashHomePage() {
         : null,
     adminSignal: adminOverview
       ? {
+          aiMonthlyBudget: aiUsage?.monthly_budget ?? null,
+          aiRemainingBudget: aiUsage?.remaining_budget ?? null,
           teacherBacklogTotal: adminOverview.teacher_workload_comparison.reduce(
             (total, row) => total + row.workload_backlog,
             0,
@@ -102,9 +111,11 @@ export default async function PlatformDashHomePage() {
         }
       : access.hasAdminAccess
         ? {
+            aiMonthlyBudget: aiUsage?.monthly_budget ?? null,
+            aiRemainingBudget: aiUsage?.remaining_budget ?? null,
             teacherBacklogTotal: 0,
             teacherSlaBreaches: 0,
-            signalAvailable: false,
+            signalAvailable: Boolean(aiUsage),
           }
         : null,
   })
@@ -144,6 +155,15 @@ async function getSafeAdminOverview(): Promise<AdminAnalyticsResponse | null> {
     return await getAdminAnalyticsOverview(analyticsQueueQuery)
   } catch (error) {
     console.warn('[dashboard] Failed to load admin overview:', error)
+    return null
+  }
+}
+
+async function getSafeAIUsageSummary(): Promise<AIUsageSummary | null> {
+  try {
+    return await apiFetcher<AIUsageSummary>('ai/usage')
+  } catch (error) {
+    console.warn('[dashboard] Failed to load AI usage summary:', error)
     return null
   }
 }

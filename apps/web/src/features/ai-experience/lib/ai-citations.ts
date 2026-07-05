@@ -7,9 +7,15 @@ export interface AICitation {
   confidence?: number | null
 }
 
-export function citationHref(citation: AICitation) {
+export function citationHref(citation: AICitation, options: { courseUuid?: string | null | undefined } = {}) {
   if (!citation.source_uuid) return undefined
-  if (citation.source_type === 'activity') return `#activity-${citation.source_uuid}`
+  if (citation.source_type === 'activity') {
+    const cleanActivityUuid = citation.source_uuid.replace(/^activity_/, '')
+    const cleanCourseUuid = options.courseUuid?.replace(/^course_/, '')
+    return cleanCourseUuid
+      ? `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
+      : `#activity-${citation.source_uuid}`
+  }
   if (citation.source_type === 'assessment') return `#assessment-${citation.source_uuid}`
   if (citation.source_type === 'submission') return `#submission-${citation.source_uuid}`
   return `#source-${citation.source_uuid}`

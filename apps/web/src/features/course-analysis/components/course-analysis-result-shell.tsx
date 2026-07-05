@@ -19,13 +19,14 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AIEvidencePanel } from '@/features/ai-experience'
+import { AIEvidencePanel, AIStaleOutputMarker } from '@/features/ai-experience'
 import type { AICitation } from '@/features/ai-experience'
 
 import type { CourseAnalysis } from '../api/use-course-analysis'
 
 interface CourseAnalysisResultShellProps {
   analysis: CourseAnalysis
+  courseUuid?: string | null | undefined
   onPublish?: () => void
   publishing?: boolean
 }
@@ -37,7 +38,12 @@ interface CourseFinding {
   action: string
 }
 
-export function CourseAnalysisResultShell({ analysis, onPublish, publishing }: CourseAnalysisResultShellProps) {
+export function CourseAnalysisResultShell({
+  analysis,
+  courseUuid,
+  onPublish,
+  publishing,
+}: CourseAnalysisResultShellProps) {
   const t = useTranslations('AiExperience.courseAnalysisResultShell')
   const locale = useLocale()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -66,6 +72,7 @@ export function CourseAnalysisResultShell({ analysis, onPublish, publishing }: C
 
   return (
     <section className="flex min-w-0 flex-col gap-4">
+      <AIStaleOutputMarker createdAt={analysis.created_at} />
       <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -106,7 +113,7 @@ export function CourseAnalysisResultShell({ analysis, onPublish, publishing }: C
           <ReportList empty={t('noStrengths')} icon="strength" items={strengths} title={t('contentStrengths')} />
         </div>
         <div className="min-w-0">
-          <AIEvidencePanel citations={citations} />
+          <AIEvidencePanel citations={citations} courseUuid={courseUuid} />
         </div>
       </div>
 

@@ -10,9 +10,10 @@ import type { AICitation } from '../lib/ai-citations'
 
 interface AIEvidencePanelProps {
   citations: AICitation[]
+  courseUuid?: string | null | undefined
 }
 
-export function AIEvidencePanel({ citations }: AIEvidencePanelProps) {
+export function AIEvidencePanel({ citations, courseUuid }: AIEvidencePanelProps) {
   const t = useTranslations('AiExperience.evidencePanel')
   if (citations.length === 0) {
     return (
@@ -33,7 +34,7 @@ export function AIEvidencePanel({ citations }: AIEvidencePanelProps) {
         {citations.map(citation => (
           <article key={citation.citation_id} className="flex flex-col gap-2 rounded-lg border p-3">
             <div className="flex flex-wrap items-center gap-2">
-              <AICitationLink citation={citation} />
+              <AICitationLink citation={citation} courseUuid={courseUuid} />
               <span className="text-muted-foreground text-xs">{confidenceLabel(citation.confidence)}</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">{citation.excerpt}</p>

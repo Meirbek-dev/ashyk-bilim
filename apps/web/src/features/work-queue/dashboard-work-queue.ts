@@ -33,6 +33,8 @@ interface TeacherDashboardSignal {
 }
 
 interface AdminDashboardSignal {
+  aiMonthlyBudget: number | null
+  aiRemainingBudget: number | null
   teacherBacklogTotal: number
   teacherSlaBreaches: number
   signalAvailable: boolean
@@ -258,6 +260,39 @@ interface AdminSectionInput {
 function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueueSection {
   const items: WorkQueueItem[] = []
 
+  if (access.hasAdminAccess && adminSignal?.signalAvailable) {
+    const aiBudgetUsage = getAiBudgetUsage(adminSignal)
+    if (aiBudgetUsage !== null && aiBudgetUsage >= 90) {
+      items.push({
+        id: 'admin-ai-budget-critical',
+        audience: 'admin',
+        title: 'Review AI budget before requests fail',
+        description: `AI usage has consumed ${aiBudgetUsage}% of the monthly token budget.`,
+        href: '/dash/admin',
+        primaryActionLabel: 'Open AI Admin',
+        source: 'ai-admin',
+        sourceLabel: 'AI Operations',
+        status: LmsStatuses.NEEDS_ATTENTION,
+        priority: 'critical',
+        metric: countMetric(aiBudgetUsage, '% used'),
+      })
+    } else if (aiBudgetUsage !== null && aiBudgetUsage >= 75) {
+      items.push({
+        id: 'admin-ai-budget-warning',
+        audience: 'admin',
+        title: 'Plan AI budget usage',
+        description: `AI usage is at ${aiBudgetUsage}% of the monthly token budget.`,
+        href: '/dash/admin',
+        primaryActionLabel: 'Open AI Admin',
+        source: 'ai-admin',
+        sourceLabel: 'AI Operations',
+        status: LmsStatuses.IN_PROGRESS,
+        priority: 'high',
+        metric: countMetric(aiBudgetUsage, '% used'),
+      })
+    }
+  }
+
   if (access.hasAdminAccess && adminSignal?.signalAvailable && adminSignal.teacherSlaBreaches > 0) {
     items.push({
       id: 'admin-workload-hotspots',
@@ -343,6 +378,13 @@ function buildAdminSection({ access, adminSignal }: AdminSectionInput): WorkQueu
     emptyDescription: 'Access reviews and operations signals will appear here when your role can act on them.',
     items: sortWorkQueueItems(items),
   }
+}
+
+function getAiBudgetUsage(adminSignal: AdminDashboardSignal): number | null {
+  if (adminSignal.aiMonthlyBudget === null || adminSignal.aiRemainingBudget === null) return null
+  if (adminSignal.aiMonthlyBudget <= 0) return null
+  const used = adminSignal.aiMonthlyBudget - adminSignal.aiRemainingBudget
+  return Math.max(0, Math.min(100, Math.round((used / adminSignal.aiMonthlyBudget) * 100)))
 }
 
 function buildDashboardTools(access: DashboardAccess): DashboardToolItem[] {

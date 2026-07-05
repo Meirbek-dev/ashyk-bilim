@@ -4,7 +4,13 @@ import { BrainCircuit, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import { AIErrorRecovery, AIPrivacyNotice, AIRunProgress, useAIRunController } from '@/features/ai-experience'
+import {
+  AIArtifactLifecycle,
+  AIErrorRecovery,
+  AIPrivacyNotice,
+  AIRunProgress,
+  useAIRunController,
+} from '@/features/ai-experience'
 
 import {
   latestCourseAnalysisQueryOptions,
@@ -41,11 +47,13 @@ export function CourseAnalysisEntry({ courseUuid }: { courseUuid: string }) {
         </Button>
       </div>
       <AIPrivacyNotice aiRole="teacher" />
+      <AIArtifactLifecycle state={run.state} artifact={run.latestArtifact} />
       <AIRunProgress state={run.state} onCancel={run.pending ? run.cancel : undefined} />
       {run.error ? <AIErrorRecovery message={run.error.message} onRetry={() => void run.start('auto')} /> : null}
       {analysis ? (
         <CourseAnalysisResultShell
           analysis={analysis}
+          courseUuid={courseUuid}
           publishing={publish.isPending}
           onPublish={() => publish.mutate(analysis.analysis_uuid)}
         />

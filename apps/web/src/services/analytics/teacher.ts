@@ -150,6 +150,27 @@ export function createTeacherIntervention(payload: TeacherInterventionCreate, qu
   })
 }
 
+export interface TeacherInterventionListResponse {
+  generated_at: string
+  total: number
+  items: TeacherInterventionRow[]
+}
+
+export function getTeacherInterventions(
+  params: {
+    course_id?: number
+    user_id?: number
+  } = {},
+  query?: AnalyticsQuery,
+) {
+  const scopedQuery = {
+    ...query,
+    ...(params.course_id !== undefined ? { course_id: params.course_id } : {}),
+    ...(params.user_id !== undefined ? { user_id: params.user_id } : {}),
+  }
+  return analyticsRequest<TeacherInterventionListResponse>('teacher/interventions', scopedQuery)
+}
+
 export function getSavedAnalyticsViews(query?: AnalyticsQuery) {
   return analyticsRequest<SavedAnalyticsViewListResponse>('teacher/saved-views', query)
 }

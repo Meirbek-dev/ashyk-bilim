@@ -39,6 +39,11 @@ import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
 import { CourseAIHub } from '@/features/course-qa'
+import { LearnerCourseModules } from '@/features/learner-course/course-page-modules'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { startCourse } from '@services/courses/activity'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface CourseClientProps {
   course: AppCourse
@@ -114,15 +119,37 @@ function normalizeLearningsHelper(input: unknown): LearningItem[] {
   return []
 }
 
+function findFirstUnfinishedActivity(course: AppCourse, run: AppTrailRun | undefined): AppActivity | null {
+  const completedActivityIds = new Set(
+    (run?.steps ?? [])
+      .filter((step: AppTrailStep) => step.complete === true || step.completed === true)
+      .map((step: AppTrailStep) => Number(step.activity_id))
+      .filter(Number.isFinite),
+  )
+
+  for (const chapter of course.chapters ?? []) {
+    for (const activity of chapter.activities ?? []) {
+      const activityId = Number(activity.id)
+      if (!Number.isFinite(activityId) || !completedActivityIds.has(activityId)) {
+        return activity
+      }
+    }
+  }
+
+  return course.chapters?.[0]?.activities?.[0] ?? null
+}
+
 const CourseClient = (props: CourseClientProps) => {
   const t = useTranslations('CoursePage')
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
+  const [isStartingCourse, setIsStartingCourse] = useState(false)
 
   const { courseuuid, course, initialDiscussions = [], trailData } = props
   const isMobile = useIsMobile()
   const { user: currentUser } = useSession()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const mutateDiscussions = () => {
     router.refresh()
@@ -132,6 +159,51 @@ const CourseClient = (props: CourseClientProps) => {
   const learnings = useMemo(() => {
     return normalizeLearningsHelper(course?.learnings)
   }, [course?.learnings])
+
+  const normalizedCourseUuidForRun = course.course_uuid?.replace('course_', '')
+  const currentCourseRun = trailData?.runs?.find((run: AppTrailRun) => {
+    const runCourseUuid = run.course?.course_uuid?.replace('course_', '')
+    return runCourseUuid === normalizedCourseUuidForRun
+  })
+  const isEnrolled = Boolean(currentCourseRun)
+
+  const handleStartCourse = async () => {
+    if (!currentUser) {
+      router.push(getAbsoluteUrl('/signup'))
+      return
+    }
+
+    if (currentCourseRun) {
+      const firstUnfinishedActivity = findFirstUnfinishedActivity(course, currentCourseRun)
+      if (firstUnfinishedActivity?.activity_uuid) {
+        router.push(
+          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstUnfinishedActivity.activity_uuid.replace('activity_', '')}`,
+        )
+      }
+      return
+    }
+
+    setIsStartingCourse(true)
+    const loadingToast = toast.loading('Starting course')
+    try {
+      await startCourse(`course_${courseuuid}`)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
+      toast.success('Course started', { id: loadingToast })
+      const firstActivity = course.chapters?.[0]?.activities?.[0]
+      if (firstActivity?.activity_uuid) {
+        router.push(
+          `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
+        )
+      } else {
+        router.refresh()
+      }
+    } catch (error) {
+      console.error('Failed to start course:', error)
+      toast.error('Could not start course', { id: loadingToast })
+    } finally {
+      setIsStartingCourse(false)
+    }
+  }
 
   const [prevCourse, setPrevCourse] = useState(course)
   if (course !== prevCourse) {
@@ -175,13 +247,10 @@ const CourseClient = (props: CourseClientProps) => {
   }
 
   const isActivityDone = (activity: AppActivity) => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((activeRun: AppTrailRun) => {
-      const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    })
-    if (run) {
-      return run.steps?.find((step: AppTrailStep) => step.activity_id === activity.id && step.complete === true)
+    if (currentCourseRun) {
+      return currentCourseRun.steps?.find(
+        (step: AppTrailStep) => step.activity_id === activity.id && step.complete === true,
+      )
     }
     return false
   }
@@ -200,11 +269,6 @@ const CourseClient = (props: CourseClientProps) => {
           <GeneralWrapper>
             <CourseBreadcrumbs course={course} />
 
-            {/* Page header */}
-            <div className="pt-5 pb-8">
-              <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{course.name}</h1>
-            </div>
-
             {/* Two-column layout */}
             <div className="flex flex-col gap-10 md:flex-row md:items-start">
               {/* Main content */}
@@ -212,6 +276,16 @@ const CourseClient = (props: CourseClientProps) => {
                 {isMobile && (
                   <CourseActionsMobile courseuuid={courseuuid} course={course as never} trailData={trailData} />
                 )}
+
+                <LearnerCourseModules
+                  course={course}
+                  courseUuid={courseuuid}
+                  isAuthenticated={Boolean(currentUser)}
+                  isEnrolled={isEnrolled}
+                  onStartCourse={handleStartCourse}
+                  starting={isStartingCourse}
+                  trailData={trailData}
+                />
 
                 {/* Thumbnail */}
                 {(() => {
@@ -305,13 +379,7 @@ const CourseClient = (props: CourseClientProps) => {
                 })()}
 
                 {/* Progress indicators */}
-                {(() => {
-                  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-                  return trailData?.runs?.find((activeRun: AppTrailRun) => {
-                    const cleanRunCourseUuid = activeRun.course?.course_uuid?.replace('course_', '')
-                    return cleanRunCourseUuid === cleanCourseUuid
-                  })
-                })() && (
+                {isEnrolled && (
                   <ActivityIndicators course_uuid={props.course.course_uuid} course={course} trailData={trailData} />
                 )}
 
@@ -426,6 +494,7 @@ const CourseClient = (props: CourseClientProps) => {
                                 return (
                                   <Link
                                     key={activity.activity_uuid}
+                                    id={`activity-${activity.activity_uuid}`}
                                     href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
                                     rel="noopener noreferrer"
                                     className={cn(

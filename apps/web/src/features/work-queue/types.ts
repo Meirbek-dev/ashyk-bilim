@@ -7,6 +7,7 @@ export type WorkQueueSource =
   | 'course-management'
   | 'teacher-analytics'
   | 'admin-analytics'
+  | 'ai-admin'
   | 'access-control'
   | 'account'
 

@@ -8,11 +8,12 @@ import type { AICitation } from '../lib/ai-citations'
 
 interface AICitationLinkProps {
   citation: AICitation
+  courseUuid?: string | null | undefined
 }
 
-export function AICitationLink({ citation }: AICitationLinkProps) {
+export function AICitationLink({ citation, courseUuid }: AICitationLinkProps) {
   const t = useTranslations('AiExperience.evidencePanel')
-  const href = citationHref(citation)
+  const href = citationHref(citation, { courseUuid })
   if (!href) {
     return <Badge variant="outline">{citation.label}</Badge>
   }

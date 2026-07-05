@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { AIRunProgress, useActivityAIUrlState, useAIRunController } from '@/features/ai-experience'
+import { AICommandList, AIRunProgress, useActivityAIUrlState, useAIRunController } from '@/features/ai-experience'
 
 import { useQAThread, useQueueCourseQuestion } from '../api/use-ask-question'
 import { useQAThreads } from '../api/use-qa-threads'
@@ -82,6 +82,7 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
   return (
     <section className="grid min-h-0 gap-4 in-data-[ai-layout=wide]:lg:grid-cols-[minmax(0,1fr)_12rem]">
       <div className="flex min-h-0 flex-col gap-4">
+        <AICommandList surface="course" disabled={run.pending} onCommand={command => submitQuestion(command.prompt)} />
         <ScrollArea className="min-h-72 rounded-lg border p-3">
           {messages.length === 0 ? (
             <QAStarterState
@@ -91,7 +92,7 @@ export function QAPanel({ courseUuid }: { courseUuid: string }) {
           ) : (
             <div className="flex flex-col gap-3">
               {messages.map(message => (
-                <QAMessageView key={message.message_uuid} message={message} />
+                <QAMessageView key={message.message_uuid} courseUuid={courseUuid} message={message} />
               ))}
             </div>
           )}

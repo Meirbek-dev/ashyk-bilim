@@ -5,7 +5,7 @@ import { AIConfidenceMeter, AIEvidencePanel, AIStreamingText } from '@/features/
 import { qaCitations } from '../lib/citation-utils'
 import type { QAMessage } from '../lib/types'
 
-export function QAMessageView({ message }: { message: QAMessage }) {
+export function QAMessageView({ courseUuid, message }: { courseUuid?: string | null; message: QAMessage }) {
   const t = useTranslations('AiExperience.qaMessage')
   const citations = qaCitations(message)
   return (
@@ -17,7 +17,7 @@ export function QAMessageView({ message }: { message: QAMessage }) {
             {message.role === 'assistant' ? <AIConfidenceMeter confidence={message.confidence} /> : null}
           </div>
           <AIStreamingText text={message.content} />
-          {message.role === 'assistant' ? <AIEvidencePanel citations={citations} /> : null}
+          {message.role === 'assistant' ? <AIEvidencePanel citations={citations} courseUuid={courseUuid} /> : null}
         </div>
       </MessageContent>
     </Message>

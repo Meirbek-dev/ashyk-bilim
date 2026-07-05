@@ -61,6 +61,7 @@ const CoursePage = async (params: { params: Promise<{ courseuuid: string }> }) =
   const [course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()])
 
   const queryClient = new QueryClient()
+  let trailData: AppTrailData | null = null
 
   if (session?.user && course_meta?.course_uuid) {
     // Prefetch data that CourseClient fetches client-side so the page renders
@@ -75,11 +76,12 @@ const CoursePage = async (params: { params: Promise<{ courseuuid: string }> }) =
       ),
       queryClient.prefetchQuery(trailCurrentQueryOptions()),
     ])
+    trailData = queryClient.getQueryData<AppTrailData>(trailCurrentQueryOptions().queryKey) ?? null
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <CourseClient courseuuid={courseuuid} course={course_meta} />
+      <CourseClient courseuuid={courseuuid} course={course_meta} trailData={trailData} />
     </HydrationBoundary>
   )
 }
