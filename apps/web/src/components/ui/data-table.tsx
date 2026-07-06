@@ -120,7 +120,7 @@ const isSamePagination = (left: PaginationState, right: PaginationState) =>
 const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
 const EMPTY_DATA: RowData[] = []
 
-const columnMeta: DataTableColumnMeta<any> = {}
+const columnMeta: DataTableColumnMeta<never> = {}
 
 const features = tableFeatures({
   columnVisibilityFeature,
@@ -394,7 +394,7 @@ export default function DataTable<TData extends RowData>({
     const bodyRows = sourceRows.map(row =>
       exportableColumns.map(column => {
         const value = column.columnDef.meta?.exportValue
-          ? column.columnDef.meta.exportValue(row.original as Record<string, unknown>)
+          ? column.columnDef.meta.exportValue(row.original as never)
           : row.getValue(column.id)
         return escapeCsv(value)
       }),

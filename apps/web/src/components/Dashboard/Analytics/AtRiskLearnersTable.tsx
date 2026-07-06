@@ -21,7 +21,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import type React from 'react'
@@ -73,6 +73,17 @@ const INTERVENTION_COPY = {
   resolvedNotes: 'Risk marked resolved after teacher review.',
   risk: 'risk',
 }
+
+const teacherInterventionsQueryOptions = (
+  row: Pick<EnhancedAtRiskLearnerRow, 'course_id' | 'user_id'>,
+  query?: AnalyticsQuery,
+  enabled = true,
+) =>
+  queryOptions({
+    queryKey: ['teacher-interventions', row.course_id, row.user_id, query] as const,
+    queryFn: () => getTeacherInterventions({ course_id: row.course_id, user_id: row.user_id }, query),
+    enabled,
+  })
 
 export default function AtRiskLearnersTable({
   title,
@@ -257,12 +268,8 @@ function LearnerInterventionDialog({
   const [open, setOpen] = useState(false)
   const [pendingType, setPendingType] = useState<TeacherInterventionCreate['intervention_type'] | null>(null)
   const [draft, setDraft] = useState(() => buildRemediationDraft(row))
-  const auditQueryKey = ['teacher-interventions', row.course_id, row.user_id, query] as const
-  const audit = useQuery({
-    queryKey: auditQueryKey,
-    queryFn: () => getTeacherInterventions({ course_id: row.course_id, user_id: row.user_id }, query),
-    enabled: open,
-  })
+  const auditOptions = teacherInterventionsQueryOptions(row, query, open)
+  const audit = useQuery(auditOptions)
 
   async function logIntervention(
     payload: Pick<TeacherInterventionCreate, 'intervention_type' | 'status' | 'outcome' | 'notes' | 'payload'>,
@@ -277,7 +284,7 @@ function LearnerInterventionDialog({
         },
         query,
       )
-      await queryClient.invalidateQueries({ queryKey: auditQueryKey })
+      await queryClient.invalidateQueries({ queryKey: auditOptions.queryKey })
       toast.success(t('atRisk.interventionLogged'))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('atRisk.interventionLogFailed'))

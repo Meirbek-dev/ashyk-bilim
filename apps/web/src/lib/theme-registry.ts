@@ -48,7 +48,7 @@ interface ShadcnRegistryItem {
   }
 }
 
-const rawRegistry = rawThemeRegistry as unknown as {
+const rawRegistry = rawThemeRegistry as {
   items?: ShadcnRegistryItem[]
 }
 

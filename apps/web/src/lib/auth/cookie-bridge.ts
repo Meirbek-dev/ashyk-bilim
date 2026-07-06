@@ -31,7 +31,7 @@ interface SetCookieHeaderSource {
  * Headers may only expose a combined set-cookie value through get().
  */
 export function getSetCookieHeaders(responseHeaders: Headers): string[] {
-  const headerSource = responseHeaders as unknown as SetCookieHeaderSource
+  const headerSource = responseHeaders as SetCookieHeaderSource
 
   if (typeof headerSource.getSetCookie === 'function') {
     const values = headerSource.getSetCookie().filter(Boolean)

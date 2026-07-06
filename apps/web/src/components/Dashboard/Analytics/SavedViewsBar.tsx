@@ -58,7 +58,7 @@ export default function SavedViewsBar({ query }: SavedViewsBarProps) {
         {
           name: trimmedName,
           view_type: 'overview',
-          query,
+          query: { ...query },
         },
         query,
       )

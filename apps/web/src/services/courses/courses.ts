@@ -71,7 +71,7 @@ type NormalizedFullCourse = Omit<
 > & {
   about: string
   authors: NormalizedCourseAuthor[]
-  chapters: NonNullable<FullCourseRead['chapters']>
+  chapters: AppChapter[]
   course_uuid: string
   creation_date?: string
   description: string
@@ -212,7 +212,7 @@ function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
     ...rest,
     about: about ?? '',
     authors: normalizeAuthors(authors),
-    chapters: chapters ?? [],
+    chapters: (chapters ?? []) as unknown as AppChapter[],
     course_uuid: course_uuid ?? '',
     description: description ?? '',
     learnings: learnings ?? '',

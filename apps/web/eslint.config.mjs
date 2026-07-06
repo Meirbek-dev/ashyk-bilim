@@ -368,7 +368,8 @@ export default defineConfig(
       '**/build/**',
       'next-env.d.ts',
       '*.config.{js,mjs,cjs,ts}',
-      'src\\lib\\api\\generated\\schema.ts',
+      'src/lib/api/generated/**',
+      'src\\lib\\api\\generated\\**',
     ],
   },
 

@@ -29,6 +29,11 @@ export interface GradebookRollupRow {
   total: number
 }
 
+type GradebookStudentWithCohort = GradebookStudent & {
+  cohort?: string | null
+  cohort_name?: string | null
+}
+
 export const GRADEBOOK_SAVED_FILTERS: GradebookSavedFilterId[] = [
   'all',
   'needs_grading',
@@ -124,14 +129,8 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
 
   const cohorts = new Map<string, ActivityProgressCell[]>()
   for (const student of data.students) {
-    const cohort =
-      (
-        student
-      ).cohort_name ??
-      (
-        student
-      ).cohort ??
-      '__default_cohort__'
+    const cohortStudent = student as GradebookStudentWithCohort
+    const cohort = cohortStudent.cohort_name ?? cohortStudent.cohort ?? '__default_cohort__'
     cohorts.set(cohort, [...(cohorts.get(cohort) ?? []), ...(cellsByStudent.get(student.id) ?? [])])
   }
   return [...cohorts.entries()].map(([cohort, cells]) => buildRollupRow(cohort, cohort, cells))

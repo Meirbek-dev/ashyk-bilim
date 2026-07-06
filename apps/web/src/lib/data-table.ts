@@ -1,4 +1,5 @@
 import type * as React from 'react'
+import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 
 export const dataTableConfig = {
   textOperators: [
@@ -83,27 +84,41 @@ export interface DataTableColumnMeta<TData = unknown> {
   exportValue?: (row: TData) => unknown
 }
 
-import type { TableFeatures, RowData, CellData } from '@tanstack/react-table'
-
 declare module '@tanstack/react-table' {
-  interface ColumnMeta<
-    TFeatures extends TableFeatures,
-    TData extends RowData,
-    TValue extends CellData = CellData,
-  > extends DataTableColumnMeta<TData> {}
+  interface ColumnMeta<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> {
+    label?: DataTableColumnMeta<TData>['label']
+    placeholder?: DataTableColumnMeta<TData>['placeholder']
+    variant?: DataTableColumnMeta<TData>['variant']
+    options?: DataTableColumnMeta<TData>['options']
+    range?: DataTableColumnMeta<TData>['range']
+    unit?: DataTableColumnMeta<TData>['unit']
+    icon?: DataTableColumnMeta<TData>['icon']
+    exportable?: DataTableColumnMeta<TData>['exportable']
+    exportValue?: DataTableColumnMeta<TData>['exportValue']
+  }
+}
+
+type ColumnPinningPosition = false | 'left' | 'right'
+
+interface PinnableColumn {
+  getAfter?: (position?: ColumnPinningPosition | 'center') => number
+  getIsFirstColumn?: (position?: ColumnPinningPosition | 'center') => boolean
+  getIsLastColumn?: (position?: ColumnPinningPosition | 'center') => boolean
+  getIsPinned?: () => ColumnPinningPosition
+  getSize?: () => number
+  getStart?: (position?: ColumnPinningPosition | 'center') => number
 }
 
 export function getColumnPinningStyle({
   column,
   withBorder = false,
 }: {
-   
-  column: any
+  column: PinnableColumn
   withBorder?: boolean
 }): React.CSSProperties {
-  const isPinned = column.getIsPinned()
-  const isLastLeftPinnedColumn = isPinned === 'left' && column.getIsLastColumn('left')
-  const isFirstRightPinnedColumn = isPinned === 'right' && column.getIsFirstColumn('right')
+  const isPinned = column.getIsPinned?.() ?? false
+  const isLastLeftPinnedColumn = isPinned === 'left' && column.getIsLastColumn?.('left')
+  const isFirstRightPinnedColumn = isPinned === 'right' && column.getIsFirstColumn?.('right')
 
   return {
     boxShadow: withBorder
@@ -113,12 +128,12 @@ export function getColumnPinningStyle({
           ? '4px 0 4px -4px var(--border) inset'
           : undefined
       : undefined,
-    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+    left: isPinned === 'left' ? `${column.getStart?.('left') ?? 0}px` : undefined,
+    right: isPinned === 'right' ? `${column.getAfter?.('right') ?? 0}px` : undefined,
     opacity: isPinned ? 0.97 : 1,
     position: isPinned ? 'sticky' : 'relative',
     background: isPinned ? 'var(--background)' : undefined,
-    width: column.getSize(),
+    width: column.getSize?.(),
     zIndex: isPinned ? 1 : undefined,
   }
 }

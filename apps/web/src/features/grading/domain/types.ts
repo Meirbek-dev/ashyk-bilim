@@ -222,7 +222,7 @@ export interface SubmissionMetadata {
 
 export function getSubmissionMetadata(submission: { metadata_json?: unknown }): SubmissionMetadata {
   const raw = submission.metadata_json
-  return raw && typeof raw === 'object' ? (raw as unknown as SubmissionMetadata) : {}
+  return raw && typeof raw === 'object' ? (raw as SubmissionMetadata) : {}
 }
 
 export function getSubmissionViolations(submission: { metadata_json?: unknown }): AntiCheatViolation[] {

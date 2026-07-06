@@ -63,6 +63,12 @@ const RECOMMENDED_ACTION_MAP: Record<string, AttemptViewModel['recommendedAction
   NO_ACTION: 'noAction',
 }
 
+const SUBMISSION_STATUSES = new Set(['DRAFT', 'PENDING', 'GRADED', 'PUBLISHED', 'RETURNED'])
+
+function normalizeSubmissionStatus(status: string | null | undefined): AttemptViewModel['submissionStatus'] {
+  return status && SUBMISSION_STATUSES.has(status) ? (status as AttemptViewModel['submissionStatus']) : null
+}
+
 /**
  * Fetches activity metadata and returns a typed view model for the requested
  * surface. Returns null while loading or if the activity is not assessable.
@@ -173,7 +179,7 @@ function useAssessment(
     title: assessment.title,
     description: assessment.description || null,
     dueAt: attemptProjection?.due_at ?? assessment.assessment_policy?.due_at ?? null,
-    submissionStatus: (attemptProjection?.submission_status ?? null),
+    submissionStatus: normalizeSubmissionStatus(attemptProjection?.submission_status),
     releaseState: attemptProjection?.release_state ?? 'HIDDEN',
     score: {
       percent: attemptProjection?.score?.percent ?? null,

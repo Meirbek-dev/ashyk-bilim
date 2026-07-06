@@ -704,9 +704,7 @@ export async function getSubmissions(activityUuid: string): Promise<CodeSubmissi
 
   await ensureOk(response, `assessments/${assessment.assessment_uuid}/me`)
 
-  return ((await response.json()) as CanonicalSubmissionRead[] as unknown as GradingSubmission[]).map(
-    mapCanonicalCodeSubmission,
-  )
+  return ((await response.json()) as CanonicalSubmissionRead[] as GradingSubmission[]).map(mapCanonicalCodeSubmission)
 }
 
 interface CanonicalCodeRunTestResult {
