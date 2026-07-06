@@ -84,7 +84,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   const activityTypes = useMemo(
     () =>
       data?.page_info?.activity_types ??
-      [...new Set((data?.activities ?? []).map(activity => activity.activity_type))].toSorted(),
+      [...new Set((data?.activities ?? []).map(activity => activity.activity_type))].toSorted((a, b) => a.localeCompare(b)),
     [data?.activities, data?.page_info?.activity_types],
   )
   const visibleActivities = useMemo(

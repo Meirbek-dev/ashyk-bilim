@@ -170,7 +170,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
 
   const auditStatuses = [
     ...new Set(detail.audit_history.map(event => event.status).filter((status): status is string => Boolean(status))),
-  ].toSorted()
+  ].toSorted((a, b) => a.localeCompare(b))
   const normalizedAuditSearch = auditSearch.trim().toLowerCase()
   const filteredAuditHistory = detail.audit_history.filter(event => {
     if (auditSourceFilter !== 'all' && event.source !== auditSourceFilter) {

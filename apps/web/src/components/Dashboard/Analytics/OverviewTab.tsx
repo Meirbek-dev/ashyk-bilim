@@ -52,7 +52,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
       ...data.trends.submissions.map(point => point.bucket_start),
       ...data.trends.grading_completed.map(point => point.bucket_start),
     ]),
-  ].toSorted()
+  ].toSorted((a, b) => a.localeCompare(b))
   const completionsMap = new Map(data.trends.completions.map(p => [p.bucket_start, p.value]))
   const submissionsMap = new Map(data.trends.submissions.map(p => [p.bucket_start, p.value]))
   const gradingMap = new Map(data.trends.grading_completed.map(p => [p.bucket_start, p.value]))

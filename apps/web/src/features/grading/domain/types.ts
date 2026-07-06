@@ -124,9 +124,21 @@ export function normalizeCourseGradebookResponse(
 ): CourseGradebookResponse {
   if (!data) {
     return {
+      course_id: 0,
+      course_name: '',
+      course_uuid: '',
       cells: [],
       activities: [],
       students: [],
+      summary: {
+        activity_count: 0,
+        completed_count: 0,
+        needs_grading_count: 0,
+        not_started_count: 0,
+        overdue_count: 0,
+        student_count: 0,
+      },
+      teacher_actions: [],
     }
   }
 
@@ -208,17 +220,17 @@ export interface SubmissionMetadata {
   [key: string]: unknown
 }
 
-export function getSubmissionMetadata(submission: Pick<Submission, 'metadata_json'>): SubmissionMetadata {
+export function getSubmissionMetadata(submission: { metadata_json?: unknown }): SubmissionMetadata {
   const raw = submission.metadata_json
-  return raw && typeof raw === 'object' ? raw : {}
+  return raw && typeof raw === 'object' ? (raw as unknown as SubmissionMetadata) : {}
 }
 
-export function getSubmissionViolations(submission: Pick<Submission, 'metadata_json'>): AntiCheatViolation[] {
+export function getSubmissionViolations(submission: { metadata_json?: unknown }): AntiCheatViolation[] {
   const { violations } = getSubmissionMetadata(submission)
   return Array.isArray(violations) ? violations : []
 }
 
-export function getSubmissionPlagiarismState(submission: Pick<Submission, 'metadata_json'>): PlagiarismState {
+export function getSubmissionPlagiarismState(submission: { metadata_json?: unknown }): PlagiarismState {
   const metadata = getSubmissionMetadata(submission)
   const status = metadata.plagiarism_status
   const plagiarism = metadata.plagiarism ?? null

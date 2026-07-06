@@ -86,7 +86,7 @@ export function CodeArenaWorkspace({
   const { handleApiError, toastApiError } = useApiError()
   const languagesQuery = useJudge0Languages()
   const submissionsQuery = useCodeChallengeSubmissions(problem.activityUuid)
-  const judge0Languages = languagesQuery.data ?? []
+  const judge0Languages = useMemo(() => languagesQuery.data ?? [], [languagesQuery.data])
   const submissionsData = submissionsQuery.data
   const runCustom = useRunCustomTest(problem.activityUuid)
   const runTests = useRunCodeChallengeTests(problem.activityUuid)
@@ -97,7 +97,7 @@ export function CodeArenaWorkspace({
       allowedLanguages.length
         ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
         : judge0Languages,
-    [allowedLanguages],
+    [allowedLanguages, judge0Languages],
   )
   const isRunning = runCustom.isPending || runTests.isPending || isSubmitting
   const starterCode = normalizeStarterCode(settings, languageId)

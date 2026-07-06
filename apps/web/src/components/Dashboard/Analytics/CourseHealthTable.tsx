@@ -14,12 +14,6 @@ interface CourseHealthTableProps {
   serverPaginated?: boolean
 }
 
-type EnhancedTeacherCourseRow = TeacherCourseRow & {
-  teacher_completion_delta_pct?: number | null
-  platform_completion_delta_pct?: number | null
-  historical_completion_delta_pct?: number | null
-  cohort_completion_delta_pct?: number | null
-}
 
 export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')

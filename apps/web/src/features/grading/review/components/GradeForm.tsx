@@ -18,7 +18,7 @@ import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
-import type { GradedItem, Submission, TeacherGradeInput } from '@/features/grading/domain'
+import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions'
@@ -666,7 +666,7 @@ function buildOptimisticSubmission(
     ...submission,
     status: nextStatus,
     final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
-    grading_json: gradingJson,
+    grading_json: gradingJson as GradingBreakdown,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
-  }
+  } as Submission
 }

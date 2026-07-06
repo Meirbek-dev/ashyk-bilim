@@ -12,7 +12,7 @@ import { useCourseEditorStore } from '@/stores/courses'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
-export interface Activity extends AppActivity {}
+export type Activity = AppActivity
 
 export interface Chapter extends AppChapter {
   activities?: Activity[]

@@ -71,7 +71,7 @@ export interface Option {
   icon?: React.ComponentType<React.ComponentProps<'svg'>>
 }
 
-export interface DataTableColumnMeta<TData = any> {
+export interface DataTableColumnMeta<TData = unknown> {
   label?: string
   placeholder?: string
   variant?: FilterVariant
@@ -83,10 +83,21 @@ export interface DataTableColumnMeta<TData = any> {
   exportValue?: (row: TData) => unknown
 }
 
+import type { TableFeatures, RowData, CellData } from '@tanstack/react-table'
+
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue extends CellData = CellData,
+  > extends DataTableColumnMeta<TData> {}
+}
+
 export function getColumnPinningStyle({
   column,
   withBorder = false,
 }: {
+   
   column: any
   withBorder?: boolean
 }): React.CSSProperties {

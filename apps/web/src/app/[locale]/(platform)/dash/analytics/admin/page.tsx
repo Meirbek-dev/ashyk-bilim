@@ -75,6 +75,7 @@ async function AdminContent({
       href: `/dash/analytics/overview${serialized ? `?${serialized}` : ''}`,
       locale: resolvedParams.locale,
     })
+    return null
   }
 
   return (

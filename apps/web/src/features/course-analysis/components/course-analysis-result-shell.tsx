@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertTriangleIcon, CheckCircle2Icon, ClipboardCheckIcon, FileTextIcon, ShieldCheckIcon } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
@@ -50,10 +50,12 @@ export function CourseAnalysisResultShell({
   const locale = useLocale()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reviewedEvidence, setReviewedEvidence] = useState(false)
-  // A new analysis run is unreviewed evidence, even if the previous one was acknowledged.
-  useEffect(() => {
+  const [prevUuid, setPrevUuid] = useState(analysis.analysis_uuid)
+
+  if (analysis.analysis_uuid !== prevUuid) {
+    setPrevUuid(analysis.analysis_uuid)
     setReviewedEvidence(false)
-  }, [analysis.analysis_uuid])
+  }
   const citations = useMemo(() => normalizeCitations(analysis.report_json.citations), [analysis.report_json.citations])
   const findings = useMemo(
     () =>

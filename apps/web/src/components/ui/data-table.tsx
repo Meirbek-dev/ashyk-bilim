@@ -120,7 +120,7 @@ const isSamePagination = (left: PaginationState, right: PaginationState) =>
 const DEFAULT_PAGE_SIZE_OPTIONS = [20, 50, 100, 250]
 const EMPTY_DATA: RowData[] = []
 
-const columnMeta: DataTableColumnMeta = {}
+const columnMeta: DataTableColumnMeta<any> = {}
 
 const features = tableFeatures({
   columnVisibilityFeature,

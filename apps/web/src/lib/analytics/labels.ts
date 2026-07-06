@@ -85,12 +85,14 @@ export function getAnalyticsAssessmentTypeLabel(
   t: Translator,
   normalizedAssessmentType: AssessmentType | null | undefined = 'manual_assessment',
 ): string {
-  const key = (assessmentTypeKeys[normalizedAssessmentType] ?? assessmentTypeKeys.manual_assessment)!
+  const lookup = normalizedAssessmentType ?? 'manual_assessment'
+  const key = (assessmentTypeKeys[lookup] ?? assessmentTypeKeys.manual_assessment)!
   return t(key)
 }
 
 export function getAnalyticsBucketLabel(t: Translator, normalizedBucket: Bucket | null | undefined = 'day'): string {
-  const key = (bucketKeys[normalizedBucket] ?? bucketKeys.day)!
+  const lookup = normalizedBucket ?? 'day'
+  const key = (bucketKeys[lookup] ?? bucketKeys.day)!
   return t(key)
 }
 
@@ -98,7 +100,8 @@ export function getAnalyticsCompareLabel(
   t: Translator,
   normalizedCompare: ComparePreset | null | undefined = 'none',
 ): string {
-  const key = (compareKeys[normalizedCompare] ?? compareKeys.none)!
+  const lookup = normalizedCompare ?? 'none'
+  const key = (compareKeys[lookup] ?? compareKeys.none)!
   return t(key)
 }
 

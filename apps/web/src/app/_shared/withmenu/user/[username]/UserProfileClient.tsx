@@ -49,11 +49,6 @@ interface ProfileDetail {
   text: string
 }
 
-interface UserCourseAuthor {
-  authorship: NonNullable<CourseThumbnailData['authors']>[number]['authorship']
-  authorship_status: NonNullable<CourseThumbnailData['authors']>[number]['authorship_status']
-  user?: NonNullable<CourseThumbnailData['authors']>[number]['user'] | null
-}
 
 interface ProfileImage {
   caption?: string
@@ -399,8 +394,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
                               {userCourses.map(course => {
                                 const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
-                                const mappedAuthors: NonNullable<CourseThumbnailData['authors']> | undefined =
-                                  authors?.flatMap((author: UserCourseAuthor) => {
+                                const mappedAuthors: AppCourseAuthor[] | undefined =
+                                  authors?.flatMap((author) => {
                                     if (!author.user) return []
                                     return [
                                       {

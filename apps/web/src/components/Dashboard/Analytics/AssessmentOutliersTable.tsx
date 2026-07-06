@@ -15,12 +15,6 @@ interface AssessmentOutliersTableProps {
   serverPaginated?: boolean
 }
 
-type EnhancedAssessmentOutlierRow = AssessmentOutlierRow & {
-  score_variance?: number | null
-  reliability_score?: number | null
-  discrimination_index?: number | null
-  suspicious_flag?: string | null
-}
 
 export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
