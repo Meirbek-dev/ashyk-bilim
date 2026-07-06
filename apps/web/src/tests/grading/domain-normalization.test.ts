@@ -35,13 +35,13 @@ describe('grading boundary normalization', () => {
   })
 
   it('uses an explicit unknown-status label for unsupported values', () => {
-    const label = getSubmissionStatusLabel('UNSUPPORTED_STATUS' as never, key => key)
+    const label = getSubmissionStatusLabel('UNSUPPORTED_STATUS', key => key)
 
     expect(label).toBe('statusUnknown')
   })
 
   it('rejects unsupported transitions rather than silently defaulting them', () => {
-    expect(canTransitionSubmission('UNSUPPORTED_STATUS' as never, 'PENDING' as never)).toBe(false)
-    expect(canTransitionSubmission('PENDING' as never, 'UNSUPPORTED_STATUS' as never)).toBe(false)
+    expect(canTransitionSubmission('UNSUPPORTED_STATUS', 'PENDING')).toBe(false)
+    expect(canTransitionSubmission('PENDING', 'UNSUPPORTED_STATUS')).toBe(false)
   })
 })

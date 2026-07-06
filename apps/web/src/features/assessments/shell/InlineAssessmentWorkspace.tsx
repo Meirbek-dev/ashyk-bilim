@@ -132,19 +132,20 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       setBottomBarAction(null)
     }
   }, [
-    isPreflightMode,
-    canAct,
-    recommendedAction,
-    vm,
-    isPending,
-    activityUuid,
-    courseUuid,
-    queryClient,
-    router,
-    setBottomBarAction,
-    setMode,
-    t,
-  ])
+	isPreflightMode,
+	canAct,
+	recommendedAction,
+	vm,
+	isPending,
+	activityUuid,
+	courseUuid,
+	queryClient,
+	router,
+	setBottomBarAction,
+	setMode,
+	t,
+	toastApiError
+])
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 

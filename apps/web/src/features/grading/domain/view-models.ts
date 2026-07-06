@@ -32,7 +32,7 @@ export function buildSubmissionReviewViewModel(submission: Submission): Submissi
     displayName: getSubmissionDisplayName(submission),
     releaseState,
     scoreLabel: formatScoreFraction(submission.final_score, 100),
-    isLate: Boolean(submission.is_late),
+    isLate: submission.is_late,
     needsTeacherAction: needsTeacherAction(submission.status),
     canTeacherEdit: canTeacherEditGrade(submission.status),
     canPublish: canPublishGrade(submission.status),

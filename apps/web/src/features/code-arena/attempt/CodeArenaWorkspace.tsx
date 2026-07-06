@@ -97,7 +97,7 @@ export function CodeArenaWorkspace({
       allowedLanguages.length
         ? judge0Languages.filter(language => allowedLanguages.includes(language.id))
         : judge0Languages,
-    [allowedLanguages, judge0Languages],
+    [allowedLanguages],
   )
   const isRunning = runCustom.isPending || runTests.isPending || isSubmitting
   const starterCode = normalizeStarterCode(settings, languageId)

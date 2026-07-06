@@ -9,7 +9,7 @@ import { apiFetch } from '@/lib/api-client'
 import { isAccessTokenExpired } from './cookie-bridge'
 import { buildReturnTo } from './return-to'
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from './types'
-import type { Session, UserSessionResponse } from './types'
+import type { Session } from './types'
 
 async function getPageReturnTo(): Promise<string | null> {
   const headersList = await headers()

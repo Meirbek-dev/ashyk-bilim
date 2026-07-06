@@ -84,7 +84,7 @@ export function getReleaseStateLabel(
   t: (key: string) => string,
 ): string {
   const normalizedState = state ?? 'HIDDEN'
-  const labelKey = (RELEASE_STATE_LABELS[normalizedState] ?? RELEASE_STATE_LABELS.HIDDEN) as string
+  const labelKey = (RELEASE_STATE_LABELS[normalizedState] ?? RELEASE_STATE_LABELS.HIDDEN)!
   return t(labelKey)
 }
 
@@ -98,7 +98,7 @@ export function getActivityProgressStateLabel(
 ): string {
   const normalizedState = state ?? 'NOT_STARTED'
   const labelKey = (ACTIVITY_PROGRESS_STATE_LABELS[normalizedState] ??
-    ACTIVITY_PROGRESS_STATE_LABELS.NOT_STARTED) as string
+    ACTIVITY_PROGRESS_STATE_LABELS.NOT_STARTED)!
   return t(labelKey)
 }
 

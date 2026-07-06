@@ -26,7 +26,6 @@ import type { AssessmentPolicyDTO } from '../domain/policy'
 import { assessmentTypeToKind } from '../domain/view-models'
 import type { AssessmentKind, AssessmentSurface, AttemptViewModel, StudioViewModel } from '../domain/view-models'
 import type { AssessmentItem } from '../domain/items'
-import type { SubmissionStatus } from '../domain/submission-status'
 
 interface ReadinessPayload {
   ok: boolean

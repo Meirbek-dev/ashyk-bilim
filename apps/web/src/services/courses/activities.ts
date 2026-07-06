@@ -119,7 +119,7 @@ async function fetchActivity(activity_uuid: string): Promise<Activity> {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   })
-  return (await errorHandling(result)) as Activity
+  return (await errorHandling(result))
 }
 
 export async function getActivity(activity_uuid: string, _next?: unknown): Promise<Activity> {
