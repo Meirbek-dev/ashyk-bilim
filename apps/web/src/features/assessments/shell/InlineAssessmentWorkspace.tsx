@@ -40,7 +40,7 @@ interface InlineAssessmentWorkspaceProps {
  * ActivityLayoutContext so the parent shell can react without prop-drilling.
  */
 export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: InlineAssessmentWorkspaceProps) {
-  const { vm: assessmentData, isLoading, error } = useAssessmentAttempt(activityUuid)
+  const { vm: assessmentData, isLoading, error: assessmentError } = useAssessmentAttempt(activityUuid)
   const { contributorStatus } = useContributorStatus(courseUuid)
   const isTeacher = contributorStatus === 'ACTIVE'
   const { setMode, setBottomBarAction } = useActivityLayout()
@@ -149,13 +149,13 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 
-  if (error) {
-    const processed = handleApiError(error, { fallback: t('startActivityFailed') })
+  if (assessmentError) {
+    const processed = handleApiError(assessmentError, { fallback: t('startActivityFailed') })
     return (
       <ErrorState
         actionLabel={processed.actionLabel}
         description={processed.message}
-        error={error}
+        error={assessmentError}
         {...(processed.showRetry ? { onAction: () => router.refresh() } : {})}
         title={t('startActivityFailed')}
         variant="section"

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 import type React from 'react'
+import { useTranslations } from 'next-intl'
 
 import AppLink from '@/components/ui/AppLink'
 import { Badge } from '@/components/ui/badge'
@@ -135,6 +136,7 @@ function CourseEnrollmentState({
   onStartCourse?: (() => void) | undefined
   starting?: boolean | undefined
 }) {
+  const t = useTranslations('LearnerCourse')
   const status = isEnrolled ? LmsStatuses.IN_PROGRESS : isAuthenticated ? LmsStatuses.READY : LmsStatuses.LIMITED
   const title = isEnrolled ? 'You are enrolled' : isAuthenticated ? 'Preview before enrolling' : 'Sign in to start'
   const description = isEnrolled
@@ -150,7 +152,7 @@ function CourseEnrollmentState({
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <LmsStatusBadge status={status} label={title} />
-            {!course.public ? <Badge variant="outline">Private course</Badge> : null}
+            {!course.public ? <Badge variant="outline">{t('privateCourse')}</Badge> : null}
           </div>
           <div className="space-y-1">
             <h2 className="text-xl font-semibold tracking-tight">{course.name}</h2>

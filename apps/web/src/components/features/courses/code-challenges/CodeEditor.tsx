@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { OnChange, OnMount } from '@monaco-editor/react'
+import { useTranslations } from 'next-intl'
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ export function CodeEditor({
   options = DEFAULT_OPTIONS,
   readOnlyMessage,
 }: CodeEditorProps) {
+  const t = useTranslations('Activities.CodeChallenges')
   const { resolvedTheme } = useTheme()
   const [editorKey, setEditorKey] = useState(0)
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
@@ -99,7 +101,7 @@ export function CodeEditor({
           {readOnlyMessage}
         </div>
       ) : null}
-      <WidgetErrorBoundary scope="monaco-code-editor" variant="section" title="Code Editor failed to load">
+      <WidgetErrorBoundary scope="monaco-code-editor" variant="section" title={t('codeEditorFailedToLoad')}>
         <Editor
           key={editorKey}
           height={height}

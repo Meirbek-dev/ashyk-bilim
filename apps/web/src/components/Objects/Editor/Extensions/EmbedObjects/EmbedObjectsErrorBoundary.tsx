@@ -5,6 +5,8 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { InlineError } from '@/components/ui/error-state'
 import { reportClientError } from '@/services/telemetry/client'
 
+import { useTranslations } from 'next-intl'
+
 // ============================================================================
 // Error Boundary for EmbedObjectsComponent (legacy blockEmbed NodeView)
 // Requirement 10.4: If a blockEmbed node fails to render, show a visible
@@ -20,6 +22,26 @@ interface EmbedObjectsErrorBoundaryProps {
 interface EmbedObjectsErrorBoundaryState {
   error: Error | null
   hasError: boolean
+}
+
+function EmbedObjectsErrorFallback({
+  message,
+  title,
+  error,
+}: {
+  message?: ReactNode
+  title?: ReactNode
+  error: Error | null
+}) {
+  const t = useTranslations('DashPage.Editor.EmbedObjects')
+  return (
+    <InlineError
+      className="min-h-[120px]"
+      description={message ?? t('embeddedBlockRenderErrorFallback')}
+      error={error}
+      title={title ?? t('embeddedContentFallback')}
+    />
+  )
 }
 
 export class EmbedObjectsErrorBoundary extends Component<
@@ -51,11 +73,10 @@ export class EmbedObjectsErrorBoundary extends Component<
   public override render() {
     if (this.state.hasError) {
       return (
-        <InlineError
-          className="min-h-[120px]"
-          description={this.props.message ?? 'This embed could not be rendered.'}
+        <EmbedObjectsErrorFallback
+          message={this.props.message}
           error={this.state.error}
-          title={this.props.title ?? 'Embed failed to render'}
+          title={this.props.title}
         />
       )
     }
@@ -63,3 +84,4 @@ export class EmbedObjectsErrorBoundary extends Component<
     return this.props.children
   }
 }
+

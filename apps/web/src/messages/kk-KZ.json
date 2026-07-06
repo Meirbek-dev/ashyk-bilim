@@ -98,6 +98,7 @@
     },
     "CodeChallenges": {
       "untitledChallenge": "Атаусыз тапсырма",
+      "codeEditorFailedToLoad": "Код редакторы жүктелмеді",
       "noProblemStatement": "Тапсырма сипаттамасы берілмеген.",
       "actualOutput": "Сіздің шығаруыңыз",
       "compileOutput": "Компиляция нәтижесі",
@@ -1221,6 +1222,11 @@
     "unsavedChanges": "Сақталмаған өзгерістер"
   },
   "Components": {
+    "WidgetErrorBoundary": {
+      "defaultTitle": "Компонентті көрсету мүмкін болмады",
+      "defaultDescription": "Бұл беттің бөлігін көрсету мүмкін болмады. Әрекетті қайталаңыз немесе қате қайталанса, бетті қайта жүктеңіз.",
+      "retry": "Қайталау"
+    },
     "MessageScroller": {
       "scrollToEnd": "Соңына дейін айналдыру",
       "scrollToStart": "Басына дейін айналдыру"
@@ -4397,7 +4403,9 @@
         "failedToRenderEmbed": "{label} кірістіруі",
         "embedRenderErrorMessage": "Бұл кірістіруді көрсету мүмкін болмады. Оны өңдеп немесе жойып көріңіз.",
         "unknownEmbedType": "Белгісіз кірістіру түрі{type}. Бұл блокты өңдеңіз.",
-        "embeddedBlockRenderError": "Бұл енгізілген блокты көрсету мүмкін болмады. Оны өңдеп немесе жойып көріңіз."
+        "embeddedBlockRenderError": "Бұл енгізілген блокты көрсету мүмкін болмады. Оны өңдеп немесе жойып көріңіз.",
+        "embeddedBlockRenderErrorFallback": "Бұл енгізілген элементті көрсету мүмкін болмады.",
+        "embeddedContentFallback": "Енгізілген элементті көрсету мүмкін болмады"
       },
       "FileUploadBlock": {
         "browseFiles": "Файлдарды шолыңыз",
@@ -10381,7 +10389,8 @@
         "complete": "Аяқталды",
         "needs_human_review": "Мұғалімнің тексеруін қажет етеді",
         "failed": "Сәтсіз аяқталды",
-        "cancelled": "Бас тартылды"
+        "cancelled": "Бас тартылды",
+        "cancel": "Болдырмау"
       }
     },
     "lectureReview": {
@@ -10469,6 +10478,7 @@
       "defaultDescription": "Жұмысты талдау дайын."
     },
     "studyCompanion": {
+      "title": "Оқу серігі",
       "label": "Осы курс туралы сұраңыз",
       "placeholder": "Түсіндірме, қысқаша мазмұн, жаттығу немесе флеш-карталарды сұраңыз",
       "send": "Жіберу",
@@ -10555,5 +10565,8 @@
         "status": "Status"
       }
     }
+  },
+  "LearnerCourse": {
+    "privateCourse": "Жабық курс"
   }
 }

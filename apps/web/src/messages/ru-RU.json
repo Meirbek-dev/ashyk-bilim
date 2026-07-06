@@ -98,6 +98,7 @@
     },
     "CodeChallenges": {
       "untitledChallenge": "Новая задача",
+      "codeEditorFailedToLoad": "Не удалось загрузить редактор кода",
       "noProblemStatement": "Описание задачи не предоставлено.",
       "actualOutput": "Ваш вывод",
       "compileOutput": "Результат компиляции",
@@ -1221,6 +1222,11 @@
     "unsavedChanges": "Несохраненные изменения"
   },
   "Components": {
+    "WidgetErrorBoundary": {
+      "defaultTitle": "Не удалось отобразить компонент",
+      "defaultDescription": "Эта часть страницы не может быть отображена. Попробуйте еще раз или перезагрузите страницу, если ошибка повторится.",
+      "retry": "Повторить"
+    },
     "MessageScroller": {
       "scrollToEnd": "Прокрутить в конец",
       "scrollToStart": "Прокрутить в начало"
@@ -4393,7 +4399,9 @@
         "failedToRenderEmbed": "Встраивание {label}",
         "embedRenderErrorMessage": "Не удалось отобразить это встраивание. Пожалуйста, попробуйте изменить или удалить его.",
         "unknownEmbedType": "Неизвестный тип встраивания{type}. Пожалуйста, отредактируйте этот блок.",
-        "embeddedBlockRenderError": "Не удалось отобразить этот встроенный блок. Пожалуйста, попробуйте изменить или удалить его."
+        "embeddedBlockRenderError": "Не удалось отобразить этот встроенный блок. Пожалуйста, попробуйте изменить или удалить его.",
+        "embeddedBlockRenderErrorFallback": "Этот встроенный элемент не удалось отобразить.",
+        "embeddedContentFallback": "Не удалось отобразить встроенный элемент"
       },
       "FileUploadBlock": {
         "browseFiles": "Обзор файлов",
@@ -10209,7 +10217,8 @@
         "complete": "Завершено",
         "needs_human_review": "Требует проверки преподавателем",
         "failed": "Ошибка",
-        "cancelled": "Отменено"
+        "cancelled": "Отменено",
+        "cancel": "Отмена"
       }
     },
     "lectureReview": {
@@ -10297,6 +10306,7 @@
       "defaultDescription": "Анализ работы готов."
     },
     "studyCompanion": {
+      "title": "Помощник в обучении",
       "label": "Спросите об этом курсе",
       "placeholder": "Запросите объяснение, конспект, практику или карточки",
       "send": "Отправить",
@@ -10383,5 +10393,8 @@
         "status": "Status"
       }
     }
+  },
+  "LearnerCourse": {
+    "privateCourse": "Приватный курс"
   }
 }

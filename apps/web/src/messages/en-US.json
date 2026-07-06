@@ -98,6 +98,7 @@
     },
     "CodeChallenges": {
       "untitledChallenge": "Untitled Challenge",
+      "codeEditorFailedToLoad": "Code Editor failed to load",
       "noProblemStatement": "No problem description provided.",
       "actualOutput": "Your Output",
       "compileOutput": "Compile output",
@@ -1218,6 +1219,11 @@
     "unsavedChanges": "Unsaved changes"
   },
   "Components": {
+    "WidgetErrorBoundary": {
+      "defaultTitle": "Failed to render component",
+      "defaultDescription": "This part of the page could not be displayed. Retry, or reload the page if it keeps failing.",
+      "retry": "Retry"
+    },
     "MessageScroller": {
       "scrollToEnd": "Scroll to end",
       "scrollToStart": "Scroll to start"
@@ -4379,7 +4385,9 @@
         "failedToRenderEmbed": "{label} embed",
         "embedRenderErrorMessage": "This embed could not be rendered. Please try editing or removing it.",
         "unknownEmbedType": "Unknown embed type{type}. Please edit this block.",
-        "embeddedBlockRenderError": "This embedded block could not be rendered. Please try editing or removing it."
+        "embeddedBlockRenderError": "This embedded block could not be rendered. Please try editing or removing it.",
+        "embeddedBlockRenderErrorFallback": "This embed could not be rendered.",
+        "embeddedContentFallback": "Embed failed to render"
       },
       "FileUploadBlock": {
         "browseFiles": "Browse Files",
@@ -10193,7 +10201,8 @@
         "complete": "Complete",
         "needs_human_review": "Needs teacher review",
         "failed": "Failed",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "cancel": "Cancel"
       }
     },
     "lectureReview": {
@@ -10281,6 +10290,7 @@
       "defaultDescription": "Submission analysis is ready."
     },
     "studyCompanion": {
+      "title": "Study Companion",
       "label": "Ask about this course",
       "placeholder": "Ask for an explanation, summary, practice, or flashcards",
       "send": "Send",
@@ -10367,5 +10377,8 @@
         "status": "Status"
       }
     }
+  },
+  "LearnerCourse": {
+    "privateCourse": "Private course"
   }
 }

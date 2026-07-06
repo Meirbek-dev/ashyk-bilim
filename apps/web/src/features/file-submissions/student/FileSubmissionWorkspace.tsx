@@ -246,7 +246,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── Query ─────────────────────────────────────────────────────────────────
 
-  const { data, error, isError, isLoading, refetch } = useQuery(fileSubmissionQueryOptions(activityUuid))
+  const { data, error: queryError, isError, isLoading, refetch } = useQuery(fileSubmissionQueryOptions(activityUuid))
 
   const activeAttempt = data?.current_attempt ?? null
   const status = activeAttempt?.status ?? null
@@ -378,12 +378,12 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   // ── Loading ───────────────────────────────────────────────────────────────
 
   if (isError) {
-    const processed = handleApiError(error, { fallback: t('notAvailable') })
+    const processed = handleApiError(queryError, { fallback: t('notAvailable') })
     return (
       <ErrorState
         actionLabel={processed.actionLabel}
         description={processed.message}
-        error={error}
+        error={queryError}
         {...(processed.showRetry
           ? {
               onAction: () => {

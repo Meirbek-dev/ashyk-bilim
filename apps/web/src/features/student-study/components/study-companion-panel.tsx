@@ -25,7 +25,7 @@ export function StudyCompanionPanel({
     <WidgetErrorBoundary
       scope="student-study-companion"
       variant="section"
-      title={t('label') || 'Study Companion'}
+      title={t('title')}
     >
       <StudyCompanionPanelInner courseUuid={courseUuid} initialMode={initialMode} />
     </WidgetErrorBoundary>

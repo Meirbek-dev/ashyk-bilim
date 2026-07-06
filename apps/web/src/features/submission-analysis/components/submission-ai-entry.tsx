@@ -36,6 +36,16 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
   })
   const remediationArtifact = remediation.latestArtifact?.content_json
 
+  const remediationSession = remediationArtifact
+    ? {
+        session_uuid: remediation.latestArtifact?.artifact_uuid ?? 'remediation_artifact',
+        status: 'active' as const,
+        gate_mode: true,
+        lecture_json: remediationArtifact,
+        test_json: { questions: [] },
+      }
+    : null
+
   if (!submissionUuid) {
     return null
   }
@@ -73,16 +83,8 @@ export function SubmissionAIEntry({ submissionUuid }: { submissionUuid: string |
           {t('generateGate')}
         </Button>
         <AIRunProgress state={remediation.state} onCancel={remediation.pending ? remediation.cancel : undefined} />
-        {remediationArtifact ? (
-          <RemediationResultShell
-            session={{
-              session_uuid: remediation.latestArtifact?.artifact_uuid ?? 'remediation_artifact',
-              status: 'active',
-              gate_mode: true,
-              lecture_json: remediationArtifact,
-              test_json: { questions: [] },
-            }}
-          />
+        {remediationSession ? (
+          <RemediationResultShell session={remediationSession} />
         ) : null}
         {remediation.error ? <AIErrorRecovery message={remediation.error.message} /> : null}
       </CardContent>

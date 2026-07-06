@@ -26,7 +26,7 @@ export function AIRunProgress({ onCancel, state }: { onCancel?: (() => void) | u
         {!terminal && onCancel ? (
           <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
             <XCircleIcon data-icon="inline-start" aria-hidden="true" />
-            Cancel
+            {t('cancel')}
           </Button>
         ) : null}
       </div>
