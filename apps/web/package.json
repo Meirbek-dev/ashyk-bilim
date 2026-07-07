@@ -29,6 +29,7 @@
     "knip": "knip"
   },
   "dependencies": {
+    "@ag-ui/client": "^0.0.57",
     "@ag-ui/core": "^0.0.57",
     "@base-ui/react": "^1.6.0",
     "@daypicker/react": "^10.0.1",
@@ -81,6 +82,7 @@
     "next": "^16.3.0-preview.5",
     "next-intl": "^4.13.1",
     "nextjs-toploader": "^3.9.17",
+    "ofetch": "^1.5.1",
     "prosemirror-view": "^1.42.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",

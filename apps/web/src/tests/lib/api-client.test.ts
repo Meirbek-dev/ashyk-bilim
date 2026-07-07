@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { apiFetch, apiJson } from '@/lib/api-client'
+import { apiFetch, apiJson, getResponseMetadata } from '@/lib/api-client'
 import { APIError, isApiError } from '@/lib/api/assertSuccess'
 
 // Mock the config and auth redirect to avoid side effects
@@ -50,15 +50,18 @@ describe('apiFetch timeout', () => {
 
     const promise = apiFetch('test-endpoint')
 
-    // Move forward by 31 seconds (DEFAULT_TIMEOUT_MS is 30s)
-    vi.advanceTimersByTime(31000)
+    // Default GET requests retry once, so two 30s timeouts are expected.
+    await vi.advanceTimersByTimeAsync(31000)
+    await vi.advanceTimersByTimeAsync(200)
+    await vi.advanceTimersByTimeAsync(31000)
 
     await expect(promise).rejects.toMatchObject({
       code: 'CLIENT_TIMEOUT',
       status: 0,
     })
 
-    const lastCall = (global.fetch as any).mock.calls[0]
+    expect((global.fetch as any).mock.calls).toHaveLength(2)
+    const lastCall = (global.fetch as any).mock.calls[1]
     const signal = lastCall[1].signal
     expect(signal.aborted).toBe(true)
   })
@@ -70,6 +73,28 @@ describe('apiFetch timeout', () => {
     const data = await response.json()
 
     expect(data.ok).toBe(true)
+  })
+
+  it('adds trace context headers to outgoing API requests', async () => {
+    ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+
+    await apiJson('traced')
+
+    const headers = new Headers((global.fetch as any).mock.calls[0][1].headers)
+    expect(headers.get('traceparent')).toMatch(/^00-[\da-f]{32}-[\da-f]{16}-01$/u)
+    expect(headers.get('x-request-id')).toBeTruthy()
+  })
+
+  it('retries an idempotent transient failure once', async () => {
+    ;(global.fetch as any)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'try again' }), { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+
+    const promise = apiJson<{ ok: boolean }>('flaky')
+    await vi.advanceTimersByTimeAsync(200)
+
+    await expect(promise).resolves.toEqual({ ok: true })
+    expect((global.fetch as any).mock.calls).toHaveLength(2)
   })
 
   it('should refresh once and retry concurrent 401 responses', async () => {
@@ -126,6 +151,38 @@ describe('apiFetch timeout', () => {
       message: 'Course was not found',
       requestId: 'req-course',
       status: 404,
+    })
+  })
+
+  it('throws parser errors instead of returning invalid JSON data', async () => {
+    ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ id: 123 }), { status: 200 }))
+
+    await expect(
+      apiJson('invalid-shape', {}, data => {
+        if (!data || typeof data !== 'object' || typeof (data as { id?: unknown }).id !== 'string') {
+          throw new Error('Response validation failed')
+        }
+        return data as { id: string }
+      }),
+    ).rejects.toThrow('Response validation failed')
+  })
+
+  it('getResponseMetadata throws normalized API errors for non-2xx responses', async () => {
+    const response = new Response(
+      JSON.stringify({
+        code: 'NOPE',
+        message: 'Nope',
+        details: null,
+        field_errors: [],
+        request_id: 'req-nope',
+      }),
+      { status: 400 },
+    )
+
+    await expect(getResponseMetadata(response)).rejects.toMatchObject({
+      code: 'NOPE',
+      requestId: 'req-nope',
+      status: 400,
     })
   })
 

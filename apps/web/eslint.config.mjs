@@ -481,6 +481,37 @@ export default defineConfig(
   },
 
   /* ------------------------------------------------------------------------ */
+  /* API client guard                                                         */
+  /* ------------------------------------------------------------------------ */
+
+  {
+    name: 'api-client-guard',
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/api-client.ts', 'src/lib/auth/server-auth-fetch.ts', 'src/lib/cache/revalidate.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'warn',
+        {
+          name: 'fetch',
+          message: 'Use the shared API client so auth refresh, trace context, retry, and APIError parsing stay intact.',
+        },
+      ],
+      'no-restricted-imports': [
+        'warn',
+        {
+          paths: [
+            {
+              name: '@/lib/api-client',
+              importNames: ['apiFetch', 'apiFetchRaw'],
+              message: 'Prefer apiJson/apiResult/apiBody. Raw responses bypass normalized API error handling.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  /* ------------------------------------------------------------------------ */
   /* Course guard                                                             */
   /* ------------------------------------------------------------------------ */
 
