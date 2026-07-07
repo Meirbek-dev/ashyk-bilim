@@ -59,7 +59,7 @@ from src.services.ai.providers import ModelProvider
 from src.services.ai.schemas import CourseQAAnswer, SubmissionAnalysisReport
 from src.services.ai.token_budget import TokenBudgetExceeded, TokenBudgetService
 from src.services.courses.courses import _get_course_by_uuid  # pyright: ignore[reportPrivateUsage]
-from src.types import JsonObject
+from src.types import JsonObject, JsonValue
 
 SECRET_PATTERNS = (
     re.compile(r"\bsk-(?:proj-|or-v1-)?[A-Za-z0-9_-]{16,}\b"),
@@ -279,10 +279,9 @@ def _finish_run(
         model_name,
     )
     run.completed_at = utc_now()
-    if run.started_at and run.completed_at:
-        run.duration_ms = int(
-            (run.completed_at - run.started_at).total_seconds() * 1000
-        )
+    run.duration_ms = int(
+        (run.completed_at - run.started_at).total_seconds() * 1000
+    )
     db_session.add(run)
     db_session.flush()
     assert run.id is not None
@@ -304,7 +303,7 @@ def _finish_run(
                 label=str(citation.get("label") or "AI evidence"),
                 source_type=str(citation.get("source_type") or "unknown"),
                 excerpt=str(citation.get("excerpt") or ""),
-                score=float(citation.get("confidence") or 0.75),
+                score=float(cast("float | int | str | None", citation.get("confidence")) or 0.75),
                 evidence_metadata={"source_uuid": citation.get("source_uuid")},
             )
         )
@@ -364,10 +363,9 @@ def _fail_run(db_session: Session, run: AIRun, error_code: str) -> None:
     run.status = AIRunStatus.ERROR.value
     run.error_code = error_code
     run.completed_at = utc_now()
-    if run.started_at and run.completed_at:
-        run.duration_ms = int(
-            (run.completed_at - run.started_at).total_seconds() * 1000
-        )
+    run.duration_ms = int(
+        (run.completed_at - run.started_at).total_seconds() * 1000
+    )
     db_session.add(run)
     _emit_run_event(
         db_session, run, "failed", {"state": "failed", "error_code": error_code}
@@ -740,7 +738,7 @@ async def run_course_analysis(
             input_tokens=input_tokens,
             context_sources=context_bundle.sources,
         )
-        assert run.id is not None
+        assert course.id is not None
         analysis = AICourseAnalysis(
             analysis_uuid=_new_uuid("course_analysis"),
             course_id=course.id,
@@ -750,7 +748,7 @@ async def run_course_analysis(
             language=report.language,
             public_score=report.public_score,
             report_json=artifact,
-            evidence_json={"citations": trusted_citations},
+            evidence_json={"citations": cast("list[JsonValue]", trusted_citations)},
             model_name=model_name,
         )
         db_session.add(analysis)
@@ -834,7 +832,7 @@ async def run_submission_analysis(
             language=report.language,
             gap_count=len(report.knowledge_gaps),
             analysis_json=artifact,
-            evidence_json={"citations": trusted_citations},
+            evidence_json={"citations": cast("list[JsonValue]", trusted_citations)},
             model_name=model_name,
         )
         db_session.add(analysis)
@@ -936,7 +934,7 @@ async def run_remediation_generation(
             gate_mode=gate_mode,
             language=bundle.language,
             lecture_json=artifact,
-            test_json={"questions": questions},
+            test_json={"questions": cast("list[JsonValue]", questions)},
         )
         db_session.add(session)
         db_session.commit()
@@ -1093,6 +1091,7 @@ async def run_lecture_review(
             input_tokens=input_tokens,
             context_sources=context_bundle.sources,
         )
+        assert course.id is not None
         assert run.id is not None
         review = AILectureReview(
             review_uuid=_new_uuid("lecture_review"),
@@ -1125,6 +1124,7 @@ async def ask_course_question(
 ) -> tuple[AIThread, AIQAMessage, AIQAMessage]:
     _require_enabled("course_qa_enabled")
     course = _course_or_404(db_session, course_uuid)
+    assert course.id is not None
     provider, token_budget = _settings_provider()
     role = derive_course_ai_role(db_session, course, user)
     include_unpublished = role in {
@@ -1231,7 +1231,7 @@ async def ask_course_question(
             role="assistant",
             content=str(artifact.get("answer_markdown") or ""),
             confidence=answer.confidence,
-            citations_json={"citations": trusted_citations},
+            citations_json={"citations": cast("list[JsonValue]", trusted_citations)},
             message_metadata={
                 "model_name": model_name,
                 "out_of_scope": answer.out_of_scope,
@@ -1287,6 +1287,7 @@ def prepare_course_question_stream(
 ) -> QAStreamSession:
     _require_enabled("course_qa_enabled")
     course = _course_or_404(db_session, course_uuid)
+    assert course.id is not None
     provider, token_budget = _settings_provider()
     role = derive_course_ai_role(db_session, course, user)
     include_unpublished = role in {
@@ -1447,6 +1448,8 @@ async def stream_course_question_events(
             context_sources=session.context_sources,
         )
 
+        assert session.thread.id is not None
+        assert session.course.id is not None
         assistant_message = AIQAMessage(
             message_uuid=_new_uuid("msg"),
             thread_id=session.thread.id,
@@ -1455,7 +1458,7 @@ async def stream_course_question_events(
             role="assistant",
             content=str(artifact.get("answer_markdown") or ""),
             confidence=final_answer.confidence,
-            citations_json={"citations": trusted_citations},
+            citations_json={"citations": cast("list[JsonValue]", trusted_citations)},
             message_metadata={
                 "model_name": model_name,
                 "out_of_scope": final_answer.out_of_scope,
@@ -1492,8 +1495,8 @@ async def stream_course_question_events(
             "result": {
                 "thread_uuid": session.thread.thread_uuid,
                 "message_uuid": assistant_message.message_uuid,
-                "confidence": final_answer.confidence,
-                "follow_up_suggestions": final_answer.follow_up_suggestions,
+                "confidence": cast("float | int | str | None", final_answer.confidence),
+                "follow_up_suggestions": cast("list[JsonValue]", final_answer.follow_up_suggestions),
             },
         }
     except AIRunCancelled:

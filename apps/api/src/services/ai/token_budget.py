@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from config.config import AIConfig
 from src.db.ai_runtime import AIRun
@@ -46,9 +46,9 @@ class TokenBudgetService:
         )
         one_hour_ago = datetime.now(UTC) - timedelta(hours=1)
         user_run_count = db_session.exec(
-            select(func.count(AIRun.id)).where(
+            select(func.count(col(AIRun.id))).where(
                 AIRun.started_at >= one_hour_ago,
-                AIRun.run_metadata["triggered_by_user_id"].as_string() == str(user_id),
+                AIRun.run_metadata["triggered_by_user_id"].as_string() == str(user_id),  # type: ignore[union-attr]
             )
         ).one()
         if user_run_count >= limit:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypeVar
 
@@ -54,7 +54,7 @@ class ModelProvider:
 
     def _build_agent(
         self, *, instructions: str, output_type: type[OutputT]
-    ) -> tuple[Agent, str]:
+    ) -> tuple[Agent[None, OutputT], str]:
         from openai import AsyncOpenAI
         from pydantic_ai import Agent
         from pydantic_ai.models.fallback import FallbackModel
@@ -73,7 +73,7 @@ class ModelProvider:
             provider=OpenAIProvider(openai_client=primary_client),
         )
         openrouter_key = secret_value(self.config.openrouter_api_key)
-        model: object = primary
+        model = primary
         selected_name = self.primary_model_name()
         if openrouter_key:
             # Fallback client uses a larger timeout to allow final completion
@@ -87,7 +87,7 @@ class ModelProvider:
                 self.config.openrouter_model,
                 provider=OpenAIProvider(openai_client=fallback_client),
             )
-            model = FallbackModel(primary, fallback)
+            model = FallbackModel(primary, fallback)  # type: ignore[assignment]
             selected_name = f"{self.primary_model_name()} with {self.fallback_model_name()} fallback"
 
         agent = Agent(model, output_type=output_type, instructions=instructions)
@@ -116,7 +116,7 @@ class ModelProvider:
         instructions: str,
         prompt: str,
         output_type: type[OutputT],
-    ) -> AsyncIterator[AIModelStreamChunk[OutputT]]:
+    ) -> AsyncGenerator[AIModelStreamChunk[OutputT]]:
         """Stream partial, then final, validated output for ``output_type``.
 
         Raises ``AIProviderUnavailable`` (on the first iteration) exactly like

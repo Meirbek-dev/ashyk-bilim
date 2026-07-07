@@ -38,10 +38,10 @@ def _build_broker() -> AsyncBroker:
         "health_check_interval": 30,
         "socket_timeout": None,
     }
-    result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(broker_url, **redis_kwargs)
+    result_backend: AsyncResultBackend[object] = RedisAsyncResultBackend(broker_url, **redis_kwargs)  # type: ignore[arg-type]
 
     return _with_common_middlewares(
-        ListQueueBroker(broker_url, **redis_kwargs).with_result_backend(result_backend),
+        ListQueueBroker(broker_url, **redis_kwargs).with_result_backend(result_backend),  # type: ignore[arg-type]
     )
 
 

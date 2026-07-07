@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, or_, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from config.config import get_settings
 from src.auth.users import get_public_user
@@ -36,7 +37,7 @@ class AIScopeCapabilityRead(PydanticStrictBaseModel):
     features: list[AIFeatureCapability]
 
 
-def _activity_statement(course_id: int, activity_uuid: str):
+def _activity_statement(course_id: int, activity_uuid: str) -> SelectOfScalar[Activity]:
     normalized = activity_uuid.removeprefix("activity_")
     return select(Activity).where(
         Activity.course_id == course_id,
@@ -84,7 +85,7 @@ async def api_ai_scope_capabilities(
     context_visibility = _role_context(role)
     activity = (
         db_session.exec(_activity_statement(course.id, activity_uuid)).first()
-        if activity_uuid and course.id is not None
+        if activity_uuid
         else None
     )
     student_restricted_activity = (

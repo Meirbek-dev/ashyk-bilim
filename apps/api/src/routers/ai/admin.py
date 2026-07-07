@@ -108,21 +108,21 @@ async def api_ai_eval_dashboard(
 ) -> AIEvalDashboardRead:
     require_ai_admin(current_user, db_session)
     run_row = db_session.exec(
-        select(
-            func.count(AIRun.id),
-            func.coalesce(func.sum(case((AIRun.status == "queued", 1), else_=0)), 0),
-            func.coalesce(func.sum(case((AIRun.status == "running", 1), else_=0)), 0),
-            func.coalesce(func.sum(case((AIRun.status == "finished", 1), else_=0)), 0),
-            func.coalesce(func.sum(case((AIRun.status == "error", 1), else_=0)), 0),
-            func.coalesce(func.sum(case((AIRun.status == "aborted", 1), else_=0)), 0),
+        select(  # type: ignore[call-overload]
+            func.count(col(AIRun.id)),
+            func.coalesce(func.sum(case((col(AIRun.status) == "queued", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((col(AIRun.status) == "running", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((col(AIRun.status) == "finished", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((col(AIRun.status) == "error", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((col(AIRun.status) == "aborted", 1), else_=0)), 0),
         )
     ).one()
     eval_row = db_session.exec(
         select(
-            func.count(AIEvalResult.id),
-            func.coalesce(func.sum(case((AIEvalResult.passed == True, 1), else_=0)), 0),  # noqa: E712
-            func.coalesce(func.sum(case((AIEvalResult.passed == False, 1), else_=0)), 0),  # noqa: E712
-            func.avg(AIEvalResult.score),
+            func.count(col(AIEvalResult.id)),
+            func.coalesce(func.sum(case((col(AIEvalResult.passed) == True, 1), else_=0)), 0),  # noqa: E712
+            func.coalesce(func.sum(case((col(AIEvalResult.passed) == False, 1), else_=0)), 0),  # noqa: E712
+            func.avg(col(AIEvalResult.score)),
         )
     ).one()
     recent = db_session.exec(select(AIEvalResult).order_by(col(AIEvalResult.created_at).desc()).limit(20)).all()
