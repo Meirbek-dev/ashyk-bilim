@@ -4,6 +4,7 @@ import {
   getSubmissionStatusLabel,
   normalizeActivityProgressCell,
   normalizeSubmission,
+  type SubmissionStatus,
 } from '@/features/grading/domain'
 
 describe('grading boundary normalization', () => {
@@ -35,13 +36,13 @@ describe('grading boundary normalization', () => {
   })
 
   it('uses an explicit unknown-status label for unsupported values', () => {
-    const label = getSubmissionStatusLabel('UNSUPPORTED_STATUS', key => key)
+    const label = getSubmissionStatusLabel('UNSUPPORTED_STATUS' as unknown as SubmissionStatus, key => key)
 
     expect(label).toBe('statusUnknown')
   })
 
   it('rejects unsupported transitions rather than silently defaulting them', () => {
-    expect(canTransitionSubmission('UNSUPPORTED_STATUS', 'PENDING')).toBe(false)
-    expect(canTransitionSubmission('PENDING', 'UNSUPPORTED_STATUS')).toBe(false)
+    expect(canTransitionSubmission('UNSUPPORTED_STATUS' as unknown as SubmissionStatus, 'PENDING')).toBe(false)
+    expect(canTransitionSubmission('PENDING', 'UNSUPPORTED_STATUS' as unknown as SubmissionStatus)).toBe(false)
   })
 })

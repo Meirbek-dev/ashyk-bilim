@@ -23,6 +23,8 @@ export interface Submission extends Omit<
   status: SubmissionStatus
   is_late: boolean
   attempt_number: number
+  user?: SubmissionUser | null
+  user_id: number
 }
 export type SubmissionUser = components['schemas']['SubmissionUser']
 export interface SubmissionsPage extends Omit<GeneratedSubmissionListResponse, 'items'> {

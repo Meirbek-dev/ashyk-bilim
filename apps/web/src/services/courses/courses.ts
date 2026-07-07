@@ -40,7 +40,7 @@ type NormalizedCourse = Omit<
   thumbnail_type?: NonNullable<CourseRead['thumbnail_type']>
   thumbnail_video: string
 }
-type NormalizedCourseWithPermissions = Omit<
+export type NormalizedCourseWithPermissions = Omit<
   CourseReadWithPermissions,
   'about' | 'authors' | 'description' | 'learnings' | 'tags' | 'thumbnail_image' | 'thumbnail_type' | 'thumbnail_video'
 > & {

@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "taze": "^19.14.1",
-    "turbo": "^2.10.3",
+    "turbo": "^2.10.4",
     "vite-plus": "^0.2.2"
   },
   "overrides": {

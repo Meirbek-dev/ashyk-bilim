@@ -6,15 +6,15 @@ requires-python = ">=3.14.5,<3.15.0"
 
 dependencies = [
   # Framework
-  "fastapi>=0.138.2",
-  "granian[reload,uvloop]>=2.7.7",
+  "fastapi>=0.139.0",
+  "granian[reload,uvloop]>=2.7.9",
 
   # Database
   "sqlalchemy>=2.0.51",
   "sqlmodel>=0.0.39",
   "alembic>=1.18.5",
   "psycopg[binary]>=3.3.4",
-  "pgvector>=0.4.2",
+  "pgvector>=0.5.0",
   "redis>=8.0.1",
 
   # Validation / Config
@@ -27,7 +27,7 @@ dependencies = [
 
   # AI
   "openai>=2.44.0",
-  "pydantic-ai-slim[logfire,openai]>=2.1.0",
+  "pydantic-ai-slim[logfire,openai]>=2.5.1",
   "tiktoken>=0.13.0",
 
   # Async / Jobs
@@ -67,10 +67,10 @@ dev = [
   "pytest-asyncio>=1.4.0",
   "pytest-cov>=7.1.0",
   # Dev Server
-  "uvicorn[standard]>=0.49.0",
+  "uvicorn[standard]>=0.50.2",
   # Fixtures
-  "faker>=40.23.0",
-  "ty>=0.0.55",
+  "faker>=40.28.1",
+  "ty>=0.0.56",
 ]
 
 [tool.ruff]

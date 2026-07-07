@@ -104,7 +104,7 @@ export const CodeBlockShiki = CodeBlock.extend({
         },
         props: {
           decorations(state) {
-            return this.getState(state)
+            return this.getState(state) as unknown as null
           },
         },
       }),
